@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n from "@/i18n/i18n"
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -15,7 +16,8 @@ interface ResultsPanelProps {
 
 export function ResultsPanel({ variant }: ResultsPanelProps) {
   const { t } = useTranslation()
-  const results = useCalculatorStore(s => s.results)!
+  const results = useCalculatorStore(s => s.results)
+  if (!results) return null
   const productName = useCalculatorStore(s => s.productName)
   const addToHistory = useCalculatorStore(s => s.addToHistory)
   const clearHistory = useHistoryStore(s => s.clearHistory)
@@ -44,7 +46,8 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
     return items
   }, [results, isFDM])
 
-  const fmtCurrency = (val: number) => (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const locale = i18n.language?.startsWith('en') ? 'en-US' : 'pt-BR'
+  const fmtCurrency = (val: number) => (val || 0).toLocaleString(locale, { style: 'currency', currency: 'BRL' })
 
   const isSidebar = variant === 'sidebar'
 

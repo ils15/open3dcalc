@@ -4,7 +4,7 @@ import type {
   MachineCosts, LaborCosts, AdditionalCosts, SalesParameters,
   OperationalCosts, SoftwareCosts, FDMHardware, FDMFinishing,
   PostProcessingResin, ResinHardware, CalculationResult,
-  CalculationSnapshot, AMSSlot,
+  CalculationSnapshot, AMSSlot, FixedCosts,
 } from '@/types'
 import { marketplaces } from '@/lib/marketplace'
 import { printers } from '@/lib/printers'

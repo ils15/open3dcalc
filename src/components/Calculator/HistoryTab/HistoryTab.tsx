@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n from "@/i18n/i18n"
 import { useHistoryStore } from '@/stores/historyStore'
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -11,7 +12,8 @@ import {
 } from 'lucide-react'
 
 function formatMoney(value: number) {
-  return (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const locale = i18n.language?.startsWith('en') ? 'en-US' : 'pt-BR'
+  return (value || 0).toLocaleString(locale, { style: 'currency', currency: 'BRL' })
 }
 
 interface DetailModalProps {
@@ -127,7 +129,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
   // Sync local search state with store
   useEffect(() => {
     store.setSearch(search)
-  }, [search])
+  }, [search, store.setSearch])
 
   const filtered = store.getFilteredEntries()
 

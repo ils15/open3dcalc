@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState, lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n from "@/i18n/i18n"
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { useFilamentInventory } from '@/stores/filamentInventory'
-import { useHistoryStore } from '@/stores/historyStore'
 import { selectSpool } from '@/stores/storeBridge'
 import { InputGroup } from '@/components/ui/InputGroup'
 import { Select } from '@/components/ui/Select'
@@ -14,7 +14,7 @@ import type { BufferGeometry } from 'three'
 import { estimatePrintTimeFromDimensions } from '@/lib/printTimeEstimator'
 import {
   Layers, SlidersHorizontal, Wrench, Printer, HardHat, ShieldCheck,
-  DollarSign, BarChart3, FolderOpen,
+  DollarSign, BarChart3,
   FlaskConical, Upload, Receipt, AlertTriangle,
   type LucideIcon,
 } from 'lucide-react'
@@ -68,7 +68,10 @@ export function Calculator() {
 
   const isFDM = store.activeTab === 'fdm'
   const results = store.results!
-  const fmtCurrency = (val: number) => (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const fmtCurrency = (value: number) => {
+    const locale = i18n.language?.startsWith('en') ? 'en-US' : 'pt-BR';
+    return (value || 0).toLocaleString(locale, { style: 'currency', currency: 'BRL' });
+  }
 
   const handleFileDrop = useCallback(async (file: File) => {
     const toast = (msg: string) => {
@@ -413,9 +416,6 @@ export function Calculator() {
               groups search />
             </div>
           )}
-          <div className="sm:col-span-2 glass rounded-xl p-4 sm:p-5">
-            <p className="text-[10px] text-gray-600">{t('calc.failure.description')}</p>
-          </div>
         </div>
       </div>
     )
@@ -847,49 +847,7 @@ export function Calculator() {
             <span className="text-emerald-400 font-bold"><span className="text-slate-500 mr-1">Venda</span>{fmtCurrency(results.sellPrice)}</span>
             <span className="text-amber-400"><span className="text-slate-500 mr-1">Lucro</span>{fmtCurrency(results.profit)}</span>
           </div>
-          <button onClick={() => {
-            const r = store.results
-            if (!r) return
-            const name = store.productName.trim() || (store.activeTab === 'fdm'
-              ? `${store.fdmMaterial.type} - ${store.fdmMaterial.weightUsed}g`
-              : `${store.resinMaterial.type} - ${store.resinMaterial.volumeUsedMl}ml`)
-            const now = Date.now()
-            const id = `hist_${now}_${Math.random().toString(36).slice(2, 7)}`
-            useHistoryStore.getState().addEntry({
-              type: store.activeTab,
-              name,
-              summary: name,
-              totalCost: r.totalCost,
-              sellPrice: r.sellPrice,
-              profit: r.profit,
-              result: r,
-              snapshot: {
-                id,
-                timestamp: now,
-                type: store.activeTab,
-                summary: name,
-                fdmMaterial: store.fdmMaterial, fdmPrintParams: store.fdmPrintParams,
-                fdmMachine: store.fdmMachine, fdmHardware: store.fdmHardware, fdmFinishing: store.fdmFinishing,
-                fdmLabor: store.fdmLabor, fdmExtras: store.fdmExtras, fdmSales: store.fdmSales,
-                fdmOps: store.fdmOps, fdmSoft: store.fdmSoft,
-                resinMaterial: store.resinMaterial, resinPrintParams: store.resinPrintParams,
-                resinPostProcess: store.resinPostProcess, resinMachine: store.resinMachine,
-                resinHardware: store.resinHardware, resinLabor: store.resinLabor,
-                resinExtras: store.resinExtras, resinSales: store.resinSales,
-                resinOps: store.resinOps, resinSoft: store.resinSoft,
-                fdmAmsEnabled: store.fdmAmsEnabled || undefined,
-                fdmAmsSlots: store.fdmAmsSlots,
-                fixedCosts: store.fixedCosts,
-                selectedPrinterId: store.selectedPrinter.id, selectedMarketplaceId: store.selectedMarketplace.id,
-                productName: store.productName, quantity: store.quantity, infillPercent: store.infillPercent,
-                targetMarginMode: store.targetMarginMode, enabledSections: store.enabledSections,
-                results: r,
-              },
-            })
-          }} className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[9px] font-bold shrink-0 flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:bg-indigo-500 transition-colors">
-            <FolderOpen className="w-2.5 h-2.5" />
-            Salvar
-          </button>
+
         </div>
         {/* Section nav */}
         <nav style={{ background: 'rgba(6,8,24,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
