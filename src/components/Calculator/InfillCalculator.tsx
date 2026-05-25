@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { InputGroup } from '@/components/ui/InputGroup'
 import { Select } from '@/components/ui/Select'
 import { calculateInfillImpact } from '@/lib/calculator'
+import { useCurrency } from '@/hooks/useCurrency'
 
 const MATERIALS = [
   { label: 'PLA', value: 'pla', density: 1.24, costPerKg: 125 },
@@ -15,6 +16,7 @@ const MATERIALS = [
 
 export function InfillCalculator() {
   const { t } = useTranslation()
+  const { format: fmtCurrency } = useCurrency()
   const [width, setWidth] = useState('50')
   const [depth, setDepth] = useState('50')
   const [height, setHeight] = useState('30')
@@ -80,7 +82,7 @@ export function InfillCalculator() {
             </div>
             <div className="glass rounded-2xl p-4 sm:p-5 text-center">
               <p className="text-[10px] sm:text-xs text-gray-400 mb-1">Custo Material</p>
-              <p className="text-lg sm:text-xl font-bold text-emerald-400">R$ {result.cost.toFixed(2)}</p>
+              <p className="text-lg sm:text-xl font-bold text-emerald-400">{fmtCurrency(result.cost)}</p>
             </div>
             <div className="glass rounded-2xl p-4 sm:p-5 text-center">
               <p className="text-[10px] sm:text-xs text-gray-400 mb-1">Volume Sólido</p>
@@ -108,9 +110,9 @@ export function InfillCalculator() {
                       <tr key={c.infill} className={`border-b border-white/5 ${c.infill === parseFloat(infillPercent) ? 'bg-purple-600/10' : ''}`}>
                         <td className="py-2 px-3 font-semibold">{c.infill}%</td>
                         <td className="text-right py-2 px-3">{c.weight.toFixed(1)}g</td>
-                        <td className="text-right py-2 px-3">R$ {c.cost.toFixed(2)}</td>
+                        <td className="text-right py-2 px-3">{fmtCurrency(c.cost)}</td>
                         <td className={`text-right py-2 px-3 ${diff > 0 ? 'text-red-400' : 'text-gray-500'}`}>
-                          {diff > 0 ? `+R$ ${diff.toFixed(2)}` : '-'}
+                          {diff > 0 ? `+${fmtCurrency(diff)}` : '-'}
                         </td>
                       </tr>
                     )

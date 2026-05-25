@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { CurrencySetting } from '@/lib/currency'
 import type {
   MaterialStateFDM, MaterialStateResin, PrintParameters,
   MachineCosts, LaborCosts, AdditionalCosts, SalesParameters,
@@ -155,6 +156,9 @@ interface CalculatorState {
   loadHistoryItem: (snapshot: CalculationSnapshot) => void
   addToHistory: () => void
   saveSettings: () => void
+
+  currency: CurrencySetting
+  setCurrency: (c: CurrencySetting) => void
 }
 
 const loadStr = <T,>(key: string, def: T): T => {
@@ -339,6 +343,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     quantity: loadStr('quantity', 1),
     infillPercent: loadStr('infillPercent', 20),
     targetMarginMode: false,
+    currency: loadStr<CurrencySetting>('currency', 'auto'),
     enabledSections: loadStr('enabledSections', {
       material: true, energy: true, machine: true, hardware: true,
       consumables: true, labor: true, software: true, failure: true,
@@ -393,6 +398,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       slots[index] = slot
       setWithCompute({ fdmAmsSlots: slots })
     },
+
+    setCurrency: (currency) => set({ currency }),
 
     setProductName: (productName) => setWithCompute({ productName }),
     setQuickMode: (quickMode) => setWithCompute({ quickMode }),
@@ -517,6 +524,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         fdmAmsSlots: s.fdmAmsSlots,
         fixedCosts: s.fixedCosts,
         quantity: s.quantity, infillPercent: s.infillPercent,
+        currency: s.currency,
       }
       localStorage.setItem('open3dcalc_settings_v2', JSON.stringify(data))
     },

@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import i18n from "@/i18n/i18n"
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useCurrency } from '@/hooks/useCurrency'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import {
   FolderOpen, Save, FileText, BarChart2, CheckCircle2, ScrollText,
@@ -17,11 +17,11 @@ interface ResultsPanelProps {
 export function ResultsPanel({ variant }: ResultsPanelProps) {
   const { t } = useTranslation()
   const results = useCalculatorStore(s => s.results)
-  if (!results) return null
   const productName = useCalculatorStore(s => s.productName)
   const addToHistory = useCalculatorStore(s => s.addToHistory)
   const clearHistory = useHistoryStore(s => s.clearHistory)
-  const recentEntries = useHistoryStore(s => s.entries.slice(0, 3))
+  const historyEntries = useHistoryStore(s => s.entries)
+  const recentEntries = useMemo(() => historyEntries.slice(0, 3), [historyEntries])
   const saveSettings = useCalculatorStore(s => s.saveSettings)
   const activeTab = useCalculatorStore(s => s.activeTab)
 
@@ -29,27 +29,27 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   const isFDM = activeTab === 'fdm'
+  const { format: fmtCurrency } = useCurrency()
+  const isSidebar = variant === 'sidebar'
 
   const chartData = useMemo((): { name: string; value: number; color: string }[] => {
+    if (!results) return []
     const items = [
-      { name: 'Material', value: results.materialCost, color: isFDM ? '#38bdf8' : '#a855f7' },
-      { name: 'Energia', value: results.energyCost, color: '#facc15' },
-      { name: 'Máquina', value: results.machineCost, color: '#94a3b8' },
-      { name: 'Hardware', value: results.hardwareCost, color: '#f97316' },
-      { name: 'Acabamento', value: results.postProcessingCost, color: '#22d3ee' },
-      { name: 'Consumíveis', value: results.consumablesCost, color: '#06b6d4' },
-      { name: 'Software', value: results.softwareCost, color: '#818cf8' },
-      { name: 'Mão de Obra', value: results.laborCost, color: '#f472b6' },
-      { name: 'Falha', value: results.failureCost, color: '#f87171' },
-      { name: 'Extras', value: results.extrasCost, color: '#cbd5e1' },
+      { name: 'Material',                        value: results.materialCost,       color: isFDM ? '#38bdf8' : '#a855f7' },
+      { name: t('calc.chartLabels.energy'),       value: results.energyCost,         color: '#facc15' },
+      { name: t('calc.chartLabels.machine'),      value: results.machineCost,        color: '#94a3b8' },
+      { name: 'Hardware',                         value: results.hardwareCost,       color: '#f97316' },
+      { name: t('calc.chartLabels.finishing'),    value: results.postProcessingCost, color: '#22d3ee' },
+      { name: t('calc.chartLabels.consumables'),  value: results.consumablesCost,    color: '#06b6d4' },
+      { name: t('calc.chartLabels.software'),     value: results.softwareCost,       color: '#818cf8' },
+      { name: t('calc.chartLabels.labor'),        value: results.laborCost,          color: '#f472b6' },
+      { name: t('calc.chartLabels.failure'),      value: results.failureCost,        color: '#f87171' },
+      { name: t('calc.chartLabels.extras'),       value: results.extrasCost,         color: '#cbd5e1' },
     ].filter(d => d.value > 0.01)
     return items
-  }, [results, isFDM])
+  }, [results, isFDM, t])
 
-  const locale = i18n.language?.startsWith('en') ? 'en-US' : 'pt-BR'
-  const fmtCurrency = (val: number) => (val || 0).toLocaleString(locale, { style: 'currency', currency: 'BRL' })
-
-  const isSidebar = variant === 'sidebar'
+  if (!results) return null
 
   const handleExportQuote = () => {
     if (!results) return

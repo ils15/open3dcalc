@@ -135,6 +135,39 @@
       "monthlyHours": "Hours per Month",
       "monthlyHoursTooltip": "Estimated monthly printer operating hours"
     },
+    "chartLabels": {
+      "energy": "Energy",
+      "machine": "Machine",
+      "finishing": "Finishing",
+      "consumables": "Consumables",
+      "software": "Software",
+      "labor": "Labor",
+      "failure": "Failure",
+      "extras": "Extras"
+    },
+    "sectionShort": {
+      "material": "Material",
+      "print": "Params",
+      "failure": "Failure",
+      "hardware": "Hardware",
+      "machine": "Machine",
+      "fixedCost": "Fixed",
+      "labor": "Labor",
+      "ops": "Ops",
+      "sales": "Sales",
+      "results": "Results"
+    },
+    "sectionDesc": {
+      "fdmMaterial": "FDM Filament",
+      "resinMaterial": "Photopolymer resin",
+      "print": "Time, energy and printer",
+      "fdmHardware": "Nozzle, bed and finishing",
+      "resinHardware": "Washing, curing, LCD/FEP",
+      "machine": "Depreciation and maintenance",
+      "labor": "Setup, post-processing and hourly rate",
+      "ops": "PPE, slicer and model license",
+      "sales": "Packaging, shipping, marketplace and margin"
+    },
     "printVsBuy": "Print vs Buy",
     "buyPrice": "Buy Price",
     "savings": "Savings",
@@ -308,5 +341,9 @@
     "finishing": "Estimated cost of sandpaper, primer, paints, putty or acetone used on this part.",
     "ppe": "Gloves, masks, paper towels, filters, etc. Fixed cost per print.",
     "extras": "Screws, adhesives, varnishes, paints, etc."
+  },
+  "settings": {
+    "currency": "Currency",
+    "currencyAuto": "Auto"
   }
 }

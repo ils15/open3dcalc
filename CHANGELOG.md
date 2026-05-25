@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.3.0] — 2026-05-25
+
+### ✨ Novo
+
+- **Sistema Multi-Moeda** — suporte a BRL/USD/EUR/GBP com auto-detecção baseada no locale do navegador. Nova lib `src/lib/currency.ts` e hook `src/hooks/useCurrency.ts`.
+- **Seletor de Moeda no Header** — dropdown no header com opções Automático, BRL, USD, EUR, GBP.
+- **Inventário Reformulado** — reformulação completa do `FilamentInventory.tsx` com SVG spool icons, busca textual, filtros por material/status, edição de rolos, paleta de cores e badges de status.
+- **Status de Carretéis** — novo campo `status` (Em estoque / A caminho / Vazio) e `purchaseStore` por rolo, com migração automática de dados legados.
+- **Custos Fixos na Navegação** — seção "Custos Fixos" adicionada à navegação lateral da calculadora.
+
+### 🎨 UX
+
+- Seletor de moeda com fallback automático (pt-BR → BRL, demais → USD).
+- Loader "Carregando..." quando resultados da calculadora estão nulos.
+- Labels de navegação lateral e descrições de seção agora internacionalizadas via i18n.
+- Labels do gráfico de pizza no ResultsPanel agora usam chaves i18n.
+
+### 🔧 Técnico
+
+- `lib/currency.ts` — sistema de moedas com formatação locale-aware via `toLocaleString`.
+- `hooks/useCurrency.ts` — hook unificado consumindo `calculatorStore.currency` + i18n language.
+- `stores/calculatorStore.ts` — novo campo `currency: CurrencySetting` com persistência em localStorage via auto-save.
+- `stores/filamentInventory.ts` — novos campos `colorHex`, `status`, `purchaseStore`; novo método `updateSpool()`; função `migrateSpool()` para dados legados.
+- `vite.config.ts` — exclude `three`, `@react-three/fiber`, `@react-three/drei` do `optimizeDeps` para evitar erros de build.
+- Todas as ocorrências de `R$` hardcoded substituídas pelo `useCurrency` hook em 7 componentes.
+
 ## [1.2.0] — 2026-05-25
 
 ### ✨ Novo

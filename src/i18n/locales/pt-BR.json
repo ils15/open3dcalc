@@ -135,6 +135,39 @@
       "monthlyHours": "Horas por Mês",
       "monthlyHoursTooltip": "Horas estimadas de operação da impressora por mês"
     },
+    "chartLabels": {
+      "energy": "Energia",
+      "machine": "Máquina",
+      "finishing": "Acabamento",
+      "consumables": "Consumíveis",
+      "software": "Software",
+      "labor": "Mão de Obra",
+      "failure": "Falha",
+      "extras": "Extras"
+    },
+    "sectionShort": {
+      "material": "Material",
+      "print": "Parâmetros",
+      "failure": "Falhas",
+      "hardware": "Hardware",
+      "machine": "Máquina",
+      "fixedCost": "C.Fixos",
+      "labor": "M.Obra",
+      "ops": "Soft/EPI",
+      "sales": "Vendas",
+      "results": "Resultado"
+    },
+    "sectionDesc": {
+      "fdmMaterial": "Filamento FDM",
+      "resinMaterial": "Resina fotopolimérica",
+      "print": "Tempo, energia e impressora",
+      "fdmHardware": "Bico, mesa e acabamento",
+      "resinHardware": "Lavagem, cura, LCD/FEP",
+      "machine": "Depreciação e manutenção",
+      "labor": "Setup, pós-processamento e taxa horária",
+      "ops": "EPI, slicer e licença de modelo",
+      "sales": "Embalagem, frete, marketplace e margem"
+    },
     "printVsBuy": "Imprimir vs Comprar",
     "buyPrice": "Preço de Compra",
     "savings": "Economia",
@@ -308,5 +341,9 @@
     "finishing": "Valor estimado de lixas, primer, tintas, massa plástica ou acetona gastos nesta peça.",
     "ppe": "Luvas, máscaras, papel toalha, filtros, etc. Custo fixo por impressão.",
     "extras": "Parafusos, colas, verniz, tintas, etc."
+  },
+  "settings": {
+    "currency": "Moeda",
+    "currencyAuto": "Automático"
   }
 }

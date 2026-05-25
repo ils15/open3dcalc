@@ -3,17 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { InputGroup } from '@/components/ui/InputGroup'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
+import { useCurrency } from '@/hooks/useCurrency'
 
 const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#14b8a6']
-
-function formatMoney(value: number) {
-  return (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
 
 export function Dashboard() {
   const { t } = useTranslation()
   const store = useCalculatorStore()
   const results = store.results
+  const { format: formatMoney, symbol: currencySymbol } = useCurrency()
   const [printsPerMonth, setPrintsPerMonth] = useState(30)
   const [buyPrice, setBuyPrice] = useState('')
   const [targetSellPrice, setTargetSellPrice] = useState('')
@@ -172,7 +170,7 @@ export function Dashboard() {
         <p className="text-xs text-gray-500 mb-3">{t('calc.targetMarginDesc')}</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputGroup label={t('calc.sellPriceTarget')} value={targetSellPrice}
-            onChange={v => setTargetSellPrice(v)} type="number" prefix="R$" />
+            onChange={v => setTargetSellPrice(v)} type="number" prefix={currencySymbol} />
           <div className="grid grid-cols-2 gap-3">
             <div className="glass rounded-xl p-3 text-center">
               <p className="text-[10px] text-gray-500">{t('calc.actualMargin')}</p>
@@ -195,7 +193,7 @@ export function Dashboard() {
         <h3 className="text-sm font-bold text-white mb-4">{t('calc.printVsBuy')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputGroup label={t('calc.buyPrice')} value={buyPrice}
-            onChange={v => setBuyPrice(v)} type="number" prefix="R$" />
+            onChange={v => setBuyPrice(v)} type="number" prefix={currencySymbol} />
           {printVsBuy && (
             <div className="grid grid-cols-2 gap-3">
               <div className="glass rounded-xl p-3 text-center">

@@ -1,20 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import i18n from "@/i18n/i18n"
 import { useHistoryStore } from '@/stores/historyStore'
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { useCurrency } from '@/hooks/useCurrency'
 import type { HistoryEntry } from '@/types'
 import {
   X, Layers, Zap, Printer, Wrench, HardHat, Monitor,
   Paintbrush, DollarSign, Store, Tags, TrendingUp, Search, FileJson,
   RotateCcw,
 } from 'lucide-react'
-
-function formatMoney(value: number) {
-  const locale = i18n.language?.startsWith('en') ? 'en-US' : 'pt-BR'
-  return (value || 0).toLocaleString(locale, { style: 'currency', currency: 'BRL' })
-}
 
 interface DetailModalProps {
   entry: HistoryEntry | null
@@ -24,6 +19,7 @@ interface DetailModalProps {
 function DetailModal({ entry, onClose }: DetailModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const { format: formatMoney } = useCurrency()
 
   // Focus trap + ESC close
   useEffect(() => {
@@ -121,15 +117,17 @@ interface HistoryTabProps {
 
 export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
   const { t } = useTranslation()
+  const { format: formatMoney } = useCurrency()
   const store = useHistoryStore()
+  const setStoreSearch = store.setSearch
   const [search, setSearch] = useState('')
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   // Sync local search state with store
   useEffect(() => {
-    store.setSearch(search)
-  }, [search, store.setSearch])
+    setStoreSearch(search)
+  }, [search, setStoreSearch])
 
   const filtered = store.getFilteredEntries()
 
