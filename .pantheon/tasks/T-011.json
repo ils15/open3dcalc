@@ -4,18 +4,7 @@
   "description": "Revisar todos os PRs da Fase 2+: qualidade, cobertura de testes, i18n, tipos, performance. Garantir que coverage calculator.ts ≥ 80%. Validar quebra de compatibilidade com dados existentes no localStorage.",
   "status": "pending",
   "activeForm": "Revisando Fase 2+",
-  "blockedBy": [
-    "T-001",
-    "T-002",
-    "T-003",
-    "T-004",
-    "T-005",
-    "T-006",
-    "T-007",
-    "T-008",
-    "T-009",
-    "T-010"
-  ],
+  "blockedBy": ["T-003", "T-006", "T-007", "T-010"],
   "blocks": [],
   "owner": "Themis",
   "metadata": {

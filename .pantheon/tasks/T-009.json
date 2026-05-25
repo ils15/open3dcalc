@@ -2,7 +2,7 @@
   "id": "T-009",
   "subject": "Usar printTimeEstimator quando STL for carregado",
   "description": "Quando um arquivo STL/OBJ/3MF for carregado e analisado, usar printTimeEstimator.ts para estimar o tempo de impressão baseado nas dimensões e preencher automaticamente printTimeHours na calculatorStore.",
-  "status": "pending",
+  "status": "done",
   "activeForm": "Integrando estimador de tempo",
   "blockedBy": [],
   "blocks": [],

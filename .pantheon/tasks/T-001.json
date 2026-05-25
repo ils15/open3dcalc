@@ -2,7 +2,7 @@
   "id": "T-001",
   "subject": "Adicionar taxa de falha como seção visível na calculadora",
   "description": "Criar seção 'Risco/Falha' na Calculator.tsx com toggle, modo (percentual/fixo) e valor. Já existe em calculator.ts como failureMode, failureValue, riskMultiplier — só precisa de UI dedicada em vez de estar escondido.",
-  "status": "pending",
+  "status": "done",
   "activeForm": "Criando seção de Falha na Calculator",
   "blockedBy": [],
   "blocks": [],

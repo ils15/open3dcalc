@@ -2,7 +2,7 @@
   "id": "T-008",
   "subject": "Adicionar botão 'Exportar Cotação' no ResultsPanel",
   "description": "quoteApi.ts já existe mas não é usado. Adicionar botão 'Exportar Cotação' no ResultsPanel ao lado de PDF/CSV. Usar generateQuotePayload() e exportQuoteJson().",
-  "status": "pending",
+  "status": "done",
   "activeForm": "Integrando quoteApi",
   "blockedBy": [],
   "blocks": [],

@@ -2,7 +2,7 @@
   "id": "T-005",
   "subject": "Adicionar ordenação e filtros no HistoryTab",
   "description": "No HistoryTab.tsx: filtro por tipo (FDM/Resina), ordenação por data↑↓, preço↑↓, lucro↑↓, nome A-Z. Pill de filtro ativo com botão 'Limpar filtros'.",
-  "status": "pending",
+  "status": "done",
   "activeForm": "Implementando ordenação e filtros",
   "blockedBy": ["T-004"],
   "blocks": [],
