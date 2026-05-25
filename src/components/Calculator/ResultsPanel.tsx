@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import i18n from '@/i18n/i18n'
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
