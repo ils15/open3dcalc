@@ -8,7 +8,7 @@ import { Dashboard } from '@/components/Dashboard/Dashboard'
 import { InfillCalculator } from '@/components/Calculator/InfillCalculator'
 import { FilamentInventory } from '@/components/Catalog/FilamentInventory'
 import { restoreAutoSnapshot } from '@/stores/storeBridge'
-import { useProductStore } from '@/stores/productStore'
+import { useHistoryStore } from '@/stores/historyStore'
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import {
   Calculator as CalculatorIcon,
@@ -36,7 +36,73 @@ function App() {
 
   useEffect(() => {
     restoreAutoSnapshot()
-    useProductStore.getState().load()
+
+    // Migração de dados antigos para historyStore
+    const migrateOldData = () => {
+      const historyStore = useHistoryStore.getState()
+      const existing = historyStore.entries.length
+
+      // Só migra se historyStore estiver vazia (evita duplicação)
+      if (existing > 0) return
+
+      // Migrar productStore antigo
+      try {
+        const oldProducts = localStorage.getItem('open3dcalc_products')
+        if (oldProducts) {
+          const parsed = JSON.parse(oldProducts)
+          if (Array.isArray(parsed)) {
+            parsed.forEach((p: any) => {
+              if (!p.result) return
+              historyStore.addEntry({
+                type: p.result?.fdmMaterial ? 'fdm' : 'resin',
+                name: p.name || 'Produto',
+                summary: p.result?.materialType || '',
+                totalCost: p.result?.totalCost || 0,
+                sellPrice: p.result?.sellPrice || 0,
+                profit: (p.result?.sellPrice || 0) - (p.result?.totalCost || 0),
+                result: p.result,
+                snapshot: p.snapshot || null,
+              })
+            })
+          }
+          localStorage.removeItem('open3dcalc_products')
+        }
+      } catch {}
+
+      // Migrar calculatorStore.history antigo (v1)
+      try {
+        const oldHistory = localStorage.getItem('open3dcalc_history_v2')
+        if (oldHistory) {
+          const parsed = JSON.parse(oldHistory)
+          if (Array.isArray(parsed)) {
+            parsed.forEach((item: any) => {
+              historyStore.addEntry({
+                type: item.type || 'fdm',
+                name: item.summary || 'Histórico',
+                summary: item.summary || '',
+                totalCost: item.totalCost || 0,
+                sellPrice: item.sellPrice || 0,
+                profit: item.profit || 0,
+                result: item.result || {
+                  materialCost: 0, energyCost: 0, machineCost: 0,
+                  hardwareCost: 0, consumablesCost: 0, laborCost: 0,
+                  softwareCost: 0, failureCost: 0, extrasCost: 0,
+                  postProcessingCost: 0, subtotal: 0, totalCost: 0,
+                  sellPrice: 0, profit: 0, marketplaceFee: 0, taxAmount: 0,
+                  costPerGram: 0, costPerUnit: 0, unitWeight: 0,
+                  estimatedPrintTime: 0, targetMarginPercent: 0,
+                  breakEvenPrice: 0, actualMargin: 0,
+                },
+                snapshot: item.snapshot || null,
+              })
+            })
+          }
+          localStorage.removeItem('open3dcalc_history_v2')
+        }
+      } catch {}
+    }
+
+    migrateOldData()
 
     const handleBeforeUnload = () => {
       const calc = useCalculatorStore.getState()

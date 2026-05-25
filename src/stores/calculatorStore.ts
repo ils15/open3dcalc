@@ -9,6 +9,7 @@ import type {
 import { marketplaces } from '@/lib/marketplace'
 import { printers } from '@/lib/printers'
 import { useCatalogStore } from '@/stores/catalogStore'
+import { useHistoryStore } from '@/stores/historyStore'
 import { calculateFDM, calculateResin } from '@/lib/calculator'
 type Marketplace = (typeof marketplaces)[number]
 type PrinterProfile = (typeof printers)[number]
@@ -410,27 +411,17 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       const s = get()
       const r = s.results
       if (!r) return
-      const summary = s.productName.trim() || (s.activeTab === 'fdm'
+      const name = s.productName.trim() || (s.activeTab === 'fdm'
         ? `${s.fdmMaterial.type} - ${s.fdmMaterial.weightUsed}g`
         : `${s.resinMaterial.type} - ${s.resinMaterial.volumeUsedMl}ml`)
-      const id = Date.now().toString()
-      const item: SavedCalculation = {
-        id,
-        timestamp: Date.now(),
-        type: s.activeTab,
-        summary,
-        totalCost: r.totalCost,
-        sellPrice: r.sellPrice,
-        profit: r.profit,
-      }
-      const newHistory = [item, ...s.history].slice(0, 20)
-      localStorage.setItem('open3dcalc_history_v2', JSON.stringify(newHistory))
+      const now = Date.now()
+      const id = `hist_${now}_${Math.random().toString(36).slice(2, 7)}`
 
       const snapshot: CalculationSnapshot = {
         id,
-        timestamp: Date.now(),
+        timestamp: now,
         type: s.activeTab,
-        summary,
+        summary: name,
         fdmAmsEnabled: s.fdmAmsEnabled || undefined,
         fdmAmsSlots: s.fdmAmsSlots,
         fixedCosts: s.fixedCosts,
@@ -463,10 +454,17 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         enabledSections: s.enabledSections,
         results: r,
       }
-      const snapshots = loadHistorySnapshots()
-      snapshots.set(id, snapshot)
-      saveHistorySnapshots(snapshots)
-      set({ history: newHistory })
+
+      useHistoryStore.getState().addEntry({
+        type: s.activeTab,
+        name,
+        summary: name,
+        totalCost: r.totalCost,
+        sellPrice: r.sellPrice,
+        profit: r.profit,
+        result: r,
+        snapshot,
+      })
     },
 
     loadHistoryItem: (snapshot: CalculationSnapshot) => {

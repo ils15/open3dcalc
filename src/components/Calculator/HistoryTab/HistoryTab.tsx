@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProductStore } from '@/stores/productStore'
+import { useHistoryStore } from '@/stores/historyStore'
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import type { SavedProduct } from '@/types'
+import type { HistoryEntry } from '@/types'
 import {
   X, Layers, Zap, Printer, Wrench, HardHat, Monitor,
   Paintbrush, DollarSign, Store, Tags, TrendingUp, Search, FileJson,
@@ -15,17 +15,17 @@ function formatMoney(value: number) {
 }
 
 interface DetailModalProps {
-  product: SavedProduct | null
+  entry: HistoryEntry | null
   onClose: () => void
 }
 
-function DetailModal({ product, onClose }: DetailModalProps) {
+function DetailModal({ entry, onClose }: DetailModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   // Focus trap + ESC close
   useEffect(() => {
-    if (!product) return
+    if (!entry) return
 
     // Move focus to close button when modal opens
     closeButtonRef.current?.focus()
@@ -52,11 +52,11 @@ function DetailModal({ product, onClose }: DetailModalProps) {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [product, onClose])
+  }, [entry, onClose])
 
-  if (!product) return null
+  if (!entry) return null
 
-  const d = product.result
+  const d = entry.result
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -71,7 +71,7 @@ function DetailModal({ product, onClose }: DetailModalProps) {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold gradient-text">{product.name}</h2>
+          <h2 className="text-lg font-bold gradient-text">{entry.name}</h2>
           <button
             ref={closeButtonRef}
             onClick={onClose}
@@ -119,26 +119,27 @@ interface HistoryTabProps {
 
 export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
   const { t } = useTranslation()
-  const { products, load, remove, exportJson } = useProductStore()
+  const store = useHistoryStore()
   const [search, setSearch] = useState('')
-  const [selectedProduct, setSelectedProduct] = useState<SavedProduct | null>(null)
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
+  const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
-  useEffect(() => { load() }, [load])
+  // Sync local search state with store
+  useEffect(() => {
+    store.setSearch(search)
+  }, [search])
 
-  const filtered = products
-    .filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
-    .reverse()
+  const filtered = store.getFilteredEntries()
 
-  const handleLoadToCalculator = (p: SavedProduct) => {
-    if (p.snapshot) {
-      useCalculatorStore.getState().loadHistoryItem(p.snapshot)
+  const handleLoadToCalculator = (entry: HistoryEntry) => {
+    if (entry.snapshot) {
+      useCalculatorStore.getState().loadHistoryItem(entry.snapshot)
       onLoadToCalculator?.()
     }
   }
 
   const handleExport = useCallback(() => {
-    const data = exportJson()
+    const data = store.exportJson()
     const blob = new Blob([data], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -146,13 +147,48 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
     a.download = 'open3dcalc_export.json'
     a.click()
     URL.revokeObjectURL(url)
-  }, [exportJson])
+  }, [store])
+
+  // Filter type tabs
+  const filterTabs = [
+    { key: 'all' as const, label: 'Todos' },
+    { key: 'fdm' as const, label: 'FDM' },
+    { key: 'resin' as const, label: 'Resina' },
+  ]
 
   return (
     <div className="glass rounded-2xl p-5 animate-fade-in">
       <h2 className="text-lg font-semibold text-white mb-4 border-b border-white/10 pb-2">
         {t('history.title')}
       </h2>
+
+      {/* Filter type tabs */}
+      <div className="flex gap-2 mb-4">
+        {filterTabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => store.setFilterType(tab.key)}
+            className={`px-3 py-1.5 text-xs rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none ${
+              store.filterType === tab.key
+                ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/30'
+                : 'bg-white/5 text-gray-400 hover:text-white'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <select
+          value={store.sortBy}
+          onChange={e => store.setSortBy(e.target.value as 'date' | 'price' | 'profit' | 'name')}
+          className="bg-white/5 border border-white/10 rounded-lg text-xs text-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="date">Data</option>
+          <option value="price">Preço</option>
+          <option value="profit">Lucro</option>
+          <option value="name">Nome</option>
+        </select>
+      </div>
 
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -169,17 +205,20 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
         <p className="text-sm text-gray-500 text-center py-8">{t('history.empty')}</p>
       ) : (
         <div className="space-y-2 max-h-80 overflow-y-auto">
-          {filtered.map(p => (
-            <div key={p.id} className="glass rounded-xl p-3 flex items-center justify-between hover:bg-white/5 transition-colors">
+          {filtered.map(entry => (
+            <div key={entry.id} className="glass rounded-xl p-3 flex items-center justify-between hover:bg-white/5 transition-colors">
               <div>
-                <p className="text-sm font-semibold">{p.name}</p>
-                <p className="text-xs text-gray-500">{p.date}</p>
+                <p className="text-sm font-semibold">{entry.name}</p>
+                <p className="text-xs text-gray-500">
+                  {new Date(entry.timestamp).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  <span className="ml-2 uppercase text-[10px] text-indigo-400/60">{entry.type}</span>
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-emerald-400">{formatMoney(p.result.sellPrice)}</span>
-                {p.snapshot && (
+                <span className="text-sm font-bold text-emerald-400">{formatMoney(entry.sellPrice)}</span>
+                {entry.snapshot && (
                   <button
-                    onClick={() => handleLoadToCalculator(p)}
+                    onClick={() => handleLoadToCalculator(entry)}
                     className="px-2 py-1.5 text-xs rounded-lg bg-emerald-600/30 text-emerald-300 hover:bg-emerald-600/50 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none flex items-center gap-1"
                     title="Carregar na calculadora"
                   >
@@ -187,13 +226,13 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
                   </button>
                 )}
                 <button
-                  onClick={() => setSelectedProduct(p)}
+                  onClick={() => setSelectedEntry(entry)}
                   className="px-3 py-1.5 text-xs rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
                 >
                   {t('history.details')}
                 </button>
                 <button
-                  onClick={() => setConfirmDeleteId(p.id)}
+                  onClick={() => setConfirmDeleteId(entry.id)}
                   className="p-1.5 text-xs rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none flex items-center justify-center"
                   aria-label="Remover"
                 >
@@ -213,7 +252,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
         {t('history.exportJson')}
       </button>
 
-      <DetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+      <DetailModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
       <ConfirmDialog
         open={confirmDeleteId !== null}
         title="Remover produto"
@@ -222,7 +261,9 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
         confirmLabel="Remover"
         cancelLabel="Cancelar"
         onConfirm={() => {
-          if (confirmDeleteId !== null) remove(confirmDeleteId)
+          if (confirmDeleteId !== null) {
+            store.removeEntry(confirmDeleteId)
+          }
           setConfirmDeleteId(null)
         }}
         onCancel={() => setConfirmDeleteId(null)}

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { useFilamentInventory } from '@/stores/filamentInventory'
-import { useProductStore } from '@/stores/productStore'
+import { useHistoryStore } from '@/stores/historyStore'
 import { selectSpool } from '@/stores/storeBridge'
 import { InputGroup } from '@/components/ui/InputGroup'
 import { Select } from '@/components/ui/Select'
@@ -421,6 +421,58 @@ export function Calculator() {
     )
   }
 
+  function renderFailureSection() {
+    const failureMode = isFDM ? store.fdmPrintParams.failureMode : store.resinPrintParams.failureMode
+    const failureValue = isFDM ? store.fdmPrintParams.failureValue : store.resinPrintParams.failureValue
+    const riskMultiplier = isFDM ? store.fdmPrintParams.riskMultiplier : store.resinPrintParams.riskMultiplier
+    const failureEnabled = store.enabledSections.failure
+
+    const setFailureField = (field: Partial<typeof store.fdmPrintParams>) => {
+      const current = isFDM ? store.fdmPrintParams : store.resinPrintParams
+      const update = { ...current, ...field }
+      isFDM ? store.setFdmPrintParams(update) : store.setResinPrintParams(update)
+    }
+
+    return (
+      <div className="glass rounded-2xl p-4 sm:p-5">
+        {renderSectionHeader(AlertTriangle, t('calc.failure.title'), t('calc.failure.description'))}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between glass rounded-xl px-4 py-3">
+            <span className="text-xs font-semibold text-gray-400">{t('calc.failure.enableFailure')}</span>
+            <ToggleSwitch enabled={failureEnabled} onToggle={() => {
+              store.toggleSection('failure')
+              if (!failureEnabled && failureMode === 'none') {
+                setFailureField({ failureMode: 'percent', failureValue: 10 })
+              }
+            }} />
+          </div>
+          <div className={`space-y-4 transition-all duration-300 ${failureEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Select label={t('calc.failure.mode')}
+                value={failureMode === 'none' ? 'percent' : failureMode}
+                onChange={v => setFailureField({ failureMode: v as 'percent' | 'fixed', failureValue: v === 'percent' ? (failureValue || 10) : failureValue })}
+                options={[
+                  { value: 'percent', label: t('calc.failure.modePercent') },
+                  { value: 'fixed', label: t('calc.failure.modeFixed') },
+                ]} />
+              <InputGroup label={t('calc.failure.value')}
+                value={failureValue}
+                onChange={v => setFailureField({ failureValue: parseFloat(v) || 0 })}
+                type="number"
+                unit={failureMode === 'fixed' ? undefined : '%'}
+                prefix={failureMode === 'fixed' ? 'R$' : undefined} />
+            </div>
+            <InputGroup label={t('calc.failure.riskMultiplier')}
+              value={riskMultiplier}
+              onChange={v => setFailureField({ riskMultiplier: parseFloat(v) || 0 })}
+              type="number" step="0.1"
+              tooltip={t('calc.failure.riskMultiplierTooltip')} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   function renderHardwareSection() {
     return (
       <div className="glass rounded-2xl p-4 sm:p-5 space-y-6">
@@ -798,29 +850,42 @@ export function Calculator() {
           <button onClick={() => {
             const r = store.results
             if (!r) return
-            store.addToHistory()
             const name = store.productName.trim() || (store.activeTab === 'fdm'
               ? `${store.fdmMaterial.type} - ${store.fdmMaterial.weightUsed}g`
               : `${store.resinMaterial.type} - ${store.resinMaterial.volumeUsedMl}ml`)
-            const snapshot: import('@/types').CalculationSnapshot = {
-              id: Date.now().toString(), timestamp: Date.now(), type: store.activeTab, summary: name,
-              fdmMaterial: store.fdmMaterial, fdmPrintParams: store.fdmPrintParams,
-              fdmMachine: store.fdmMachine, fdmHardware: store.fdmHardware, fdmFinishing: store.fdmFinishing,
-              fdmLabor: store.fdmLabor, fdmExtras: store.fdmExtras, fdmSales: store.fdmSales,
-              fdmOps: store.fdmOps, fdmSoft: store.fdmSoft,
-              resinMaterial: store.resinMaterial, resinPrintParams: store.resinPrintParams,
-              resinPostProcess: store.resinPostProcess, resinMachine: store.resinMachine,
-              resinHardware: store.resinHardware, resinLabor: store.resinLabor,
-              resinExtras: store.resinExtras, resinSales: store.resinSales,
-              resinOps: store.resinOps, resinSoft: store.resinSoft,
-              fdmAmsEnabled: store.fdmAmsEnabled || undefined,
-              fdmAmsSlots: store.fdmAmsSlots,
-              selectedPrinterId: store.selectedPrinter.id, selectedMarketplaceId: store.selectedMarketplace.id,
-              productName: store.productName, quantity: store.quantity, infillPercent: store.infillPercent,
-              targetMarginMode: store.targetMarginMode, enabledSections: store.enabledSections,
-              results: r,
-            }
-            useProductStore.getState().save(name, r, snapshot)
+            const now = Date.now()
+            const id = `hist_${now}_${Math.random().toString(36).slice(2, 7)}`
+            useHistoryStore.getState().addEntry({
+              type: store.activeTab,
+              name,
+              summary: name,
+              totalCost: r.totalCost,
+              sellPrice: r.sellPrice,
+              profit: r.profit,
+              result: r,
+              snapshot: {
+                id,
+                timestamp: now,
+                type: store.activeTab,
+                summary: name,
+                fdmMaterial: store.fdmMaterial, fdmPrintParams: store.fdmPrintParams,
+                fdmMachine: store.fdmMachine, fdmHardware: store.fdmHardware, fdmFinishing: store.fdmFinishing,
+                fdmLabor: store.fdmLabor, fdmExtras: store.fdmExtras, fdmSales: store.fdmSales,
+                fdmOps: store.fdmOps, fdmSoft: store.fdmSoft,
+                resinMaterial: store.resinMaterial, resinPrintParams: store.resinPrintParams,
+                resinPostProcess: store.resinPostProcess, resinMachine: store.resinMachine,
+                resinHardware: store.resinHardware, resinLabor: store.resinLabor,
+                resinExtras: store.resinExtras, resinSales: store.resinSales,
+                resinOps: store.resinOps, resinSoft: store.resinSoft,
+                fdmAmsEnabled: store.fdmAmsEnabled || undefined,
+                fdmAmsSlots: store.fdmAmsSlots,
+                fixedCosts: store.fixedCosts,
+                selectedPrinterId: store.selectedPrinter.id, selectedMarketplaceId: store.selectedMarketplace.id,
+                productName: store.productName, quantity: store.quantity, infillPercent: store.infillPercent,
+                targetMarginMode: store.targetMarginMode, enabledSections: store.enabledSections,
+                results: r,
+              },
+            })
           }} className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[9px] font-bold shrink-0 flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none hover:bg-indigo-500 transition-colors">
             <FolderOpen className="w-2.5 h-2.5" />
             Salvar
