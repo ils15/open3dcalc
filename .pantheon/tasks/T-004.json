@@ -1,0 +1,20 @@
+{
+  "id": "T-004",
+  "subject": "Unificar histórico (calculatorStore.history + productStore)",
+  "description": "Criar historyStore única que unifica calculatorStore.history (snapshot rápido do ResultsPanel) com productStore (HistoryTab). Migrar dados existentes. O ResultsPanel usa o mesmo store para mini-histórico, e o HistoryTab para lista completa.",
+  "status": "pending",
+  "activeForm": "Unificando histórico",
+  "blockedBy": [],
+  "blocks": ["T-005", "T-006", "T-010"],
+  "owner": "Hermes",
+  "metadata": {
+    "files": [
+      "src/stores/ (nova historyStore)",
+      "src/stores/calculatorStore.ts",
+      "src/stores/productStore.ts"
+    ],
+    "dependencies": ["precisa migrar dados do localStorage"],
+    "i18nKeys": [],
+    "estimatedEffort": "grande"
+  }
+}

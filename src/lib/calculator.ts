@@ -16,6 +16,7 @@ export function calculateFDM(
   soft: SoftwareCosts,
   fdmHW: FDMHardware,
   fdmFin: FDMFinishing,
+  fixedCostPerHour = 0,
 ): CalculationResult {
   const efficiencyFactor = mat.spoolEfficiency > 0 ? (100 / mat.spoolEfficiency) : 1
   const totalWeightFDM = mat.weightUsed + mat.purgeWeight
@@ -37,7 +38,7 @@ export function calculateFDM(
     if (machine.maintenanceEnabled) {
       hourlyMaintenance = machine.hoursPerMonth > 0 ? machine.maintenanceCost / machine.hoursPerMonth : 0
     }
-    machineTotal = (hourlyDepreciation + hourlyMaintenance) * print.printTimeHours
+    machineTotal = (hourlyDepreciation + hourlyMaintenance + fixedCostPerHour) * print.printTimeHours
   }
 
   let hardwareTotal = 0
@@ -137,6 +138,7 @@ export function calculateResin(
   soft: SoftwareCosts,
   resinPP: PostProcessingResin,
   resinHW: ResinHardware,
+  fixedCostPerHour = 0,
 ): CalculationResult {
   const volumeWithWaste = mat.volumeUsedMl * (1 + (mat.wasteMarginPercent / 100))
   const matCost = (volumeWithWaste / 1000) * mat.costPerLiter
@@ -160,7 +162,7 @@ export function calculateResin(
     if (machine.maintenanceEnabled) {
       hourlyMaintenance = machine.hoursPerMonth > 0 ? machine.maintenanceCost / machine.hoursPerMonth : 0
     }
-    machineTotal = (hourlyDepreciation + hourlyMaintenance) * print.printTimeHours
+    machineTotal = (hourlyDepreciation + hourlyMaintenance + fixedCostPerHour) * print.printTimeHours
   }
 
   let hardwareTotal = 0

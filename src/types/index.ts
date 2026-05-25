@@ -121,6 +121,12 @@ export interface LaborCosts {
   hourlyRate: number
 }
 
+export interface FixedCosts {
+  enabled: boolean
+  monthlyCost: number
+  monthlyPrintHours: number
+}
+
 export interface OperationalCosts {
   enabled: boolean
   ppeCostPerPrint: number
@@ -188,6 +194,19 @@ export interface SavedProduct {
   snapshot?: CalculationSnapshot
 }
 
+export interface HistoryEntry {
+  id: string
+  timestamp: number
+  type: 'fdm' | 'resin'
+  name: string
+  summary: string
+  totalCost: number
+  sellPrice: number
+  profit: number
+  result: CalculationResult
+  snapshot: CalculationSnapshot | null
+}
+
 export interface CalculationInputs {
   productName: string
   material: Material
@@ -228,6 +247,7 @@ export interface CalculationSnapshot {
   fdmSales: SalesParameters
   fdmOps: OperationalCosts
   fdmSoft: SoftwareCosts
+  fixedCosts: FixedCosts
   resinMaterial: MaterialStateResin
   resinPrintParams: PrintParameters
   resinPostProcess: PostProcessingResin

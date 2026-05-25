@@ -1,0 +1,25 @@
+{
+  "id": "T-002",
+  "subject": "Adicionar campo de Custo Fixo Mensal no cálculo",
+  "description": "Adicionar 'fixedMonthlyCost' e 'monthlyPrintHours' nos tipos e na calculatorStore. Criar seção 'Custos Fixos' na calculadora. A lógica: custo fixo por hora = fixedMonthlyCost / monthlyPrintHours. Esse custo é adicionado ao cálculo de depreciação/máquina. Atualizar calculator.ts para incluir no cálculo.",
+  "status": "pending",
+  "activeForm": "Implementando custo fixo mensal",
+  "blockedBy": [],
+  "blocks": ["T-003"],
+  "owner": "Hermes",
+  "metadata": {
+    "files": [
+      "src/types/index.ts",
+      "src/stores/calculatorStore.ts",
+      "src/lib/calculator.ts",
+      "src/components/Calculator/Calculator.tsx"
+    ],
+    "dependencies": ["types → store → calculator"],
+    "i18nKeys": [
+      "calc.fixedCost.title",
+      "calc.fixedCost.monthlyCost",
+      "calc.fixedCost.monthlyHours"
+    ],
+    "estimatedEffort": "médio"
+  }
+}

@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCalculatorStore } from '@/stores/calculatorStore'
+import { useHistoryStore } from '@/stores/historyStore'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import {
-  FolderOpen, Save, FileText, BarChart2, CheckCircle2,
+  FolderOpen, Save, FileText, BarChart2, CheckCircle2, ScrollText,
 } from 'lucide-react'
+import { exportQuoteJson, downloadQuoteJson } from '@/lib/quoteApi'
 
 interface ResultsPanelProps {
   variant: 'sidebar' | 'mobile'
@@ -14,10 +16,10 @@ interface ResultsPanelProps {
 export function ResultsPanel({ variant }: ResultsPanelProps) {
   const { t } = useTranslation()
   const results = useCalculatorStore(s => s.results)!
-  const history = useCalculatorStore(s => s.history)
   const productName = useCalculatorStore(s => s.productName)
   const addToHistory = useCalculatorStore(s => s.addToHistory)
-  const clearHistory = useCalculatorStore(s => s.clearHistory)
+  const clearHistory = useHistoryStore(s => s.clearHistory)
+  const recentEntries = useHistoryStore(s => s.entries.slice(0, 3))
   const saveSettings = useCalculatorStore(s => s.saveSettings)
   const activeTab = useCalculatorStore(s => s.activeTab)
 
@@ -45,6 +47,18 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   const fmtCurrency = (val: number) => (val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   const isSidebar = variant === 'sidebar'
+
+  const handleExportQuote = () => {
+    if (!results) return
+    const state = useCalculatorStore.getState()
+    const name = state.productName || 'Cotação Open3DCalc'
+    const qty = state.quantity || 1
+    const isFdm = state.activeTab === 'fdm'
+    const pkg = isFdm ? state.fdmSales.packagingCost : state.resinSales.packagingCost
+    const ship = isFdm ? state.fdmSales.shippingCost : state.resinSales.shippingCost
+    const json = exportQuoteJson(results, name, qty, pkg || 0, ship || 0)
+    downloadQuoteJson(json, `quote_${Date.now()}.json`)
+  }
 
   const content = (
     <>
@@ -126,17 +140,17 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
         {t('calc.addHistory')}
       </button>
 
-      {history.length > 0 && (
+      {recentEntries.length > 0 && (
         <div className="glass-elevated rounded-2xl p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{t('calc.history')} ({history.length})</span>
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{t('calc.history')} ({recentEntries.length})</span>
             <button onClick={() => setShowClearConfirm(true)}
               className="text-[10px] sm:text-xs text-red-400/70 hover:text-red-400 transition-colors">
               {t('calc.clearHistory')}
             </button>
           </div>
           <div className="space-y-2.5 max-h-52 overflow-y-auto pr-1">
-            {history.map(item => (
+            {recentEntries.map(item => (
               <div key={item.id} className="p-2.5 rounded-xl bg-white/5 border border-white/5">
                 <div className="flex justify-between text-[10px] text-gray-500 mb-1">
                   <span>{new Date(item.timestamp).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -153,7 +167,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button onClick={() => { saveSettings(); setSaveStatus('saved'); setTimeout(() => setSaveStatus('idle'), 2000) }}
           className={`py-3 rounded-xl text-[11px] sm:text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none flex items-center justify-center gap-1.5 ${
             saveStatus === 'saved'
@@ -170,6 +184,10 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
         <button onClick={async () => { const { exportResultToCsv, downloadCsv } = await import('@/lib/csvExport'); const csv = exportResultToCsv(results, productName || 'open3dcalc'); downloadCsv(csv, 'open3dcalc_resultado.csv') }}
           className="py-3 rounded-xl text-[11px] sm:text-xs font-bold bg-teal-700 text-white hover:bg-teal-600 transition-all focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:outline-none flex items-center justify-center gap-1.5">
           <BarChart2 className="w-3.5 h-3.5" /> CSV
+        </button>
+        <button onClick={handleExportQuote}
+          className="py-3 rounded-xl text-[11px] sm:text-xs font-bold bg-amber-700 text-white hover:bg-amber-600 transition-all focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none flex items-center justify-center gap-1.5">
+          <ScrollText className="w-3.5 h-3.5" /> {t('results.exportQuote')}
         </button>
       </div>
     </>

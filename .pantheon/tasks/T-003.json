@@ -1,0 +1,27 @@
+{
+  "id": "T-003",
+  "subject": "Implementar dedução automática de estoque pós-cálculo",
+  "description": "No ResultsPanel, adicionar botão 'Deduzir do Estoque' que usa deductWeight() do filamentInventory. Pegar o peso calculado (result.unitWeight) e deduzir do carretel ativo selecionado via storeBridge. Adicionar confirmação via ConfirmDialog.",
+  "status": "pending",
+  "activeForm": "Implementando dedução automática de estoque",
+  "blockedBy": ["T-002"],
+  "blocks": [],
+  "owner": "Hermes",
+  "metadata": {
+    "files": [
+      "src/stores/storeBridge.ts",
+      "src/stores/filamentInventory.ts",
+      "src/components/Calculator/ResultsPanel.tsx"
+    ],
+    "dependencies": [
+      "filamentInventory.deductWeight() já existe",
+      "precisa de UI no ResultsPanel"
+    ],
+    "i18nKeys": [
+      "results.deductFromInventory",
+      "results.deductConfirm",
+      "results.deductSuccess"
+    ],
+    "estimatedEffort": "pequeno"
+  }
+}

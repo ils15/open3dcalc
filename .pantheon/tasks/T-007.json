@@ -1,0 +1,20 @@
+{
+  "id": "T-007",
+  "subject": "Persistir Dashboard inputs e adicionar break-even chart",
+  "description": "Persistir printsPerMonth, buyPrice, targetSellPrice no localStorage. Adicionar card Break-even (quantas unidades para cobrir custo fixo). Gráfico de linha com lucro médio dos últimos N cálculos. Card de Margem Média sobre histórico.",
+  "status": "pending",
+  "activeForm": "Melhorando Dashboard",
+  "blockedBy": ["T-004"],
+  "blocks": [],
+  "owner": "Aphrodite",
+  "metadata": {
+    "files": ["src/components/Dashboard/Dashboard.tsx"],
+    "dependencies": ["T-004 (historyStore para dados do gráfico)"],
+    "i18nKeys": [
+      "dashboard.breakEven",
+      "dashboard.avgMargin",
+      "dashboard.trend"
+    ],
+    "estimatedEffort": "grande"
+  }
+}

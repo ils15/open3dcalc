@@ -1,0 +1,23 @@
+{
+  "id": "T-006",
+  "subject": "Criar comparativo lado a lado de registros do histórico",
+  "description": "Checkbox em cada item do histórico para selecionar até 2 registros. Botão 'Comparar' abre modal com tabela lado a lado. Diferenças destacadas em verde (melhor) / vermelho (pior). Criar componente ComparisonModal.",
+  "status": "pending",
+  "activeForm": "Criando comparativo de registros",
+  "blockedBy": ["T-004", "T-005"],
+  "blocks": [],
+  "owner": "Aphrodite",
+  "metadata": {
+    "files": [
+      "src/components/Calculator/HistoryTab/HistoryTab.tsx",
+      "src/components/ui/ComparisonModal.tsx"
+    ],
+    "dependencies": ["T-004 (historyStore)", "T-005 (filtros)"],
+    "i18nKeys": [
+      "history.compare",
+      "history.compareTitle",
+      "history.selectTwo"
+    ],
+    "estimatedEffort": "grande"
+  }
+}

@@ -10,7 +10,6 @@ import { marketplaces } from '@/lib/marketplace'
 import { printers } from '@/lib/printers'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { calculateFDM, calculateResin } from '@/lib/calculator'
-
 type Marketplace = (typeof marketplaces)[number]
 type PrinterProfile = (typeof printers)[number]
 
@@ -35,6 +34,7 @@ function debouncedAutoSave(getState: () => CalculatorState) {
       selectedMarketplaceId: s.selectedMarketplace.id,
       fdmAmsEnabled: s.fdmAmsEnabled,
       fdmAmsSlots: s.fdmAmsSlots,
+      fixedCosts: s.fixedCosts,
       productName: s.productName, quantity: s.quantity,
       infillPercent: s.infillPercent, targetMarginMode: s.targetMarginMode,
       enabledSections: s.enabledSections,
@@ -65,6 +65,8 @@ const DEFAULT_RESIN_SOFT: SoftwareCosts = { enabled: false, slicerMonthlyCost: 0
 const DEFAULT_RESIN_EXTRAS: AdditionalCosts = { extrasCost: 0 }
 const DEFAULT_RESIN_SALES: SalesParameters = { packagingCost: 2, shippingCost: 0, taxPercent: 0, marketplaceFeePercent: 0, profitMarginPercent: 50 }
 
+const DEFAULT_FIXED_COSTS: FixedCosts = { enabled: false, monthlyCost: 200, monthlyPrintHours: 160 }
+
 const DEFAULT_AMS_SLOTS: AMSSlot[] = Array.from({ length: 4 }, (_, i) => ({
   enabled: i === 0,
   materialType: 'PLA',
@@ -76,16 +78,6 @@ const DEFAULT_AMS_SLOTS: AMSSlot[] = Array.from({ length: 4 }, (_, i) => ({
   spoolEfficiency: 98,
   color: ['#cccccc', '#f87171', '#60a5fa', '#34d399'][i],
 }))
-
-interface SavedCalculation {
-  id: string
-  timestamp: number
-  type: 'fdm' | 'resin'
-  summary: string
-  totalCost: number
-  sellPrice: number
-  profit: number
-}
 
 interface CalculatorState {
   activeTab: 'fdm' | 'resin'
@@ -140,6 +132,9 @@ interface CalculatorState {
 
   fdmAmsEnabled: boolean
   fdmAmsSlots: AMSSlot[]
+  fixedCosts: FixedCosts
+  setFixedCostsField: (field: keyof FixedCosts, value: number | boolean) => void
+
   setFdmAmsEnabled: (v: boolean) => void
   setFdmAmsSlot: (index: number, slot: AMSSlot) => void
 
@@ -156,10 +151,8 @@ interface CalculatorState {
   enabledSections: Record<string, boolean>
   toggleSection: (section: string) => void
   results: CalculationResult | null
-  history: SavedCalculation[]
-  addToHistory: () => void
   loadHistoryItem: (snapshot: CalculationSnapshot) => void
-  clearHistory: () => void
+  addToHistory: () => void
   saveSettings: () => void
 }
 
@@ -171,30 +164,6 @@ const loadStr = <T,>(key: string, def: T): T => {
     const parsed = JSON.parse(saved)
     return parsed[key] !== undefined ? parsed[key] : def
   } catch { return def }
-}
-
-const loadHistory = (): SavedCalculation[] => {
-  if (typeof window === 'undefined') return []
-  try {
-    const saved = localStorage.getItem('open3dcalc_history_v2')
-    return saved ? JSON.parse(saved) : []
-  } catch { return [] }
-}
-
-const HISTORY_SNAPSHOTS_KEY = 'open3dcalc_history_snapshots'
-
-function loadHistorySnapshots(): Map<string, CalculationSnapshot> {
-  if (typeof window === 'undefined') return new Map()
-  try {
-    const raw = localStorage.getItem(HISTORY_SNAPSHOTS_KEY)
-    if (!raw) return new Map()
-    const arr: [string, CalculationSnapshot][] = JSON.parse(raw)
-    return new Map(arr)
-  } catch { return new Map() }
-}
-
-function saveHistorySnapshots(snapshots: Map<string, CalculationSnapshot>) {
-  localStorage.setItem(HISTORY_SNAPSHOTS_KEY, JSON.stringify([...snapshots]))
 }
 
 type ComputeStoreInput = {
@@ -223,16 +192,20 @@ type ComputeStoreInput = {
   enabledSections: Record<string, boolean>
   fdmAmsEnabled?: boolean
   fdmAmsSlots?: AMSSlot[]
+  fixedCosts: FixedCosts
 }
 
 function computeStoreResults(s: ComputeStoreInput): CalculationResult {
   const qty = s.quantity > 0 ? s.quantity : 1
   const es = s.enabledSections
+  const fixedCostPerHour = s.fixedCosts.enabled && s.fixedCosts.monthlyPrintHours > 0
+    ? s.fixedCosts.monthlyCost / s.fixedCosts.monthlyPrintHours
+    : 0
   if (s.activeTab === 'fdm') {
     const result = calculateFDM(
       s.fdmMaterial, s.fdmPrintParams, s.fdmMachine,
       s.fdmLabor, s.fdmExtras, s.fdmSales, s.fdmOps, s.fdmSoft,
-      s.fdmHardware, s.fdmFinishing,
+      s.fdmHardware, s.fdmFinishing, fixedCostPerHour,
     )
     let amsMaterialCost = 0
     if (s.fdmAmsEnabled && s.fdmAmsSlots) {
@@ -283,7 +256,7 @@ function computeStoreResults(s: ComputeStoreInput): CalculationResult {
     const result = calculateResin(
       s.resinMaterial, s.resinPrintParams, s.resinMachine,
       s.resinLabor, s.resinExtras, s.resinSales, s.resinOps, s.resinSoft,
-      s.resinPostProcess, s.resinHardware,
+      s.resinPostProcess, s.resinHardware, fixedCostPerHour,
     )
     const filtered = {
       ...result,
@@ -355,6 +328,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     selectedPrinter: printers[0],
     selectedMarketplace: marketplaces[0],
+    fixedCosts: { ...DEFAULT_FIXED_COSTS },
 
     fdmAmsEnabled: false,
     fdmAmsSlots: DEFAULT_AMS_SLOTS.map(s => ({ ...s })),
@@ -376,7 +350,6 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
   return {
     ...initialValues,
     results: initialResults,
-    history: loadHistory(),
 
     setActiveTab: (activeTab) => setWithCompute({ activeTab }),
 
@@ -408,6 +381,10 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       setWithCompute({ selectedPrinter, fdmAmsEnabled: hasAms && wasAmsEnabled })
     },
     setSelectedMarketplace: (selectedMarketplace) => setWithCompute({ selectedMarketplace }),
+
+    setFixedCostsField: (field, value) => setWithCompute((state) => ({
+      fixedCosts: { ...state.fixedCosts, [field]: value as never },
+    })),
 
     setFdmAmsEnabled: (fdmAmsEnabled) => setWithCompute({ fdmAmsEnabled }),
     setFdmAmsSlot: (index, slot) => {
@@ -456,6 +433,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         summary,
         fdmAmsEnabled: s.fdmAmsEnabled || undefined,
         fdmAmsSlots: s.fdmAmsSlots,
+        fixedCosts: s.fixedCosts,
         fdmMaterial: s.fdmMaterial,
         fdmPrintParams: s.fdmPrintParams,
         fdmMachine: s.fdmMachine,
@@ -496,6 +474,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         activeTab: snapshot.type,
         fdmAmsEnabled: snapshot.fdmAmsEnabled ?? false,
         fdmAmsSlots: snapshot.fdmAmsSlots ?? DEFAULT_AMS_SLOTS.map(s => ({ ...s })),
+        fixedCosts: snapshot.fixedCosts ?? { ...DEFAULT_FIXED_COSTS },
         fdmMaterial: snapshot.fdmMaterial,
         fdmPrintParams: snapshot.fdmPrintParams,
         fdmMachine: snapshot.fdmMachine,
@@ -524,12 +503,6 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       })
     },
 
-    clearHistory: () => {
-      localStorage.removeItem('open3dcalc_history_v2')
-      localStorage.removeItem('open3dcalc_history_snapshots')
-      set({ history: [] })
-    },
-
     saveSettings: () => {
       const s = get()
       const data = {
@@ -544,6 +517,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         resinOps: s.resinOps, resinSoft: s.resinSoft,
         fdmAmsEnabled: s.fdmAmsEnabled,
         fdmAmsSlots: s.fdmAmsSlots,
+        fixedCosts: s.fixedCosts,
         quantity: s.quantity, infillPercent: s.infillPercent,
       }
       localStorage.setItem('open3dcalc_settings_v2', JSON.stringify(data))

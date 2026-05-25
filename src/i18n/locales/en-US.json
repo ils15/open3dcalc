@@ -36,7 +36,19 @@
     "printerPower": "Printer Power",
     "energyCost": "Energy Cost",
     "printer": "Printer",
-    "failure": "Risk & Failure",
+    "failure": {
+      "title": "Risk & Failures",
+      "description": "Print failure costs",
+      "enableFailure": "Enable failure cost",
+      "mode": "Failure mode",
+      "modePercent": "Percentage",
+      "modeFixed": "Fixed (R$)",
+      "value": "Failure value",
+      "valuePercent": "% failure over base cost",
+      "valueFixed": "Fixed failure cost",
+      "riskMultiplier": "Risk multiplier",
+      "riskMultiplierTooltip": "Applies a multiplier to the total cost for high-risk scenarios"
+    },
     "noFailure": "No fee",
     "failureValue": "Value",
     "riskMultiplier": "Risk Multiplier",
@@ -115,6 +127,14 @@
     "monthlyRevenue": "Monthly Revenue",
     "monthlyCost": "Monthly Cost",
     "monthlyProfit": "Monthly Profit",
+    "fixedCost": {
+      "title": "Fixed Costs",
+      "description": "Monthly fixed workshop costs",
+      "monthlyCost": "Monthly Fixed Cost",
+      "monthlyCostTooltip": "Internet, rent, base electricity, workshop maintenance",
+      "monthlyHours": "Hours per Month",
+      "monthlyHoursTooltip": "Estimated monthly printer operating hours"
+    },
     "printVsBuy": "Print vs Buy",
     "buyPrice": "Buy Price",
     "savings": "Savings",
@@ -270,6 +290,10 @@
     "minutes": "min",
     "watt": "W",
     "noData": "No data available"
+  },
+  "results": {
+    "exportQuote": "Export Quote",
+    "exportQuoteSuccess": "Quote exported successfully"
   },
   "tooltip": {
     "costPerKg": "Average price per kg of filament. PLA ~R$90, PETG ~R$110, ABS ~R$100.",

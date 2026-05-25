@@ -1,0 +1,23 @@
+{
+  "id": "T-010",
+  "subject": "Adicionar importação de JSON no HistoryTab",
+  "description": "Botão 'Importar JSON' no HistoryTab que aceita arquivo gerado pelo export. Merge inteligente: não duplica registros com mesmo id.",
+  "status": "pending",
+  "activeForm": "Implementando import JSON",
+  "blockedBy": ["T-004"],
+  "blocks": [],
+  "owner": "Hermes",
+  "metadata": {
+    "files": [
+      "src/stores/productStore.ts",
+      "src/components/Calculator/HistoryTab/HistoryTab.tsx"
+    ],
+    "dependencies": ["T-004 (historyStore unificada)"],
+    "i18nKeys": [
+      "history.importJson",
+      "history.importSuccess",
+      "history.importDuplicate"
+    ],
+    "estimatedEffort": "médio"
+  }
+}

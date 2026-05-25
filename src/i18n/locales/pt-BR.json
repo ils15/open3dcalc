@@ -36,7 +36,19 @@
     "printerPower": "Potência da Impressora",
     "energyCost": "Custo da Energia",
     "printer": "Impressora",
-    "failure": "Risco e Falhas",
+    "failure": {
+      "title": "Risco e Falhas",
+      "description": "Custos com falhas de impressão",
+      "enableFailure": "Ativar custo de falha",
+      "mode": "Modo de falha",
+      "modePercent": "Percentual",
+      "modeFixed": "Fixo (R$)",
+      "value": "Valor da falha",
+      "valuePercent": "% de falha sobre custo base",
+      "valueFixed": "Custo fixo por falha",
+      "riskMultiplier": "Multiplicador de risco",
+      "riskMultiplierTooltip": "Aplica um multiplicador sobre o custo total para cenários de alto risco"
+    },
     "noFailure": "Sem taxa",
     "failureValue": "Valor",
     "riskMultiplier": "Multiplicador de Risco",
@@ -115,6 +127,14 @@
     "monthlyRevenue": "Receita Mensal",
     "monthlyCost": "Custo Mensal",
     "monthlyProfit": "Lucro Mensal",
+    "fixedCost": {
+      "title": "Custos Fixos",
+      "description": "Custos fixos mensais da oficina",
+      "monthlyCost": "Custo Fixo Mensal",
+      "monthlyCostTooltip": "Internet, aluguel, energia base, manutenção da oficina",
+      "monthlyHours": "Horas por Mês",
+      "monthlyHoursTooltip": "Horas estimadas de operação da impressora por mês"
+    },
     "printVsBuy": "Imprimir vs Comprar",
     "buyPrice": "Preço de Compra",
     "savings": "Economia",
@@ -270,6 +290,10 @@
     "minutes": "min",
     "watt": "W",
     "noData": "Nenhum dado disponível"
+  },
+  "results": {
+    "exportQuote": "Exportar Cotação",
+    "exportQuoteSuccess": "Cotação exportada com sucesso"
   },
   "tooltip": {
     "costPerKg": "Preço médio do kg do filamento. PLA ~R$90, PETG ~R$110, ABS ~R$100.",

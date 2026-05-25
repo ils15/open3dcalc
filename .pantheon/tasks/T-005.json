@@ -1,0 +1,16 @@
+{
+  "id": "T-005",
+  "subject": "Adicionar ordenação e filtros no HistoryTab",
+  "description": "No HistoryTab.tsx: filtro por tipo (FDM/Resina), ordenação por data↑↓, preço↑↓, lucro↑↓, nome A-Z. Pill de filtro ativo com botão 'Limpar filtros'.",
+  "status": "pending",
+  "activeForm": "Implementando ordenação e filtros",
+  "blockedBy": ["T-004"],
+  "blocks": [],
+  "owner": "Aphrodite",
+  "metadata": {
+    "files": ["src/components/Calculator/HistoryTab/HistoryTab.tsx"],
+    "dependencies": ["T-004 (historyStore unificada)"],
+    "i18nKeys": ["history.sortBy", "history.filterBy", "history.clearFilters"],
+    "estimatedEffort": "médio"
+  }
+}
