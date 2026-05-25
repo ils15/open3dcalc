@@ -26,3 +26,4 @@ OLD_REF
 *.sw?
 *.plan.md
 docs/
+coverage
