@@ -7,6 +7,7 @@ import { HistoryTab } from '@/components/Calculator/HistoryTab/HistoryTab'
 import { Dashboard } from '@/components/Dashboard/Dashboard'
 import { InfillCalculator } from '@/components/Calculator/InfillCalculator'
 import { FilamentInventory } from '@/components/Catalog/FilamentInventory'
+import type { SavedProduct } from '@/types'
 import { restoreAutoSnapshot } from '@/stores/storeBridge'
 import { useHistoryStore } from '@/stores/historyStore'
 import { useCalculatorStore } from '@/stores/calculatorStore'
@@ -57,6 +58,9 @@ function App() {
     const migrateOldData = () => {
       const historyStore = useHistoryStore.getState()
       const existing = historyStore.entries.length
+
+      // Se já migrou antes, não repete
+      if (localStorage.getItem('open3dcalc_migration_done_v2')) return
 
       // Só migra se historyStore estiver vazia (evita duplicação)
       if (existing > 0) return

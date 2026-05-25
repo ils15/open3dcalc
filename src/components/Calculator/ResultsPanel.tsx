@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n/i18n'
 import { useCalculatorStore } from '@/stores/calculatorStore'
 import { useHistoryStore } from '@/stores/historyStore'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -21,6 +22,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   const addToHistory = useCalculatorStore(s => s.addToHistory)
   const clearHistory = useHistoryStore(s => s.clearHistory)
   const historyEntries = useHistoryStore(s => s.entries)
+  const historyCount = useHistoryStore(s => s.entries.length)
   const recentEntries = useMemo(() => historyEntries.slice(0, 3), [historyEntries])
   const saveSettings = useCalculatorStore(s => s.saveSettings)
   const activeTab = useCalculatorStore(s => s.activeTab)
@@ -146,7 +148,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
       {recentEntries.length > 0 && (
         <div className="glass-elevated rounded-2xl p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{t('calc.history')} ({historyEntries.length})</span>
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{t('calc.history')} ({historyCount})</span>
             <button onClick={() => setShowClearConfirm(true)}
               className="text-[10px] sm:text-xs text-red-400/70 hover:text-red-400 transition-colors">
               {t('calc.clearHistory')}

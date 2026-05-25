@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useReducer } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 
 interface ConfirmDialogProps {
@@ -10,6 +10,17 @@ interface ConfirmDialogProps {
   variant?: 'danger' | 'warning' | 'info'
   onConfirm: () => void
   onCancel: () => void
+}
+
+type DialogState = 'visible' | 'closing' | 'hidden'
+type DialogAction = { type: 'open' } | { type: 'close' } | { type: 'closeComplete' }
+
+function dialogReducer(state: DialogState, action: DialogAction): DialogState {
+  switch (action.type) {
+    case 'open': return 'visible'
+    case 'close': return 'closing'
+    case 'closeComplete': return 'hidden'
+  }
 }
 
 const variantStyles = {
@@ -24,6 +35,18 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const [dialogState, dispatch] = useReducer(dialogReducer, 'hidden')
+
+  useEffect(() => {
+    if (open) {
+      dispatch({ type: 'open' })
+      setTimeout(() => confirmRef.current?.focus(), 50)
+    } else {
+      dispatch({ type: 'close' })
+      const timer = setTimeout(() => dispatch({ type: 'closeComplete' }), 200)
+      return () => clearTimeout(timer)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -49,7 +72,7 @@ export function ConfirmDialog({
     }
   }, [open, onCancel])
 
-  if (!open) return null
+  if (dialogState === 'hidden') return null
 
   const styles = variantStyles[variant]
 
