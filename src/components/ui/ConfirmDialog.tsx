@@ -15,7 +15,7 @@ interface ConfirmDialogProps {
 type DialogState = 'visible' | 'closing' | 'hidden'
 type DialogAction = { type: 'open' } | { type: 'close' } | { type: 'closeComplete' }
 
-function dialogReducer(state: DialogState, action: DialogAction): DialogState {
+function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
   switch (action.type) {
     case 'open': return 'visible'
     case 'close': return 'closing'
