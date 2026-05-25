@@ -137,6 +137,19 @@ describe('calculateFDM', () => {
     const r = calculateFDM(d.mat, d.print, d.machine, d.labor, d.extras, d.sales, d.ops, d.soft, d.hw, d.fin)
     expect(r.machineCost).toBeCloseTo(5000 / (36 * 200) * 2, 5)
   })
+
+  it('includes fixed hourly costs in machine total', () => {
+    const d = defaultFDM()
+    d.print.printTimeHours = 3
+    d.machine.enabled = true
+    d.machine.machineCost = 3600
+    d.machine.depreciationMonths = 36
+    d.machine.hoursPerMonth = 100
+    const fixedCostPerHour = 2
+    const r = calculateFDM(d.mat, d.print, d.machine, d.labor, d.extras, d.sales, d.ops, d.soft, d.hw, d.fin, fixedCostPerHour)
+    const depreciationPerHour = 3600 / (36 * 100)
+    expect(r.machineCost).toBeCloseTo((depreciationPerHour + fixedCostPerHour) * 3, 5)
+  })
 })
 
 describe('calculateResin', () => {
@@ -171,5 +184,23 @@ describe('calculateResin', () => {
 
     const r = calculateResin(mat, print, machine, labor, extras, sales, ops, soft, pp, hw)
     expect(r.postProcessingCost).toBeCloseTo(0.2 * 25 + (60 / 1000) * (10 / 60) * 1, 4)
+  })
+
+  it('includes fixed hourly costs in resin machine total', () => {
+    const mat = { type: 'Standard', volumeUsedMl: 50, costPerLiter: 180, density: 1.10, wasteMarginPercent: 0 }
+    const print = { printTimeHours: 4, printerPowerWatts: 50, energyCostPerKwh: 1, failureMode: 'none' as const, failureValue: 0, riskMultiplier: 1 }
+    const machine = { enabled: true, machineCost: 3600, depreciationMonths: 36, hoursPerMonth: 100, maintenanceEnabled: false, maintenanceCost: 0 }
+    const labor = { enabled: false, setupTimeMinutes: 10, postProcessingTimeMinutes: 15, hourlyRate: 25 }
+    const extras = { extrasCost: 0 }
+    const sales = { packagingCost: 0, shippingCost: 0, taxPercent: 0, marketplaceFeePercent: 0, profitMarginPercent: 0 }
+    const ops = { enabled: false, ppeCostPerPrint: 0 }
+    const soft = { enabled: false, slicerMonthlyCost: 0, modelFileCost: 0 }
+    const pp = { washingEnabled: false, alcoholCostPerLiter: 25, alcoholVolumeLiters: 0, curingEnabled: false, curingTimeMinutes: 10, curingPowerWatts: 60 }
+    const hw = { enabled: false, lcdCost: 400, lcdLifespanHours: 2000, fepCost: 80, fepLifespanPrints: 50 }
+    const fixedCostPerHour = 1.5
+
+    const r = calculateResin(mat, print, machine, labor, extras, sales, ops, soft, pp, hw, fixedCostPerHour)
+    const depreciationPerHour = 3600 / (36 * 100)
+    expect(r.machineCost).toBeCloseTo((depreciationPerHour + fixedCostPerHour) * 4, 5)
   })
 })

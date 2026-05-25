@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 
 interface ConfirmDialogProps {
@@ -24,20 +24,10 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setVisible(true)
-      setTimeout(() => confirmRef.current?.focus(), 50)
-    } else {
-      const timer = setTimeout(() => setVisible(false), 200)
-      return () => clearTimeout(timer)
-    }
-  }, [open])
 
   useEffect(() => {
     if (!open) return
+    const focusTimer = setTimeout(() => confirmRef.current?.focus(), 50)
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { onCancel(); return }
       if (e.key !== 'Tab') return
@@ -53,10 +43,13 @@ export function ConfirmDialog({
       }
     }
     document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      clearTimeout(focusTimer)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
   }, [open, onCancel])
 
-  if (!visible) return null
+  if (!open) return null
 
   const styles = variantStyles[variant]
 

@@ -116,7 +116,7 @@ interface HistoryTabProps {
 }
 
 export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { format: formatMoney } = useCurrency()
   const store = useHistoryStore()
   const setStoreSearch = store.setSearch
@@ -151,9 +151,9 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
 
   // Filter type tabs
   const filterTabs = [
-    { key: 'all' as const, label: 'Todos' },
+    { key: 'all' as const, label: t('history.filters.all') },
     { key: 'fdm' as const, label: 'FDM' },
-    { key: 'resin' as const, label: 'Resina' },
+    { key: 'resin' as const, label: t('history.filters.resin') },
   ]
 
   return (
@@ -183,10 +183,10 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
           onChange={e => store.setSortBy(e.target.value as 'date' | 'price' | 'profit' | 'name')}
           className="bg-white/5 border border-white/10 rounded-lg text-xs text-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          <option value="date">Data</option>
-          <option value="price">Preço</option>
-          <option value="profit">Lucro</option>
-          <option value="name">Nome</option>
+          <option value="date">{t('history.sort.date')}</option>
+          <option value="price">{t('history.sort.price')}</option>
+          <option value="profit">{t('history.sort.profit')}</option>
+          <option value="name">{t('history.sort.name')}</option>
         </select>
       </div>
 
@@ -210,7 +210,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
               <div>
                 <p className="text-sm font-semibold">{entry.name}</p>
                 <p className="text-xs text-gray-500">
-                  {new Date(entry.timestamp).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(entry.timestamp).toLocaleDateString(i18n.resolvedLanguage || i18n.language, { hour: '2-digit', minute: '2-digit' })}
                   <span className="ml-2 uppercase text-[10px] text-indigo-400/60">{entry.type}</span>
                 </p>
               </div>

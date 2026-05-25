@@ -277,6 +277,16 @@
     "empty": "No saved products.",
     "search": "Search products...",
     "filter": "Filter",
+    "filters": {
+      "all": "All",
+      "resin": "Resin"
+    },
+    "sort": {
+      "date": "Date",
+      "price": "Price",
+      "profit": "Profit",
+      "name": "Name"
+    },
     "details": "Details",
     "delete": "Delete",
     "deleteConfirm": "Delete this product?",

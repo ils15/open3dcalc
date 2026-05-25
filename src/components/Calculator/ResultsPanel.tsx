@@ -15,7 +15,7 @@ interface ResultsPanelProps {
 }
 
 export function ResultsPanel({ variant }: ResultsPanelProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const results = useCalculatorStore(s => s.results)
   const productName = useCalculatorStore(s => s.productName)
   const addToHistory = useCalculatorStore(s => s.addToHistory)
@@ -146,7 +146,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
       {recentEntries.length > 0 && (
         <div className="glass-elevated rounded-2xl p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{t('calc.history')} ({recentEntries.length})</span>
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{t('calc.history')} ({historyEntries.length})</span>
             <button onClick={() => setShowClearConfirm(true)}
               className="text-[10px] sm:text-xs text-red-400/70 hover:text-red-400 transition-colors">
               {t('calc.clearHistory')}
@@ -156,7 +156,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
             {recentEntries.map(item => (
               <div key={item.id} className="p-2.5 rounded-xl bg-white/5 border border-white/5">
                 <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                  <span>{new Date(item.timestamp).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span>{new Date(item.timestamp).toLocaleDateString(i18n.resolvedLanguage || i18n.language, { hour: '2-digit', minute: '2-digit' })}</span>
                   <span className="uppercase font-bold tracking-wider">{item.type}</span>
                 </div>
                 <div className="font-medium text-gray-200 text-xs truncate mb-1">{item.summary}</div>

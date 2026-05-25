@@ -9,7 +9,9 @@ interface HistoryStore {
   sortOrder: 'asc' | 'desc'
   filterType: 'all' | 'fdm' | 'resin'
 
-  addEntry: (entry: Omit<HistoryEntry, 'id' | 'timestamp'>) => string
+  addEntry: (
+    entry: Omit<HistoryEntry, 'id' | 'timestamp'> & Partial<Pick<HistoryEntry, 'id' | 'timestamp'>>,
+  ) => string
   removeEntry: (id: string) => void
   clearHistory: () => void
   getEntry: (id: string) => HistoryEntry | undefined
@@ -34,11 +36,11 @@ export const useHistoryStore = create<HistoryStore>()(
       filterType: 'all',
 
       addEntry: (entry) => {
-        const id = `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+        const id = entry.id || `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
         const newEntry: HistoryEntry = {
           ...entry,
           id,
-          timestamp: Date.now(),
+          timestamp: entry.timestamp ?? Date.now(),
         }
         set((state) => ({ entries: [newEntry, ...state.entries] }))
         return id
@@ -111,13 +113,34 @@ export const useHistoryStore = create<HistoryStore>()(
       importJson: (json) => {
         try {
           const data = JSON.parse(json)
-          const incoming = data.entries || []
+          const incoming = Array.isArray(data.entries) ? data.entries : []
           let imported = 0
           let skipped = 0
 
           set((state) => {
             const existingIds = new Set(state.entries.map((e) => e.id))
-            const newEntries = incoming.filter((e: HistoryEntry) => {
+            const newEntries = incoming.flatMap((entry: unknown) => {
+              const e = entry as Partial<HistoryEntry>
+              if (!e || typeof e !== 'object' || !e.result) {
+                skipped++
+                return []
+              }
+              const normalized: HistoryEntry = {
+                id: typeof e.id === 'string' && e.id.trim()
+                  ? e.id
+                  : `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                timestamp: typeof e.timestamp === 'number' ? e.timestamp : Date.now(),
+                type: e.type === 'resin' ? 'resin' : 'fdm',
+                name: typeof e.name === 'string' && e.name.trim() ? e.name : 'Histórico',
+                summary: typeof e.summary === 'string' ? e.summary : '',
+                totalCost: Number(e.totalCost || 0),
+                sellPrice: Number(e.sellPrice || 0),
+                profit: Number(e.profit || 0),
+                result: e.result,
+                snapshot: e.snapshot ?? null,
+              }
+              return [normalized]
+            }).filter((e: HistoryEntry) => {
               if (existingIds.has(e.id)) {
                 skipped++
                 return false

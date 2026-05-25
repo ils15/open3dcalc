@@ -67,7 +67,7 @@ const DEFAULT_RESIN_SOFT: SoftwareCosts = { enabled: false, slicerMonthlyCost: 0
 const DEFAULT_RESIN_EXTRAS: AdditionalCosts = { extrasCost: 0 }
 const DEFAULT_RESIN_SALES: SalesParameters = { packagingCost: 2, shippingCost: 0, taxPercent: 0, marketplaceFeePercent: 0, profitMarginPercent: 50 }
 
-const DEFAULT_FIXED_COSTS: FixedCosts = { enabled: false, monthlyCost: 200, monthlyPrintHours: 160 }
+const DEFAULT_FIXED_COSTS: FixedCosts = { enabled: false, monthlyCost: 0, monthlyPrintHours: 160 }
 
 const DEFAULT_AMS_SLOTS: AMSSlot[] = Array.from({ length: 4 }, (_, i) => ({
   enabled: i === 0,
@@ -333,7 +333,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     selectedPrinter: printers[0],
     selectedMarketplace: marketplaces[0],
-    fixedCosts: { ...DEFAULT_FIXED_COSTS },
+    fixedCosts: { ...DEFAULT_FIXED_COSTS, ...loadStr('fixedCosts', {}) },
 
     fdmAmsEnabled: false,
     fdmAmsSlots: DEFAULT_AMS_SLOTS.map(s => ({ ...s })),
@@ -463,6 +463,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       }
 
       useHistoryStore.getState().addEntry({
+        id,
+        timestamp: now,
         type: s.activeTab,
         name,
         summary: name,
@@ -538,4 +540,3 @@ if (typeof window !== 'undefined') {
   const printer = catalog.printers.find(p => p.id === state.selectedPrinter.id)
   if (printer) useCalculatorStore.setState({ selectedPrinter: printer as PrinterProfile })
 }
-

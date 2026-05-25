@@ -277,6 +277,16 @@
     "empty": "Nenhum produto salvo.",
     "search": "Buscar produtos...",
     "filter": "Filtrar",
+    "filters": {
+      "all": "Todos",
+      "resin": "Resina"
+    },
+    "sort": {
+      "date": "Data",
+      "price": "Preço",
+      "profit": "Lucro",
+      "name": "Nome"
+    },
     "details": "Detalhes",
     "delete": "Excluir",
     "deleteConfirm": "Excluir este produto?",
