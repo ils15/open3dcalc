@@ -92,6 +92,14 @@ jobs:
               ARTIFACTS+=("$f")
             fi
           done
+
+          # Also include latest.yml/latest-linux.yml and .blockmap files for auto-updater
+          for f in dist-electron/latest*.yml dist-electron/*.blockmap; do
+            if [ -f "$f" ]; then
+              echo "  Found: $f ($(du -h "$f" | cut -f1))"
+              ARTIFACTS+=("$f")
+            fi
+          done
           
           if [ ${#ARTIFACTS[@]} -gt 0 ]; then
             echo "Creating release with ${#ARTIFACTS[@]} artifact(s)..."

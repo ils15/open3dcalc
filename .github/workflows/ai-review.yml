@@ -2,12 +2,12 @@ name: AI Code Review
 
 on:
   pull_request:
+    types: [opened, synchronize]
     branches: [main]
 
 permissions:
   contents: read
   pull-requests: write
-  issues: write
 
 jobs:
   ai-review:
@@ -17,121 +17,129 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate diff
+      - name: Setup Node.js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install alibaba/open-code-review
+        run: npm install -g @alibaba-group/open-code-review
+
+      - name: Configure OCR
         run: |
-          git diff origin/${{ github.base_ref }}...HEAD > /tmp/diff.patch
-          echo "Diff size: $(wc -c < /tmp/diff.patch) bytes"
+          ocr config set provider custom
+          ocr config set custom_providers.custom.url https://llm.ofertachina.cloud/v1
+          ocr config set custom_providers.custom.protocol openai
+          ocr config set custom_providers.custom.auth_token ${{ secrets.BF_VIRTUAL_KEY }}
+          ocr config set custom_providers.custom.model opencode-zen/deepseek-v4-flash-free
+          ocr config set language English
 
-      - name: Run AI Review via Bifrost
-        id: review
-        env:
-          BF_KEY: ${{ secrets.BF_VIRTUAL_KEY }}
+      - name: Run OCR review
         run: |
-          python3 -c "
-import json, os, subprocess
+          ocr review \
+            --from "origin/${{ github.base_ref }}" \
+            --to "origin/${{ github.head_ref }}" \
+            --format json \
+            > /tmp/ocr-result.json 2>/tmp/ocr-stderr.log || true
 
-# Read diff
-with open('/tmp/diff.patch') as f:
-    diff = f.read()
-
-# Truncate if too large
-if len(diff) > 80000:
-    diff = diff[:80000] + '\n... [diff truncated to 80KB]'
-
-# Build system prompt
-system_prompt = '''You are a senior code reviewer. Review the following code changes (diff) and provide feedback in this exact format:
-
-## Summary
-1-2 sentence overview of what the PR does
-
-## Potential Issues
-- Bugs, security problems, performance issues
-
-## Code Quality
-- Style, maintainability, naming, duplication
-
-## Suggestions
-- Concrete improvements (with code examples if applicable)
-
-## Veredict
-✅ Looks good / ⚠️ Minor issues / ❌ Changes required
-
-Be concise but thorough. Focus on what matters.'''
-
-# Build user prompt
-user_prompt = f'Review this code diff:\n\n```diff\n{diff}\n```'
-
-# Build request body
-body = json.dumps({
-    'model': 'opencode-zen/deepseek-v4-flash-free',
-    'messages': [
-        {'role': 'system', 'content': system_prompt},
-        {'role': 'user', 'content': user_prompt}
-    ],
-    'max_tokens': 4096,
-    'temperature': 0.3
-})
-
-# Call API
-result = subprocess.run([
-    'curl', '-s',
-    'https://llm.ofertachina.cloud/v1/chat/completions',
-    '-H', f'Authorization: Bearer {os.environ[\"BF_KEY\"]}',
-    '-H', 'Content-Type: application/json',
-    '-d', body
-], capture_output=True, text=True)
-
-response = json.loads(result.stdout)
-review = response['choices'][0]['message']['content']
-
-with open('/tmp/review.md', 'w') as f:
-    f.write(review)
-
-print('Review generated successfully')
-print(f'Length: {len(review)} chars')
-"
-
-      - name: Post review comment
+      - name: Post review as PR comment
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const review = fs.readFileSync('/tmp/review.md', 'utf8');
-            const body = `## 🤖 AI Code Review\n\n${review}`;
-            
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            
-            const botComment = comments.find(c => 
-              c.user.type === 'Bot' && c.body.startsWith('## 🤖 AI Code Review')
-            );
-            
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body,
-              });
-            } else {
+
+            let ocrResult;
+            try {
+              ocrResult = JSON.parse(fs.readFileSync('/tmp/ocr-result.json', 'utf8'));
+            } catch (parseErr) {
+              const stderr = fs.readFileSync('/tmp/ocr-stderr.log', 'utf8');
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body,
+                body: `## 🤖 AI Code Review\n\n**Error parsing OCR output:**\n\`\`\`\n${parseErr.message}\n\`\`\`\n\n**Stderr:**\n\`\`\`\n${stderr || '(empty)'}\n\`\`\``,
               });
+              return;
             }
 
-      - name: Add review status check
-        if: always()
-        run: |
-          if grep -q '❌ Changes required' /tmp/review.md 2>/dev/null; then
-            echo "REVIEW_STATUS=failure" >> $GITHUB_ENV
-          elif grep -q '⚠️ Minor issues' /tmp/review.md 2>/dev/null; then
-            echo "REVIEW_STATUS=neutral" >> $GITHUB_ENV
-          else
-            echo "REVIEW_STATUS=success" >> $GITHUB_ENV
-          fi
+            const comments = ocrResult.comments || [];
+
+            if (comments.length === 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: '## 🤖 AI Code Review\n\n✅ No issues found',
+              });
+              return;
+            }
+
+            const reviewComments = [];
+            const summaryComments = [];
+
+            for (const comment of comments) {
+              const bodyParts = [];
+              if (comment.content) bodyParts.push(comment.content);
+              if (comment.existing_code) {
+                bodyParts.push('**Existing code:**\n```\n' + comment.existing_code + '\n```');
+              }
+              if (comment.suggestion_code) {
+                bodyParts.push('**Suggested code:**\n```\n' + comment.suggestion_code + '\n```');
+              }
+              const body = bodyParts.join('\n\n');
+
+              if (comment.path && (comment.start_line || comment.end_line)) {
+                reviewComments.push({
+                  path: comment.path,
+                  start_line: comment.start_line || comment.end_line,
+                  end_line: comment.end_line || comment.start_line,
+                  body: body,
+                });
+              } else {
+                summaryComments.push(body);
+              }
+            }
+
+            const summaryBody = summaryComments.length > 0
+              ? '## 🤖 AI Code Review\n\n' + summaryComments.join('\n\n---\n\n')
+              : '## 🤖 AI Code Review';
+
+            try {
+              if (reviewComments.length > 0) {
+                await github.rest.pulls.createReview({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: context.issue.number,
+                  event: 'COMMENT',
+                  body: summaryBody,
+                  comments: reviewComments,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: summaryBody,
+                });
+              }
+            } catch (reviewErr) {
+              // Fallback: post individual comments for each finding
+              for (const comment of comments) {
+                const fallbackBody = ['## 🤖 AI Code Review'];
+                if (comment.path) fallbackBody.push(`**File:** \`${comment.path}\``);
+                if (comment.content) fallbackBody.push(comment.content);
+                if (comment.existing_code) {
+                  fallbackBody.push('**Existing code:**\n```\n' + comment.existing_code + '\n```');
+                }
+                if (comment.suggestion_code) {
+                  fallbackBody.push('**Suggested code:**\n```\n' + comment.suggestion_code + '\n```');
+                }
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: fallbackBody.join('\n\n'),
+                });
+              }
+            }
