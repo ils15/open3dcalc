@@ -30,7 +30,7 @@ jobs:
           ocr config set provider custom
           ocr config set custom_providers.custom.url https://llm.ofertachina.cloud/v1
           ocr config set custom_providers.custom.protocol openai
-          ocr config set custom_providers.custom.auth_token ${{ secrets.BF_VIRTUAL_KEY }}
+          ocr config set custom_providers.custom.api_key ${{ secrets.BF_VIRTUAL_KEY }}
           ocr config set custom_providers.custom.model opencode-zen/deepseek-v4-flash-free
           ocr config set language English
 
