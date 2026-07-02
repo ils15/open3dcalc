@@ -1,6 +1,6 @@
 import { Zap, RotateCcw, X } from 'lucide-react'
 import { useCalculatorStore } from '@/shared/stores/calculatorStore'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 const BANNER_KEY = 'open3dcalc_quickstart_dismissed'
 

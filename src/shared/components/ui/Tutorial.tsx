@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo, useState } from 'react'
+import { useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -68,43 +68,35 @@ function SpotlightOverlay({ targetRect, onClick }: { targetRect: DOMRect | null;
 
 // ── Simple card positioning (replaces Floating UI) ──────────────────────────
 
-function useCardPosition(targetRect: DOMRect | null) {
-  const [pos, setPos] = useState<{ top: number; left: number; placement: string }>({ top: 0, left: 0, placement: 'right' })
+function useCardPosition(targetRect: DOMRect | null): { top: number; left: number; placement: string } {
+  if (!targetRect) {
+    // Center on screen when no target
+    return { top: window.innerHeight / 2, left: window.innerWidth / 2, placement: 'center' }
+  }
 
-  useEffect(() => {
-    if (!targetRect) {
-      // Center on screen when no target
-      setPos({ top: window.innerHeight / 2, left: window.innerWidth / 2, placement: 'center' })
-      return
+  const CARD_W = 300
+  const CARD_H = 240
+  const GAP = 14
+  const PAD = 16
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+
+  // Try placements in order: right → left → bottom → top
+  const placements = [
+    { name: 'right',  top: targetRect.top, left: targetRect.right + GAP },
+    { name: 'left',   top: targetRect.top, left: targetRect.left - CARD_W - GAP },
+    { name: 'bottom', top: targetRect.bottom + GAP, left: targetRect.left },
+    { name: 'top',    top: targetRect.top - CARD_H - GAP, left: targetRect.left },
+  ]
+
+  for (const p of placements) {
+    if (p.left >= PAD && p.left + CARD_W <= vw - PAD && p.top >= PAD && p.top + CARD_H <= vh - PAD) {
+      return { top: p.top, left: p.left, placement: p.name }
     }
+  }
 
-    const CARD_W = 300
-    const CARD_H = 240
-    const GAP = 14
-    const PAD = 16
-    const vw = window.innerWidth
-    const vh = window.innerHeight
-
-    // Try placements in order: right → left → bottom → top
-    const placements = [
-      { name: 'right',  top: targetRect.top, left: targetRect.right + GAP },
-      { name: 'left',   top: targetRect.top, left: targetRect.left - CARD_W - GAP },
-      { name: 'bottom', top: targetRect.bottom + GAP, left: targetRect.left },
-      { name: 'top',    top: targetRect.top - CARD_H - GAP, left: targetRect.left },
-    ]
-
-    for (const p of placements) {
-      if (p.left >= PAD && p.left + CARD_W <= vw - PAD && p.top >= PAD && p.top + CARD_H <= vh - PAD) {
-        setPos({ top: p.top, left: p.left, placement: p.name })
-        return
-      }
-    }
-
-    // Fallback: center on screen
-    setPos({ top: vh / 2 - CARD_H / 2, left: vw / 2 - CARD_W / 2, placement: 'center' })
-  }, [targetRect])
-
-  return pos
+  // Fallback: center on screen
+  return { top: vh / 2 - CARD_H / 2, left: vw / 2 - CARD_W / 2, placement: 'center' }
 }
 
 // ── Tooltip card ─────────────────────────────────────────────────────────────
