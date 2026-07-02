@@ -1,0 +1,22 @@
+name: Auto-Approve (Owner)
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-approve:
+    if: github.actor == 'ils15'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Auto-approve PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr review ${{ github.event.pull_request.number }} --approve
+          gh pr merge ${{ github.event.pull_request.number }} --auto --squash
