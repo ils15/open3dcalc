@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Husky git hooks (auto-generated)
+.husky/_/
+
 # Build outputs
 dist/
 dist-web/

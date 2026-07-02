@@ -22,7 +22,8 @@
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx db/migrate.ts",
-    "postinstall": "electron-rebuild -f -w better-sqlite3"
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "prepare": "husky"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.19",
