@@ -53,7 +53,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
 
 			{/* Desktop sidebar — icon + label + cost toggle dot */}
 			<nav className="hidden lg:flex flex-col gap-0.5 w-[134px] xl:w-[142px] shrink-0 sticky top-[92px] h-[calc(100vh-92px)] overflow-y-auto px-2">
-				<div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 ml-2">Seções</div>
+				<div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 ml-2">{t('sections.title')}</div>
 				{visibleSections.map((s) => {
 					const keys = SECTION_ENABLES[s.id] || [];
 					const anyEnabled =

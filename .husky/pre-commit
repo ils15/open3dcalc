@@ -1,5 +1,67 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/h"
 
-echo "🔒 Running pre-commit lint..."
-npx lint-staged
+echo "🔒 Security checks..."
+
+# Gitleaks (secret scanning)
+if command -v gitleaks >/dev/null 2>&1 || npx --yes gitleaks@latest --version >/dev/null 2>&1; then
+  npx gitleaks@latest git --pre-commit --staged 2>/dev/null || {
+    echo "❌ Gitleaks detected secrets. Aborting commit."
+    exit 1
+  }
+  echo "  ✓ Secrets scan (gitleaks)"
+else
+  echo "  ⚠️  Gitleaks not available — skipping secret scan"
+fi
+
+# Detect private keys
+git diff --cached --name-only | xargs grep -l "BEGIN.*PRIVATE KEY" 2>/dev/null && {
+  echo "❌ Private key detected in staged files. Aborting commit."
+  exit 1
+}
+echo "  ✓ No private keys in staged files"
+
+echo ""
+echo "🧹 Hygiene checks..."
+
+# Check merge conflict markers
+git diff --cached --diff-filter=ACM | grep -qE '^<<<<<<< |^=======$|^>>>>>>> ' && {
+  echo "❌ Merge conflict markers detected. Aborting commit."
+  exit 1
+}
+echo "  ✓ No merge conflict markers"
+
+# Check for added large files (>5MB)
+git diff --cached --name-only --diff-filter=A -z | xargs -0 -I{} sh -c '
+  if [ -f "{}" ]; then
+    SIZE=$(stat --printf="%s" "{}" 2>/dev/null || stat -f"%z" "{}" 2>/dev/null)
+    if [ "$SIZE" -gt 5242880 ]; then
+      echo "❌ File too large: {} ($SIZE bytes)"
+      exit 1
+    fi
+  fi
+' || exit 1
+echo "  ✓ File sizes within limit (5MB)"
+
+# Check GitHub workflows syntax
+if npx --yes check-jsonschema@latest --version >/dev/null 2>&1; then
+  if ls .github/workflows/*.yml >/dev/null 2>&1; then
+    npx check-jsonschema@latest \
+      --verbose \
+      --schemafile "https://json.schemastore.org/github-workflow.json" \
+      .github/workflows/*.yml 2>/dev/null && \
+    echo "  ✓ Workflow YAML valid" || \
+    echo "  ⚠️  Workflow validation encountered issues"
+  else
+    echo "  ✓ No workflow files to validate"
+  fi
+else
+  echo "  ⚠️  check-jsonschema not available — skipping workflow validation"
+fi
+
+echo ""
+echo "🔍 Running lint-staged..."
+npx lint-staged || exit 1
+
+echo ""
+echo "✅ All pre-commit checks passed"

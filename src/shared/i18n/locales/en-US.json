@@ -34,6 +34,9 @@
     "cantBreakEven": "Price doesn't cover costs",
     "loadingCharts": "Loading charts..."
   },
+  "sections": {
+    "title": "Sections"
+  },
   "calc": {
     "fdm": "FDM Printing",
     "resin": "Resin Printing",
@@ -114,6 +117,7 @@
     "profitMargin": "Profit Margin",
     "costDistribution": "Cost Distribution",
     "summary": "Cost Summary",
+    "results": "Results",
     "directProduction": "Direct Production",
     "equipment": "Equipment & Wear",
     "operational": "Operational & Labor",
@@ -550,6 +554,26 @@
   "settings": {
     "currency": "Currency",
     "currencyAuto": "Auto"
+  },
+  "update": {
+    "checkForUpdates": "Check for Updates",
+    "checking": "Checking for updates…",
+    "checkingShort": "Checking…",
+    "checkingDesc": "Please wait while we check for the latest version",
+    "available": "Update v{{version}} Available",
+    "availableDesc": "A new version is ready to download",
+    "downloading": "Downloading v{{version}}…",
+    "downloadingProgress": "Downloading update…",
+    "download": "Download",
+    "skipVersion": "Skip this version",
+    "whatsNew": "What's new",
+    "ready": "Update v{{version}} Ready",
+    "readyDesc": "Restart the app to install the update",
+    "restartInstall": "Restart & Install",
+    "failed": "Update Failed",
+    "retry": "Retry",
+    "upToDate": "You're up to date!",
+    "dismiss": "Dismiss"
   },
   "changelog": {
     "header": "{{versions}} versions · {{changes}} changes",

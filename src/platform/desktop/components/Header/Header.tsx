@@ -163,8 +163,8 @@ export function Header() {
                   ? 'text-[var(--color-text-muted)] cursor-not-allowed'
                   : 'text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent-muted)]'
               }`}
-              title={isChecking ? 'Checking…' : 'Check for Updates'}
-              aria-label={isChecking ? 'Checking for updates' : 'Check for updates'}
+              title={isChecking ? t('update.checkingShort') : t('update.checkForUpdates')}
+              aria-label={isChecking ? t('update.checking') : t('update.checkForUpdates')}
             >
               <RefreshCw className={`w-5 h-5 ${isChecking ? 'animate-spin' : ''}`} />
             </button>

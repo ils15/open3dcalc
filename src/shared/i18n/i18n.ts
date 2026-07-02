@@ -14,6 +14,10 @@ i18n
     },
     fallbackLng: 'pt-BR',
     interpolation: { escapeValue: false },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+    },
   })
 
 export default i18n

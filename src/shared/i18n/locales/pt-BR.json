@@ -34,6 +34,9 @@
     "cantBreakEven": "Preço não cobre custos",
     "loadingCharts": "Carregando gráficos..."
   },
+  "sections": {
+    "title": "Seções"
+  },
   "calc": {
     "fdm": "Impressão FDM",
     "resin": "Impressão em Resina",
@@ -114,6 +117,7 @@
     "profitMargin": "Margem de Lucro",
     "costDistribution": "Distribuição de Custos",
     "summary": "Resumo de Custos",
+    "results": "Resultados",
     "directProduction": "Produção Direta",
     "equipment": "Equipamento & Desgaste",
     "operational": "Operacional & Trabalho",
@@ -550,6 +554,26 @@
   "settings": {
     "currency": "Moeda",
     "currencyAuto": "Automático"
+  },
+  "update": {
+    "checkForUpdates": "Verificar Atualizações",
+    "checking": "Verificando atualizações…",
+    "checkingShort": "Verificando…",
+    "checkingDesc": "Aguarde enquanto verificamos a versão mais recente",
+    "available": "Atualização v{{version}} Disponível",
+    "availableDesc": "Uma nova versão está pronta para download",
+    "downloading": "Baixando v{{version}}…",
+    "downloadingProgress": "Baixando atualização…",
+    "download": "Baixar",
+    "skipVersion": "Pular esta versão",
+    "whatsNew": "O que há de novo",
+    "ready": "Atualização v{{version}} Pronta",
+    "readyDesc": "Reinicie o app para instalar a atualização",
+    "restartInstall": "Reiniciar e Instalar",
+    "failed": "Falha na Atualização",
+    "retry": "Tentar Novamente",
+    "upToDate": "Você está atualizado!",
+    "dismiss": "Fechar"
   },
   "changelog": {
     "header": "{{versions}} versões · {{changes}} mudanças",

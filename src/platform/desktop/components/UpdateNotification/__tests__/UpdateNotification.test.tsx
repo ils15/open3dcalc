@@ -3,6 +3,43 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { UpdateNotification, CheckForUpdatesButton } from '../UpdateNotification'
 import { useUpdaterStore } from '../UpdaterStore'
 
+// ── i18n Mock ───────────────────────────────────────────────────────
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, unknown>) => {
+      const translations: Record<string, string> = {
+        'update.checkForUpdates': 'Check for Updates',
+        'update.checking': 'Checking for updates…',
+        'update.checkingShort': 'Checking…',
+        'update.checkingDesc': 'Please wait while we check for the latest version',
+        'update.available': 'Update v{{version}} Available',
+        'update.availableDesc': 'A new version is ready to download',
+        'update.downloading': 'Downloading v{{version}}…',
+        'update.downloadingProgress': 'Downloading update…',
+        'update.download': 'Download',
+        'update.skipVersion': 'Skip this version',
+        'update.whatsNew': "What's new",
+        'update.ready': 'Update v{{version}} Ready',
+        'update.readyDesc': 'Restart the app to install the update',
+        'update.restartInstall': 'Restart & Install',
+        'update.failed': 'Update Failed',
+        'update.retry': 'Retry',
+        'update.upToDate': "You're up to date!",
+        'update.dismiss': 'Dismiss',
+      }
+      let text = translations[key] ?? key
+      if (params) {
+        for (const [k, v] of Object.entries(params)) {
+          text = text.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v))
+        }
+      }
+      return text
+    },
+    i18n: { language: 'en-US' },
+  }),
+}))
+
 // ── Mocks ──────────────────────────────────────────────────────────
 
 function createMockUpdater(overrides: Partial<ElectronUpdaterApi> = {}): ElectronUpdaterApi {
@@ -378,7 +415,7 @@ describe('UpdateNotification', () => {
 
     it('has proper aria-label', () => {
       render(<CheckForUpdatesButton />)
-      expect(screen.getByLabelText('Check for updates')).toBeInTheDocument()
+      expect(screen.getByLabelText('Check for Updates')).toBeInTheDocument()
     })
   })
 })

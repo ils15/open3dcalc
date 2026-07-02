@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Download,
   RefreshCw,
@@ -39,6 +40,7 @@ function formatSpeed(bytesPerSecond: number): string {
 // ── Sub-components ─────────────────────────────────────────────────
 
 function CheckingBanner() {
+  const { t } = useTranslation()
   return (
     <div
       className="surface rounded-xl p-5 flex items-center gap-4 border border-[var(--color-border)] shadow-lg animate-fade-in"
@@ -48,10 +50,10 @@ function CheckingBanner() {
       <Loader2 className="w-6 h-6 text-[var(--color-accent)] animate-spin shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-          Checking for updates…
+          {t('update.checking')}
         </p>
         <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-          Please wait while we check for the latest version
+          {t('update.checkingDesc')}
         </p>
       </div>
     </div>
@@ -83,6 +85,7 @@ function AvailableBanner({
   onSkip,
   onDismiss,
 }: AvailableBannerProps) {
+  const { t } = useTranslation()
   const bannerRef = useRef<HTMLDivElement>(null)
   const isDownloading = status === 'downloading'
 
@@ -127,12 +130,12 @@ function AvailableBanner({
           <div className="min-w-0">
             <p className="text-sm font-bold text-[var(--color-text-primary)]">
               {isDownloading
-                ? `Downloading v${version}…`
-                : `Update v${version} Available`}
+                ? t('update.downloading', { version })
+                : t('update.available', { version })}
             </p>
             {!isDownloading && (
               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                A new version is ready to download
+                {t('update.availableDesc')}
               </p>
             )}
           </div>
@@ -140,7 +143,7 @@ function AvailableBanner({
         <button
           onClick={onDismiss}
           className="shrink-0 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-          aria-label="Dismiss"
+          aria-label={t('update.dismiss')}
           disabled={isDownloading}
         >
           <X className="w-4 h-4" />
@@ -156,7 +159,7 @@ function AvailableBanner({
             aria-valuenow={progressPercent}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`Download progress: ${progressPercent.toFixed(0)}%`}
+            aria-label={t('update.downloadingProgress')}
           >
             <div
               className="h-full rounded-full bg-[var(--color-accent)] transition-all duration-300 ease-out"
@@ -184,7 +187,7 @@ function AvailableBanner({
       {releaseNotes && !isDownloading && (
         <details className="group mb-4">
           <summary className="text-xs font-semibold text-[var(--color-accent)] cursor-pointer hover:text-[var(--color-accent-light)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded">
-            What&apos;s new
+            {t('update.whatsNew')}
           </summary>
           <div className="mt-2 text-xs text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-wrap max-h-32 overflow-y-auto bg-[var(--color-bg-elevated)] rounded-lg p-3">
             {releaseNotes}
@@ -197,7 +200,7 @@ function AvailableBanner({
         {isDownloading ? (
           <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1.5">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Downloading update…
+            {t('update.downloadingProgress')}
           </span>
         ) : (
           <>
@@ -206,13 +209,13 @@ function AvailableBanner({
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-accent)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none shadow-md"
             >
               <Download className="w-3.5 h-3.5" />
-              Download
+              {t('update.download')}
             </button>
             <button
               onClick={onSkip}
               className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] px-2 py-1.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
             >
-              Skip this version
+              {t('update.skipVersion')}
             </button>
           </>
         )}
@@ -228,6 +231,7 @@ interface DownloadedBannerProps {
 }
 
 function DownloadedBanner({ version, onInstall, onDismiss }: DownloadedBannerProps) {
+  const { t } = useTranslation()
   return (
     <div
       className="surface rounded-xl p-5 border border-emerald-500/30 shadow-lg animate-fade-in"
@@ -241,17 +245,17 @@ function DownloadedBanner({ version, onInstall, onDismiss }: DownloadedBannerPro
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-[var(--color-text-primary)]">
-              Update v{version} Ready
+              {t('update.ready', { version })}
             </p>
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-              Restart the app to install the update
+              {t('update.readyDesc')}
             </p>
           </div>
         </div>
         <button
           onClick={onDismiss}
           className="shrink-0 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-          aria-label="Dismiss"
+          aria-label={t('update.dismiss')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -262,7 +266,7 @@ function DownloadedBanner({ version, onInstall, onDismiss }: DownloadedBannerPro
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-all focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none shadow-md"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          Restart & Install
+          {t('update.restartInstall')}
         </button>
       </div>
     </div>
@@ -276,6 +280,7 @@ interface ErrorBannerProps {
 }
 
 function ErrorBanner({ message, onRetry, onDismiss }: ErrorBannerProps) {
+  const { t } = useTranslation()
   return (
     <div
       className="surface rounded-xl p-5 border border-red-500/30 shadow-lg animate-fade-in"
@@ -288,7 +293,7 @@ function ErrorBanner({ message, onRetry, onDismiss }: ErrorBannerProps) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-[var(--color-text-primary)]">
-              Update Failed
+              {t('update.failed')}
             </p>
             <p className="text-xs text-red-400 mt-0.5">{message}</p>
           </div>
@@ -296,7 +301,7 @@ function ErrorBanner({ message, onRetry, onDismiss }: ErrorBannerProps) {
         <button
           onClick={onDismiss}
           className="shrink-0 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-          aria-label="Dismiss"
+          aria-label={t('update.dismiss')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -307,7 +312,7 @@ function ErrorBanner({ message, onRetry, onDismiss }: ErrorBannerProps) {
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-accent)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none shadow-md"
         >
           <RefreshCw className="w-3.5 h-3.5" />
-          Retry
+          {t('update.retry')}
         </button>
       </div>
     </div>
@@ -320,6 +325,7 @@ export function UpdateNotification({
   onCheck,
   className = '',
 }: UpdateNotificationProps) {
+  const { t } = useTranslation()
   const {
     status,
     version,
@@ -440,7 +446,7 @@ export function UpdateNotification({
           aria-live="polite"
         >
           <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span className="font-medium">You&apos;re up to date!</span>
+          <span className="font-medium">{t('update.upToDate')}</span>
         </div>
       )}
 
@@ -465,6 +471,7 @@ export function CheckForUpdatesButton({
   onClick,
   className = '',
 }: CheckForUpdatesButtonProps) {
+  const { t } = useTranslation()
   const { status, checkForUpdates } = useUpdaterStore(
     useShallow((s) => ({
       status: s.status,
@@ -483,14 +490,14 @@ export function CheckForUpdatesButton({
           ? 'text-[var(--color-text-muted)] cursor-not-allowed'
           : 'text-[var(--color-accent)] hover:bg-[var(--color-accent-muted)] active:scale-[0.97]'
       } ${className}`}
-      aria-label="Check for updates"
+      aria-label={t('update.checkForUpdates')}
     >
       {isLoading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : (
         <RefreshCw className="w-4 h-4" />
       )}
-      <span>{isLoading ? 'Checking…' : 'Check for Updates'}</span>
+      <span>{isLoading ? t('update.checkingShort') : t('update.checkForUpdates')}</span>
     </button>
   )
 }

@@ -1,0 +1,96 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/h"
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Skip AI review for merge commits automatically
+if echo "$COMMIT_MSG" | grep -qE "^Merge branch|^Merge remote-tracking|^Merge pull request"; then
+  echo "  ⏭️  Skipping commit-msg hooks for merge commit"
+  exit 0
+fi
+
+echo "📝 Validating commit message format..."
+
+# commitlint — validate conventional commit format
+if echo "$COMMIT_MSG" | npx commitlint@latest 2>/dev/null; then
+  echo "  ✓ Conventional commit format valid"
+else
+  echo "❌ Commit message format invalid."
+  echo "   Use conventional commits: type(scope): description"
+  echo "   Types: feat, fix, chore, docs, refactor, test, style, ci, perf, build, revert"
+  echo ""
+  echo "   Examples:"
+  echo "     feat(api): add user authentication endpoint"
+  echo "     fix(parser): handle null edge case in CSV import"
+  echo "     docs(readme): update installation instructions"
+  exit 1
+fi
+
+echo ""
+echo "🤖 AI commit message review..."
+
+# Try to get Bifrost API key (env var > git config > skip)
+BF_KEY="${BF_VIRTUAL_KEY:-$(git config --get bifrost.api-key 2>/dev/null || echo '')}"
+
+if [ -n "$BF_KEY" ]; then
+  # Build JSON payload safely with Python3 (handles special chars in commit message)
+  JSON_BODY=$(python3 -c "
+import json, os
+msg = os.environ.get('COMMIT_MSG', '')
+body = {
+    'model': 'opencode-zen/deepseek-v4-flash-free',
+    'messages': [
+        {
+            'role': 'system',
+            'content': 'You are a commit message reviewer. Respond with exactly one line: ACCEPT if the message is clear and descriptive, or REJECT: <reason> if it is vague, uninformative, or lacks context. Be strict but fair.'
+        },
+        {
+            'role': 'user',
+            'content': f'Review this commit message:\n\n{msg}'
+        }
+    ],
+    'temperature': 0.1,
+    'max_tokens': 100
+}
+print(json.dumps(body))
+" 2>/dev/null)
+
+  if [ -n "$JSON_BODY" ]; then
+    AI_REVIEW=$(curl -s --max-time 15 \
+      -X POST "https://llm.ofertachina.cloud/v1/chat/completions" \
+      -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $BF_KEY" \
+      -d "$JSON_BODY" 2>/dev/null)
+
+    AI_DECISION=$(echo "$AI_REVIEW" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    msg = data['choices'][0]['message']['content'].strip()
+    print(msg)
+except Exception:
+    print('ERROR')
+" 2>/dev/null)
+
+    if echo "$AI_DECISION" | grep -q "^REJECT"; then
+      echo "❌ AI review rejected your commit message:"
+      echo "   $AI_DECISION"
+      echo ""
+      echo "💡 Tip: Be more descriptive about WHAT and WHY the change was made."
+      exit 1
+    elif [ "$AI_DECISION" = "ERROR" ]; then
+      echo "  ⚠️  AI review API error — proceeding without AI approval"
+    else
+      echo "  ✅ AI approved: $AI_DECISION"
+    fi
+  else
+    echo "  ⚠️  Failed to construct AI request payload — skipping review"
+  fi
+else
+  echo "  ⏭️  AI review skipped (no Bifrost key). Set BF_VIRTUAL_KEY env or:"
+  echo "     git config --add bifrost.api-key 'your-key'"
+fi
+
+echo ""
+echo "✅ Commit message validated"

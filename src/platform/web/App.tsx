@@ -53,11 +53,11 @@ const MORE_TABS: Tab[] = ['inventory', 'quotes', 'customers', 'changelog']
 const TABS: { id: Tab; icon: React.ReactNode; labelKey: string; label: string }[] = [
   { id: 'calculator', icon: <CalculatorIcon className="w-[18px] h-[18px]" />, labelKey: 'nav.calculator', label: 'Calculadora' },
   { id: 'dashboard',  icon: <BarChart3 className="w-[18px] h-[18px]" />,      labelKey: 'nav.dashboard',  label: 'Dashboard' },
-  { id: 'infill',     icon: <Grid3x3 className="w-[18px] h-[18px]" />,        labelKey: 'nav.infill',     label: 'Infill' },
+  { id: 'infill',     icon: <Grid3x3 className="w-[18px] h-[18px]" />,        labelKey: 'nav.infill',     label: 'Calc. Infill' },
   { id: 'inventory',  icon: <Spool className="w-[18px] h-[18px]" />,          labelKey: 'nav.inventory',  label: 'Filamentos' },
-  { id: 'catalog',    icon: <Settings2 className="w-[18px] h-[18px]" />,      labelKey: 'nav.catalog',    label: 'Catálogo' },
+  { id: 'catalog',    icon: <Settings2 className="w-[18px] h-[18px]" />,      labelKey: 'nav.catalog',    label: 'Cadastros' },
   { id: 'history',    icon: <Clock className="w-[18px] h-[18px]" />,          labelKey: 'nav.history',    label: 'Histórico' },
-  { id: 'quotes',     icon: <FileText className="w-[18px] h-[18px]" />,    labelKey: 'nav.quotes',     label: 'Quotes' },
+  { id: 'quotes',     icon: <FileText className="w-[18px] h-[18px]" />,    labelKey: 'nav.quotes',     label: 'Orçamentos' },
   { id: 'customers',  icon: <Users className="w-[18px] h-[18px]" />,      labelKey: 'nav.customers',  label: 'Clientes' },
 ]
 
@@ -390,7 +390,7 @@ function App() {
       </AnimatePresence>
       <footer className="hidden lg:block text-center text-xs text-[var(--color-text-muted)] py-3 border-t border-[var(--color-border)]">
         <div className="flex items-center justify-center gap-3">
-          <span>Open3DCalc v1.9.0 — Open Source · MIT License</span>
+          <span>Open3DCalc v1.9.1 — Open Source · MIT License</span>
         </div>
       </footer>
 

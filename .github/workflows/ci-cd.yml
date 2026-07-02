@@ -17,14 +17,40 @@ concurrency:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, cx33, linux]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - name: ⚡ Cache node_modules
+        id: npm-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+      - if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - if: steps.npm-cache.outputs.cache-hit == 'true'
+        run: echo "  ✓ node_modules restored from cache"
+      - name: 🔒 Security scan (secrets)
+        run: |
+          echo "Running gitleaks secret scan..."
+          npx gitleaks@latest git --no-git --source . 2>/dev/null || {
+            echo "❌ Secrets detected. Check gitleaks report."
+            exit 1
+          }
+          echo "  ✓ No secrets detected"
+      - name: 🗄️ Validate DB migrations
+        run: |
+          echo "Running DB migrations..."
+          export OPEN3DCALC_DB_PATH=/tmp/test-open3dcalc.db
+          npm run db:migrate 2>/dev/null || {
+            echo "❌ DB migration failed!"
+            exit 1
+          }
+          echo "  ✓ Migrations applied successfully"
       - name: Rebuild native modules
         run: npm rebuild better-sqlite3 2>/dev/null || true
       - run: npm run lint
@@ -36,11 +62,16 @@ jobs:
         with:
           name: coverage
           path: coverage/
+      - name: 🔔 Notify failure
+        if: failure()
+        run: |
+          echo "❌ CI/CD failed: ${{ github.repository }}@${{ github.ref_name }}"
+          echo "  https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   build-web:
     needs: quality
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, cx33, linux]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -50,7 +81,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - name: ⚡ Cache node_modules
+        id: npm-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+      - if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - if: steps.npm-cache.outputs.cache-hit == 'true'
+        run: echo "  ✓ node_modules restored from cache"
       - run: npm run build:web
       - name: SPA routing fix
         run: cp dist-web/index.web.html dist-web/404.html && cp dist-web/index.web.html dist-web/index.html
@@ -62,14 +102,23 @@ jobs:
 
   build-desktop:
     needs: quality
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, cx33, linux]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - name: ⚡ Cache node_modules
+        id: npm-cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+      - if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - if: steps.npm-cache.outputs.cache-hit == 'true'
+        run: echo "  ✓ node_modules restored from cache"
       - name: Rebuild native modules
         run: npm rebuild better-sqlite3 2>/dev/null || true
       - run: npm run build:desktop
