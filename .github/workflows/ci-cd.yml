@@ -38,10 +38,10 @@ jobs:
         run: |
           echo "Installing gitleaks..."
           curl -sL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 \
-            -o /usr/local/bin/gitleaks
-          chmod +x /usr/local/bin/gitleaks
+            -o /tmp/gitleaks
+          chmod +x /tmp/gitleaks
           echo "Running gitleaks secret scan..."
-          gitleaks detect --source . --verbose 2>&1 || {
+          /tmp/gitleaks detect --source . --verbose 2>&1 || {
             echo "╳ gitleaks scan failed (exit code $?)"
             exit 1
           }
