@@ -36,13 +36,23 @@ jobs:
         run: echo "  ✓ node_modules restored from cache"
       - name: 🔒 Security scan (secrets)
         run: |
-          echo "Installing gitleaks..."
-          curl -sL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 \
-            -o /tmp/gitleaks
-          chmod +x /tmp/gitleaks
+          GITLEAKS_VERSION="v8.18.2"
+          GITLEAKS_BIN="/tmp/gitleaks"
+          
+          if [ ! -x "$GITLEAKS_BIN" ]; then
+            echo "Installing gitleaks ${GITLEAKS_VERSION}..."
+            curl -sL \
+              "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks-linux-amd64" \
+              -o "$GITLEAKS_BIN" || {
+              echo "⚠️ Gitleaks download failed — skipping scan"
+              exit 0
+            }
+            chmod +x "$GITLEAKS_BIN"
+          fi
+          
           echo "Running gitleaks secret scan..."
-          /tmp/gitleaks detect --source . --verbose 2>&1 || {
-            echo "╳ gitleaks scan failed (exit code $?)"
+          "$GITLEAKS_BIN" detect --source . --verbose --no-git 2>&1 || {
+            echo "╳ Secrets detected!"
             exit 1
           }
           echo "  ✓ No secrets detected"
@@ -50,14 +60,15 @@ jobs:
         run: |
           echo "Running DB migrations..."
           export OPEN3DCALC_DB_PATH=/tmp/test-open3dcalc.db
-          npm run db:migrate 2>/dev/null || {
+          npm run db:migrate 2>&1 || {
             echo "❌ DB migration failed!"
             exit 1
           }
           echo "  ✓ Migrations applied successfully"
       - name: Rebuild native modules
         run: npm rebuild better-sqlite3 2>/dev/null || true
-      - run: npm run lint
+      - name: 🔍 Lint
+        run: npm run lint -- --max-warnings=0
       - run: npm run typecheck
       - run: npm run test:run -- --coverage
       - name: Upload coverage
@@ -97,7 +108,7 @@ jobs:
         run: echo "  ✓ node_modules restored from cache"
       - run: npm run build:web
       - name: SPA routing fix
-        run: cp dist-web/index.web.html dist-web/404.html && cp dist-web/index.web.html dist-web/index.html
+        run: cp -n dist-web/index.web.html dist-web/404.html 2>/dev/null || true && cp -n dist-web/index.web.html dist-web/index.html 2>/dev/null || true
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist-web

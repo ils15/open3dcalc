@@ -13,7 +13,7 @@ fi
 echo "📝 Validating commit message format..."
 
 # commitlint — validate conventional commit format
-if echo "$COMMIT_MSG" | npx commitlint@latest 2>/dev/null; then
+if echo "$COMMIT_MSG" | npx --no-install commitlint 2>/dev/null; then
   echo "  ✓ Conventional commit format valid"
 else
   echo "❌ Commit message format invalid."
@@ -24,6 +24,9 @@ else
   echo "     feat(api): add user authentication endpoint"
   echo "     fix(parser): handle null edge case in CSV import"
   echo "     docs(readme): update installation instructions"
+          # Se commitlint falhou, tentar de novo sem suprimir stderr para diagnóstico
+          echo "   Tentando diagnóstico..."
+          echo "$COMMIT_MSG" | npx --no-install commitlint 2>&1 || true
   exit 1
 fi
 
@@ -34,6 +37,11 @@ echo "🤖 AI commit message review..."
 BF_KEY="${BF_VIRTUAL_KEY:-$(git config --get bifrost.api-key 2>/dev/null || echo '')}"
 
 if [ -n "$BF_KEY" ]; then
+  # Verificar se python3 está disponível
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "  ⚠️  python3 not available — AI review requires python3"
+    echo "  ⏭️  Skipping AI review"
+  else
   # Build JSON payload safely with Python3 (handles special chars in commit message)
   JSON_BODY=$(python3 -c "
 import json, os
@@ -57,7 +65,7 @@ print(json.dumps(body))
 " 2>/dev/null)
 
   if [ -n "$JSON_BODY" ]; then
-    AI_REVIEW=$(curl -s --max-time 15 \
+    AI_REVIEW=$(curl -s --max-time 45 \
       -X POST "https://llm.ofertachina.cloud/v1/chat/completions" \
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer $BF_KEY" \
@@ -86,6 +94,7 @@ except Exception:
     fi
   else
     echo "  ⚠️  Failed to construct AI request payload — skipping review"
+  fi
   fi
 else
   echo "  ⏭️  AI review skipped (no Bifrost key). Set BF_VIRTUAL_KEY env or:"

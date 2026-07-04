@@ -4,18 +4,28 @@
 echo "🔒 Security checks..."
 
 # Gitleaks (secret scanning)
-if command -v gitleaks >/dev/null 2>&1 || npx --yes gitleaks@latest --version >/dev/null 2>&1; then
-  npx gitleaks@latest git --pre-commit --staged 2>/dev/null || {
+GITLEAKS_BIN="/tmp/gitleaks"
+if command -v gitleaks >/dev/null 2>&1; then
+  GITLEAKS_BIN="gitleaks"
+elif [ ! -f "$GITLEAKS_BIN" ]; then
+  echo "  ⚠️  Gitleaks not found. Attempting download..."
+  curl -sL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 \
+    -o "$GITLEAKS_BIN" 2>/dev/null && chmod +x "$GITLEAKS_BIN" || {
+    echo "  ⚠️  Could not download gitleaks — skipping secret scan"
+    GITLEAKS_BIN=""
+  }
+fi
+
+if [ -n "$GITLEAKS_BIN" ]; then
+  "$GITLEAKS_BIN" git --pre-commit --staged 2>/dev/null || {
     echo "❌ Gitleaks detected secrets. Aborting commit."
     exit 1
   }
   echo "  ✓ Secrets scan (gitleaks)"
-else
-  echo "  ⚠️  Gitleaks not available — skipping secret scan"
 fi
 
 # Detect private keys
-git diff --cached --name-only | xargs grep -l "BEGIN.*PRIVATE KEY" 2>/dev/null && {
+git diff -z --cached --name-only | xargs -0 grep -l "BEGIN.*PRIVATE KEY" 2>/dev/null && {
   echo "❌ Private key detected in staged files. Aborting commit."
   exit 1
 }
