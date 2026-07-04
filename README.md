@@ -4,6 +4,7 @@
 > Free & open-source 3D printing cost calculator.
 
 [![CI/CD](https://github.com/ils15/open3dcalc/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/ils15/open3dcalc/actions/workflows/ci-cd.yml)
+[![Self-Hosted CX33](https://img.shields.io/badge/runner-CX33-8A2BE2)](https://github.com/ils15/open3dcalc/settings/actions/runners)
 [![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Live-brightgreen)](https://ils15.github.io/open3dcalc/)
 [![Licença](https://img.shields.io/badge/licença-MIT-blue)](LICENSE)
 [![Versão](https://img.shields.io/github/v/release/ils15/open3dcalc)](https://github.com/ils15/open3dcalc/releases)
@@ -289,6 +290,17 @@ Contributions are welcome! See the full guide at [CONTRIBUTING.md](CONTRIBUTING.
 ## 📜 Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+---
+
+## ⚡ Infraestrutura
+
+Este projeto utiliza um **self-hosted runner CX33** para execução dos pipelines de CI/CD:
+
+- 🚀 Zero custo de execução (vs GitHub Actions hosted)
+- 💤 Runner sleep quando ocioso — zero consumo
+- 🔥 Acorda automaticamente nos pushes/PRs
+- 🔒 Segredos e cache locais (sem egress)
 
 ---
 
