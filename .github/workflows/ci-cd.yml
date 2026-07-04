@@ -36,10 +36,13 @@ jobs:
         run: echo "  ✓ node_modules restored from cache"
       - name: 🔒 Security scan (secrets)
         run: |
+          echo "Installing gitleaks..."
+          curl -sL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 \
+            -o /usr/local/bin/gitleaks
+          chmod +x /usr/local/bin/gitleaks
           echo "Running gitleaks secret scan..."
-          npx gitleaks@latest detect --source . --verbose 2>&1 || {
+          gitleaks detect --source . --verbose 2>&1 || {
             echo "╳ gitleaks scan failed (exit code $?)"
-            echo "❌ Secrets detected. Check gitleaks report."
             exit 1
           }
           echo "  ✓ No secrets detected"
