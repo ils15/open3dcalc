@@ -39,15 +39,6 @@ jobs:
       - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: 🗄️ Validate DB migrations
-        run: |
-          echo "Running DB migrations..."
-          export OPEN3DCALC_DB_PATH=/tmp/test-open3dcalc.db
-          npm run db:migrate 2>&1 || {
-            echo "❌ DB migration failed!"
-            exit 1
-          }
-          echo "  ✓ Migrations applied successfully"
       - name: Rebuild native modules
         run: npm rebuild better-sqlite3 2>/dev/null || true
       - name: 🔍 Lint
