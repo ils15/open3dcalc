@@ -14,7 +14,7 @@ function walk(dir) {
       walk(join(dir, entry.name));
     } else if (entry.name.endsWith('.js')) {
       const content = readFileSync(join(dir, entry.name), 'utf-8');
-      const relPath = join(dir, entry.name).replace(distDir, '');
+      const relPath = join(dir, entry.name).replace(distDir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), '');
 
       // Check for `from './something'` or `from '../something'`
       const importMatches = content.match(/from\s+['"](\.[^'"]+)['"]/g) || [];
