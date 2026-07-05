@@ -1,22 +1,24 @@
 name: Auto-Approve (Owner)
+
 on:
   pull_request_target:
     types: [opened, synchronize]
-    branches: [main]
 
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   auto-approve:
     if: github.actor == 'ils15'
     runs-on: [self-hosted, cx33, linux]
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
       - name: Auto-approve PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          gh pr review ${{ github.event.pull_request.number }} --approve
-          gh pr merge ${{ github.event.pull_request.number }} --auto --squash
+          gh pr review "$PR_NUMBER" --approve || echo "⚠️ Auto-approve failed (may already be approved)"
+          gh pr merge "$PR_NUMBER" --auto --squash || echo "⚠️ Auto-merge setup failed"
