@@ -19,7 +19,9 @@ jobs:
   quality:
     runs-on: [self-hosted, cx33, linux]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -34,28 +36,9 @@ jobs:
         run: npm ci
       - if: steps.npm-cache.outputs.cache-hit == 'true'
         run: echo "  ✓ node_modules restored from cache"
-      - name: 🔒 Security scan (secrets)
-        run: |
-          GITLEAKS_VERSION="v8.18.2"
-          GITLEAKS_BIN="/tmp/gitleaks"
-          
-          if [ ! -x "$GITLEAKS_BIN" ]; then
-            echo "Installing gitleaks ${GITLEAKS_VERSION}..."
-            curl -sL \
-              "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks-linux-amd64" \
-              -o "$GITLEAKS_BIN" || {
-              echo "⚠️ Gitleaks download failed — skipping scan"
-              exit 0
-            }
-            chmod +x "$GITLEAKS_BIN"
-          fi
-          
-          echo "Running gitleaks secret scan..."
-          "$GITLEAKS_BIN" detect --source . --verbose --no-git 2>&1 || {
-            echo "╳ Secrets detected!"
-            exit 1
-          }
-          echo "  ✓ No secrets detected"
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 🗄️ Validate DB migrations
         run: |
           echo "Running DB migrations..."

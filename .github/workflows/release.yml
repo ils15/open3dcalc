@@ -50,6 +50,37 @@ jobs:
             npx changelogen --bump --${{ inputs.bump }}
           fi
 
+      - name: 🤖 Themis Pre-Release Review
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://llm.ofertachina.cloud/v1' }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL || 'opencode-zen/deepseek-v4-flash' }}
+        run: |
+          # Get diff from last release tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            DIFF=$(git diff "$LAST_TAG"...HEAD -- . | head -c 80000)
+            [ -z "$DIFF" ] && echo "No diff since $LAST_TAG — skipping review" && exit 0
+
+            echo "Running Themis pre-release code review..."
+            curl -s "$LLM_BASE_URL/chat/completions" \
+              -H "Authorization: Bearer $LLM_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg diff "$DIFF" '{
+                model: env.LLM_MODEL,
+                messages: [
+                  {role: "system", content: "You are Themis. Review this diff for CRITICAL issues only. Return JSON with: has_critical_issues (bool), summary (string), findings array."},
+                  {role: "user", content: "Pre-release review:\n\($diff)"}
+                ],
+                response_format: {type: "json_object"}
+              }')" > /tmp/themis-release-review.json
+
+            SCRIPT_B64="aW1wb3J0IGpzb24Kd2l0aCBvcGVuKCcvdG1wL3RoZW1pcy1yZWxlYXNlLXJldmlldy5qc29uJykgYXMgZjoKICAgIGRhdGEgPSBqc29uLmxvYWQoZikKcmVzdWx0ID0ganNvbi5sb2FkcyhkYXRhWydjaG9pY2VzJ11bMF1bJ21lc3NhZ2UnXVsnY29udGVudCddKQppZiByZXN1bHQuZ2V0KCdoYXNfY3JpdGljYWxfaXNzdWVzJyk6CiAgICBwcmludCgn4pidIFRoZW1pcyBmb3VuZCBjcml0aWNhbCBpc3N1ZXMgaW4gdGhpcyByZWxlYXNlIScpCiAgICBmb3IgZl9pdGVtIGluIHJlc3VsdC5nZXQoJ2ZpbmRpbmdzJywgW10pOgogICAgICAgIHByaW50KGYnICAtIFt7Zl9pdGVtLmdldCgic2V2ZXJpdHkiLCJjcml0aWNhbCIpfV0ge2ZfaXRlbVsiZGljdCJdfScpCiAgICBleGl0KDEpCmVsc2U6CiAgICBwcmludCgn4pyFIFRoZW1pcyBwcmUtcmVsZWFzZSByZXZpZXcgcGFzc2VkJykKICAgIHByaW50KGYnICAgU3VtbWFyeToge3Jlc3VsdC5nZXQoInN1bW1hcnkiLCAiTm8gY3JpdGljYWwgaXNzdWVzIil9JykK"
+            echo "$SCRIPT_B64" | base64 -d | python3
+          else:
+            echo "No previous tag found — skipping Themis review"
+            exit 0
+
       - name: Build all targets
         run: |
           npm run build:all
