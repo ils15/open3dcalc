@@ -28,8 +28,9 @@ jobs:
           [ -z "$DIFF" ] && echo "No diff to review" && exit 0
           DIFF=$(echo "$DIFF" | head -c 80000)
 
-          echo "Sending diff to Bifrost LLM for review..."
-          curl -s "$LLM_BASE_URL/chat/completions" \
+          echo "Sending diff to Bifrost ($LLM_MODEL)..."
+          HTTP_CODE=$(curl -s -o /tmp/themis-response.json -w "%{http_code}" \
+            "$LLM_BASE_URL/chat/completions" \
             -H "Authorization: Bearer $LLM_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$(jq -n --arg diff "$DIFF" '{
@@ -39,7 +40,20 @@ jobs:
                 {role: "user", content: "Review this diff:\n\($diff)"}
               ],
               response_format: {type: "json_object"}
-            }')" > /tmp/themis-response.json
+            }')")
+          echo "HTTP response code: $HTTP_CODE"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ LLM API returned HTTP $HTTP_CODE"
+            cat /tmp/themis-response.json 2>/dev/null || echo "(empty)"
+            exit 1
+          fi
+          echo "✅ LLM response received"
+          # Validate JSON
+          python3 -c "import json; json.load(open('/tmp/themis-response.json')); print('  ✓ JSON valid')" || {
+            echo "❌ Invalid JSON response"
+            cat /tmp/themis-response.json
+            exit 1
+          }
 
       - name: 📝 Post Review Comments
         env:
