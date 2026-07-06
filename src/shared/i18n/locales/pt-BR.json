@@ -32,7 +32,10 @@
     "trend": "Tendência de Lucro",
     "noHistory": "Sem dados de histórico",
     "cantBreakEven": "Preço não cobre custos",
-    "loadingCharts": "Carregando gráficos..."
+    "loadingCharts": "Carregando gráficos...",
+    "dateFrom": "Data inicial",
+    "dateTo": "Data final",
+    "clearFilters": "Limpar filtros"
   },
   "sections": {
     "title": "Seções"
@@ -370,7 +373,10 @@
     "valueB": "Registro B",
     "compareBetter": "Melhor",
     "compareWorse": "Pior",
-    "noResults": "Nenhum resultado encontrado"
+    "noResults": "Nenhum resultado encontrado",
+    "dateFrom": "Data inicial",
+    "dateTo": "Data final",
+    "clearFilters": "Limpar filtros"
   },
   "breakdown": {
     "title": "Detalhamento de Custos",
@@ -423,7 +429,11 @@
     "deductConfirm": "Deduzir {{weight}}g do carretel {{spool}}?",
     "deductSuccess": "Peso deduzido com sucesso!",
     "deductSelect": "Selecionar carretel para deduzir",
-    "deductAvailable": "{{weight}}g disponíveis"
+    "deductAvailable": "{{weight}}g disponíveis",
+    "autoDeductSuccess": "{{weight}}g deduzidos automaticamente do carretel",
+    "selectSpool": "Selecionar carretel para dedução automática",
+    "noSpoolSelected": "Nenhum carretel selecionado",
+    "clearSpool": "Limpar seleção"
   },
   "tutorial": {
     "start": "Iniciar Tutorial",

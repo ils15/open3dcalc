@@ -35,6 +35,8 @@ describe('useHistoryStore (integration)', () => {
       sortBy: 'date',
       sortOrder: 'desc',
       filterType: 'all',
+      dateFrom: null,
+      dateTo: null,
     })
   })
 
@@ -326,5 +328,54 @@ describe('useHistoryStore (integration)', () => {
     useHistoryStore.getState().addEntry(entryData({ timestamp: customTimestamp, name: 'Timeless' }))
 
     expect(useHistoryStore.getState().entries[0].timestamp).toBe(customTimestamp)
+  })
+
+  // ══════════════════════════════════════════════════════════
+  //  Date range filter (Phase 1)
+  // ══════════════════════════════════════════════════════════
+
+  describe('Date range filter', () => {
+    it('setDateFrom updates the state', () => {
+      useHistoryStore.getState().setDateFrom(1_600_000_000_000)
+      expect(useHistoryStore.getState().dateFrom).toBe(1_600_000_000_000)
+
+      useHistoryStore.getState().setDateFrom(null)
+      expect(useHistoryStore.getState().dateFrom).toBeNull()
+    })
+
+    it('setDateTo updates the state', () => {
+      useHistoryStore.getState().setDateTo(1_700_000_000_000)
+      expect(useHistoryStore.getState().dateTo).toBe(1_700_000_000_000)
+
+      useHistoryStore.getState().setDateTo(null)
+      expect(useHistoryStore.getState().dateTo).toBeNull()
+    })
+
+    it('getFilteredEntries with date range filters correctly', () => {
+      const early = 1_600_000_000_000
+      const middle = 1_650_000_000_000
+      const late = 1_700_000_000_000
+
+      useHistoryStore.getState().addEntry(entryData({ timestamp: early, name: 'Early' }))
+      useHistoryStore.getState().addEntry(entryData({ timestamp: middle, name: 'Middle' }))
+      useHistoryStore.getState().addEntry(entryData({ timestamp: late, name: 'Late' }))
+
+      useHistoryStore.getState().setDateFrom(middle)
+      useHistoryStore.getState().setDateTo(late)
+      const filtered = useHistoryStore.getState().getFilteredEntries()
+
+      expect(filtered).toHaveLength(2)
+      expect(filtered.map(e => e.name).sort()).toEqual(['Late', 'Middle'])
+    })
+
+    it('getFilteredEntries with empty date range returns all', () => {
+      useHistoryStore.getState().addEntry(entryData({ timestamp: 1_600_000_000_000, name: 'A' }))
+      useHistoryStore.getState().addEntry(entryData({ timestamp: 1_700_000_000_000, name: 'B' }))
+
+      // dateFrom and dateTo are null (default)
+      const filtered = useHistoryStore.getState().getFilteredEntries()
+
+      expect(filtered).toHaveLength(2)
+    })
   })
 })

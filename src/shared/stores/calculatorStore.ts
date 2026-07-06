@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { marketplaces } from '@/shared/lib/marketplace'
 import { printers } from '@/shared/lib/printers'
 import { useCatalogStore } from '@/shared/stores/catalogStore'
+import { useFilamentInventory } from '@/shared/stores/filamentInventory'
 import { useHistoryStore } from '@/shared/stores/historyStore'
 import type { CalculatorState, ComputeStoreInput } from './calculatorStore.types'
 import type { CalcLevel } from './calculatorStore.types'
@@ -127,6 +128,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       consumables: true, labor: true, software: true, failure: true,
       extras: true, postProcessing: true, packaging: true, shipping: true,
     }),
+    selectedSpoolId: null,
+    lastDeductedInfo: null,
     history: [],
   }
 
@@ -179,6 +182,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     },
 
     setCurrency: (currency) => set({ currency }),
+    setSelectedSpoolId: (id) => setWithCompute({ selectedSpoolId: id }),
+    setLastDeductedInfo: (info) => set({ lastDeductedInfo: info }),
 
     undo: () => {
       const s = get()
@@ -297,6 +302,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         fdmAmsSlots: DEFAULT_AMS_SLOTS.map(s => ({ ...s })),
         selectedPrinter: printers[0],
         selectedMarketplace: marketplaces[0],
+        selectedSpoolId: null,
+        lastDeductedInfo: null,
       })
     },
 
@@ -360,6 +367,12 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         result: r,
         snapshot,
       })
+
+      // Auto-deduct filament from inventory
+      if (s.activeTab === 'fdm' && s.selectedSpoolId !== null && r.unitWeight > 0) {
+        useFilamentInventory.getState().deductWeight(s.selectedSpoolId, r.unitWeight)
+        set({ lastDeductedInfo: { spoolId: s.selectedSpoolId, weight: r.unitWeight } })
+      }
     },
 
     loadHistoryItem: (snapshot: CalculationSnapshot) => {

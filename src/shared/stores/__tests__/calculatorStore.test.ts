@@ -3,13 +3,23 @@ import type { MaterialStateFDM, PrintParameters } from '@/shared/types'
 import { useCalculatorStore, initialState, buildSnapshot } from './calculatorStore.test-utils'
 
 // ── Hoisted mocks (executed by vitest BEFORE imports) ──────────────
-const { mockAddEntry } = vi.hoisted(() => ({
+const { mockAddEntry, mockDeductWeight } = vi.hoisted(() => ({
   mockAddEntry: vi.fn(),
+  mockDeductWeight: vi.fn(),
 }))
 
 vi.mock('@/shared/stores/historyStore', () => ({
   useHistoryStore: {
     getState: () => ({ addEntry: mockAddEntry }),
+    setState: () => {},
+    subscribe: () => () => {},
+    destroy: () => {},
+  },
+}))
+
+vi.mock('@/shared/stores/filamentInventory', () => ({
+  useFilamentInventory: {
+    getState: () => ({ deductWeight: mockDeductWeight }),
     setState: () => {},
     subscribe: () => () => {},
     destroy: () => {},
@@ -28,6 +38,7 @@ describe('CalculatorStore core', () => {
     localStorage.clear()
     useCalculatorStore.setState(initialState, true)
     mockAddEntry.mockClear()
+    mockDeductWeight.mockClear()
   })
 
   // ══════════════════════════════════════════════════════════════
@@ -241,6 +252,98 @@ describe('CalculatorStore core', () => {
       const store = useCalculatorStore.getState()
       store.setCurrency('BRL')
       expect(useCalculatorStore.getState().currency).toBe('BRL')
+    })
+  })
+
+  // ══════════════════════════════════════════════════════════════
+  //  Spool auto-deduction (Phase 1)
+  // ══════════════════════════════════════════════════════════════
+
+  describe('Spool auto-deduction', () => {
+    it('setSelectedSpoolId stores and retrieves the ID', () => {
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_abc123')
+      expect(useCalculatorStore.getState().selectedSpoolId).toBe('spool_abc123')
+    })
+
+    it('setSelectedSpoolId with null clears it', () => {
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_abc123')
+      expect(useCalculatorStore.getState().selectedSpoolId).toBe('spool_abc123')
+
+      store.setSelectedSpoolId(null)
+      expect(useCalculatorStore.getState().selectedSpoolId).toBeNull()
+    })
+
+    it('addToHistory with FDM + selectedSpoolId + unitWeight > 0 calls deductWeight', () => {
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_456')
+      store.setProductName('Deductible Part')
+
+      store.addToHistory()
+
+      expect(mockDeductWeight).toHaveBeenCalledTimes(1)
+      expect(mockDeductWeight).toHaveBeenCalledWith('spool_456', expect.any(Number))
+    })
+
+    it('addToHistory with resin type does NOT deduct', () => {
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_789')
+      store.setActiveTab('resin')
+      store.setProductName('Resin Part')
+
+      store.addToHistory()
+
+      expect(mockDeductWeight).not.toHaveBeenCalled()
+    })
+
+    it('addToHistory with FDM but no selectedSpoolId does NOT deduct', () => {
+      const store = useCalculatorStore.getState()
+      // selectedSpoolId is null by default
+      store.setProductName('No Spool Part')
+
+      store.addToHistory()
+
+      expect(mockDeductWeight).not.toHaveBeenCalled()
+    })
+
+    it('addToHistory with unitWeight === 0 does NOT deduct', () => {
+      // Override material weight to zero so unitWeight becomes 0
+      const store = useCalculatorStore.getState()
+      store.setFdmMaterial({
+        ...store.fdmMaterial,
+        weightUsed: 0,
+        purgeWeight: 0,
+      })
+      store.setSelectedSpoolId('spool_zero')
+      store.setProductName('Zero Weight Part')
+
+      store.addToHistory()
+
+      expect(mockDeductWeight).not.toHaveBeenCalled()
+    })
+
+    it('lastDeductedInfo is set after auto-deduction', () => {
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_info_1')
+      store.setProductName('Info Test')
+
+      store.addToHistory()
+
+      const state = useCalculatorStore.getState()
+      expect(state.lastDeductedInfo).not.toBeNull()
+      expect(state.lastDeductedInfo!.spoolId).toBe('spool_info_1')
+      expect(state.lastDeductedInfo!.weight).toBeGreaterThan(0)
+    })
+
+    it('lastDeductedInfo is null when no deduction happens', () => {
+      // Default: no selectedSpoolId
+      const store = useCalculatorStore.getState()
+      store.setProductName('No Deduct')
+
+      store.addToHistory()
+
+      expect(useCalculatorStore.getState().lastDeductedInfo).toBeNull()
     })
   })
 })

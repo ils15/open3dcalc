@@ -238,6 +238,7 @@ export interface CalculationSnapshot {
   timestamp: number
   type: 'fdm' | 'resin'
   summary: string
+  spoolId?: string
   fdmAmsEnabled?: boolean
   fdmAmsSlots?: AMSSlot[]
   fdmMaterial: MaterialStateFDM

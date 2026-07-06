@@ -86,6 +86,10 @@ export interface CalculatorState {
   setTargetMarginMode: (v: boolean) => void
   enabledSections: Record<string, boolean>
   toggleSection: (section: string) => void
+  selectedSpoolId: string | null
+  setSelectedSpoolId: (id: string | null) => void
+  lastDeductedInfo: { spoolId: string; weight: number } | null
+  setLastDeductedInfo: (info: { spoolId: string; weight: number } | null) => void
   results: CalculationResult | null
   loadHistoryItem: (snapshot: CalculationSnapshot) => void
   addToHistory: () => void

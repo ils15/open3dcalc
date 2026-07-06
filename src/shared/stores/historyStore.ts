@@ -8,6 +8,8 @@ interface HistoryStore {
   sortBy: 'date' | 'price' | 'profit' | 'name'
   sortOrder: 'asc' | 'desc'
   filterType: 'all' | 'fdm' | 'resin'
+  dateFrom: number | null
+  dateTo: number | null
 
   addEntry: (
     entry: Omit<HistoryEntry, 'id' | 'timestamp'> & Partial<Pick<HistoryEntry, 'id' | 'timestamp'>>,
@@ -20,6 +22,8 @@ interface HistoryStore {
   setSortBy: (sortBy: HistoryStore['sortBy']) => void
   setSortOrder: (order: 'asc' | 'desc') => void
   setFilterType: (type: 'all' | 'fdm' | 'resin') => void
+  setDateFrom: (date: number | null) => void
+  setDateTo: (date: number | null) => void
 
   getFilteredEntries: () => HistoryEntry[]
   exportJson: () => string
@@ -34,6 +38,8 @@ export const useHistoryStore = create<HistoryStore>()(
       sortBy: 'date',
       sortOrder: 'desc',
       filterType: 'all',
+      dateFrom: null,
+      dateTo: null,
 
       addEntry: (entry) => {
         const id = entry.id || `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
@@ -59,9 +65,11 @@ export const useHistoryStore = create<HistoryStore>()(
       setSortBy: (sortBy) => set({ sortBy }),
       setSortOrder: (sortOrder) => set({ sortOrder }),
       setFilterType: (filterType) => set({ filterType }),
+      setDateFrom: (dateFrom) => set({ dateFrom }),
+      setDateTo: (dateTo) => set({ dateTo }),
 
       getFilteredEntries: () => {
-        const { entries, search, filterType, sortBy, sortOrder } = get()
+        const { entries, search, filterType, sortBy, sortOrder, dateFrom, dateTo } = get()
         let filtered = [...entries]
 
         if (filterType !== 'all') {
@@ -74,6 +82,13 @@ export const useHistoryStore = create<HistoryStore>()(
               e.name.toLowerCase().includes(q) ||
               e.summary.toLowerCase().includes(q),
           )
+        }
+        if (dateFrom !== null) {
+          filtered = filtered.filter((e) => e.timestamp >= dateFrom)
+        }
+        if (dateTo !== null) {
+          const endOfDay = dateTo + 86399999
+          filtered = filtered.filter((e) => e.timestamp <= endOfDay)
         }
 
         filtered.sort((a, b) => {

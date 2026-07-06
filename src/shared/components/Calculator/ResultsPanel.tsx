@@ -19,7 +19,7 @@ interface ResultsPanelProps {
 
 export function ResultsPanel({ variant }: ResultsPanelProps) {
   const { t, i18n } = useTranslation()
-  const { results, productName, addToHistory, saveSettings, activeTab, fdmType, resinType } =
+  const { results, productName, addToHistory, saveSettings, activeTab, fdmType, resinType, lastDeductedInfo } =
     useCalculatorStore(useShallow((s) => ({
       results: s.results,
       productName: s.productName,
@@ -28,7 +28,9 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
       activeTab: s.activeTab,
       fdmType: s.fdmMaterial.type,
       resinType: s.resinMaterial.type,
+      lastDeductedInfo: s.lastDeductedInfo,
     })))
+  const setLastDeductedInfo = useCalculatorStore(s => s.setLastDeductedInfo)
   const { clearHistory, entries: historyEntries, historyCount } =
     useHistoryStore(useShallow((s) => ({
       clearHistory: s.clearHistory,
@@ -80,6 +82,16 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
     const timer = setTimeout(() => setDeductSuccess(false), 3000)
     return () => clearTimeout(timer)
   }, [deductSuccess])
+
+  // Watch for auto-deduction triggered by addToHistory
+  useEffect(() => {
+    if (!lastDeductedInfo) return
+    const timer = setTimeout(() => {
+      setDeductSuccess(true)
+      setLastDeductedInfo(null)
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [lastDeductedInfo, setLastDeductedInfo])
 
   const handleDeductClick = (spool: FilamentSpool) => {
     setSelectedSpool(spool)
