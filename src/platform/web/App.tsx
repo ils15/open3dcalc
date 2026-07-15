@@ -473,7 +473,7 @@ function App() {
       </AnimatePresence>
       <footer className="hidden lg:block text-center text-xs text-[var(--color-text-muted)] py-3 border-t border-[var(--color-border)]">
         <div className="flex items-center justify-center gap-3">
-          <span>Open3DCalc v1.9.1 — Open Source · MIT License</span>
+          <span>Open3DCalc v1.9.2 — Open Source · MIT License</span>
         </div>
       </footer>
 
