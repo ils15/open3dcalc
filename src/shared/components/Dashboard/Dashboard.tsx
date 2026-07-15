@@ -442,17 +442,17 @@ export function Dashboard() {
             <label className="text-xs text-[var(--color-text-secondary)]">{t('dashboard.dateFrom')}</label>
             <input type="date" value={epochToDateStr(dashboardDateFrom)}
               onChange={e => setDashboardDateFrom(e.target.value ? dateStrToEpoch(e.target.value) : null)}
-              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" />
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[var(--color-text-secondary)]">{t('dashboard.dateTo')}</label>
             <input type="date" value={epochToDateStr(dashboardDateTo)}
               onChange={e => setDashboardDateTo(e.target.value ? dateStrToEpoch(e.target.value) : null)}
-              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" />
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" />
           </div>
           {(dashboardDateFrom !== null || dashboardDateTo !== null) && (
             <button onClick={() => { setDashboardDateFrom(null); setDashboardDateTo(null) }}
-              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-elevated)] text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] transition-colors">
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] transition-colors">
               {t('dashboard.clearFilters')}
             </button>
           )}
