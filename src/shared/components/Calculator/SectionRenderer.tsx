@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import type { BufferGeometry } from "three";
 import type { LucideIcon } from "lucide-react";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useShallow } from "zustand/react/shallow";
@@ -22,16 +21,6 @@ interface SectionRendererProps {
 	currencySymbol: string;
 	handleInput: (value: string, setter: (v: number) => void) => void;
 	isFDM: boolean;
-	fileInputRef: React.RefObject<HTMLInputElement | null>;
-	stlGeometry: BufferGeometry | null;
-	stlInfo: {
-		volume: number;
-		faces: number;
-		vertices: number;
-		dimensions: { x: number; y: number; z: number };
-	} | null;
-	stlLoading: boolean;
-	handleFileDrop: (file: File) => void;
 	showSpoolSelector: boolean;
 	setShowSpoolSelector: (show: boolean) => void;
 	inventorySpools: FilamentSpool[];
@@ -46,11 +35,6 @@ export function SectionRenderer(props: SectionRendererProps) {
 		currencySymbol,
 		handleInput,
 		isFDM,
-		fileInputRef,
-		stlGeometry,
-		stlInfo,
-		stlLoading,
-		handleFileDrop,
 		showSpoolSelector,
 		setShowSpoolSelector,
 		inventorySpools,
@@ -106,11 +90,6 @@ export function SectionRenderer(props: SectionRendererProps) {
 									isFDM={isFDM}
 									store={store}
 									isFieldVisible={isFieldVisible}
-									fileInputRef={fileInputRef}
-									stlGeometry={stlGeometry}
-									stlInfo={stlInfo}
-									stlLoading={stlLoading}
-									handleFileDrop={handleFileDrop}
 									showSpoolSelector={showSpoolSelector}
 									setShowSpoolSelector={setShowSpoolSelector}
 									inventorySpools={inventorySpools}

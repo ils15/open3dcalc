@@ -6,6 +6,13 @@ import type { CalculationResult } from '@/shared/types'
 import type { HistoryEntry } from '@/shared/types'
 
 // ---------------------------------------------------------------------------
+// Helper: month boundaries for period comparison tests
+// ---------------------------------------------------------------------------
+const now = new Date()
+const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime()
+
+// ---------------------------------------------------------------------------
 // Sample entries — match HistoryEntry shape
 // ---------------------------------------------------------------------------
 const sampleEntries = [
@@ -43,6 +50,51 @@ const sampleEntries = [
     totalCost: 110,
     summary: 'Resumo C',
     snapshot: null,
+    result: {} as CalculationResult,
+  },
+  {
+    id: '4',
+    name: 'Large Print',
+    type: 'fdm' as const,
+    timestamp: currentMonthStart + 86_400_000 * 5, // 5th of current month
+    sellPrice: 200,
+    profit: 80,
+    totalCost: 120,
+    summary: 'Large item',
+    snapshot: {
+      selectedPrinterId: 'Ender 3',
+      fdmMaterial: { type: 'pla' },
+    } as unknown as HistoryEntry['snapshot'],
+    result: {} as CalculationResult,
+  },
+  {
+    id: '5',
+    name: 'Low Margin Item',
+    type: 'resin' as const,
+    timestamp: currentMonthStart + 86_400_000 * 10, // 10th of current month
+    sellPrice: 100,
+    profit: 5,
+    totalCost: 95,
+    summary: 'Low margin',
+    snapshot: {
+      selectedPrinterId: 'Mars 3',
+      resinMaterial: { type: 'standard' },
+    } as unknown as HistoryEntry['snapshot'],
+    result: {} as CalculationResult,
+  },
+  {
+    id: '6',
+    name: 'Old Order',
+    type: 'fdm' as const,
+    timestamp: prevMonthStart + 86_400_000 * 15, // 15th of previous month
+    sellPrice: 300,
+    profit: 90,
+    totalCost: 210,
+    summary: 'Previous month order',
+    snapshot: {
+      selectedPrinterId: 'Ender 3',
+      fdmMaterial: { type: 'petg' },
+    } as unknown as HistoryEntry['snapshot'],
     result: {} as CalculationResult,
   },
 ]
@@ -109,6 +161,8 @@ vi.mock('../RechartsLazy', () => ({
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
+  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
+  Bar: () => <div data-testid="bar" />,
 }))
 
 // ---------------------------------------------------------------------------
@@ -171,10 +225,10 @@ describe('Dashboard date filter', () => {
     render(<Dashboard />)
     const dateInputs = document.querySelectorAll<HTMLInputElement>('input[type="date"]')
 
-    // Initially avgMargin uses all 3 entries:
-    // margins: 30/100=30%, 50/200=25%, 40/150≈26.67%
-    // avg = (30 + 25 + 26.67) / 3 ≈ 27.2%
-    expect(screen.getByText(/\+27\.2/)).toBeInTheDocument()
+    // Initially avgMargin uses all 6 entries:
+    // margins: 30/100=30%, 50/200=25%, 40/150≈26.67%, 80/200=40%, 5/100=5%, 90/300=30%
+    // avg = (30 + 25 + 26.67 + 40 + 5 + 30) / 6 ≈ 26.1%
+    expect(screen.getByText(/\+26\.1/)).toBeInTheDocument()
 
     // Filter to only the first entry (timestamp 1_600_000_000_000 ≈ 2020-09-13)
     // Set dateFrom and dateTo to that same day
@@ -187,8 +241,8 @@ describe('Dashboard date filter', () => {
 
   it('renders filtered entry count in avg margin card', () => {
     render(<Dashboard />)
-    // Unfiltered: 3 entries
-    expect(screen.getByText(/3 common\.entries/)).toBeInTheDocument()
+    // Unfiltered: 6 entries
+    expect(screen.getByText(/6 common\.entries/)).toBeInTheDocument()
 
     const dateInputs = document.querySelectorAll<HTMLInputElement>('input[type="date"]')
     // Filter to only one entry
@@ -214,7 +268,70 @@ describe('Dashboard date filter', () => {
     const clearButton = screen.getByText('dashboard.clearFilters')
     fireEvent.click(clearButton)
 
-    // After clearing, avgMargin should be back to ~27.2% (all 3 entries)
-    expect(screen.getByText(/\+27\.2/)).toBeInTheDocument()
+    // After clearing, avgMargin should be back to ~26.1% (all 6 entries)
+    expect(screen.getByText(/\+26\.1/)).toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Dashboard advanced features tests
+// ---------------------------------------------------------------------------
+describe('Dashboard advanced features', () => {
+  beforeEach(() => {
+    mockEntries = [...sampleEntries]
+    vi.clearAllMocks()
+    localStorage.clear()
+  })
+
+  it('renders top printers chart section', () => {
+    render(<Dashboard />)
+    expect(screen.getByText('dashboard.topPrinters')).toBeInTheDocument()
+    // With entries that have snapshot data, chart should render (no "noData" text)
+    expect(screen.queryByText('common.noData')).not.toBeInTheDocument()
+  })
+
+  it('renders top materials chart section', () => {
+    render(<Dashboard />)
+    expect(screen.getByText('dashboard.topMaterials')).toBeInTheDocument()
+  })
+
+  it('renders period comparison section with current month data', () => {
+    render(<Dashboard />)
+    expect(screen.getByText('dashboard.periodComparison')).toBeInTheDocument()
+    // Current month metrics header should be visible
+    expect(screen.getByText('dashboard.currentMonth')).toBeInTheDocument()
+    expect(screen.getByText('dashboard.previousMonth')).toBeInTheDocument()
+    // Revenue metric label
+    expect(screen.getByText('dashboard.revenue')).toBeInTheDocument()
+  })
+
+  it('custom goal input saves to localStorage', () => {
+    render(<Dashboard />)
+    const goalLabel = screen.getByText('dashboard.goalInput')
+    expect(goalLabel).toBeInTheDocument()
+
+    // Find the goal input
+    const inputs = document.querySelectorAll<HTMLInputElement>('input[type="number"]')
+    // The goal input is the last number input (after printsPerMonth, buyPrice, targetSellPrice)
+    const goalInput = inputs[inputs.length - 1]
+    expect(goalInput).toBeInTheDocument()
+
+    fireEvent.change(goalInput, { target: { value: '5000' } })
+
+    // Should be saved to localStorage
+    const saved = localStorage.getItem('open3dcalc_dashboard_goal')
+    expect(saved).toBe('5000')
+  })
+
+  it('low-margin alerts show for entries with margin < 20%', () => {
+    render(<Dashboard />)
+    // Entry 5 has profit=5 on sellPrice=100 (5% margin)
+    expect(screen.getByText('dashboard.lowMarginAlerts')).toBeInTheDocument()
+    // The low-margin count key should be rendered
+    expect(screen.getByText(/dashboard\.lowMarginCount/)).toBeInTheDocument()
+    // The low-margin entry name should appear
+    expect(screen.getByText('Low Margin Item')).toBeInTheDocument()
+    // The margin percentage for entry 5: 5/100 = 5%
+    expect(screen.getByText('5.0%')).toBeInTheDocument()
   })
 })

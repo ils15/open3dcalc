@@ -309,12 +309,13 @@ function parse3mfXml(xmlData: string, THREE: typeof import('three')): { geometry
 
   const volume = calcVolumeFromPositions(allPositions)
   const box = geometry.boundingBox!
+  const meshSurfaceArea = calculateSurfaceArea(geometry)
   const analysis: MeshAnalysis = {
     volume,
     triangleCount: allPositions.length / 9,
     vertexCount: allPositions.length / 3,
     dimensions: { x: box.max.x - box.min.x, y: box.max.y - box.min.y, z: box.max.z - box.min.z },
-    surfaceArea: 0,
+    surfaceArea: +meshSurfaceArea.toFixed(2),
     boundingBox: { min: { x: box.min.x, y: box.min.y, z: box.min.z }, max: { x: box.max.x, y: box.max.y, z: box.max.z } },
     integrity: { valid: true, issues: [] },
   }
@@ -341,7 +342,7 @@ function calcVolumeFromPositions(positions: number[]): number {
     volume += (normal[0] * (v1[0] + v2[0] + v3[0]) + normal[1] * (v1[1] + v2[1] + v3[1]) + normal[2] * (v1[2] + v2[2] + v3[2])) / 6
   }
 
-  return Math.abs(volume) / 1000
+  return Math.abs(volume)
 }
 
 function mergeGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
