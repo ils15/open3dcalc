@@ -20,4 +20,14 @@ i18n
     },
   })
 
+// Sync <html lang> with i18n language so <input type="date"> uses the correct locale format
+i18n.on('languageChanged', (lng) => {
+  const htmlLang = lng === 'pt-BR' ? 'pt-BR' : 'en-US'
+  document.documentElement.lang = htmlLang
+})
+// Set initial lang
+if (typeof document !== 'undefined') {
+  document.documentElement.lang = i18n.language === 'pt-BR' ? 'pt-BR' : 'en-US'
+}
+
 export default i18n

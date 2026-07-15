@@ -83,11 +83,6 @@ const defaultProps = {
 	handleInput: vi.fn(),
 	isFDM: true,
 	isFieldVisible: vi.fn(() => true),
-	fileInputRef: { current: null } as React.RefObject<HTMLInputElement | null>,
-	stlGeometry: null,
-	stlInfo: null,
-	stlLoading: false,
-	handleFileDrop: vi.fn(),
 	showSpoolSelector: false,
 	setShowSpoolSelector: vi.fn(),
 	inventorySpools: mockInventorySpools,
@@ -282,43 +277,7 @@ describe('MaterialSection', () => {
 		expect(screen.queryByText('Inventário')).not.toBeInTheDocument()
 	})
 
-	it('renders STL upload button', () => {
-		const store = createMockStore()
-		render(<MaterialSection {...defaultProps} store={store} isFDM={true} />)
-		expect(screen.getByText('product.uploadStl')).toBeInTheDocument()
-	})
 
-	it('shows loading text when stlLoading is true', () => {
-		const store = createMockStore()
-		render(<MaterialSection {...defaultProps} store={store} isFDM={true} stlLoading={true} />)
-		expect(screen.getByText('stl.loading')).toBeInTheDocument()
-	})
-
-	it('hides loading text when stlLoading is false', () => {
-		const store = createMockStore()
-		render(<MaterialSection {...defaultProps} store={store} isFDM={true} stlLoading={false} />)
-		expect(screen.queryByText('stl.loading')).not.toBeInTheDocument()
-	})
-
-	it('shows STL info when stlInfo is provided', () => {
-		const store = createMockStore()
-		const stlInfo = {
-			volume: 12.5,
-			faces: 1000,
-			vertices: 500,
-			dimensions: { x: 10, y: 10, z: 10 },
-		}
-		render(<MaterialSection {...defaultProps} store={store} isFDM={true} stlInfo={stlInfo} />)
-		expect(screen.getByText('stl.volume')).toBeInTheDocument()
-		expect(screen.getByText('stl.faces')).toBeInTheDocument()
-		expect(screen.getByText('stl.vertices')).toBeInTheDocument()
-	})
-
-	it('hides STL info when stlInfo is null', () => {
-		const store = createMockStore()
-		render(<MaterialSection {...defaultProps} store={store} isFDM={true} stlInfo={null} />)
-		expect(screen.queryByText('stl.volume')).not.toBeInTheDocument()
-	})
 
 	it('does not render resin inputs in FDM mode', () => {
 		const store = createMockStore()

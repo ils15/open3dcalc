@@ -26,6 +26,8 @@ interface HistoryStore {
   setDateTo: (date: number | null) => void
 
   getFilteredEntries: () => HistoryEntry[]
+  getTopPrinters: (limit?: number) => Array<{ name: string; profit: number; count: number }>
+  getTopMaterials: (limit?: number) => Array<{ name: string; count: number; totalCost: number }>
   exportJson: () => string
   importJson: (json: string) => { imported: number; skipped: number }
 }
@@ -111,6 +113,38 @@ export const useHistoryStore = create<HistoryStore>()(
         })
 
         return filtered
+      },
+
+      getTopPrinters: (limit = 5) => {
+        const entries = get().entries
+        const map = new Map<string, { profit: number; count: number }>()
+        for (const e of entries) {
+          const name = e.snapshot?.selectedPrinterId || (e.type === 'resin' ? 'Impressora Resina' : 'Impressora FDM')
+          const existing = map.get(name) || { profit: 0, count: 0 }
+          existing.profit += e.profit
+          existing.count++
+          map.set(name, existing)
+        }
+        return Array.from(map.entries())
+          .map(([name, data]) => ({ name, ...data }))
+          .sort((a, b) => b.profit - a.profit)
+          .slice(0, limit)
+      },
+
+      getTopMaterials: (limit = 5) => {
+        const entries = get().entries
+        const map = new Map<string, { count: number; totalCost: number }>()
+        for (const e of entries) {
+          const type = e.snapshot?.fdmMaterial?.type || e.snapshot?.resinMaterial?.type || e.type
+          const existing = map.get(type) || { count: 0, totalCost: 0 }
+          existing.count++
+          existing.totalCost += e.totalCost
+          map.set(type, existing)
+        }
+        return Array.from(map.entries())
+          .map(([name, data]) => ({ name, ...data }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, limit)
       },
 
       exportJson: () => {

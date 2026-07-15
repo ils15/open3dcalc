@@ -13,3 +13,6 @@ export const Area = lazy(() => import('recharts').then(m => ({ default: m.Area }
 export const CartesianGrid = lazy(() => import('recharts').then(m => ({ default: m.CartesianGrid })))
 export const XAxis = lazy(() => import('recharts').then(m => ({ default: m.XAxis })))
 export const YAxis = lazy(() => import('recharts').then(m => ({ default: m.YAxis })))
+export const BarChart = lazy(() => import('recharts').then(m => ({ default: m.BarChart })))
+// @ts-expect-error recharts v2 class components have strict contravariance issues with ComponentType
+export const Bar = lazy(() => import('recharts').then(m => ({ default: m.Bar })))

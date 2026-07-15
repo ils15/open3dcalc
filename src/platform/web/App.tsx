@@ -13,6 +13,8 @@ import { QuoteSection } from '@/shared/components/Calculator/QuoteSection'
 import { restoreAutoSnapshot } from '@/shared/stores/storeBridge'
 import { useHistoryStore } from '@/shared/stores/historyStore'
 import { useCalculatorStore } from '@/shared/stores/calculatorStore'
+import { useCurrency } from '@/shared/hooks/useCurrency'
+import { CURRENCIES, type CurrencyCode } from '@/shared/lib/currency'
 import { motion, AnimatePresence } from "framer-motion"
 import { Tutorial } from '@/shared/components/ui/Tutorial'
 import { PrivacyBanner } from '@/shared/components/ui/PrivacyBanner'
@@ -29,6 +31,11 @@ import {
   FileText,
   Users,
   MoreHorizontal,
+  BookOpen,
+  DollarSign,
+  Globe,
+  Info,
+  ExternalLink,
 } from 'lucide-react'
 
 type Tab = 'calculator' | 'dashboard' | 'catalog' | 'history' | 'infill' | 'inventory' | 'changelog' | 'quotes' | 'customers'
@@ -47,8 +54,8 @@ type LegacyHistoryItem = {
   snapshot?: CalculationSnapshot | null
 }
 
-// On mobile, show first 5 tabs + More button
-const MORE_TABS: Tab[] = ['inventory', 'quotes', 'customers', 'changelog']
+// On mobile, show first 4 tabs + Menu button
+const MORE_TABS: Tab[] = ['catalog', 'inventory', 'quotes', 'customers', 'changelog']
 
 const TABS: { id: Tab; icon: React.ReactNode; labelKey: string; label: string }[] = [
   { id: 'calculator', icon: <CalculatorIcon className="w-[18px] h-[18px]" />, labelKey: 'nav.calculator', label: 'Calculadora' },
@@ -62,9 +69,13 @@ const TABS: { id: Tab; icon: React.ReactNode; labelKey: string; label: string }[
 ]
 
 function App() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [activeTab, setActiveTab] = useState<Tab>('calculator')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+  const { symbol } = useCurrency()
+  const currencySetting = useCalculatorStore((s) => s.currency)
+  const setCurrency = useCalculatorStore((s) => s.setCurrency)
 
   useEffect(() => {
     restoreAutoSnapshot()
@@ -295,7 +306,7 @@ function App() {
         aria-label={t('nav.mainNavigation')}
       >
         <div className="flex items-center h-[56px] px-1">
-          {['calculator', 'dashboard', 'infill', 'catalog', 'history'].map(tabId => {
+          {['calculator', 'dashboard', 'infill', 'history'].map(tabId => {
             const tab = TABS.find(t => t.id === tabId)!
             const isActive = activeTab === tab.id
             return (
@@ -356,7 +367,7 @@ function App() {
                 background: 'var(--color-bg-primary)',
                 borderTop: '1px solid var(--color-border)',
                 boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
-                maxHeight: '50vh',
+                maxHeight: '70vh',
                 paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))'
               }}
             >
@@ -364,7 +375,7 @@ function App() {
               <div className="flex justify-center pt-2 pb-1">
                 <div className="w-10 h-1 rounded-full" style={{ background: 'var(--color-border)' }} />
               </div>
-              <div className="px-3 pb-3 overflow-y-auto space-y-0.5">
+              <div className="px-3 pb-4 overflow-y-auto space-y-0.5">
                 {MORE_TABS.map(tabId => {
                   const tab = TABS.find(t => t.id === tabId) || (tabId === 'changelog' ? { id: 'changelog' as Tab, icon: <Sparkles className="w-[18px] h-[18px]" />, labelKey: 'nav.changelog', label: 'Novidades' } : undefined)!
                   if (!tab) return null
@@ -383,6 +394,78 @@ function App() {
                     </button>
                   )
                 })}
+
+                {/* ── Settings separator ── */}
+                <div className="flex items-center gap-3 pt-3 pb-1 px-4">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    {t('nav.settings')}
+                  </span>
+                  <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
+                </div>
+
+                {/* Tutorial */}
+                <button
+                  onClick={() => { useTutorialStore.getState().startTutorial(); setMobileMenuOpen(false) }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
+                >
+                  <BookOpen className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
+                  <span className="text-sm font-medium">{t('nav.tutorial')}</span>
+                </button>
+
+                {/* Currency */}
+                <button
+                  onClick={() => setShowCurrencyPicker(v => !v)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
+                >
+                  <DollarSign className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
+                  <span className="text-sm font-medium">{t('settings.currency')}</span>
+                  <span className="ml-auto text-xs text-[var(--color-text-muted)] font-mono">{symbol} {currencySetting}</span>
+                </button>
+                {showCurrencyPicker && (
+                  <div className="mx-4 mb-1 rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-border)' }}>
+                    {(Object.entries(CURRENCIES) as [CurrencyCode, typeof CURRENCIES[CurrencyCode]][]).map(([code, info]) => (
+                      <button
+                        key={code}
+                        onClick={() => { setCurrency(code); setShowCurrencyPicker(false) }}
+                        className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--color-bg-hover)] transition-colors ${currencySetting === code ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}
+                      >
+                        <span className="font-mono font-bold w-6">{info.symbol}</span>
+                        <span>{code}</span>
+                        <span className="text-[10px] text-[var(--color-text-muted)] ml-auto">{info.name}</span>
+                        {currencySetting === code && <span className="text-[var(--color-accent)] ml-1">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Language */}
+                <button
+                  onClick={() => { const next = i18n.language === 'pt-BR' ? 'en-US' : 'pt-BR'; i18n.changeLanguage(next); setMobileMenuOpen(false) }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
+                >
+                  <Globe className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
+                  <span className="text-sm font-medium">{t('nav.language')}</span>
+                  <span className="ml-auto text-xs text-[var(--color-text-muted)]">{i18n.language === 'pt-BR' ? 'PT-BR' : 'EN-US'}</span>
+                </button>
+
+                {/* GitHub */}
+                <a
+                  href="https://github.com/ils15/open3dcalc"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
+                >
+                  <ExternalLink className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
+                  <span className="text-sm font-medium">GitHub</span>
+                  <span className="ml-auto text-xs text-[var(--color-text-muted)]">github.com/ils15/open3dcalc</span>
+                </a>
+
+                {/* Version */}
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-[var(--color-text-muted)]">
+                  <Info className="w-[18px] h-[18px] shrink-0" />
+                  <span className="text-xs">Open3DCalc v1.9.2</span>
+                </div>
               </div>
             </motion.div>
           </>
@@ -390,7 +473,7 @@ function App() {
       </AnimatePresence>
       <footer className="hidden lg:block text-center text-xs text-[var(--color-text-muted)] py-3 border-t border-[var(--color-border)]">
         <div className="flex items-center justify-center gap-3">
-          <span>Open3DCalc v1.9.1 — Open Source · MIT License</span>
+          <span>Open3DCalc v1.9.2 — Open Source · MIT License</span>
         </div>
       </footer>
 

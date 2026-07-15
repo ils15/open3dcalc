@@ -266,25 +266,31 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
 
       {/* Date range filter */}
       {entries.length > 0 && (
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <input
-            type="date"
-            value={epochToDateStr(dateFrom)}
-            onChange={e => setDateFrom(e.target.value ? dateStrToEpoch(e.target.value) : null)}
-            aria-label={t('history.dateFrom')}
-            className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-lg text-sm text-[var(--color-text-primary)] h-9 px-3 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all w-40"
-          />
-          <input
-            type="date"
-            value={epochToDateStr(dateTo)}
-            onChange={e => setDateTo(e.target.value ? dateStrToEpoch(e.target.value) : null)}
-            aria-label={t('history.dateTo')}
-            className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-lg text-sm text-[var(--color-text-primary)] h-9 px-3 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all w-40"
-          />
+        <div className="flex items-end gap-2 mb-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('history.dateFrom')}</label>
+            <input
+              type="date"
+              value={epochToDateStr(dateFrom)}
+              onChange={e => setDateFrom(e.target.value ? dateStrToEpoch(e.target.value) : null)}
+              aria-label={t('history.dateFrom')}
+              className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-lg text-sm text-[var(--color-text-primary)] h-9 px-3 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all w-40"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('history.dateTo')}</label>
+            <input
+              type="date"
+              value={epochToDateStr(dateTo)}
+              onChange={e => setDateTo(e.target.value ? dateStrToEpoch(e.target.value) : null)}
+              aria-label={t('history.dateTo')}
+              className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-lg text-sm text-[var(--color-text-primary)] h-9 px-3 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all w-40"
+            />
+          </div>
           {(dateFrom !== null || dateTo !== null) && (
             <button
               onClick={() => { setDateFrom(null); setDateTo(null) }}
-              className="px-3 py-1.5 text-xs rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+              className="px-3 py-1.5 text-xs rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[36px]"
             >
               {t('history.clearFilters')}
             </button>

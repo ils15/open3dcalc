@@ -18,7 +18,9 @@
     "language": "Mudar idioma",
     "navigation": "Navegação",
     "mainNavigation": "Navegação principal",
-    "more": "Mais"
+    "more": "Mais",
+    "menu": "Menu",
+    "settings": "Configurações"
   },
   "dashboard": {
     "totalCost": "Custo Total",
@@ -35,7 +37,27 @@
     "loadingCharts": "Carregando gráficos...",
     "dateFrom": "Data inicial",
     "dateTo": "Data final",
-    "clearFilters": "Limpar filtros"
+    "clearFilters": "Limpar filtros",
+    "topPrinters": "Impressoras com Mais Lucro",
+    "topMaterials": "Materiais Mais Usados",
+    "periodComparison": "Comparação de Períodos",
+    "currentMonth": "Mês Atual",
+    "previousMonth": "Mês Anterior",
+    "change": "Variação",
+    "customGoal": "Meta de Lucro Mensal",
+    "goalInput": "Meta de lucro mensal",
+    "printsNeeded": "Você precisa de {{count}} prints/mês para atingir sua meta de {{value}}",
+    "goalWarning": "⚠ Lucro por unidade atual é negativo. Aumente o preço de venda ou reduza custos.",
+    "lowMarginAlerts": "Alertas de Margem Baixa",
+    "lowMarginCount": "{{count}} itens com margem baixa (<20%)",
+    "revenue": "Receita",
+    "cost": "Custo",
+    "printCount": "Prints",
+    "exportPdf": "Exportar PDF",
+    "generatingPdf": "Gerando PDF…",
+    "executiveReport": "Relatório Executivo",
+    "kpiSummary": "Resumo de KPIs",
+    "periodLabel": "Período"
   },
   "sections": {
     "title": "Seções"
@@ -403,7 +425,21 @@
     "estimatedWeight": "Peso Estimado",
     "invalidFile": "Arquivo inválido. Envie um STL, OBJ ou 3MF.",
     "notManifold": "A malha não é manifold (pode não ser hermética)",
-    "noModel": "Nenhum modelo carregado"
+    "noModel": "Nenhum modelo carregado",
+    "dimensions": "Dimensões",
+    "triangles": "Triângulos",
+    "printTime": "Tempo de Impressão",
+    "tooLarge": "Arquivo muito grande. Limite: 100 MB.",
+    "tooComplex": "Malha muito complexa. Limite: 2 milhões de triângulos.",
+    "weight": "Peso Estimado",
+    "resetView": "Resetar Vista",
+    "dropzone": "Arraste seu arquivo 3D aqui",
+    "dropActive": "Solte para analisar",
+    "processing": "Processando...",
+    "tapToSelect": "Toque para selecionar arquivo",
+    "unsupportedFormat": "Formato não suportado. Use STL, OBJ, 3MF ou GCODE.",
+    "fileError": "Erro ao ler arquivo",
+    "gcodeLoaded": "G-code carregado com sucesso!"
   },
   "common": {
     "save": "Salvar",

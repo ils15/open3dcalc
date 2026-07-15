@@ -1,8 +1,11 @@
-import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback, Suspense, Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCalculatorStore } from '@/shared/stores/calculatorStore'
 import { useHistoryStore } from '@/shared/stores/historyStore'
 import { InputGroup } from '@/shared/components/ui/InputGroup'
+import html2canvas from 'html2canvas'
+import { exportExecutivePdf } from '@/shared/lib/pdfExport'
+import type { ExecutiveReportData } from '@/shared/lib/ExecutiveReportDoc'
 import {
   PieChart,
   Pie,
@@ -11,6 +14,8 @@ import {
   Tooltip,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -84,6 +89,8 @@ export function Dashboard() {
   const [printsPerMonth, setPrintsPerMonth] = useState(() => (saved.printsPerMonth as number) ?? 30)
   const [buyPrice, setBuyPrice] = useState(() => (saved.buyPrice as string) ?? '')
   const [targetSellPrice, setTargetSellPrice] = useState(() => (saved.targetSellPrice as string) ?? '')
+  const [exportingPdf, setExportingPdf] = useState(false)
+  const trendChartRef = useRef<HTMLDivElement>(null)
 
   // Persist to localStorage on change
   useEffect(() => {
@@ -153,6 +160,211 @@ export function Dashboard() {
     profit: (parseFloat(targetSellPrice) || 0) - results.totalCost - results.taxAmount - results.marketplaceFee,
   } : null
 
+  // ---------------------------------------------------------------------------
+  // Top Printers (from filtered history)
+  // ---------------------------------------------------------------------------
+  const topPrintersData = useMemo(() => {
+    const map = new Map<string, { profit: number; count: number }>()
+    for (const e of filteredEntries) {
+      const name = e.snapshot?.selectedPrinterId || (e.type === 'resin' ? 'Resin' : 'FDM')
+      const existing = map.get(name) || { profit: 0, count: 0 }
+      existing.profit += e.profit
+      existing.count++
+      map.set(name, existing)
+    }
+    return Array.from(map.entries())
+      .map(([name, data]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), ...data }))
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 5)
+  }, [filteredEntries])
+
+  // ---------------------------------------------------------------------------
+  // Top Materials (from filtered history)
+  // ---------------------------------------------------------------------------
+  const topMaterialsData = useMemo(() => {
+    const map = new Map<string, { count: number; totalCost: number }>()
+    for (const e of filteredEntries) {
+      const type = e.snapshot?.fdmMaterial?.type || e.snapshot?.resinMaterial?.type || e.type
+      const existing = map.get(type) || { count: 0, totalCost: 0 }
+      existing.count++
+      existing.totalCost += e.totalCost
+      map.set(type, existing)
+    }
+    return Array.from(map.entries())
+      .map(([name, data]) => ({ name: name.toUpperCase(), ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+  }, [filteredEntries])
+
+  // ---------------------------------------------------------------------------
+  // Period Comparison: current month vs previous month
+  // ---------------------------------------------------------------------------
+  const periodComparison = useMemo(() => {
+    const now = new Date()
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime()
+
+    const current = filteredEntries.filter(e => e.timestamp >= currentMonthStart)
+    const previous = filteredEntries.filter(e => e.timestamp >= prevMonthStart && e.timestamp < currentMonthStart)
+
+    const sum = (arr: typeof filteredEntries, key: 'sellPrice' | 'totalCost' | 'profit') =>
+      arr.reduce((s, e) => s + e[key], 0)
+
+    const calcChange = (cur: number, prev: number): number | null => {
+      if (prev === 0) return cur > 0 ? 100 : null
+      return parseFloat((((cur - prev) / Math.abs(prev)) * 100).toFixed(1))
+    }
+
+    return [
+      {
+        key: 'revenue' as const,
+        current: sum(current, 'sellPrice'),
+        previous: sum(previous, 'sellPrice'),
+      },
+      {
+        key: 'cost' as const,
+        current: sum(current, 'totalCost'),
+        previous: sum(previous, 'totalCost'),
+      },
+      {
+        key: 'profit' as const,
+        current: sum(current, 'profit'),
+        previous: sum(previous, 'profit'),
+      },
+      {
+        key: 'printCount' as const,
+        current: current.length,
+        previous: previous.length,
+      },
+    ].map(m => ({
+      ...m,
+      change: calcChange(m.current, m.previous),
+    }))
+  }, [filteredEntries])
+
+  // ---------------------------------------------------------------------------
+  // PDF Export Handler
+  // ---------------------------------------------------------------------------
+  const handleExportPdf = useCallback(async () => {
+    setExportingPdf(true)
+    try {
+      // Capture profit trend chart as base64 image
+      let chartImage: string | undefined
+      if (trendChartRef.current) {
+        const canvas = await html2canvas(trendChartRef.current, {
+          backgroundColor: null,
+          scale: 2,
+          logging: false,
+        })
+        chartImage = canvas.toDataURL('image/png')
+      }
+
+      // Build period range from filter or fallback to last 90 days
+      const dateFrom = dashboardDateFrom ?? Date.now() - 90 * 24 * 60 * 60 * 1000
+      const dateTo = dashboardDateTo ?? Date.now()
+      const fromStr = epochToDateStr(dateFrom)
+      const toStr = epochToDateStr(dateTo)
+
+      const sorted = [...filteredEntries].sort((a, b) => a.timestamp - b.timestamp)
+
+      const totalRevenue = sorted.reduce((s, e) => s + e.sellPrice, 0)
+      const totalCost = sorted.reduce((s, e) => s + e.totalCost, 0)
+      const totalProfit = sorted.reduce((s, e) => s + e.profit, 0)
+      const marginEntries = sorted.filter(e => e.sellPrice > 0)
+      const avgMargin = marginEntries.length > 0
+        ? marginEntries.reduce((s, e) => s + (e.profit / e.sellPrice) * 100, 0) / marginEntries.length
+        : 0
+
+      // Recompute comparison for the report (use same logic as periodComparison)
+      const calcChange = (cur: number, prev: number): number | null => {
+        if (prev === 0) return cur > 0 ? 100 : null
+        return parseFloat((((cur - prev) / Math.abs(prev)) * 100).toFixed(1))
+      }
+
+      const now = new Date()
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime()
+      const current = sorted.filter(e => e.timestamp >= currentMonthStart)
+      const previous = sorted.filter(e => e.timestamp >= prevMonthStart && e.timestamp < currentMonthStart)
+
+      const sum = (arr: typeof sorted, key: 'sellPrice' | 'totalCost' | 'profit') =>
+        arr.reduce((s, e) => s + e[key], 0)
+
+      const reportData: ExecutiveReportData = {
+        period: { from: fromStr, to: toStr },
+        entryCount: sorted.length,
+        totalRevenue,
+        totalCost,
+        totalProfit,
+        avgMargin,
+        topPrinters: topPrintersData,
+        topMaterials: topMaterialsData,
+        comparison: {
+          revenue: {
+            current: sum(current, 'sellPrice'),
+            previous: sum(previous, 'sellPrice'),
+            change: calcChange(sum(current, 'sellPrice'), sum(previous, 'sellPrice')),
+          },
+          cost: {
+            current: sum(current, 'totalCost'),
+            previous: sum(previous, 'totalCost'),
+            change: calcChange(sum(current, 'totalCost'), sum(previous, 'totalCost')),
+          },
+          profit: {
+            current: sum(current, 'profit'),
+            previous: sum(previous, 'profit'),
+            change: calcChange(sum(current, 'profit'), sum(previous, 'profit')),
+          },
+        },
+        chartImage,
+      }
+
+      await exportExecutivePdf(reportData)
+    } finally {
+      setExportingPdf(false)
+    }
+  }, [filteredEntries, dashboardDateFrom, dashboardDateTo, topPrintersData, topMaterialsData])
+
+  // ---------------------------------------------------------------------------
+  // Custom Goal
+  // ---------------------------------------------------------------------------
+  const GOAL_KEY = 'open3dcalc_dashboard_goal'
+  const [goal, setGoal] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    try {
+      return localStorage.getItem(GOAL_KEY) || ''
+    } catch {
+      return ''
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(GOAL_KEY, goal)
+    } catch {
+      // Silently fail
+    }
+  }, [goal])
+
+  const printsNeeded = useMemo(() => {
+    const goalValue = parseFloat(goal)
+    if (!goalValue || goalValue <= 0 || !results) return null
+    if (results.profit <= 0) return { prints: Infinity, negativeMargin: true, goalValue }
+    return { prints: Math.ceil(goalValue / results.profit), negativeMargin: false, goalValue }
+  }, [goal, results])
+
+  // ---------------------------------------------------------------------------
+  // Low-Margin Alerts
+  // ---------------------------------------------------------------------------
+  const lowMarginEntries = useMemo(() => {
+    return filteredEntries
+      .filter(e => e.sellPrice > 0)
+      .map(e => ({ ...e, margin: (e.profit / e.sellPrice) * 100 }))
+      .filter(e => e.margin < 20)
+      .sort((a, b) => a.margin - b.margin)
+      .slice(0, 3)
+  }, [filteredEntries])
+
   if (!results) {
     return (
       <div className="space-y-5">
@@ -186,6 +398,18 @@ export function Dashboard() {
 
   return (
     <div className="space-y-5">
+      {/* Header with Export PDF */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold text-[var(--color-text-primary)]">{t('nav.dashboard')}</h2>
+        <button
+          onClick={handleExportPdf}
+          disabled={exportingPdf || filteredEntries.length === 0}
+          className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+        >
+          {exportingPdf ? t('common.loading') : t('dashboard.exportPdf')}
+        </button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="surface rounded-xl p-4 text-center hover:-translate-y-0.5 transition-transform">
@@ -212,6 +436,7 @@ export function Dashboard() {
 
       {/* Date Range Filter */}
       <div className="surface rounded-xl p-4">
+        <p className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">{t('dashboard.dateFrom')} / {t('dashboard.dateTo')}</p>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[var(--color-text-secondary)]">{t('dashboard.dateFrom')}</label>
@@ -360,7 +585,7 @@ export function Dashboard() {
         <div className="surface rounded-xl p-5">
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">{t('dashboard.trend')}</h3>
           {trendData.length > 1 ? (
-            <div className="w-full h-56">
+            <div className="w-full h-56" ref={trendChartRef}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
@@ -460,6 +685,159 @@ export function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Top Printers Chart */}
+      <Suspense fallback={<div className="surface rounded-xl p-5"><p className="text-sm text-[var(--color-text-muted)] text-center py-8">{t('dashboard.loadingCharts')}</p></div>}>
+        <div className="surface rounded-xl p-5">
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">{t('dashboard.topPrinters')}</h3>
+          {topPrintersData.length > 0 ? (
+            <div className="w-full h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topPrintersData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => new Intl.NumberFormat(i18n.resolvedLanguage || i18n.language, { notation: 'compact', maximumFractionDigits: 0 }).format(v)}
+                    width={50}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '12px' }}
+                    formatter={(value: unknown) => formatMoney(Number(value))}
+                    labelStyle={{ color: 'var(--color-text-secondary)' }}
+                  />
+                  <Bar dataKey="profit" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--color-text-muted)] text-center py-8">{t('common.noData')}</p>
+          )}
+        </div>
+      </Suspense>
+
+      {/* Top Materials Chart */}
+      <Suspense fallback={<div className="surface rounded-xl p-5"><p className="text-sm text-[var(--color-text-muted)] text-center py-8">{t('dashboard.loadingCharts')}</p></div>}>
+        <div className="surface rounded-xl p-5">
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">{t('dashboard.topMaterials')}</h3>
+          {topMaterialsData.length > 0 ? (
+            <div className="w-full h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topMaterialsData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: 'var(--color-text-muted)' }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => new Intl.NumberFormat(i18n.resolvedLanguage || i18n.language, { notation: 'compact', maximumFractionDigits: 0 }).format(v)}
+                    width={40}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: '8px', fontSize: '12px' }}
+                    formatter={(value: unknown) => `${value}`}
+                    labelStyle={{ color: 'var(--color-text-secondary)' }}
+                  />
+                  <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="text-xs text-[var(--color-text-muted)] text-center py-8">{t('common.noData')}</p>
+          )}
+        </div>
+      </Suspense>
+
+      {/* Period Comparison */}
+      <div className="surface rounded-xl p-5">
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">{t('dashboard.periodComparison')}</h3>
+        {periodComparison.some(m => m.current > 0 || m.previous > 0) ? (
+          <div className="grid grid-cols-2 gap-3">
+            {/* Header row */}
+            <div className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider" />
+            <div className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-right">{t('dashboard.currentMonth')}</div>
+            <div className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-right">{t('dashboard.previousMonth')}</div>
+            <div className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider text-right">{t('dashboard.change')}</div>
+            {periodComparison.map(m => (
+              <Fragment key={m.key}>
+                <div className="text-xs text-[var(--color-text-secondary)] font-medium">{t(`dashboard.${m.key}`)}</div>
+                <div className="text-xs text-[var(--color-text-primary)] font-semibold text-right">
+                  {m.key === 'printCount' ? m.current : formatMoney(m.current)}
+                </div>
+                <div className="text-xs text-[var(--color-text-muted)] text-right">
+                  {m.key === 'printCount' ? m.previous : formatMoney(m.previous)}
+                </div>
+                <div className={`text-xs font-bold text-right ${m.change !== null ? (m.change >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]') : 'text-[var(--color-text-muted)]'}`}>
+                  {m.change !== null ? `${m.change >= 0 ? '+' : ''}${m.change}%` : '---'}
+                </div>
+              </Fragment>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-[var(--color-text-muted)] text-center py-4">{t('common.noData')}</p>
+        )}
+      </div>
+
+      {/* Custom Goal */}
+      <div className="surface rounded-xl p-5">
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">{t('dashboard.customGoal')}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('dashboard.goalInput')}</label>
+            <input
+              type="number"
+              value={goal}
+              onChange={e => setGoal(e.target.value)}
+              placeholder="0"
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+          </div>
+          <div className="flex flex-col justify-center gap-1">
+            {printsNeeded ? (
+              printsNeeded.negativeMargin ? (
+                <p className="text-xs text-[var(--color-danger)]">{t('dashboard.goalWarning')}</p>
+              ) : (
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  {t('dashboard.printsNeeded', { count: printsNeeded.prints, value: formatMoney(printsNeeded.goalValue) })}
+                </p>
+              )
+            ) : (
+              <p className="text-xs text-[var(--color-text-muted)]">{t('calc.noCosts')}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Low-Margin Alerts */}
+      {lowMarginEntries.length > 0 && (
+        <div className="surface rounded-xl p-5 border border-amber-500/30">
+          <h3 className="text-sm font-bold text-amber-400 mb-2">{t('dashboard.lowMarginAlerts')}</h3>
+          <p className="text-xs text-[var(--color-text-secondary)] mb-3">
+            {t('dashboard.lowMarginCount', { count: lowMarginEntries.length })}
+          </p>
+          <div className="space-y-1">
+            {lowMarginEntries.map(e => (
+              <div key={e.id} className="flex items-center justify-between py-1 px-2 rounded-lg bg-amber-500/5">
+                <span className="text-xs text-[var(--color-text-primary)] truncate mr-2">{e.name}</span>
+                <span className="text-xs font-semibold text-amber-400 shrink-0">{e.margin.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

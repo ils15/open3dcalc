@@ -1,21 +1,14 @@
-import { FlaskConical, Layers, Upload, Package, Database, CheckCircle2, X } from 'lucide-react'
+import { useCallback } from 'react'
+import { FlaskConical, Layers, Package, Database, CheckCircle2, X } from 'lucide-react'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
-import { Suspense } from 'react'
 import { InputGroup } from '@/shared/components/ui/InputGroup'
 import { Select } from '@/shared/components/ui/Select'
-import type { BufferGeometry } from 'three'
 import type { CalculatorState } from '@/shared/stores/calculatorStore'
 import type { FilamentSpool } from '@/shared/stores/filamentInventory'
 import type { AMSSlot } from '@/shared/types'
 import { selectSpool } from '@/shared/stores/storeBridge'
-
-// Lazy-loaded STL preview
-import { lazy } from 'react'
-const StlPreview = lazy(() =>
-	import("@/shared/components/StlPreview/StlPreview").then((m) => ({
-		default: m.StlPreview,
-	})),
-)
+import type { FileParseResult } from '@/shared/components/StlPreview/StlPreview'
+import { StlPreview } from '@/shared/components/StlPreview/StlPreview'
 
 export interface MaterialSectionProps {
 	renderSectionHeader: (
@@ -30,16 +23,6 @@ export interface MaterialSectionProps {
 	isFDM: boolean
 	store: CalculatorState
 	isFieldVisible: (sectionId: string, fieldId: string) => boolean
-	fileInputRef: React.RefObject<HTMLInputElement | null>
-	stlGeometry: BufferGeometry | null
-	stlInfo: {
-		volume: number
-		faces: number
-		vertices: number
-		dimensions: { x: number; y: number; z: number }
-	} | null
-	stlLoading: boolean
-	handleFileDrop: (file: File) => void
 	showSpoolSelector: boolean
 	setShowSpoolSelector: (show: boolean) => void
 	inventorySpools: FilamentSpool[]
@@ -57,16 +40,42 @@ export function MaterialSection({
 	isFDM,
 	store,
 	isFieldVisible,
-	fileInputRef,
-	stlGeometry,
-	stlInfo,
-	stlLoading,
-	handleFileDrop,
 	showSpoolSelector,
 	setShowSpoolSelector,
 	inventorySpools,
 	catalogMaterials,
 }: MaterialSectionProps) {
+	const handleStlParsed = useCallback(
+		(data: FileParseResult) => {
+			// Update print time
+			if (data.printTimeHours > 0) {
+				if (isFDM) {
+					store.setFdmPrintParams({
+						...store.fdmPrintParams,
+						printTimeHours: data.printTimeHours,
+					})
+				} else {
+					store.setResinPrintParams({
+						...store.resinPrintParams,
+						printTimeHours: data.printTimeHours,
+					})
+				}
+			}
+			// Update weight / material usage
+			if (data.weight > 0) {
+				if (store.fdmAmsEnabled) {
+					const idx = store.fdmAmsSlots.findIndex((s) => s.enabled)
+					if (idx >= 0) {
+						const slot = { ...store.fdmAmsSlots[idx], weightUsedGrams: data.weight }
+						store.setFdmAmsSlot(idx, slot)
+					}
+				} else {
+					store.setFdmMaterial({ ...store.fdmMaterial, weightUsed: data.weight })
+				}
+			}
+		},
+		[store, isFDM],
+	)
 	return (
 		<div className="surface rounded-xl p-4 sm:p-5">
 			{renderSectionHeader(
@@ -429,7 +438,7 @@ export function MaterialSection({
 								{store.selectedSpoolId && (
 									<p className="text-[10px] text-emerald-400/70 mt-1.5 text-center">
 										<Database className="w-3 h-3 inline mr-1 align-middle" />
-										{t("results.autoDeductSuccess").replace("{{weight}}", unitWeight.toFixed(1))}
+									{t("results.deductAvailable").replace("{{weight}}", unitWeight.toFixed(0))}
 									</p>
 								)}
 							</div>
@@ -437,82 +446,7 @@ export function MaterialSection({
 					})()}
 
 					<div className="sm:col-span-2 mt-3">
-						<button
-							type="button"
-							onDragOver={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-							}}
-							onDrop={(e) => {
-								e.preventDefault();
-								const f = e.dataTransfer.files[0];
-								if (f) handleFileDrop(f);
-							}}
-							onClick={() => fileInputRef.current?.click()}
-							className="w-full min-h-[44px] border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex flex-col items-center gap-1.5"
-							style={{ borderColor: "var(--color-border)" }}
-							onMouseEnter={(e) =>
-								(e.currentTarget.style.borderColor = "var(--color-accent)")
-							}
-							onMouseLeave={(e) =>
-								(e.currentTarget.style.borderColor = "var(--color-border)")
-							}
-						>
-							<input
-								ref={fileInputRef}
-								type="file"
-								accept=".stl,.obj,.3mf,.gcode"
-								onChange={(e) => {
-									const f = e.target.files?.[0];
-									if (f) handleFileDrop(f);
-								}}
-								className="hidden"
-							/>
-							<Upload className="w-4 h-4 text-[var(--color-text-muted)]" />
-							<p className="text-xs text-[var(--color-text-secondary)]">
-								{t("product.uploadStl")}
-							</p>
-							{stlLoading && (
-								<p className="text-[10px] text-[var(--color-accent)]">
-									{t("stl.loading")}
-								</p>
-							)}
-						</button>
-						{stlGeometry && (
-							<div className="mt-2 h-40">
-								<Suspense
-									fallback={
-										<div className="text-xs text-[var(--color-text-secondary)]">
-											{t("common.loading")}
-										</div>
-									}
-								>
-									<StlPreview geometry={stlGeometry} />
-								</Suspense>
-							</div>
-						)}
-						{stlInfo && (
-							<div className="grid grid-cols-3 gap-2 mt-2 text-xs">
-								<div className="surface rounded-lg p-2 text-center">
-									<p className="text-[var(--color-text-muted)]">{t("stl.volume")}</p>
-									<p className="font-semibold text-purple-400">
-										{stlInfo.volume.toFixed(1)} cm³
-									</p>
-								</div>
-								<div className="surface rounded-lg p-2 text-center">
-									<p className="text-[var(--color-text-muted)]">{t("stl.faces")}</p>
-									<p className="font-semibold text-[var(--color-text-primary)]">
-										{stlInfo.faces}
-									</p>
-								</div>
-								<div className="surface rounded-lg p-2 text-center">
-									<p className="text-[var(--color-text-muted)]">{t("stl.vertices")}</p>
-									<p className="font-semibold text-[var(--color-text-primary)]">
-										{stlInfo.vertices}
-									</p>
-								</div>
-							</div>
-						)}
+						<StlPreview onFileParsed={handleStlParsed} />
 					</div>
 				</>
 			) : (

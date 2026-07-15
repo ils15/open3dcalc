@@ -8,7 +8,7 @@ export default defineConfig(mergeConfig(baseConfig, {
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
         name: 'Open3DCalc - Calculadora 3D Livre',
