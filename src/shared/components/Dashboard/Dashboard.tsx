@@ -39,6 +39,20 @@ function saveDashboardSettings(data: Record<string, unknown>) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Date helpers
+// ---------------------------------------------------------------------------
+const dateStrToEpoch = (dateStr: string): number => {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day).getTime()
+}
+
+const epochToDateStr = (epoch: number | null): string => {
+  if (epoch === null) return ''
+  const d = new Date(epoch)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export function Dashboard() {
   const { t, i18n } = useTranslation()
   const store = useCalculatorStore()
@@ -46,6 +60,23 @@ export function Dashboard() {
   const fixedCosts = store.fixedCosts
   const { format: formatMoney, symbol: currencySymbol } = useCurrency()
   const historyEntries = useHistoryStore(s => s.entries)
+
+  // Local date range filter state (independent from history store)
+  const [dashboardDateFrom, setDashboardDateFrom] = useState<number | null>(null)
+  const [dashboardDateTo, setDashboardDateTo] = useState<number | null>(null)
+
+  // Filter entries by date range
+  const filteredEntries = useMemo(() => {
+    let result = historyEntries
+    if (dashboardDateFrom !== null) {
+      result = result.filter(e => e.timestamp >= dashboardDateFrom)
+    }
+    if (dashboardDateTo !== null) {
+      const endOfDay = dashboardDateTo + 86_399_999 // 23:59:59.999
+      result = result.filter(e => e.timestamp <= endOfDay)
+    }
+    return result
+  }, [historyEntries, dashboardDateFrom, dashboardDateTo])
 
   // Load saved values on mount
   const saved = useMemo(() => loadDashboardSettings(), [])
@@ -86,26 +117,25 @@ export function Dashboard() {
     ? breakEvenUnits * breakEven.sellPrice
     : null
 
-  // Average margin from history
+  // Average margin from history (filtered)
   const avgMargin = useMemo(() => {
-    const margins = historyEntries
+    const margins = filteredEntries
       .filter(e => e.sellPrice > 0)
       .map(e => (e.profit / e.sellPrice) * 100)
     if (margins.length === 0) return null
     return margins.reduce((a, b) => a + b, 0) / margins.length
-  }, [historyEntries])
+  }, [filteredEntries])
 
-  // Profit trend data
+  // Profit trend data (filtered)
   const trendData = useMemo(() => {
-    const sorted = [...historyEntries]
+    const sorted = [...filteredEntries]
       .sort((a, b) => a.timestamp - b.timestamp)
-      .slice(-10)
     const locale = i18n.resolvedLanguage || i18n.language
     return sorted.map(e => ({
       date: new Date(e.timestamp).toLocaleDateString(locale),
       profit: Math.round(e.profit * 100) / 100,
     }))
-  }, [historyEntries, i18n.resolvedLanguage, i18n.language])
+  }, [filteredEntries, i18n.resolvedLanguage, i18n.language])
 
   const printVsBuy = results && buyPrice ? {
     printCost: results.totalCost,
@@ -177,6 +207,30 @@ export function Dashboard() {
           <p className={`text-lg font-extrabold ${roi >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
             {roi.toFixed(0)}%
           </p>
+        </div>
+      </div>
+
+      {/* Date Range Filter */}
+      <div className="surface rounded-xl p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('dashboard.dateFrom')}</label>
+            <input type="date" value={epochToDateStr(dashboardDateFrom)}
+              onChange={e => setDashboardDateFrom(e.target.value ? dateStrToEpoch(e.target.value) : null)}
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-[var(--color-text-secondary)]">{t('dashboard.dateTo')}</label>
+            <input type="date" value={epochToDateStr(dashboardDateTo)}
+              onChange={e => setDashboardDateTo(e.target.value ? dateStrToEpoch(e.target.value) : null)}
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]" />
+          </div>
+          {(dashboardDateFrom !== null || dashboardDateTo !== null) && (
+            <button onClick={() => { setDashboardDateFrom(null); setDashboardDateTo(null) }}
+              className="px-3 py-1.5 rounded-lg bg-[var(--color-bg-tertiary)] text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] transition-colors">
+              {t('dashboard.clearFilters')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -293,7 +347,7 @@ export function Dashboard() {
               {avgMargin >= 0 ? '+' : ''}{avgMargin.toFixed(1)}%
             </p>
             <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
-              {t('calc.history')}: {historyEntries.length} {t('common.entries')}
+              {t('calc.history')}: {filteredEntries.length} {t('common.entries')}
             </p>
           </div>
         ) : (

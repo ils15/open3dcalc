@@ -114,6 +114,20 @@ function Row({ icon, label, value, bold = false }: { icon: React.ReactNode; labe
   )
 }
 
+// Date conversion helpers
+const dateStrToEpoch = (dateStr: string): number => {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day).getTime()
+}
+
+const epochToDateStr = (epoch: number | null): string => {
+  if (epoch === null) return ''
+  const d = new Date(epoch)
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0')
+}
+
 interface HistoryTabProps {
   onLoadToCalculator?: () => void
 }
@@ -123,6 +137,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
   const { format: formatMoney } = useCurrency()
   const store = useHistoryStore()
   const setStoreSearch = store.setSearch
+  const { dateFrom, dateTo, setDateFrom, setDateTo, entries } = store
   const [search, setSearch] = useState('')
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -248,6 +263,34 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
           </button>
         </div>
       </div>
+
+      {/* Date range filter */}
+      {entries.length > 0 && (
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <input
+            type="date"
+            value={epochToDateStr(dateFrom)}
+            onChange={e => setDateFrom(e.target.value ? dateStrToEpoch(e.target.value) : null)}
+            aria-label={t('history.dateFrom')}
+            className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-lg text-sm text-[var(--color-text-primary)] h-9 px-3 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all w-40"
+          />
+          <input
+            type="date"
+            value={epochToDateStr(dateTo)}
+            onChange={e => setDateTo(e.target.value ? dateStrToEpoch(e.target.value) : null)}
+            aria-label={t('history.dateTo')}
+            className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-lg text-sm text-[var(--color-text-primary)] h-9 px-3 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all w-40"
+          />
+          {(dateFrom !== null || dateTo !== null) && (
+            <button
+              onClick={() => { setDateFrom(null); setDateTo(null) }}
+              className="px-3 py-1.5 text-xs rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            >
+              {t('history.clearFilters')}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />

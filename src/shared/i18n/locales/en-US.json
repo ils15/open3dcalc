@@ -32,7 +32,10 @@
     "trend": "Profit Trend",
     "noHistory": "No history data",
     "cantBreakEven": "Price doesn't cover costs",
-    "loadingCharts": "Loading charts..."
+    "loadingCharts": "Loading charts...",
+    "dateFrom": "Start date",
+    "dateTo": "End date",
+    "clearFilters": "Clear filters"
   },
   "sections": {
     "title": "Sections"
@@ -370,7 +373,10 @@
     "valueB": "Record B",
     "compareBetter": "Better",
     "compareWorse": "Worse",
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "dateFrom": "Start date",
+    "dateTo": "End date",
+    "clearFilters": "Clear filters"
   },
   "breakdown": {
     "title": "Cost Breakdown",
@@ -423,7 +429,11 @@
     "deductConfirm": "Deduct {{weight}}g from spool {{spool}}?",
     "deductSuccess": "Weight deducted successfully!",
     "deductSelect": "Select spool to deduct from",
-    "deductAvailable": "{{weight}}g available"
+    "deductAvailable": "{{weight}}g available",
+    "autoDeductSuccess": "{{weight}}g automatically deducted from spool",
+    "selectSpool": "Select spool for auto-deduction",
+    "noSpoolSelected": "No spool selected",
+    "clearSpool": "Clear selection"
   },
   "tutorial": {
     "start": "Start Tutorial",

@@ -1,4 +1,4 @@
-import { FlaskConical, Layers, Upload, Package } from 'lucide-react'
+import { FlaskConical, Layers, Upload, Package, Database, CheckCircle2, X } from 'lucide-react'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { Suspense } from 'react'
 import { InputGroup } from '@/shared/components/ui/InputGroup'
@@ -361,6 +361,81 @@ export function MaterialSection({
 							)}
 						</div>
 					)}
+
+					{/* Auto-deduction Spool Selector — FDM non-AMS only */}
+					{isFDM && !store.fdmAmsEnabled && inventorySpools.length > 0 && (() => {
+						const unitWeight = store.results?.unitWeight ?? 0
+						const availableSpools = inventorySpools.filter(
+							s => s.status === 'in_stock'
+								&& s.material.toLowerCase() === store.fdmMaterial.type.toLowerCase()
+								&& s.weightGrams >= unitWeight,
+						)
+						return (
+							<div className="mt-4 border-t border-[var(--color-border)] pt-3">
+								<div className="flex items-center justify-between mb-2">
+									<span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+										{t("results.selectSpool")}
+									</span>
+									{store.selectedSpoolId && (
+										<button
+											type="button"
+											onClick={() => store.setSelectedSpoolId(null)}
+											className="text-[10px] text-[var(--color-text-muted)] hover:text-red-400 transition-colors flex items-center gap-1"
+										>
+											<X className="w-3 h-3" />
+											{t("results.clearSpool")}
+										</button>
+									)}
+								</div>
+								<div className="space-y-1 max-h-48 overflow-y-auto">
+									{availableSpools.length === 0 ? (
+										<p className="text-xs text-[var(--color-text-muted)] text-center py-2">
+											{t("common.noData")}
+										</p>
+									) : (
+										availableSpools.map(spool => {
+											const isSelected = store.selectedSpoolId === spool.id
+											return (
+												<button
+													key={spool.id}
+													type="button"
+													onClick={() => store.setSelectedSpoolId(isSelected ? null : spool.id)}
+													className={`w-full text-left p-2 rounded-lg transition-colors flex items-center gap-2.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
+														isSelected
+															? "bg-emerald-800/30 border border-emerald-500/40"
+															: "bg-[var(--color-bg-hover)] hover:bg-[var(--color-bg-hover)] border border-transparent"
+													}`}
+												>
+													<span
+														className="w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-[var(--color-border)]"
+														style={{ backgroundColor: spool.colorHex }}
+													/>
+													<div className="flex-1 min-w-0">
+														<div className="text-xs text-[var(--color-text-primary)] font-medium truncate">
+															{spool.brand} — {spool.color}
+														</div>
+														<div className="text-[10px] text-[var(--color-text-muted)]">
+															{spool.material} &middot; {t("results.deductAvailable").replace("{{weight}}", spool.weightGrams.toFixed(0))}
+														</div>
+													</div>
+													{isSelected && (
+														<CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+													)}
+												</button>
+											)
+										})
+									)}
+								</div>
+								{store.selectedSpoolId && (
+									<p className="text-[10px] text-emerald-400/70 mt-1.5 text-center">
+										<Database className="w-3 h-3 inline mr-1 align-middle" />
+										{t("results.autoDeductSuccess").replace("{{weight}}", unitWeight.toFixed(1))}
+									</p>
+								)}
+							</div>
+						)
+					})()}
+
 					<div className="sm:col-span-2 mt-3">
 						<button
 							type="button"
