@@ -18,7 +18,9 @@
     "navigation": "Navigation",
     "mainNavigation": "Main navigation",
     "quotes": "Quotes",
-    "more": "More"
+    "more": "More",
+    "menu": "Menu",
+    "settings": "Settings"
   },
   "dashboard": {
     "totalCost": "Total Cost",

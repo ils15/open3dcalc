@@ -14,7 +14,6 @@ import { LevelToggle } from "./LevelToggle";
 import { ProductName } from "./ProductName";
 import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./SectionRenderer";
-import { MobileBottomBar } from "./MobileBottomBar";
 
 export function Calculator() {
 	const { t } = useTranslation()
@@ -80,7 +79,7 @@ export function Calculator() {
 		<>
 			<ToastContainer items={toastItems} onDismiss={dismissToast} />
 			<h1 className="sr-only">{t('nav.calculator')}</h1>
-			<div className="flex gap-5 xl:gap-8 pb-[220px] lg:pb-0">
+			<div className="flex gap-5 xl:gap-8 pb-[72px] lg:pb-0">
 				<SectionNav activeSection={activeSection} onSectionClick={setActiveSection} />
 				<div className="flex-1 min-w-0 space-y-5">
 					<QuickStartBanner />
@@ -106,7 +105,6 @@ export function Calculator() {
 					<ResultsPanel variant="sidebar" />
 				</div>
 			</div>
-			<MobileBottomBar activeSection={activeSection} onSectionClick={setActiveSection} />
 		</>
 	);
 }

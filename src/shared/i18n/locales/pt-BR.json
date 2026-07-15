@@ -18,7 +18,9 @@
     "language": "Mudar idioma",
     "navigation": "Navegação",
     "mainNavigation": "Navegação principal",
-    "more": "Mais"
+    "more": "Mais",
+    "menu": "Menu",
+    "settings": "Configurações"
   },
   "dashboard": {
     "totalCost": "Custo Total",
