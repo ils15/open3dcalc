@@ -196,32 +196,7 @@ function setupIpcHandlers(): void {
     }
   });
 
-  // ── db:query ─────────────────────────────────────────────────────
-  ipcMain.handle(
-    'db:query',
-    async (_event, sql: string, params?: unknown[]): Promise<unknown[]> => {
-      try {
-        if (typeof sql !== 'string' || sql.trim().length === 0) {
-          throw new Error('SQL query must be a non-empty string');
-        }
-        // Safety: only allow SELECT queries for raw IPC queries
-        const trimmed = sql.trim().toUpperCase();
-        if (
-          !trimmed.startsWith('SELECT') &&
-          !trimmed.startsWith('PRAGMA') &&
-          !trimmed.startsWith('EXPLAIN')
-        ) {
-          throw new Error('Only SELECT, PRAGMA, and EXPLAIN queries are allowed via IPC');
-        }
-        const stmt = db.$client.prepare(sql);
-        const rows = params && params.length > 0 ? stmt.all(...params) : stmt.all();
-        return rows as unknown[];
-      } catch (error) {
-        console.error('[db:query] Error:', error);
-        throw error;
-      }
-    },
-  );
+
 
   // ── db:export ────────────────────────────────────────────────────
   ipcMain.handle('db:export', async (): Promise<string> => {

@@ -2,7 +2,6 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "ignoreDeprecations": "6.0",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
@@ -16,8 +15,7 @@
       "@/shared/*": ["./src/shared/*"],
       "@/platform/desktop/*": ["./src/platform/desktop/*"],
       "@/platform/web/*": ["./src/platform/web/*"]
-    },
-    "baseUrl": "."
+    }
   },
   "exclude": ["node_modules", "electron"]
 }

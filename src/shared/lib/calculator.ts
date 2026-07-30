@@ -70,17 +70,17 @@ export function calculateFDM(
     softwareTotal = (softwareHourly * print.printTimeHours) + soft.modelFileCost
   }
 
-  const producitonCost = matCost + printerEnergyCost + machineTotal + hardwareTotal + ppeCost + laborTotal + softwareTotal + postProcessingTotal + extras.extrasCost
+  const productionCost = matCost + printerEnergyCost + machineTotal + hardwareTotal + ppeCost + laborTotal + softwareTotal + postProcessingTotal + extras.extrasCost
 
   let failureCost = 0
   if (print.failureMode === 'percent') {
     const adjustedPercent = print.failureValue * (print.riskMultiplier ?? 1)
-    failureCost = producitonCost * (adjustedPercent / 100)
+    failureCost = productionCost * (adjustedPercent / 100)
   } else if (print.failureMode === 'fixed') {
     failureCost = print.failureValue
   }
 
-  const totalBaseCost = producitonCost + failureCost + sales.packagingCost + sales.shippingCost
+  const totalBaseCost = productionCost + failureCost + sales.packagingCost + sales.shippingCost
 
   const profitAmountRaw = totalBaseCost * (sales.profitMarginPercent / 100)
   const priceBeforeFees = totalBaseCost + profitAmountRaw
@@ -111,7 +111,7 @@ export function calculateFDM(
     laborCost: laborTotal,
     failureCost,
     extrasCost: extras.extrasCost,
-    subtotal: producitonCost,
+    subtotal: productionCost,
     totalCost: totalBaseCost,
     sellPrice,
     profit: totalProfit,
@@ -187,17 +187,17 @@ export function calculateResin(
     softwareTotal = (softwareHourly * print.printTimeHours) + soft.modelFileCost
   }
 
-  const producitonCost = matCost + printerEnergyCost + machineTotal + hardwareTotal + ppeCost + laborTotal + softwareTotal + postProcessingTotal + extras.extrasCost
+  const productionCost = matCost + printerEnergyCost + machineTotal + hardwareTotal + ppeCost + laborTotal + softwareTotal + postProcessingTotal + extras.extrasCost
 
   let failureCost = 0
   if (print.failureMode === 'percent') {
     const adjustedPercent = print.failureValue * (print.riskMultiplier ?? 1)
-    failureCost = producitonCost * (adjustedPercent / 100)
+    failureCost = productionCost * (adjustedPercent / 100)
   } else if (print.failureMode === 'fixed') {
     failureCost = print.failureValue
   }
 
-  const totalBaseCost = producitonCost + failureCost + sales.packagingCost + sales.shippingCost
+  const totalBaseCost = productionCost + failureCost + sales.packagingCost + sales.shippingCost
 
   const profitAmountRaw = totalBaseCost * (sales.profitMarginPercent / 100)
   const priceBeforeFees = totalBaseCost + profitAmountRaw
@@ -228,7 +228,7 @@ export function calculateResin(
     laborCost: laborTotal,
     failureCost,
     extrasCost: extras.extrasCost,
-    subtotal: producitonCost,
+    subtotal: productionCost,
     totalCost: totalBaseCost,
     sellPrice,
     profit: totalProfit,
