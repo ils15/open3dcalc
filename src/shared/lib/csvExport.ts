@@ -1,3 +1,4 @@
+import { formatCurrency, type CurrencyCode } from './currency'
 import type { CalculationResult } from '@/shared/types'
 
 interface CsvRow {
@@ -22,39 +23,54 @@ function rowsToCsv(rows: CsvRow[]): string {
   return [headerRow, ...dataRows].join('\n')
 }
 
-export function exportHistoryToCsv(history: Array<{ id: string; timestamp: number; type: string; summary: string; totalCost: number; sellPrice: number; profit: number }>): string {
+function getCurrencySymbol(currency?: string): string {
+  return formatCurrency(0, (currency ?? 'BRL') as CurrencyCode).replace(/[\d,.\s]/g, '').trim()
+}
+
+export function exportHistoryToCsv(
+  history: Array<{ id: string; timestamp: number; type: string; summary: string; totalCost: number; sellPrice: number; profit: number }>,
+  options?: { locale?: string; currency?: string }
+): string {
+  const locale = options?.locale ?? 'pt-BR'
+  const sym = getCurrencySymbol(options?.currency)
   const rows = history.map(item => ({
-    Data: new Date(item.timestamp).toLocaleDateString('pt-BR'),
-    Hora: new Date(item.timestamp).toLocaleTimeString('pt-BR'),
+    Data: new Date(item.timestamp).toLocaleDateString(locale),
+    Hora: new Date(item.timestamp).toLocaleTimeString(locale),
     Tipo: item.type.toUpperCase(),
     Produto: item.summary,
-    'Custo Total (R$)': item.totalCost.toFixed(2),
-    'Preco Venda (R$)': item.sellPrice.toFixed(2),
-    'Lucro (R$)': item.profit.toFixed(2),
+    [`Custo Total (${sym})`]: item.totalCost.toFixed(2),
+    [`Preco Venda (${sym})`]: item.sellPrice.toFixed(2),
+    [`Lucro (${sym})`]: item.profit.toFixed(2),
     'Margem (%)': item.totalCost > 0 ? ((item.profit / item.totalCost) * 100).toFixed(1) : '0',
   }))
   return rowsToCsv(rows)
 }
 
-export function exportResultToCsv(result: CalculationResult, productName: string): string {
+export function exportResultToCsv(
+  result: CalculationResult,
+  productName?: string,
+  options?: { locale?: string; currency?: string }
+): string {
+  const sym = getCurrencySymbol(options?.currency)
+  const label = (field: string) => `${field} (${sym})`
   const rows: CsvRow[] = [
-    { Campo: 'Produto', Valor: productName },
-    { Campo: 'Custo Material (R$)', Valor: result.materialCost.toFixed(2) },
-    { Campo: 'Custo Energia (R$)', Valor: result.energyCost.toFixed(2) },
-    { Campo: 'Depreciacao (R$)', Valor: result.machineCost.toFixed(2) },
-    { Campo: 'Hardware (R$)', Valor: result.hardwareCost.toFixed(2) },
-    { Campo: 'Consumiveis (R$)', Valor: result.consumablesCost.toFixed(2) },
-    { Campo: 'Mao de Obra (R$)', Valor: result.laborCost.toFixed(2) },
-    { Campo: 'Software (R$)', Valor: result.softwareCost.toFixed(2) },
-    { Campo: 'Falha (R$)', Valor: result.failureCost.toFixed(2) },
-    { Campo: 'Extras (R$)', Valor: result.extrasCost.toFixed(2) },
-    { Campo: 'Pos-Processamento (R$)', Valor: result.postProcessingCost.toFixed(2) },
-    { Campo: 'Custo Total (R$)', Valor: result.totalCost.toFixed(2) },
-    { Campo: 'Preco Venda (R$)', Valor: result.sellPrice.toFixed(2) },
-    { Campo: 'Lucro Liquido (R$)', Valor: result.profit.toFixed(2) },
-    { Campo: 'Taxa Marketplace (R$)', Valor: result.marketplaceFee.toFixed(2) },
-    { Campo: 'Impostos (R$)', Valor: result.taxAmount.toFixed(2) },
-    { Campo: 'Custo por Grama (R$)', Valor: result.costPerGram.toFixed(4) },
+    { Campo: 'Produto', Valor: productName ?? '' },
+    { Campo: label('Custo Material'), Valor: result.materialCost.toFixed(2) },
+    { Campo: label('Custo Energia'), Valor: result.energyCost.toFixed(2) },
+    { Campo: label('Depreciacao'), Valor: result.machineCost.toFixed(2) },
+    { Campo: label('Hardware'), Valor: result.hardwareCost.toFixed(2) },
+    { Campo: label('Consumiveis'), Valor: result.consumablesCost.toFixed(2) },
+    { Campo: label('Mao de Obra'), Valor: result.laborCost.toFixed(2) },
+    { Campo: label('Software'), Valor: result.softwareCost.toFixed(2) },
+    { Campo: label('Falha'), Valor: result.failureCost.toFixed(2) },
+    { Campo: label('Extras'), Valor: result.extrasCost.toFixed(2) },
+    { Campo: label('Pos-Processamento'), Valor: result.postProcessingCost.toFixed(2) },
+    { Campo: label('Custo Total'), Valor: result.totalCost.toFixed(2) },
+    { Campo: label('Preco Venda'), Valor: result.sellPrice.toFixed(2) },
+    { Campo: label('Lucro Liquido'), Valor: result.profit.toFixed(2) },
+    { Campo: label('Taxa Marketplace'), Valor: result.marketplaceFee.toFixed(2) },
+    { Campo: label('Impostos'), Valor: result.taxAmount.toFixed(2) },
+    { Campo: label('Custo por Grama'), Valor: result.costPerGram.toFixed(4) },
     { Campo: 'Peso (g)', Valor: result.unitWeight.toFixed(2) },
   ]
   return rowsToCsv(rows)
