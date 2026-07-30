@@ -248,7 +248,7 @@ export async function initPersistenceBridge(): Promise<void> {
 
   // 4. Periodic auto-save every 30 seconds (safety net)
   //    Also runs stale-key cleanup on each cycle.
-  const AUTO_SAVE_INTERVAL_MS = 30_000;
+  const AUTO_SAVE_INTERVAL_MS = 10_000;
   setInterval(async () => {
     await saveToDatabase();
     await deleteStaleKeys();

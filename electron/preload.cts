@@ -25,13 +25,6 @@ const electronAPI = {
       ipcRenderer.invoke('db:list-keys'),
 
     /**
-     * Execute a raw SQL query (SELECT / PRAGMA / EXPLAIN only).
-     * Write operations must go through the dedicated save/delete methods.
-     */
-    query: (sql: string, params?: unknown[]): Promise<unknown[]> =>
-      ipcRenderer.invoke('db:query', sql, params),
-
-    /**
      * Export the database file to a user-chosen location.
      * Returns the destination file path on success.
      */
