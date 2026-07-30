@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Center } from '@react-three/drei'
-import { Upload, RotateCcw, AlertCircle } from 'lucide-react'
+import { Upload, AlertCircle } from 'lucide-react'
 import type { BufferGeometry } from 'three'
 import type { MeshAnalysis } from '@/shared/lib/stlParser'
 import { estimatePrintTime } from '@/shared/lib/printTimeEstimator'
@@ -23,6 +23,10 @@ interface StlPreviewProps {
   initialGeometry?: BufferGeometry | null
   /** If true, manages own state (drag-drop, parse, display) */
   standalone?: boolean
+  /** Calculator material density (g/cm³). Default 1.24 (PLA). */
+  materialDensity?: number
+  /** Calculator infill percentage. Default 20. */
+  infillPercent?: number
 }
 
 function Model({ geometry }: { geometry: BufferGeometry }) {
@@ -45,11 +49,6 @@ function Model({ geometry }: { geometry: BufferGeometry }) {
 }
 
 function PreviewCanvas({ geometry }: { geometry: BufferGeometry }) {
-  const resetView = () => {
-    // Trigger re-render with camera reset — OrbitControls reset is implicit
-    // by toggling via key prop or manual camera
-  }
-
   return (
     <div className="relative w-full h-full group">
       <Canvas
@@ -66,24 +65,26 @@ function PreviewCanvas({ geometry }: { geometry: BufferGeometry }) {
           autoRotate={false}
         />
       </Canvas>
-      <button
-        type="button"
-        onClick={resetView}
-        className="absolute top-2 right-2 z-10 min-h-[36px] min-w-[36px] p-2 rounded-lg bg-black/50 hover:bg-black/70 backdrop-blur-sm text-white/80 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-        aria-label="Reset view"
-        title="Reset view"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
     </div>
   )
 }
 
+/**
+ * Drag-and-drop 3D file preview with model info panel.
+ *
+ * Accepts STL, OBJ, 3MF and GCODE files. When a mesh file is parsed,
+ * it estimates weight using the provided `materialDensity` and
+ * `infillPercent` props (or sensible defaults for PLA at 20% infill).
+ * The Canvas remounts automatically when geometry changes (via `key` prop),
+ * so camera reset happens implicitly without the need for a reset button.
+ */
 export function StlPreview({
   onFileParsed,
   onError,
   initialGeometry = null,
   standalone = false,
+  materialDensity,
+  infillPercent,
 }: StlPreviewProps) {
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -167,7 +168,9 @@ export function StlPreview({
           }
           setGeometry(parsedGeometry)
           const volumeCm3 = volumeToCm3(analysis.volume)
-          const weight = estimateWeight(volumeCm3, 1.24, 20, 10)
+          const density = materialDensity ?? 1.24
+          const infill = infillPercent ?? 20
+          const weight = estimateWeight(volumeCm3, density, infill, 10)
           const timeEstimate = estimatePrintTime(volumeCm3, analysis.dimensions)
           const result: FileParseResult = {
             geometry: parsedGeometry,
@@ -186,7 +189,7 @@ export function StlPreview({
       }
       setParsing(false)
     },
-    [t, onFileParsed, showError],
+    [t, onFileParsed, showError, materialDensity, infillPercent],
   )
 
   const handleFileSelect = useCallback(
