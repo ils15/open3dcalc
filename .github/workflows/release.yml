@@ -72,7 +72,7 @@ jobs:
           if [ -n "${{ secrets.RELEASE_TOKEN }}" ]; then
             git remote set-url origin https://x-access-token:${{ secrets.RELEASE_TOKEN }}@github.com/ils15/open3dcalc.git
           fi
-          git push --force --follow-tags
+          git push --force-with-lease --follow-tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
