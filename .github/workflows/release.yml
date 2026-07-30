@@ -21,7 +21,7 @@ jobs:
   release-linux:
     runs-on: [self-hosted, cx33, linux]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
@@ -70,7 +70,7 @@ jobs:
           git commit --no-verify -m "chore(release): $VERSION [skip ci]"
           git tag "$VERSION"
           if [ -n "${{ secrets.RELEASE_TOKEN }}" ]; then
-            git remote set-url origin https://x-access-token:${{ secrets.RELEASE_TOKEN }}@github.com/ils15/open3dcalc.git
+            git remote set-url origin https://x-access-token:${{ secrets.RELEASE_TOKEN }}@github.com/${{ github.repository }}.git
           fi
           git push --force-with-lease --follow-tags
         env:
