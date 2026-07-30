@@ -253,21 +253,22 @@ interface QuoteDocProps {
   customer?: Customer
   currencySymbol: string
   logoBase64?: string
+  locale?: string
 }
 
-function formatPrice(value: number, symbol: string): string {
+function formatPrice(value: number, symbol: string, locale: string): string {
   const abs = Math.abs(value)
-  const formatted = abs.toLocaleString('pt-BR', {
+  const formatted = abs.toLocaleString(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
   return `${symbol} ${formatted}`
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: string): string {
   if (!dateStr) return '---'
   const d = new Date(dateStr + (dateStr.includes('T') ? '' : 'T00:00:00'))
-  return d.toLocaleDateString('pt-BR')
+  return d.toLocaleDateString(locale)
 }
 
 export function QuoteDoc({
@@ -275,9 +276,10 @@ export function QuoteDoc({
   customer,
   currencySymbol,
   logoBase64,
+  locale = 'pt-BR',
 }: QuoteDocProps) {
   const formattedDate = quote.createdAt
-    ? new Date(quote.createdAt).toLocaleDateString('pt-BR')
+    ? new Date(quote.createdAt).toLocaleDateString(locale)
     : '---'
 
   const displayCustomer = customer
@@ -316,7 +318,7 @@ export function QuoteDoc({
               Validade
             </Text>
             <Text style={styles.headerValue}>
-              {quote.validUntil ? formatDate(quote.validUntil) : '---'}
+              {quote.validUntil ? formatDate(quote.validUntil, locale) : '---'}
             </Text>
           </View>
         </View>
@@ -438,7 +440,7 @@ export function QuoteDoc({
                         { width: COL_UNIT },
                       ]}
                     >
-                      {formatPrice(item.unitPrice, currencySymbol)}
+                      {formatPrice(item.unitPrice, currencySymbol, locale)}
                     </Text>
                     <Text
                       style={[
@@ -446,7 +448,7 @@ export function QuoteDoc({
                         { width: COL_TOTAL },
                       ]}
                     >
-                      {formatPrice(discountedTotal, currencySymbol)}
+                      {formatPrice(discountedTotal, currencySymbol, locale)}
                     </Text>
                   </View>
                 )
@@ -460,7 +462,7 @@ export function QuoteDoc({
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Subtotal</Text>
                 <Text style={styles.totalValue}>
-                  {formatPrice(quote.subtotal, currencySymbol)}
+                  {formatPrice(quote.subtotal, currencySymbol, locale)}
                 </Text>
               </View>
               {quote.globalDiscountPercent > 0 && (
@@ -469,14 +471,14 @@ export function QuoteDoc({
                     Desc. {quote.globalDiscountPercent}%
                   </Text>
                   <Text style={styles.discountValue}>
-                    -{formatPrice(quote.discountAmount, currencySymbol)}
+                    -{formatPrice(quote.discountAmount, currencySymbol, locale)}
                   </Text>
                 </View>
               )}
               <View style={styles.totalRowHighlight}>
                 <Text style={styles.totalLabelHighlight}>TOTAL</Text>
                 <Text style={styles.totalValueHighlight}>
-                  {formatPrice(quote.total, currencySymbol)}
+                  {formatPrice(quote.total, currencySymbol, locale)}
                 </Text>
               </View>
             </View>

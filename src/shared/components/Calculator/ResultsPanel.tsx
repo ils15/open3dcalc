@@ -108,7 +108,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   }
 
   const isFDM = activeTab === 'fdm'
-  const { format: fmtCurrency } = useCurrency()
+  const { currency, format: fmtCurrency } = useCurrency()
   const isSidebar = variant === 'sidebar'
 
   const chartData = useMemo((): { name: string; value: number; color: string }[] => {
@@ -138,7 +138,8 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
     const isFdm = state.activeTab === 'fdm'
     const pkg = isFdm ? state.fdmSales.packagingCost : state.resinSales.packagingCost
     const ship = isFdm ? state.fdmSales.shippingCost : state.resinSales.shippingCost
-    const json = exportQuoteJson(results, name, qty, pkg || 0, ship || 0)
+    const locale = i18n.resolvedLanguage || i18n.language || 'pt-BR'
+    const json = exportQuoteJson(results, name, qty, pkg || 0, ship || 0, locale, currency)
     downloadQuoteJson(json, `quote_${Date.now()}.json`)
   }
 
@@ -263,7 +264,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
           {saveStatus === 'saved' ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <Save className="w-3.5 h-3.5 shrink-0" />}
           <span className="truncate">{saveStatus === 'saved' ? t('calc.saved') : t('calc.saveSettings')}</span>
         </button>
-        <button data-shortcut="export" onClick={async () => { const { exportPdf } = await import('@/shared/lib/pdfExport'); exportPdf(results) }}
+        <button data-shortcut="export" onClick={async () => { const { exportPdf } = await import('@/shared/lib/pdfExport'); const locale = i18n.resolvedLanguage || i18n.language || 'pt-BR'; exportPdf(results, locale, currency) }}
           className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--color-bg-surface)] text-white hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-bg-surface)] focus-visible:outline-none flex items-center justify-center gap-1 truncate">
           <FileText className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t('calc.exportPdf')}</span>
         </button>
