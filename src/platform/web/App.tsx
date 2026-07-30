@@ -13,6 +13,11 @@ import { QuoteSection } from '@/shared/components/Calculator/QuoteSection'
 import { restoreAutoSnapshot } from '@/shared/stores/storeBridge'
 import { useHistoryStore } from '@/shared/stores/historyStore'
 import { useCalculatorStore } from '@/shared/stores/calculatorStore'
+import { computeStoreResults } from '@/shared/stores/calculatorStore.compute'
+import type { ComputeStoreInput } from '@/shared/stores/calculatorStore.types'
+import { getSharedCalculation } from '@/shared/lib/calculationLink'
+import { printers } from '@/shared/lib/printers'
+import { marketplaces } from '@/shared/lib/marketplace'
 import { useCurrency } from '@/shared/hooks/useCurrency'
 import { CURRENCIES, type CurrencyCode } from '@/shared/lib/currency'
 import { motion, AnimatePresence } from "framer-motion"
@@ -144,8 +149,8 @@ function App() {
                   postProcessingCost: 0, subtotal: 0, totalCost: 0,
                   sellPrice: 0, profit: 0, marketplaceFee: 0, taxAmount: 0,
                   costPerGram: 0, costPerUnit: 0, unitWeight: 0,
-                  estimatedPrintTime: 0, targetMarginPercent: 0,
-                  breakEvenPrice: 0, actualMargin: 0,
+                  estimatedPrintTime: 0,                   targetMarginPercent: 0,
+                  breakEvenPrice: 0, actualMargin: 0, carbonFootprintGrams: 0,
                 },
                 snapshot: legacyItem.snapshot || null,
               })
@@ -185,6 +190,61 @@ function App() {
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [])
+
+  // Load shared calculation from URL hash
+  useEffect(() => {
+    const shared = getSharedCalculation()
+    if (shared) {
+      const state = useCalculatorStore.getState()
+      // Merge shared state with current defaults
+      const merged = {
+        ...state,
+        activeTab: shared.activeTab,
+        ...(shared.fdmMaterial && { fdmMaterial: shared.fdmMaterial }),
+        ...(shared.fdmPrintParams && { fdmPrintParams: shared.fdmPrintParams }),
+        ...(shared.fdmMachine && { fdmMachine: shared.fdmMachine }),
+        ...(shared.fdmHardware && { fdmHardware: shared.fdmHardware }),
+        ...(shared.fdmFinishing && { fdmFinishing: shared.fdmFinishing }),
+        ...(shared.fdmLabor && { fdmLabor: shared.fdmLabor }),
+        ...(shared.fdmExtras && { fdmExtras: shared.fdmExtras }),
+        ...(shared.fdmSales && { fdmSales: shared.fdmSales }),
+        ...(shared.fdmOps && { fdmOps: shared.fdmOps }),
+        ...(shared.fdmSoft && { fdmSoft: shared.fdmSoft }),
+        ...(shared.resinMaterial && { resinMaterial: shared.resinMaterial }),
+        ...(shared.resinPrintParams && { resinPrintParams: shared.resinPrintParams }),
+        ...(shared.resinMachine && { resinMachine: shared.resinMachine }),
+        ...(shared.resinHardware && { resinHardware: shared.resinHardware }),
+        ...(shared.resinPostProcess && { resinPostProcess: shared.resinPostProcess }),
+        ...(shared.resinLabor && { resinLabor: shared.resinLabor }),
+        ...(shared.resinExtras && { resinExtras: shared.resinExtras }),
+        ...(shared.resinSales && { resinSales: shared.resinSales }),
+        ...(shared.resinOps && { resinOps: shared.resinOps }),
+        ...(shared.resinSoft && { resinSoft: shared.resinSoft }),
+        ...(shared.fdmAmsEnabled !== undefined && { fdmAmsEnabled: shared.fdmAmsEnabled }),
+        ...(shared.fdmAmsSlots && { fdmAmsSlots: shared.fdmAmsSlots }),
+        ...(shared.fixedCosts && { fixedCosts: shared.fixedCosts }),
+        ...(shared.productName !== undefined && { productName: shared.productName }),
+        ...(shared.quantity !== undefined && { quantity: shared.quantity }),
+        ...(shared.infillPercent !== undefined && { infillPercent: shared.infillPercent }),
+        ...(shared.targetMarginMode !== undefined && { targetMarginMode: shared.targetMarginMode }),
+        ...(shared.enabledSections && { enabledSections: shared.enabledSections }),
+      }
+      // Resolve printer/marketplace by ID
+      if (shared.selectedPrinterId) {
+        const printer = printers.find(p => p.id === shared.selectedPrinterId)
+        if (printer) merged.selectedPrinter = printer as typeof state.selectedPrinter
+      }
+      if (shared.selectedMarketplaceId) {
+        const marketplace = marketplaces.find(m => m.id === shared.selectedMarketplaceId)
+        if (marketplace) merged.selectedMarketplace = marketplace as typeof state.selectedMarketplace
+      }
+      // Recompute results
+      const results = computeStoreResults(merged as ComputeStoreInput)
+      useCalculatorStore.setState({ ...merged, results })
+      // Clear the hash so it doesn't re-trigger
+      window.location.hash = ''
+    }
   }, [])
 
   // Auto-start tutorial on first visit (after short delay)

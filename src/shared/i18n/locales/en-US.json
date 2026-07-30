@@ -458,7 +458,9 @@
     "autoDeductSuccess": "{{weight}}g automatically deducted from spool",
     "selectSpool": "Select spool for auto-deduction",
     "noSpoolSelected": "No spool selected",
-    "clearSpool": "Clear selection"
+    "clearSpool": "Clear selection",
+    "shareLink": "Copy Share Link",
+    "linkCopied": "Link copied!"
   },
   "tutorial": {
     "start": "Start Tutorial",

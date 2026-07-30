@@ -458,7 +458,9 @@
     "autoDeductSuccess": "{{weight}}g deduzidos automaticamente do carretel",
     "selectSpool": "Selecionar carretel para dedução automática",
     "noSpoolSelected": "Nenhum carretel selecionado",
-    "clearSpool": "Limpar seleção"
+    "clearSpool": "Limpar seleção",
+    "shareLink": "Copiar Link",
+    "linkCopied": "Link copiado!"
   },
   "tutorial": {
     "start": "Iniciar Tutorial",

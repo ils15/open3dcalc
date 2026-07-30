@@ -53,6 +53,7 @@ function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
       targetMarginPercent: 300,
       breakEvenPrice: 10,
       actualMargin: 400,
+      carbonFootprintGrams: 0,
     },
     snapshot: null,
     ...overrides,
@@ -87,6 +88,7 @@ describe('ComparisonModal', () => {
       targetMarginPercent: 300,
       breakEvenPrice: 12,
       actualMargin: 400,
+      carbonFootprintGrams: 0,
     },
   })
 

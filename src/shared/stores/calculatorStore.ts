@@ -16,6 +16,7 @@ import {
   DEFAULT_RESIN_MACHINE, DEFAULT_RESIN_HARDWARE, DEFAULT_RESIN_LABOR,
   DEFAULT_RESIN_OPS, DEFAULT_RESIN_SOFT, DEFAULT_RESIN_EXTRAS,
   DEFAULT_RESIN_SALES, DEFAULT_FIXED_COSTS, DEFAULT_AMS_SLOTS,
+  DEFAULT_VOLUME_DISCOUNTS,
 } from './calculatorStore.defaults'
 import { debouncedAutoSave, loadStr, migrateQuickMode } from './calculatorStore.helpers'
 import { computeStoreResults } from './calculatorStore.compute'
@@ -166,7 +167,12 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     setSelectedPrinter: (selectedPrinter) => {
       const hasAms = (selectedPrinter.maxFilaments ?? 1) > 1
       const wasAmsEnabled = get().fdmAmsEnabled
-      setWithCompute({ selectedPrinter, fdmAmsEnabled: hasAms && wasAmsEnabled })
+      const state = get()
+      setWithCompute({
+        selectedPrinter,
+        fdmAmsEnabled: hasAms && wasAmsEnabled,
+        fdmPrintParams: { ...state.fdmPrintParams, printerPowerWatts: selectedPrinter.power },
+      })
     },
     setSelectedMarketplace: (selectedMarketplace) => setWithCompute({ selectedMarketplace }),
 
@@ -255,14 +261,14 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       setWithCompute({
         activeTab: 'fdm',
         fdmMaterial: { type, weightUsed, purgeWeight, costPerKg, density, spoolEfficiency: spoolEff },
-        fdmPrintParams: { printTimeHours: printTime, printerPowerWatts: power, energyCostPerKwh: energyCost, failureMode: 'percent', failureValue, riskMultiplier: 1 },
+        fdmPrintParams: { printTimeHours: printTime, printerPowerWatts: power, energyCostPerKwh: energyCost, failureMode: 'percent', failureValue, riskMultiplier: 1, heatUpTimeMinutes: 5, heatUpPowerPercent: 150 },
         fdmMachine: { enabled: true, machineCost, depreciationMonths: depMonths, hoursPerMonth: hoursMonth, maintenanceEnabled: false, maintenanceCost: 0 },
         fdmHardware: { enabled: true, nozzleEnabled: true, nozzleCost, nozzleLifespanKg: nozzleLife, bedEnabled: true, bedAdhesionCost: bedCost },
         fdmFinishing: { enabled: false, suppliesCost: 5 },
         fdmLabor: { enabled: true, setupTimeMinutes: setupTime, postProcessingTimeMinutes: postTime, hourlyRate },
         fdmExtras: { extrasCost: 0 },
-        fdmSales: { packagingCost: packaging, shippingCost: shipping, taxPercent: 0, marketplaceFeePercent: 0, profitMarginPercent: margin },
-        fdmOps: { enabled: false, ppeCostPerPrint: 0 },
+        fdmSales: { packagingCost: packaging, shippingCost: shipping, taxPercent: 0, marketplaceFeePercent: 0, profitMarginPercent: margin, volumeDiscounts: DEFAULT_VOLUME_DISCOUNTS },
+        fdmOps: { enabled: false, ppeCostPerPrint: 0, carbonIntensity: 100 },
         fdmSoft: { enabled: false, slicerMonthlyCost: 0, modelFileCost: 0 },
         quantity: 1,
         productName: pick(names),

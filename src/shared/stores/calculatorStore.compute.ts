@@ -1,6 +1,6 @@
 import type { ComputeStoreInput } from './calculatorStore.types'
 import type { CalculationResult } from '@/shared/types'
-import { calculateFDM, calculateResin } from '@/shared/lib/calculator'
+import { calculateFDM, calculateResin, getBulkDiscount } from '@/shared/lib/calculator'
 
 export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
   const qty = s.quantity > 0 ? s.quantity : 1
@@ -54,7 +54,9 @@ export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
     if (qty > 1) {
       const laborPerUnit = s.fdmLabor.enabled ? ((s.fdmLabor.setupTimeMinutes + s.fdmLabor.postProcessingTimeMinutes) / 60) * s.fdmLabor.hourlyRate : 0
       const setupCost = laborPerUnit
-      const perUnitCost = r.totalCost - setupCost + (setupCost / qty)
+      const bulkDiscount = getBulkDiscount(qty, s.fdmSales.volumeDiscounts)
+      const discountMultiplier = 1 - (bulkDiscount / 100)
+      const perUnitCost = (r.totalCost - setupCost + (setupCost / qty)) * discountMultiplier
       const perUnitSellPrice = r.sellPrice - setupCost + (setupCost / qty)
       return { ...r, totalCost: perUnitCost, sellPrice: perUnitSellPrice, profit: perUnitSellPrice - perUnitCost - r.marketplaceFee - r.taxAmount, costPerUnit: perUnitCost }
     }
@@ -90,7 +92,9 @@ export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
     if (qty > 1) {
       const laborPerUnit = s.resinLabor.enabled ? ((s.resinLabor.setupTimeMinutes + s.resinLabor.postProcessingTimeMinutes) / 60) * s.resinLabor.hourlyRate : 0
       const setupCost = laborPerUnit
-      const perUnitCost = r.totalCost - setupCost + (setupCost / qty)
+      const bulkDiscount = getBulkDiscount(qty, s.resinSales.volumeDiscounts)
+      const discountMultiplier = 1 - (bulkDiscount / 100)
+      const perUnitCost = (r.totalCost - setupCost + (setupCost / qty)) * discountMultiplier
       const perUnitSellPrice = r.sellPrice - setupCost + (setupCost / qty)
       return { ...r, totalCost: perUnitCost, sellPrice: perUnitSellPrice, profit: perUnitSellPrice - perUnitCost - r.marketplaceFee - r.taxAmount, costPerUnit: perUnitCost }
     }

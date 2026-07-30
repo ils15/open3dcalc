@@ -72,6 +72,8 @@ export interface PrintParameters {
   failureMode: 'none' | 'percent' | 'fixed'
   failureValue: number
   riskMultiplier: number
+  heatUpTimeMinutes: number
+  heatUpPowerPercent: number
 }
 
 export interface MachineCosts {
@@ -130,6 +132,7 @@ export interface FixedCosts {
 export interface OperationalCosts {
   enabled: boolean
   ppeCostPerPrint: number
+  carbonIntensity: number
 }
 
 export interface SoftwareCosts {
@@ -142,12 +145,18 @@ export interface AdditionalCosts {
   extrasCost: number
 }
 
+export interface VolumeDiscount {
+  minQuantity: number
+  discountPercent: number
+}
+
 export interface SalesParameters {
   packagingCost: number
   shippingCost: number
   taxPercent: number
   marketplaceFeePercent: number
   profitMarginPercent: number
+  volumeDiscounts: VolumeDiscount[]
 }
 
 export interface CalculationResult {
@@ -174,6 +183,7 @@ export interface CalculationResult {
   targetMarginPercent: number
   breakEvenPrice: number
   actualMargin: number
+  carbonFootprintGrams: number
 }
 
 export { type Customer, type CustomerFormData } from './customer'
