@@ -1,5 +1,37 @@
 # Changelog
 
+## v1.9.2
+
+[compare changes](https://github.com/ils15/open3dcalc/compare/v1.9.1...v1.9.2)
+
+### 🚀 Enhancements
+
+- **ci:** Add AI code review workflow via Bifrost LLM Gateway ([8287e51](https://github.com/ils15/open3dcalc/commit/8287e51))
+- **ci:** Switch AI review to alibaba/open-code-review, fix release artifacts ([#11](https://github.com/ils15/open3dcalc/pull/11))
+- CI/CD otimizado — self-hosted runner, husky-only, AI commit review, i18n ([#12](https://github.com/ils15/open3dcalc/pull/12))
+- Auto-deduct filament + date filters (Issue #16) ([#17](https://github.com/ils15/open3dcalc/pull/17), [#16](https://github.com/ils15/open3dcalc/issues/16))
+- Phase 2+3 — STL & Dashboard optimization (dead code removal, calc integration) ([#20](https://github.com/ils15/open3dcalc/pull/20))
+
+### 🩹 Fixes
+
+- **changelog:** Sort versions by semver + add v1.9.1 entry ([ffc68bb](https://github.com/ils15/open3dcalc/commit/ffc68bb))
+- Safety Sprint — security & quality hardening ([#19](https://github.com/ils15/open3dcalc/pull/19))
+- **release:** Remove [skip ci] from release commit ([#21](https://github.com/ils15/open3dcalc/pull/21))
+- **release:** Push tag only, use release branch + PR for version bump ([#22](https://github.com/ils15/open3dcalc/pull/22))
+- **release:** Padronizar pipeline protegido e idempotente ([#23](https://github.com/ils15/open3dcalc/pull/23))
+
+### 🏡 Chore
+
+- Translate missing pt-BR keys, remove stale web/ and desktop/ copies ([cc5b0e9](https://github.com/ils15/open3dcalc/commit/cc5b0e9))
+
+### 🤖 CI
+
+- Remove themis review, add opencode github integration ([#13](https://github.com/ils15/open3dcalc/pull/13))
+
+### ❤️ Contributors
+
+- Ils15 ([@ils15](https://github.com/ils15))
+
 ## v1.9.0
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.8.0...v1.9.0)
