@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-/** Audited, read-only release notes generator.  It never calls a mutating API. */
+/** Deterministic, read-only release notes generator. */
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
 
 export const CATEGORIES = [
   "Highlights",
@@ -27,16 +27,20 @@ const MAX = 240;
 const clean = (value, fallback = "Unknown") =>
   String(value ?? "")
     .replace(/[\u0000-\u001f]/g, " ")
-    .trim() || fallback;
+    .trim()
+    .slice(0, MAX) || fallback;
+const validNumber = (value) => Number.isInteger(value) && value > 0;
+const isBot = (person) => {
+  const login = String(person?.login ?? "").toLowerCase();
+  return person?.type === "Bot" || login.endsWith("[bot]") || BOTS.has(login);
+};
 export const escapeMarkdown = (value) =>
-  clean(value, "Not available")
-    .replace(/([\\`*_{}\[\]()<>#+.!|])/g, "\\$1")
-    .slice(0, MAX);
+  clean(value, "Not available").replace(/([\\`*_{}\[\]()<>#+.!|])/g, "\\$1");
 export const sha256 = (value) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
 export const categoryFor = (item) => {
   const text =
-    `${item.title ?? ""} ${item.body ?? ""} ${item.labels?.map((label) => label.name ?? label).join(" ") ?? ""}`.toLowerCase();
+    `${item.title ?? ""} ${item.body ?? ""} ${(item.labels ?? []).map((label) => label.name ?? label).join(" ")}`.toLowerCase();
   if (/breaking|!:|major change/.test(text)) return "Breaking Changes";
   if (/security|cve|vulnerab|dependabot|renovate/.test(text))
     return text.includes("depend") ? "Dependencies" : "Security";
@@ -47,29 +51,34 @@ export const categoryFor = (item) => {
   if (/improv|refactor|perf|enhanc/.test(text)) return "Improvements";
   return "Other Changes";
 };
-const login = (person) => clean(person?.login ?? person?.name);
+const personLogin = (person) => clean(person?.login ?? person?.name);
 export const authorFor = (item) => {
-  const candidates = [
-    item.pr?.merged_by,
-    item.pr?.user,
-    item.commit?.author,
-    item.author,
-  ];
-  for (const person of candidates) {
-    const name = login(person);
-    if (name !== "Unknown" && !BOTS.has(name.toLowerCase())) return name;
-  }
-  return "Unknown";
+  const prAuthor = item.pr?.user;
+  if (prAuthor) return isBot(prAuthor) ? "Unknown" : personLogin(prAuthor);
+  const commitAuthor = item.commit?.author ?? item.author;
+  return commitAuthor && !isBot(commitAuthor)
+    ? personLogin(commitAuthor)
+    : "Unknown";
 };
 const version = (tag) => (/^v\d+\.\d+\.\d+$/.test(tag) ? tag : null);
 const compare = (a, b) =>
   String(a).localeCompare(String(b), "en", { numeric: true });
 
+const itemKey = (pr, commit) =>
+  validNumber(pr?.number)
+    ? `pr:${pr.number}`
+    : commit?.sha
+      ? `commit:${commit.sha}`
+      : null;
 export const normalize = (input) => {
-  const releases = input.releases ?? [];
-  const tags = input.tags ?? [];
-  const commits = input.commits ?? [];
-  const prs = input.pullRequests ?? input.prs ?? [];
+  const releases = input.releases ?? [],
+    tags = input.tags ?? [],
+    commits = input.commits ?? [],
+    prs = [
+      ...(input.pullRequests ?? input.prs ?? []),
+      ...(input.associatedPullRequests ?? []),
+    ];
+  const errors = input.errors ?? [];
   const assets =
     input.assets ??
     releases.flatMap((release) =>
@@ -78,52 +87,69 @@ export const normalize = (input) => {
         release: release.tag_name,
       })),
     );
-  const prBySha = new Map(
-    prs.flatMap((pr) =>
-      (pr.commits ?? pr.commitShas ?? []).map((sha) => [sha, pr]),
-    ),
-  );
-  const seen = new Set();
-  const items = [];
-  for (const commit of commits) {
-    const pr = commit.pullRequest ?? prBySha.get(commit.sha);
-    const key = pr?.number ? `pr:${pr.number}` : `commit:${commit.sha}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+  const prBySha = new Map();
+  for (const pr of prs)
+    for (const sha of [
+      ...(pr.commits ?? pr.commitShas ?? []),
+      pr.merge_commit_sha,
+    ].filter(Boolean)) {
+      const existing = prBySha.get(sha);
+      if (!existing || (pr.merged === true && existing.merged !== true))
+        prBySha.set(sha, pr);
+    }
+  for (const association of input.commitPullRequests ?? [])
+    for (const pr of association.pullRequests ?? []) {
+      for (const sha of [association.sha, pr.merge_commit_sha].filter(
+        Boolean,
+      )) {
+        const existing = prBySha.get(sha);
+        if (!existing || (pr.merged === true && existing.merged !== true))
+          prBySha.set(sha, pr);
+      }
+    }
+  const seen = new Map();
+  const aliases = new Map();
+  const add = (commit, pr) => {
+    if (pr && !validNumber(pr.number)) pr = undefined;
+    const key = itemKey(pr, commit);
+    if (!key) return;
+    const identityKeys = [
+      key,
+      validNumber(pr?.number) ? `pr:${pr.number}` : null,
+      pr?.merge_commit_sha ? `commit:${pr.merge_commit_sha}` : null,
+      commit?.sha ? `commit:${commit.sha}` : null,
+    ].filter(Boolean);
+    const existingKey = identityKeys
+      .map((identity) => aliases.get(identity))
+      .find(Boolean);
+    const current = existingKey ? seen.get(existingKey) : undefined;
+    if (current && !(pr?.merged === true && !current.pr?.merged)) return;
     const item = {
       key,
-      sha: clean(commit.sha),
-      title: clean(pr?.title ?? commit.message),
+      sha: clean(commit?.sha ?? pr?.merge_commit_sha),
+      title: clean(pr?.title ?? commit?.message),
       body: clean(pr?.body, ""),
       pr,
       commit,
       category: categoryFor({ ...commit, ...pr }),
       author: authorFor({ pr, commit }),
     };
-    items.push(item);
-  }
-  for (const pr of prs.filter((pr) => pr.merged !== false)) {
-    const key = `pr:${pr.number}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      items.push({
-        key,
-        sha: clean(pr.merge_commit_sha),
-        title: clean(pr.title),
-        body: clean(pr.body, ""),
-        pr,
-        category: categoryFor(pr),
-        author: authorFor({ pr }),
-      });
-    }
-  }
-  items.sort(
+    if (existingKey && existingKey !== key) seen.delete(existingKey);
+    seen.set(key, item);
+    for (const identity of identityKeys) aliases.set(identity, key);
+  };
+  for (const commit of commits) add(commit, prBySha.get(commit.sha));
+  for (const pr of prs.filter((candidate) => candidate.merged !== false))
+    add(undefined, pr);
+  const items = [...seen.values()].sort(
     (a, b) =>
       compare(a.category, b.category) ||
       compare(a.title, b.title) ||
       compare(a.key, b.key),
   );
   return {
+    partial: Boolean(input.partial || errors.length),
+    errors,
     releases: releases
       .map((release) => ({
         tag: clean(release.tag_name),
@@ -157,14 +183,26 @@ export const render = (catalog, repository = "repository") => {
     `Audited release inventory for ${tick}${escapeMarkdown(repository)}${tick}.`,
     "",
   ];
+  if (catalog.partial)
+    lines.push(
+      "> **Partial collection:** some GitHub responses failed; see the audit inventory for evidence.",
+      "",
+    );
   for (const category of CATEGORIES) {
     const entries = catalog.items.filter((item) => item.category === category);
     if (!entries.length) continue;
     lines.push(`## ${category}`, "");
-    for (const item of entries)
-      lines.push(
-        `- ${escapeMarkdown(item.title)} ([${escapeMarkdown(item.author)}](https://github.com/${encodeURIComponent(item.author)}))${item.pr?.number ? ` — PR #${item.pr.number}` : ` — commit ${tick}${escapeMarkdown(item.sha)}${tick}`}`,
-      );
+    for (const item of entries) {
+      const prNumber = validNumber(item.pr?.number);
+      const suffix = prNumber
+        ? ` — PR #${item.pr.number}`
+        : ` — commit ${tick}${escapeMarkdown(item.sha)}${tick}`;
+      const author =
+        item.author === "Unknown"
+          ? "Unknown"
+          : `[${escapeMarkdown(item.author)}](https://github.com/${encodeURIComponent(item.author)})`;
+      lines.push(`- ${escapeMarkdown(item.title)} (${author})${suffix}`);
+    }
     lines.push("");
   }
   lines.push(
@@ -195,6 +233,21 @@ export const render = (catalog, repository = "repository") => {
   return lines.join("\n");
 };
 
+class GitHubError extends Error {
+  constructor(url, status, attempts) {
+    super(`GitHub request failed with status ${status}`);
+    this.url = url;
+    this.status = status;
+    this.attempts = attempts;
+  }
+}
+const retryable = new Set([429, 500, 502, 503, 504]);
+const delayFor = (response, attempt) => {
+  const retryAfter = Number(response.headers.get("retry-after"));
+  return Number.isFinite(retryAfter)
+    ? Math.min(retryAfter * 1000, 30_000)
+    : 250 * 2 ** attempt;
+};
 async function fetchJson(url, attempt = 0) {
   const response = await fetch(url, {
     headers: {
@@ -204,91 +257,152 @@ async function fetchJson(url, attempt = 0) {
         : {}),
     },
   });
-  if ([403, 429, 500, 502, 503, 504].includes(response.status) && attempt < 4) {
+  if (retryable.has(response.status) && attempt < 4) {
     await new Promise((resolveDelay) =>
-      setTimeout(resolveDelay, 250 * 2 ** attempt),
+      setTimeout(resolveDelay, delayFor(response, attempt)),
     );
     return fetchJson(url, attempt + 1);
   }
-  if (!response.ok)
-    throw new Error(`GitHub request failed with status ${response.status}`);
+  if (response.status === 404) throw new GitHubError(url, 404, attempt + 1);
+  if (!response.ok) throw new GitHubError(url, response.status, attempt + 1);
   return response.json();
 }
-async function pages(url) {
+async function pages(url, errors, label) {
   const result = [];
   for (let page = 1; ; page++) {
-    const data = await fetchJson(
-      `${url}${url.includes("?") ? "&" : "?"}per_page=100&page=${page}`,
-    );
-    result.push(...(Array.isArray(data) ? data : []));
-    if (!Array.isArray(data) || data.length < 100) return result;
+    try {
+      const data = await fetchJson(
+        `${url}${url.includes("?") ? "&" : "?"}per_page=100&page=${page}`,
+      );
+      if (!Array.isArray(data)) {
+        errors.push({ label, page, status: "invalid_payload" });
+        return result;
+      }
+      result.push(...data);
+      if (data.length < 100) return result;
+    } catch (error) {
+      errors.push({
+        label,
+        page,
+        status: error.status ?? "network",
+        attempts: error.attempts ?? 1,
+        message: error.message,
+      });
+      return result;
+    }
   }
 }
 export async function collect(repository, release) {
-  const base = `https://api.github.com/repos/${encodeURIComponent(repository)}`;
-  const [releases, tags, commits, prs] = await Promise.all([
-    pages(`${base}/releases`),
-    pages(`${base}/tags`),
-    pages(`${base}/commits`),
-    pages(`${base}/pulls?state=closed`),
-  ]).then((values) => values);
+  const base = `https://api.github.com/repos/${encodeURIComponent(repository)}`,
+    errors = [];
+  const releases = await pages(`${base}/releases`, errors, "releases");
+  const tags = await pages(`${base}/tags`, errors, "tags");
+  const commits = await pages(`${base}/commits`, errors, "commits");
+  const prs = await pages(`${base}/pulls?state=closed`, errors, "pullRequests");
+  const associations = [];
+  for (const commit of commits) {
+    const found = await pages(
+      `${base}/commits/${encodeURIComponent(commit.sha)}/pulls`,
+      errors,
+      `commitPulls:${commit.sha}`,
+    );
+    associations.push({ sha: commit.sha, pullRequests: found });
+  }
+  const associated = associations.flatMap(
+    (association) => association.pullRequests,
+  );
+  const allPrs = [...prs, ...associated];
   const selected = release
     ? releases.filter((item) => item.tag_name === release)
     : releases;
-  const assets = selected.flatMap((item) => item.assets ?? []);
   return normalize({
     releases: selected,
     tags,
     commits,
-    pullRequests: prs,
-    assets,
+    pullRequests: allPrs,
+    commitPullRequests: associations,
+    assets: selected.flatMap((item) => item.assets ?? []),
+    errors,
+    partial: errors.length > 0,
   });
 }
-const args = process.argv.slice(2);
-const flag = (name) => args.includes(name);
-const value = (name) => {
-  const index = args.indexOf(name);
-  return index >= 0 ? args[index + 1] : undefined;
-};
-export async function main(argv = args) {
+
+const usage =
+  "Usage: node scripts/release-notes.mjs (--release vX.Y.Z | --all) [--dry-run] [--audit-only] [--input file] [--output dir]";
+const parseArgs = (argv) => {
+  const allowed = new Set([
+    "--dry-run",
+    "--audit-only",
+    "--all",
+    "--write",
+    "--release",
+    "--input",
+    "--output",
+  ]);
+  for (const arg of argv)
+    if (arg.startsWith("--") && !allowed.has(arg))
+      throw new Error(`Unknown flag: ${arg}\n${usage}`);
+  const value = (name) => {
+    const index = argv.indexOf(name);
+    return index >= 0 ? argv[index + 1] : undefined;
+  };
   if (argv.includes("--write"))
     throw new Error(
-      "--write is intentionally disabled in this PR; mutable backfill will be implemented in a separate workflow after approval.",
+      "--write is intentionally disabled; this tool never mutates GitHub.",
     );
-  const inputPath = value("--input");
-  const output = resolve(value("--output") ?? "release-notes-output");
-  const repository = process.env.GITHUB_REPOSITORY ?? "ils15/open3dcalc";
   const release = value("--release");
   if (release && !version(release))
     throw new Error("--release must be a tag in vX.Y.Z format");
+  if (!release && !argv.includes("--all"))
+    throw new Error(`${usage}\nA release tag or --all is required.`);
+  for (const name of ["--release", "--input", "--output"])
+    if (argv.includes(name) && (!value(name) || value(name).startsWith("--")))
+      throw new Error(`${name} requires a value`);
+  return {
+    release,
+    all: argv.includes("--all"),
+    dryRun: argv.includes("--dry-run"),
+    auditOnly: argv.includes("--audit-only"),
+    input: value("--input"),
+    output: resolve(value("--output") ?? "release-notes-output"),
+  };
+};
+export async function main(argv = process.argv.slice(2)) {
+  const options = parseArgs(argv),
+    repository = process.env.GITHUB_REPOSITORY ?? "ils15/open3dcalc";
   const catalog = normalize(
-    inputPath
-      ? JSON.parse(await readFile(resolve(inputPath), "utf8"))
-      : await collect(repository, release),
+    options.input
+      ? JSON.parse(await readFile(resolve(options.input), "utf8"))
+      : await collect(repository, options.release),
   );
   const audit = {
-    schema: 1,
+    schema: 2,
     repository,
-    release: release ?? "all",
+    release: options.release ?? "all",
+    dryRun: options.dryRun,
+    partial: catalog.partial,
     inputSha256: sha256(catalog),
     outputSha256: sha256(render(catalog, repository)),
     catalog,
   };
-  await mkdir(output, { recursive: true });
+  await mkdir(options.output, { recursive: true });
   await writeFile(
-    resolve(output, "inventory.json"),
+    resolve(options.output, "inventory.json"),
     `${JSON.stringify(catalog, null, 2)}\n`,
   );
   await writeFile(
-    resolve(output, "audit.json"),
+    resolve(options.output, "audit.json"),
     `${JSON.stringify(audit, null, 2)}\n`,
   );
-  if (!flag("--audit-only")) {
+  if (!options.auditOnly) {
     const markdown = render(catalog, repository);
-    await writeFile(resolve(output, "release-notes.md"), `${markdown}\n`);
     await writeFile(
-      resolve(output, "release-notes.diff"),
-      `--- generated\n+++ audited\n@@\n+${markdown.split("\n").join("\n+")}\n`,
+      resolve(options.output, "release-notes.md"),
+      `${markdown}\n`,
+    );
+    await writeFile(
+      resolve(options.output, "release-notes.diff"),
+      `--- generated\n+++ audited\n@@\n+${markdown.split("\n").join("\n+\n")}`,
     );
   }
   return audit;

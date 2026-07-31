@@ -1,9 +1,12 @@
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   authorFor,
   categoryFor,
+  collect,
+  main,
   escapeMarkdown,
   normalize,
   render,
@@ -24,10 +27,10 @@ describe("audited release notes", () => {
     expect(categoryFor({ title: "fix: regression" })).toBe("Fixes");
     expect(categoryFor({ title: "docs: README" })).toBe("Documentation");
   });
-  it("uses merged author, then commit author, excluding bots", () => {
+  it("uses PR author, then commit author, excluding bots", () => {
     expect(
       authorFor({
-        pr: { merged_by: { login: "alice" } },
+        pr: { user: { login: "alice" }, merged_by: { login: "reviewer" } },
         commit: { author: { login: "bob" } },
       }),
     ).toBe("alice");
@@ -74,5 +77,128 @@ describe("audited release notes", () => {
     expect(
       catalog.assets.find((asset) => asset.name === "latest.yml")?.digest,
     ).toBe("Not available");
+  });
+  it("collects associated PRs through the commit endpoint and preserves partial errors", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url);
+      if (url.includes("/commits/abc/pulls")) {
+        if (
+          calls.filter((call) => call.includes("/commits/abc/pulls")).length ===
+          1
+        )
+          return new Response("busy", {
+            status: 429,
+            headers: { "retry-after": "0" },
+          });
+        return new Response("missing", { status: 404 });
+      }
+      if (url.includes("/commits?"))
+        return Response.json([
+          { sha: "abc", commit: { message: "fix: safe" } },
+        ]);
+      return Response.json([]);
+    }) as typeof fetch;
+    try {
+      const catalog = await collect("owner/repo", "v1.0.0");
+      expect(catalog.partial).toBe(true);
+      expect(catalog.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ label: "commitPulls:abc", status: 404 }),
+        ]),
+      );
+      expect(calls.some((call) => call.includes("/commits/abc/pulls"))).toBe(
+        true,
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+  it("enforces CLI safety flags and writes audit-only offline output", async () => {
+    await expect(main(["--all", "--unknown"])).rejects.toThrow("Unknown flag");
+    await expect(main([])).rejects.toThrow("tag or --all");
+    await expect(main(["--all", "--write"])).rejects.toThrow("never mutates");
+    const output = await mkdtemp(resolve(tmpdir(), "release-notes-test-"));
+    const audit = await main([
+      "--all",
+      "--dry-run",
+      "--audit-only",
+      "--input",
+      "scripts/__fixtures__/release-notes/aggregate.json",
+      "--output",
+      output,
+    ]);
+    expect(audit.dryRun).toBe(true);
+    await expect(
+      readFile(resolve(output, "audit.json"), "utf8"),
+    ).resolves.toContain('"partial": false');
+    const renderedOutput = await mkdtemp(
+      resolve(tmpdir(), "release-notes-rendered-"),
+    );
+    await main([
+      "--all",
+      "--input",
+      "scripts/__fixtures__/release-notes/aggregate.json",
+      "--output",
+      renderedOutput,
+    ]);
+    await expect(
+      readFile(resolve(renderedOutput, "release-notes.md"), "utf8"),
+    ).resolves.toContain("# Release notes");
+  });
+  it("records malformed pages, paginates, validates tags, and renders failures", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls = new Map<string, number>();
+    globalThis.fetch = (async (url: string) => {
+      const key = url.split("?")[0];
+      const count = (calls.get(key) ?? 0) + 1;
+      calls.set(key, count);
+      if (key.endsWith("/releases")) return Response.json({ unexpected: true });
+      if (key.endsWith("/tags"))
+        return Response.json(
+          count === 1
+            ? Array.from({ length: 100 }, (_, index) => ({
+                name: `v1.0.${index}`,
+              }))
+            : [],
+        );
+      return Response.json([]);
+    }) as typeof fetch;
+    try {
+      const catalog = await collect("owner/repo");
+      expect(catalog.partial).toBe(true);
+      expect(catalog.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ status: "invalid_payload" }),
+        ]),
+      );
+      expect(render({ ...catalog, partial: true }, "owner/repo")).toContain(
+        "Partial collection",
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    globalThis.fetch = (async (url: string) =>
+      url.includes("/releases?")
+        ? Response.json([{ tag_name: "v1.0.0", assets: [{ name: "app.zip" }] }])
+        : Response.json([])) as typeof fetch;
+    try {
+      const selected = await collect("owner/repo", "v1.0.0");
+      expect(selected.releases[0]?.tag).toBe("v1.0.0");
+      expect(selected.assets[0]?.name).toBe("app.zip");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(
+      authorFor({
+        pr: { user: { login: "service", type: "Bot" } },
+        commit: { author: { login: "human" } },
+      }),
+    ).toBe("Unknown");
+    await expect(main(["--release", "bad"])).rejects.toThrow("vX.Y.Z");
+    await expect(main(["--all", "--output"])).rejects.toThrow(
+      "requires a value",
+    );
   });
 });
