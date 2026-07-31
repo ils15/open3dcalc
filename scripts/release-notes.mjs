@@ -449,11 +449,12 @@ export async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv),
     repository = process.env.GITHUB_REPOSITORY ?? "ils15/open3dcalc";
   validateRepository(repository);
-  const catalog = normalize(
-    options.input
-      ? JSON.parse(await readFile(resolve(options.input), "utf8"))
-      : await collect(repository, options.release),
-  );
+  // collect() already returns a normalized catalog; only raw --input JSON
+  // needs normalization here. Re-normalizing an already normalized catalog
+  // drops the renamed fields (tag/target/url) and leaves items empty.
+  const catalog = options.input
+    ? normalize(JSON.parse(await readFile(resolve(options.input), "utf8")))
+    : await collect(repository, options.release);
   const audit = {
     schema: 2,
     repository,
