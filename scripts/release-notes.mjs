@@ -41,13 +41,41 @@ export const escapeMarkdown = (value) =>
   clean(value, "Not available").replace(/([\\`*_{}\[\]()<>#+.!|])/g, "\\$1");
 export const sha256 = (value) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const CONVENTIONAL_PREFIXES = {
+  feat: "Features",
+  fix: "Fixes",
+  perf: "Improvements",
+  refactor: "Improvements",
+  style: "Improvements",
+  docs: "Documentation",
+  ci: "CI/CD",
+  build: "CI/CD",
+  deps: "Dependencies",
+};
+const HIGHLIGHT_LIMIT = 3;
 export const categoryFor = (item) => {
+  // Raw commit payloads carry the title in commit.message (or a flat message),
+  // not in title — normalize before classifying so Conventional Commit
+  // prefixes win over generic keyword scanning (e.g. "feat: fix calculator"
+  // must be Features, and "calculator" must never match /\bci\b/).
+  const title = clean(
+    item?.title ?? item?.message ?? item?.commit?.message ?? item?.pr?.title,
+  );
   const text =
-    `${item.title ?? ""} ${item.body ?? ""} ${(item.labels ?? []).map((label) => label.name ?? label).join(" ")}`.toLowerCase();
+    `${title} ${item?.body ?? ""} ${(item?.labels ?? []).map((label) => label.name ?? label).join(" ")}`.toLowerCase();
+  const conventional = /^([a-z]+)(?:\(([^)]*)\))?(!)?:/.exec(text);
+  if (conventional) {
+    const [, prefix, scope, bang] = conventional;
+    if (bang) return "Breaking Changes";
+    if (scope && /deps?/.test(scope)) return "Dependencies";
+    if (CONVENTIONAL_PREFIXES[prefix]) return CONVENTIONAL_PREFIXES[prefix];
+    if (prefix === "chore" && /^chore\(release\)/.test(text)) return "CI/CD";
+  }
   if (/breaking|!:|major change/.test(text)) return "Breaking Changes";
   if (/security|cve|vulnerab|dependabot|renovate/.test(text))
     return text.includes("depend") ? "Dependencies" : "Security";
-  if (/ci|workflow|github action|pipeline|build/.test(text)) return "CI/CD";
+  // Anchored \bci\b so "calculator"/"calculadora" never land in CI/CD.
+  if (/\bci\b|workflow|github action|pipeline|build/.test(text)) return "CI/CD";
   if (/doc|readme|typo/.test(text)) return "Documentation";
   if (/fix|bug|patch|regression/.test(text)) return "Fixes";
   if (/feature|add|support|implement/.test(text)) return "Features";
@@ -66,6 +94,47 @@ export const authorFor = (item) => {
 const version = (tag) => (/^v\d+\.\d+\.\d+$/.test(tag) ? tag : null);
 const compare = (a, b) =>
   String(a).localeCompare(String(b), "en", { numeric: true });
+const semverOf = (tag) => {
+  const match = /^v(\d+)\.(\d+)\.(\d+)$/.exec(String(tag ?? ""));
+  return match
+    ? {
+        tag: String(tag),
+        major: Number(match[1]),
+        minor: Number(match[2]),
+        patch: Number(match[3]),
+      }
+    : null;
+};
+const semverCompare = (a, b) =>
+  a.major - b.major || a.minor - b.minor || a.patch - b.patch;
+// Highest SemVer tag strictly older than `release`, or null for the first one.
+const previousReleaseFor = (tags, release) => {
+  const target = semverOf(release);
+  if (!target) return null;
+  const older = tags
+    .map((tag) => semverOf(tag.name ?? tag))
+    .filter((candidate) => candidate && semverCompare(candidate, target) < 0)
+    .sort((a, b) => semverCompare(b, a));
+  return older[0]?.tag ?? null;
+};
+// The /commits list is newest-first, so its last entry is the oldest
+// commit reachable from the default branch; the first tagged release is
+// compared from that commit so every commit up to the tag is included.
+const changelogEntry = (repository, range, releases) => {
+  const repositoryUrl = `https://github.com/${repository}`;
+  if (range?.release) {
+    const target = encodeURIComponent(range.release);
+    return range.previous
+      ? `[Full Changelog](${repositoryUrl}/compare/${encodeURIComponent(range.previous)}...${target})`
+      : `[Full Changelog](${repositoryUrl}/commits/${target})`;
+  }
+  const versionedTags = (releases ?? [])
+    .map((release) => release.tag)
+    .filter((tag) => version(tag));
+  return versionedTags.length >= 2
+    ? `[Full Changelog](${repositoryUrl}/compare/${encodeURIComponent(versionedTags[0])}...${encodeURIComponent(versionedTags[versionedTags.length - 1])})`
+    : "- Generated from the audited tag, commit, pull request, and asset inventory.";
+};
 
 export const validateRepository = (repository) => {
   const match = repositoryPattern.exec(
@@ -138,14 +207,17 @@ export const normalize = (input) => {
       .find(Boolean);
     const current = existingKey ? seen.get(existingKey) : undefined;
     if (current && !(pr?.merged === true && !current.pr?.merged)) return;
+    const title = clean(
+      pr?.title ?? commit?.message ?? commit?.commit?.message,
+    );
     const item = {
       key,
       sha: clean(commit?.sha ?? pr?.merge_commit_sha),
-      title: clean(pr?.title ?? commit?.message ?? commit?.commit?.message),
+      title,
       body: clean(pr?.body, ""),
       pr,
       commit,
-      category: categoryFor({ ...commit, ...pr }),
+      category: categoryFor({ ...commit, ...pr, title }),
       author: authorFor({ pr, commit }),
     };
     if (existingKey && existingKey !== key) seen.delete(existingKey);
@@ -186,6 +258,7 @@ export const normalize = (input) => {
       }))
       .sort((a, b) => compare(a.name, b.name)),
     generatedAt: "deterministic",
+    range: input.range ?? null,
   };
 };
 
@@ -203,7 +276,14 @@ export const render = (catalog, repository = "repository") => {
       "",
     );
   for (const category of CATEGORIES) {
-    const entries = catalog.items.filter((item) => item.category === category);
+    let entries = catalog.items.filter((item) => item.category === category);
+    if (category === "Highlights" && !entries.length) {
+      // Deterministic highlights: the first Features entries in canonical
+      // item order, so the section never stays empty when Features items exist.
+      entries = catalog.items
+        .filter((item) => item.category === "Features")
+        .slice(0, HIGHLIGHT_LIMIT);
+    }
     if (!entries.length) continue;
     lines.push(`## ${category}`, "");
     for (const item of entries) {
@@ -241,7 +321,7 @@ export const render = (catalog, repository = "repository") => {
     "",
     "## Full Changelog",
     "",
-    "- Generated from the audited tag, commit, pull request, and asset inventory.",
+    changelogEntry(repository, catalog.range, catalog.releases),
     "",
   );
   return lines.join("\n");
@@ -332,6 +412,103 @@ async function mapWithConcurrency(items, worker, limit) {
   );
   return results;
 }
+// compare/<base>...<head> returns { status, ahead_by, behind_by, commits }.
+// The commits[] list is paginated with per_page/page; guard against API
+// layers that ignore pagination and would echo the same first page forever.
+async function fetchCompareCommits(base, baseRef, headRef, errors) {
+  const label = `compare:${baseRef}...${headRef}`;
+  const commits = [];
+  let firstShaOfPreviousPage = null;
+  for (let page = 1; ; page++) {
+    try {
+      const data = await fetchJson(
+        `${base}/compare/${encodeURIComponent(baseRef)}...${encodeURIComponent(headRef)}?per_page=100&page=${page}`,
+      );
+      if (!Array.isArray(data?.commits)) {
+        errors.push({ label, page, status: "invalid_payload" });
+        return { commits, ok: false };
+      }
+      if (
+        data.commits.length &&
+        data.commits[0]?.sha === firstShaOfPreviousPage
+      ) {
+        // Pagination ignored by the server: the same page repeats. Stop
+        // before duplicating entries instead of looping forever.
+        return { commits, ok: true };
+      }
+      if (data.commits.length) firstShaOfPreviousPage = data.commits[0]?.sha;
+      commits.push(...data.commits);
+      if (data.commits.length < 100) return { commits, ok: true };
+    } catch (error) {
+      errors.push({
+        label,
+        page,
+        status: error.status ?? "network",
+        attempts: error.attempts ?? 1,
+        message: error.message,
+      });
+      return { commits, ok: false };
+    }
+  }
+}
+// Narrow the catalog to the commits introduced by `release`:
+// - previous SemVer tag: compare/<previous>...<tag> (exact range);
+// - first tagged release: compare/<oldest known commit>...<tag sha> (every
+//   commit up to the tag, including the tag's own commit; the GitHub compare
+//   API rejects the empty-tree base, so the oldest default-branch commit is
+//   used instead);
+// - compare unavailable: fall back to the full commit list and record the
+//   failure so the rendered notes stay clearly "Partial collection".
+async function scopeForRelease({
+  base,
+  errors,
+  release,
+  releases,
+  tags,
+  commits,
+}) {
+  const previous = previousReleaseFor(tags, release);
+  if (previous) {
+    const range = await fetchCompareCommits(base, previous, release, errors);
+    return {
+      commits: range.ok ? range.commits : commits,
+      range: { release, previous },
+    };
+  }
+  const tag = tags.find(
+    (candidate) => (candidate.name ?? candidate) === release,
+  );
+  const targetRelease = releases.find(
+    (candidate) => candidate.tag_name === release,
+  );
+  const head = tag?.commit?.sha ?? targetRelease?.target_commitish;
+  // The /commits list is newest-first, so its last entry is the oldest
+  // commit reachable from the default branch.
+  const oldest = commits[commits.length - 1]?.sha;
+  if (head && oldest) {
+    if (oldest === head) {
+      // Single-commit edge case: the tag IS the oldest commit, so a compare
+      // against itself would return zero commits; keep the tag's own commit.
+      return { commits: [head], range: { release, previous: null } };
+    }
+    const range = await fetchCompareCommits(base, oldest, head, errors);
+    return {
+      commits: range.ok ? range.commits : commits,
+      range: { release, previous: null },
+    };
+  }
+  return { commits, range: { release, previous: null } };
+}
+const dedupePullRequests = (list) => {
+  const unique = new Map();
+  for (const pr of list) {
+    const key = validNumber(pr?.number)
+      ? `pr:${pr.number}`
+      : (pr?.id ?? pr?.merge_commit_sha ?? JSON.stringify(pr));
+    if (!unique.has(key)) unique.set(key, pr);
+  }
+  return [...unique.values()];
+};
 export async function collect(repository, release) {
   const { owner, repo } = validateRepository(repository);
   const base = `https://api.github.com/repos/${owner}/${repo}`,
@@ -340,6 +517,12 @@ export async function collect(repository, release) {
   const tags = await pages(`${base}/tags`, errors, "tags");
   const commits = await pages(`${base}/commits`, errors, "commits");
   const prs = await pages(`${base}/pulls?state=closed`, errors, "pullRequests");
+
+  // Per-release catalogs scope commits to the previous...tag range; --all
+  // keeps the aggregated repository-wide inventory.
+  const scope = release
+    ? await scopeForRelease({ base, errors, release, releases, tags, commits })
+    : { commits, range: null };
 
   // The paginated pull-request response already contains merge_commit_sha for
   // the usual squash/merge cases. Only unresolved SHAs need the per-commit
@@ -372,7 +555,7 @@ export async function collect(repository, release) {
     return commitPullCache.get(sha);
   };
   const associations = await mapWithConcurrency(
-    commits,
+    scope.commits,
     async (commit) => {
       const sha = String(commit.sha ?? "");
       if (!sha || /[\u0000-\u001f\u007f/\\]/.test(sha)) {
@@ -389,19 +572,24 @@ export async function collect(repository, release) {
   const associated = associations.flatMap(
     (association) => association.pullRequests,
   );
-  const allPrs = [...prs, ...associated];
+  // Per-release catalogs must never include PRs from other releases: keep
+  // only PRs associated with scoped commits instead of the full closed list.
+  const allPrs = release
+    ? dedupePullRequests(associated)
+    : [...prs, ...associated];
   const selected = release
     ? releases.filter((item) => item.tag_name === release)
     : releases;
   return normalize({
     releases: selected,
     tags,
-    commits,
+    commits: scope.commits,
     pullRequests: allPrs,
     commitPullRequests: associations,
     assets: selected.flatMap((item) => item.assets ?? []),
     errors,
     partial: errors.length > 0,
+    range: scope.range,
   });
 }
 
