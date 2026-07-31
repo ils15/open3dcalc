@@ -1,3 +1,4 @@
+# Release workflow v2 — tag-only push + PR strategy
 name: Release
 
 on:
