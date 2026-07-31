@@ -104,4 +104,4 @@
 
 ---
 
-Para histórico completo anterior à v1.8.0, veja [web/CHANGELOG.md](web/CHANGELOG.md)
+Para histórico completo anterior à v1.8.0, veja as [releases no GitHub](https://github.com/ils15/open3dcalc/releases).

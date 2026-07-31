@@ -620,8 +620,51 @@
     "header": "{{versions}} versões · {{changes}} mudanças",
     "viewAllOnGitHub": "Ver todas as releases no GitHub",
     "versions": [
-
-    {
+      {
+        "version": "1.9.2",
+        "date": "",
+        "sections": [
+          {
+            "title": "🚀 Novidades",
+            "items": [
+              "**ci:** Add AI code review workflow via Bifrost LLM Gateway (8287e51)",
+              "**ci:** Switch AI review to alibaba/open-code-review, fix release artifacts (#11)",
+              "CI/CD otimizado — self-hosted runner, husky-only, AI commit review, i18n (#12)",
+              "Auto-deduct filament + date filters (Issue #16) (#17, #16)",
+              "Phase 2+3 — STL & Dashboard optimization (dead code removal, calc integration) (#20)"
+            ]
+          },
+          {
+            "title": "🐛 Correções",
+            "items": [
+              "**changelog:** Sort versions by semver + add v1.9.1 entry (ffc68bb)",
+              "Safety Sprint — security & quality hardening (#19)",
+              "**release:** Remove [skip ci] from release commit (#21)",
+              "**release:** Push tag only, use release branch + PR for version bump (#22)",
+              "**release:** Padronizar pipeline protegido e idempotente (#23)"
+            ]
+          },
+          {
+            "title": "🧹 Outros",
+            "items": [
+              "Translate missing pt-BR keys, remove stale web/ and desktop/ copies (cc5b0e9)"
+            ]
+          },
+          {
+            "title": "🤖 CI/CD",
+            "items": [
+              "Remove themis review, add opencode github integration (#13)"
+            ]
+          },
+          {
+            "title": "❤️ Contribuidores",
+            "items": [
+              "Ils15 (@ils15)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "1.9.1",
         "date": "2026-07-02",
         "sections": [
@@ -658,6 +701,110 @@
             "items": [
               "**latest.yml** now included in GitHub releases — auto-updater finds updates",
               "**Blockmap** for delta updates"
+            ]
+          }
+        ]
+      },
+      {
+        "version": "1.9.0",
+        "date": "2026-07-01",
+        "sections": [
+          {
+            "title": "🚀 Novidades",
+            "items": [
+              "**ui:** Usability improvements — tooltips, quick mode labels, tutorial overhaul (72720a4)",
+              "**ui:** Accessibility and i18n fixes (1e30bc0)",
+              "**ui:** Quick Start, Empty States, Scroll, Keyboard Shortcuts (80c2f29)"
+            ]
+          },
+          {
+            "title": "🐛 Correções",
+            "items": [
+              "**release:** Use bash array for artifact upload (a719447)",
+              "**ui:** Resolve 5 audit bugs — tutorial navigation, H1, touch targets, export (5b032ca)",
+              "**ui:** Tutorial spotlight positioning + remaining touch targets (5d6b8ae)",
+              "**ui:** Remaining touch targets in SectionNav + MobileBottomBar (87e1cd9)",
+              "**ui:** Min-h-[44px] in SectionNav buttons (d875147)",
+              "Lint error in useKeyboardShortcuts + enforce CI/CD gate in AGENTS.md (60a72b1)",
+              "Type error document.querySelector().click() → cast to HTMLElement (61ebfab)"
+            ]
+          },
+          {
+            "title": "📖 Documentação",
+            "items": [
+              "Add RELEASE.md with step-by-step release process (01d42fb)"
+            ]
+          },
+          {
+            "title": "🧹 Outros",
+            "items": [
+              "**release:** V1.8.1 [skip ci] (079945e)",
+              "**release:** V1.8.2 [skip ci] (7e1508d)"
+            ]
+          },
+          {
+            "title": "❤️ Contribuidores",
+            "items": [
+              "Ils15 (@ils15)"
+            ]
+          }
+        ]
+      },
+      {
+        "version": "1.8.2",
+        "date": "2026-06-29",
+        "sections": [
+          {
+            "title": "🐛 Correções",
+            "items": [
+              "**release:** Use bash array for artifact upload (a719447)"
+            ]
+          },
+          {
+            "title": "🧹 Outros",
+            "items": [
+              "**release:** V1.8.1 [skip ci] (079945e)"
+            ]
+          },
+          {
+            "title": "❤️ Contribuidores",
+            "items": [
+              "Ils15 (@ils15)"
+            ]
+          }
+        ]
+      },
+      {
+        "version": "1.8.1",
+        "date": "",
+        "sections": []
+      },
+      {
+        "version": "1.8.0",
+        "date": "2026-06-29",
+        "sections": [
+          {
+            "title": "🎨 UI/UX",
+            "items": [
+              "Redesign Bifrost: superfícies planas, sem glassmorphism",
+              "Tema claro/escuro no web",
+              "Badges retangulares (6px), border-radius reduzido (14px)",
+              "Sistema de CSS variables unificado"
+            ]
+          },
+          {
+            "title": "🔧 Técnico",
+            "items": [
+              "Codebase unificada em monorepo (`src/shared/` + `src/platform/`)",
+              "Git migrado para raiz (história preservada)",
+              "`web/` e `desktop/` mantidos para referência histórica"
+            ]
+          },
+          {
+            "title": "✅ Testes",
+            "items": [
+              "417 testes, 36/36 arquivos passando",
+              "Cobertura >80%"
             ]
           }
         ]
@@ -721,90 +868,6 @@
               "`src/data/printers-database.json` — 385 impressoras com specs detalhadas",
               "`src/types/customer.ts` — interfaces Customer e CustomerFormData",
               "`src/types/quote.ts` — interfaces Quote, QuoteItem, QuoteFormData"
-            ]
-          }
-        ]
-      },
-      {
-        "version": "1.9.0",
-        "date": "2026-07-01",
-        "sections": [
-          {
-            "title": "🎨 UX — Usability & Accessibility",
-            "items": [
-              "**53 tooltips** on calculator fields with Floating UI (touch + a11y)",
-              "**LevelToggle renamed**: Quick/Detailed/Complete with descriptions",
-              "**Interactive tutorial rewritten**: 7 steps, non-blocking, overlay dismiss",
-              "**Quick Start**: \"Fill with Example\" button with realistic values",
-              "**Empty States**: History, Inventory, Quotes empty with helpful messages",
-              "**Smooth scroll** + keyboard shortcuts (Ctrl+Z, Ctrl+E, Ctrl+P)"
-            ]
-          },
-          {
-            "title": "♿ Accessibility",
-            "items": [
-              "**Skip link** to bypass navigation",
-              "**Heading hierarchy** fixed (h1→h2→h3, no gaps)",
-              "**Touch targets** ≥ 44px on all interactive elements",
-              "**Tooltips migrated** to i18n (pt-BR + en-US)"
-            ]
-          },
-          {
-            "title": "🐛 Fixes",
-            "items": [
-              "Tutorial navigation: MutationObserver ignores tutorial card",
-              "Tutorial card positioning: fixed position (no Floating UI)",
-              "Export: buttons no longer overlap",
-              "Mobile nav: horizontal scroll removed",
-              "Desktop sidebar: full page height, no unnecessary scroll"
-            ]
-          },
-          {
-            "title": "🧪 Tests",
-            "items": [
-              "**483 tests passing** (was 448)",
-              "+35 new tests (tutorialStore, Tutorial, QuickStart, EmptyState)"
-            ]
-          }
-        ]
-      },
-      {
-        "version": "1.8.2",
-        "date": "2026-06-29",
-        "sections": [
-          {
-            "title": "🐛 Fixes",
-            "items": [
-              "Fix: database module import in Electron (.js extension)",
-              "Fix: icon references in electron-builder"
-            ]
-          },
-          {
-            "title": "🏡 Chore",
-            "items": [
-              "Release workflow: artifact upload with bash array"
-            ]
-          }
-        ]
-      },
-      {
-        "version": "1.8.0",
-        "date": "2026-06-29",
-        "sections": [
-          {
-            "title": "🚀 Bifrost — Major Refactor",
-            "items": [
-              "**Calculator.tsx refactored**: from 1459 to 234 lines — 11 components extracted",
-              "**calculatorStore.ts refactored**: from 561 to 278 lines",
-              "**Unified types** in `src/shared/types/index.ts`",
-              "**Automatic migration** from old data format to new one"
-            ]
-          },
-          {
-            "title": "🧪 Tests",
-            "items": [
-              "**417 tests** (was 321), coverage maintained at 93%",
-              "historyStore +12, filamentInventory +11, Calculator mobile export +3"
             ]
           }
         ]
