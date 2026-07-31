@@ -47,7 +47,7 @@ export function Header() {
         borderColor: 'var(--color-border)',
       }}
     >
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-12 h-[68px] flex items-center justify-between gap-4">
+      <div className="max-w-[1440px] mx-auto min-w-0 px-6 sm:px-8 lg:px-12 h-[68px] flex items-center justify-between gap-4">
 
         {/* Logo */}
         <div className="flex items-center gap-3">
@@ -75,7 +75,7 @@ export function Header() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <a
             href="https://t.me/Impressao3DBR"
             target="_blank"
@@ -110,11 +110,13 @@ export function Header() {
           </button>
 
           {/* Currency selector */}
-          <div ref={menuRef} className="relative">
+          <div ref={menuRef} className="relative shrink-0">
             <button
               onClick={() => setShowCurrencyMenu(v => !v)}
-              className="flex items-center gap-1 text-[13px] font-semibold px-3 py-2.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+              className="flex min-w-[80px] shrink-0 items-center justify-center gap-1 whitespace-nowrap text-[13px] font-semibold px-3 py-2.5 rounded-lg min-h-[44px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
               title={t('settings.currency')}
+              aria-label={t('settings.currency')}
+              aria-haspopup="menu"
             >
               <span className="font-mono">{symbol}</span>
               {currencySetting === 'auto' && (
@@ -172,8 +174,9 @@ export function Header() {
 
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2.5 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-w-[44px]"
+            className="flex min-w-[64px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap text-[13px] font-semibold px-3.5 py-2.5 min-h-[44px] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
             title={t('nav.language')}
+            aria-label={t('nav.language')}
           >
             <Globe className="w-4 h-4" />
             <span className="hidden sm:inline">{i18n.language === 'pt-BR' ? 'EN' : 'PT'}</span>

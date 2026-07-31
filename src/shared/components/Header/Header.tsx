@@ -42,12 +42,12 @@ export function Header() {
         borderColor: 'var(--color-border)',
       }}
     >
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 h-[68px] flex items-center justify-between gap-2 sm:gap-4 overflow-hidden">
+      <div className="max-w-[1440px] mx-auto min-w-0 px-4 sm:px-6 lg:px-12 h-[68px] flex items-center justify-between gap-2 sm:gap-4">
 
         {/* Logo — clickable on mobile to open settings */}
         <button
           onClick={() => setShowSettings(true)}
-          className="flex items-center gap-3 cursor-pointer sm:cursor-default text-left focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded-xl"
+          className="flex min-w-0 items-center gap-3 cursor-pointer sm:cursor-default text-left focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded-xl"
           aria-label={t('nav.settings')}
         >
           <div
@@ -60,7 +60,7 @@ export function Header() {
             <Box className="w-[22px] h-[22px] text-white" strokeWidth={2} />
           </div>
 
-          <div className="leading-none">
+          <div className="min-w-0 leading-none">
             <div className="flex items-center gap-2">
               <span className="text-[17px] sm:text-[19px] font-black tracking-tight gradient-text">
                 {t('app.title')}
@@ -74,7 +74,7 @@ export function Header() {
         </button>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
 
           {/* Desktop-only actions */}
           <div className="hidden sm:flex items-center gap-2">
@@ -90,11 +90,13 @@ export function Header() {
             </button>
 
             {/* Currency selector */}
-            <div ref={menuRef} className="relative">
+            <div ref={menuRef} className="relative shrink-0">
               <button
                 onClick={() => setShowCurrencyMenu(v => !v)}
-                className="flex items-center gap-1 text-[13px] font-semibold px-3 py-2.5 rounded-lg min-h-[44px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+                className="flex min-w-[80px] shrink-0 items-center justify-center gap-1 whitespace-nowrap text-[13px] font-semibold px-3 py-2.5 rounded-lg min-h-[44px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
                 title={t('settings.currency')}
+                aria-label={t('settings.currency')}
+                aria-haspopup="menu"
               >
                 <span className="font-mono">{symbol}</span>
                 {currencySetting === 'auto' && (
@@ -133,8 +135,9 @@ export function Header() {
             {/* Language toggle */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1.5 text-[13px] font-semibold px-3.5 py-2.5 min-h-[44px] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-w-[44px]"
+              className="flex min-w-[64px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap text-[13px] font-semibold px-3.5 py-2.5 min-h-[44px] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
               title={t('nav.language')}
+              aria-label={t('nav.language')}
             >
               <Globe className="w-4 h-4" />
               <span className="hidden sm:inline">{i18n.language === 'pt-BR' ? 'EN' : 'PT'}</span>
@@ -202,16 +205,18 @@ export function Header() {
                 {/* Currency */}
                 <button
                   onClick={() => setShowCurrencyMenu(true)}
+                  aria-label={t('settings.currency')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
                 >
                   <DollarSign className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
                   <span className="text-sm font-medium">{t('settings.currency')}</span>
-                  <span className="ml-auto text-xs text-[var(--color-text-muted)] font-mono">{symbol} {currencySetting}</span>
+                  <span className="ml-auto shrink-0 whitespace-nowrap text-xs text-[var(--color-text-muted)] font-mono">{symbol} {currencySetting}</span>
                 </button>
 
                 {/* Language */}
                 <button
                   onClick={() => { toggleLanguage(); setShowSettings(false) }}
+                  aria-label={t('nav.language')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
                 >
                   <Globe className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />

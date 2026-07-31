@@ -475,11 +475,12 @@ function App() {
                 {/* Currency */}
                 <button
                   onClick={() => setShowCurrencyPicker(v => !v)}
+                  aria-label={t('settings.currency')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
                 >
                   <DollarSign className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
                   <span className="text-sm font-medium">{t('settings.currency')}</span>
-                  <span className="ml-auto text-xs text-[var(--color-text-muted)] font-mono">{symbol} {currencySetting}</span>
+                  <span className="ml-auto shrink-0 whitespace-nowrap text-xs text-[var(--color-text-muted)] font-mono">{symbol} {currencySetting}</span>
                 </button>
                 {showCurrencyPicker && (
                   <div className="mx-4 mb-1 rounded-xl overflow-hidden border" style={{ borderColor: 'var(--color-border)' }}>
@@ -501,6 +502,7 @@ function App() {
                 {/* Language */}
                 <button
                   onClick={() => { const next = i18n.language === 'pt-BR' ? 'en-US' : 'pt-BR'; i18n.changeLanguage(next); setMobileMenuOpen(false) }}
+                  aria-label={t('nav.language')}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
                 >
                   <Globe className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
