@@ -79,9 +79,9 @@ export function Calculator() {
 		<>
 			<ToastContainer items={toastItems} onDismiss={dismissToast} />
 			<h1 className="sr-only">{t('nav.calculator')}</h1>
-			<div className="flex gap-5 xl:gap-8 pb-[72px] lg:pb-0">
+			<div className="flex gap-4 xl:gap-6 2xl:gap-8 pb-[72px] lg:pb-0">
 				<SectionNav activeSection={activeSection} onSectionClick={setActiveSection} />
-				<div className="flex-1 min-w-0 space-y-5">
+				<div className="flex-1 min-w-0 @container space-y-5">
 					<QuickStartBanner />
 						<div className="flex flex-wrap items-center gap-2 sm:gap-3 py-1">
 						<TechToggle />
@@ -101,7 +101,7 @@ export function Calculator() {
 						handlePrinterSelect={handlePrinterSelect}
 					/>
 				</div>
-				<div data-tutorial="results-sidebar" className="hidden lg:flex flex-col gap-5 w-[320px] xl:w-[360px] shrink-0 sticky top-[92px] self-start max-h-[calc(100vh-120px)] overflow-y-auto">
+				<div data-tutorial="results-sidebar" className="hidden xl:flex flex-col gap-5 w-[280px] xl:w-[320px] 2xl:w-[360px] shrink-0 sticky top-[92px] self-start max-h-[calc(100vh-120px)] overflow-y-auto">
 					<ResultsPanel variant="sidebar" />
 				</div>
 			</div>
