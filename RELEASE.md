@@ -13,7 +13,8 @@ para um commit já incorporado em `main`.
 - O runner self-hosted tem as labels `cx33` e `linux`, Node.js 22, npm, GitHub
   CLI autenticado pelo token do Actions e, para builds Windows, Wine.
 - A permissão de Actions permite `contents: write` e `pull-requests: write`.
-- Não existe uma branch remota `release/vX.Y.Z` para a versão pretendida.
+- Uma rerun reutiliza a única branch remota `release/vX.Y.Z` existente; se mais
+  de uma existir, o workflow falha sem alterar nenhuma delas.
 - Nunca usar `[skip ci]`, force push ou mover uma tag já publicada.
 
 ## Preparação manual
@@ -23,8 +24,8 @@ para um commit já incorporado em `main`.
 2. O workflow cria `release/vX.Y.Z`, fixa a versão com `changelogen 0.6.2`,
    atualiza `package.json`, `package-lock.json` e `CHANGELOG.md`, executa lint,
    typecheck, testes e builds, e abre um PR para `main`.
-3. Se o PR já existir, um rerun o reutiliza. Se a branch já existir, a execução
-   aborta sem sobrescrever estado.
+3. Se a branch/PR já existir, um rerun reutiliza ambos sem executar outro bump,
+   sem force push e sem sobrescrever o estado existente.
 4. Revise e faça o merge do PR normalmente. Não crie a tag antes do merge.
 
 ## Publicação automática
@@ -48,15 +49,22 @@ SHA e anexa os artefatos Windows/Linux. Só após confirmação da Release remov
 
 ## Rerun, falhas parciais e recuperação
 
-- Preparação: branch existente aborta claramente; PR aberto é reutilizado.
-  Corrija a causa e execute um novo bump/branch apenas quando apropriado.
-- Publicação: tag movida, tag fora de `main`, versão divergente ou Release já
-  existente aborta. O workflow nunca sobrescreve Release nem recria artefatos.
+- Preparação: a única branch `release/vX.Y.Z` existente e seu PR são
+  reutilizados. Mais de uma branch é ambígua e falha com diagnóstico, sem
+  alterações.
+- Publicação: tag movida, tag fora de `main` ou versão divergente falha. Uma
+  Release existente para a mesma tag é validada e atualizada com segurança; só
+  assets ausentes são anexados. Assets com o mesmo nome e digest diferente
+  causam falha, sem overwrite ou delete.
+- O build limpa os diretórios de saída antes de gerar artefatos e verifica o
+  SHA-256 local. Assim, nenhum arquivo residual de outra tag é anexado.
 - Se o build falhar, corrija no código e faça novo PR/versionamento. Não mova a
   tag existente. Se a Release já foi publicada, preserve-a e trate a correção
   em uma nova versão.
-- Se a publicação terminou mas a limpeza falhou, reexecute apenas após conferir
-  a Release; a limpeza é idempotente e só remove a branch correspondente.
+- Se a publicação terminou mas a limpeza falhou, reexecute após conferir a
+  Release; a publicação e a limpeza são idempotentes e só removem a branch
+  correspondente. Em estado parcial não reparável, o job falha preservando
+  manifestos/detalhes para diagnóstico e não apaga assets.
 - Para recuperação de um PR ainda não publicado, feche-o/remova a branch
   manualmente somente após confirmar que não há tag ou Release correspondente.
 

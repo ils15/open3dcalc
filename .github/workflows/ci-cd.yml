@@ -47,9 +47,9 @@ jobs:
             echo "⚠️ gitleaks not installed on runner — skipping"
           fi
       - name: 📦 Dependency audit
-        run: npm audit --audit-level=high || echo "⚠️ npm audit found issues — review manually"
+        run: npm audit --omit=optional --audit-level=critical
       - name: Rebuild native modules
-        run: npm rebuild better-sqlite3 2>/dev/null || true
+        run: npm rebuild better-sqlite3
       - name: 🔍 Lint
         run: npm run lint -- --max-warnings=0
       - run: npm run typecheck

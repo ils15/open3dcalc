@@ -48,8 +48,27 @@ jobs:
         shell: bash
         env:
           BUMP: ${{ inputs.bump }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          REPOSITORY="${{ github.repository }}"
+          mapfile -t EXISTING_BRANCHES < <(gh api --paginate "repos/$REPOSITORY/branches?per_page=100" --jq '.[].name' | awk '/^release\/v[0-9]+\.[0-9]+\.[0-9]+$/')
+          if [ "${#EXISTING_BRANCHES[@]}" -gt 1 ]; then
+            printf 'Multiple release branches exist; resolve explicitly before rerun: %s\n' "${EXISTING_BRANCHES[*]}" >&2
+            exit 1
+          fi
+          if [ "${#EXISTING_BRANCHES[@]}" -eq 1 ]; then
+            BRANCH="${EXISTING_BRANCHES[0]}"
+            VERSION="${BRANCH#release/}"
+            [ "$VERSION" != "v1.10.0" ] || { echo "v1.10.0 is intentionally excluded from this automation." >&2; exit 1; }
+            git fetch origin "$BRANCH:refs/remotes/origin/$BRANCH"
+            git switch --track "origin/$BRANCH"
+            echo "Reusing existing $BRANCH; changelog/version are not bumped again."
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+            echo "reused=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           case "$BUMP" in
             auto) npm exec -- changelogen --bump ;;
             patch|minor|major) npm exec -- changelogen --bump --"$BUMP" ;;
@@ -62,13 +81,10 @@ jobs:
             exit 1
           fi
           BRANCH="release/$VERSION"
-          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            echo "Release branch $BRANCH already exists; refusing to duplicate or overwrite it." >&2
-            exit 1
-          fi
           git switch -c "$BRANCH"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "reused=false" >> "$GITHUB_OUTPUT"
 
       - name: Validate changed release files
         shell: bash
@@ -81,8 +97,10 @@ jobs:
               exit 1
             }
           done < <(git diff --name-only)
-          git add package.json package-lock.json CHANGELOG.md
-          git diff --cached --check
+          if [ "${{ steps.version.outputs.reused }}" != "true" ]; then
+            git add package.json package-lock.json CHANGELOG.md
+            git diff --cached --check
+          fi
 
       - name: Quality checks and application builds
         run: |
@@ -93,6 +111,7 @@ jobs:
           npm run build:electron
 
       - name: Commit and push release branch
+        if: steps.version.outputs.reused != 'true'
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.version }}

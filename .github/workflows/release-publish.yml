@@ -45,10 +45,11 @@ jobs:
       - name: Install and build release artifacts
         run: |
           npm ci
-          npm rebuild better-sqlite3 2>/dev/null || true
+          npm rebuild better-sqlite3
           npm run lint -- --max-warnings=0
           npm run typecheck
           npm run test:run
+          rm -rf dist-electron dist-web
           npm run build:all
           npm run build:electron
           if command -v sudo >/dev/null 2>&1; then
@@ -58,7 +59,7 @@ jobs:
           fi
           npm exec -- electron-builder --win --linux --publish never
 
-      - name: Create immutable GitHub Release
+      - name: Create or repair GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
@@ -67,10 +68,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$TAG" --repo "$REPOSITORY" >/dev/null 2>&1; then
-            echo "Release $TAG already exists; refusing to overwrite or duplicate it." >&2
-            exit 1
-          fi
           mapfile -t ARTIFACTS < <(find dist-electron -maxdepth 1 -type f \( \
             -name 'Open3DCalc-*.exe' -o -name 'Open3DCalc-*.AppImage' -o \
             -name 'latest*.yml' -o -name '*.blockmap' \) -print)
@@ -78,12 +75,48 @@ jobs:
             echo "No release artifacts found." >&2
             exit 1
           fi
-          gh release create "$TAG" \
-            --repo "$REPOSITORY" \
-            --title "$TAG" \
-            --generate-notes \
-            --target "$TAG_SHA" \
-            "${ARTIFACTS[@]}"
+          : > release-artifacts.sha256
+          for artifact in "${ARTIFACTS[@]}"; do sha256sum "$artifact" >> release-artifacts.sha256; done
+          rm -rf release-publish-diagnostics
+          mkdir -p release-publish-diagnostics
+          RELEASE_JSON=release-publish-diagnostics/release.json
+          if gh api "repos/$REPOSITORY/releases/tags/$TAG" >"$RELEASE_JSON" 2>/dev/null; then
+            RELEASE_ID=$(jq -r '.id' "$RELEASE_JSON")
+            TAG_REF=$(git ls-remote origin "refs/tags/$TAG^{}" | cut -f1)
+            [ "$TAG_REF" = "$TAG_SHA" ] || { echo "Existing release tag resolves to $TAG_REF, expected $TAG_SHA; preserving release." >&2; exit 1; }
+            gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" --target "$TAG_SHA"
+            EXISTING_ASSETS=release-publish-diagnostics/assets.json
+            gh api --paginate "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" >"$EXISTING_ASSETS"
+            for artifact in "${ARTIFACTS[@]}"; do
+              name=$(basename "$artifact")
+              local_digest="sha256:$(sha256sum "$artifact" | cut -d' ' -f1)"
+              existing_name=$(jq -r --arg name "$name" '[.[] | select(.name == $name)] | length' "$EXISTING_ASSETS")
+              existing_digest=$(jq -r --arg name "$name" '.[] | select(.name == $name) | .digest // empty' "$EXISTING_ASSETS")
+              if [ "$existing_name" -gt 0 ] && [ -z "$existing_digest" ]; then
+                echo "Asset $name exists but has no server digest; refusing blind overwrite. Evidence: $EXISTING_ASSETS" >&2
+                exit 1
+              elif [ -n "$existing_digest" ] && [ "$existing_digest" != "$local_digest" ]; then
+                echo "Asset $name exists with a different digest; refusing overwrite. Evidence: $EXISTING_ASSETS and release-artifacts.sha256" >&2
+                exit 1
+              elif [ -z "$existing_digest" ]; then
+                gh release upload "$TAG" "$artifact" --repo "$REPOSITORY"
+              else
+                echo "Keeping matching existing asset $name."
+              fi
+            done
+          else
+            gh release create "$TAG" --repo "$REPOSITORY" --title "$TAG" --generate-notes --target "$TAG_SHA" "${ARTIFACTS[@]}"
+          fi
+
+      - name: Preserve publication diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-publication-diagnostics-${{ github.run_id }}
+          if-no-files-found: ignore
+          path: |
+            release-artifacts.sha256
+            release-publish-diagnostics/
 
       - name: Remove release branch after confirmed publication
         if: success()
