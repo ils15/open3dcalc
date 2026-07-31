@@ -71,7 +71,7 @@ export function FailureSection({
 				<div
 					className={`space-y-4 transition-all duration-300 ${failureEnabled ? "" : "opacity-40 pointer-events-none"}`}
 				>
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+					<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
 						<Select
 							label={t("calc.failure.mode")}
 							value={failureMode === "none" ? "percent" : failureMode}

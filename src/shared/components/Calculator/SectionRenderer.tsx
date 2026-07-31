@@ -184,7 +184,7 @@ export function SectionRenderer(props: SectionRendererProps) {
 						);
 					case "results":
 						return (
-							<div key="results" id="section-results" data-tutorial="results" className="scroll-mt-24 lg:hidden">
+							<div key="results" id="section-results" data-tutorial="results" className="scroll-mt-24 xl:hidden">
 								<ResultsPanel variant="mobile" />
 							</div>
 						);

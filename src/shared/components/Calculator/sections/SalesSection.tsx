@@ -60,7 +60,7 @@ export function SalesSection() {
 				sectionId="sales"
 			/>
 			<div className="space-y-4">
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+				<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
 					<InputGroup
 						label={t("calc.quantity")}
 						value={store.quantity}
@@ -104,7 +104,7 @@ export function SalesSection() {
 						tooltip={t("tooltip.extras")}
 					/>
 				)}
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+				<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
 					<InputGroup
 						label={t("calc.packaging")}
 						value={
@@ -158,7 +158,7 @@ export function SalesSection() {
 				</div>
 				{isFieldVisible("sales", "marketplace") && (
 					<>
-						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+						<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
 							<Select
 								label={t("calc.marketplace")}
 								value={store.selectedMarketplace.id}

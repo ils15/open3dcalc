@@ -24,7 +24,7 @@ export function OpsSection() {
 				subtitle={t("calc.sectionDesc.ops")}
 				sectionId="ops"
 			/>
-			<div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+			<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
 				<div>
 				<div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2 mb-3">
 					<span className="text-xs font-semibold text-[var(--color-text-secondary)]">
