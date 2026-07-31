@@ -1,10 +1,12 @@
+---
 name: Release preparation
 
-on:
+"on":
   workflow_dispatch:
     inputs:
       bump:
-        description: Version bump to prepare (v1.10.0 is intentionally not supported)
+        description: >-
+          Version bump to prepare (v1.10.0 is intentionally not supported)
         required: true
         type: choice
         default: patch
@@ -41,7 +43,11 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
-          npm rebuild better-sqlite3 2>/dev/null || true
+          if ! npm rebuild better-sqlite3; then
+            echo "better-sqlite3 rebuild failed on this runner; release
+            preparation cannot continue." >&2
+            exit 1
+          fi
 
       - name: Prepare version and changelog
         id: version
@@ -52,18 +58,29 @@ jobs:
         run: |
           set -euo pipefail
           REPOSITORY="${{ github.repository }}"
-          mapfile -t EXISTING_BRANCHES < <(gh api --paginate "repos/$REPOSITORY/branches?per_page=100" --jq '.[].name' | awk '/^release\/v[0-9]+\.[0-9]+\.[0-9]+$/')
+          mapfile -t EXISTING_BRANCHES < <(
+            gh api --paginate "repos/$REPOSITORY/branches?per_page=100" \
+              --jq '.[].name' \
+              | awk '/^release\/v[0-9]+\.[0-9]+\.[0-9]+$/'
+          )
           if [ "${#EXISTING_BRANCHES[@]}" -gt 1 ]; then
-            printf 'Multiple release branches exist; resolve explicitly before rerun: %s\n' "${EXISTING_BRANCHES[*]}" >&2
+            printf '%s\n' \
+              "Multiple release branches exist; resolve explicitly before " \
+              "rerun: " \
+              "${EXISTING_BRANCHES[*]}" >&2
             exit 1
           fi
           if [ "${#EXISTING_BRANCHES[@]}" -eq 1 ]; then
             BRANCH="${EXISTING_BRANCHES[0]}"
             VERSION="${BRANCH#release/}"
-            [ "$VERSION" != "v1.10.0" ] || { echo "v1.10.0 is intentionally excluded from this automation." >&2; exit 1; }
+            [ "$VERSION" != "v1.10.0" ] || {
+              echo "v1.10.0 is intentionally excluded from this automation." >&2
+              exit 1
+            }
             git fetch origin "$BRANCH:refs/remotes/origin/$BRANCH"
             git switch --track "origin/$BRANCH"
-            echo "Reusing existing $BRANCH; changelog/version are not bumped again."
+            message="Reusing existing $BRANCH; changelog/version are not bumped"
+            printf '%s again.\n' "$message"
             echo "version=$VERSION" >> "$GITHUB_OUTPUT"
             echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
             echo "reused=true" >> "$GITHUB_OUTPUT"
@@ -121,7 +138,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if git diff --cached --quiet; then
-            echo "No version or changelog changes were produced; refusing an empty release PR." >&2
+            printf '%s\n' \
+              "No version or changelog changes were produced; refusing an " \
+              "empty release PR." >&2
             exit 1
           fi
           git commit --no-verify -m "chore(release): $VERSION"
@@ -136,7 +155,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          EXISTING=$(gh pr list --repo "$REPOSITORY" --state open --head "$BRANCH" --json number,url --jq '.[0] // empty')
+           EXISTING=$(gh pr list --repo "$REPOSITORY" --state open \
+             --head "$BRANCH" --json number,url --jq '.[0] // empty')
           if [ -n "$EXISTING" ]; then
             echo "Release PR already exists; reusing it: $EXISTING"
             exit 0
@@ -146,4 +166,6 @@ jobs:
             --base main \
             --head "$BRANCH" \
             --title "chore(release): $VERSION" \
-            --body "Automated release preparation for $VERSION. Merge this PR after CI passes; then create the immutable tag $VERSION on the merged commit to publish."
+            --body "Automated release preparation for $VERSION. Merge this PR "\
+              "after CI passes; then create the immutable tag $VERSION on the "\
+              "merged commit to publish."

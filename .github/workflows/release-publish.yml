@@ -1,6 +1,7 @@
+---
 name: Release publication
 
-on:
+"on":
   push:
     tags:
       - 'v*.*.*'
@@ -36,11 +37,24 @@ jobs:
           set -euo pipefail
           git fetch origin main --no-tags
           ACTUAL_SHA=$(git rev-list -n 1 "$TAG^{commit}")
-          [ "$ACTUAL_SHA" = "$TAG_SHA" ] || { echo "Tag does not point to event commit." >&2; exit 1; }
-          git merge-base --is-ancestor "$TAG_SHA" origin/main || { echo "Tag is not on merged main." >&2; exit 1; }
+          [ "$ACTUAL_SHA" = "$TAG_SHA" ] || {
+            echo "Tag does not point to event commit." >&2
+            exit 1
+          }
+          git merge-base --is-ancestor "$TAG_SHA" origin/main || {
+            echo "Tag is not on merged main." >&2
+            exit 1
+          }
           PACKAGE_VERSION="v$(node -p "require('./package.json').version")"
-          [ "$PACKAGE_VERSION" = "$TAG" ] || { echo "Tag $TAG does not match package version $PACKAGE_VERSION." >&2; exit 1; }
-          [ "$TAG" != "v1.10.0" ] || { echo "v1.10.0 is intentionally excluded from this automation." >&2; exit 1; }
+          [ "$PACKAGE_VERSION" = "$TAG" ] || {
+            printf '%s\n' \
+              "Tag $TAG does not match package version $PACKAGE_VERSION." >&2
+            exit 1
+          }
+          [ "$TAG" != "v1.10.0" ] || {
+            echo "v1.10.0 is intentionally excluded from this automation." >&2
+            exit 1
+          }
 
       - name: Install and build release artifacts
         run: |
@@ -76,27 +90,46 @@ jobs:
             exit 1
           fi
           : > release-artifacts.sha256
-          for artifact in "${ARTIFACTS[@]}"; do sha256sum "$artifact" >> release-artifacts.sha256; done
+           for artifact in "${ARTIFACTS[@]}"; do
+             sha256sum "$artifact" >> release-artifacts.sha256
+           done
           rm -rf release-publish-diagnostics
           mkdir -p release-publish-diagnostics
           RELEASE_JSON=release-publish-diagnostics/release.json
-          if gh api "repos/$REPOSITORY/releases/tags/$TAG" >"$RELEASE_JSON" 2>/dev/null; then
+           if gh api "repos/$REPOSITORY/releases/tags/$TAG" \
+             >"$RELEASE_JSON" 2>/dev/null; then
             RELEASE_ID=$(jq -r '.id' "$RELEASE_JSON")
             TAG_REF=$(git ls-remote origin "refs/tags/$TAG^{}" | cut -f1)
-            [ "$TAG_REF" = "$TAG_SHA" ] || { echo "Existing release tag resolves to $TAG_REF, expected $TAG_SHA; preserving release." >&2; exit 1; }
-            gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" --target "$TAG_SHA"
+             [ "$TAG_REF" = "$TAG_SHA" ] || {
+               echo "Existing release tag resolves to $TAG_REF, expected "
+                 "$TAG_SHA; preserving release." >&2
+               exit 1
+             }
+             gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" \
+               --target "$TAG_SHA"
             EXISTING_ASSETS=release-publish-diagnostics/assets.json
-            gh api --paginate "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" >"$EXISTING_ASSETS"
+             gh api --paginate \
+               "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" \
+               >"$EXISTING_ASSETS"
             for artifact in "${ARTIFACTS[@]}"; do
               name=$(basename "$artifact")
               local_digest="sha256:$(sha256sum "$artifact" | cut -d' ' -f1)"
-              existing_name=$(jq -r --arg name "$name" '[.[] | select(.name == $name)] | length' "$EXISTING_ASSETS")
-              existing_digest=$(jq -r --arg name "$name" '.[] | select(.name == $name) | .digest // empty' "$EXISTING_ASSETS")
-              if [ "$existing_name" -gt 0 ] && [ -z "$existing_digest" ]; then
-                echo "Asset $name exists but has no server digest; refusing blind overwrite. Evidence: $EXISTING_ASSETS" >&2
-                exit 1
-              elif [ -n "$existing_digest" ] && [ "$existing_digest" != "$local_digest" ]; then
-                echo "Asset $name exists with a different digest; refusing overwrite. Evidence: $EXISTING_ASSETS and release-artifacts.sha256" >&2
+               existing_name=$(jq -r --arg name "$name" \
+                 '[.[] | select(.name == $name)] | length' "$EXISTING_ASSETS")
+               existing_digest=$(jq -r --arg name "$name" \
+                 '.[] | select(.name == $name) | .digest // empty' \
+                 "$EXISTING_ASSETS")
+               if [ "$existing_name" -gt 0 ] && [ -z "$existing_digest" ]; then
+                  printf '%s\n' \
+                    "Asset $name exists but has no server digest; refusing " \
+                    "blind overwrite. Evidence: $EXISTING_ASSETS" >&2
+                 exit 1
+               elif [ -n "$existing_digest" ] \
+                 && [ "$existing_digest" != "$local_digest" ]; then
+                  printf '%s\n' \
+                    "Asset $name exists with a different digest; refusing " \
+                    "overwrite. Evidence: $EXISTING_ASSETS and " \
+                    "release-artifacts.sha256" >&2
                 exit 1
               elif [ -z "$existing_digest" ]; then
                 gh release upload "$TAG" "$artifact" --repo "$REPOSITORY"
@@ -104,9 +137,90 @@ jobs:
                 echo "Keeping matching existing asset $name."
               fi
             done
-          else
-            gh release create "$TAG" --repo "$REPOSITORY" --title "$TAG" --generate-notes --target "$TAG_SHA" "${ARTIFACTS[@]}"
+           else
+             gh release create "$TAG" --repo "$REPOSITORY" --title "$TAG" \
+               --generate-notes --target "$TAG_SHA" "${ARTIFACTS[@]}"
+           fi
+
+      - name: Validate published tag, release, and assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          TAG_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf release-validation-diagnostics
+          mkdir -p release-validation-diagnostics
+          RELEASE_JSON=release-validation-diagnostics/release.json
+          ASSETS_JSON=release-validation-diagnostics/assets.json
+          EXPECTED_ASSETS=release-validation-diagnostics/expected-assets.txt
+          VERSION="${TAG#v}"
+
+          mapfile -t ARTIFACTS < <(find dist-electron -maxdepth 1 -type f \( \
+            -name 'Open3DCalc-*.exe' -o -name 'Open3DCalc-*.AppImage' -o \
+            -name 'latest*.yml' -o -name '*.blockmap' \) -print | sort)
+          if [ "${#ARTIFACTS[@]}" -eq 0 ]; then
+            echo "Validation failed: no local release artifacts found." >&2
+            exit 1
           fi
+          for artifact in "${ARTIFACTS[@]}"; do
+            basename "$artifact"
+          done | sort >"$EXPECTED_ASSETS"
+
+          TAG_REF=$(git ls-remote origin "refs/tags/$TAG^{}" | cut -f1)
+          if [ "$TAG_REF" != "$TAG_SHA" ]; then
+            printf '%s\n' \
+              "Validation failed: tag $TAG resolves to $TAG_REF; expected " \
+              "$TAG_SHA." >&2
+            exit 1
+          fi
+
+          if ! gh api "repos/$REPOSITORY/releases/tags/$TAG" \
+            >"$RELEASE_JSON"; then
+            printf '%s\n' \
+              "Validation failed: GitHub Release for $TAG does not exist. " \
+              "Tag SHA: $TAG_SHA." >&2
+            exit 1
+          fi
+          RELEASE_TAG=$(jq -r '.tag_name // empty' "$RELEASE_JSON")
+          RELEASE_ID=$(jq -r '.id // empty' "$RELEASE_JSON")
+          if [ "$RELEASE_TAG" != "$TAG" ] || [ -z "$RELEASE_ID" ]; then
+            printf '%s\n' \
+              "Validation failed: Release is not associated with tag $TAG. " \
+              "Observed tag=$RELEASE_TAG id=$RELEASE_ID." >&2
+            exit 1
+          fi
+
+          gh api --paginate \
+            "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" \
+            >"$ASSETS_JSON"
+          while IFS= read -r name; do
+            if ! jq -e --arg name "$name" \
+              'any(.[]; .name == $name)' "$ASSETS_JSON" >/dev/null; then
+              printf '%s\n' \
+                "Validation failed: expected asset is missing: $name. See " \
+                "$ASSETS_JSON and $EXPECTED_ASSETS." >&2
+              exit 1
+            fi
+            case "$name" in
+              Open3DCalc-*)
+                case "$name" in
+                  Open3DCalc-"$VERSION"*) ;;
+                  *)
+                    printf '%s\n' \
+                      "Validation failed: asset $name does not contain tag " \
+                      "version $VERSION." >&2
+                    exit 1
+                    ;;
+                esac
+                ;;
+            esac
+          done <"$EXPECTED_ASSETS"
+          printf '%s\n' \
+            "Validated tag $TAG at $TAG_SHA, Release $RELEASE_ID, and all " \
+            "expected versioned assets."
 
       - name: Preserve publication diagnostics
         if: failure()
@@ -117,6 +231,7 @@ jobs:
           path: |
             release-artifacts.sha256
             release-publish-diagnostics/
+            release-validation-diagnostics/
 
       - name: Remove release branch after confirmed publication
         if: success()
@@ -128,7 +243,8 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH="release/$TAG"
-          if gh api "repos/$REPOSITORY/git/ref/heads/$BRANCH" >/dev/null 2>&1; then
+           if gh api "repos/$REPOSITORY/git/ref/heads/$BRANCH" \
+             >/dev/null 2>&1; then
             gh api --method DELETE "repos/$REPOSITORY/git/refs/heads/$BRANCH"
             echo "Deleted $BRANCH after successful publication."
           else

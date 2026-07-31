@@ -1,6 +1,7 @@
+---
 name: CI/CD
 
-on:
+"on":
   push:
     branches: [main]
   pull_request:
@@ -99,7 +100,9 @@ jobs:
         run: echo "  ✓ node_modules restored from cache"
       - run: npm run build:web
       - name: SPA routing fix
-        run: cp -n dist-web/index.web.html dist-web/404.html 2>/dev/null || true && cp -n dist-web/index.web.html dist-web/index.html 2>/dev/null || true
+        run: |
+          cp -n dist-web/index.web.html dist-web/404.html 2>/dev/null || true
+          cp -n dist-web/index.web.html dist-web/index.html 2>/dev/null || true
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist-web
@@ -129,7 +132,12 @@ jobs:
       - if: steps.npm-cache.outputs.cache-hit == 'true'
         run: echo "  ✓ node_modules restored from cache"
       - name: Rebuild native modules
-        run: npm rebuild better-sqlite3 2>/dev/null || true
+        run: >-
+          if ! npm rebuild better-sqlite3; then
+            echo "better-sqlite3 rebuild failed on this runner; refusing to
+            continue with the desktop build." >&2;
+            exit 1;
+          fi
       - run: npm run build:desktop
       - name: Verify desktop build
         run: ls -la dist/

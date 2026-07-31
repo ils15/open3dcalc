@@ -28,6 +28,11 @@ para um commit já incorporado em `main`.
    sem force push e sem sobrescrever o estado existente.
 4. Revise e faça o merge do PR normalmente. Não crie a tag antes do merge.
 
+Os checks obrigatórios de qualidade continuam sendo os do job oficial
+`quality` da `main`. A cobertura atual (46,69%) é o baseline reportado pelo CI;
+este fluxo de release não impõe um novo gate de 80% nem altera artificialmente
+os números. A melhoria da cobertura é uma tarefa futura separada.
+
 ## Publicação automática
 
 Após o merge, crie a tag localmente no commit exato de `main` e envie somente a
@@ -44,7 +49,10 @@ git push origin vX.Y.Z
 O workflow **Release publication** valida que a tag aponta para o commit do
 evento, está na história de `main` e coincide com `package.json`. Depois roda
 qualidade/build no commit/tag exato, cria a GitHub Release com `--target` desse
-SHA e anexa os artefatos Windows/Linux. Só após confirmação da Release remove
+SHA e anexa os artefatos Windows/Linux. Uma etapa explícita confirma novamente
+o SHA da tag, a existência da Release associada, e todos os assets esperados com
+nomes/versões corretos. Se essa confirmação falhar, o diagnóstico é preservado
+e a branch não é removida. Só após confirmação da Release remove
 `release/vX.Y.Z`.
 
 ## Rerun, falhas parciais e recuperação
