@@ -1,186 +1,234 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { Header } from '../Header'
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { Header } from "../Header";
 
-const mockChangeLanguage = vi.fn()
-const mockStartTutorial = vi.fn()
-const mockSetCurrency = vi.fn()
+const mockChangeLanguage = vi.fn();
+const mockStartTutorial = vi.fn();
+const mockSetCurrency = vi.fn();
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ 
-    t: (k: string) => k, 
-    i18n: { language: 'pt-BR', changeLanguage: mockChangeLanguage, resolvedLanguage: 'pt-BR' } 
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (k: string) => k,
+    i18n: {
+      language: "pt-BR",
+      changeLanguage: mockChangeLanguage,
+      resolvedLanguage: "pt-BR",
+    },
   }),
-}))
+}));
 
-vi.mock('@/shared/stores/calculatorStore', () => ({
+vi.mock("@/shared/stores/calculatorStore", () => ({
   useCalculatorStore: Object.assign(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (selector?: any) => {
-      const state = { currency: 'auto', setCurrency: mockSetCurrency }
-      return selector ? selector(state) : state
+      const state = { currency: "auto", setCurrency: mockSetCurrency };
+      return selector ? selector(state) : state;
     },
-    { getState: () => ({ currency: 'auto', setCurrency: mockSetCurrency }) }
+    { getState: () => ({ currency: "auto", setCurrency: mockSetCurrency }) },
   ),
-}))
+}));
 
-vi.mock('@/shared/stores/tutorialStore', () => ({
+vi.mock("@/shared/stores/tutorialStore", () => ({
   useTutorialStore: Object.assign(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (selector?: any) => {
-      const state = { startTutorial: mockStartTutorial }
-      return selector ? selector(state) : state
+      const state = { startTutorial: mockStartTutorial };
+      return selector ? selector(state) : state;
     },
-    { getState: () => ({ startTutorial: mockStartTutorial }) }
+    { getState: () => ({ startTutorial: mockStartTutorial }) },
   ),
-}))
+}));
 
-vi.mock('@/shared/hooks/useCurrency', () => ({
-  useCurrency: () => ({ symbol: 'R$', format: (v: number) => `R$ ${v.toFixed(2)}` }),
-  CURRENCIES: { USD: { symbol: '$', name: 'US Dollar' }, BRL: { symbol: 'R$', name: 'Brazilian Real' }, EUR: { symbol: '€', name: 'Euro' } },
-}))
+vi.mock("@/shared/hooks/useCurrency", () => ({
+  useCurrency: () => ({
+    symbol: "R$",
+    format: (v: number) => `R$ ${v.toFixed(2)}`,
+  }),
+  CURRENCIES: {
+    USD: { symbol: "$", name: "US Dollar" },
+    BRL: { symbol: "R$", name: "Brazilian Real" },
+    EUR: { symbol: "€", name: "Euro" },
+  },
+}));
 
-vi.mock('@/shared/lib/currency', () => ({
-  CURRENCIES: { USD: { symbol: '$', name: 'US Dollar' }, BRL: { symbol: 'R$', name: 'Brazilian Real' }, EUR: { symbol: '€', name: 'Euro' } },
-}))
+vi.mock("@/shared/lib/currency", () => ({
+  CURRENCIES: {
+    USD: { symbol: "$", name: "US Dollar" },
+    BRL: { symbol: "R$", name: "Brazilian Real" },
+    EUR: { symbol: "€", name: "Euro" },
+  },
+}));
 
-vi.mock('../ThemeToggle', () => ({ ThemeToggle: () => <div data-testid="theme-toggle" /> }))
+vi.mock("../ThemeToggle", () => ({
+  ThemeToggle: () => <div data-testid="theme-toggle" />,
+}));
 
-describe('Header', () => {
-  const user = userEvent.setup()
+describe("Header", () => {
+  const user = userEvent.setup();
 
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
-  it('renders logo and title', () => {
-    render(<Header />)
-    expect(screen.getByText('app.title')).toBeInTheDocument()
-  })
+  it("renders logo and title", () => {
+    render(<Header />);
+    expect(screen.getByText("app.title")).toBeInTheDocument();
+  });
 
-  describe('currency dropdown — portal, z-index, Escape and aria', () => {
-    it('renders the currency menu in a portal directly under body', async () => {
-      render(<Header />)
-      await user.click(screen.getByTitle('settings.currency'))
-      const menu = screen.getByRole('menu')
-      expect(menu).toBeInTheDocument()
-      expect(menu.parentElement).toBe(document.body)
-    })
+  describe("currency dropdown — portal, z-index, Escape and aria", () => {
+    it("renders the currency menu in a portal directly under body", async () => {
+      render(<Header />);
+      await user.click(screen.getByTitle("settings.currency"));
+      const menu = screen.getByRole("menu");
+      expect(menu).toBeInTheDocument();
+      expect(menu.parentElement).toBe(document.body);
+    });
 
-    it('exposes menu semantics on the trigger (haspopup/expanded/controls)', async () => {
-      render(<Header />)
-      const trigger = screen.getByTitle('settings.currency')
-      expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
-      expect(trigger).toHaveAttribute('aria-controls', 'header-currency-menu')
-      expect(trigger).toHaveAttribute('aria-expanded', 'false')
-      await user.click(trigger)
-      expect(trigger).toHaveAttribute('aria-expanded', 'true')
-    })
+    it("exposes menu semantics on the trigger (haspopup/expanded/controls)", async () => {
+      render(<Header />);
+      const trigger = screen.getByTitle("settings.currency");
+      expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+      expect(trigger).toHaveAttribute("aria-controls", "header-currency-menu");
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+    });
 
-    it('is positioned fixed with a high z-index so content never covers it', async () => {
-      render(<Header />)
-      await user.click(screen.getByTitle('settings.currency'))
-      const menu = screen.getByRole('menu')
-      expect(menu.className).toContain('z-[60]')
-      expect(menu).toHaveStyle({ position: 'fixed' })
-    })
+    it("is positioned fixed with a high z-index so content never covers it", async () => {
+      render(<Header />);
+      await user.click(screen.getByTitle("settings.currency"));
+      const menu = screen.getByRole("menu");
+      expect(menu.className).toContain("z-[60]");
+      expect(menu).toHaveStyle({ position: "fixed" });
+    });
 
-    it('closes on Escape and restores focus to the trigger', async () => {
-      render(<Header />)
-      const trigger = screen.getByTitle('settings.currency')
-      await user.click(trigger)
-      expect(screen.getByRole('menu')).toBeInTheDocument()
-      await user.keyboard('{Escape}')
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-      expect(trigger).toHaveFocus()
-    })
+    it("closes on Escape and restores focus to the trigger", async () => {
+      render(<Header />);
+      const trigger = screen.getByTitle("settings.currency");
+      await user.click(trigger);
+      expect(screen.getByRole("menu")).toBeInTheDocument();
+      await user.keyboard("{Escape}");
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+    });
 
-    it('closes on click outside', async () => {
-      render(<Header />)
-      await user.click(screen.getByTitle('settings.currency'))
-      expect(screen.getByRole('menu')).toBeInTheDocument()
-      await user.click(document.body)
-      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-    })
+    it("closes on click outside", async () => {
+      render(<Header />);
+      await user.click(screen.getByTitle("settings.currency"));
+      expect(screen.getByRole("menu")).toBeInTheDocument();
+      await user.click(document.body);
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    });
 
-    it('header container does not clip dropdowns (no overflow-hidden)', () => {
-      const { container } = render(<Header />)
-      const inner = Array.from(container.querySelectorAll('div')).find((el) =>
-        el.className.includes('h-[68px]'),
-      )
-      expect(inner).toBeDefined()
-      expect(inner!.className).not.toContain('overflow-hidden')
-    })
-  })
+    it("header container does not clip dropdowns (no overflow-hidden)", () => {
+      const { container } = render(<Header />);
+      const inner = Array.from(container.querySelectorAll("div")).find((el) =>
+        el.className.includes("h-[68px]"),
+      );
+      expect(inner).toBeDefined();
+      expect(inner!.className).not.toContain("overflow-hidden");
+    });
+  });
 
-  it('renders beta badge', () => {
-    render(<Header />)
-    expect(screen.getByText('Beta')).toBeInTheDocument()
-  })
+  it("renders beta badge", () => {
+    render(<Header />);
+    expect(screen.getByText("Beta")).toBeInTheDocument();
+  });
 
-  it('renders tutorial button', () => {
-    render(<Header />)
-    expect(screen.getByLabelText('nav.tutorial')).toBeInTheDocument()
-  })
+  it("renders tutorial button", () => {
+    render(<Header />);
+    expect(screen.getByLabelText("nav.tutorial")).toBeInTheDocument();
+  });
 
-  it('calls startTutorial when tutorial button clicked', async () => {
-    render(<Header />)
-    await user.click(screen.getByLabelText('nav.tutorial'))
-    expect(mockStartTutorial).toHaveBeenCalled()
-  })
+  it("calls startTutorial when tutorial button clicked", async () => {
+    render(<Header />);
+    await user.click(screen.getByLabelText("nav.tutorial"));
+    expect(mockStartTutorial).toHaveBeenCalled();
+  });
 
-  it('renders currency selector', () => {
-    render(<Header />)
-    expect(screen.getByTitle('settings.currency')).toBeInTheDocument()
-  })
+  it("renders currency selector", () => {
+    render(<Header />);
+    expect(
+      screen.getByRole("button", { name: "settings.currency" }),
+    ).toBeInTheDocument();
+  });
 
-  it('shows currency menu on click', async () => {
-    render(<Header />)
-    await user.click(screen.getByTitle('settings.currency'))
-    expect(screen.getByText('settings.currencyAuto')).toBeInTheDocument()
-  })
+  it("shows currency menu on click", async () => {
+    render(<Header />);
+    await user.click(screen.getByRole("button", { name: "settings.currency" }));
+    expect(screen.getByText("settings.currencyAuto")).toBeInTheDocument();
+  });
 
-  it('shows theme toggle', () => {
-    render(<Header />)
-    expect(screen.getByTestId('theme-toggle')).toBeInTheDocument()
-  })
+  it("exposes the currency popup with menu semantics", async () => {
+    render(<Header />);
+    const trigger = screen.getByRole("button", { name: "settings.currency" });
 
-  it('renders language toggle', () => {
-    render(<Header />)
-    expect(screen.getByTitle('nav.language')).toBeInTheDocument()
-  })
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveAttribute("aria-controls", "header-currency-menu");
 
-  it('calls changeLanguage when language toggle clicked', async () => {
-    render(<Header />)
-    await user.click(screen.getByTitle('nav.language'))
-    expect(mockChangeLanguage).toHaveBeenCalledWith('en-US')
-  })
+    await user.click(trigger);
+
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("menu", { name: "settings.currency" }),
+    ).toHaveAttribute("id", "header-currency-menu");
+    expect(screen.getAllByRole("menuitem")).not.toHaveLength(0);
+  });
+
+  it("shows theme toggle", () => {
+    render(<Header />);
+    expect(screen.getByTestId("theme-toggle")).toBeInTheDocument();
+  });
+
+  it("renders language toggle", () => {
+    render(<Header />);
+    expect(
+      screen.getByRole("button", { name: "nav.language" }),
+    ).toBeInTheDocument();
+  });
+
+  it("calls changeLanguage when language toggle clicked", async () => {
+    render(<Header />);
+    await user.click(screen.getByRole("button", { name: "nav.language" }));
+    expect(mockChangeLanguage).toHaveBeenCalledWith("en-US");
+  });
 
   it("has accessible buttons with min 44px touch targets", () => {
-    render(<Header />)
-    const buttons = screen.getAllByRole("button")
+    render(<Header />);
+    const buttons = screen.getAllByRole("button");
     const hasTouchTarget = buttons.some(
       (btn) =>
-        btn.className.includes("min-h-[") ||
-        btn.className.includes("min-w-["),
-    )
-    expect(hasTouchTarget).toBe(true)
-  })
+        btn.className.includes("min-h-[") || btn.className.includes("min-w-["),
+    );
+    expect(hasTouchTarget).toBe(true);
+  });
 
   // Currency menu items
-  it('shows currency options when menu is open', async () => {
-    render(<Header />)
-    await user.click(screen.getByTitle('settings.currency'))
-    expect(screen.getByText('USD')).toBeInTheDocument()
-    expect(screen.getByText('BRL')).toBeInTheDocument()
-    expect(screen.getByText('EUR')).toBeInTheDocument()
-  })
+  it("shows currency options when menu is open", async () => {
+    render(<Header />);
+    await user.click(screen.getByRole("button", { name: "settings.currency" }));
+    expect(screen.getByText("USD")).toBeInTheDocument();
+    expect(screen.getByText("BRL")).toBeInTheDocument();
+    expect(screen.getByText("EUR")).toBeInTheDocument();
+  });
 
-  it('calls setCurrency when currency option selected', async () => {
-    render(<Header />)
-    await user.click(screen.getByTitle('settings.currency'))
-    await user.click(screen.getByText('USD'))
-    expect(mockSetCurrency).toHaveBeenCalledWith('USD')
-  })
-})
+  it("calls setCurrency when currency option selected", async () => {
+    render(<Header />);
+    await user.click(screen.getByRole("button", { name: "settings.currency" }));
+    await user.click(screen.getByText("USD"));
+    expect(mockSetCurrency).toHaveBeenCalledWith("USD");
+  });
+
+  it("keeps locale controls accessible and non-shrinking", () => {
+    render(<Header />);
+
+    expect(
+      screen.getByRole("button", { name: "settings.currency" }).className,
+    ).toContain("shrink-0");
+    expect(
+      screen.getByRole("button", { name: "nav.language" }).className,
+    ).toContain("shrink-0");
+  });
+});

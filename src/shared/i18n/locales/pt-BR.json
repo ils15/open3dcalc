@@ -134,7 +134,7 @@
     "slicerCost": "Mensalidade Slicer",
     "modelCost": "Custo do Arquivo STL",
     "sales": "Custos Adicionais & Vendas",
-    	"extras": "Peças e Extras",
+    "extras": "Peças e Extras",
     "packaging": "Embalagem",
     "shipping": "Frete",
     "marketplace": "Marketplace",
@@ -158,16 +158,16 @@
     "history": "Últimos Cálculos",
     "clearHistory": "Limpar",
     "clearConfirm": "Tem certeza? Isso apagará todo o histórico.",
-	"quickMode": "Modo Rápido",
-	"basic": "Básico",
-	"advanced": "Avançado",
-	"intermediate": "Intermediário",
-	"quick": "Rápido",
-	"detailed": "Detalhado",
-	"complete": "Completo",
-	"quickDesc": "Apenas o essencial para um orçamento rápido",
-	"detailedDesc": "Mais opções de custo para precisão",
-	"completeDesc": "Controle total sobre todos os parâmetros",
+    "quickMode": "Modo Rápido",
+    "basic": "Básico",
+    "advanced": "Avançado",
+    "intermediate": "Intermediário",
+    "quick": "Rápido",
+    "detailed": "Detalhado",
+    "complete": "Completo",
+    "quickDesc": "Apenas o essencial para um orçamento rápido",
+    "detailedDesc": "Mais opções de custo para precisão",
+    "completeDesc": "Controle total sobre todos os parâmetros",
     "customizeFields": "Personalizar campos",
     "productName": "Nome do Produto",
     "productNamePlaceholder": "Ex: Vaso Decorativo",
@@ -554,43 +554,43 @@
     "bedCost": "Custo estimado de spray, cola ou desgaste da folha PEI por impressão.",
     "finishing": "Valor estimado de lixas, primer, tintas, massa plástica ou acetona gastos nesta peça.",
     "ppe": "Luvas, máscaras, papel toalha, filtros, etc. Custo fixo por impressão.",
-	"extras": "Parafusos, colas, verniz, tintas, etc.",
-	"printTimeHours": "Tempo total que a impressão leva para ser concluída. Use o valor do seu fatiador (slicer).",
-	"printerPowerWatts": "Consumo médio de energia da impressora. A maioria das FDM consome entre 100W e 350W.",
-	"energyCostPerKwh": "Valor do kWh na sua conta de luz.",
-	"machineCost": "Quanto você pagou pela impressora. Inclua frete e impostos se possível.",
-	"depreciationMonths": "Em quantos meses a impressora será paga. 36 meses é o padrão para equipamentos.",
-	"hoursPerMonth": "Quantas horas por mês a impressora fica ligada imprimindo.",
-	"maintenanceCost": "Custo mensal estimado com manutenção (bicos, correias, lubrificação).",
-	"setupTime": "Tempo gasto preparando o arquivo, fatiando e configurando a impressora.",
-	"postProcessingTime": "Tempo retirando a peça da mesa, removendo suportes, lixando.",
-	"hourlyRate": "Quanto você quer ganhar por hora de trabalho. Seu tempo vale dinheiro.",
-	"quantity": "Quantas unidades iguais serão produzidas. O custo de setup é diluído entre as unidades.",
-	"infillPercent": "Quanto do interior será preenchido. 15% para decorativos, 50%+ para peças funcionais.",
-	"packaging": "Custo da embalagem (caixa, plástico bolha, fita).",
-	"shipping": "Custo do frete para entrega ao cliente.",
-	"taxPercent": "Impostos sobre o valor de venda (ICMS, ISS, Simples Nacional).",
-	"profitMargin": "Margem de lucro desejada sobre o custo total. 50% é comum para iniciar.",
-	"infillDimension": "Dimensão da peça em centímetros para estimar o volume.",
-	"wallThickness": "Espessura das paredes externas da peça.",
-	"layerHeight": "Altura de cada camada. 0.08mm = qualidade alta, 0.28mm = econômico.",
-	"infillDensity": "Percentual de preenchimento interno. 15% para decorativos, 50%+ para funcionais.",
-	"topBottomLayers": "Número de camadas sólidas no topo e na base da peça.",
-	"alcoholCostPerLiter": "Preço do litro de álcool isopropílico para lavagem. ~R$30-60/L. Reutilize filtrado para economizar.",
-	"alcoholVolume": "Quantos litros de álcool são consumidos por ciclo de lavagem. ~0.1-0.3L por batch de peças.",
-	"cureTime": "Tempo de cura UV após a lavagem da peça.",
-	"curePower": "Potência da lâmpada UV da câmara de cura.",
-	"lcdCost": "Custo da tela LCD do seu printer de resina para substituição.",
-	"lcdLife": "Horas estimadas de vida útil da tela LCD antes de precisar trocar.",
-	"fepCost": "Custo do filme FEP para substituição no tanque de resina.",
-	"fepLife": "Número de impressões que o filme FEP suporta antes de precisar trocar.",
-	"slicerCost": "Custo mensal do software de fatiamento, se aplicável.",
-	"modelCost": "Custo do arquivo 3D se você comprou o modelo de terceiros.",
-	"failureValue": "Percentual de falha esperado. 10% é um bom padrão para começar.",
-	"costPerLiter": "Preço médio do litro da resina. Padrão ~R$180-250/L.",
-	"volumeMl": "Volume de resina usado na peça em mililitros.",
-	"weightUsed": "Peso da peça em gramas. Use o valor do seu fatiador (slicer).",
-	"filamentType": "Tipo de filamento. PLA para iniciantes, PETG para resistência, ABS para alta temperatura."
+    "extras": "Parafusos, colas, verniz, tintas, etc.",
+    "printTimeHours": "Tempo total que a impressão leva para ser concluída. Use o valor do seu fatiador (slicer).",
+    "printerPowerWatts": "Consumo médio de energia da impressora. A maioria das FDM consome entre 100W e 350W.",
+    "energyCostPerKwh": "Valor do kWh na sua conta de luz.",
+    "machineCost": "Quanto você pagou pela impressora. Inclua frete e impostos se possível.",
+    "depreciationMonths": "Em quantos meses a impressora será paga. 36 meses é o padrão para equipamentos.",
+    "hoursPerMonth": "Quantas horas por mês a impressora fica ligada imprimindo.",
+    "maintenanceCost": "Custo mensal estimado com manutenção (bicos, correias, lubrificação).",
+    "setupTime": "Tempo gasto preparando o arquivo, fatiando e configurando a impressora.",
+    "postProcessingTime": "Tempo retirando a peça da mesa, removendo suportes, lixando.",
+    "hourlyRate": "Quanto você quer ganhar por hora de trabalho. Seu tempo vale dinheiro.",
+    "quantity": "Quantas unidades iguais serão produzidas. O custo de setup é diluído entre as unidades.",
+    "infillPercent": "Quanto do interior será preenchido. 15% para decorativos, 50%+ para peças funcionais.",
+    "packaging": "Custo da embalagem (caixa, plástico bolha, fita).",
+    "shipping": "Custo do frete para entrega ao cliente.",
+    "taxPercent": "Impostos sobre o valor de venda (ICMS, ISS, Simples Nacional).",
+    "profitMargin": "Margem de lucro desejada sobre o custo total. 50% é comum para iniciar.",
+    "infillDimension": "Dimensão da peça em centímetros para estimar o volume.",
+    "wallThickness": "Espessura das paredes externas da peça.",
+    "layerHeight": "Altura de cada camada. 0.08mm = qualidade alta, 0.28mm = econômico.",
+    "infillDensity": "Percentual de preenchimento interno. 15% para decorativos, 50%+ para funcionais.",
+    "topBottomLayers": "Número de camadas sólidas no topo e na base da peça.",
+    "alcoholCostPerLiter": "Preço do litro de álcool isopropílico para lavagem. ~R$30-60/L. Reutilize filtrado para economizar.",
+    "alcoholVolume": "Quantos litros de álcool são consumidos por ciclo de lavagem. ~0.1-0.3L por batch de peças.",
+    "cureTime": "Tempo de cura UV após a lavagem da peça.",
+    "curePower": "Potência da lâmpada UV da câmara de cura.",
+    "lcdCost": "Custo da tela LCD do seu printer de resina para substituição.",
+    "lcdLife": "Horas estimadas de vida útil da tela LCD antes de precisar trocar.",
+    "fepCost": "Custo do filme FEP para substituição no tanque de resina.",
+    "fepLife": "Número de impressões que o filme FEP suporta antes de precisar trocar.",
+    "slicerCost": "Custo mensal do software de fatiamento, se aplicável.",
+    "modelCost": "Custo do arquivo 3D se você comprou o modelo de terceiros.",
+    "failureValue": "Percentual de falha esperado. 10% é um bom padrão para começar.",
+    "costPerLiter": "Preço médio do litro da resina. Padrão ~R$180-250/L.",
+    "volumeMl": "Volume de resina usado na peça em mililitros.",
+    "weightUsed": "Peso da peça em gramas. Use o valor do seu fatiador (slicer).",
+    "filamentType": "Tipo de filamento. PLA para iniciantes, PETG para resistência, ABS para alta temperatura."
   },
   "settings": {
     "currency": "Moeda",
@@ -617,8 +617,43 @@
     "dismiss": "Fechar"
   },
   "changelog": {
+    "title": "Novidades",
+    "summary": "{{versions}} · {{changes}}",
+    "versionsCount_one": "{{count}} versão",
+    "versionsCount_other": "{{count}} versões",
+    "changesCount_one": "{{count}} mudança",
+    "changesCount_other": "{{count}} mudanças",
+    "latest": "Atual",
+    "releaseDate": "Lançado em {{date}}",
     "header": "{{versions}} versões · {{changes}} mudanças",
     "viewAllOnGitHub": "Ver todas as releases no GitHub",
+    "github": "GitHub",
+    "telegram": "Telegram",
+    "partner": "ofertachina.com.br",
+    "categories": {
+      "features": "Funcionalidades",
+      "fixes": "Correções",
+      "improvements": "Melhorias",
+      "security": "Segurança",
+      "ciCd": "CI/CD",
+      "dependencies": "Dependências",
+      "breakingChanges": "Alterações Incompatíveis",
+      "other": "Outros",
+      "ci": "CI",
+      "contributors": "Contribuidores",
+      "visualMobile": "Polimento Visual e Mobile",
+      "qualityGates": "Portões de Qualidade",
+      "autoUpdate": "Atualização Automática",
+      "documentation": "Documentação",
+      "uiUx": "UI/UX",
+      "technical": "Técnico",
+      "tests": "Testes",
+      "new": "Novidades",
+      "ux": "UX",
+      "quality": "Qualidade",
+      "ciAutomation": "CI e Automação",
+      "data": "Dados"
+    },
     "versions": [
       {
         "version": "1.9.2",
@@ -658,9 +693,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -744,9 +777,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -762,15 +793,11 @@
           },
           {
             "title": "🧹 Outros",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -802,10 +829,7 @@
           },
           {
             "title": "✅ Testes",
-            "items": [
-              "417 testes, 36/36 arquivos passando",
-              "Cobertura >80%"
-            ]
+            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
           }
         ]
       },
