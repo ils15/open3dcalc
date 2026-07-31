@@ -1,7 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MaterialSection } from '../MaterialSection'
 import type { CalculatorState } from '@/shared/stores/calculatorStore'
+
+// Mock StlPreview so tests can drive the onClear wiring without 3D setup
+vi.mock('@/shared/components/StlPreview/StlPreview', () => ({
+	StlPreview: ({
+		onClear,
+		onFileParsed,
+	}: {
+		onClear?: () => void
+		onFileParsed?: () => void
+	}) => (
+		<button type="button" data-testid="mock-stl-preview" onClick={onClear ?? onFileParsed}>
+			mock stl preview
+		</button>
+	),
+}))
 
 const createMockStore = (overrides: Partial<CalculatorState> = {}): CalculatorState =>
 	({
@@ -13,6 +28,16 @@ const createMockStore = (overrides: Partial<CalculatorState> = {}): CalculatorSt
 			density: 1.24,
 			spoolEfficiency: 95,
 		},
+		fdmPrintParams: {
+			printTimeHours: 5,
+			heatUpTimeMinutes: 10,
+		},
+		resinPrintParams: {
+			printTimeHours: 0,
+			heatUpTimeMinutes: 0,
+		},
+		setFdmPrintParams: vi.fn(),
+		setResinPrintParams: vi.fn(),
 		fdmAmsEnabled: false,
 	fdmAmsSlots: [
 		{
@@ -340,5 +365,35 @@ describe('MaterialSection', () => {
 		)
 		expect(missingKeyWarnings).toHaveLength(0)
 		consoleSpy.mockRestore()
+	})
+
+	it('onClear resets FDM print time and material weight', () => {
+		const store = createMockStore()
+		render(<MaterialSection {...defaultProps} store={store} isFDM={true} />)
+		fireEvent.click(screen.getByTestId('mock-stl-preview'))
+		expect(store.setFdmPrintParams).toHaveBeenCalledWith({
+			...store.fdmPrintParams,
+			printTimeHours: 0,
+		})
+		expect(store.setFdmMaterial).toHaveBeenCalledWith({
+			...store.fdmMaterial,
+			weightUsed: 0,
+		})
+	})
+
+	it('onClear resets the active AMS slot weight when AMS is enabled', () => {
+		const store = createMockStore({ fdmAmsEnabled: true })
+		render(<MaterialSection {...defaultProps} store={store} isFDM={true} />)
+		fireEvent.click(screen.getByTestId('mock-stl-preview'))
+		expect(store.setFdmPrintParams).toHaveBeenCalledWith({
+			...store.fdmPrintParams,
+			printTimeHours: 0,
+		})
+		// Only the enabled slot (index 0) is reset
+		expect(store.setFdmAmsSlot).toHaveBeenCalledWith(
+			0,
+			expect.objectContaining({ weightUsedGrams: 0 }),
+		)
+		expect(store.setFdmMaterial).not.toHaveBeenCalled()
 	})
 })
