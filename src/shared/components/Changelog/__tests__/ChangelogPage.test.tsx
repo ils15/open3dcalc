@@ -1,10 +1,25 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import enUS from "@/shared/i18n/locales/en-US.json";
+import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import { ChangelogPage } from "../ChangelogPage";
+import {
+  getLocalizedCategoryTitle,
+  normalizeCategoryKey,
+} from "../categoryLocalization";
 
-const i18nState = vi.hoisted(() => ({ language: "en-US" }));
+type TestVersion = {
+  version: string;
+  date: string;
+  sections: { title: string; items: string[] }[];
+};
 
-const versions = [
+const i18nState = vi.hoisted(() => ({
+  language: "en-US",
+  versions: [] as TestVersion[],
+}));
+
+const versions: TestVersion[] = [
   {
     version: "1.9.2",
     date: "",
@@ -17,34 +32,70 @@ const versions = [
   },
 ];
 
+const categoryVersions: TestVersion[] = [
+  {
+    version: "2.0.0",
+    date: "",
+    sections: [
+      "Features",
+      "Fixes",
+      "Improvements",
+      "Security",
+      "CI/CD",
+      "Documentation",
+      "Dependencies",
+      "Breaking Changes",
+      "Other",
+      "Technical",
+      "Tests",
+      "New",
+      "Visual Polish & Mobile",
+      "Quality Gates",
+      "Técnico",
+      "Testes",
+      "Novo",
+    ].map((title) => ({ title, items: [title] })),
+  },
+];
+
+i18nState.versions = versions;
+
 const translations: Record<string, Record<string, string>> = {
   "en-US": {
-    "changelog.title": "Changelog",
+    "changelog.title": enUS.changelog.title,
     "changelog.summary": "{{versions}} · {{changes}}",
     "changelog.versionsCount": "{{count}} versions",
     "changelog.changesCount": "{{count}} changes",
-    "changelog.latest": "Latest",
-    "changelog.releaseDate": "Released {{date}}",
-    "changelog.viewAllOnGitHub": "View all releases on GitHub",
-    "changelog.github": "GitHub",
-    "changelog.telegram": "Telegram",
-    "changelog.partner": "ofertachina.com.br",
-    "changelog.categories.features": "Features",
-    "changelog.categories.fixes": "Fixes",
+    "changelog.latest": enUS.changelog.latest,
+    "changelog.releaseDate": enUS.changelog.releaseDate,
+    "changelog.viewAllOnGitHub": enUS.changelog.viewAllOnGitHub,
+    "changelog.github": enUS.changelog.github,
+    "changelog.telegram": enUS.changelog.telegram,
+    "changelog.partner": enUS.changelog.partner,
+    ...Object.fromEntries(
+      Object.entries(enUS.changelog.categories).map(([key, value]) => [
+        `changelog.categories.${key}`,
+        value,
+      ]),
+    ),
   },
   "pt-BR": {
-    "changelog.title": "Novidades",
+    "changelog.title": ptBR.changelog.title,
     "changelog.summary": "{{versions}} · {{changes}}",
     "changelog.versionsCount": "{{count}} versões",
     "changelog.changesCount": "{{count}} mudanças",
-    "changelog.latest": "Atual",
-    "changelog.releaseDate": "Lançado em {{date}}",
-    "changelog.viewAllOnGitHub": "Ver todas as releases no GitHub",
-    "changelog.github": "GitHub",
-    "changelog.telegram": "Telegram",
-    "changelog.partner": "ofertachina.com.br",
-    "changelog.categories.features": "Funcionalidades",
-    "changelog.categories.fixes": "Correções",
+    "changelog.latest": ptBR.changelog.latest,
+    "changelog.releaseDate": ptBR.changelog.releaseDate,
+    "changelog.viewAllOnGitHub": ptBR.changelog.viewAllOnGitHub,
+    "changelog.github": ptBR.changelog.github,
+    "changelog.telegram": ptBR.changelog.telegram,
+    "changelog.partner": ptBR.changelog.partner,
+    ...Object.fromEntries(
+      Object.entries(ptBR.changelog.categories).map(([key, value]) => [
+        `changelog.categories.${key}`,
+        value,
+      ]),
+    ),
   },
 };
 
@@ -64,7 +115,7 @@ vi.mock("react-i18next", () => ({
       },
     ) => {
       if (key === "changelog.versions" && options?.returnObjects)
-        return versions;
+        return i18nState.versions;
 
       const template = translations[i18nState.language][key] ?? key;
       return template
@@ -76,6 +127,10 @@ vi.mock("react-i18next", () => ({
 }));
 
 describe("ChangelogPage", () => {
+  beforeEach(() => {
+    i18nState.versions = versions;
+  });
+
   it.each([
     ["en-US", "2 versions · 3 changes"],
     ["pt-BR", "2 versões · 3 mudanças"],
@@ -145,6 +200,86 @@ describe("ChangelogPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /v1\.9\.2/i }));
 
     expect(screen.getByText("Funcionalidades")).toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      "en-US",
+      [
+        "Features",
+        "Fixes",
+        "Improvements",
+        "Security",
+        "CI/CD",
+        "Documentation",
+        "Dependencies",
+        "Breaking Changes",
+        "Other",
+        "Technical",
+        "Tests",
+        "New",
+        "Visual Polish & Mobile",
+        "Quality Gates",
+      ],
+    ],
+    [
+      "pt-BR",
+      [
+        "Funcionalidades",
+        "Correções",
+        "Melhorias",
+        "Segurança",
+        "CI/CD",
+        "Documentação",
+        "Dependências",
+        "Alterações Incompatíveis",
+        "Outros",
+        "Técnico",
+        "Testes",
+        "Novo",
+        "Polimento Visual e Mobile",
+        "Portões de Qualidade",
+      ],
+    ],
+  ])("renders Portuguese and English category data in %s", (language, labels) => {
+    i18nState.language = language;
+    i18nState.versions = categoryVersions;
+
+    render(<ChangelogPage />);
+    fireEvent.click(screen.getByRole("button", { name: /v2\.0\.0/i }));
+
+    labels.forEach((label) => expect(screen.getAllByText(label).length).toBeGreaterThan(0));
+  });
+
+  it.each([
+    ["Técnico", "technical"],
+    ["Testes", "tests"],
+    ["Novo — Fase 5", "new"],
+    ["Visual Polish & Mobile", "visualMobile"],
+    ["Bug Fixes", "fixes"],
+    ["Quality Gates", "qualityGates"],
+    ["CI/CD", "ciCd"],
+  ])("normalizes %s to canonical category key", (title, key) => {
+    expect(normalizeCategoryKey(title)).toBe(key);
+  });
+
+  it("uses the real locale category values for canonical keys", () => {
+    const translate = (locale: typeof enUS) => (key: string) => {
+      const category = key.split(".").at(-1) as keyof typeof locale.changelog.categories;
+      return locale.changelog.categories[category] ?? key;
+    };
+
+    expect(getLocalizedCategoryTitle("🔧 Técnico", translate(enUS))).toBe("Technical");
+    expect(getLocalizedCategoryTitle("🎨 Visual Polish & Mobile", translate(ptBR))).toBe(
+      "Polimento Visual e Mobile",
+    );
+  });
+
+  it("falls back to the source title when a category translation is unavailable", () => {
+    expect(getLocalizedCategoryTitle("Unmapped category", () => "missing")).toBe(
+      "Unmapped category",
+    );
+    expect(getLocalizedCategoryTitle("Technical", (key) => key)).toBe("Technical");
   });
 
   it("uses translated footer link labels", () => {

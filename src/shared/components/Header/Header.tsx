@@ -97,6 +97,8 @@ export function Header() {
                 title={t('settings.currency')}
                 aria-label={t('settings.currency')}
                 aria-haspopup="menu"
+                aria-expanded={showCurrencyMenu}
+                aria-controls="currency-menu"
               >
                 <span className="font-mono">{symbol}</span>
                 {currencySetting === 'auto' && (
@@ -106,8 +108,9 @@ export function Header() {
               </button>
 
               {showCurrencyMenu && (
-                <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl shadow-2xl z-50 overflow-hidden surface border border-[var(--color-border)]">
+                <div id="currency-menu" role="menu" aria-label={t('settings.currency')} className="absolute right-0 top-full mt-1.5 w-44 rounded-xl shadow-2xl z-50 overflow-hidden surface border border-[var(--color-border)]">
                   <button
+                    role="menuitem"
                     onClick={() => { setCurrency('auto'); setShowCurrencyMenu(false) }}
                     className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--color-bg-hover)] transition-colors ${currencySetting === 'auto' ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}
                   >
@@ -119,6 +122,7 @@ export function Header() {
                   {(Object.entries(CURRENCIES) as [CurrencyCode, typeof CURRENCIES[CurrencyCode]][]).map(([code, info]) => (
                     <button
                       key={code}
+                      role="menuitem"
                       onClick={() => { setCurrency(code); setShowCurrencyMenu(false) }}
                       className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--color-bg-hover)] transition-colors ${currencySetting === code ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}
                     >

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import { renderInlineMarkdown } from './renderInlineMarkdown'
+import { getLocalizedCategoryTitle } from './categoryLocalization'
 
 interface VersionSection {
   title: string
@@ -12,40 +13,6 @@ interface VersionEntry {
   version: string
   date: string
   sections: VersionSection[]
-}
-
-const CATEGORY_ALIASES: Record<string, string> = {
-  features: 'features',
-  fixes: 'fixes',
-  'bug fixes': 'fixes',
-  other: 'other',
-  ci: 'ci',
-  contributors: 'contributors',
-  'visual polish mobile': 'visualMobile',
-  'quality gates': 'qualityGates',
-  'auto-update': 'autoUpdate',
-  documentation: 'documentation',
-  'ui/ux': 'uiUx',
-  technical: 'technical',
-  tests: 'tests',
-  new: 'new',
-  ux: 'ux',
-  quality: 'quality',
-  'ci automation': 'ciAutomation',
-  data: 'data',
-}
-
-function normalizeCategoryTitle(title: string): string {
-  return title
-    .replace(/[^\p{L}\p{N}/ -]/gu, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase()
-}
-
-function getLocalizedCategoryTitle(title: string, translate: (key: string) => string): string {
-  const categoryKey = CATEGORY_ALIASES[normalizeCategoryTitle(title)]
-  return categoryKey ? translate(`changelog.categories.${categoryKey}`) : title
 }
 
 function formatChangelogDate(date: string, locale: string): string | undefined {

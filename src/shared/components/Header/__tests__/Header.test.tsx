@@ -86,6 +86,24 @@ describe('Header', () => {
     expect(screen.getByText('settings.currencyAuto')).toBeInTheDocument()
   })
 
+  it('exposes the currency popup with menu semantics', async () => {
+    render(<Header />)
+    const trigger = screen.getByRole('button', { name: 'settings.currency' })
+
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(trigger).toHaveAttribute('aria-controls', 'currency-menu')
+
+    await user.click(trigger)
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('menu', { name: 'settings.currency' })).toHaveAttribute(
+      'id',
+      'currency-menu',
+    )
+    expect(screen.getAllByRole('menuitem')).not.toHaveLength(0)
+  })
+
   it('shows theme toggle', () => {
     render(<Header />)
     expect(screen.getByTestId('theme-toggle')).toBeInTheDocument()

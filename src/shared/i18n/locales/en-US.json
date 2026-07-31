@@ -633,6 +633,11 @@
     "categories": {
       "features": "Features",
       "fixes": "Fixes",
+      "improvements": "Improvements",
+      "security": "Security",
+      "ciCd": "CI/CD",
+      "dependencies": "Dependencies",
+      "breakingChanges": "Breaking Changes",
       "other": "Other",
       "ci": "CI",
       "contributors": "Contributors",
