@@ -118,11 +118,15 @@ jobs:
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "reused=false" >> "$GITHUB_OUTPUT"
 
+      - name: Sync in-app changelog
+        shell: bash
+        run: node scripts/sync-changelog.mjs --write
+
       - name: Validate changed release files
         shell: bash
         run: |
           set -euo pipefail
-          ALLOWED=$'package.json\npackage-lock.json\nCHANGELOG.md'
+          ALLOWED=$'package.json\npackage-lock.json\nCHANGELOG.md\nsrc/shared/i18n/locales/pt-BR.json\nsrc/shared/i18n/locales/en-US.json'
           while IFS= read -r file; do
             [ -z "$file" ] || grep -Fxq "$file" <<< "$ALLOWED" || {
               echo "Unexpected release change: $file" >&2
@@ -130,7 +134,7 @@ jobs:
             }
           done < <(git diff --name-only)
           if [ "${{ steps.version.outputs.reused }}" != "true" ]; then
-            git add package.json package-lock.json CHANGELOG.md
+            git add package.json package-lock.json CHANGELOG.md src/shared/i18n/locales/pt-BR.json src/shared/i18n/locales/en-US.json
             git diff --cached --check
           fi
 
