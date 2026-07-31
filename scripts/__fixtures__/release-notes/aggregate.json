@@ -49,16 +49,53 @@
       "title": "feat: add audited notes",
       "merged": true,
       "merge_commit_sha": "aaa111",
-      "commits": ["aaa111"],
-      "merged_by": { "login": "alice" }
+      "user": { "login": "alice", "type": "User" },
+      "merged_by": { "login": "reviewer" }
     },
     {
       "number": 11,
       "title": "fix: squash duplicate",
       "merged": true,
       "merge_commit_sha": "bbb222",
-      "commits": ["bbb222", "ddd444"],
-      "user": { "login": "dependabot[bot]" }
+      "user": { "login": "dependabot[bot]", "type": "Bot" }
+    }
+  ],
+  "commitPullRequests": [
+    {
+      "sha": "aaa111",
+      "pullRequests": [
+        {
+          "number": 10,
+          "title": "feat: add audited notes",
+          "merged": true,
+          "merge_commit_sha": "aaa111",
+          "user": { "login": "alice", "type": "User" }
+        }
+      ]
+    },
+    {
+      "sha": "bbb222",
+      "pullRequests": [
+        {
+          "number": 11,
+          "title": "fix: squash duplicate",
+          "merged": true,
+          "merge_commit_sha": "bbb222",
+          "user": { "login": "dependabot[bot]", "type": "Bot" }
+        }
+      ]
+    },
+    {
+      "sha": "ddd444",
+      "pullRequests": [
+        {
+          "number": 11,
+          "title": "fix: squash duplicate",
+          "merged": true,
+          "merge_commit_sha": "bbb222",
+          "user": { "login": "dependabot[bot]", "type": "Bot" }
+        }
+      ]
     }
   ]
 }
