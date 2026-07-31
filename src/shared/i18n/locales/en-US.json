@@ -429,6 +429,9 @@
     "dropActive": "Drop to analyze",
     "processing": "Processing...",
     "tapToSelect": "Tap to select a file",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "clear": "Clear model",
     "fit": "Fit view"
   },
   "common": {

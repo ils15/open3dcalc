@@ -99,4 +99,65 @@ describe('StlPreview', () => {
     await user.click(screen.getByRole('button', { name: 'stl.fit' }))
     expect(mockBounds.fit).toHaveBeenCalled()
   })
+
+  it('shows a clear button when geometry is present', () => {
+    render(<StlPreview initialGeometry={createMockGeometry()} onFileParsed={mockOnFileParsed} />)
+    expect(screen.getByRole('button', { name: 'stl.clear' })).toBeInTheDocument()
+  })
+
+  it('clears the model and calls onClear', async () => {
+    const user = userEvent.setup()
+    const onClear = vi.fn()
+    render(
+      <StlPreview
+        initialGeometry={createMockGeometry()}
+        onFileParsed={mockOnFileParsed}
+        onClear={onClear}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'stl.clear' }))
+    expect(onClear).toHaveBeenCalledTimes(1)
+    // Canvas is removed and the upload zone comes back
+    expect(screen.queryByTestId('r3f-canvas')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /stl\./ })).toBeInTheDocument()
+  })
+
+  it('opens a fullscreen portal overlay and closes it', async () => {
+    const user = userEvent.setup()
+    render(<StlPreview initialGeometry={createMockGeometry()} onFileParsed={mockOnFileParsed} />)
+
+    await user.click(screen.getByRole('button', { name: 'stl.fullscreen' }))
+
+    // Portal overlay rendered into document.body with dialog semantics
+    const overlay = document.querySelector('.fixed.inset-0')
+    expect(overlay).not.toBeNull()
+    expect(overlay).toHaveAttribute('role', 'dialog')
+    expect(screen.getByRole('button', { name: 'stl.exitFullscreen' })).toBeInTheDocument()
+    // Inline preview hidden while fullscreen
+    expect(screen.queryByRole('button', { name: 'stl.fullscreen' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'stl.exitFullscreen' }))
+    expect(screen.queryByRole('button', { name: 'stl.exitFullscreen' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'stl.fullscreen' })).toBeInTheDocument()
+  })
+
+  it('exits fullscreen on Escape key', async () => {
+    const user = userEvent.setup()
+    render(<StlPreview initialGeometry={createMockGeometry()} onFileParsed={mockOnFileParsed} />)
+
+    await user.click(screen.getByRole('button', { name: 'stl.fullscreen' }))
+    expect(screen.getByRole('button', { name: 'stl.exitFullscreen' })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: 'stl.exitFullscreen' })).not.toBeInTheDocument()
+  })
+
+  it('keeps fit and clear buttons visible inside fullscreen overlay', async () => {
+    const user = userEvent.setup()
+    render(<StlPreview initialGeometry={createMockGeometry()} onFileParsed={mockOnFileParsed} />)
+
+    await user.click(screen.getByRole('button', { name: 'stl.fullscreen' }))
+    expect(screen.getByRole('button', { name: 'stl.fit' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'stl.clear' })).toBeInTheDocument()
+  })
 })

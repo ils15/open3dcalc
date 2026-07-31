@@ -429,6 +429,9 @@
     "dropActive": "Solte para analisar",
     "processing": "Processando...",
     "tapToSelect": "Toque para selecionar arquivo",
+    "fullscreen": "Tela cheia",
+    "exitFullscreen": "Sair da tela cheia",
+    "clear": "Limpar modelo",
     "fit": "Encaixar"
   },
   "common": {
