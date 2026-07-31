@@ -5,6 +5,13 @@ name: Release publication
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v1.9.2)"
+        required: true
+        type: string
+        default: "v1.9.2"
 
 concurrency:
   group: release-publication-${{ github.ref_name }}
@@ -20,7 +27,7 @@ jobs:
       - name: Checkout immutable tag commit
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -28,11 +35,36 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Ensure gh CLI available
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "Installing gh CLI..."
+            sudo mkdir -p -m 755 /etc/apt/keyrings
+            wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+              | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+            sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+              | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+            sudo apt-get update
+            sudo apt-get install -y gh
+          fi
+          gh --version
+
+      - name: Resolve tag and SHA
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          TAG_SHA=$(git rev-list -n 1 "$TAG^{commit}")
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "tag_sha=$TAG_SHA" >> "$GITHUB_OUTPUT"
+
       - name: Verify tag is immutable, merged, and matches package version
         shell: bash
         env:
-          TAG: ${{ github.ref_name }}
-          TAG_SHA: ${{ github.sha }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+          TAG_SHA: ${{ steps.resolve.outputs.tag_sha }}
         run: |
           set -euo pipefail
           git fetch origin main --no-tags
@@ -76,8 +108,8 @@ jobs:
       - name: Create or repair GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-          TAG_SHA: ${{ github.sha }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+          TAG_SHA: ${{ steps.resolve.outputs.tag_sha }}
           REPOSITORY: ${{ github.repository }}
         shell: bash
         run: |
@@ -145,8 +177,8 @@ jobs:
       - name: Validate published tag, release, and assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-          TAG_SHA: ${{ github.sha }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+          TAG_SHA: ${{ steps.resolve.outputs.tag_sha }}
           REPOSITORY: ${{ github.repository }}
         shell: bash
         run: |
@@ -267,7 +299,7 @@ jobs:
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ steps.resolve.outputs.tag }}
           REPOSITORY: ${{ github.repository }}
         shell: bash
         run: |
