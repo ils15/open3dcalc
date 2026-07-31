@@ -4,7 +4,7 @@ name: Release publication
 "on":
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 concurrency:
   group: release-publication-${{ github.ref_name }}

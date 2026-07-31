@@ -87,8 +87,8 @@ nova versão patch. Não apagar, mover ou recriar a tag/Release anterior.
 
 ## Artefatos
 
-| Plataforma | Formato | Local |
-|------------|---------|-------|
-| Web | PWA | `dist-web/` |
-| Windows | `.exe` | `dist-electron/` |
-| Linux | `.AppImage` | `dist-electron/` |
+| Plataforma | Formato     | Local            |
+| ---------- | ----------- | ---------------- |
+| Web        | PWA         | `dist-web/`      |
+| Windows    | `.exe`      | `dist-electron/` |
+| Linux      | `.AppImage` | `dist-electron/` |
