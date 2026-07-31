@@ -1,14 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { StlPreview } from '../StlPreview'
 
 // Mock R3F — Canvas doesn't work well in jsdom
 vi.mock('@react-three/fiber', () => ({
   Canvas: ({ children }: { children: React.ReactNode }) => <div data-testid="r3f-canvas">{children}</div>,
 }))
+
+// Expose the mocked Bounds API so tests can assert fit() is invoked
+const { mockBounds } = vi.hoisted(() => ({
+  mockBounds: {
+    fit: vi.fn(),
+    refresh: vi.fn(),
+    clip: vi.fn(),
+    reset: vi.fn(),
+    getSize: vi.fn(),
+  },
+}))
+
 vi.mock('@react-three/drei', () => ({
   OrbitControls: () => null,
   Center: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Bounds: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useBounds: () => mockBounds,
   MeshStandardMaterial: () => null,
   MeshBasicMaterial: () => null,
 }))
@@ -71,5 +86,17 @@ describe('StlPreview', () => {
     render(<StlPreview onFileParsed={mockOnFileParsed} />)
     const uploadButton = screen.getByRole('button', { name: /stl\./ })
     expect(uploadButton).toBeInTheDocument()
+  })
+
+  it('renders a fit button when geometry is present', () => {
+    render(<StlPreview initialGeometry={createMockGeometry()} onFileParsed={mockOnFileParsed} />)
+    expect(screen.getByRole('button', { name: 'stl.fit' })).toBeInTheDocument()
+  })
+
+  it('calls the bounds fit API when fit button is clicked', async () => {
+    const user = userEvent.setup()
+    render(<StlPreview initialGeometry={createMockGeometry()} onFileParsed={mockOnFileParsed} />)
+    await user.click(screen.getByRole('button', { name: 'stl.fit' }))
+    expect(mockBounds.fit).toHaveBeenCalled()
   })
 })

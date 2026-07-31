@@ -428,7 +428,8 @@
     "dropzone": "Arraste seu arquivo 3D aqui",
     "dropActive": "Solte para analisar",
     "processing": "Processando...",
-    "tapToSelect": "Toque para selecionar arquivo"
+    "tapToSelect": "Toque para selecionar arquivo",
+    "fit": "Encaixar"
   },
   "common": {
     "save": "Salvar",
