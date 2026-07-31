@@ -77,12 +77,12 @@ describe('Header', () => {
 
   it('renders currency selector', () => {
     render(<Header />)
-    expect(screen.getByTitle('settings.currency')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'settings.currency' })).toBeInTheDocument()
   })
 
   it('shows currency menu on click', async () => {
     render(<Header />)
-    await user.click(screen.getByTitle('settings.currency'))
+    await user.click(screen.getByRole('button', { name: 'settings.currency' }))
     expect(screen.getByText('settings.currencyAuto')).toBeInTheDocument()
   })
 
@@ -93,12 +93,12 @@ describe('Header', () => {
 
   it('renders language toggle', () => {
     render(<Header />)
-    expect(screen.getByTitle('nav.language')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'nav.language' })).toBeInTheDocument()
   })
 
   it('calls changeLanguage when language toggle clicked', async () => {
     render(<Header />)
-    await user.click(screen.getByTitle('nav.language'))
+    await user.click(screen.getByRole('button', { name: 'nav.language' }))
     expect(mockChangeLanguage).toHaveBeenCalledWith('en-US')
   })
 
@@ -116,7 +116,7 @@ describe('Header', () => {
   // Currency menu items
   it('shows currency options when menu is open', async () => {
     render(<Header />)
-    await user.click(screen.getByTitle('settings.currency'))
+    await user.click(screen.getByRole('button', { name: 'settings.currency' }))
     expect(screen.getByText('USD')).toBeInTheDocument()
     expect(screen.getByText('BRL')).toBeInTheDocument()
     expect(screen.getByText('EUR')).toBeInTheDocument()
@@ -124,8 +124,15 @@ describe('Header', () => {
 
   it('calls setCurrency when currency option selected', async () => {
     render(<Header />)
-    await user.click(screen.getByTitle('settings.currency'))
+    await user.click(screen.getByRole('button', { name: 'settings.currency' }))
     await user.click(screen.getByText('USD'))
     expect(mockSetCurrency).toHaveBeenCalledWith('USD')
+  })
+
+  it('keeps locale controls accessible and non-shrinking', () => {
+    render(<Header />)
+
+    expect(screen.getByRole('button', { name: 'settings.currency' }).className).toContain('shrink-0')
+    expect(screen.getByRole('button', { name: 'nav.language' }).className).toContain('shrink-0')
   })
 })

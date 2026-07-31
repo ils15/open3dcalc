@@ -37,7 +37,7 @@ const CATEGORY_ALIASES: Record<string, string> = {
 
 function normalizeCategoryTitle(title: string): string {
   return title
-    .replace(/[^\p{L}\p{N}&/ -]/gu, '')
+    .replace(/[^\p{L}\p{N}/ -]/gu, '')
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase()
