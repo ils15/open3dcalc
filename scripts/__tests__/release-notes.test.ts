@@ -43,6 +43,59 @@ describe("audited release notes", () => {
       authorFor({ commit: { author: { login: "github-actions[bot]" } } }),
     ).toBe("Unknown");
   });
+  it("extracts real titles from nested GitHub commit payloads", () => {
+    const catalog = normalize({
+      releases: [{ tag_name: "v1.0.0", assets: [] }],
+      tags: [{ name: "v1.0.0" }],
+      // Real GitHub API shape: { sha, commit: { message, ... }, author }
+      commits: [
+        {
+          sha: "nested-nopr",
+          commit: {
+            message: "fix: direct commit without PR",
+            author: { name: "Carol", email: "carol@example.com" },
+          },
+          author: { login: "carol" },
+        },
+        {
+          sha: "nested-pr",
+          commit: {
+            message: "feat: nested payload merged via PR",
+            author: { name: "Dave", email: "dave@example.com" },
+          },
+          author: { login: "dave" },
+        },
+      ],
+      pullRequests: [
+        {
+          number: 101,
+          title: "feat: nested payload merged via PR",
+          merge_commit_sha: "nested-pr",
+          user: { login: "dave" },
+        },
+      ],
+    });
+    expect(catalog.partial).toBe(false);
+    expect(catalog.items.map((item) => item.title)).toEqual(
+      expect.arrayContaining([
+        "fix: direct commit without PR",
+        "feat: nested payload merged via PR",
+      ]),
+    );
+    // Regression: titles must never degrade to the "Unknown" fallback when
+    // the payload is nested ({ sha, commit: { message } }) instead of flat.
+    expect(catalog.items.map((item) => item.title)).not.toContain("Unknown");
+    const direct = catalog.items.find(
+      (item) => item.key === "commit:nested-nopr",
+    );
+    expect(direct).toMatchObject({
+      title: "fix: direct commit without PR",
+      author: "carol",
+    });
+    expect(catalog.items.find((item) => item.key === "pr:101")?.title).toBe(
+      "feat: nested payload merged via PR",
+    );
+  });
   it("deduplicates squash commits and sorts deterministically", async () => {
     const catalog = normalize(await fixture());
     expect(catalog.items.filter((item) => item.key === "pr:11")).toHaveLength(

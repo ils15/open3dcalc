@@ -141,7 +141,7 @@ export const normalize = (input) => {
     const item = {
       key,
       sha: clean(commit?.sha ?? pr?.merge_commit_sha),
-      title: clean(pr?.title ?? commit?.message),
+      title: clean(pr?.title ?? commit?.message ?? commit?.commit?.message),
       body: clean(pr?.body, ""),
       pr,
       commit,
