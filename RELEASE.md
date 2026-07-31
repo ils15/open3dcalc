@@ -50,10 +50,13 @@ O workflow **Release publication** valida que a tag aponta para o commit do
 evento, está na história de `main` e coincide com `package.json`. Depois roda
 qualidade/build no commit/tag exato, cria a GitHub Release com `--target` desse
 SHA e anexa os artefatos Windows/Linux. Uma etapa explícita confirma novamente
-o SHA da tag, a existência da Release associada, e todos os assets esperados com
-nomes/versões corretos. Se essa confirmação falhar, o diagnóstico é preservado
-e a branch não é removida. Só após confirmação da Release remove
-`release/vX.Y.Z`.
+o SHA da tag, a existência da Release associada (não draft e com
+`published_at`), e a lista completa paginada de assets. Para cada asset esperado,
+confere nome/versão, exige o `digest` SHA-256 fornecido pela API e o compara ao
+SHA-256 calculado localmente. Asset ausente, duplicado, sem digest ou com digest
+divergente faz o job falhar e preserva a branch. Se essa confirmação falhar, o
+diagnóstico é preservado e a branch não é removida. Só após confirmação da
+Release e dos digests remove `release/vX.Y.Z`.
 
 ## Rerun, falhas parciais e recuperação
 
@@ -65,7 +68,8 @@ e a branch não é removida. Só após confirmação da Release remove
   assets ausentes são anexados. Assets com o mesmo nome e digest diferente
   causam falha, sem overwrite ou delete.
 - O build limpa os diretórios de saída antes de gerar artefatos e verifica o
-  SHA-256 local. Assim, nenhum arquivo residual de outra tag é anexado.
+  SHA-256 local; a validação posterior reconcilia esse valor com o `digest` da
+  API. Assim, nenhum arquivo residual de outra tag é anexado ou aceito.
 - Se o build falhar, corrija no código e faça novo PR/versionamento. Não mova a
   tag existente. Se a Release já foi publicada, preserve-a e trate a correção
   em uma nova versão.

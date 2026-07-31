@@ -1,26 +1,73 @@
 # Dependency audit
 
-Audit run on 2026-07-31 with `npm audit --omit=optional` after the safe
-`npm audit fix` pass: 23 residual findings (19 high, 4 moderate, no critical).
+Snapshot determinístico obtido em **2026-07-31**, no Node.js 22.22.2/npm
+10.9.7, com:
 
-- `@electron/rebuild` was migrated from deprecated `electron-rebuild@3` to
-  `@electron/rebuild@4`; this removes its vulnerable `node-gyp`/`tar` chain
-  and keeps the existing `electron-rebuild` command.
-- Remaining findings are transitive development/build-tool findings:
-  Electron Builder's `@electron/asar`/`glob`/`minimatch` chain
-  (`brace-expansion`) and Drizzle Kit's legacy `@esbuild-kit` chain (`esbuild`).
-  npm offers only breaking downgrades (`electron-rebuild@2` and
-  `drizzle-kit@0.18`) rather than compatible fixes; neither was applied.
-- npm also reports the direct `vite-plugin-pwa` finding and its transitive
-  `workbox-build` chain. `workbox-build` brings in
-  `@trickfilm400/rollup-plugin-off-main-thread`, which reaches the vulnerable
-  `ejs` dependency. npm reports a compatible fix is available, but does not
-  identify a non-breaking version in this audit result. These packages remain
-  pinned by the current lockfile and are recorded here rather than silently
-  removed or force-upgraded.
-- CI runs the audit explicitly with `--audit-level=critical`, so any future
-  critical finding fails the gate. High/moderate residual build-only findings
-  remain visible and are not hidden with `|| true`.
+```bash
+npm ci
+npm audit --omit=optional --json | jq -S .
+```
 
-Revisit this exception when compatible Electron Builder or Drizzle Kit releases
-remove the transitive advisories. Do not use `npm audit fix --force` blindly.
+O resultado tem 23 findings: **19 high, 4 moderate, 0 critical**. O inventário
+abaixo reproduz todos os nós reportados por `npm audit` (o campo *nodes* é o
+caminho instalado no lockfile), inclusive findings transitivos.
+
+| Pacote vulnerável | Cadeia reportada | Severidade | Versão afetada | Nodes | Versão corrigida / motivo de permanecer |
+|---|---|---:|---|---|---|
+| `@electron/asar` | `app-builder-lib → @electron/asar → glob/minimatch` | high | `3.2.1–3.4.1` | `node_modules/@electron/asar` | `electron-builder@25.1.8` (breaking); manter `26.0.0` para não trocar a toolchain de empacotamento sem validação |
+| `@electron/universal` | `app-builder-lib → @electron/universal → @electron/asar/dir-compare/minimatch` | high | `1.0.1–3.0.3` | `node_modules/@electron/universal` | `electron-builder@25.1.8` (breaking); mesma exceção do builder |
+| `@esbuild-kit/core-utils` | `drizzle-kit → @esbuild-kit/esm-loader → @esbuild-kit/core-utils → esbuild` | moderate | `*` | `node_modules/@esbuild-kit/core-utils` | `drizzle-kit@0.18.1` (breaking); manter a versão atual até migração do kit |
+| `@esbuild-kit/esm-loader` | `drizzle-kit → @esbuild-kit/esm-loader → @esbuild-kit/core-utils` | moderate | `*` | `node_modules/@esbuild-kit/esm-loader` | `drizzle-kit@0.18.1` (breaking); mesma exceção |
+| `@trickfilm400/rollup-plugin-off-main-thread` | `vite-plugin-pwa → workbox-build → @trickfilm400/... → ejs` | high | `≤3.1.0-pre2` | `node_modules/@trickfilm400/rollup-plugin-off-main-thread` | npm indica fix, mas não fixa uma versão compatível; manter PWA atual até upgrade validado |
+| `app-builder-lib` | `electron-builder → app-builder-lib → @electron/asar/universal, dmg-builder, ejs, squirrel` | high | `≥22.6.0` | `node_modules/app-builder-lib` | `electron-builder@25.1.8` (breaking); manter builder atual para preservar os alvos de release |
+| `brace-expansion` | `electron-builder → ... → minimatch → brace-expansion` | high | `≤5.0.7` | `node_modules/@electron/asar/node_modules/brace-expansion`; `node_modules/@electron/universal/node_modules/brace-expansion`; `node_modules/dir-compare/node_modules/brace-expansion`; `node_modules/filelist/node_modules/brace-expansion`; `node_modules/glob/node_modules/brace-expansion` | `electron-builder@25.1.8` (breaking); cadeia de build, aguardando migração segura |
+| `dir-compare` | `app-builder-lib → @electron/universal → dir-compare → minimatch` | high | `*` | `node_modules/dir-compare` | `electron-builder@25.1.8` (breaking); mesma exceção |
+| `dmg-builder` | `electron-builder → dmg-builder → app-builder-lib` | high | `26.0.0-alpha.0–27.0.0-alpha.2` | `node_modules/dmg-builder` | `electron-builder@25.1.8` (breaking); manter alvo macOS atual |
+| `drizzle-kit` | `drizzle-kit → @esbuild-kit/esm-loader → @esbuild-kit/core-utils → esbuild` | moderate | `0.19.0–1.0.0-beta.1-fd8bfcc` | `node_modules/drizzle-kit` | `0.18.1` (breaking); migração requer validação das migrations |
+| `ejs` | `electron-builder → app-builder-lib → ejs → jake → filelist → minimatch` **e** `vite-plugin-pwa → workbox-build → ... → ejs` | high | `3.1.2–4.0.1` | `node_modules/ejs` | `electron-builder@25.1.8` (breaking) ou fix transitivo do PWA; manter até upgrades compatíveis |
+| `electron-builder` | direto; `electron-builder → app-builder-lib/dmg-builder` | high | `19.25.0` ou `26.0.0-alpha.0–27.0.0-alpha.2` | `node_modules/electron-builder` | `25.1.8` (breaking); versão atual é necessária para os artefatos configurados |
+| `electron-builder-squirrel-windows` | `app-builder-lib → electron-builder-squirrel-windows → electron-winstaller/temp` | high | `≥26.0.0-alpha.0` | `node_modules/electron-builder-squirrel-windows` | npm indica fix, sem versão compatível; manter até validar empacotamento Windows |
+| `electron-winstaller` | `electron-builder-squirrel-windows → electron-winstaller → @electron/asar/temp` | high | `≥3.0.0` | `node_modules/electron-winstaller` | npm indica fix, sem versão compatível; mesma cadeia Windows |
+| `esbuild` | `drizzle-kit → @esbuild-kit/esm-loader → @esbuild-kit/core-utils → esbuild` | moderate | `≤0.24.2` | `node_modules/@esbuild-kit/core-utils/node_modules/esbuild` | `drizzle-kit@0.18.1` (breaking); dev/build-only e aguardando migração |
+| `filelist` | `jake → filelist → minimatch → brace-expansion` | high | `0.0.5–1.0.6` | `node_modules/filelist` | `electron-builder@25.1.8` (breaking); transitivo de build |
+| `glob` | `rimraf → glob → minimatch → brace-expansion` | high | `4.3.0–10.5.0` | `node_modules/glob` | npm indica fix transitivo; trocar builder é breaking |
+| `jake` | `ejs → jake → filelist → minimatch` | high | `10.6.1–10.9.4` | `node_modules/jake` | `electron-builder@25.1.8` (breaking); transitivo |
+| `minimatch` | `@electron/asar/universal, dir-compare, filelist, glob → minimatch → brace-expansion` | high | `2.0.0–10.0.2` | `node_modules/@electron/asar/node_modules/minimatch`; `node_modules/@electron/universal/node_modules/minimatch`; `node_modules/dir-compare/node_modules/minimatch`; `node_modules/filelist/node_modules/minimatch`; `node_modules/glob/node_modules/minimatch` | `electron-builder@25.1.8` (breaking); transitivo |
+| `rimraf` | `temp → rimraf → glob → minimatch` | high | `2.3.0–3.0.2` ou `4.2.0–5.0.10` | `node_modules/rimraf` | npm indica fix transitivo; sem atualização não-breaking identificada |
+| `temp` | `electron-winstaller → temp → rimraf` | high | `≥0.8.4` | `node_modules/temp` | npm indica fix transitivo; cadeia Windows do builder |
+| `vite-plugin-pwa` | direto → `workbox-build → @trickfilm400/... → ejs` | high | `≥1.3.0` | `node_modules/vite-plugin-pwa` | npm indica fix, sem versão compatível explicitada; manter PWA até validar service worker |
+| `workbox-build` | `vite-plugin-pwa → workbox-build → @trickfilm400/...` | high | `≥7.4.1` | `node_modules/workbox-build` | npm indica fix, sem versão compatível explicitada; mesma exceção PWA |
+
+Os dois findings diretos são `drizzle-kit` e `vite-plugin-pwa`; os demais são
+transitivos de ferramentas de build/teste. O `npm audit fix --force` propõe
+`electron-builder@25.1.8` e `drizzle-kit@0.18.1`, ambos downgrades breaking.
+Não foram aplicados porque alterariam a cadeia de empacotamento/migrations sem
+uma tarefa de migração e testes próprios. Não há credenciais no snapshot nem no
+lockfile. Não usar `npm audit fix --force` como correção automática.
+
+O CI continua executando `npm audit --omit=optional --audit-level=critical`:
+este comando passou neste snapshot; findings high/moderate permanecem visíveis
+e documentados, enquanto qualquer finding critical futuro falha o job.
+
+## Cobertura reproduzida
+
+Foi executado exatamente o comando do CI, após `npm rebuild better-sqlite3`:
+
+```bash
+npm run test:run -- --coverage
+```
+
+Resultado reproduzido: **46,69% statements** (`1753/3754`), `45,03% branches`,
+`42,39% functions` e `48,15% lines`. Foram 59 suites/701 testes aprovados e
+20 testes skipped. O Vitest também registrou dois `.js.map` de `db/schema`
+como não parseáveis e os excluiu da cobertura.
+
+O valor anterior **46,67%** não é reproduzido por este checkout com o mesmo
+comando/flags. Nesta execução, `1753/3754 = 46,6915%`, que arredonda para
+46,69%; portanto, 46,67% necessariamente veio de um numerador/denominador
+ligeiramente diferente (ou de outra seleção de arquivos) no relatório
+anterior. Os insumos desse relatório não estão disponíveis para atribuir uma
+causa mais específica. Não há mudança de gate ou testes neste ajuste; a única
+medição verificável nesta execução é 46,69%.
+Os thresholds existentes do Vitest (30/26/28/33) continuam sendo os únicos
+gates; nenhum gate novo foi inventado.

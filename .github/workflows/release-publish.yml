@@ -108,9 +108,9 @@ jobs:
              gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" \
                --target "$TAG_SHA"
             EXISTING_ASSETS=release-publish-diagnostics/assets.json
-             gh api --paginate \
-               "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" \
-               >"$EXISTING_ASSETS"
+             gh api --paginate --slurp \
+                "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" \
+                | jq 'add' >"$EXISTING_ASSETS"
             for artifact in "${ARTIFACTS[@]}"; do
               name=$(basename "$artifact")
               local_digest="sha256:$(sha256sum "$artifact" | cut -d' ' -f1)"
@@ -184,27 +184,56 @@ jobs:
               "Tag SHA: $TAG_SHA." >&2
             exit 1
           fi
-          RELEASE_TAG=$(jq -r '.tag_name // empty' "$RELEASE_JSON")
-          RELEASE_ID=$(jq -r '.id // empty' "$RELEASE_JSON")
-          if [ "$RELEASE_TAG" != "$TAG" ] || [ -z "$RELEASE_ID" ]; then
-            printf '%s\n' \
-              "Validation failed: Release is not associated with tag $TAG. " \
-              "Observed tag=$RELEASE_TAG id=$RELEASE_ID." >&2
-            exit 1
-          fi
+           RELEASE_TAG=$(jq -r '.tag_name // empty' "$RELEASE_JSON")
+           RELEASE_ID=$(jq -r '.id // empty' "$RELEASE_JSON")
+           RELEASE_DRAFT=$(jq -r '.draft // true' "$RELEASE_JSON")
+           RELEASE_PUBLISHED_AT=$(jq -r \
+             '.published_at // empty' "$RELEASE_JSON")
+           if [ "$RELEASE_TAG" != "$TAG" ] || [ -z "$RELEASE_ID" ]; then
+             printf '%s\n' \
+               "Validation failed: Release is not associated with tag $TAG. " \
+               "Observed tag=$RELEASE_TAG id=$RELEASE_ID." >&2
+             exit 1
+           fi
+           if [ "$RELEASE_DRAFT" != "false" ] \
+             || [ -z "$RELEASE_PUBLISHED_AT" ]; then
+             printf '%s\n' \
+               "Validation failed: Release $RELEASE_ID is not published (" \
+               "draft=$RELEASE_DRAFT published_at=$RELEASE_PUBLISHED_AT)." >&2
+             exit 1
+           fi
 
-          gh api --paginate \
-            "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" \
-            >"$ASSETS_JSON"
-          while IFS= read -r name; do
-            if ! jq -e --arg name "$name" \
-              'any(.[]; .name == $name)' "$ASSETS_JSON" >/dev/null; then
-              printf '%s\n' \
-                "Validation failed: expected asset is missing: $name. See " \
-                "$ASSETS_JSON and $EXPECTED_ASSETS." >&2
-              exit 1
-            fi
-            case "$name" in
+           gh api --paginate --slurp \
+             "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" \
+             | jq 'add' >"$ASSETS_JSON"
+           ASSET_FILTER='map(select(.name == $name)) | '
+           ASSET_FILTER+='if length == 1 then .[0] else empty end'
+           while IFS= read -r name; do
+             asset=$(jq -c --arg name "$name" \
+               "$ASSET_FILTER" \
+               "$ASSETS_JSON")
+             if [ -z "$asset" ]; then
+               printf '%s\n' \
+                 "Validation failed: expected asset is missing: $name. See " \
+                 "$ASSETS_JSON and $EXPECTED_ASSETS." >&2
+               exit 1
+             fi
+             local_digest="sha256:$(sha256sum \
+               "dist-electron/$name" | cut -d' ' -f1)"
+             remote_digest=$(jq -r '.digest // empty' <<<"$asset")
+             if [ -z "$remote_digest" ]; then
+               printf '%s\n' \
+                 "Validation failed: asset $name has no API digest; refusing " \
+                 "to clean up. See $ASSETS_JSON." >&2
+               exit 1
+             fi
+             if [ "$remote_digest" != "$local_digest" ]; then
+               printf '%s\n' \
+                 "Validation failed: asset $name digest mismatch: API=" \
+                 "$remote_digest local=$local_digest." >&2
+               exit 1
+             fi
+             case "$name" in
               Open3DCalc-*)
                 case "$name" in
                   Open3DCalc-"$VERSION"*) ;;
@@ -217,10 +246,11 @@ jobs:
                 esac
                 ;;
             esac
-          done <"$EXPECTED_ASSETS"
-          printf '%s\n' \
-            "Validated tag $TAG at $TAG_SHA, Release $RELEASE_ID, and all " \
-            "expected versioned assets."
+           done <"$EXPECTED_ASSETS"
+           printf '%s\n' \
+             "Validated published tag $TAG at $TAG_SHA, Release $RELEASE_ID, " \
+             "complete asset list, and SHA-256 digest for every expected " \
+             "versioned asset."
 
       - name: Preserve publication diagnostics
         if: failure()
