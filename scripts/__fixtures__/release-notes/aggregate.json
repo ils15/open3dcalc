@@ -1,0 +1,64 @@
+{
+  "releases": [
+    {
+      "id": 1,
+      "tag_name": "v1.5.0",
+      "target_commitish": "aaa",
+      "assets": [{ "name": "Open3DCalc-1.5.0.exe", "digest": "sha256:aaa" }]
+    },
+    {
+      "id": 2,
+      "tag_name": "v1.9.2",
+      "target_commitish": "bbb",
+      "assets": [
+        { "name": "latest.yml" },
+        { "name": "checksums.txt", "digest": "sha256:bbb" }
+      ]
+    }
+  ],
+  "tags": [
+    { "name": "v1.5.0" },
+    { "name": "v1.9.2" },
+    { "name": "v1.8.1-no-release" }
+  ],
+  "commits": [
+    {
+      "sha": "aaa111",
+      "message": "feat: add audited notes",
+      "author": { "login": "alice" }
+    },
+    {
+      "sha": "bbb222",
+      "message": "fix: squash duplicate",
+      "author": { "login": "bob" }
+    },
+    {
+      "sha": "ccc333",
+      "message": "docs: safe text <script>alert(1)</script>",
+      "author": { "login": "github-actions[bot]" }
+    },
+    {
+      "sha": "ddd444",
+      "message": "fix: same squash",
+      "author": { "login": "bob" }
+    }
+  ],
+  "pullRequests": [
+    {
+      "number": 10,
+      "title": "feat: add audited notes",
+      "merged": true,
+      "merge_commit_sha": "aaa111",
+      "commits": ["aaa111"],
+      "merged_by": { "login": "alice" }
+    },
+    {
+      "number": 11,
+      "title": "fix: squash duplicate",
+      "merged": true,
+      "merge_commit_sha": "bbb222",
+      "commits": ["bbb222", "ddd444"],
+      "user": { "login": "dependabot[bot]" }
+    }
+  ]
+}
