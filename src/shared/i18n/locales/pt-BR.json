@@ -617,8 +617,38 @@
     "dismiss": "Fechar"
   },
   "changelog": {
+    "title": "Novidades",
+    "summary": "{{versions}} · {{changes}}",
+    "versionsCount_one": "{{count}} versão",
+    "versionsCount_other": "{{count}} versões",
+    "changesCount_one": "{{count}} mudança",
+    "changesCount_other": "{{count}} mudanças",
+    "latest": "Atual",
+    "releaseDate": "Lançado em {{date}}",
     "header": "{{versions}} versões · {{changes}} mudanças",
     "viewAllOnGitHub": "Ver todas as releases no GitHub",
+    "github": "GitHub",
+    "telegram": "Telegram",
+    "partner": "ofertachina.com.br",
+    "categories": {
+      "features": "Funcionalidades",
+      "fixes": "Correções",
+      "other": "Outros",
+      "ci": "CI",
+      "contributors": "Contribuidores",
+      "visualMobile": "Visual e Mobile",
+      "qualityGates": "Portões de Qualidade",
+      "autoUpdate": "Atualização Automática",
+      "documentation": "Documentação",
+      "uiUx": "UI/UX",
+      "technical": "Técnico",
+      "tests": "Testes",
+      "new": "Novidades",
+      "ux": "UX",
+      "quality": "Qualidade",
+      "ciAutomation": "CI e Automação",
+      "data": "Dados"
+    },
     "versions": [
       {
         "version": "1.9.2",
