@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   release-linux:
@@ -60,11 +61,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit, tag and force push
+      - name: Commit, tag and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           VERSION=v$(node -p "require('./package.json').version")
+          BRANCH="release/$VERSION"
           git add package.json package-lock.json CHANGELOG.md 2>/dev/null || true
           git add -A
           git commit --no-verify -m "chore(release): $VERSION"
@@ -72,7 +74,10 @@ jobs:
           if [ -n "${{ secrets.RELEASE_TOKEN }}" ]; then
             git remote set-url origin https://x-access-token:${{ secrets.RELEASE_TOKEN }}@github.com/${{ github.repository }}.git
           fi
-          git push --force-with-lease --follow-tags
+          # Push tag only — tags bypass branch protection
+          git push origin "$VERSION"
+          # Push commit to release/v<VERSION> branch (not protected)
+          git push origin "HEAD:$BRANCH"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -116,3 +121,25 @@ jobs:
               --target ${{ github.sha }}
           fi
           echo "✅ Release created: https://github.com/ils15/open3dcalc/releases/tag/$VERSION"
+
+      - name: Create PR for version bump to main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          VERSION=v$(node -p "require('./package.json').version")
+          BRANCH="release/$VERSION"
+          echo "Creating PR from $BRANCH → main..."
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(release): $VERSION" \
+            --body "Automated release PR.
+
+- Version bumped to **$VERSION**
+- CHANGELOG updated
+- Release artifacts published: https://github.com/${{ github.repository }}/releases/tag/$VERSION
+
+Merge this PR when CI passes to apply the version bump to \`main\`." \
+            --label release
+          echo "✅ PR created for $BRANCH → main"
