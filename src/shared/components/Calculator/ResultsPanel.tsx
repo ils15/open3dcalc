@@ -78,6 +78,16 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [showInventoryDropdown])
 
+  // Close dropdown with Escape
+  useEffect(() => {
+    if (!showInventoryDropdown) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowInventoryDropdown(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showInventoryDropdown])
+
   // Auto-hide success message
   useEffect(() => {
     if (!deductSuccess) return

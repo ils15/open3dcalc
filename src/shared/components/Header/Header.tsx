@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { createPortal } from 'react-dom'
 import { Box, Globe, ChevronDown, BookOpen, DollarSign, Info, X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -7,6 +8,7 @@ import { useCalculatorStore } from '@/shared/stores/calculatorStore'
 import { useTutorialStore } from '@/shared/stores/tutorialStore'
 import { CURRENCIES, type CurrencyCode } from '@/shared/lib/currency'
 import { useCurrency } from '@/shared/hooks/useCurrency'
+import { useDismissablePopover } from '@/shared/hooks/useDismissablePopover'
 import { ThemeToggle } from './ThemeToggle'
 
 export function Header() {
@@ -15,24 +17,30 @@ export function Header() {
     useShallow((s) => ({ currency: s.currency, setCurrency: s.setCurrency })),
   )
   const { symbol } = useCurrency()
-  const [showCurrencyMenu, setShowCurrencyMenu] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const {
+    open: currencyMenuOpen,
+    toggle: toggleCurrencyMenu,
+    triggerRef: currencyTriggerRef,
+    contentRef: currencyMenuContentRef,
+  } = useDismissablePopover<HTMLButtonElement>()
+  const [currencyMenuPos, setCurrencyMenuPos] = useState<{ top: number; right: number } | null>(null)
 
   const toggleLanguage = () => {
     const next = i18n.language === 'pt-BR' ? 'en-US' : 'pt-BR'
     i18n.changeLanguage(next)
   }
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowCurrencyMenu(false)
-      }
+  const handleCurrencyToggle = () => {
+    if (!currencyMenuOpen && currencyTriggerRef.current) {
+      const rect = currencyTriggerRef.current.getBoundingClientRect()
+      setCurrencyMenuPos({
+        top: rect.bottom + 6,
+        right: Math.max(12, window.innerWidth - rect.right),
+      })
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    toggleCurrencyMenu()
+  }
 
   return (
     <header
@@ -42,7 +50,7 @@ export function Header() {
         borderColor: 'var(--color-border)',
       }}
     >
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 h-[68px] flex items-center justify-between gap-2 sm:gap-4 overflow-hidden">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 h-[68px] flex items-center justify-between gap-2 sm:gap-4">
 
         {/* Logo — clickable on mobile to open settings */}
         <button
@@ -90,9 +98,13 @@ export function Header() {
             </button>
 
             {/* Currency selector */}
-            <div ref={menuRef} className="relative">
+            <div className="flex items-center">
               <button
-                onClick={() => setShowCurrencyMenu(v => !v)}
+                ref={currencyTriggerRef}
+                onClick={handleCurrencyToggle}
+                aria-haspopup="menu"
+                aria-expanded={currencyMenuOpen}
+                aria-controls="header-currency-menu"
                 className="flex items-center gap-1 text-[13px] font-semibold px-3 py-2.5 rounded-lg min-h-[44px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
                 title={t('settings.currency')}
               >
@@ -103,31 +115,44 @@ export function Header() {
                 <ChevronDown className="w-3 h-3 opacity-40" />
               </button>
 
-              {showCurrencyMenu && (
-                <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl shadow-2xl z-50 overflow-hidden surface border border-[var(--color-border)]">
-                  <button
-                    onClick={() => { setCurrency('auto'); setShowCurrencyMenu(false) }}
-                    className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--color-bg-hover)] transition-colors ${currencySetting === 'auto' ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}
+              {currencyMenuOpen &&
+                currencyMenuPos &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                  <div
+                    ref={currencyMenuContentRef}
+                    id="header-currency-menu"
+                    role="menu"
+                    aria-label={t('settings.currency')}
+                    className="fixed z-[60] w-44 rounded-xl shadow-2xl overflow-hidden surface border border-[var(--color-border)]"
+                    style={{ position: 'fixed', top: currencyMenuPos.top, right: currencyMenuPos.right }}
                   >
-                    <span className="font-mono font-bold w-6">{symbol}</span>
-                    <span>{t('settings.currencyAuto')}</span>
-                    {currencySetting === 'auto' && <span className="ml-auto text-[var(--color-accent)]">✓</span>}
-                  </button>
-                  <div className="border-t border-[var(--color-border)]" />
-                  {(Object.entries(CURRENCIES) as [CurrencyCode, typeof CURRENCIES[CurrencyCode]][]).map(([code, info]) => (
                     <button
-                      key={code}
-                      onClick={() => { setCurrency(code); setShowCurrencyMenu(false) }}
-                      className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--color-bg-hover)] transition-colors ${currencySetting === code ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}
+                      role="menuitem"
+                      onClick={() => { setCurrency('auto'); toggleCurrencyMenu() }}
+                      className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--color-bg-hover)] transition-colors ${currencySetting === 'auto' ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}
                     >
-                      <span className="font-mono font-bold w-6">{info.symbol}</span>
-                      <span>{code}</span>
-                      <span className="text-[10px] text-[var(--color-text-muted)] ml-auto">{info.name}</span>
-                      {currencySetting === code && <span className="text-[var(--color-accent)] ml-1">✓</span>}
+                      <span className="font-mono font-bold w-6">{symbol}</span>
+                      <span>{t('settings.currencyAuto')}</span>
+                      {currencySetting === 'auto' && <span className="ml-auto text-[var(--color-accent)]">✓</span>}
                     </button>
-                  ))}
-                </div>
-              )}
+                    <div className="border-t border-[var(--color-border)]" />
+                    {(Object.entries(CURRENCIES) as [CurrencyCode, typeof CURRENCIES[CurrencyCode]][]).map(([code, info]) => (
+                      <button
+                        key={code}
+                        role="menuitem"
+                        onClick={() => { setCurrency(code); toggleCurrencyMenu() }}
+                        className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--color-bg-hover)] transition-colors ${currencySetting === code ? 'text-[var(--color-accent)]' : 'text-[var(--color-text-primary)]'}`}
+                      >
+                        <span className="font-mono font-bold w-6">{info.symbol}</span>
+                        <span>{code}</span>
+                        <span className="text-[10px] text-[var(--color-text-muted)] ml-auto">{info.name}</span>
+                        {currencySetting === code && <span className="text-[var(--color-accent)] ml-1">✓</span>}
+                      </button>
+                    ))}
+                  </div>,
+                  document.body,
+                )}
             </div>
 
             {/* Language toggle */}
@@ -199,9 +224,9 @@ export function Header() {
                   <span className="text-sm font-medium">{t('nav.tutorial')}</span>
                 </button>
 
-                {/* Currency */}
+                {/* Currency — desktop selector handles changes; close the sheet here */}
                 <button
-                  onClick={() => setShowCurrencyMenu(true)}
+                  onClick={() => setShowSettings(false)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
                 >
                   <DollarSign className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />

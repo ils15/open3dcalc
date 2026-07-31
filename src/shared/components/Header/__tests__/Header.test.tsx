@@ -59,6 +59,61 @@ describe('Header', () => {
     expect(screen.getByText('app.title')).toBeInTheDocument()
   })
 
+  describe('currency dropdown — portal, z-index, Escape and aria', () => {
+    it('renders the currency menu in a portal directly under body', async () => {
+      render(<Header />)
+      await user.click(screen.getByTitle('settings.currency'))
+      const menu = screen.getByRole('menu')
+      expect(menu).toBeInTheDocument()
+      expect(menu.parentElement).toBe(document.body)
+    })
+
+    it('exposes menu semantics on the trigger (haspopup/expanded/controls)', async () => {
+      render(<Header />)
+      const trigger = screen.getByTitle('settings.currency')
+      expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+      expect(trigger).toHaveAttribute('aria-controls', 'header-currency-menu')
+      expect(trigger).toHaveAttribute('aria-expanded', 'false')
+      await user.click(trigger)
+      expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    })
+
+    it('is positioned fixed with a high z-index so content never covers it', async () => {
+      render(<Header />)
+      await user.click(screen.getByTitle('settings.currency'))
+      const menu = screen.getByRole('menu')
+      expect(menu.className).toContain('z-[60]')
+      expect(menu).toHaveStyle({ position: 'fixed' })
+    })
+
+    it('closes on Escape and restores focus to the trigger', async () => {
+      render(<Header />)
+      const trigger = screen.getByTitle('settings.currency')
+      await user.click(trigger)
+      expect(screen.getByRole('menu')).toBeInTheDocument()
+      await user.keyboard('{Escape}')
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+      expect(trigger).toHaveFocus()
+    })
+
+    it('closes on click outside', async () => {
+      render(<Header />)
+      await user.click(screen.getByTitle('settings.currency'))
+      expect(screen.getByRole('menu')).toBeInTheDocument()
+      await user.click(document.body)
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
+
+    it('header container does not clip dropdowns (no overflow-hidden)', () => {
+      const { container } = render(<Header />)
+      const inner = Array.from(container.querySelectorAll('div')).find((el) =>
+        el.className.includes('h-[68px]'),
+      )
+      expect(inner).toBeDefined()
+      expect(inner!.className).not.toContain('overflow-hidden')
+    })
+  })
+
   it('renders beta badge', () => {
     render(<Header />)
     expect(screen.getByText('Beta')).toBeInTheDocument()
