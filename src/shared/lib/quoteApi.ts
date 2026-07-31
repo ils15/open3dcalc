@@ -49,6 +49,8 @@ export function generateQuotePayload(
   quantity: number,
   packagingCost: number,
   shippingCost: number,
+  locale: string = 'pt-BR',
+  currency: string = 'BRL',
 ): QuotePayload {
   return {
     version: '1.0.0',
@@ -87,15 +89,23 @@ export function generateQuotePayload(
       unitWeightGrams: result.unitWeight,
     },
     metadata: {
-      currency: 'BRL',
-      locale: 'pt-BR',
+      currency,
+      locale,
       generator: 'Open3DCalc',
     },
   }
 }
 
-export function exportQuoteJson(result: CalculationResult, productName: string, quantity: number, packagingCost: number, shippingCost: number): string {
-  const payload = generateQuotePayload(result, productName, quantity, packagingCost, shippingCost)
+export function exportQuoteJson(
+  result: CalculationResult,
+  productName: string,
+  quantity: number,
+  packagingCost: number,
+  shippingCost: number,
+  locale: string = 'pt-BR',
+  currency: string = 'BRL',
+): string {
+  const payload = generateQuotePayload(result, productName, quantity, packagingCost, shippingCost, locale, currency)
   return JSON.stringify(payload, null, 2)
 }
 

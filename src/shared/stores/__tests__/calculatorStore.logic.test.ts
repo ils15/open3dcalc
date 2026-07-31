@@ -174,7 +174,7 @@ describe('CalculatorStore logic', () => {
       const snap = buildSnapshot({
         type: 'resin',
         resinMaterial: { type: 'Water Washable', volumeUsedMl: 100, costPerLiter: 220, density: 1.15, wasteMarginPercent: 8 },
-        resinPrintParams: { printTimeHours: 3, printerPowerWatts: 80, energyCostPerKwh: 0.80, failureMode: 'fixed', failureValue: 15, riskMultiplier: 1 },
+        resinPrintParams: { printTimeHours: 3, printerPowerWatts: 80, energyCostPerKwh: 0.80, failureMode: 'fixed', failureValue: 15, riskMultiplier: 1, heatUpTimeMinutes: 5, heatUpPowerPercent: 150 },
         productName: 'Resin Part',
         quantity: 2,
       })
@@ -235,9 +235,9 @@ describe('CalculatorStore logic', () => {
       expect(after.results!.materialCost).toBe(0)
     })
 
-    it('FDM with zero printTimeHours → energyCost === 0', () => {
+    it('FDM with zero printTimeHours and heat-up → energyCost === 0', () => {
       const store = useCalculatorStore.getState()
-      store.setFdmPrintParams({ ...store.fdmPrintParams, printTimeHours: 0 })
+      store.setFdmPrintParams({ ...store.fdmPrintParams, printTimeHours: 0, heatUpTimeMinutes: 0 })
 
       const after = useCalculatorStore.getState()
       expect(after.results!.energyCost).toBe(0)

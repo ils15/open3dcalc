@@ -63,7 +63,7 @@ export function Dashboard() {
   const store = useCalculatorStore()
   const results = store.results
   const fixedCosts = store.fixedCosts
-  const { format: formatMoney, symbol: currencySymbol } = useCurrency()
+  const { currency, format: formatMoney, symbol: currencySymbol } = useCurrency()
   const historyEntries = useHistoryStore(s => s.entries)
 
   // Local date range filter state (independent from history store)
@@ -290,6 +290,7 @@ export function Dashboard() {
       const sum = (arr: typeof sorted, key: 'sellPrice' | 'totalCost' | 'profit') =>
         arr.reduce((s, e) => s + e[key], 0)
 
+      const locale = i18n.resolvedLanguage || i18n.language || 'pt-BR'
       const reportData: ExecutiveReportData = {
         period: { from: fromStr, to: toStr },
         entryCount: sorted.length,
@@ -317,13 +318,15 @@ export function Dashboard() {
           },
         },
         chartImage,
+        locale,
+        currency,
       }
 
       await exportExecutivePdf(reportData)
     } finally {
       setExportingPdf(false)
     }
-  }, [filteredEntries, dashboardDateFrom, dashboardDateTo, topPrintersData, topMaterialsData])
+  }, [filteredEntries, dashboardDateFrom, dashboardDateTo, topPrintersData, topMaterialsData, i18n, currency])
 
   // ---------------------------------------------------------------------------
   // Custom Goal

@@ -190,7 +190,7 @@ describe('CalculatorStore Resin', () => {
     it('resin ops disabled → consumablesCost === 0', () => {
       const store = useCalculatorStore.getState()
       store.setActiveTab('resin')
-      store.setResinOps({ enabled: false, ppeCostPerPrint: 2.5 })
+      store.setResinOps({ enabled: false, ppeCostPerPrint: 2.5, carbonIntensity: 100 })
 
       const after = useCalculatorStore.getState()
       expect(after.results!.consumablesCost).toBe(0)

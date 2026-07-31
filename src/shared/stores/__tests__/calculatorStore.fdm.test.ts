@@ -187,18 +187,18 @@ describe('CalculatorStore FDM', () => {
       expect(store.fdmOps.enabled).toBe(false)
       expect(store.results!.consumablesCost).toBe(0)
 
-      store.setFdmOps({ enabled: true, ppeCostPerPrint: 2.5 })
+      store.setFdmOps({ enabled: true, ppeCostPerPrint: 2.5, carbonIntensity: 100 })
       const after = useCalculatorStore.getState()
       expect(after.results!.consumablesCost).toBe(2.5)
     })
 
     it('ops disabled → consumablesCost === 0', () => {
       const store = useCalculatorStore.getState()
-      store.setFdmOps({ enabled: true, ppeCostPerPrint: 5 })
+      store.setFdmOps({ enabled: true, ppeCostPerPrint: 5, carbonIntensity: 100 })
       const after1 = useCalculatorStore.getState()
       expect(after1.results!.consumablesCost).toBe(5)
 
-      store.setFdmOps({ enabled: false, ppeCostPerPrint: 5 })
+      store.setFdmOps({ enabled: false, ppeCostPerPrint: 5, carbonIntensity: 100 })
       const after2 = useCalculatorStore.getState()
       expect(after2.results!.consumablesCost).toBe(0)
     })

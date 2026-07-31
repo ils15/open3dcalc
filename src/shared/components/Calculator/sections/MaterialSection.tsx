@@ -446,7 +446,11 @@ export function MaterialSection({
 					})()}
 
 					<div className="sm:col-span-2 mt-3">
-						<StlPreview onFileParsed={handleStlParsed} />
+						<StlPreview
+							onFileParsed={handleStlParsed}
+							materialDensity={store.fdmMaterial.density}
+							infillPercent={store.infillPercent}
+						/>
 					</div>
 				</>
 			) : (

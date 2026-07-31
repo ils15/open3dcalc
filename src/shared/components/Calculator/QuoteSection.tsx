@@ -104,10 +104,12 @@ function QuoteFormModal({
   editQuote,
   onClose,
   onSave,
+  locale: localeProp,
 }: {
   editQuote?: Quote
   onClose: () => void
   onSave: () => void
+  locale?: string
 }) {
   const { symbol } = useCurrency()
   const customers = useCustomerStore((s) => s.customers)
@@ -138,13 +140,14 @@ function QuoteFormModal({
     globalDiscount,
   )
 
+  const locale = localeProp ?? 'pt-BR'
   const formatPrice = useCallback(
     (val: number) =>
-      val.toLocaleString('pt-BR', {
+      val.toLocaleString(locale, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }),
-    [],
+    [locale],
   )
 
   const addItemFromHistory = (entryId: string) => {
@@ -500,10 +503,12 @@ function QuoteViewModal({
   quote,
   customer,
   onClose,
+  locale = 'pt-BR',
 }: {
   quote: Quote
   customer?: Customer
   onClose: () => void
+  locale?: string
 }) {
   const { symbol, format: formatMoney } = useCurrency()
   const quoteStore = useQuoteStore.getState()
@@ -545,7 +550,7 @@ function QuoteViewModal({
               {statusConfig.label}
             </span>
             <span className="text-xs text-[var(--color-text-muted)]">
-              Criado em {new Date(quote.createdAt).toLocaleDateString('pt-BR')}
+              Criado em {new Date(quote.createdAt).toLocaleDateString(locale)}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -578,7 +583,7 @@ function QuoteViewModal({
           {quote.validUntil && (
             <div>
               <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Validade</p>
-              <p className="text-sm text-[var(--color-text-primary)]">{new Date(quote.validUntil + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+              <p className="text-sm text-[var(--color-text-primary)]">{new Date(quote.validUntil + 'T00:00:00').toLocaleDateString(locale)}</p>
             </div>
           )}
         </div>
@@ -685,9 +690,10 @@ function QuoteViewModal({
 }
 
 // ── Main QuoteSection ─────────────────────────────────────────────
-export function QuoteSection() {
-  const { t } = useTranslation()
+export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
+  const { t, i18n } = useTranslation()
   const { format: formatMoney } = useCurrency()
+  const locale = localeProp ?? i18n.language ?? 'pt-BR'
   const quoteStore = useQuoteStore()
   const customers = useCustomerStore((s) => s.customers)
   const [search, setSearch] = useState('')
@@ -817,7 +823,7 @@ export function QuoteSection() {
                   <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                     {customer ? customer.name : 'Sem cliente'}
                     <span className="mx-1">·</span>
-                    {new Date(quote.createdAt).toLocaleDateString('pt-BR')}
+                    {new Date(quote.createdAt).toLocaleDateString(locale)}
                   </p>
                 </div>
 
@@ -867,6 +873,7 @@ export function QuoteSection() {
           editQuote={editQuote}
           onClose={() => { setShowForm(false); setEditQuote(undefined) }}
           onSave={handleFormSave}
+          locale={locale}
         />
       )}
       {viewQuote && (
@@ -874,6 +881,7 @@ export function QuoteSection() {
           quote={viewQuote}
           customer={getCustomerForQuote(viewQuote)}
           onClose={() => setViewQuote(undefined)}
+          locale={locale}
         />
       )}
 

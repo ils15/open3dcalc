@@ -82,6 +82,8 @@ describe('PrintSection', () => {
 				failureMode: 'percent',
 				failureValue: 10,
 				riskMultiplier: 1.5,
+				heatUpTimeMinutes: 5,
+				heatUpPowerPercent: 150,
 			},
 		})
 		render(<PrintSection {...defaultProps} isFDM={true} store={store} />)
@@ -100,6 +102,8 @@ describe('PrintSection', () => {
 				failureMode: 'none',
 				failureValue: 0,
 				riskMultiplier: 1,
+				heatUpTimeMinutes: 5,
+				heatUpPowerPercent: 150,
 			},
 		})
 		render(<PrintSection {...defaultProps} isFDM={false} store={store} />)

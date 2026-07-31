@@ -3,7 +3,18 @@ import type {
   MachineCosts, LaborCosts, AdditionalCosts, SalesParameters,
   OperationalCosts, SoftwareCosts, FDMHardware, FDMFinishing,
   PostProcessingResin, ResinHardware, CalculationResult,
+  VolumeDiscount,
 } from '@/shared/types'
+
+export function getBulkDiscount(quantity: number, discounts: VolumeDiscount[]): number {
+  let maxDiscount = 0
+  for (const d of discounts) {
+    if (quantity >= d.minQuantity && d.discountPercent > maxDiscount) {
+      maxDiscount = d.discountPercent
+    }
+  }
+  return maxDiscount
+}
 
 export function calculateFDM(
   mat: MaterialStateFDM,
@@ -23,7 +34,11 @@ export function calculateFDM(
   const effectiveWeight = totalWeightFDM * efficiencyFactor
   const matCost = (effectiveWeight / 1000) * mat.costPerKg
 
-  const printerEnergyCost = (print.printerPowerWatts / 1000) * print.printTimeHours * print.energyCostPerKwh
+  const totalKwh = (print.printerPowerWatts / 1000) * print.printTimeHours
+  const heatUpKwh = (print.printerPowerWatts / 1000) * (print.heatUpTimeMinutes / 60) * ((print.heatUpPowerPercent - 100) / 100)
+  const totalEnergyKwh = totalKwh + heatUpKwh
+  const printerEnergyCost = totalEnergyKwh * print.energyCostPerKwh
+  const carbonFootprintGrams = totalEnergyKwh * ops.carbonIntensity
 
   let postProcessingTotal = 0
   if (fdmFin.enabled) {
@@ -124,6 +139,7 @@ export function calculateFDM(
     targetMarginPercent: sales.profitMarginPercent,
     breakEvenPrice,
     actualMargin,
+    carbonFootprintGrams,
   }
 }
 
@@ -143,7 +159,11 @@ export function calculateResin(
   const volumeWithWaste = mat.volumeUsedMl * (1 + (mat.wasteMarginPercent / 100))
   const matCost = (volumeWithWaste / 1000) * mat.costPerLiter
 
-  const printerEnergyCost = (print.printerPowerWatts / 1000) * print.printTimeHours * print.energyCostPerKwh
+  const totalKwh = (print.printerPowerWatts / 1000) * print.printTimeHours
+  const heatUpKwh = (print.printerPowerWatts / 1000) * (print.heatUpTimeMinutes / 60) * ((print.heatUpPowerPercent - 100) / 100)
+  const totalEnergyKwh = totalKwh + heatUpKwh
+  const printerEnergyCost = totalEnergyKwh * print.energyCostPerKwh
+  const carbonFootprintGrams = totalEnergyKwh * ops.carbonIntensity
 
   let postProcessingTotal = 0
   if (resinPP.washingEnabled) {
@@ -241,6 +261,7 @@ export function calculateResin(
     targetMarginPercent: sales.profitMarginPercent,
     breakEvenPrice,
     actualMargin,
+    carbonFootprintGrams,
   }
 }
 

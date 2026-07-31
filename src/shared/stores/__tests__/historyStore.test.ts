@@ -18,7 +18,7 @@ function entryData(overrides: Partial<HistoryEntry> = {}) {
       subtotal: 9, totalCost: 25.50, sellPrice: 50.00, profit: 24.50,
       marketplaceFee: 0, taxAmount: 0, costPerGram: 0, costPerUnit: 0,
       unitWeight: 50, estimatedPrintTime: 5, targetMarginPercent: 50,
-      breakEvenPrice: 0, actualMargin: 49,
+      breakEvenPrice: 0, actualMargin: 49, carbonFootprintGrams: 0,
     },
     snapshot: null,
     ...overrides,

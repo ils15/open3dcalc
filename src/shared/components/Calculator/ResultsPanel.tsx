@@ -9,9 +9,10 @@ import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog'
 import { useCurrency } from '@/shared/hooks/useCurrency'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from '@/shared/components/Dashboard/RechartsLazy'
 import {
-  FolderOpen, Save, FileText, BarChart2, CheckCircle2, ScrollText, Database,
+  FolderOpen, Save, FileText, BarChart2, CheckCircle2, ScrollText, Database, Share2,
 } from 'lucide-react'
 import { exportQuoteJson, downloadQuoteJson } from '@/shared/lib/quoteApi'
+import { generateShareUrl } from '@/shared/lib/calculationLink'
 
 interface ResultsPanelProps {
   variant: 'sidebar' | 'mobile'
@@ -40,6 +41,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   const recentEntries = useMemo(() => historyEntries.slice(0, 3), [historyEntries])
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
   const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   // Inventory deduction state
@@ -108,7 +110,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   }
 
   const isFDM = activeTab === 'fdm'
-  const { format: fmtCurrency } = useCurrency()
+  const { currency, format: fmtCurrency } = useCurrency()
   const isSidebar = variant === 'sidebar'
 
   const chartData = useMemo((): { name: string; value: number; color: string }[] => {
@@ -130,6 +132,59 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
 
   if (!results) return null
 
+  const handleShareLink = async () => {
+    const state = useCalculatorStore.getState()
+    const shareState = {
+      activeTab: state.activeTab,
+      fdmMaterial: state.fdmMaterial,
+      fdmPrintParams: state.fdmPrintParams,
+      fdmMachine: state.fdmMachine,
+      fdmHardware: state.fdmHardware,
+      fdmFinishing: state.fdmFinishing,
+      fdmLabor: state.fdmLabor,
+      fdmExtras: state.fdmExtras,
+      fdmSales: state.fdmSales,
+      fdmOps: state.fdmOps,
+      fdmSoft: state.fdmSoft,
+      resinMaterial: state.resinMaterial,
+      resinPrintParams: state.resinPrintParams,
+      resinMachine: state.resinMachine,
+      resinHardware: state.resinHardware,
+      resinPostProcess: state.resinPostProcess,
+      resinLabor: state.resinLabor,
+      resinExtras: state.resinExtras,
+      resinSales: state.resinSales,
+      resinOps: state.resinOps,
+      resinSoft: state.resinSoft,
+      selectedPrinterId: state.selectedPrinter.id,
+      selectedMarketplaceId: state.selectedMarketplace.id,
+      fdmAmsEnabled: state.fdmAmsEnabled,
+      fdmAmsSlots: state.fdmAmsSlots,
+      fixedCosts: state.fixedCosts,
+      productName: state.productName,
+      quantity: state.quantity,
+      infillPercent: state.infillPercent,
+      targetMarginMode: state.targetMarginMode,
+      enabledSections: state.enabledSections,
+    }
+    const url = generateShareUrl(shareState)
+    try {
+      await navigator.clipboard.writeText(url)
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 2500)
+    } catch {
+      // Clipboard API may fail in some contexts — fallback
+      const textArea = document.createElement('textarea')
+      textArea.value = url
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 2500)
+    }
+  }
+
   const handleExportQuote = () => {
     if (!results) return
     const state = useCalculatorStore.getState()
@@ -138,7 +193,8 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
     const isFdm = state.activeTab === 'fdm'
     const pkg = isFdm ? state.fdmSales.packagingCost : state.resinSales.packagingCost
     const ship = isFdm ? state.fdmSales.shippingCost : state.resinSales.shippingCost
-    const json = exportQuoteJson(results, name, qty, pkg || 0, ship || 0)
+    const locale = i18n.resolvedLanguage || i18n.language || 'pt-BR'
+    const json = exportQuoteJson(results, name, qty, pkg || 0, ship || 0, locale, currency)
     downloadQuoteJson(json, `quote_${Date.now()}.json`)
   }
 
@@ -263,7 +319,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
           {saveStatus === 'saved' ? <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> : <Save className="w-3.5 h-3.5 shrink-0" />}
           <span className="truncate">{saveStatus === 'saved' ? t('calc.saved') : t('calc.saveSettings')}</span>
         </button>
-        <button data-shortcut="export" onClick={async () => { const { exportPdf } = await import('@/shared/lib/pdfExport'); exportPdf(results) }}
+        <button data-shortcut="export" onClick={async () => { const { exportPdf } = await import('@/shared/lib/pdfExport'); const locale = i18n.resolvedLanguage || i18n.language || 'pt-BR'; exportPdf(results, locale, currency) }}
           className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--color-bg-surface)] text-white hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-bg-surface)] focus-visible:outline-none flex items-center justify-center gap-1 truncate">
           <FileText className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t('calc.exportPdf')}</span>
         </button>
@@ -276,6 +332,23 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
           <ScrollText className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{t('results.exportQuote')}</span>
         </button>
       </div>
+
+      {/* Share Link */}
+      <button
+        onClick={handleShareLink}
+        className={`w-full min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2 ${
+          shareStatus === 'copied'
+            ? 'bg-emerald-600 text-white'
+            : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-hover)]'
+        }`}
+        aria-label={t('results.shareLink')}
+      >
+        {shareStatus === 'copied' ? (
+          <><CheckCircle2 className="w-4 h-4 shrink-0" /> <span>{t('results.linkCopied')}</span></>
+        ) : (
+          <><Share2 className="w-4 h-4 shrink-0" /> <span>{t('results.shareLink')}</span></>
+        )}
+      </button>
 
       {/* Deduct from Inventory — FDM only */}
       {isFDM && <div className="relative">
