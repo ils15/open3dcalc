@@ -1,0 +1,103 @@
+name: Release publication
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+concurrency:
+  group: release-publication-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: [self-hosted, cx33, linux]
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout immutable tag commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify tag is immutable, merged, and matches package version
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+          TAG_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          ACTUAL_SHA=$(git rev-list -n 1 "$TAG^{commit}")
+          [ "$ACTUAL_SHA" = "$TAG_SHA" ] || { echo "Tag does not point to event commit." >&2; exit 1; }
+          git merge-base --is-ancestor "$TAG_SHA" origin/main || { echo "Tag is not on merged main." >&2; exit 1; }
+          PACKAGE_VERSION="v$(node -p "require('./package.json').version")"
+          [ "$PACKAGE_VERSION" = "$TAG" ] || { echo "Tag $TAG does not match package version $PACKAGE_VERSION." >&2; exit 1; }
+          [ "$TAG" != "v1.10.0" ] || { echo "v1.10.0 is intentionally excluded from this automation." >&2; exit 1; }
+
+      - name: Install and build release artifacts
+        run: |
+          npm ci
+          npm rebuild better-sqlite3 2>/dev/null || true
+          npm run lint -- --max-warnings=0
+          npm run typecheck
+          npm run test:run
+          npm run build:all
+          npm run build:electron
+          if command -v sudo >/dev/null 2>&1; then
+            sudo dpkg --add-architecture i386
+            sudo apt-get update
+            sudo apt-get install -y wine64 wine32
+          fi
+          npm exec -- electron-builder -- --win --linux --publish never
+
+      - name: Create immutable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          TAG_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; refusing to overwrite or duplicate it." >&2
+            exit 1
+          fi
+          mapfile -t ARTIFACTS < <(find dist-electron -maxdepth 1 -type f \( \
+            -name 'Open3DCalc-*.exe' -o -name 'Open3DCalc-*.AppImage' -o \
+            -name 'latest*.yml' -o -name '*.blockmap' \) -print)
+          if [ "${#ARTIFACTS[@]}" -eq 0 ]; then
+            echo "No release artifacts found." >&2
+            exit 1
+          fi
+          gh release create "$TAG" \
+            --repo "$REPOSITORY" \
+            --title "$TAG" \
+            --generate-notes \
+            --target "$TAG_SHA" \
+            "${ARTIFACTS[@]}"
+
+      - name: Remove release branch after confirmed publication
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH="release/$TAG"
+          if gh api "repos/$REPOSITORY/git/ref/heads/$BRANCH" >/dev/null 2>&1; then
+            gh api --method DELETE "repos/$REPOSITORY/git/refs/heads/$BRANCH"
+            echo "Deleted $BRANCH after successful publication."
+          else
+            echo "$BRANCH does not exist; nothing to clean up."
+          fi

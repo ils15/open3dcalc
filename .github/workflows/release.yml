@@ -1,146 +1,130 @@
-# Release workflow v2 — tag-only push + PR strategy
-name: Release
+name: Release preparation
 
 on:
   workflow_dispatch:
     inputs:
       bump:
-        description: 'Bump type (auto = detect from commits)'
+        description: Version bump to prepare (v1.10.0 is intentionally not supported)
         required: true
         type: choice
-        default: auto
+        default: patch
         options:
           - auto
           - patch
           - minor
           - major
 
-permissions:
-  contents: write
-  pull-requests: write
+concurrency:
+  group: release-preparation
+  cancel-in-progress: false
 
 jobs:
-  release-linux:
+  prepare:
     runs-on: [self-hosted, cx33, linux]
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout main
+        uses: actions/checkout@v6
         with:
+          ref: main
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - run: npm ci
-
-      - name: Rebuild native modules
-        run: npm rebuild better-sqlite3 2>/dev/null || true
-
-      - name: Setup Wine (Windows cross-compile)
+      - name: Install dependencies
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y wine64 wine32 2>/dev/null || true
+          npm ci
+          npm rebuild better-sqlite3 2>/dev/null || true
 
-      - name: Bump version with changelogen
+      - name: Prepare version and changelog
+        id: version
+        shell: bash
+        env:
+          BUMP: ${{ inputs.bump }}
         run: |
-          if [ "${{ inputs.bump }}" = "auto" ]; then
-            npx changelogen --bump
-          else
-            npx changelogen --bump --${{ inputs.bump }}
+          set -euo pipefail
+          case "$BUMP" in
+            auto) npm exec -- changelogen --bump ;;
+            patch|minor|major) npm exec -- changelogen --bump --"$BUMP" ;;
+            *) echo "Unsupported bump: $BUMP" >&2; exit 1 ;;
+          esac
+
+          VERSION="v$(node -p "require('./package.json').version")"
+          if [ "$VERSION" = "v1.10.0" ]; then
+            echo "v1.10.0 is intentionally excluded from this automation." >&2
+            exit 1
           fi
+          BRANCH="release/$VERSION"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "Release branch $BRANCH already exists; refusing to duplicate or overwrite it." >&2
+            exit 1
+          fi
+          git switch -c "$BRANCH"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 
-      - name: Build all targets
+      - name: Validate changed release files
+        shell: bash
         run: |
+          set -euo pipefail
+          ALLOWED=$'package.json\npackage-lock.json\nCHANGELOG.md'
+          while IFS= read -r file; do
+            [ -z "$file" ] || grep -Fxq "$file" <<< "$ALLOWED" || {
+              echo "Unexpected release change: $file" >&2
+              exit 1
+            }
+          done < <(git diff --name-only)
+          git add package.json package-lock.json CHANGELOG.md
+          git diff --cached --check
+
+      - name: Quality checks and application builds
+        run: |
+          npm run lint -- --max-warnings=0
+          npm run typecheck
+          npm run test:run
           npm run build:all
           npm run build:electron
 
-      - name: Electron-builder (Windows + Linux)
-        run: npx electron-builder --win --linux --publish never
+      - name: Commit and push release branch
+        shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit, tag and push
+          VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: ${{ steps.version.outputs.branch }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          VERSION=v$(node -p "require('./package.json').version")
-          BRANCH="release/$VERSION"
-          git add package.json package-lock.json CHANGELOG.md 2>/dev/null || true
-          git add -A
+          if git diff --cached --quiet; then
+            echo "No version or changelog changes were produced; refusing an empty release PR." >&2
+            exit 1
+          fi
           git commit --no-verify -m "chore(release): $VERSION"
-          git tag "$VERSION"
-          if [ -n "${{ secrets.RELEASE_TOKEN }}" ]; then
-            git remote set-url origin https://x-access-token:${{ secrets.RELEASE_TOKEN }}@github.com/${{ github.repository }}.git
-          fi
-          # Push tag only — tags bypass branch protection
-          git push origin "$VERSION"
-          # Push commit to release/v<VERSION> branch (not protected)
           git push origin "HEAD:$BRANCH"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create GitHub Release with artifacts
+      - name: Create or reuse release PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BRANCH: ${{ steps.version.outputs.branch }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
         run: |
-          set -e
-          VERSION=v$(node -p "require('./package.json').version")
-          echo "Creating release $VERSION..."
-          
-          # Collect artifacts as an array
-          ARTIFACTS=()
-          for f in dist-electron/Open3DCalc-*.exe dist-electron/Open3DCalc-*.AppImage; do
-            if [ -f "$f" ]; then
-              echo "  Found: $f ($(du -h "$f" | cut -f1))"
-              ARTIFACTS+=("$f")
-            fi
-          done
-
-          # Also include latest.yml/latest-linux.yml and .blockmap files for auto-updater
-          for f in dist-electron/latest*.yml dist-electron/*.blockmap; do
-            if [ -f "$f" ]; then
-              echo "  Found: $f ($(du -h "$f" | cut -f1))"
-              ARTIFACTS+=("$f")
-            fi
-          done
-          
-          if [ ${#ARTIFACTS[@]} -gt 0 ]; then
-            echo "Creating release with ${#ARTIFACTS[@]} artifact(s)..."
-            gh release create "$VERSION" \
-              --title "$VERSION" \
-              --generate-notes \
-              --target ${{ github.sha }} \
-              "${ARTIFACTS[@]}"
-          else
-            echo "No artifacts found, creating release without artifacts..."
-            gh release create "$VERSION" \
-              --title "$VERSION" \
-              --generate-notes \
-              --target ${{ github.sha }}
+          set -euo pipefail
+          EXISTING=$(gh pr list --repo "$REPOSITORY" --state open --head "$BRANCH" --json number,url --jq '.[0] // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "Release PR already exists; reusing it: $EXISTING"
+            exit 0
           fi
-          echo "✅ Release created: https://github.com/ils15/open3dcalc/releases/tag/$VERSION"
-
-      - name: Create PR for version bump to main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          VERSION=v$(node -p "require('./package.json').version")
-          BRANCH="release/$VERSION"
-          echo "Creating PR from $BRANCH → main..."
           gh pr create \
+            --repo "$REPOSITORY" \
             --base main \
             --head "$BRANCH" \
             --title "chore(release): $VERSION" \
-            --body "Automated release PR.
-
-- Version bumped to **$VERSION**
-- CHANGELOG updated
-- Release artifacts published: https://github.com/${{ github.repository }}/releases/tag/$VERSION
-
-Merge this PR when CI passes to apply the version bump to \`main\`." \
-            --label release
-          echo "✅ PR created for $BRANCH → main"
+            --body "Automated release preparation for $VERSION. Merge this PR after CI passes; then create the immutable tag $VERSION on the merged commit to publish."
