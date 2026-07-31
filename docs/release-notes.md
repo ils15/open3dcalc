@@ -33,9 +33,15 @@ Use `node scripts/release-notes.mjs --dry-run --all` or `--release vX.Y.Z`.
 fixtures. `--write` is rejected: mutable backfill belongs to a separate,
 approved workflow. Requests use GitHub pagination and bounded exponential
 backoff for 429 and transient 5xx responses (500, 502, 503, and 504), with at
-most four retries. HTTP 403 is not retried: it is recorded as a
-partial-collection error so a permissions failure cannot loop or be mistaken
-for a rate-limit response. Tokens come from `GH_TOKEN` and are never printed.
+most four retries. A valid numeric `Retry-After` is capped at 30 seconds;
+missing or malformed headers use the deterministic capped exponential fallback.
+The paginated closed-PR response is used as the batch association source when
+it contains a commit SHA. Only unresolved SHAs use the commit pull-request
+endpoint, with a four-request concurrency limit and a per-SHA promise cache.
+Partial pages and their errors remain in `audit.json`. HTTP 403 is not retried:
+it is recorded as a partial-collection error so a permissions failure cannot
+loop or be mistaken for a rate-limit response. Tokens come from `GH_TOKEN` and
+are never printed.
 
 ## Invariants, snapshots, and rollback
 

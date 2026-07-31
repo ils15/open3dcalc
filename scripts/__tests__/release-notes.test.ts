@@ -6,12 +6,15 @@ import {
   authorFor,
   categoryFor,
   collect,
+  COMMIT_PULL_CONCURRENCY,
   fetchJson,
   main,
   escapeMarkdown,
   normalize,
   render,
+  retryDelayMs,
   sha256,
+  validateRepository,
 } from "../release-notes.mjs";
 
 const fixture = async () =>
@@ -68,6 +71,37 @@ describe("audited release notes", () => {
     expect(JSON.stringify(normalize(data))).toBe(
       JSON.stringify(normalize(data)),
     );
+  });
+  it("validates repository paths before constructing REST URLs", async () => {
+    expect(validateRepository("owner/repo")).toEqual({
+      owner: "owner",
+      repo: "repo",
+    });
+    for (const repository of [
+      "owner/repo/extra",
+      "../repo",
+      "owner/repo?x=1",
+      "owner/repo\nmalicious",
+    ])
+      expect(() => validateRepository(repository)).toThrow("safe GitHub");
+
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url);
+      return Response.json([]);
+    }) as typeof fetch;
+    try {
+      await collect("owner/repo");
+      expect(calls[0]).toBe(
+        "https://api.github.com/repos/owner/repo/releases?per_page=100&page=1",
+      );
+      expect(calls.some((call) => call.includes("repos/owner%2Frepo"))).toBe(
+        false,
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
   it("covers the v1.5.0 through v1.9.2 aggregate fixture", async () => {
     const catalog = normalize(await fixture());
@@ -152,6 +186,13 @@ describe("audited release notes", () => {
       vi.useRealTimers();
     }
   });
+  it("uses deterministic bounded fallback for absent or invalid Retry-After", () => {
+    expect(retryDelayMs(null, 0)).toBe(250);
+    expect(retryDelayMs("", 1)).toBe(500);
+    expect(retryDelayMs("not-a-delay", 99)).toBe(30_000);
+    expect(retryDelayMs("999999", 0)).toBe(30_000);
+    expect(retryDelayMs("0", 0)).toBe(0);
+  });
   it("does not retry forbidden responses and records them as read-only failures", async () => {
     const originalFetch = globalThis.fetch;
     const calls: string[] = [];
@@ -170,6 +211,82 @@ describe("audited release notes", () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+  it("uses the paginated PR batch before falling back to commit endpoints", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url);
+      if (url.includes("/commits?"))
+        return Response.json([
+          { sha: "abc", commit: { message: "feat: batched" } },
+        ]);
+      if (url.includes("/pulls?"))
+        return Response.json([{ number: 42, merge_commit_sha: "abc" }]);
+      return Response.json([]);
+    }) as typeof fetch;
+    try {
+      const catalog = await collect("owner/repo");
+      expect(
+        calls.filter((call) => call.includes("/commits/abc/pulls")),
+      ).toHaveLength(0);
+      expect(catalog.items[0]?.pr?.number).toBe(42);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+  it("caches commit associations by SHA and limits fallback concurrency", async () => {
+    const originalFetch = globalThis.fetch;
+    const commitShas = ["aaa", "bbb", "ccc", "ddd", "eee", "aaa"];
+    const calls: string[] = [];
+    let active = 0;
+    let maximumActive = 0;
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url);
+      if (url.includes("/commits/") && url.includes("/pulls")) {
+        active += 1;
+        maximumActive = Math.max(maximumActive, active);
+        await new Promise((resolveDelay) => setTimeout(resolveDelay, 5));
+        active -= 1;
+      }
+      if (url.includes("/commits?"))
+        return Response.json(
+          commitShas.map((sha) => ({
+            sha,
+            commit: { message: "fix: cached" },
+          })),
+        );
+      return Response.json([]);
+    }) as typeof fetch;
+    try {
+      await collect("owner/repo");
+      expect(
+        calls.filter((call) => /\/commits\/[^/]+\/pulls/.test(call)),
+      ).toHaveLength(5);
+      expect(maximumActive).toBeLessThanOrEqual(COMMIT_PULL_CONCURRENCY);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+  it("keeps the backfill workflow shell-safe and read-only", async () => {
+    const workflow = await readFile(
+      resolve(".github/workflows/release-notes-backfill.yml"),
+      "utf8",
+    );
+    const runSection = workflow.match(
+      /\s{8}run: \|\n([\s\S]*?)(?=\n\s{6}- name: Upload audited artifacts)/,
+    )?.[1];
+    expect(workflow).toContain("RELEASE_TAG: ${{ inputs.tag }}");
+    expect(runSection).toBeDefined();
+    expect(runSection).not.toContain("${{ inputs.tag }}");
+    expect(runSection).toContain(
+      'if [[ -n "$RELEASE_TAG" && ! "$RELEASE_TAG" =~ ^v[0-9]+\\.[0-9]+\\.[0-9]+$ ]]; then',
+    );
+    expect(runSection).toContain('args+=(--release "$RELEASE_TAG")');
+    expect(workflow).toContain("contents: read");
+    expect(workflow).not.toMatch(
+      /gh\s+(release|api\s+--method\s+(POST|PATCH|DELETE)) /,
+    );
   });
   it("enforces CLI safety flags and writes audit-only offline output", async () => {
     await expect(main(["--all", "--unknown"])).rejects.toThrow("Unknown flag");

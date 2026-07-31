@@ -24,6 +24,9 @@ const BOTS = new Set([
   "github-actions[bot]",
 ]);
 const MAX = 240;
+const repositoryPattern =
+  /^([A-Za-z0-9](?:[A-Za-z0-9-]{0,38})?)\/([A-Za-z0-9_.-]{1,100})$/;
+export const COMMIT_PULL_CONCURRENCY = 4;
 const clean = (value, fallback = "Unknown") =>
   String(value ?? "")
     .replace(/[\u0000-\u001f]/g, " ")
@@ -63,6 +66,17 @@ export const authorFor = (item) => {
 const version = (tag) => (/^v\d+\.\d+\.\d+$/.test(tag) ? tag : null);
 const compare = (a, b) =>
   String(a).localeCompare(String(b), "en", { numeric: true });
+
+export const validateRepository = (repository) => {
+  const match = repositoryPattern.exec(
+    typeof repository === "string" ? repository : "",
+  );
+  if (!match)
+    throw new Error(
+      "repository must contain only a safe GitHub owner/repo path",
+    );
+  return { owner: match[1], repo: match[2] };
+};
 
 const itemKey = (pr, commit) =>
   validNumber(pr?.number)
@@ -242,12 +256,23 @@ class GitHubError extends Error {
   }
 }
 const retryable = new Set([429, 500, 502, 503, 504]);
-const delayFor = (response, attempt) => {
-  const retryAfter = Number(response.headers.get("retry-after"));
-  return Number.isFinite(retryAfter)
-    ? Math.min(retryAfter * 1000, 30_000)
-    : 250 * 2 ** attempt;
+const BASE_RETRY_DELAY_MS = 250;
+const MAX_RETRY_DELAY_MS = 30_000;
+export const retryDelayMs = (retryAfterHeader, attempt) => {
+  const value =
+    typeof retryAfterHeader === "string" ? retryAfterHeader.trim() : "";
+  if (/^\d+$/.test(value)) {
+    const seconds = Number(value);
+    if (Number.isSafeInteger(seconds))
+      return Math.min(seconds * 1000, MAX_RETRY_DELAY_MS);
+  }
+  return Math.min(
+    BASE_RETRY_DELAY_MS * 2 ** Math.max(0, attempt),
+    MAX_RETRY_DELAY_MS,
+  );
 };
+const delayFor = (response, attempt) =>
+  retryDelayMs(response.headers.get("retry-after"), attempt);
 export async function fetchJson(url, attempt = 0) {
   const response = await fetch(url, {
     method: "GET",
@@ -293,22 +318,74 @@ async function pages(url, errors, label) {
     }
   }
 }
+async function mapWithConcurrency(items, worker, limit) {
+  const results = new Array(items.length);
+  let next = 0;
+  const run = async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await worker(items[index], index);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => run()),
+  );
+  return results;
+}
 export async function collect(repository, release) {
-  const base = `https://api.github.com/repos/${encodeURIComponent(repository)}`,
+  const { owner, repo } = validateRepository(repository);
+  const base = `https://api.github.com/repos/${owner}/${repo}`,
     errors = [];
   const releases = await pages(`${base}/releases`, errors, "releases");
   const tags = await pages(`${base}/tags`, errors, "tags");
   const commits = await pages(`${base}/commits`, errors, "commits");
   const prs = await pages(`${base}/pulls?state=closed`, errors, "pullRequests");
-  const associations = [];
-  for (const commit of commits) {
-    const found = await pages(
-      `${base}/commits/${encodeURIComponent(commit.sha)}/pulls`,
-      errors,
-      `commitPulls:${commit.sha}`,
-    );
-    associations.push({ sha: commit.sha, pullRequests: found });
+
+  // The paginated pull-request response already contains merge_commit_sha for
+  // the usual squash/merge cases. Only unresolved SHAs need the per-commit
+  // endpoint. Keep one promise per SHA so duplicate commit records never
+  // create duplicate requests.
+  const knownPullRequests = new Map();
+  for (const pr of prs) {
+    for (const sha of [
+      ...(pr.commits ?? pr.commitShas ?? []),
+      pr.merge_commit_sha,
+    ].filter(Boolean)) {
+      const existing = knownPullRequests.get(sha) ?? [];
+      existing.push(pr);
+      knownPullRequests.set(sha, existing);
+    }
   }
+  const commitPullCache = new Map();
+  const pullRequestsForCommit = (sha) => {
+    const known = knownPullRequests.get(sha);
+    if (known?.length) return Promise.resolve(known);
+    if (!commitPullCache.has(sha))
+      commitPullCache.set(
+        sha,
+        pages(
+          `${base}/commits/${encodeURIComponent(sha)}/pulls`,
+          errors,
+          `commitPulls:${sha}`,
+        ),
+      );
+    return commitPullCache.get(sha);
+  };
+  const associations = await mapWithConcurrency(
+    commits,
+    async (commit) => {
+      const sha = String(commit.sha ?? "");
+      if (!sha || /[\u0000-\u001f\u007f/\\]/.test(sha)) {
+        errors.push({
+          label: `commitPulls:${sha || "unknown"}`,
+          status: "invalid_sha",
+        });
+        return { sha, pullRequests: [] };
+      }
+      return { sha, pullRequests: await pullRequestsForCommit(sha) };
+    },
+    COMMIT_PULL_CONCURRENCY,
+  );
   const associated = associations.flatMap(
     (association) => association.pullRequests,
   );
@@ -371,6 +448,7 @@ const parseArgs = (argv) => {
 export async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv),
     repository = process.env.GITHUB_REPOSITORY ?? "ils15/open3dcalc";
+  validateRepository(repository);
   const catalog = normalize(
     options.input
       ? JSON.parse(await readFile(resolve(options.input), "utf8"))
