@@ -248,8 +248,9 @@ const delayFor = (response, attempt) => {
     ? Math.min(retryAfter * 1000, 30_000)
     : 250 * 2 ** attempt;
 };
-async function fetchJson(url, attempt = 0) {
+export async function fetchJson(url, attempt = 0) {
   const response = await fetch(url, {
+    method: "GET",
     headers: {
       accept: "application/vnd.github+json",
       ...(process.env.GH_TOKEN

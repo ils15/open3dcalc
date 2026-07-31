@@ -1,11 +1,12 @@
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   authorFor,
   categoryFor,
   collect,
+  fetchJson,
   main,
   escapeMarkdown,
   normalize,
@@ -111,6 +112,61 @@ describe("audited release notes", () => {
       expect(calls.some((call) => call.includes("/commits/abc/pulls"))).toBe(
         true,
       );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+  it("retries each transient 5xx response with bounded Retry-After backoff", async () => {
+    const originalFetch = globalThis.fetch;
+    const statuses = [500, 502, 503, 504];
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    const attempts = new Map<string, number>();
+    vi.useFakeTimers();
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      const attempt = (attempts.get(url) ?? 0) + 1;
+      attempts.set(url, attempt);
+      const index = Number(url.split("/").pop());
+      const status = attempt === 1 ? statuses[index] : 200;
+      return status === 200
+        ? Response.json({ ok: true })
+        : new Response("transient", {
+            status,
+            headers: { "retry-after": "1" },
+          });
+    }) as typeof fetch;
+    try {
+      const pending = Promise.all(
+        statuses.map((_, index) => fetchJson(`https://example.test/${index}`)),
+      );
+      await vi.advanceTimersByTimeAsync(999);
+      expect(calls).toHaveLength(4);
+      await vi.advanceTimersByTimeAsync(1);
+      await expect(pending).resolves.toEqual(
+        statuses.map(() => ({ ok: true })),
+      );
+      expect(calls).toHaveLength(8);
+      expect(calls.every(({ init }) => init?.method === "GET")).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+      vi.useRealTimers();
+    }
+  });
+  it("does not retry forbidden responses and records them as read-only failures", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url);
+      return new Response("forbidden", { status: 403 });
+    }) as typeof fetch;
+    try {
+      await expect(
+        fetchJson("https://example.test/forbidden"),
+      ).rejects.toMatchObject({
+        status: 403,
+        attempts: 1,
+      });
+      expect(calls).toEqual(["https://example.test/forbidden"]);
     } finally {
       globalThis.fetch = originalFetch;
     }

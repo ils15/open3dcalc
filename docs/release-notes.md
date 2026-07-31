@@ -32,8 +32,10 @@ Use `node scripts/release-notes.mjs --dry-run --all` or `--release vX.Y.Z`.
 `--audit-only` writes only inventory and audit JSON. `--input` enables offline
 fixtures. `--write` is rejected: mutable backfill belongs to a separate,
 approved workflow. Requests use GitHub pagination and bounded exponential
-backoff for 403, 429, and transient 5xx responses. Tokens come from
-`GH_TOKEN` and are never printed.
+backoff for 429 and transient 5xx responses (500, 502, 503, and 504), with at
+most four retries. HTTP 403 is not retried: it is recorded as a
+partial-collection error so a permissions failure cannot loop or be mistaken
+for a rate-limit response. Tokens come from `GH_TOKEN` and are never printed.
 
 ## Invariants, snapshots, and rollback
 
