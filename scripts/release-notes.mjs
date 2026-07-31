@@ -121,18 +121,23 @@ const previousReleaseFor = (tags, release) => {
 // commit reachable from the default branch; the first tagged release is
 // compared from that commit so every commit up to the tag is included.
 const changelogEntry = (repository, range, releases) => {
-  const repositoryUrl = `https://github.com/${repository}`;
+  // The same escaping used across the render: URL components are
+  // encodeURIComponent'd first (neutralizing quotes/angles/whitespace) and
+  // then escapeMarkdown'd so the parens and brackets that
+  // encodeURIComponent leaves behind can never break or inject into the
+  // parens-form Markdown link destination.
+  const repositoryUrl = `https://github.com/${escapeMarkdown(repository)}`;
   if (range?.release) {
-    const target = encodeURIComponent(range.release);
+    const target = escapeMarkdown(encodeURIComponent(range.release));
     return range.previous
-      ? `[Full Changelog](${repositoryUrl}/compare/${encodeURIComponent(range.previous)}...${target})`
+      ? `[Full Changelog](${repositoryUrl}/compare/${escapeMarkdown(encodeURIComponent(range.previous))}...${target})`
       : `[Full Changelog](${repositoryUrl}/commits/${target})`;
   }
   const versionedTags = (releases ?? [])
     .map((release) => release.tag)
     .filter((tag) => version(tag));
   return versionedTags.length >= 2
-    ? `[Full Changelog](${repositoryUrl}/compare/${encodeURIComponent(versionedTags[0])}...${encodeURIComponent(versionedTags[versionedTags.length - 1])})`
+    ? `[Full Changelog](${repositoryUrl}/compare/${escapeMarkdown(encodeURIComponent(versionedTags[0]))}...${escapeMarkdown(encodeURIComponent(versionedTags[versionedTags.length - 1]))})`
     : "- Generated from the audited tag, commit, pull request, and asset inventory.";
 };
 
@@ -483,17 +488,29 @@ async function scopeForRelease({
   );
   const head = tag?.commit?.sha ?? targetRelease?.target_commitish;
   // The /commits list is newest-first, so its last entry is the oldest
-  // commit reachable from the default branch.
-  const oldest = commits[commits.length - 1]?.sha;
+  // commit reachable from the default branch (the root for the first
+  // tagged release).
+  const oldestCommit = commits[commits.length - 1];
+  const oldest = oldestCommit?.sha;
   if (head && oldest) {
     if (oldest === head) {
       // Single-commit edge case: the tag IS the oldest commit, so a compare
-      // against itself would return zero commits; keep the tag's own commit.
-      return { commits: [head], range: { release, previous: null } };
+      // against itself would return zero commits; keep the tag's own commit
+      // as a valid commit object so normalize() never drops it.
+      return { commits: [{ sha: head }], range: { release, previous: null } };
     }
     const range = await fetchCompareCommits(base, oldest, head, errors);
+    // The compare API excludes its base commit from the commits[] payload,
+    // so when the base is the default-branch root the first release would
+    // silently miss the root commit. Prepend it — unless the server already
+    // included it — so "all commits up to the tag, including the root" holds.
+    const scoped = range.ok
+      ? range.commits.some((commit) => commit?.sha === oldest)
+        ? range.commits
+        : [oldestCommit, ...range.commits]
+      : commits;
     return {
-      commits: range.ok ? range.commits : commits,
+      commits: scoped,
       range: { release, previous: null },
     };
   }

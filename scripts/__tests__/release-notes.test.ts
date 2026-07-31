@@ -653,7 +653,19 @@ describe("audited release notes", () => {
       expect(v192.items.map((item) => item.category)).toEqual(["Features"]);
 
       const v150 = await collect("owner/repo", "v1.5.0");
-      expect(v150.items.map((item) => item.pr?.number)).toEqual([20]);
+      // The first release must include every commit up to the tag: the
+      // compare API excludes its base (the default-branch root), so the
+      // root commit is prepended back onto the scoped commit list and ends
+      // up as a commit-only item (no PR association).
+      expect(v150.items.map((item) => item.pr?.number)).toEqual([
+        20,
+        undefined,
+      ]);
+      expect(v150.items.map((item) => item.title)).toEqual([
+        "feat: v1.5.0 feature",
+        "chore: init",
+      ]);
+      expect(v150.items.some((item) => item.sha === oldestSha)).toBe(true);
       expect(v150.items.map((item) => item.title)).not.toContain(
         "feat: v1.9.2 feature",
       );
@@ -699,11 +711,11 @@ describe("audited release notes", () => {
       const v192 = await collect("owner/repo", "v1.9.2");
       const markdown = render(v192, "ils15/open3dcalc");
       expect(markdown).toContain(
-        "[Full Changelog](https://github.com/ils15/open3dcalc/compare/v1.5.0...v1.9.2)",
+        "[Full Changelog](https://github.com/ils15/open3dcalc/compare/v1\\.5\\.0...v1\\.9\\.2)",
       );
       const v150 = await collect("owner/repo", "v1.5.0");
       expect(render(v150, "ils15/open3dcalc")).toContain(
-        "[Full Changelog](https://github.com/ils15/open3dcalc/commits/v1.5.0)",
+        "[Full Changelog](https://github.com/ils15/open3dcalc/commits/v1\\.5\\.0)",
       );
       // --input catalogs can carry the range metadata directly.
       const data = await fixture();
@@ -716,7 +728,7 @@ describe("audited release notes", () => {
           "ils15/open3dcalc",
         ),
       ).toContain(
-        "[Full Changelog](https://github.com/ils15/open3dcalc/compare/v1.5.0...v1.9.2)",
+        "[Full Changelog](https://github.com/ils15/open3dcalc/compare/v1\\.5\\.0...v1\\.9\\.2)",
       );
     } finally {
       globalThis.fetch = originalFetch;
@@ -748,5 +760,101 @@ describe("audited release notes", () => {
     expect(markdown).toContain("## Highlights");
     expect(markdown).toContain("## Features");
     expect(markdown).toContain("feat: flagship feature");
+  });
+  it("includes the default-branch root commit when the first release compare excludes its base", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      if (url.includes("/releases"))
+        return Response.json([
+          { tag_name: "v1.0.0", target_commitish: "aaa111", assets: [] },
+        ]);
+      if (url.includes("/tags"))
+        return Response.json([{ name: "v1.0.0", commit: { sha: "aaa111" } }]);
+      if (url.includes("/commits/") && url.includes("/pulls"))
+        return Response.json([]);
+      if (url.includes("/compare/"))
+        // The compare payload deliberately excludes the base (root) commit,
+        // exactly like the GitHub compare API does for oldest...tag ranges.
+        return Response.json({
+          status: "ahead",
+          commits: [
+            { sha: "aaa111", commit: { message: "feat: first release" } },
+          ],
+        });
+      if (url.includes("/commits"))
+        return Response.json([
+          { sha: "aaa111", commit: { message: "feat: first release" } },
+          { sha: "root000", commit: { message: "chore: init" } },
+        ]);
+      return Response.json([]);
+    }) as typeof fetch;
+    try {
+      const catalog = await collect("owner/repo", "v1.0.0");
+      // The root commit surfaces as a commit-only item even though the
+      // compare payload excluded it from its own commits[] response.
+      expect(catalog.items.map((item) => item.sha)).toEqual(
+        expect.arrayContaining(["root000", "aaa111"]),
+      );
+      expect(catalog.items.map((item) => item.title)).toContain("chore: init");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+  it("keeps the tag's own commit as a valid commit object when it is also the oldest commit", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      if (url.includes("/releases"))
+        return Response.json([
+          { tag_name: "v1.0.0", target_commitish: "root000", assets: [] },
+        ]);
+      if (url.includes("/tags"))
+        return Response.json([{ name: "v1.0.0", commit: { sha: "root000" } }]);
+      if (url.includes("/commits/") && url.includes("/pulls"))
+        return Response.json([]);
+      if (url.includes("/commits"))
+        return Response.json([
+          { sha: "root000", commit: { message: "feat: root release" } },
+        ]);
+      return Response.json([]);
+    }) as typeof fetch;
+    try {
+      const catalog = await collect("owner/repo", "v1.0.0");
+      // The single-commit edge case keeps a valid commit object so the item
+      // survives normalize() instead of being silently discarded.
+      expect(catalog.items).toHaveLength(1);
+      expect(catalog.items[0]?.sha).toBe("root000");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+  it("escapes hostile range and repository values in Full Changelog links", () => {
+    const catalog = normalize({
+      releases: [{ tag_name: 'v1.0.0">x', assets: [] }],
+      tags: [{ name: 'v1.0.0">x' }],
+      commits: [],
+      range: { release: 'v1.0.0">x', previous: null },
+    });
+    const markdown = render(catalog, "ils15/open3dcalc");
+    expect(markdown).toContain("[Full Changelog]");
+    // The hostile value must never appear raw inside the link destination.
+    expect(markdown).not.toContain('v1.0.0">x');
+    expect(markdown).not.toContain('">');
+    // A trailing `)` would close the parens-form link destination early;
+    // the same escaping that protects the `">x` payload keeps it intact.
+    const paren = render(
+      normalize({
+        releases: [{ tag_name: "v1.0.0)", assets: [] }],
+        tags: [{ name: "v1.0.0)" }],
+        commits: [],
+        range: { release: "v1.0.0)", previous: null },
+      }),
+      "ils15/open3dcalc",
+    );
+    expect(paren).toContain("commits/v1\\.0\\.0\\)");
+    // The repository interpolation is escaped too, so a hostile repo can
+    // not close the link or inject a second Markdown link.
+    expect(render(catalog, "ils15/open3dcalc)")).toContain(
+      "https://github.com/ils15/open3dcalc\\)/commits/",
+    );
   });
 });
