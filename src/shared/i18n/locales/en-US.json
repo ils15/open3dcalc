@@ -428,7 +428,11 @@
     "dropzone": "Drag your 3D file here",
     "dropActive": "Drop to analyze",
     "processing": "Processing...",
-    "tapToSelect": "Tap to select a file"
+    "tapToSelect": "Tap to select a file",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "clear": "Clear model",
+    "fit": "Fit view"
   },
   "common": {
     "save": "Save",

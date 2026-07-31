@@ -76,6 +76,29 @@ export function MaterialSection({
 		},
 		[store, isFDM],
 	)
+
+	const handleStlClear = useCallback(() => {
+		if (isFDM) {
+			store.setFdmPrintParams({
+				...store.fdmPrintParams,
+				printTimeHours: 0,
+			})
+			if (store.fdmAmsEnabled) {
+				const idx = store.fdmAmsSlots.findIndex((s) => s.enabled)
+				if (idx >= 0) {
+					const slot = { ...store.fdmAmsSlots[idx], weightUsedGrams: 0 }
+					store.setFdmAmsSlot(idx, slot)
+				}
+			} else {
+				store.setFdmMaterial({ ...store.fdmMaterial, weightUsed: 0 })
+			}
+		} else {
+			store.setResinPrintParams({
+				...store.resinPrintParams,
+				printTimeHours: 0,
+			})
+		}
+	}, [store, isFDM])
 	return (
 		<div className="surface rounded-xl p-4 sm:p-5">
 			{renderSectionHeader(
@@ -448,6 +471,7 @@ export function MaterialSection({
 					<div className="w-full min-w-0 @md:col-span-2 mt-3">
 						<StlPreview
 							onFileParsed={handleStlParsed}
+							onClear={handleStlClear}
 							materialDensity={store.fdmMaterial.density}
 							infillPercent={store.infillPercent}
 						/>

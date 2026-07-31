@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Center } from '@react-three/drei'
-import { Upload, AlertCircle } from 'lucide-react'
+import { OrbitControls, Center, Bounds, useBounds } from '@react-three/drei'
+import type { BoundsApi } from '@react-three/drei'
+import { Upload, AlertCircle, Maximize2, X, Trash2, Crosshair } from 'lucide-react'
 import type { BufferGeometry } from 'three'
 import type { MeshAnalysis } from '@/shared/lib/stlParser'
 import { estimatePrintTime } from '@/shared/lib/printTimeEstimator'
@@ -27,6 +29,8 @@ interface StlPreviewProps {
   materialDensity?: number
   /** Calculator infill percentage. Default 20. */
   infillPercent?: number
+  /** Called when the user clears the loaded model from the viewer. */
+  onClear?: () => void
 }
 
 function Model({ geometry }: { geometry: BufferGeometry }) {
@@ -48,23 +52,105 @@ function Model({ geometry }: { geometry: BufferGeometry }) {
   )
 }
 
-function PreviewCanvas({ geometry }: { geometry: BufferGeometry }) {
+/**
+ * Bridges the drei `Bounds` context API (exposed via `useBounds`) to an
+ * external ref so toolbar buttons outside the Canvas can trigger `fit()`.
+ * drei 10.x does not forward a `ref` on <Bounds>, hence the bridge.
+ */
+function BoundsBridge({ apiRef }: { apiRef: React.MutableRefObject<BoundsApi | null> }) {
+  const bounds = useBounds()
+  useEffect(() => {
+    apiRef.current = bounds
+    return () => {
+      apiRef.current = null
+    }
+  }, [bounds, apiRef])
+  return null
+}
+
+const toolbarButtonClass =
+  'min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg ' +
+  'bg-[var(--color-bg-elevated)]/85 backdrop-blur-sm border border-[var(--color-border)]/60 ' +
+  'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] ' +
+  'hover:bg-[var(--color-bg-elevated)] transition-colors ' +
+  'focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none'
+
+interface PreviewCanvasProps {
+  geometry: BufferGeometry
+  /** Rendered inside the fullscreen portal overlay */
+  isFullscreen?: boolean
+  /** Toggles fullscreen mode (null hides the button, e.g. inside fullscreen) */
+  onToggleFullscreen?: () => void
+  /** Clears the loaded model (null hides the button) */
+  onClear?: () => void
+}
+
+function PreviewCanvas({
+  geometry,
+  isFullscreen = false,
+  onToggleFullscreen,
+  onClear,
+}: PreviewCanvasProps) {
+  const { t } = useTranslation()
+  const boundsApi = useRef<BoundsApi | null>(null)
   return (
     <div className="relative w-full h-full group">
       <Canvas
-        camera={{ position: [5, 5, 5], fov: 45 }}
+        camera={{ position: [5, 5, 5], fov: 45, near: 0.01, far: 2000 }}
         key={geometry.uuid}
       >
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={0.8} />
         <directionalLight position={[-5, -5, -5]} intensity={0.3} />
-        <Model geometry={geometry} />
+        <Bounds fit clip margin={1.2}>
+          <Model geometry={geometry} />
+        </Bounds>
+        <BoundsBridge apiRef={boundsApi} />
         <OrbitControls
+          makeDefault
           enablePan
           enableZoom
-          autoRotate={false}
+          minDistance={0.5}
+          maxDistance={30}
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI}
         />
       </Canvas>
+
+      {/* Toolbar overlay */}
+      <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => boundsApi.current?.fit()}
+          aria-label={t('stl.fit')}
+          title={t('stl.fit')}
+          className={toolbarButtonClass}
+        >
+          <Crosshair className="w-4 h-4" />
+        </button>
+        {onClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label={t('stl.clear')}
+            title={t('stl.clear')}
+            className={toolbarButtonClass}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+        {onToggleFullscreen && (
+          <button
+            type="button"
+            onClick={onToggleFullscreen}
+            aria-label={isFullscreen ? t('stl.exitFullscreen') : t('stl.fullscreen')}
+            title={isFullscreen ? t('stl.exitFullscreen') : t('stl.fullscreen')}
+            className={toolbarButtonClass}
+          >
+            {isFullscreen ? <X className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -76,7 +162,8 @@ function PreviewCanvas({ geometry }: { geometry: BufferGeometry }) {
  * it estimates weight using the provided `materialDensity` and
  * `infillPercent` props (or sensible defaults for PLA at 20% infill).
  * The Canvas remounts automatically when geometry changes (via `key` prop),
- * so camera reset happens implicitly without the need for a reset button.
+ * and the camera auto-fits to the model bounds on mount. Toolbar buttons
+ * offer fit-to-view, fullscreen and clear-model actions.
  */
 export function StlPreview({
   onFileParsed,
@@ -85,6 +172,7 @@ export function StlPreview({
   standalone = false,
   materialDensity,
   infillPercent,
+  onClear,
 }: StlPreviewProps) {
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -93,6 +181,7 @@ export function StlPreview({
   const [parsing, setParsing] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const isTouchDevice = useMemo(
     () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0),
     [],
@@ -100,6 +189,25 @@ export function StlPreview({
 
   // initialGeometry is used as the initial state value above;
   // consumers that need to reset geometry should use a key prop on StlPreview
+
+  // Close the fullscreen overlay with the Escape key
+  useEffect(() => {
+    if (!isFullscreen) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFullscreen(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isFullscreen])
+
+  const handleClear = useCallback(() => {
+    setGeometry(null)
+    setModelInfo(null)
+    setError(null)
+    setParsing(false)
+    setIsFullscreen(false)
+    onClear?.()
+  }, [onClear])
 
   const showError = useCallback(
     (message: string) => {
@@ -313,11 +421,36 @@ export function StlPreview({
       )}
 
       {/* 3D Preview */}
-      {geometry && (
+      {geometry && !isFullscreen && (
         <div className="surface rounded-xl overflow-hidden min-h-[300px] sm:min-h-[400px]">
-          <PreviewCanvas geometry={geometry} />
+          <PreviewCanvas
+            geometry={geometry}
+            onToggleFullscreen={() => setIsFullscreen(true)}
+            onClear={handleClear}
+          />
         </div>
       )}
+
+      {/* Fullscreen 3D Preview (portal overlay) */}
+      {isFullscreen &&
+        geometry &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] bg-black/90 p-3 sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('stl.fullscreen')}
+          >
+            <PreviewCanvas
+              geometry={geometry}
+              isFullscreen
+              onToggleFullscreen={() => setIsFullscreen(false)}
+              onClear={handleClear}
+            />
+          </div>,
+          document.body,
+        )}
 
       {/* Model Info Panel */}
       {modelInfo && (
