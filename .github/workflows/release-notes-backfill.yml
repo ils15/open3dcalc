@@ -1,0 +1,60 @@
+---
+name: Release notes audited dry-run
+
+"on":
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Optional vX.Y.Z tag
+        required: false
+        type: string
+      all:
+        description: Audit all releases
+        required: true
+        default: true
+        type: boolean
+      apply:
+        description: Reserved for a future approved mutating implementation
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-notes-global
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Reject mutation and install dependencies
+        if: inputs.apply
+        run: exit 1
+      - run: npm ci
+      - name: Generate inventory and dry-run notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: >-
+          node scripts/release-notes.mjs --dry-run
+          ${{ inputs.all && '--all' || '' }}
+          ${{ inputs.tag && format('--release {0}', inputs.tag) || '' }}
+          --output release-notes-output
+      - name: Upload audited artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes-audit-${{ github.run_id }}
+          if-no-files-found: error
+          path: release-notes-output/
