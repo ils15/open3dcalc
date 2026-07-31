@@ -422,7 +422,7 @@ export function StlPreview({
 
       {/* 3D Preview */}
       {geometry && !isFullscreen && (
-        <div className="surface rounded-xl overflow-hidden min-h-[300px] sm:min-h-[400px]">
+        <div className="surface rounded-xl overflow-hidden aspect-[4/3] min-h-[300px] sm:min-h-[400px] h-full">
           <PreviewCanvas
             geometry={geometry}
             onToggleFullscreen={() => setIsFullscreen(true)}

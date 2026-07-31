@@ -143,8 +143,9 @@ export function MaterialSection({
 						</div>
 					)}
 					{store.fdmAmsEnabled ? (
-						<div className="space-y-2">
-							{store.fdmAmsSlots.map((slot: AMSSlot, i: number) => (
+						<>
+							<div className="space-y-2">
+								{store.fdmAmsSlots.map((slot: AMSSlot, i: number) => (
 								<div
 									key={i}
 									className="surface rounded-xl p-3 border-l-4"
@@ -246,6 +247,15 @@ export function MaterialSection({
 								</div>
 							))}
 						</div>
+						<div className="w-full min-w-0 mt-3">
+							<StlPreview
+								onFileParsed={handleStlParsed}
+								onClear={handleStlClear}
+								materialDensity={store.fdmMaterial.density}
+								infillPercent={store.infillPercent}
+							/>
+						</div>
+						</>
 					) : (
 						<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 							<Select
@@ -391,6 +401,14 @@ export function MaterialSection({
 									tooltip={t('tooltip.density')}
 								/>
 							)}
+							<div className="w-full min-w-0 @form:col-span-2">
+								<StlPreview
+									onFileParsed={handleStlParsed}
+									onClear={handleStlClear}
+									materialDensity={store.fdmMaterial.density}
+									infillPercent={store.infillPercent}
+								/>
+							</div>
 						</div>
 					)}
 
@@ -467,15 +485,6 @@ export function MaterialSection({
 							</div>
 						)
 					})()}
-
-					<div className="w-full min-w-0 @form:col-span-2 mt-3">
-						<StlPreview
-							onFileParsed={handleStlParsed}
-							onClear={handleStlClear}
-							materialDensity={store.fdmMaterial.density}
-							infillPercent={store.infillPercent}
-						/>
-					</div>
 				</>
 			) : (
 				<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">

@@ -396,4 +396,28 @@ describe('MaterialSection', () => {
 		)
 		expect(store.setFdmMaterial).not.toHaveBeenCalled()
 	})
+
+	it('places the STL preview inside the material grid so col-span applies', () => {
+		const store = createMockStore()
+		const { container } = render(<MaterialSection {...defaultProps} store={store} isFDM={true} />)
+		const stl = container.querySelector('[data-testid="mock-stl-preview"]')
+		expect(stl).not.toBeNull()
+		// STL wrapper must be a grid child with col-span-2
+		const wrapper = stl!.parentElement!
+		expect(wrapper.className).toContain('@form:col-span-2')
+		// The wrapper must live INSIDE the grid container
+		const grid = wrapper.parentElement!
+		expect(grid.className).toContain('grid grid-cols-1')
+		expect(grid.className).toContain('@form:grid-cols-2')
+	})
+
+	it('keeps a full-width STL preview in AMS mode (no grid context)', () => {
+		const store = createMockStore({ fdmAmsEnabled: true })
+		const { container } = render(<MaterialSection {...defaultProps} store={store} isFDM={true} />)
+		const stl = container.querySelector('[data-testid="mock-stl-preview"]')
+		expect(stl).not.toBeNull()
+		const wrapper = stl!.parentElement!
+		expect(wrapper.className).toContain('mt-3')
+		expect(wrapper.className).not.toContain('col-span-2')
+	})
 })
