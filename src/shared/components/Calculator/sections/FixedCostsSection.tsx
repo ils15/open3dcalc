@@ -41,7 +41,7 @@ export function FixedCostsSection({
 				/>
 			</div>
 			{store.fixedCosts.enabled && (
-				<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
+				<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 					<InputGroup
 						label={t('calc.fixedCost.monthlyCost')}
 						value={store.fixedCosts.monthlyCost}

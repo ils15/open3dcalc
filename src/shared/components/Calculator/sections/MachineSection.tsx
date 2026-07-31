@@ -33,7 +33,7 @@ export function MachineSection({
 				t('calc.sectionDesc.machine'),
 				'machine',
 			)}
-			<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
+			<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 				<InputGroup
 					label={t('calc.machineCost')}
 					value={
@@ -106,7 +106,7 @@ export function MachineSection({
 					unit="h/mês"
 					tooltip={t('tooltip.hoursPerMonth')}
 				/>
-				<div className="@md:col-span-2 flex items-center justify-between surface rounded-xl p-4 sm:p-5">
+				<div className="@form:col-span-2 flex items-center justify-between surface rounded-xl p-4 sm:p-5">
 				<span className="text-xs text-[var(--color-text-secondary)]">
 					{t('calc.maintenance')}
 				</span>
@@ -132,7 +132,7 @@ export function MachineSection({
 				{(isFDM
 					? store.fdmMachine.maintenanceEnabled
 					: store.resinMachine.maintenanceEnabled) && (
-					<div className="@md:col-span-2">
+					<div className="@form:col-span-2">
 						<InputGroup
 							label={t('calc.maintenanceCost')}
 							value={

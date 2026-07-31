@@ -247,7 +247,7 @@ export function MaterialSection({
 							))}
 						</div>
 					) : (
-						<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
+						<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 							<Select
 								label={t("calc.filamentType")}
 								value={store.fdmMaterial.type}
@@ -468,7 +468,7 @@ export function MaterialSection({
 						)
 					})()}
 
-					<div className="w-full min-w-0 @md:col-span-2 mt-3">
+					<div className="w-full min-w-0 @form:col-span-2 mt-3">
 						<StlPreview
 							onFileParsed={handleStlParsed}
 							onClear={handleStlClear}
@@ -478,7 +478,7 @@ export function MaterialSection({
 					</div>
 				</>
 			) : (
-				<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
+				<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 					<Select
 						label={t("calc.resinType")}
 						value={store.resinMaterial.type}

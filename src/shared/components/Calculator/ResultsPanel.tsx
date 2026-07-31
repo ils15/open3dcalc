@@ -446,5 +446,5 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
     return withDialogs
   }
 
-  return <div className="space-y-4 lg:hidden">{withDialogs}</div>
+  return <div className="space-y-4 2xl:hidden">{withDialogs}</div>
 }

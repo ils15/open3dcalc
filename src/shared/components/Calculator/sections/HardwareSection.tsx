@@ -30,7 +30,7 @@ export function HardwareSection() {
 			/>
 			{isFDM && (
 				<>
-					<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
+					<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 						<div className="space-y-4">
 							<div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
 								<span className="text-xs font-semibold text-[var(--color-info)]">
@@ -253,7 +253,7 @@ export function HardwareSection() {
 								{t("calc.resinHardware")}
 							</span>
 						</div>
-						<div className="grid grid-cols-1 @md:grid-cols-2 gap-3">
+						<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 							<InputGroup
 								label={t("calc.lcdCost")}
 								value={store.resinHardware.lcdCost}
