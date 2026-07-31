@@ -1,0 +1,36 @@
+{
+  "changelog": {
+    "header": "{{versions}} versões · {{changes}} mudanças",
+    "viewAllOnGitHub": "Ver todas as releases no GitHub",
+    "versions": [
+      {
+        "version": "1.2.0",
+        "date": "2026-05-25",
+        "sections": [
+          {
+            "title": "🧪 Testes",
+            "items": ["**old** item que será substituído pelo CHANGELOG.md"]
+          }
+        ]
+      },
+      {
+        "version": "1.0.0",
+        "date": "2026-05-01",
+        "sections": [
+          {
+            "title": "✨ Lançamento",
+            "items": ["primeira versão do app"]
+          }
+        ]
+      }
+    ]
+  },
+  "common": {
+    "appName": "Open3DCalc",
+    "tagline": "Calculadora 3D Livre & Open-Source"
+  },
+  "nav": {
+    "changelog": "Novidades",
+    "calculator": "Calculadora"
+  }
+}
