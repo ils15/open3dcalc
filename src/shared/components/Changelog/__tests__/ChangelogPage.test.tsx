@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import enUS from "@/shared/i18n/locales/en-US.json";
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import { ChangelogPage } from "../ChangelogPage";
@@ -32,33 +32,17 @@ const versions: TestVersion[] = [
   },
 ];
 
-const categoryVersions: TestVersion[] = [
-  {
-    version: "2.0.0",
-    date: "",
-    sections: [
-      "Features",
-      "Fixes",
-      "Improvements",
-      "Security",
-      "CI/CD",
-      "Documentation",
-      "Dependencies",
-      "Breaking Changes",
-      "Other",
-      "Technical",
-      "Tests",
-      "New",
-      "Visual Polish & Mobile",
-      "Quality Gates",
-      "Técnico",
-      "Testes",
-      "Novo",
-    ].map((title) => ({ title, items: [title] })),
-  },
-];
-
 i18nState.versions = versions;
+
+const localeData = {
+  "en-US": enUS,
+  "pt-BR": ptBR,
+} as const;
+
+const realVersions = {
+  "en-US": enUS.changelog.versions as TestVersion[],
+  "pt-BR": ptBR.changelog.versions as TestVersion[],
+} as const;
 
 const translations: Record<string, Record<string, string>> = {
   "en-US": {
@@ -175,6 +159,19 @@ describe("ChangelogPage", () => {
     expect(undatedHeading.textContent).not.toContain("·");
   });
 
+  it("exposes the version menu state through aria-expanded", () => {
+    i18nState.language = "en-US";
+
+    render(<ChangelogPage />);
+
+    const versionButton = screen.getByRole("button", { name: /v1\.9\.2/i });
+    expect(versionButton).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(versionButton);
+
+    expect(versionButton).toHaveAttribute("aria-expanded", "true");
+  });
+
   it("keeps version and date in separate layout elements", () => {
     i18nState.language = "en-US";
 
@@ -202,84 +199,117 @@ describe("ChangelogPage", () => {
     expect(screen.getByText("Funcionalidades")).toBeInTheDocument();
   });
 
+  it.each(["en-US", "pt-BR"] as const)(
+    "renders real locale category headings in %s",
+    (language) => {
+      i18nState.language = language;
+      i18nState.versions = realVersions[language];
+
+      render(<ChangelogPage />);
+      const categories = localeData[language].changelog.categories as Record<
+        string,
+        string
+      >;
+
+      realVersions[language].forEach((version) => {
+        fireEvent.click(
+          screen.getByRole("button", {
+            name: new RegExp(`v${version.version}`, "i"),
+          }),
+        );
+        const versionCard = screen
+          .getByTestId(`version-heading-${version.version}`)
+          .closest("div.surface");
+        expect(versionCard).not.toBeNull();
+
+        version.sections.forEach((section) => {
+          const categoryKey = normalizeCategoryKey(section.title);
+          const expectedTitle = categoryKey
+            ? categories[categoryKey]
+            : section.title;
+
+          expect(
+            within(versionCard as HTMLElement).getAllByRole("heading", {
+              level: 2,
+              name: expectedTitle,
+            }),
+          ).not.toHaveLength(0);
+        });
+
+        fireEvent.click(
+          screen.getByRole("button", {
+            name: new RegExp(`v${version.version}`, "i"),
+          }),
+        );
+      });
+
+      const ciTitles = realVersions[language]
+        .flatMap((version) => version.sections)
+        .map((section) => section.title)
+        .filter((title) => normalizeCategoryKey(title) === "ciCd");
+      expect(ciTitles.length).toBeGreaterThan(0);
+      expect(ciTitles).toEqual(
+        expect.arrayContaining(
+          language === "en-US"
+            ? ["🤖 CI", "🤖 CI & Automation"]
+            : ["🤖 CI/CD", "🤖 CI & Automação"],
+        ),
+      );
+      expect(localeData[language].changelog.categories.ciCd).toBe("CI/CD");
+      expect(
+        realVersions[language]
+          .flatMap((version) => version.sections)
+          .map((section) => normalizeCategoryKey(section.title))
+          .filter((key) => key === "ciCd"),
+      ).not.toHaveLength(0);
+    },
+  );
+
   it.each([
-    [
-      "en-US",
-      [
-        "Features",
-        "Fixes",
-        "Improvements",
-        "Security",
-        "CI/CD",
-        "Documentation",
-        "Dependencies",
-        "Breaking Changes",
-        "Other",
-        "Technical",
-        "Tests",
-        "New",
-        "Visual Polish & Mobile",
-        "Quality Gates",
-      ],
-    ],
-    [
-      "pt-BR",
-      [
-        "Funcionalidades",
-        "Correções",
-        "Melhorias",
-        "Segurança",
-        "CI/CD",
-        "Documentação",
-        "Dependências",
-        "Alterações Incompatíveis",
-        "Outros",
-        "Técnico",
-        "Testes",
-        "Novo",
-        "Polimento Visual e Mobile",
-        "Portões de Qualidade",
-      ],
-    ],
-  ])("renders Portuguese and English category data in %s", (language, labels) => {
-    i18nState.language = language;
-    i18nState.versions = categoryVersions;
-
-    render(<ChangelogPage />);
-    fireEvent.click(screen.getByRole("button", { name: /v2\.0\.0/i }));
-
-    labels.forEach((label) => expect(screen.getAllByText(label).length).toBeGreaterThan(0));
-  });
-
-  it.each([
+    ["CI", "ciCd"],
+    ["CI/CD", "ciCd"],
+    ["CI & Automation", "ciCd"],
+    ["CI & Automação", "ciCd"],
+    ["CI e Automação", "ciCd"],
+    ["CI and Automation", "ciCd"],
+    ["ci automation", "ciCd"],
+    ["ci e automacao", "ciCd"],
+    [" cI / cD ", "ciCd"],
+    ["CI   &   AUTOMAÇÃO", "ciCd"],
+    ["ci__and__automation", "ciCd"],
     ["Técnico", "technical"],
     ["Testes", "tests"],
     ["Novo — Fase 5", "new"],
     ["Visual Polish & Mobile", "visualMobile"],
     ["Bug Fixes", "fixes"],
     ["Quality Gates", "qualityGates"],
-    ["CI/CD", "ciCd"],
   ])("normalizes %s to canonical category key", (title, key) => {
     expect(normalizeCategoryKey(title)).toBe(key);
   });
 
   it("uses the real locale category values for canonical keys", () => {
     const translate = (locale: typeof enUS) => (key: string) => {
-      const category = key.split(".").at(-1) as keyof typeof locale.changelog.categories;
+      const category = key
+        .split(".")
+        .at(-1) as keyof typeof locale.changelog.categories;
       return locale.changelog.categories[category] ?? key;
     };
 
-    expect(getLocalizedCategoryTitle("🔧 Técnico", translate(enUS))).toBe("Technical");
-    expect(getLocalizedCategoryTitle("🎨 Visual Polish & Mobile", translate(ptBR))).toBe(
-      "Polimento Visual e Mobile",
+    expect(getLocalizedCategoryTitle("🔧 Técnico", translate(enUS))).toBe(
+      "Technical",
     );
+    expect(
+      getLocalizedCategoryTitle("🎨 Visual Polish & Mobile", translate(ptBR)),
+    ).toBe("Polimento Visual e Mobile");
   });
 
   it("falls back to the source title when a category translation is unavailable", () => {
-    expect(getLocalizedCategoryTitle("Unmapped category", () => "missing")).toBe(
-      "Unmapped category",
+    expect(
+      getLocalizedCategoryTitle("Unmapped category", () => "missing"),
+    ).toBe("Unmapped category");
+    expect(getLocalizedCategoryTitle("Technical", (key) => key)).toBe(
+      "Technical",
     );
-    expect(getLocalizedCategoryTitle("Technical", (key) => key)).toBe("Technical");
   });
 
   it("uses translated footer link labels", () => {
