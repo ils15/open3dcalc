@@ -25,7 +25,7 @@ export function InputGroup({
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <div className="flex items-start gap-2 min-h-[2.5rem]">
-        <label htmlFor={id} className={`text-[11px] font-semibold uppercase tracking-wider ${error ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'}`}>
+        <label htmlFor={id} className={`text-[12px] font-semibold uppercase tracking-wider ${error ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-secondary)]'}`}>
           {label}
         </label>
         {tooltip && (
@@ -77,7 +77,7 @@ export function SelectGroup({ label, value, onChange, options }: SelectGroupProp
 
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-[12px] sm:text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">{label}</label>
+      <label htmlFor={id} className="text-[12px] sm:text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">{label}</label>
       <select
         id={id}
         value={value}

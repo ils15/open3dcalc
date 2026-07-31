@@ -16,6 +16,7 @@
   --color-bg-input: #f1f5f9;
   --color-border: #e2e8f0;
   --color-border-subtle: #f1f5f9;
+  --color-border-hover: #cbd5e1;
   --color-border-focus: #6366f1;
 
   --color-text-primary: #0f172a;
@@ -61,6 +62,7 @@
   --color-bg-input: rgba(0, 0, 0, 0.25);
   --color-border: #2e3348;
   --color-border-subtle: #232738;
+  --color-border-hover: #3a4057;
   --color-border-focus: #6366f1;
 
   --color-text-primary: #e2e8f0;
@@ -153,7 +155,7 @@ body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   min-height: 100dvh;
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 

@@ -193,7 +193,7 @@ export function Select({
   return (
     <div className={`relative flex flex-col gap-1.5 ${className}`}>
       <div className="min-h-[2.5rem] flex items-start">
-        <label htmlFor={`${id}-trigger`} className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+        <label htmlFor={`${id}-trigger`} className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
           {label}
         </label>
       </div>

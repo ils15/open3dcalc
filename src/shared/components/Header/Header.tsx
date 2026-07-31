@@ -50,7 +50,7 @@ export function Header() {
         borderColor: 'var(--color-border)',
       }}
     >
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 h-[68px] flex items-center justify-between gap-2 sm:gap-4">
+      <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 h-[68px] flex items-center justify-between gap-2 sm:gap-4">
 
         {/* Logo — clickable on mobile to open settings */}
         <button

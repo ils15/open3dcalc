@@ -252,12 +252,12 @@ function App() {
   }, [])
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div className="min-h-dvh flex flex-col overflow-x-clip">
       <Header />
       <UpdateNotification className="max-w-[1440px] mx-auto w-full px-6 sm:px-8 lg:px-12 pt-4" />
       <PrivacyBanner />
 
-      <div className="flex flex-1 w-full max-w-[1600px] mx-auto overflow-hidden">
+      <div className="flex flex-1 w-full max-w-[1600px] 2xl:max-w-[1920px] mx-auto overflow-x-clip">
 
         {/* ── Tablet Sidebar — icons only ── */}
         <aside className="hidden md:flex lg:hidden flex-col gap-1 w-16 shrink-0 px-2 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--color-border)]">
