@@ -35,14 +35,23 @@ declare global {
     /** Open a save dialog and export the database file. Returns the chosen path. */
     exportDatabase(): Promise<string>;
 
-    /** Import a database from a backup file, replacing the current one. */
-    importDatabase(filePath: string): Promise<void>;
+    /**
+     * Import a database from an external backup file.
+     * The file is chosen via a native dialog in the main process — any
+     * renderer-supplied path argument is ignored. Replaces the current
+     * database. Returns the path of the imported database on success.
+     */
+    importDatabase(): Promise<string>;
   }
 
   /** Update-check operations available through IPC. */
   interface ElectronUpdaterApi {
     /** Check for available updates. */
-    check: () => Promise<{ available: boolean; version?: string; releaseNotes?: string }>;
+    check: () => Promise<{
+      available: boolean;
+      version?: string;
+      releaseNotes?: string;
+    }>;
 
     /** Start downloading the update. */
     download: () => Promise<void>;
@@ -54,13 +63,26 @@ declare global {
     skip: (version: string) => Promise<void>;
 
     /** Get the current updater status. */
-    getStatus: () => Promise<{ status: string; progress?: number; version?: string }>;
+    getStatus: () => Promise<{
+      status: string;
+      progress?: number;
+      version?: string;
+    }>;
 
     /** Listen for download progress events. Returns an unsubscribe function. */
-    onProgress: (callback: (data: { percent: number; bytesPerSecond: number; total: number; transferred: number }) => void) => () => void;
+    onProgress: (
+      callback: (data: {
+        percent: number;
+        bytesPerSecond: number;
+        total: number;
+        transferred: number;
+      }) => void,
+    ) => () => void;
 
     /** Listen for update-available events. Returns an unsubscribe function. */
-    onAvailable: (callback: (data: { version: string; releaseNotes?: string }) => void) => () => void;
+    onAvailable: (
+      callback: (data: { version: string; releaseNotes?: string }) => void,
+    ) => () => void;
 
     /** Listen for update-downloaded events. Returns an unsubscribe function. */
     onDownloaded: (callback: (data: { version: string }) => void) => () => void;

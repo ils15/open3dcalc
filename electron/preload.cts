@@ -33,11 +33,13 @@ const electronAPI = {
 
     /**
      * Import a database from an external backup file.
-     * Replaces the current database. A backup of the current DB
-     * is created before the replacement.
+     * The file is chosen via a native dialog in the main process — any
+     * renderer-supplied path argument is ignored. Replaces the current
+     * database; a backup of the current DB is created before the swap.
+     * Returns the path of the imported database on success.
      */
-    importDatabase: (filePath: string): Promise<void> =>
-      ipcRenderer.invoke('db:import', filePath),
+    importDatabase: (_filePath?: string): Promise<string> =>
+      ipcRenderer.invoke('db:import'),
   },
 
   updater: {
