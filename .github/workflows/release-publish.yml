@@ -14,7 +14,7 @@ name: Release publication
         default: "v1.9.2"
 
 concurrency:
-  group: release-publication-${{ github.ref_name }}
+  group: release-publication-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -25,12 +25,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout immutable tag commit
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
           cache: npm
@@ -53,9 +53,15 @@ jobs:
       - name: Resolve tag and SHA
         id: resolve
         shell: bash
+        env:
+          TAG_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
-          TAG="${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}"
+          if [[ ! "$TAG_INPUT" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: expected vX.Y.Z, got '$TAG_INPUT'" >&2
+            exit 1
+          fi
+          TAG="$TAG_INPUT"
           TAG_SHA=$(git rev-list -n 1 "$TAG^{commit}")
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "tag_sha=$TAG_SHA" >> "$GITHUB_OUTPUT"
@@ -125,6 +131,14 @@ jobs:
            for artifact in "${ARTIFACTS[@]}"; do
              sha256sum "$artifact" >> release-artifacts.sha256
            done
+          # Publishable SHA256SUMS manifest (basenames so users can run
+          # `sha256sum -c SHA256SUMS` after downloading all assets).
+          : > SHA256SUMS
+          for artifact in "${ARTIFACTS[@]}"; do
+            printf '%s  %s\n' "$(sha256sum "$artifact" | cut -d' ' -f1)" \
+              "$(basename "$artifact")" >> SHA256SUMS
+          done
+          UPLOAD_ITEMS=("${ARTIFACTS[@]}" SHA256SUMS)
           rm -rf release-publish-diagnostics
           mkdir -p release-publish-diagnostics
           RELEASE_JSON=release-publish-diagnostics/release.json
@@ -143,7 +157,7 @@ jobs:
              gh api --paginate --slurp \
                 "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" \
                 | jq 'add' >"$EXISTING_ASSETS"
-            for artifact in "${ARTIFACTS[@]}"; do
+            for artifact in "${UPLOAD_ITEMS[@]}"; do
               name=$(basename "$artifact")
               local_digest="sha256:$(sha256sum "$artifact" | cut -d' ' -f1)"
                existing_name=$(jq -r --arg name "$name" \
@@ -171,7 +185,7 @@ jobs:
             done
            else
              gh release create "$TAG" --repo "$REPOSITORY" --title "$TAG" \
-               --generate-notes --target "$TAG_SHA" "${ARTIFACTS[@]}"
+               --generate-notes --target "$TAG_SHA" "${UPLOAD_ITEMS[@]}"
            fi
 
       - name: Validate published tag, release, and assets
@@ -197,9 +211,12 @@ jobs:
             echo "Validation failed: no local release artifacts found." >&2
             exit 1
           fi
-          for artifact in "${ARTIFACTS[@]}"; do
-            basename "$artifact"
-          done | sort >"$EXPECTED_ASSETS"
+          {
+            for artifact in "${ARTIFACTS[@]}"; do
+              basename "$artifact"
+            done
+            echo "SHA256SUMS"
+          } | sort >"$EXPECTED_ASSETS"
 
           TAG_REF=$(git ls-remote origin "refs/tags/$TAG^{}" | cut -f1)
           if [ "$TAG_REF" != "$TAG_SHA" ]; then
@@ -250,8 +267,13 @@ jobs:
                  "$ASSETS_JSON and $EXPECTED_ASSETS." >&2
                exit 1
              fi
-             local_digest="sha256:$(sha256sum \
-               "dist-electron/$name" | cut -d' ' -f1)"
+             if [ "$name" = "SHA256SUMS" ]; then
+               local_digest="sha256:$(sha256sum \
+                 "SHA256SUMS" | cut -d' ' -f1)"
+             else
+               local_digest="sha256:$(sha256sum \
+                 "dist-electron/$name" | cut -d' ' -f1)"
+             fi
              remote_digest=$(jq -r '.digest // empty' <<<"$asset")
              if [ -z "$remote_digest" ]; then
                printf '%s\n' \
@@ -281,17 +303,18 @@ jobs:
            done <"$EXPECTED_ASSETS"
            printf '%s\n' \
              "Validated published tag $TAG at $TAG_SHA, Release $RELEASE_ID, " \
-             "complete asset list, and SHA-256 digest for every expected " \
-             "versioned asset."
+             "complete asset list (incl. SHA256SUMS), and SHA-256 digest for " \
+             "every expected asset."
 
       - name: Preserve publication diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-publication-diagnostics-${{ github.run_id }}
           if-no-files-found: ignore
           path: |
             release-artifacts.sha256
+            SHA256SUMS
             release-publish-diagnostics/
             release-validation-diagnostics/
 
