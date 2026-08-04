@@ -2,6 +2,8 @@
 
 COMMIT_MSG_FILE="$1"
 COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+# Exporta para o python3 da seção de AI review (lê os.environ)
+export COMMIT_MSG
 
 # Skip AI review for merge commits automatically
 if echo "$COMMIT_MSG" | grep -qE "^Merge branch|^Merge remote-tracking|^Merge pull request"; then
@@ -34,6 +36,12 @@ echo "🤖 AI commit message review..."
 
 # Try to get Bifrost API key (env var > git config > skip)
 BF_KEY="${BF_VIRTUAL_KEY:-$(git config --get bifrost.api-key 2>/dev/null || echo '')}"
+
+# fail-open: o hook roda sob `sh -e` (via .husky/_/h); uma falha de rede no
+# curl (ex. exit 28) ou no parse abortaria o commit. Desliga errexit durante
+# a review da IA para que qualquer erro caia no branch "⚠️ ... proceeding
+# without AI approval" em vez de travar o commit.
+set +e
 
 if [ -n "$BF_KEY" ]; then
   # Verificar se python3 está disponível
@@ -99,6 +107,9 @@ else
   echo "  ⏭️  AI review skipped (no Bifrost key). Set BF_VIRTUAL_KEY env or:"
   echo "     git config --add bifrost.api-key 'your-key'"
 fi
+
+# restaura errexit para o restante do hook (linhas seguintes só ecoam mensagens)
+set -e
 
 echo ""
 echo "✅ Commit message validated"

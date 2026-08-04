@@ -6,9 +6,11 @@
 # ────────────────────────────────────────────────────────────────────────────
 #  Proteção de secrets em camadas (hardening)
 #  1. gitleaks — OBRIGATÓRIO (v8.x). SKIP_GITLEAKS=1 para pular.
-#  2. Guardião .env — bloqueia .env* / *.pem. SKIP_ENV_GUARD=1 para pular.
+#  2. Guardião .env — bloqueia .env reais / *.pem (permite .env.example).
+#     SKIP_ENV_GUARD=1 para pular.
 #  3. Bifrost AI exposure check — heurísticas + LLM. SKIP_BIFROST_EXPOSURE=1.
-#  4. lint-staged (ESLint + Prettier)
+#  4. Hygiene — arquivos >5MB e marcadores de merge. SKIP_HYGIENE=1 para pular.
+#  5. lint-staged (ESLint + Prettier)
 # ────────────────────────────────────────────────────────────────────────────
 
 # 🔒 1. Gitleaks — obrigatório
@@ -26,11 +28,16 @@ else
   fi
 fi
 
-# 🛡️ 2. Guardião .env — bloqueia .env* e *.pem no staged
+# 🛡️ 2. Guardião .env — bloqueia .env reais e *.pem no staged.
+#    Templates (.env.example/.env.sample/.env.template) SÃO permitidos:
+#    o segundo grep filtra da lista capturada os nomes que terminam nesses
+#    sufixos, evitando falso positivo.
 if [ "${SKIP_ENV_GUARD:-}" = "1" ]; then
   echo "  ⏭️  Guardião .env pulado (SKIP_ENV_GUARD=1)"
 else
-  ENV_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)(\.env(\.[A-Za-z0-9_-]+)*|[^/]*\.pem)$' || true)
+  ENV_FILES=$(git diff --cached --name-only --diff-filter=ACM \
+    | grep -E '(^|/)(\.env(\.[A-Za-z0-9_-]+)*|[^/]*\.pem)$' \
+    | grep -vE '\.(example|sample|template)$' || true)
   if [ -n "$ENV_FILES" ]; then
     echo "❌ Arquivos sensíveis detectados no commit:"
     echo "$ENV_FILES" | sed 's/^/   /'
@@ -44,6 +51,50 @@ fi
 # 🤖 3. Bifrost AI exposure check (heurísticas determinísticas + LLM)
 node scripts/scan-secrets-bifrost.mjs || exit 1
 
-# 🔍 4. lint-staged (ESLint + Prettier)
+# 🧼 4. Hygiene pré-lint-staged — POSIX puro, fail-open:
+#    a. bloqueia arquivos staged > 5MB (anti-blob, propósito: impedir blobs
+#       gigantes de entrar no histórico);
+#    b. bloqueia marcadores de conflito de merge (<<<<<<< / ======= / >>>>>>>)
+#       em arquivos de texto staged.
+if [ "${SKIP_HYGIENE:-}" = "1" ]; then
+  echo "  ⏭️  Hygiene check pulado (SKIP_HYGIENE=1)"
+else
+  echo "🧼 Hygiene check: arquivos grandes (>5MB) e marcadores de merge..."
+
+  # 4a. Arquivos grandes (>5MB) — bloqueia
+  BIG_FILES=$(git diff --cached --name-only --diff-filter=ACM \
+    | xargs -r ls -ld 2>/dev/null \
+    | awk '$5 > 5242880 { $1=$2=$3=$4=$5=$6=$7=$8=""; sub(/^ +/, ""); print }' \
+    | grep -v '^$' || true)
+  if [ -n "$BIG_FILES" ]; then
+    echo "❌ Arquivos grandes (>5MB) detectados no commit:"
+    echo "$BIG_FILES" | sed 's/^/   /'
+    echo ""
+    echo "   NUNCA commite blobs grandes no repo. Use git-lfs ou remova o arquivo."
+    echo "   export SKIP_HYGIENE=1 para forçar (não recomendado)."
+    exit 1
+  fi
+
+  # 4b. Marcadores de conflito de merge — bloqueia (só em arquivos de texto)
+  CONFLICT_FILES=$(git diff --cached --name-only --diff-filter=ACM | {
+    while read -r f; do
+      if [ -f "$f" ]; then
+        if grep -IqE '^(<<<<<<< |=======$|>>>>>>> )' "$f" 2>/dev/null; then
+          echo "$f"
+        fi
+      fi
+    done
+  } || true)
+  if [ -n "$CONFLICT_FILES" ]; then
+    echo "❌ Marcadores de conflito de merge detectados no commit:"
+    echo "$CONFLICT_FILES" | sed 's/^/   /'
+    echo ""
+    echo "   Resolva os conflitos antes de commitar (procure <<<<<<< / ======= / >>>>>>>)."
+    echo "   export SKIP_HYGIENE=1 para forçar (não recomendado)."
+    exit 1
+  fi
+fi
+
+# 🔍 5. lint-staged (ESLint + Prettier)
 echo "🔍 Running lint-staged..."
 npx lint-staged || exit 1

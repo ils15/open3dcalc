@@ -21,6 +21,28 @@
 [extend]
   useDefault = true
 
+# Regras custom do projeto (além do ruleset default do gitleaks).
+# Entropia mínima alta para evitar falsos positivos: valores fake curtos
+# (ex.: BF_VIRTUAL_KEY=fake) não disparam; só tokens longos com entropia
+# real de segredo são sinalizados.
+[[rules]]
+  id = "bifrost-virtual-key"
+  description = "Bifrost BF_VIRTUAL_KEY credential"
+  regex = '''(?i)BF_VIRTUAL_KEY\s*[:=]\s*["']?[A-Za-z0-9._~+/=-]{20,}["']?'''
+  entropy = 3.5
+
+[[rules]]
+  id = "opencode-api-key"
+  description = "OpenCode OPENCODE_API_KEY credential"
+  regex = '''(?i)OPENCODE_API_KEY\s*[:=]\s*["']?[A-Za-z0-9._~+/=-]{20,}["']?'''
+  entropy = 3.5
+
+[[rules]]
+  id = "llm-gateway-bearer-token"
+  description = "Bearer token do gateway llm.ofertachina.cloud"
+  regex = '''(?i)llm\.ofertachina\.cloud.{0,200}?Bearer\s+[A-Za-z0-9._~+/=-]{16,}'''
+  entropy = 3.0
+
 [allowlist]
   paths = [
     '''scripts/__tests__/''',
