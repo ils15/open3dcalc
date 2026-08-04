@@ -333,9 +333,19 @@ export function truncateDiff(diffText, maxChars = MAX_LLM_DIFF_CHARS) {
 
 /**
  * Camada IA via Bifrost. Fail-open em erro de API/rede (retorna ERROR —
- * o chamador decide se bloqueia). Apenas as linhas *adicionadas* do diff são
- * enviadas (addedLines) — contexto e remoções não vazam para o LLM, e o
- * conteúdo vai dentro de `<diff>...</diff>` (tratado como dado, não instrução).
+ * o chamador decide se bloqueia). O conteúdo vai dentro de `<diff>...</diff>`
+ * (tratado como dado, não instrução).
+ *
+ * Contrato do payload: `diffText` deve vir JÁ reduzido às linhas adicionadas
+ * (addedLines + truncateDiff) — é exatamente o que main() envia. Por isso o
+ * padrão de `options.alreadyClean` é `true` e a função NÃO re-filtra: reaplicar
+ * addedLines derrubaria linhas indentadas (que começam com espaço e seriam
+ * confundidas com contexto), fazendo secrets adicionados dentro de funções
+ * desaparecerem do payload do LLM (P2 — Codex Review PR #35).
+ *
+ * Para passar um diff bruto (com `+`/`-`/contexto/@), use
+ * `{ alreadyClean: false }` — aí addedLines é aplicado uma única vez e só as
+ * linhas adicionadas (sem o marcador `+`) vão ao LLM.
  *
  * Retries: até 2 retries com backoff (1s, 2s) em falha de transporte, timeout
  * (AbortError) ou HTTP 429/5xx. HTTP 4xx não-429 não tem retry. Timeout de
@@ -347,8 +357,9 @@ export function truncateDiff(diffText, maxChars = MAX_LLM_DIFF_CHARS) {
  *   - WARN: IA viu algo com confidence < 0.8 → fail-open, não bloqueia.
  *   - ERROR: falha de API/rede/JSON fora do schema → fail-open.
  */
-export async function detectExposureWithLLM(diffText, apiKey) {
-  const cleanDiff = addedLines(diffText);
+export async function detectExposureWithLLM(diffText, apiKey, options = {}) {
+  const { alreadyClean = true } = options;
+  const cleanDiff = alreadyClean ? String(diffText) : addedLines(diffText);
   let lastReason = null;
 
   for (let attempt = 0; attempt < LLM_MAX_ATTEMPTS; attempt++) {
@@ -535,7 +546,12 @@ export async function main() {
     );
   }
 
-  const ai = await detectExposureWithLLM(payload, apiKey);
+  // O payload já é o diff limpo (addedLines + truncate) — passa alreadyClean
+  // para a camada IA NÃO reaplicar addedLines (isso derrubaria linhas
+  // indentadas, fazendo secrets adicionados dentro de funções sumirem).
+  const ai = await detectExposureWithLLM(payload, apiKey, {
+    alreadyClean: true,
+  });
   if (ai.decision === "FAIL") {
     console.error("❌ IA de segurança detectou exposição — commit bloqueado:");
     console.error(`   ${ai.reason}`);
