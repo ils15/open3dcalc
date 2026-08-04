@@ -234,11 +234,12 @@ export function closeDatabase(): void {
 export function initDatabase(dbPath?: string): ReturnType<typeof drizzle> {
   if (drizzleInstance) return drizzleInstance;
 
+  let sqlite: Database.Database | undefined;
   try {
     const resolvedPath = dbPath ?? getDbPath();
     console.log("[db] Opening database at:", resolvedPath);
 
-    const sqlite = new Database(resolvedPath);
+    sqlite = new Database(resolvedPath);
 
     // Recommended performance pragmas for better-sqlite3
     sqlite.pragma("journal_mode = WAL");
@@ -254,9 +255,26 @@ export function initDatabase(dbPath?: string): ReturnType<typeof drizzle> {
     restrictFilePermissions(resolvedPath);
 
     drizzleInstance = drizzle(sqlite, { schema });
+    // Ownership of the connection is transferred to the singleton — it must
+    // NOT be closed by the error handler below.
+    sqlite = undefined;
     console.log("[db] Database initialized successfully");
     return drizzleInstance;
   } catch (error) {
+    // Close the connection this call opened before rethrowing. A leaked
+    // handle keeps the DB file locked (Windows/macOS), which would make a
+    // subsequent db:import backup restore silently fail and leave the
+    // broken imported file in place.
+    if (sqlite) {
+      try {
+        sqlite.close();
+      } catch (closeError) {
+        console.error(
+          "[db] Failed to close connection after initialization error:",
+          closeError,
+        );
+      }
+    }
     console.error("[db] Failed to initialize database:", error);
     throw error;
   }

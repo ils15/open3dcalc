@@ -14,6 +14,7 @@ import {
 } from "../db/database.js";
 import {
   initUpdateService,
+  setDatabase,
   checkForUpdates,
   downloadUpdate,
   installUpdate,
@@ -454,12 +455,43 @@ function setupIpcHandlers(): void {
         // (c) Reconnect for real.
         try {
           db = initDatabase();
+          // The updater service keeps its own reference to the database —
+          // rebind it so skipVersion()/checkForUpdates() don't keep using
+          // the handle whose client was closed above.
+          setDatabase(db);
         } catch (error) {
           // Restore the pre-import database and reconnect, then reject
           // the import with a clear error.
-          await fs.copyFile(backupPath, dbPath).catch(() => {});
+          //
+          // initDatabase() closes the connection it opened on failure, but
+          // close anyway (defensive) BEFORE overwriting the file so the
+          // restore never tries to copy over a still-open/locked handle.
           closeDatabase();
+
+          // The backup copy MUST succeed: a silent failure would leave the
+          // broken imported file in place and the retry below would just
+          // re-open it.
+          try {
+            await fs.copyFile(backupPath, dbPath);
+          } catch (restoreError) {
+            const restoreMessage =
+              restoreError instanceof Error
+                ? restoreError.message
+                : String(restoreError);
+            console.error(
+              "[db:import] Failed to restore pre-import backup:",
+              restoreError,
+            );
+            throw new Error(
+              `Import failed: could not open the imported database and the ` +
+                `original database could not be restored automatically. ` +
+                `Restore it manually from: ${backupPath} (${restoreMessage})`,
+              { cause: restoreError },
+            );
+          }
+
           db = initDatabase();
+          setDatabase(db);
           throw new Error(
             `Import failed: could not open the imported database. Original data restored. ` +
               `(${(error as Error)?.message ?? String(error)})`,
