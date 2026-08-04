@@ -25,23 +25,36 @@
 # Entropia mínima alta para evitar falsos positivos: valores fake curtos
 # (ex.: BF_VIRTUAL_KEY=fake) não disparam; só tokens longos com entropia
 # real de segredo são sinalizados.
+#
+# CRÍTICO: cada regra define um capture group `(?P<secret>...)` cobrindo
+# SOMENTE o valor da credencial. Sem ele, o gitleaks calcula a entropia
+# sobre o match inteiro da regex — incluindo texto fixo (BF_VIRTUAL_KEY=,
+# llm.ofertachina.cloud ... Bearer) cuja diversidade de caracteres infla a
+# entropia e faz placeholders óbvios (ex.: BF_VIRTUAL_KEY=your_bifrost_key_here)
+# ultrapassarem o limiar, quebrando os .env.example que o guardião permite.
+#
+# Calibração do limiar: com o secret group, a entropia é medida só sobre o
+# valor. Placeholders óbvios ficam em ~3.5–3.7 (ex.: your_bifrost_key_here =
+# 3.52, your_bearer_token_here_placeholder = 3.62) enquanto tokens reais
+# aleatórios ficam em ~5.1+ (ex.: octu_live_kJh4mPq2xR8tVz7wL9nB3cD5fG6hJ1kL4mN8qR2sT7
+# = 5.16). entropy = 4.0 separa os dois com folga (>0.3 de cada lado).
 [[rules]]
   id = "bifrost-virtual-key"
   description = "Bifrost BF_VIRTUAL_KEY credential"
-  regex = '''(?i)BF_VIRTUAL_KEY\s*[:=]\s*["']?[A-Za-z0-9._~+/=-]{20,}["']?'''
-  entropy = 3.5
+  regex = '''(?i)BF_VIRTUAL_KEY\s*[:=]\s*["']?(?P<secret>[A-Za-z0-9._~+/=-]{20,})["']?'''
+  entropy = 4.0
 
 [[rules]]
   id = "opencode-api-key"
   description = "OpenCode OPENCODE_API_KEY credential"
-  regex = '''(?i)OPENCODE_API_KEY\s*[:=]\s*["']?[A-Za-z0-9._~+/=-]{20,}["']?'''
-  entropy = 3.5
+  regex = '''(?i)OPENCODE_API_KEY\s*[:=]\s*["']?(?P<secret>[A-Za-z0-9._~+/=-]{20,})["']?'''
+  entropy = 4.0
 
 [[rules]]
   id = "llm-gateway-bearer-token"
   description = "Bearer token do gateway llm.ofertachina.cloud"
-  regex = '''(?i)llm\.ofertachina\.cloud.{0,200}?Bearer\s+[A-Za-z0-9._~+/=-]{16,}'''
-  entropy = 3.0
+  regex = '''(?i)llm\.ofertachina\.cloud.{0,200}?Bearer\s+(?P<secret>[A-Za-z0-9._~+/=-]{16,})'''
+  entropy = 4.0
 
 [allowlist]
   paths = [

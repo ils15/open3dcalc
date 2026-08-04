@@ -76,12 +76,16 @@ else
   fi
 
   # 4b. Marcadores de conflito de merge — bloqueia (só em arquivos de texto)
+  #    IMPORTANTE: valida o BLOB STAGED (git show :"$f"), não o arquivo da
+  #    working tree. Com mudanças parcialmente staged, um dev pode staged
+  #    marcadores de conflito e removê-los só na working tree — lendo o
+  #    working tree o check veria o arquivo limpo e deixaria o commit passar
+  #    com marcadores no índice. O staged é a fonte da verdade do que será
+  #    commitado. grep -I ignora arquivos binários (fail-open para binários).
   CONFLICT_FILES=$(git diff --cached --name-only --diff-filter=ACM | {
     while read -r f; do
-      if [ -f "$f" ]; then
-        if grep -IqE '^(<<<<<<< |=======$|>>>>>>> )' "$f" 2>/dev/null; then
-          echo "$f"
-        fi
+      if git show :"$f" 2>/dev/null | grep -IqE '^(<<<<<<< |=======$|>>>>>>> )'; then
+        echo "$f"
       fi
     done
   } || true)
