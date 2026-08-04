@@ -116,7 +116,14 @@ jobs:
 
   build-desktop:
     needs: quality
-    if: github.ref == 'refs/heads/main'
+    # Fork guard (same as the quality job): for PR workflows github.ref is
+    # refs/pull/<number>/merge, so a ref-based condition would skip the
+    # desktop build on every PR. Run on trusted pushes to main AND same-repo
+    # PRs; NEVER on fork PRs (which run on untrusted runners).
+    if: |
+      github.event_name != 'pull_request' ||
+      (github.head_ref != '' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, cx33, linux]
     timeout-minutes: 15
     steps:

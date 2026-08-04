@@ -10,6 +10,9 @@ permissions:
   contents: read
   pull-requests: read
   issues: read
+  # The pinned anomalyco/opencode action authenticates the GitHub invocation
+  # through Actions OIDC; OPENCODE_API_KEY only supplies the model credential.
+  id-token: write
 
 concurrency:
   group: opencode-${{ github.event.issue.number }}-${{ github.event.comment.id }}
