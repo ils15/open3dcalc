@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   prepare:
-    runs-on: [self-hosted, cx33, linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: write

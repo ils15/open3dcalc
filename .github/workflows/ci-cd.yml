@@ -22,7 +22,7 @@ jobs:
       github.event_name != 'pull_request' ||
       (github.head_ref != '' &&
        github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, cx33, linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -76,7 +76,7 @@ jobs:
   build-web:
     needs: quality
     if: github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, cx33, linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
       name: github-pages
@@ -124,7 +124,7 @@ jobs:
       github.event_name != 'pull_request' ||
       (github.head_ref != '' &&
        github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: [self-hosted, cx33, linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0

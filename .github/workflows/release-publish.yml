@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: [self-hosted, cx33, linux]
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: write
