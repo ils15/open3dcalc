@@ -61,7 +61,7 @@
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.1.7",
     "changelogen": "0.6.2",
-    "concurrently": "^9.2.0",
+    "concurrently": "^10.0.5",
     "cross-env": "^7.0.3",
     "drizzle-kit": "^0.31.10",
     "electron": "^42.0.0",
