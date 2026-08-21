@@ -27,10 +27,10 @@
 
 Baixe a versão desktop para Windows ou Linux na [página de releases](https://github.com/ils15/open3dcalc/releases).
 
-| Plataforma | Formato | Arquivo |
-|-----------|---------|---------|
+| Plataforma            | Formato        | Arquivo                          |
+| --------------------- | -------------- | -------------------------------- |
 | Windows (x64 / arm64) | NSIS Installer | `Open3DCalc-{version}-setup.exe` |
-| Linux (x64 / arm64) | AppImage | `Open3DCalc-{version}.AppImage` |
+| Linux (x64 / arm64)   | AppImage       | `Open3DCalc-{version}.AppImage`  |
 
 > ⚠️ macOS build is configured but not actively published.
 
@@ -108,6 +108,19 @@ open3dcalc/
 
 ---
 
+## 📂 Supported File Formats
+
+O preview 3D (`StlPreview`) aceita arrastar/soltar ou selecionar via explorador de arquivos:
+
+| Formato | Extensão               | Notas                                                                                                                                                                                                                                                     |
+| ------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STL     | `.stl`                 | binário e ASCII                                                                                                                                                                                                                                           |
+| OBJ     | `.obj`                 | Wavefront                                                                                                                                                                                                                                                 |
+| 3MF     | `.3mf`                 | XML 3D Manufacturing                                                                                                                                                                                                                                      |
+| GCODE   | `.gcode`, `.gco`, `.g` | Cura (`;TIME:` em segundos) + PrusaSlicer/OrcaSlicer (`; estimated printing time = 1h 23m 45s`, suporta `d/h/m/s` combinados) — se o header de tempo não existir o arquivo ainda abre (tempo = `—`) e exibe dimensões/peso estimados pelos movimentos `E` |
+
+> **Troubleshooting GCODE (issue #32):** se o tempo aparecer como `—`, seu slicer não incluiu header de tempo ou usa formato não reconhecido — o arquivo continua sendo aceito (sem gate silencioso). Após carregar um GCODE a drop zone permanece visível e o botão 🗑️ (`stl.clear`) limpa o estado para novo upload sem dead-end.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -171,24 +184,24 @@ We use **Vitest** + **Testing Library** for unit and component tests. Minimum co
 
 ## 🛠 Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | React 19, TypeScript 6, Tailwind CSS v4 |
-| **Build** | Vite 8 |
-| **Desktop** | Electron 42, better-sqlite3, Drizzle ORM |
-| **Web (PWA)** | vite-plugin-pwa (Workbox service worker) |
-| **State Management** | Zustand 5 |
-| **Testing** | Vitest 4, Testing Library (React + Jest DOM) |
-| **i18n** | i18next 26, react-i18next 17 |
-| **Charts** | Recharts 2 |
-| **3D Preview** | Three.js + React Three Fiber + Drei |
-| **PDF Export** | @react-pdf/renderer 4 |
-| **Animations** | Framer Motion 12 |
-| **Icons** | Lucide React |
-| **Linting** | ESLint 10, TypeScript ESLint, Prettier 3 |
-| **CI/CD** | GitHub Actions |
-| **Commit Lint** | commitlint + husky + lint-staged |
-| **Changelog** | changelogen |
+| Layer                | Technology                                   |
+| -------------------- | -------------------------------------------- |
+| **Frontend**         | React 19, TypeScript 6, Tailwind CSS v4      |
+| **Build**            | Vite 8                                       |
+| **Desktop**          | Electron 42, better-sqlite3, Drizzle ORM     |
+| **Web (PWA)**        | vite-plugin-pwa (Workbox service worker)     |
+| **State Management** | Zustand 5                                    |
+| **Testing**          | Vitest 4, Testing Library (React + Jest DOM) |
+| **i18n**             | i18next 26, react-i18next 17                 |
+| **Charts**           | Recharts 2                                   |
+| **3D Preview**       | Three.js + React Three Fiber + Drei          |
+| **PDF Export**       | @react-pdf/renderer 4                        |
+| **Animations**       | Framer Motion 12                             |
+| **Icons**            | Lucide React                                 |
+| **Linting**          | ESLint 10, TypeScript ESLint, Prettier 3     |
+| **CI/CD**            | GitHub Actions                               |
+| **Commit Lint**      | commitlint + husky + lint-staged             |
+| **Changelog**        | changelogen                                  |
 
 ---
 
@@ -215,25 +228,25 @@ npm run db:migrate
 
 ## 📜 Scripts Reference
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev:web` | Start web dev server (Vite, hot-reload) |
-| `npm run dev:desktop` | Start Electron + Vite dev (hot-reload) |
-| `npm run dev:electron` | Compile + launch Electron main process |
-| `npm run build:web` | Build web app → `dist-web/` |
-| `npm run build:desktop` | Build desktop renderer → `dist/` |
-| `npm run build:electron` | Compile Electron main process (TypeScript) |
-| `npm run build:all` | Build both web + desktop |
-| `npm run build:shared` | TypeScript check shared code (`--noEmit`) |
-| `npm run preview:web` | Preview web production build locally |
-| `npm test` | Run tests in watch mode |
-| `npm run test:run` | Run tests once (CI mode) |
-| `npm run lint` | ESLint check across entire project |
-| `npm run typecheck` | TypeScript check (`tsc --noEmit -p tsconfig.app.json`) |
-| `npm run typecheck:electron` | TypeScript check for Electron main process |
-| `npm run db:generate` | Generate Drizzle ORM migrations |
-| `npm run db:migrate` | Run pending SQLite migrations |
-| `npm run postinstall` | Rebuild native modules (electron-rebuild) |
+| Script                       | Description                                            |
+| ---------------------------- | ------------------------------------------------------ |
+| `npm run dev:web`            | Start web dev server (Vite, hot-reload)                |
+| `npm run dev:desktop`        | Start Electron + Vite dev (hot-reload)                 |
+| `npm run dev:electron`       | Compile + launch Electron main process                 |
+| `npm run build:web`          | Build web app → `dist-web/`                            |
+| `npm run build:desktop`      | Build desktop renderer → `dist/`                       |
+| `npm run build:electron`     | Compile Electron main process (TypeScript)             |
+| `npm run build:all`          | Build both web + desktop                               |
+| `npm run build:shared`       | TypeScript check shared code (`--noEmit`)              |
+| `npm run preview:web`        | Preview web production build locally                   |
+| `npm test`                   | Run tests in watch mode                                |
+| `npm run test:run`           | Run tests once (CI mode)                               |
+| `npm run lint`               | ESLint check across entire project                     |
+| `npm run typecheck`          | TypeScript check (`tsc --noEmit -p tsconfig.app.json`) |
+| `npm run typecheck:electron` | TypeScript check for Electron main process             |
+| `npm run db:generate`        | Generate Drizzle ORM migrations                        |
+| `npm run db:migrate`         | Run pending SQLite migrations                          |
+| `npm run postinstall`        | Rebuild native modules (electron-rebuild)              |
 
 ---
 
@@ -246,8 +259,8 @@ npm run db:migrate
 
 Optional environment variables:
 
-| Variable | Purpose |
-|----------|---------|
+| Variable             | Purpose                                |
+| -------------------- | -------------------------------------- |
 | `OPEN3DCALC_DB_PATH` | Custom path to SQLite file (tests/CLI) |
 
 ---

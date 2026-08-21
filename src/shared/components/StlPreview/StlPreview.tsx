@@ -1,40 +1,47 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { useTranslation } from 'react-i18next'
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Center, Bounds, useBounds } from '@react-three/drei'
-import type { BoundsApi } from '@react-three/drei'
-import { Upload, AlertCircle, Maximize2, X, Trash2, Crosshair } from 'lucide-react'
-import type { BufferGeometry } from 'three'
-import type { MeshAnalysis } from '@/shared/lib/stlParser'
-import { estimatePrintTime } from '@/shared/lib/printTimeEstimator'
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, Center, Bounds, useBounds } from "@react-three/drei";
+import type { BoundsApi } from "@react-three/drei";
+import {
+  Upload,
+  AlertCircle,
+  Maximize2,
+  X,
+  Trash2,
+  Crosshair,
+} from "lucide-react";
+import type { BufferGeometry } from "three";
+import type { MeshAnalysis } from "@/shared/lib/stlParser";
+import { estimatePrintTime } from "@/shared/lib/printTimeEstimator";
 
 export interface FileParseResult {
-  geometry: BufferGeometry
-  analysis: MeshAnalysis
-  volumeCm3: number
-  weight: number
-  printTimeHours: number
-  dimensions: { x: number; y: number; z: number }
-  triangleCount: number
+  geometry: BufferGeometry | null;
+  analysis: MeshAnalysis;
+  volumeCm3: number;
+  weight: number;
+  printTimeHours: number;
+  dimensions: { x: number; y: number; z: number };
+  triangleCount: number;
 }
 
 interface StlPreviewProps {
-  onFileParsed?: (data: FileParseResult) => void
-  onError?: (message: string) => void
-  initialGeometry?: BufferGeometry | null
+  onFileParsed?: (data: FileParseResult) => void;
+  onError?: (message: string) => void;
+  initialGeometry?: BufferGeometry | null;
   /** If true, manages own state (drag-drop, parse, display) */
-  standalone?: boolean
+  standalone?: boolean;
   /** Calculator material density (g/cm³). Default 1.24 (PLA). */
-  materialDensity?: number
+  materialDensity?: number;
   /** Calculator infill percentage. Default 20. */
-  infillPercent?: number
+  infillPercent?: number;
   /** Called when the user clears the loaded model from the viewer. */
-  onClear?: () => void
+  onClear?: () => void;
 }
 
 function Model({ geometry }: { geometry: BufferGeometry }) {
-  const geo = useMemo(() => geometry.clone(), [geometry])
+  const geo = useMemo(() => geometry.clone(), [geometry]);
   return (
     <Center>
       <mesh geometry={geo} scale={0.01}>
@@ -46,10 +53,15 @@ function Model({ geometry }: { geometry: BufferGeometry }) {
         />
       </mesh>
       <mesh geometry={geo} scale={0.01}>
-        <meshBasicMaterial color="#a78bfa" wireframe opacity={0.15} transparent />
+        <meshBasicMaterial
+          color="#a78bfa"
+          wireframe
+          opacity={0.15}
+          transparent
+        />
       </mesh>
     </Center>
-  )
+  );
 }
 
 /**
@@ -57,32 +69,36 @@ function Model({ geometry }: { geometry: BufferGeometry }) {
  * external ref so toolbar buttons outside the Canvas can trigger `fit()`.
  * drei 10.x does not forward a `ref` on <Bounds>, hence the bridge.
  */
-function BoundsBridge({ apiRef }: { apiRef: React.MutableRefObject<BoundsApi | null> }) {
-  const bounds = useBounds()
+function BoundsBridge({
+  apiRef,
+}: {
+  apiRef: React.MutableRefObject<BoundsApi | null>;
+}) {
+  const bounds = useBounds();
   useEffect(() => {
-    apiRef.current = bounds
+    apiRef.current = bounds;
     return () => {
-      apiRef.current = null
-    }
-  }, [bounds, apiRef])
-  return null
+      apiRef.current = null;
+    };
+  }, [bounds, apiRef]);
+  return null;
 }
 
 const toolbarButtonClass =
-  'min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg ' +
-  'bg-[var(--color-bg-elevated)]/85 backdrop-blur-sm border border-[var(--color-border)]/60 ' +
-  'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] ' +
-  'hover:bg-[var(--color-bg-elevated)] transition-colors ' +
-  'focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none'
+  "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg " +
+  "bg-[var(--color-bg-elevated)]/85 backdrop-blur-sm border border-[var(--color-border)]/60 " +
+  "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] " +
+  "hover:bg-[var(--color-bg-elevated)] transition-colors " +
+  "focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none";
 
 interface PreviewCanvasProps {
-  geometry: BufferGeometry
+  geometry: BufferGeometry;
   /** Rendered inside the fullscreen portal overlay */
-  isFullscreen?: boolean
+  isFullscreen?: boolean;
   /** Toggles fullscreen mode (null hides the button, e.g. inside fullscreen) */
-  onToggleFullscreen?: () => void
+  onToggleFullscreen?: () => void;
   /** Clears the loaded model (null hides the button) */
-  onClear?: () => void
+  onClear?: () => void;
 }
 
 function PreviewCanvas({
@@ -91,8 +107,8 @@ function PreviewCanvas({
   onToggleFullscreen,
   onClear,
 }: PreviewCanvasProps) {
-  const { t } = useTranslation()
-  const boundsApi = useRef<BoundsApi | null>(null)
+  const { t } = useTranslation();
+  const boundsApi = useRef<BoundsApi | null>(null);
   return (
     <div className="relative w-full h-full group">
       <Canvas
@@ -122,8 +138,8 @@ function PreviewCanvas({
         <button
           type="button"
           onClick={() => boundsApi.current?.fit()}
-          aria-label={t('stl.fit')}
-          title={t('stl.fit')}
+          aria-label={t("stl.fit")}
+          title={t("stl.fit")}
           className={toolbarButtonClass}
         >
           <Crosshair className="w-4 h-4" />
@@ -132,8 +148,8 @@ function PreviewCanvas({
           <button
             type="button"
             onClick={onClear}
-            aria-label={t('stl.clear')}
-            title={t('stl.clear')}
+            aria-label={t("stl.clear")}
+            title={t("stl.clear")}
             className={toolbarButtonClass}
           >
             <Trash2 className="w-4 h-4" />
@@ -143,16 +159,22 @@ function PreviewCanvas({
           <button
             type="button"
             onClick={onToggleFullscreen}
-            aria-label={isFullscreen ? t('stl.exitFullscreen') : t('stl.fullscreen')}
-            title={isFullscreen ? t('stl.exitFullscreen') : t('stl.fullscreen')}
+            aria-label={
+              isFullscreen ? t("stl.exitFullscreen") : t("stl.fullscreen")
+            }
+            title={isFullscreen ? t("stl.exitFullscreen") : t("stl.fullscreen")}
             className={toolbarButtonClass}
           >
-            {isFullscreen ? <X className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullscreen ? (
+              <X className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
           </button>
         )}
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -174,112 +196,130 @@ export function StlPreview({
   infillPercent,
   onClear,
 }: StlPreviewProps) {
-  const { t } = useTranslation()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [geometry, setGeometry] = useState<BufferGeometry | null>(initialGeometry)
-  const [modelInfo, setModelInfo] = useState<FileParseResult | null>(null)
-  const [parsing, setParsing] = useState(false)
-  const [isDragOver, setIsDragOver] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [geometry, setGeometry] = useState<BufferGeometry | null>(
+    initialGeometry,
+  );
+  const [modelInfo, setModelInfo] = useState<FileParseResult | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const isTouchDevice = useMemo(
-    () => typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0),
+    () =>
+      typeof window !== "undefined" &&
+      ("ontouchstart" in window || navigator.maxTouchPoints > 0),
     [],
-  )
+  );
 
   // initialGeometry is used as the initial state value above;
   // consumers that need to reset geometry should use a key prop on StlPreview
 
   // Close the fullscreen overlay with the Escape key
   useEffect(() => {
-    if (!isFullscreen) return
+    if (!isFullscreen) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsFullscreen(false)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isFullscreen])
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isFullscreen]);
 
   const handleClear = useCallback(() => {
-    setGeometry(null)
-    setModelInfo(null)
-    setError(null)
-    setParsing(false)
-    setIsFullscreen(false)
-    onClear?.()
-  }, [onClear])
+    setGeometry(null);
+    setModelInfo(null);
+    setError(null);
+    setParsing(false);
+    setIsFullscreen(false);
+    onClear?.();
+  }, [onClear]);
 
   const showError = useCallback(
     (message: string) => {
-      setError(message)
-      onError?.(message)
-      setTimeout(() => setError(null), 4000)
+      setError(message);
+      onError?.(message);
+      setTimeout(() => setError(null), 4000);
     },
     [onError],
-  )
+  );
 
   const processFile = useCallback(
     async (file: File) => {
-      const ext = file.name.split('.').pop()?.toLowerCase()
-      if (!ext || !['stl', 'obj', '3mf', 'gcode'].includes(ext)) {
-        showError(t('stl.invalidFile'))
-        return
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (!ext || !["stl", "obj", "3mf", "gcode"].includes(ext)) {
+        showError(t("stl.invalidFile"));
+        return;
       }
 
       if (file.size > 100 * 1024 * 1024) {
-        showError(t('stl.tooLarge'))
-        return
+        showError(t("stl.tooLarge"));
+        return;
       }
 
-      setParsing(true)
-      setError(null)
+      setParsing(true);
+      setError(null);
 
       try {
-        if (ext === 'gcode') {
-          const { parseGcode } = await import('@/shared/lib/gcodeParser')
-          const text = await file.text()
-          const gcode = parseGcode(text)
-          if (gcode.printTimeMinutes > 0) {
-            const hours = gcode.printTimeMinutes / 60
-            const result: FileParseResult = {
-              geometry: null as unknown as BufferGeometry,
-              analysis: {
-                triangleCount: 0,
-                vertexCount: 0,
-                dimensions: { x: gcode.printSize.x, y: gcode.printSize.y, z: gcode.printSize.z },
-                volume: 0,
-                surfaceArea: 0,
-                boundingBox: {
-                  min: { x: 0, y: 0, z: 0 },
-                  max: { x: gcode.printSize.x, y: gcode.printSize.y, z: gcode.printSize.z },
-                },
-                integrity: { valid: true, issues: [] },
-              },
-              volumeCm3: 0,
-              weight: gcode.filamentUsedGrams,
-              printTimeHours: parseFloat(hours.toFixed(2)),
-              dimensions: { x: gcode.printSize.x, y: gcode.printSize.y, z: gcode.printSize.z },
+        if (ext === "gcode") {
+          const { parseGcode } = await import("@/shared/lib/gcodeParser");
+          const text = await file.text();
+          const gcode = parseGcode(text);
+          const hours = gcode.printTimeMinutes / 60;
+          const result: FileParseResult = {
+            geometry: null,
+            analysis: {
               triangleCount: 0,
-            }
-            setModelInfo(result)
-            onFileParsed?.(result)
-          }
+              vertexCount: 0,
+              dimensions: {
+                x: gcode.printSize.x,
+                y: gcode.printSize.y,
+                z: gcode.printSize.z,
+              },
+              volume: 0,
+              surfaceArea: 0,
+              boundingBox: {
+                min: { x: 0, y: 0, z: 0 },
+                max: {
+                  x: gcode.printSize.x,
+                  y: gcode.printSize.y,
+                  z: gcode.printSize.z,
+                },
+              },
+              integrity: { valid: true, issues: [] },
+            },
+            volumeCm3: 0,
+            weight: gcode.filamentUsedGrams,
+            printTimeHours: parseFloat(hours.toFixed(2)),
+            dimensions: {
+              x: gcode.printSize.x,
+              y: gcode.printSize.y,
+              z: gcode.printSize.z,
+            },
+            triangleCount: 0,
+          };
+          setGeometry(null);
+          setModelInfo(result);
+          onFileParsed?.(result);
         } else {
-          const { analyzeMeshFile, volumeToCm3, estimateWeight } = await import(
-            '@/shared/lib/stlParser'
-          )
-          const { geometry: parsedGeometry, analysis } = await analyzeMeshFile(file)
+          const { analyzeMeshFile, volumeToCm3, estimateWeight } =
+            await import("@/shared/lib/stlParser");
+          const { geometry: parsedGeometry, analysis } =
+            await analyzeMeshFile(file);
           if (analysis.triangleCount > 2_000_000) {
-            showError(t('stl.tooComplex'))
-            setParsing(false)
-            return
+            showError(t("stl.tooComplex"));
+            setParsing(false);
+            return;
           }
-          setGeometry(parsedGeometry)
-          const volumeCm3 = volumeToCm3(analysis.volume)
-          const density = materialDensity ?? 1.24
-          const infill = infillPercent ?? 20
-          const weight = estimateWeight(volumeCm3, density, infill, 10)
-          const timeEstimate = estimatePrintTime(volumeCm3, analysis.dimensions)
+          setGeometry(parsedGeometry);
+          const volumeCm3 = volumeToCm3(analysis.volume);
+          const density = materialDensity ?? 1.24;
+          const infill = infillPercent ?? 20;
+          const weight = estimateWeight(volumeCm3, density, infill, 10);
+          const timeEstimate = estimatePrintTime(
+            volumeCm3,
+            analysis.dimensions,
+          );
           const result: FileParseResult = {
             geometry: parsedGeometry,
             analysis,
@@ -288,62 +328,62 @@ export function StlPreview({
             printTimeHours: timeEstimate.estimatedHours,
             dimensions: analysis.dimensions,
             triangleCount: analysis.triangleCount,
-          }
-          setModelInfo(result)
-          onFileParsed?.(result)
+          };
+          setModelInfo(result);
+          onFileParsed?.(result);
         }
       } catch {
-        showError(t('stl.error'))
+        showError(t("stl.error"));
       }
-      setParsing(false)
+      setParsing(false);
     },
     [t, onFileParsed, showError, materialDensity, infillPercent],
-  )
+  );
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (file) processFile(file)
+      const file = e.target.files?.[0];
+      if (file) processFile(file);
       // Reset input so same file can be re-selected
-      e.target.value = ''
+      e.target.value = "";
     },
     [processFile],
-  )
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragOver(true)
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragOver(false)
-  }, [])
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsDragOver(false)
-      const file = e.dataTransfer.files[0]
-      if (file) processFile(file)
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (file) processFile(file);
     },
     [processFile],
-  )
+  );
 
   const handleClick = useCallback(() => {
-    fileInputRef.current?.click()
-  }, [])
+    fileInputRef.current?.click();
+  }, []);
 
   const dropZoneText = parsing
-    ? t('stl.processing')
+    ? t("stl.processing")
     : isDragOver
-      ? t('stl.dropActive')
+      ? t("stl.dropActive")
       : isTouchDevice
-        ? t('stl.tapToSelect')
-        : t('stl.dropzone')
+        ? t("stl.tapToSelect")
+        : t("stl.dropzone");
 
   return (
     <div className="space-y-3">
@@ -370,33 +410,36 @@ export function StlPreview({
             text-center cursor-pointer transition-all duration-200
             focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none
             flex flex-col items-center gap-2
-            ${isDragOver
-              ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 scale-[1.02]'
-              : 'border-[var(--color-border)] hover:border-[var(--color-accent)] hover:bg-[var(--color-bg-hover)]'
+            ${
+              isDragOver
+                ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 scale-[1.02]"
+                : "border-[var(--color-border)] hover:border-[var(--color-accent)] hover:bg-[var(--color-bg-hover)]"
             }
-            ${parsing ? 'pointer-events-none opacity-70' : ''}
+            ${parsing ? "pointer-events-none opacity-70" : ""}
           `}
           aria-label={dropZoneText}
         >
           {parsing ? (
             <div className="flex flex-col items-center gap-2">
               <div className="w-6 h-6 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-[var(--color-accent)]">{dropZoneText}</p>
+              <p className="text-sm text-[var(--color-accent)]">
+                {dropZoneText}
+              </p>
             </div>
           ) : (
             <>
               <Upload
                 className={`w-6 h-6 transition-colors ${
                   isDragOver
-                    ? 'text-[var(--color-accent)]'
-                    : 'text-[var(--color-text-muted)]'
+                    ? "text-[var(--color-accent)]"
+                    : "text-[var(--color-text-muted)]"
                 }`}
               />
               <p
                 className={`text-sm transition-colors ${
                   isDragOver
-                    ? 'text-[var(--color-accent)] font-medium'
-                    : 'text-[var(--color-text-secondary)]'
+                    ? "text-[var(--color-accent)] font-medium"
+                    : "text-[var(--color-text-secondary)]"
                 }`}
               >
                 {dropZoneText}
@@ -434,13 +477,13 @@ export function StlPreview({
       {/* Fullscreen 3D Preview (portal overlay) */}
       {isFullscreen &&
         geometry &&
-        typeof document !== 'undefined' &&
+        typeof document !== "undefined" &&
         createPortal(
           <div
             className="fixed inset-0 z-[100] bg-black/90 p-3 sm:p-6"
             role="dialog"
             aria-modal="true"
-            aria-label={t('stl.fullscreen')}
+            aria-label={t("stl.fullscreen")}
           >
             <PreviewCanvas
               geometry={geometry}
@@ -458,7 +501,7 @@ export function StlPreview({
           {modelInfo.volumeCm3 > 0 && (
             <div className="surface rounded-lg p-2.5 text-center">
               <p className="text-[var(--color-text-muted)] mb-0.5">
-                {t('stl.volume')}
+                {t("stl.volume")}
               </p>
               <p className="font-semibold text-purple-400">
                 {modelInfo.volumeCm3.toFixed(1)} cm³
@@ -468,7 +511,7 @@ export function StlPreview({
           {modelInfo.weight > 0 && (
             <div className="surface rounded-lg p-2.5 text-center">
               <p className="text-[var(--color-text-muted)] mb-0.5">
-                {t('stl.weight')}
+                {t("stl.weight")}
               </p>
               <p className="font-semibold text-[var(--color-text-primary)]">
                 {modelInfo.weight.toFixed(1)} g
@@ -477,34 +520,51 @@ export function StlPreview({
           )}
           <div className="surface rounded-lg p-2.5 text-center">
             <p className="text-[var(--color-text-muted)] mb-0.5">
-              {t('stl.dimensions')}
+              {t("stl.dimensions")}
             </p>
             <p className="font-semibold text-[var(--color-text-primary)] text-[11px]">
-              {modelInfo.dimensions.x.toFixed(1)}×{modelInfo.dimensions.y.toFixed(1)}×{modelInfo.dimensions.z.toFixed(1)} mm
+              {modelInfo.dimensions.x.toFixed(1)}×
+              {modelInfo.dimensions.y.toFixed(1)}×
+              {modelInfo.dimensions.z.toFixed(1)} mm
             </p>
           </div>
           {modelInfo.triangleCount > 0 && (
             <div className="surface rounded-lg p-2.5 text-center">
               <p className="text-[var(--color-text-muted)] mb-0.5">
-                {t('stl.triangles')}
+                {t("stl.triangles")}
               </p>
               <p className="font-semibold text-[var(--color-text-primary)]">
                 {modelInfo.triangleCount.toLocaleString()}
               </p>
             </div>
           )}
-          {modelInfo.printTimeHours > 0 && (
-            <div className="surface rounded-lg p-2.5 text-center">
-              <p className="text-[var(--color-text-muted)] mb-0.5">
-                {t('stl.printTime')}
-              </p>
-              <p className="font-semibold text-emerald-400">
-                {modelInfo.printTimeHours.toFixed(1)} h
-              </p>
-            </div>
-          )}
+          <div className="surface rounded-lg p-2.5 text-center">
+            <p className="text-[var(--color-text-muted)] mb-0.5">
+              {t("stl.printTime")}
+            </p>
+            <p className="font-semibold text-emerald-400">
+              {modelInfo.printTimeHours > 0
+                ? `${modelInfo.printTimeHours.toFixed(1)} h`
+                : "—"}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Clear button for GCODE (no geometry) — drop zone is also visible, but this gives an explicit clear action */}
+      {modelInfo && !geometry && onClear && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleClear}
+            aria-label={t("stl.clear")}
+            title={t("stl.clear")}
+            className={toolbarButtonClass}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>
-  )
+  );
 }

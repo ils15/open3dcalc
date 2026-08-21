@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### 🐛 Bug Fixes
+
+- **gcode:** não ignora gcode sem TIME header e suporta formato Prusa/Orca (closes #32) — remove gate silencioso `if(printTimeMinutes>0)` em `StlPreview.tsx:242`, parser `d/h/m/s` (`1h 23m 45s`/`2d 5h`/`45m 30s`) em `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` no branch GCODE, drop zone permanece visível (`!modelInfo?.geometry`), botão 🗑️ `stl.clear` para GCODE, 13 testes novos (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolvido
+
 ## v1.9.2
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.9.1...v1.9.2)
@@ -88,17 +94,20 @@
 ## v1.8.0 — Bifrost UI Redesign (2026-06-29)
 
 ### 🎨 UI/UX
+
 - Redesign Bifrost: superfícies planas, sem glassmorphism
 - Tema claro/escuro no web
 - Badges retangulares (6px), border-radius reduzido (14px)
 - Sistema de CSS variables unificado
 
 ### 🔧 Técnico
+
 - Codebase unificada em monorepo (`src/shared/` + `src/platform/`)
 - Git migrado para raiz (história preservada)
 - `web/` e `desktop/` mantidos para referência histórica
 
 ### ✅ Testes
+
 - 417 testes, 36/36 arquivos passando
 - Cobertura >80%
 
