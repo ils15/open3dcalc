@@ -55,7 +55,7 @@
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.0.0",
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^25.9.0",
+    "@types/node": "^26.2.0",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.184.0",
     "@vitejs/plugin-react": "^6.0.0",
