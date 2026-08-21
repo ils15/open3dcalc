@@ -59,7 +59,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.184.0",
     "@vitejs/plugin-react": "^6.0.0",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@vitest/coverage-v8": "^4.1.11",
     "changelogen": "0.6.2",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
