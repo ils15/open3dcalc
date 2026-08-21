@@ -656,6 +656,45 @@
     },
     "versions": [
       {
+        "version": "1.9.3",
+        "date": "",
+        "sections": [
+          {
+            "title": "🚀 Features",
+            "items": [
+              "**release:** Deterministic audited English release notes generator (dry-run) (#26)",
+              "**stlpreview:** Auto-fit camera, fullscreen overlay and clear model (#29)",
+              "**changelog:** Sync in-app changelog automatically on release (#31)"
+            ]
+          },
+          {
+            "title": "🐛 Fixes",
+            "items": [
+              "**release:** Correct notes generator normalization and nested commit titles (#27)",
+              "**release:** Scope notes per tag range with root commit and hardened URLs (#28)",
+              "**layout:** Responsive calculator columns for complete mode (#30)",
+              "**changelog:** Localize version cards and polish header controls (#33)",
+              "**layout:** Results sidebar only with space, portal dropdowns, ultrawide shell (#34)",
+              "**gcode:** Não ignora gcode sem TIME header e suporta Prusa/Orca (#32, #51)",
+              "**gcode:** não ignora gcode sem TIME header e suporta formato Prusa/Orca (closes #32) — remove gate silencioso `if(printTimeMinutes>0)` em `StlPreview.tsx:242`, parser `d/h/m/s` (`1h 23m 45s`/`2d 5h`/`45m 30s`) em `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` no branch GCODE, drop zone permanece visível (`!modelInfo?.geometry`), botão `stl.clear` para GCODE, 13 testes novos (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolvido"
+            ]
+          },
+          {
+            "title": "🧹 Other",
+            "items": [
+              "**ci:** Pre-commit — gitleaks + guardião .env + AI Bifrost (9afa29b)",
+              "**ci:** Security phase 2 — deepwork CI/CD, pre-commit and scan (fe56338)"
+            ]
+          },
+          {
+            "title": "❤️ Contributors",
+            "items": [
+              "Ils15 (@ils15)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "1.9.2",
         "date": "",
         "sections": [
@@ -693,7 +732,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -777,7 +818,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -793,11 +836,15 @@
           },
           {
             "title": "🧹 Other",
-            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
+            "items": [
+              "**release:** V1.8.1 [skip ci] (079945e)"
+            ]
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -829,7 +876,10 @@
           },
           {
             "title": "✅ Testes",
-            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
+            "items": [
+              "417 testes, 36/36 arquivos passando",
+              "Cobertura >80%"
+            ]
           }
         ]
       },

@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.9.3
+
+[compare changes](https://github.com/ils15/open3dcalc/compare/v1.9.2...v1.9.3)
+
+### 🚀 Enhancements
+
+- **release:** Deterministic audited English release notes generator (dry-run) ([#26](https://github.com/ils15/open3dcalc/pull/26))
+- **stlpreview:** Auto-fit camera, fullscreen overlay and clear model ([#29](https://github.com/ils15/open3dcalc/pull/29))
+- **changelog:** Sync in-app changelog automatically on release ([#31](https://github.com/ils15/open3dcalc/pull/31))
+
+### 🩹 Fixes
+
+- **release:** Correct notes generator normalization and nested commit titles ([#27](https://github.com/ils15/open3dcalc/pull/27))
+- **release:** Scope notes per tag range with root commit and hardened URLs ([#28](https://github.com/ils15/open3dcalc/pull/28))
+- **layout:** Responsive calculator columns for complete mode ([#30](https://github.com/ils15/open3dcalc/pull/30))
+- **changelog:** Localize version cards and polish header controls ([#33](https://github.com/ils15/open3dcalc/pull/33))
+- **layout:** Results sidebar only with space, portal dropdowns, ultrawide shell ([#34](https://github.com/ils15/open3dcalc/pull/34))
+- **gcode:** Não ignora gcode sem TIME header e suporta Prusa/Orca ([#32](https://github.com/ils15/open3dcalc/pull/32), [#51](https://github.com/ils15/open3dcalc/pull/51))
+
+### 🏡 Chore
+
+- **ci:** Pre-commit — gitleaks + guardião .env + AI Bifrost ([9afa29b](https://github.com/ils15/open3dcalc/commit/9afa29b))
+- **ci:** Security phase 2 — deepwork CI/CD, pre-commit and scan ([fe56338](https://github.com/ils15/open3dcalc/commit/fe56338))
+
+### ❤️ Contributors
+
+- Ils15 ([@ils15](https://github.com/ils15))
+
 ## Unreleased
 
 ### 🐛 Bug Fixes
