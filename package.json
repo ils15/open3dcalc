@@ -62,7 +62,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "changelogen": "0.6.2",
     "concurrently": "^10.0.5",
-    "cross-env": "^7.0.3",
+    "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.10",
     "electron": "^43.4.0",
     "electron-builder": "^26.0.0",
