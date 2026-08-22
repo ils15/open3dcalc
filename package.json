@@ -58,7 +58,7 @@
     "@types/node": "^26.2.0",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.184.0",
-    "@vitejs/plugin-react": "^6.0.0",
+    "@vitejs/plugin-react": "^6.0.5",
     "@vitest/coverage-v8": "^4.1.11",
     "changelogen": "0.6.2",
     "concurrently": "^10.0.5",
