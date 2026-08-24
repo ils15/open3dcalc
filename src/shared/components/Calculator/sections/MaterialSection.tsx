@@ -70,18 +70,27 @@ export function MaterialSection({
       }
       // Update weight / material usage
       if (data.weight > 0) {
-        if (store.fdmAmsEnabled) {
-          const idx = store.fdmAmsSlots.findIndex((s) => s.enabled);
-          if (idx >= 0) {
-            const slot = {
-              ...store.fdmAmsSlots[idx],
-              weightUsedGrams: data.weight,
-            };
-            store.setFdmAmsSlot(idx, slot);
+        if (isFDM) {
+          if (store.fdmAmsEnabled) {
+            const idx = store.fdmAmsSlots.findIndex((s) => s.enabled);
+            if (idx >= 0) {
+              const slot = {
+                ...store.fdmAmsSlots[idx],
+                weightUsedGrams: data.weight,
+              };
+              store.setFdmAmsSlot(idx, slot);
+            }
+          } else {
+            store.setFdmMaterial({
+              ...store.fdmMaterial,
+              weightUsed: data.weight,
+            });
           }
         } else {
-          store.setFdmMaterial({
-            ...store.fdmMaterial,
+          // Resin: model volume (cm³) → ml with ~10% waste factor; weight wired to store
+          store.setResinMaterial({
+            ...store.resinMaterial,
+            volumeUsedMl: parseFloat((data.volumeCm3 * 1.1).toFixed(1)),
             weightUsed: data.weight,
           });
         }
@@ -109,6 +118,11 @@ export function MaterialSection({
       store.setResinPrintParams({
         ...store.resinPrintParams,
         printTimeHours: 0,
+      });
+      store.setResinMaterial({
+        ...store.resinMaterial,
+        volumeUsedMl: 0,
+        weightUsed: 0,
       });
     }
   }, [store, isFDM]);
@@ -577,6 +591,15 @@ export function MaterialSection({
               tooltip={t("tooltip.wasteMargin")}
             />
           )}
+          <div className="w-full min-w-0 @form:col-span-2">
+            <StlPreview
+              onFileParsed={handleStlParsed}
+              onClear={handleStlClear}
+              materialDensity={store.resinMaterial.density}
+              infillPercent={100}
+              printerPowerWatts={store.resinPrintParams.printerPowerWatts}
+            />
+          </div>
         </div>
       )}
     </div>

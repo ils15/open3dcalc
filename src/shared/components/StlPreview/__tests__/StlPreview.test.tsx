@@ -34,6 +34,20 @@ vi.mock("@react-three/drei", () => ({
 vi.mock("three/examples/jsm/loaders/STLLoader", () => ({ STLLoader: vi.fn() }));
 vi.mock("three/examples/jsm/loaders/OBJLoader", () => ({ OBJLoader: vi.fn() }));
 
+// Mock the STL parser so STL drops can be tested without real parsing
+const { mockAnalyzeMeshFile } = vi.hoisted(() => ({
+  mockAnalyzeMeshFile: vi.fn(),
+}));
+
+vi.mock("@/shared/lib/stlParser", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/shared/lib/stlParser")>();
+  return {
+    ...actual,
+    analyzeMeshFile: mockAnalyzeMeshFile,
+  };
+});
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createMockGeometry(overrides: Record<string, any> = {}): any {
   return {
@@ -404,6 +418,111 @@ describe("StlPreview", () => {
       expect(clearBtn).toBeInTheDocument();
       await userEvent.setup().click(clearBtn);
       expect(onClear).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("support estimation toggle", () => {
+    const stlFile = () =>
+      new File(
+        [
+          "solid test\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid test",
+        ],
+        "test.stl",
+        { type: "" },
+      );
+
+    const mockAnalysis = {
+      triangleCount: 100,
+      vertexCount: 300,
+      dimensions: { x: 10, y: 10, z: 10 },
+      volume: 1000,
+      surfaceArea: 600,
+      boundingBox: {
+        min: { x: 0, y: 0, z: 0 },
+        max: { x: 10, y: 10, z: 10 },
+      },
+      integrity: { valid: true, issues: [] },
+      supportVolumeCm3: 0.5,
+    };
+
+    beforeEach(() => {
+      mockAnalyzeMeshFile.mockResolvedValue({
+        geometry: createMockGeometry(),
+        analysis: mockAnalysis,
+      });
+    });
+
+    it("parses without support estimation by default and hides support weight", async () => {
+      const onFileParsed = vi.fn();
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      const dropZone = screen.getByRole("button", { name: /stl\./ });
+
+      fireEvent.drop(dropZone, {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      expect(mockAnalyzeMeshFile).toHaveBeenLastCalledWith(
+        expect.any(File),
+        expect.objectContaining({ estimateSupport: false }),
+      );
+      // Toggle is visible in the info panel
+      expect(
+        screen.getByRole("checkbox", { name: "stl.estimateSupport" }),
+      ).toBeInTheDocument();
+      // Support weight NOT shown while disabled
+      expect(screen.queryByText(/stl\.supportWeight/)).not.toBeInTheDocument();
+    });
+
+    it("re-parses with estimateSupport: true when toggled and shows support weight", async () => {
+      const onFileParsed = vi.fn();
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      const dropZone = screen.getByRole("button", { name: /stl\./ });
+      const file = stlFile();
+
+      fireEvent.drop(dropZone, {
+        dataTransfer: { files: [file], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      const toggle = screen.getByRole("checkbox", {
+        name: "stl.estimateSupport",
+      });
+      expect(toggle).not.toBeChecked();
+
+      await userEvent.setup().click(toggle);
+
+      await waitFor(() =>
+        expect(mockAnalyzeMeshFile).toHaveBeenLastCalledWith(
+          file,
+          expect.objectContaining({ estimateSupport: true }),
+        ),
+      );
+      // Support weight shown below the weight (0.5 cm³ × 1.24 g/cm³ = 0.6 g)
+      await waitFor(() =>
+        expect(screen.getByText(/stl\.supportWeight/)).toBeInTheDocument(),
+      );
+      expect(screen.getByText(/stl\.supportWeight/)).toHaveTextContent("0.6 g");
+    });
+
+    it("parses with estimateSupport: true when the prop is enabled", async () => {
+      const onFileParsed = vi.fn();
+      render(<StlPreview estimateSupport onFileParsed={onFileParsed} />);
+      const dropZone = screen.getByRole("button", { name: /stl\./ });
+
+      fireEvent.drop(dropZone, {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      expect(mockAnalyzeMeshFile).toHaveBeenLastCalledWith(
+        expect.any(File),
+        expect.objectContaining({ estimateSupport: true }),
+      );
+      // Toggle starts checked
+      expect(
+        screen.getByRole("checkbox", { name: "stl.estimateSupport" }),
+      ).toBeChecked();
     });
   });
 });

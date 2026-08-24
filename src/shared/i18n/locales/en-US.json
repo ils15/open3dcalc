@@ -432,7 +432,9 @@
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit fullscreen",
     "clear": "Clear model",
-    "fit": "Fit view"
+    "fit": "Fit view",
+    "estimateSupport": "Estimate support",
+    "supportWeight": "Estimated support"
   },
   "common": {
     "save": "Save",
@@ -1318,6 +1320,7 @@
       "modeReplace": "Replace all",
       "modeMergeDesc": "Add new data, update existing",
       "modeReplaceDesc": "Remove all current data and replace with imported",
+      "replaceConfirm": "Are you sure? This will replace ALL current data with the data from the file. This action cannot be undone.",
       "button": "Import Data",
       "success": "Data imported successfully",
       "importing": "Importing data...",

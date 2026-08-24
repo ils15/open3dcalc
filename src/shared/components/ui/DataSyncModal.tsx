@@ -90,6 +90,7 @@ function DataSyncModalContent({
   const [importPassword, setImportPassword] = useState("");
   const [showImportPassword, setShowImportPassword] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>("merge");
+  const [confirmReplace, setConfirmReplace] = useState(false);
   const [importPhase, setImportPhase] = useState<Phase>("idle");
   const [importResult, setImportResult] = useState<DataSyncImportResult | null>(
     null,
@@ -167,6 +168,7 @@ function DataSyncModalContent({
     setImportPhase("idle");
     setImportResult(null);
     setImportError(null);
+    setConfirmReplace(false);
     if (!file) {
       setFileEncrypted(false);
       return;
@@ -180,6 +182,12 @@ function DataSyncModalContent({
 
   const handleImport = async () => {
     if (!importFile || importPhase === "working") return;
+    // "Replace all" is destructive — require explicit confirmation first.
+    if (importMode === "replace" && !confirmReplace) {
+      setConfirmReplace(true);
+      return;
+    }
+    setConfirmReplace(false);
     setImportPhase("working");
     setImportResult(null);
     setImportError(null);
@@ -197,6 +205,11 @@ function DataSyncModalContent({
       );
       setImportPhase("error");
     }
+  };
+
+  const handleModeChange = (mode: ImportMode) => {
+    setImportMode(mode);
+    setConfirmReplace(false);
   };
 
   return (
@@ -279,7 +292,10 @@ function DataSyncModalContent({
               showImportPassword={showImportPassword}
               setShowImportPassword={setShowImportPassword}
               mode={importMode}
-              setMode={setImportMode}
+              setMode={handleModeChange}
+              confirmReplace={confirmReplace}
+              onConfirmReplace={handleImport}
+              onCancelReplace={() => setConfirmReplace(false)}
               phase={importPhase}
               result={importResult}
               error={importError}
@@ -483,6 +499,9 @@ interface ImportTabProps {
   setShowImportPassword: React.Dispatch<React.SetStateAction<boolean>>;
   mode: ImportMode;
   setMode: (m: ImportMode) => void;
+  confirmReplace: boolean;
+  onConfirmReplace: () => void;
+  onCancelReplace: () => void;
   phase: Phase;
   result: DataSyncImportResult | null;
   error: "invalid" | "wrongPassword" | null;
@@ -502,6 +521,9 @@ function ImportTab({
   setShowImportPassword,
   mode,
   setMode,
+  confirmReplace,
+  onConfirmReplace,
+  onCancelReplace,
   phase,
   result,
   error,
@@ -626,10 +648,40 @@ function ImportTab({
         </div>
       </fieldset>
 
+      {confirmReplace && (
+        <div
+          role="alert"
+          className="p-3 rounded-xl bg-[var(--color-warning-muted)] border border-[var(--color-warning)] space-y-3"
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-[var(--color-warning)]" />
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              {t("sync.import.replaceConfirm")}
+            </p>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onCancelReplace}
+              className="px-4 py-2 rounded-lg text-sm font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirmReplace}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-[var(--color-danger)] text-white hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            >
+              {t("common.confirm")}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         <button
           onClick={onImport}
-          disabled={!file || phase === "working"}
+          disabled={!file || phase === "working" || confirmReplace}
           className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           <Upload className="w-4 h-4" />

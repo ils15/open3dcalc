@@ -432,7 +432,9 @@
     "fullscreen": "Tela cheia",
     "exitFullscreen": "Sair da tela cheia",
     "clear": "Limpar modelo",
-    "fit": "Encaixar"
+    "fit": "Encaixar",
+    "estimateSupport": "Estimar suporte",
+    "supportWeight": "Suporte estimado"
   },
   "common": {
     "save": "Salvar",
@@ -1318,6 +1320,7 @@
       "modeReplace": "Substituir tudo",
       "modeMergeDesc": "Adiciona dados novos, atualiza existentes",
       "modeReplaceDesc": "Remove todos os dados atuais e substitui pelos importados",
+      "replaceConfirm": "Tem certeza? Isso substituirá TODOS os dados atuais pelos dados do arquivo. Esta ação não pode ser desfeita.",
       "button": "Importar Dados",
       "success": "Dados importados com sucesso",
       "importing": "Importando dados...",

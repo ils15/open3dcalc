@@ -24,6 +24,10 @@ export interface FileParseResult {
   printTimeHours: number;
   dimensions: { x: number; y: number; z: number };
   triangleCount: number;
+  /** Estimated support material volume in cm³ (only when estimateSupport is enabled). */
+  supportVolumeCm3?: number;
+  /** Estimated support material weight in grams (only when estimateSupport is enabled). */
+  supportWeightGrams?: number;
 }
 
 interface StlPreviewProps {
@@ -44,6 +48,8 @@ interface StlPreviewProps {
   wallCount?: number;
   /** Printer power draw in watts (from store fdmPrintParams / selectedPrinter). */
   printerPowerWatts?: number;
+  /** When true, estimates support material volume from overhang triangles. Default false. */
+  estimateSupport?: boolean;
   /** Called when the user clears the loaded model from the viewer. */
   onClear?: () => void;
 }
@@ -206,10 +212,12 @@ export function StlPreview({
   speed,
   wallCount,
   printerPowerWatts,
+  estimateSupport = false,
   onClear,
 }: StlPreviewProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastFileRef = useRef<File | null>(null);
   const [geometry, setGeometry] = useState<BufferGeometry | null>(
     initialGeometry,
   );
@@ -218,6 +226,7 @@ export function StlPreview({
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [supportEnabled, setSupportEnabled] = useState(estimateSupport);
   const isTouchDevice = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -257,7 +266,9 @@ export function StlPreview({
   );
 
   const processFile = useCallback(
-    async (file: File) => {
+    async (file: File, supportFlag?: boolean) => {
+      const estimateSupportFlag = supportFlag ?? supportEnabled;
+      lastFileRef.current = file;
       const ext = file.name.split(".").pop()?.toLowerCase();
       if (!ext || !["stl", "obj", "3mf", "gcode"].includes(ext)) {
         showError(t("stl.invalidFile"));
@@ -316,8 +327,14 @@ export function StlPreview({
         } else {
           const { analyzeMeshFile, volumeToCm3, estimateWeight } =
             await import("@/shared/lib/stlParser");
-          const { geometry: parsedGeometry, analysis } =
-            await analyzeMeshFile(file);
+          const { geometry: parsedGeometry, analysis } = await analyzeMeshFile(
+            file,
+            {
+              estimateSupport: estimateSupportFlag,
+              layerHeight,
+              supportDensity: 0.15,
+            },
+          );
           if (analysis.triangleCount > 2_000_000) {
             showError(t("stl.tooComplex"));
             setParsing(false);
@@ -345,6 +362,11 @@ export function StlPreview({
             printTimeHours: timeEstimate.estimatedHours,
             dimensions: analysis.dimensions,
             triangleCount: analysis.triangleCount,
+            supportVolumeCm3: analysis.supportVolumeCm3,
+            supportWeightGrams:
+              analysis.supportVolumeCm3 != null
+                ? parseFloat((analysis.supportVolumeCm3 * density).toFixed(2))
+                : undefined,
           };
           setModelInfo(result);
           onFileParsed?.(result);
@@ -364,8 +386,18 @@ export function StlPreview({
       speed,
       wallCount,
       printerPowerWatts,
+      supportEnabled,
     ],
   );
+
+  const handleToggleSupport = useCallback(() => {
+    const next = !supportEnabled;
+    setSupportEnabled(next);
+    // Re-parse the last loaded model with the new support estimation flag
+    if (lastFileRef.current) {
+      void processFile(lastFileRef.current, next);
+    }
+  }, [supportEnabled, processFile]);
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -524,56 +556,75 @@ export function StlPreview({
 
       {/* Model Info Panel */}
       {modelInfo && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-          {modelInfo.volumeCm3 > 0 && (
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={supportEnabled}
+              onChange={handleToggleSupport}
+              className="w-4 h-4 accent-[var(--color-accent)]"
+            />
+            <span className="text-[var(--color-text-secondary)]">
+              {t("stl.estimateSupport")}
+            </span>
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+            {modelInfo.volumeCm3 > 0 && (
+              <div className="surface rounded-lg p-2.5 text-center">
+                <p className="text-[var(--color-text-muted)] mb-0.5">
+                  {t("stl.volume")}
+                </p>
+                <p className="font-semibold text-purple-400">
+                  {modelInfo.volumeCm3.toFixed(1)} cm³
+                </p>
+              </div>
+            )}
+            {modelInfo.weight > 0 && (
+              <div className="surface rounded-lg p-2.5 text-center">
+                <p className="text-[var(--color-text-muted)] mb-0.5">
+                  {t("stl.weight")}
+                </p>
+                <p className="font-semibold text-[var(--color-text-primary)]">
+                  {modelInfo.weight.toFixed(1)} g
+                </p>
+                {supportEnabled && modelInfo.supportWeightGrams != null && (
+                  <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
+                    {t("stl.supportWeight")}:{" "}
+                    {modelInfo.supportWeightGrams.toFixed(1)} g
+                  </p>
+                )}
+              </div>
+            )}
             <div className="surface rounded-lg p-2.5 text-center">
               <p className="text-[var(--color-text-muted)] mb-0.5">
-                {t("stl.volume")}
+                {t("stl.dimensions")}
               </p>
-              <p className="font-semibold text-purple-400">
-                {modelInfo.volumeCm3.toFixed(1)} cm³
+              <p className="font-semibold text-[var(--color-text-primary)] text-[11px]">
+                {modelInfo.dimensions.x.toFixed(1)}×
+                {modelInfo.dimensions.y.toFixed(1)}×
+                {modelInfo.dimensions.z.toFixed(1)} mm
               </p>
             </div>
-          )}
-          {modelInfo.weight > 0 && (
+            {modelInfo.triangleCount > 0 && (
+              <div className="surface rounded-lg p-2.5 text-center">
+                <p className="text-[var(--color-text-muted)] mb-0.5">
+                  {t("stl.triangles")}
+                </p>
+                <p className="font-semibold text-[var(--color-text-primary)]">
+                  {modelInfo.triangleCount.toLocaleString()}
+                </p>
+              </div>
+            )}
             <div className="surface rounded-lg p-2.5 text-center">
               <p className="text-[var(--color-text-muted)] mb-0.5">
-                {t("stl.weight")}
+                {t("stl.printTime")}
               </p>
-              <p className="font-semibold text-[var(--color-text-primary)]">
-                {modelInfo.weight.toFixed(1)} g
-              </p>
-            </div>
-          )}
-          <div className="surface rounded-lg p-2.5 text-center">
-            <p className="text-[var(--color-text-muted)] mb-0.5">
-              {t("stl.dimensions")}
-            </p>
-            <p className="font-semibold text-[var(--color-text-primary)] text-[11px]">
-              {modelInfo.dimensions.x.toFixed(1)}×
-              {modelInfo.dimensions.y.toFixed(1)}×
-              {modelInfo.dimensions.z.toFixed(1)} mm
-            </p>
-          </div>
-          {modelInfo.triangleCount > 0 && (
-            <div className="surface rounded-lg p-2.5 text-center">
-              <p className="text-[var(--color-text-muted)] mb-0.5">
-                {t("stl.triangles")}
-              </p>
-              <p className="font-semibold text-[var(--color-text-primary)]">
-                {modelInfo.triangleCount.toLocaleString()}
+              <p className="font-semibold text-emerald-400">
+                {modelInfo.printTimeHours > 0
+                  ? `${modelInfo.printTimeHours.toFixed(1)} h`
+                  : "—"}
               </p>
             </div>
-          )}
-          <div className="surface rounded-lg p-2.5 text-center">
-            <p className="text-[var(--color-text-muted)] mb-0.5">
-              {t("stl.printTime")}
-            </p>
-            <p className="font-semibold text-emerald-400">
-              {modelInfo.printTimeHours > 0
-                ? `${modelInfo.printTimeHours.toFixed(1)} h`
-                : "—"}
-            </p>
           </div>
         </div>
       )}
