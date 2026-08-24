@@ -36,6 +36,14 @@ interface StlPreviewProps {
   materialDensity?: number;
   /** Calculator infill percentage. Default 20. */
   infillPercent?: number;
+  /** Layer height in mm (from store fdmPrintParams). Default 0.2. */
+  layerHeight?: number;
+  /** Print speed in mm/s (from store fdmPrintParams). Default 60. */
+  speed?: number;
+  /** Number of perimeter walls (from store fdmPrintParams). Default 3. */
+  wallCount?: number;
+  /** Printer power draw in watts (from store fdmPrintParams / selectedPrinter). */
+  printerPowerWatts?: number;
   /** Called when the user clears the loaded model from the viewer. */
   onClear?: () => void;
 }
@@ -194,6 +202,10 @@ export function StlPreview({
   standalone = false,
   materialDensity,
   infillPercent,
+  layerHeight,
+  speed,
+  wallCount,
+  printerPowerWatts,
   onClear,
 }: StlPreviewProps) {
   const { t } = useTranslation();
@@ -316,10 +328,15 @@ export function StlPreview({
           const density = materialDensity ?? 1.24;
           const infill = infillPercent ?? 20;
           const weight = estimateWeight(volumeCm3, density, infill, 10);
-          const timeEstimate = estimatePrintTime(
+          const timeEstimate = estimatePrintTime({
             volumeCm3,
-            analysis.dimensions,
-          );
+            dimensions: analysis.dimensions,
+            layerHeight,
+            speed,
+            infillPercent: infill,
+            wallCount,
+            printerPowerWatts,
+          });
           const result: FileParseResult = {
             geometry: parsedGeometry,
             analysis,
@@ -337,7 +354,17 @@ export function StlPreview({
       }
       setParsing(false);
     },
-    [t, onFileParsed, showError, materialDensity, infillPercent],
+    [
+      t,
+      onFileParsed,
+      showError,
+      materialDensity,
+      infillPercent,
+      layerHeight,
+      speed,
+      wallCount,
+      printerPowerWatts,
+    ],
   );
 
   const handleFileSelect = useCallback(
