@@ -105,6 +105,17 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   };
 }
 
+/**
+ * Billable hours with centi-hour precision for the profit/hr rate (Fase 2 #70).
+ * Unlike `estimatedHours` (1 decimal, display-oriented), this keeps 2 decimals
+ * so the `totalHours = (print + post + setup) / 60` denominator stays accurate.
+ * Returns 0 for non-finite or non-positive inputs (never NaN).
+ */
+export function estimatedHoursPrecise(estimatedMinutes: number): number {
+  if (!Number.isFinite(estimatedMinutes) || estimatedMinutes <= 0) return 0;
+  return Math.round((estimatedMinutes / 60) * 100) / 100;
+}
+
 export function estimatePrintTimeFromDimensions(
   widthMm: number,
   depthMm: number,

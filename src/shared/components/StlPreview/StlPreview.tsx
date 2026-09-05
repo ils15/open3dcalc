@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import type { BufferGeometry } from "three";
 import type { MeshAnalysis } from "@/shared/lib/stlParser";
-import { estimatePrintTime } from "@/shared/lib/printTimeEstimator";
+import {
+  estimatePrintTime,
+  estimatedHoursPrecise,
+} from "@/shared/lib/printTimeEstimator";
 
 export interface FileParseResult {
   geometry: BufferGeometry | null;
@@ -359,7 +362,10 @@ export function StlPreview({
             analysis,
             volumeCm3,
             weight: parseFloat(weight.toFixed(2)),
-            printTimeHours: timeEstimate.estimatedHours,
+            // 2-decimal hours keep the profit/hr denominator accurate (Fase 2 #70)
+            printTimeHours: estimatedHoursPrecise(
+              timeEstimate.estimatedMinutes,
+            ),
             dimensions: analysis.dimensions,
             triangleCount: analysis.triangleCount,
             supportVolumeCm3: analysis.supportVolumeCm3,
@@ -619,7 +625,15 @@ export function StlPreview({
               <p className="text-[var(--color-text-muted)] mb-0.5">
                 {t("stl.printTime")}
               </p>
-              <p className="font-semibold text-emerald-400">
+              <p
+                className="font-semibold text-emerald-400"
+                title={t("stl.printTimeProfitHint")}
+                aria-label={`${t("stl.printTime")}: ${
+                  modelInfo.printTimeHours > 0
+                    ? `${modelInfo.printTimeHours.toFixed(1)} h`
+                    : "—"
+                }`}
+              >
                 {modelInfo.printTimeHours > 0
                   ? `${modelInfo.printTimeHours.toFixed(1)} h`
                   : "—"}
