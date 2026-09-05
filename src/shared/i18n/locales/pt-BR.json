@@ -692,6 +692,51 @@
     },
     "versions": [
       {
+        "version": "1.11.0",
+        "date": "",
+        "sections": [
+          {
+            "title": "🚀 Novidades",
+            "items": [
+              "**sync:** Add text label to DataSyncButton for better visibility (a6da01d)",
+              "UI/UX improvements — STL support estimation, Resin preview, safety fixes (#57)",
+              "**calc:** Exibe lucro por hora (profit/hr) FDM+Resina (#77)",
+              "**products:** Cadastro produtos + vendido + CSV + sync (#78)"
+            ]
+          },
+          {
+            "title": "🐛 Correções",
+            "items": [
+              "**ci:** Remove v1.10.0 exclusion and sync changelog (7794266)",
+              "**dashboard:** Replace React.lazy with static recharts imports to fix #7463 crash (#7463)",
+              "**3mf:** Segue p:path da production extension e corrige volume 3x maior (#72)",
+              "**estimators:** Casca por area de superficie e fisica da extrusao no… (#73)",
+              "**release:** Windows exe + auto-update resiliente (#76)",
+              "**release:** Join --body into single quoted string in release PR step (#79)"
+            ]
+          },
+          {
+            "title": "✅ Tests",
+            "items": [
+              "Increase ChangelogPage test timeout to 15s for CI stability (1bee06d)"
+            ]
+          },
+          {
+            "title": "🤖 CI/CD",
+            "items": [
+              "Split quality into checks+test and run on fork PRs (#74)"
+            ]
+          },
+          {
+            "title": "❤️ Contribuidores",
+            "items": [
+              "Ils15 (@ils15)",
+              "Lupolima"
+            ]
+          }
+        ]
+      },
+      {
         "version": "1.10.0",
         "date": "",
         "sections": [
@@ -712,7 +757,9 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -749,7 +796,9 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -791,7 +840,9 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -875,7 +926,9 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -891,11 +944,15 @@
           },
           {
             "title": "🧹 Outros",
-            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
+            "items": [
+              "**release:** V1.8.1 [skip ci] (079945e)"
+            ]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -927,7 +984,10 @@
           },
           {
             "title": "✅ Testes",
-            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
+            "items": [
+              "417 testes, 36/36 arquivos passando",
+              "Cobertura >80%"
+            ]
           }
         ]
       },

@@ -1,5 +1,38 @@
 # Changelog
 
+## v1.11.0
+
+[compare changes](https://github.com/ils15/open3dcalc/compare/v1.10.0...v1.11.0)
+
+### 🚀 Enhancements
+
+- **sync:** Add text label to DataSyncButton for better visibility ([a6da01d](https://github.com/ils15/open3dcalc/commit/a6da01d))
+- UI/UX improvements — STL support estimation, Resin preview, safety fixes ([#57](https://github.com/ils15/open3dcalc/pull/57))
+- **calc:** Exibe lucro por hora (profit/hr) FDM+Resina ([#77](https://github.com/ils15/open3dcalc/pull/77))
+- **products:** Cadastro produtos + vendido + CSV + sync ([#78](https://github.com/ils15/open3dcalc/pull/78))
+
+### 🩹 Fixes
+
+- **ci:** Remove v1.10.0 exclusion and sync changelog ([7794266](https://github.com/ils15/open3dcalc/commit/7794266))
+- **dashboard:** Replace React.lazy with static recharts imports to fix #7463 crash ([#7463](https://github.com/ils15/open3dcalc/issues/7463))
+- **3mf:** Segue p:path da production extension e corrige volume 3x maior ([#72](https://github.com/ils15/open3dcalc/pull/72))
+- **estimators:** Casca por area de superficie e fisica da extrusao no… ([#73](https://github.com/ils15/open3dcalc/pull/73))
+- **release:** Windows exe + auto-update resiliente ([#76](https://github.com/ils15/open3dcalc/pull/76))
+- **release:** Join --body into single quoted string in release PR step ([#79](https://github.com/ils15/open3dcalc/pull/79))
+
+### ✅ Tests
+
+- Increase ChangelogPage test timeout to 15s for CI stability ([1bee06d](https://github.com/ils15/open3dcalc/commit/1bee06d))
+
+### 🤖 CI
+
+- Split quality into checks+test and run on fork PRs ([#74](https://github.com/ils15/open3dcalc/pull/74))
+
+### ❤️ Contributors
+
+- Ils15 ([@ils15](https://github.com/ils15))
+- Lupolima <lucasguilherme_@hotmail.com>
+
 ## v1.10.0
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.9.3...v1.10.0)
