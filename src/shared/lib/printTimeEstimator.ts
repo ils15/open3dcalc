@@ -1,3 +1,9 @@
+import {
+  DEFAULT_FILAMENT_FAMILY,
+  maxVolumetricSpeedFor,
+  type FilamentFamily,
+} from "./filamentProfiles";
+
 export interface PrintTimeEstimate {
   estimatedMinutes: number;
   estimatedHours: number;
@@ -5,95 +11,179 @@ export interface PrintTimeEstimate {
   travelDistanceMm: number;
   filamentLengthMm: number;
   confidence: "low" | "medium" | "high";
+  /**
+   * Sempre `"rough_estimate"`: aproximação pré-slice (±30%, ver
+   * `docs/estimators-model.md`). Só um fatiador de verdade crava o tempo.
+   */
+  kind: "rough_estimate";
 }
 
+/** Dimensões da bounding box em mm. */
+export interface DimensionsMm {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/**
+ * Parâmetros do estimador de tempo.
+ *
+ * Todo campo afeta o cálculo — params-fantasma (`wallCount`, `infillPercent`,
+ * `printerPowerWatts`, `nozzleDiameterMm`, `topBottomLayers`, que só
+ * alimentavam o rótulo de confiança) foram removidos em favor das entradas
+ * que movem o número: volume extrudado, geometria da fita, velocidades e
+ * material (MVS). Unidades canônicas vão no nome. Defaults em
+ * `docs/estimators-model.md`.
+ */
 export interface PrintTimeParams {
-  /** Model volume in cm³. */
+  /** Volume MACIÇO do modelo em cm³ (fallback quando sem `materialVolumeCm3`). */
   volumeCm3: number;
-  /** Model bounding box in mm (used for layer count). */
-  dimensions: { x: number; y: number; z: number };
-  /** Layer height in mm. Default 0.2. */
-  layerHeight?: number;
-  /** Print speed in mm/s. Default 60. */
-  speed?: number;
-  /** Infill percentage. Default 20. */
-  infillPercent?: number;
-  /** Number of perimeter walls. Default 3. */
-  wallCount?: number;
-  /** Printer power draw in watts (from store fdmPrintParams / selectedPrinter). */
-  printerPowerWatts?: number;
-  /** Nozzle diameter in mm. Default 0.4. */
-  nozzleDiameterMm?: number;
-  /** Travel (non-print) speed in mm/s. Default 150. */
+  /** Bounding box do modelo em mm (só `z` é usada, p/ contagem de camadas). */
+  dimensions: DimensionsMm;
+  /**
+   * Plástico REALMENTE extrudado em cm³ (casca + infill + suporte).
+   * Quando ausente, usa `volumeCm3` — superestima peça oca como se sólida.
+   */
+  materialVolumeCm3?: number;
+  /** Altura de camada em mm. Padrão 0,2. */
+  layerHeightMm?: number;
+  /** Largura da linha extrudada em mm. Padrão 0,42 (bico de 0,4). */
+  lineWidthMm?: number;
+  /** Velocidade de impressão em mm/s. Padrão 60 (sujeita ao clamp MVS). */
+  printSpeedMmPerS?: number;
+  /** Velocidade de travel em mm/s. Padrão 150. */
   travelSpeedMmPerS?: number;
-  /** Solid top/bottom layers. Default 4. */
-  topBottomLayers?: number;
+  /**
+   * Fração da distância de extrusão percorrida em travel (0–1).
+   * Padrão 0,25 — aproximação pré-slice documentada, não medição.
+   */
+  travelRatio?: number;
+  /**
+   * Família do filamento (default PLA). Define o teto MVS:
+   * `Q = layerH × lineW × speed` é clamped no MVS do material, então pedir
+   * 300 mm/s não gera tempo impossível — gera o tempo do teto físico.
+   */
+  material?: FilamentFamily | string;
 }
 
 const DEFAULT_SETTINGS = {
   layerHeightMm: 0.2,
-  nozzleDiameterMm: 0.4,
+  // Largura da linha extrudada. Bico de 0,4 mm deposita ~0,42 mm nos perfis
+  // padrão de Bambu Studio, OrcaSlicer e PrusaSlicer.
+  lineWidthMm: 0.42,
   printSpeedMmPerS: 60,
   travelSpeedMmPerS: 150,
-  infillPercent: 20,
-  wallCount: 3,
-  topBottomLayers: 4,
-};
+  travelRatio: 0.25,
+} as const;
+
+/** Segundos de overhead por troca de camada (home da aproximação). */
+const LAYER_CHANGE_SECONDS = 2;
+
+function emptyEstimate(layers: number): PrintTimeEstimate {
+  return {
+    estimatedMinutes: 0,
+    estimatedHours: 0,
+    layers,
+    travelDistanceMm: 0,
+    filamentLengthMm: 0,
+    confidence: "low",
+    kind: "rough_estimate",
+  };
+}
 
 export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const {
     volumeCm3,
     dimensions,
-    layerHeight = DEFAULT_SETTINGS.layerHeightMm,
-    speed = DEFAULT_SETTINGS.printSpeedMmPerS,
+    materialVolumeCm3,
+    layerHeightMm = DEFAULT_SETTINGS.layerHeightMm,
+    lineWidthMm = DEFAULT_SETTINGS.lineWidthMm,
+    printSpeedMmPerS = DEFAULT_SETTINGS.printSpeedMmPerS,
     travelSpeedMmPerS = DEFAULT_SETTINGS.travelSpeedMmPerS,
+    travelRatio = DEFAULT_SETTINGS.travelRatio,
+    material = DEFAULT_FILAMENT_FAMILY,
   } = params;
 
-  const heightMm = dimensions.z;
-  const layers = Math.ceil(heightMm / layerHeight);
+  // Geometria inválida → zeros explícitos, nunca NaN. (Camadas ainda são
+  // reportadas quando a altura é válida, para debug.)
+  const heightMm = dimensions?.z;
+  const layers =
+    Number.isFinite(heightMm) && heightMm > 0 && layerHeightMm > 0
+      ? Math.ceil(heightMm / layerHeightMm)
+      : 0;
+  const effectiveVolumeCm3 = materialVolumeCm3 ?? volumeCm3;
+  if (
+    !Number.isFinite(effectiveVolumeCm3) ||
+    effectiveVolumeCm3 <= 0 ||
+    !Number.isFinite(heightMm) ||
+    heightMm <= 0 ||
+    !(layerHeightMm > 0) ||
+    !(lineWidthMm > 0) ||
+    !(printSpeedMmPerS > 0) ||
+    !(travelSpeedMmPerS > 0)
+  ) {
+    return emptyEstimate(layers);
+  }
 
-  // Estimate filament length from volume
-  // Volume = π * r² * length
+  // Comprimento de filamento CONSUMIDO (só para relatório).
+  // Volume = π * r² * comprimento
   const filamentRadiusMm = 1.75 / 2;
-  const volumeMm3 = volumeCm3 * 1000;
+  const volumeMm3 = effectiveVolumeCm3 * 1000;
   const filamentLengthMm =
     volumeMm3 / (Math.PI * filamentRadiusMm * filamentRadiusMm);
 
-  // Estimate print time
-  // Print time = (filament length / print speed) + (travel distance / travel speed)
-  // Travel distance is roughly 25% of print distance
-  const printDistanceMm = filamentLengthMm;
-  const travelDistanceMm = printDistanceMm * 0.25;
+  // Distância que o BICO percorre. Não é o comprimento de filamento: o bico
+  // deposita uma fita de (altura de camada × largura de linha), muito mais fina
+  // que os 1,75 mm do filamento.
+  const extrusionCrossSectionMm2 = layerHeightMm * lineWidthMm;
 
-  const printTimeSeconds = printDistanceMm / speed;
+  // Clamp MVS: Q = seção × velocidade não passa do teto do material.
+  // Sem isso, 300 mm/s em PLA (Q ≈ 25 mm³/s, teto 15) promete um tempo que o
+  // hotend nunca entrega. O clamp troca a velocidade pedida pela máxima física.
+  const maxVolumetricSpeed = maxVolumetricSpeedFor(material);
+  const nominalFlowMm3PerS = extrusionCrossSectionMm2 * printSpeedMmPerS;
+  const effectiveSpeedMmPerS =
+    nominalFlowMm3PerS > maxVolumetricSpeed
+      ? maxVolumetricSpeed / extrusionCrossSectionMm2
+      : printSpeedMmPerS;
+
+  const printDistanceMm = volumeMm3 / extrusionCrossSectionMm2;
+  // Travel é fração fixa da extrusão: aproximação pré-slice (o slicer real
+  // mede saltos/retrações; nós assumimos 25% → overhead efetivo de ~10-15%
+  // sobre o tempo de extrusão, dentro da margem ±30% do rough_estimate).
+  // NaN (ex: store corrompida, parse falho) vaza por Math.min/max
+  // (Math.max(0, NaN) = NaN) — fallback para o default antes do clamp.
+  const safeTravelRatio = Number.isFinite(travelRatio)
+    ? travelRatio
+    : DEFAULT_SETTINGS.travelRatio;
+  const clampedTravelRatio = Math.min(1, Math.max(0, safeTravelRatio));
+  const travelDistanceMm = printDistanceMm * clampedTravelRatio;
+
+  const printTimeSeconds = printDistanceMm / effectiveSpeedMmPerS;
   const travelTimeSeconds = travelDistanceMm / travelSpeedMmPerS;
 
   // Add layer change overhead (~2 seconds per layer)
-  const layerChangeSeconds = layers * 2;
+  const layerChangeSeconds = layers * LAYER_CHANGE_SECONDS;
 
   const totalSeconds =
     printTimeSeconds + travelTimeSeconds + layerChangeSeconds;
   const estimatedMinutes = Math.round(totalSeconds / 60);
   const estimatedHours = Math.round((estimatedMinutes / 60) * 10) / 10;
 
-  // Confidence: high when real printer settings were provided,
-  // medium when only defaults are used, low without valid geometry
+  // Confiança alta quando settings reais (que MOVEM o número) foram
+  // informados; média só com defaults; baixa sem geometria válida.
   const hasRealSettings =
-    params.layerHeight !== undefined ||
-    params.speed !== undefined ||
-    params.infillPercent !== undefined ||
-    params.wallCount !== undefined ||
-    params.printerPowerWatts !== undefined ||
-    params.nozzleDiameterMm !== undefined ||
+    params.materialVolumeCm3 !== undefined ||
+    params.layerHeightMm !== undefined ||
+    params.lineWidthMm !== undefined ||
+    params.printSpeedMmPerS !== undefined ||
     params.travelSpeedMmPerS !== undefined ||
-    params.topBottomLayers !== undefined;
+    params.travelRatio !== undefined ||
+    params.material !== undefined;
 
-  const confidence: PrintTimeEstimate["confidence"] =
-    volumeCm3 <= 0 || dimensions.z <= 0
-      ? "low"
-      : hasRealSettings
-        ? "high"
-        : "medium";
+  const confidence: PrintTimeEstimate["confidence"] = hasRealSettings
+    ? "high"
+    : "medium";
 
   return {
     estimatedMinutes,
@@ -102,6 +192,7 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     travelDistanceMm: Math.round(travelDistanceMm),
     filamentLengthMm: Math.round(filamentLengthMm),
     confidence,
+    kind: "rough_estimate",
   };
 }
 
@@ -111,7 +202,10 @@ export function estimatePrintTimeFromDimensions(
   heightMm: number,
   settings: Omit<PrintTimeParams, "volumeCm3" | "dimensions"> = {},
 ): PrintTimeEstimate {
-  // Estimate volume from bounding box (assuming ~40% fill for typical prints)
+  // Heurística de volume aparente: bounding box × 0,4 — fração sólida típica
+  // de peça FDM média (casca + 20% infill); mesma ordem do legado
+  // `volume × (0,2 + 0,8 × infill)` com infill 20% (= 0,36 ≈ 0,4).
+  // Só para estimativa sem malha; com malha, usa materialVolumeCm3.
   const boundingBoxVolume = widthMm * depthMm * heightMm;
   const estimatedVolumeCm3 = (boundingBoxVolume * 0.4) / 1000;
 

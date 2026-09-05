@@ -35,9 +35,12 @@ db/**/*.js.map
 desktop/db/**/*.js
 desktop/db/**/*.js.map
 
-# Pantheon / docs
+# Pantheon / docs (conteúdo ignorado, exceto ADRs explicitamente versionados;
+# docs/* em vez de docs/ para permitir a negação abaixo — git não
+# re-inclui arquivo dentro de diretório excluído)
 .pantheon/
-docs/
+docs/*
+!docs/estimators-model.md
 
 # Logs
 logs/

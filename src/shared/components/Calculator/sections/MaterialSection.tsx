@@ -281,7 +281,6 @@ export function MaterialSection({
                   onClear={handleStlClear}
                   materialDensity={store.fdmMaterial.density}
                   infillPercent={store.infillPercent}
-                  printerPowerWatts={store.fdmPrintParams.printerPowerWatts}
                 />
               </div>
             </>
@@ -436,7 +435,6 @@ export function MaterialSection({
                   onClear={handleStlClear}
                   materialDensity={store.fdmMaterial.density}
                   infillPercent={store.infillPercent}
-                  printerPowerWatts={store.fdmPrintParams.printerPowerWatts}
                 />
               </div>
             </div>
@@ -597,7 +595,6 @@ export function MaterialSection({
               onClear={handleStlClear}
               materialDensity={store.resinMaterial.density}
               infillPercent={100}
-              printerPowerWatts={store.resinPrintParams.printerPowerWatts}
             />
           </div>
         </div>
