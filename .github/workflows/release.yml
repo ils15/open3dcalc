@@ -177,6 +177,4 @@ jobs:
             --base main \
             --head "$BRANCH" \
             --title "chore(release): $VERSION" \
-            --body "Automated release preparation for $VERSION. Merge this PR "\
-              "after CI passes; then create the immutable tag $VERSION on the "\
-              "merged commit to publish."
+            --body "Automated release preparation for $VERSION. Merge this PR after CI passes; then create the immutable tag $VERSION on the merged commit to publish."

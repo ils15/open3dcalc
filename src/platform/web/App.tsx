@@ -9,6 +9,7 @@ import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
 import { FilamentInventory } from "@/shared/components/Catalog/FilamentInventory";
 import { CustomerTab } from "@/shared/components/Catalog/CustomerTab";
+import { ProductInventory } from "@/shared/components/Catalog/ProductInventory";
 import { QuoteSection } from "@/shared/components/Calculator/QuoteSection";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import { useHistoryStore } from "@/shared/stores/historyStore";
@@ -35,6 +36,7 @@ import {
   Sparkles,
   FileText,
   Users,
+  Package,
   MoreHorizontal,
   BookOpen,
   DollarSign,
@@ -52,7 +54,8 @@ type Tab =
   | "inventory"
   | "changelog"
   | "quotes"
-  | "customers";
+  | "customers"
+  | "products";
 type LegacyProduct = {
   name?: string;
   result?: CalculationResult;
@@ -74,6 +77,7 @@ const MORE_TABS: Tab[] = [
   "inventory",
   "quotes",
   "customers",
+  "products",
   "changelog",
 ];
 
@@ -130,6 +134,12 @@ const TABS: {
     icon: <Users className="w-[18px] h-[18px]" />,
     labelKey: "nav.customers",
     label: "Clientes",
+  },
+  {
+    id: "products",
+    icon: <Package className="w-[18px] h-[18px]" />,
+    labelKey: "nav.products",
+    label: "Produtos",
   },
 ];
 
@@ -487,6 +497,7 @@ function App() {
             {activeTab === "changelog" && <ChangelogPage />}
             {activeTab === "quotes" && <QuoteSection />}
             {activeTab === "customers" && <CustomerTab />}
+            {activeTab === "products" && <ProductInventory />}
           </div>
         </main>
       </div>

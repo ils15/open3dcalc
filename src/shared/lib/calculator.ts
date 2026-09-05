@@ -1,19 +1,78 @@
 import type {
-  MaterialStateFDM, MaterialStateResin, PrintParameters,
-  MachineCosts, LaborCosts, AdditionalCosts, SalesParameters,
-  OperationalCosts, SoftwareCosts, FDMHardware, FDMFinishing,
-  PostProcessingResin, ResinHardware, CalculationResult,
+  MaterialStateFDM,
+  MaterialStateResin,
+  PrintParameters,
+  MachineCosts,
+  LaborCosts,
+  AdditionalCosts,
+  SalesParameters,
+  OperationalCosts,
+  SoftwareCosts,
+  FDMHardware,
+  FDMFinishing,
+  PostProcessingResin,
+  ResinHardware,
+  CalculationResult,
   VolumeDiscount,
-} from '@/shared/types'
+} from "@/shared/types";
+import { roundCurrency } from "@/shared/lib/currency";
 
-export function getBulkDiscount(quantity: number, discounts: VolumeDiscount[]): number {
-  let maxDiscount = 0
+/** Below this many hours the profit/hr rate is treated as zero (Fase 2 #70 guard). */
+export const MIN_BILLABLE_HOURS = 1e-9;
+
+/**
+ * Total billable hours behind the profit/hr rate (Fase 2 #70).
+ * totalHours = (printTimeMinutes + postProcessingTimeMinutes + setupTimeMinutes) / 60.
+ * All inputs are clamped to >= 0; non-finite values become 0.
+ */
+export function computeTotalHoursForProfit(
+  printTimeMinutes: number,
+  postProcessingTimeMinutes: number,
+  setupTimeMinutes = 0,
+): number {
+  const print = Number.isFinite(printTimeMinutes)
+    ? Math.max(0, printTimeMinutes)
+    : 0;
+  const post = Number.isFinite(postProcessingTimeMinutes)
+    ? Math.max(0, postProcessingTimeMinutes)
+    : 0;
+  const setup = Number.isFinite(setupTimeMinutes)
+    ? Math.max(0, setupTimeMinutes)
+    : 0;
+  return (print + post + setup) / 60;
+}
+
+/**
+ * Pure profit-per-hour rate: totalProfit / totalHours, rounded to 2 decimals.
+ * Returns 0 when totalHours <= 1e-9 (never NaN/Infinity).
+ */
+export function computeProfitPerHour(
+  totalProfit: number,
+  printTimeMinutes: number,
+  postProcessingTimeMinutes: number,
+  setupTimeMinutes = 0,
+): number {
+  const profit = Number.isFinite(totalProfit) ? totalProfit : 0;
+  const totalHours = computeTotalHoursForProfit(
+    printTimeMinutes,
+    postProcessingTimeMinutes,
+    setupTimeMinutes,
+  );
+  if (totalHours <= MIN_BILLABLE_HOURS) return 0;
+  return roundCurrency(profit / totalHours);
+}
+
+export function getBulkDiscount(
+  quantity: number,
+  discounts: VolumeDiscount[],
+): number {
+  let maxDiscount = 0;
   for (const d of discounts) {
     if (quantity >= d.minQuantity && d.discountPercent > maxDiscount) {
-      maxDiscount = d.discountPercent
+      maxDiscount = d.discountPercent;
     }
   }
-  return maxDiscount
+  return maxDiscount;
 }
 
 export function calculateFDM(
@@ -29,91 +88,122 @@ export function calculateFDM(
   fdmFin: FDMFinishing,
   fixedCostPerHour = 0,
 ): CalculationResult {
-  const efficiencyFactor = mat.spoolEfficiency > 0 ? (100 / mat.spoolEfficiency) : 1
-  const totalWeightFDM = mat.weightUsed + mat.purgeWeight
-  const effectiveWeight = totalWeightFDM * efficiencyFactor
-  const matCost = (effectiveWeight / 1000) * mat.costPerKg
+  const efficiencyFactor =
+    mat.spoolEfficiency > 0 ? 100 / mat.spoolEfficiency : 1;
+  const totalWeightFDM = mat.weightUsed + mat.purgeWeight;
+  const effectiveWeight = totalWeightFDM * efficiencyFactor;
+  const matCost = (effectiveWeight / 1000) * mat.costPerKg;
 
-  const totalKwh = (print.printerPowerWatts / 1000) * print.printTimeHours
-  const heatUpKwh = (print.printerPowerWatts / 1000) * (print.heatUpTimeMinutes / 60) * ((print.heatUpPowerPercent - 100) / 100)
-  const totalEnergyKwh = totalKwh + heatUpKwh
-  const printerEnergyCost = totalEnergyKwh * print.energyCostPerKwh
-  const carbonFootprintGrams = totalEnergyKwh * ops.carbonIntensity
+  const totalKwh = (print.printerPowerWatts / 1000) * print.printTimeHours;
+  const heatUpKwh =
+    (print.printerPowerWatts / 1000) *
+    (print.heatUpTimeMinutes / 60) *
+    ((print.heatUpPowerPercent - 100) / 100);
+  const totalEnergyKwh = totalKwh + heatUpKwh;
+  const printerEnergyCost = totalEnergyKwh * print.energyCostPerKwh;
+  const carbonFootprintGrams = totalEnergyKwh * ops.carbonIntensity;
 
-  let postProcessingTotal = 0
+  let postProcessingTotal = 0;
   if (fdmFin.enabled) {
-    postProcessingTotal += fdmFin.suppliesCost
+    postProcessingTotal += fdmFin.suppliesCost;
   }
 
-  let machineTotal = 0
+  let machineTotal = 0;
   if (machine.enabled) {
-    const totalLifeHours = machine.depreciationMonths * machine.hoursPerMonth
-    const hourlyDepreciation = totalLifeHours > 0 ? machine.machineCost / totalLifeHours : 0
-    let hourlyMaintenance = 0
+    const totalLifeHours = machine.depreciationMonths * machine.hoursPerMonth;
+    const hourlyDepreciation =
+      totalLifeHours > 0 ? machine.machineCost / totalLifeHours : 0;
+    let hourlyMaintenance = 0;
     if (machine.maintenanceEnabled) {
-      hourlyMaintenance = machine.hoursPerMonth > 0 ? machine.maintenanceCost / machine.hoursPerMonth : 0
+      hourlyMaintenance =
+        machine.hoursPerMonth > 0
+          ? machine.maintenanceCost / machine.hoursPerMonth
+          : 0;
     }
-    machineTotal = (hourlyDepreciation + hourlyMaintenance + fixedCostPerHour) * print.printTimeHours
+    machineTotal =
+      (hourlyDepreciation + hourlyMaintenance + fixedCostPerHour) *
+      print.printTimeHours;
   }
 
-  let hardwareTotal = 0
+  let hardwareTotal = 0;
   if (fdmHW.enabled) {
-    let nozzleDepreciation = 0
+    let nozzleDepreciation = 0;
     if (fdmHW.nozzleEnabled) {
-      nozzleDepreciation = fdmHW.nozzleLifespanKg > 0
-        ? (totalWeightFDM / 1000) / fdmHW.nozzleLifespanKg * fdmHW.nozzleCost
-        : 0
+      nozzleDepreciation =
+        fdmHW.nozzleLifespanKg > 0
+          ? (totalWeightFDM / 1000 / fdmHW.nozzleLifespanKg) * fdmHW.nozzleCost
+          : 0;
     }
-    let bedCost = 0
+    let bedCost = 0;
     if (fdmHW.bedEnabled) {
-      bedCost = fdmHW.bedAdhesionCost
+      bedCost = fdmHW.bedAdhesionCost;
     }
-    hardwareTotal = nozzleDepreciation + bedCost
+    hardwareTotal = nozzleDepreciation + bedCost;
   }
 
-  const ppeCost = ops.enabled ? ops.ppeCostPerPrint : 0
+  const ppeCost = ops.enabled ? ops.ppeCostPerPrint : 0;
 
-  let laborTotal = 0
+  let laborTotal = 0;
   if (labor.enabled) {
-    const totalMinutes = labor.setupTimeMinutes + labor.postProcessingTimeMinutes
-    laborTotal = (totalMinutes / 60) * labor.hourlyRate
+    const totalMinutes =
+      labor.setupTimeMinutes + labor.postProcessingTimeMinutes;
+    laborTotal = (totalMinutes / 60) * labor.hourlyRate;
   }
 
-  let softwareTotal = 0
+  let softwareTotal = 0;
   if (soft.enabled) {
-    const softwareHourly = machine.hoursPerMonth > 0 ? soft.slicerMonthlyCost / machine.hoursPerMonth : 0
-    softwareTotal = (softwareHourly * print.printTimeHours) + soft.modelFileCost
+    const softwareHourly =
+      machine.hoursPerMonth > 0
+        ? soft.slicerMonthlyCost / machine.hoursPerMonth
+        : 0;
+    softwareTotal = softwareHourly * print.printTimeHours + soft.modelFileCost;
   }
 
-  const productionCost = matCost + printerEnergyCost + machineTotal + hardwareTotal + ppeCost + laborTotal + softwareTotal + postProcessingTotal + extras.extrasCost
+  const productionCost =
+    matCost +
+    printerEnergyCost +
+    machineTotal +
+    hardwareTotal +
+    ppeCost +
+    laborTotal +
+    softwareTotal +
+    postProcessingTotal +
+    extras.extrasCost;
 
-  let failureCost = 0
-  if (print.failureMode === 'percent') {
-    const adjustedPercent = print.failureValue * (print.riskMultiplier ?? 1)
-    failureCost = productionCost * (adjustedPercent / 100)
-  } else if (print.failureMode === 'fixed') {
-    failureCost = print.failureValue
+  let failureCost = 0;
+  if (print.failureMode === "percent") {
+    const adjustedPercent = print.failureValue * (print.riskMultiplier ?? 1);
+    failureCost = productionCost * (adjustedPercent / 100);
+  } else if (print.failureMode === "fixed") {
+    failureCost = print.failureValue;
   }
 
-  const totalBaseCost = productionCost + failureCost + sales.packagingCost + sales.shippingCost
+  const totalBaseCost =
+    productionCost + failureCost + sales.packagingCost + sales.shippingCost;
 
-  const profitAmountRaw = totalBaseCost * (sales.profitMarginPercent / 100)
-  const priceBeforeFees = totalBaseCost + profitAmountRaw
+  const profitAmountRaw = totalBaseCost * (sales.profitMarginPercent / 100);
+  const priceBeforeFees = totalBaseCost + profitAmountRaw;
 
-  const totalFeePercent = (sales.taxPercent + sales.marketplaceFeePercent) / 100
+  const totalFeePercent =
+    (sales.taxPercent + sales.marketplaceFeePercent) / 100;
 
-  const sellPrice = totalFeePercent < 1
-    ? priceBeforeFees / (1 - totalFeePercent)
-    : priceBeforeFees * 2
+  const sellPrice =
+    totalFeePercent < 1
+      ? priceBeforeFees / (1 - totalFeePercent)
+      : priceBeforeFees * 2;
 
-  const taxAmount = sellPrice * (sales.taxPercent / 100)
-  const marketplaceFee = sellPrice * (sales.marketplaceFeePercent / 100)
-  const totalProfit = sellPrice - totalBaseCost - taxAmount - marketplaceFee
+  const taxAmount = sellPrice * (sales.taxPercent / 100);
+  const marketplaceFee = sellPrice * (sales.marketplaceFeePercent / 100);
+  const totalProfit = sellPrice - totalBaseCost - taxAmount - marketplaceFee;
 
-  const costPerGram = effectiveWeight > 0 ? matCost / effectiveWeight : 0
-  const unitWeight = effectiveWeight
-  const breakEvenPrice = totalBaseCost
-  const actualMargin = sellPrice > 0 ? ((sellPrice - totalBaseCost - taxAmount - marketplaceFee) / sellPrice) * 100 : 0
+  const costPerGram = effectiveWeight > 0 ? matCost / effectiveWeight : 0;
+  const unitWeight = effectiveWeight;
+  const breakEvenPrice = totalBaseCost;
+  const actualMargin =
+    sellPrice > 0
+      ? ((sellPrice - totalBaseCost - taxAmount - marketplaceFee) / sellPrice) *
+        100
+      : 0;
 
   return {
     materialCost: matCost,
@@ -140,7 +230,7 @@ export function calculateFDM(
     breakEvenPrice,
     actualMargin,
     carbonFootprintGrams,
-  }
+  };
 }
 
 export function calculateResin(
@@ -156,86 +246,124 @@ export function calculateResin(
   resinHW: ResinHardware,
   fixedCostPerHour = 0,
 ): CalculationResult {
-  const volumeWithWaste = mat.volumeUsedMl * (1 + (mat.wasteMarginPercent / 100))
-  const matCost = (volumeWithWaste / 1000) * mat.costPerLiter
+  const volumeWithWaste = mat.volumeUsedMl * (1 + mat.wasteMarginPercent / 100);
+  const matCost = (volumeWithWaste / 1000) * mat.costPerLiter;
 
-  const totalKwh = (print.printerPowerWatts / 1000) * print.printTimeHours
-  const heatUpKwh = (print.printerPowerWatts / 1000) * (print.heatUpTimeMinutes / 60) * ((print.heatUpPowerPercent - 100) / 100)
-  const totalEnergyKwh = totalKwh + heatUpKwh
-  const printerEnergyCost = totalEnergyKwh * print.energyCostPerKwh
-  const carbonFootprintGrams = totalEnergyKwh * ops.carbonIntensity
+  const totalKwh = (print.printerPowerWatts / 1000) * print.printTimeHours;
+  const heatUpKwh =
+    (print.printerPowerWatts / 1000) *
+    (print.heatUpTimeMinutes / 60) *
+    ((print.heatUpPowerPercent - 100) / 100);
+  const totalEnergyKwh = totalKwh + heatUpKwh;
+  const printerEnergyCost = totalEnergyKwh * print.energyCostPerKwh;
+  const carbonFootprintGrams = totalEnergyKwh * ops.carbonIntensity;
 
-  let postProcessingTotal = 0
+  let postProcessingTotal = 0;
   if (resinPP.washingEnabled) {
-    postProcessingTotal += resinPP.alcoholVolumeLiters * resinPP.alcoholCostPerLiter
+    postProcessingTotal +=
+      resinPP.alcoholVolumeLiters * resinPP.alcoholCostPerLiter;
   }
   if (resinPP.curingEnabled) {
-    const curingKwh = (resinPP.curingPowerWatts / 1000) * (resinPP.curingTimeMinutes / 60)
-    postProcessingTotal += curingKwh * print.energyCostPerKwh
+    const curingKwh =
+      (resinPP.curingPowerWatts / 1000) * (resinPP.curingTimeMinutes / 60);
+    postProcessingTotal += curingKwh * print.energyCostPerKwh;
   }
 
-  let machineTotal = 0
+  let machineTotal = 0;
   if (machine.enabled) {
-    const totalLifeHours = machine.depreciationMonths * machine.hoursPerMonth
-    const hourlyDepreciation = totalLifeHours > 0 ? machine.machineCost / totalLifeHours : 0
-    let hourlyMaintenance = 0
+    const totalLifeHours = machine.depreciationMonths * machine.hoursPerMonth;
+    const hourlyDepreciation =
+      totalLifeHours > 0 ? machine.machineCost / totalLifeHours : 0;
+    let hourlyMaintenance = 0;
     if (machine.maintenanceEnabled) {
-      hourlyMaintenance = machine.hoursPerMonth > 0 ? machine.maintenanceCost / machine.hoursPerMonth : 0
+      hourlyMaintenance =
+        machine.hoursPerMonth > 0
+          ? machine.maintenanceCost / machine.hoursPerMonth
+          : 0;
     }
-    machineTotal = (hourlyDepreciation + hourlyMaintenance + fixedCostPerHour) * print.printTimeHours
+    machineTotal =
+      (hourlyDepreciation + hourlyMaintenance + fixedCostPerHour) *
+      print.printTimeHours;
   }
 
-  let hardwareTotal = 0
+  let hardwareTotal = 0;
   if (resinHW.enabled) {
-    const lcdHourly = resinHW.lcdLifespanHours > 0 ? resinHW.lcdCost / resinHW.lcdLifespanHours : 0
-    const lcdCost = lcdHourly * print.printTimeHours
-    const fepPerPrint = resinHW.fepLifespanPrints > 0 ? resinHW.fepCost / resinHW.fepLifespanPrints : 0
-    hardwareTotal = lcdCost + fepPerPrint
+    const lcdHourly =
+      resinHW.lcdLifespanHours > 0
+        ? resinHW.lcdCost / resinHW.lcdLifespanHours
+        : 0;
+    const lcdCost = lcdHourly * print.printTimeHours;
+    const fepPerPrint =
+      resinHW.fepLifespanPrints > 0
+        ? resinHW.fepCost / resinHW.fepLifespanPrints
+        : 0;
+    hardwareTotal = lcdCost + fepPerPrint;
   }
 
-  const ppeCost = ops.enabled ? ops.ppeCostPerPrint : 0
+  const ppeCost = ops.enabled ? ops.ppeCostPerPrint : 0;
 
-  let laborTotal = 0
+  let laborTotal = 0;
   if (labor.enabled) {
-    const totalMinutes = labor.setupTimeMinutes + labor.postProcessingTimeMinutes
-    laborTotal = (totalMinutes / 60) * labor.hourlyRate
+    const totalMinutes =
+      labor.setupTimeMinutes + labor.postProcessingTimeMinutes;
+    laborTotal = (totalMinutes / 60) * labor.hourlyRate;
   }
 
-  let softwareTotal = 0
+  let softwareTotal = 0;
   if (soft.enabled) {
-    const softwareHourly = machine.hoursPerMonth > 0 ? soft.slicerMonthlyCost / machine.hoursPerMonth : 0
-    softwareTotal = (softwareHourly * print.printTimeHours) + soft.modelFileCost
+    const softwareHourly =
+      machine.hoursPerMonth > 0
+        ? soft.slicerMonthlyCost / machine.hoursPerMonth
+        : 0;
+    softwareTotal = softwareHourly * print.printTimeHours + soft.modelFileCost;
   }
 
-  const productionCost = matCost + printerEnergyCost + machineTotal + hardwareTotal + ppeCost + laborTotal + softwareTotal + postProcessingTotal + extras.extrasCost
+  const productionCost =
+    matCost +
+    printerEnergyCost +
+    machineTotal +
+    hardwareTotal +
+    ppeCost +
+    laborTotal +
+    softwareTotal +
+    postProcessingTotal +
+    extras.extrasCost;
 
-  let failureCost = 0
-  if (print.failureMode === 'percent') {
-    const adjustedPercent = print.failureValue * (print.riskMultiplier ?? 1)
-    failureCost = productionCost * (adjustedPercent / 100)
-  } else if (print.failureMode === 'fixed') {
-    failureCost = print.failureValue
+  let failureCost = 0;
+  if (print.failureMode === "percent") {
+    const adjustedPercent = print.failureValue * (print.riskMultiplier ?? 1);
+    failureCost = productionCost * (adjustedPercent / 100);
+  } else if (print.failureMode === "fixed") {
+    failureCost = print.failureValue;
   }
 
-  const totalBaseCost = productionCost + failureCost + sales.packagingCost + sales.shippingCost
+  const totalBaseCost =
+    productionCost + failureCost + sales.packagingCost + sales.shippingCost;
 
-  const profitAmountRaw = totalBaseCost * (sales.profitMarginPercent / 100)
-  const priceBeforeFees = totalBaseCost + profitAmountRaw
+  const profitAmountRaw = totalBaseCost * (sales.profitMarginPercent / 100);
+  const priceBeforeFees = totalBaseCost + profitAmountRaw;
 
-  const totalFeePercent = (sales.taxPercent + sales.marketplaceFeePercent) / 100
+  const totalFeePercent =
+    (sales.taxPercent + sales.marketplaceFeePercent) / 100;
 
-  const sellPrice = totalFeePercent < 1
-    ? priceBeforeFees / (1 - totalFeePercent)
-    : priceBeforeFees * 2
+  const sellPrice =
+    totalFeePercent < 1
+      ? priceBeforeFees / (1 - totalFeePercent)
+      : priceBeforeFees * 2;
 
-  const taxAmount = sellPrice * (sales.taxPercent / 100)
-  const marketplaceFee = sellPrice * (sales.marketplaceFeePercent / 100)
-  const totalProfit = sellPrice - totalBaseCost - taxAmount - marketplaceFee
+  const taxAmount = sellPrice * (sales.taxPercent / 100);
+  const marketplaceFee = sellPrice * (sales.marketplaceFeePercent / 100);
+  const totalProfit = sellPrice - totalBaseCost - taxAmount - marketplaceFee;
 
-  const resinWeight = volumeWithWaste * mat.density
-  const costPerGram = matCost > 0 && resinWeight > 0 ? matCost / resinWeight : 0
-  const breakEvenPrice = totalBaseCost
-  const actualMargin = sellPrice > 0 ? ((sellPrice - totalBaseCost - taxAmount - marketplaceFee) / sellPrice) * 100 : 0
+  const resinWeight = volumeWithWaste * mat.density;
+  const costPerGram =
+    matCost > 0 && resinWeight > 0 ? matCost / resinWeight : 0;
+  const breakEvenPrice = totalBaseCost;
+  const actualMargin =
+    sellPrice > 0
+      ? ((sellPrice - totalBaseCost - taxAmount - marketplaceFee) / sellPrice) *
+        100
+      : 0;
 
   return {
     materialCost: matCost,
@@ -262,7 +390,7 @@ export function calculateResin(
     breakEvenPrice,
     actualMargin,
     carbonFootprintGrams,
-  }
+  };
 }
 
 export function calculateReverseMargin(
@@ -270,35 +398,41 @@ export function calculateReverseMargin(
   targetSellPrice: number,
   taxPercent: number,
   marketplaceFeePercent: number,
-): { actualMargin: number; profit: number; taxAmount: number; marketplaceFee: number } {
-  const taxAmount = targetSellPrice * (taxPercent / 100)
-  const marketplaceFee = targetSellPrice * (marketplaceFeePercent / 100)
-  const profit = targetSellPrice - totalBaseCost - taxAmount - marketplaceFee
-  const actualMargin = targetSellPrice > 0 ? (profit / targetSellPrice) * 100 : 0
-  return { actualMargin, profit, taxAmount, marketplaceFee }
+): {
+  actualMargin: number;
+  profit: number;
+  taxAmount: number;
+  marketplaceFee: number;
+} {
+  const taxAmount = targetSellPrice * (taxPercent / 100);
+  const marketplaceFee = targetSellPrice * (marketplaceFeePercent / 100);
+  const profit = targetSellPrice - totalBaseCost - taxAmount - marketplaceFee;
+  const actualMargin =
+    targetSellPrice > 0 ? (profit / targetSellPrice) * 100 : 0;
+  return { actualMargin, profit, taxAmount, marketplaceFee };
 }
 
 export function calculateMonthlyProjection(
   result: { totalCost: number; sellPrice: number; profit: number },
   printsPerMonth: number,
 ): { revenue: number; cost: number; profit: number; annualProfit: number } {
-  const revenue = result.sellPrice * printsPerMonth
-  const cost = result.totalCost * printsPerMonth
-  const profit = result.profit * printsPerMonth
-  return { revenue, cost, profit, annualProfit: profit * 12 }
+  const revenue = result.sellPrice * printsPerMonth;
+  const cost = result.totalCost * printsPerMonth;
+  const profit = result.profit * printsPerMonth;
+  return { revenue, cost, profit, annualProfit: profit * 12 };
 }
 
 export function calculatePrintVsBuy(
   printCost: number,
   buyPrice: number,
-): { cheaper: 'print' | 'buy'; savings: number; savingsPercent: number } {
-  const savings = Math.abs(buyPrice - printCost)
-  const savingsPercent = buyPrice > 0 ? (savings / buyPrice) * 100 : 0
+): { cheaper: "print" | "buy"; savings: number; savingsPercent: number } {
+  const savings = Math.abs(buyPrice - printCost);
+  const savingsPercent = buyPrice > 0 ? (savings / buyPrice) * 100 : 0;
   return {
-    cheaper: printCost <= buyPrice ? 'print' : 'buy',
+    cheaper: printCost <= buyPrice ? "print" : "buy",
     savings,
     savingsPercent,
-  }
+  };
 }
 
 export function calculateInfillImpact(
@@ -308,10 +442,11 @@ export function calculateInfillImpact(
   density: number,
   costPerKg: number,
 ): { weight: number; cost: number; timeChange: number } {
-  const infillVolume = (boundingBoxCm3 - volumeSolidCm3) * (infillPercent / 100)
-  const totalVolume = volumeSolidCm3 + infillVolume
-  const weight = totalVolume * density
-  const cost = (weight / 1000) * costPerKg
-  const timeChange = infillPercent / 20
-  return { weight, cost, timeChange }
+  const infillVolume =
+    (boundingBoxCm3 - volumeSolidCm3) * (infillPercent / 100);
+  const totalVolume = volumeSolidCm3 + infillVolume;
+  const weight = totalVolume * density;
+  const cost = (weight / 1000) * costPerKg;
+  const timeChange = infillPercent / 20;
+  return { weight, cost, timeChange };
 }

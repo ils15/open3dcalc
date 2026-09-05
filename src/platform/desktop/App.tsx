@@ -9,6 +9,7 @@ import { ChangelogPage } from '@/shared/components/Changelog/ChangelogPage'
 import { InfillCalculator } from '@/shared/components/Calculator/InfillCalculator'
 import { FilamentInventory } from '@/shared/components/Catalog/FilamentInventory'
 import { CustomerTab } from '@/shared/components/Catalog/CustomerTab'
+import { ProductInventory } from '@/shared/components/Catalog/ProductInventory'
 import { QuoteSection } from '@/shared/components/Calculator/QuoteSection'
 import { restoreAutoSnapshot } from '@/shared/stores/storeBridge'
 import { useHistoryStore } from '@/shared/stores/historyStore'
@@ -34,9 +35,10 @@ import {
   Sparkles,
   FileText,
   Users,
+  Package,
 } from 'lucide-react'
 
-type Tab = 'calculator' | 'dashboard' | 'catalog' | 'history' | 'infill' | 'inventory' | 'changelog' | 'quotes' | 'customers'
+type Tab = 'calculator' | 'dashboard' | 'catalog' | 'history' | 'infill' | 'inventory' | 'changelog' | 'quotes' | 'customers' | 'products'
 type LegacyProduct = {
   name?: string
   result?: CalculationResult
@@ -63,6 +65,7 @@ const TABS: { id: Tab; icon: React.ReactNode; labelKey: string; label: string }[
   { id: 'changelog',  icon: <Sparkles className="w-[18px] h-[18px]" />,     labelKey: 'nav.changelog',  label: 'Novidades' },
   { id: 'quotes',     icon: <FileText className="w-[18px] h-[18px]" />,    labelKey: 'nav.quotes',     label: 'Orçamentos' },
   { id: 'customers',  icon: <Users className="w-[18px] h-[18px]" />,      labelKey: 'nav.customers',  label: 'Clientes' },
+  { id: 'products',   icon: <Package className="w-[18px] h-[18px]" />,    labelKey: 'nav.products',   label: 'Produtos' },
 ]
 
 function App() {
@@ -334,6 +337,7 @@ function App() {
             {activeTab === 'changelog' && <ChangelogPage />}
             {activeTab === 'quotes' && <QuoteSection />}
             {activeTab === 'customers' && <CustomerTab />}
+            {activeTab === 'products' && <ProductInventory />}
           </div>
         </main>
       </div>
