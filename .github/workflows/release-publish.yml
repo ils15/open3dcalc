@@ -18,7 +18,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+          - os: ubuntu-latest
+            target: --linux
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout immutable tag commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install and build platform artifacts
+        shell: bash
+        run: |
+          npm ci
+          npm rebuild better-sqlite3
+          rm -rf dist-electron dist-web
+          npm run build:all
+          npm run build:electron
+          npm exec -- electron-builder ${{ matrix.target }} --publish never
+
+      - name: Upload platform artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-dist-${{ matrix.os }}
+          if-no-files-found: error
+          path: dist-electron/
+
   publish:
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -90,22 +133,12 @@ jobs:
             exit 1
           }
 
-      - name: Install and build release artifacts
-        run: |
-          npm ci
-          npm rebuild better-sqlite3
-          npm run lint -- --max-warnings=0
-          npm run typecheck
-          npm run test:run
-          rm -rf dist-electron dist-web
-          npm run build:all
-          npm run build:electron
-          if command -v sudo >/dev/null 2>&1; then
-            sudo dpkg --add-architecture i386
-            sudo apt-get update
-            sudo apt-get install -y wine64 wine32
-          fi
-          npm exec -- electron-builder --win --linux --publish never
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-dist-*
+          merge-multiple: true
+          path: dist-electron
 
       - name: Create or repair GitHub Release
         env:
