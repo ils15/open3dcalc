@@ -314,6 +314,7 @@ function setupIpcHandlers(): void {
       available: boolean;
       version?: string;
       releaseNotes?: string;
+      error?: string;
     }> => {
       try {
         return await checkForUpdates();

@@ -51,6 +51,8 @@ jobs:
       - name: 🔍 Lint
         run: npm run lint -- --max-warnings=0
       - run: npm run typecheck
+      - run: npm run typecheck:electron
+      - run: npm run build:electron
       - name: 🔔 Notify failure
         if: failure()
         shell: bash
