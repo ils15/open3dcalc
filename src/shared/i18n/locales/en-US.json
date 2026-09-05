@@ -12,6 +12,7 @@
     "inventory": "Filaments",
     "changelog": "Changelog",
     "customers": "Customers",
+    "products": "Products",
     "telegram": "Telegram Channel",
     "tutorial": "Tutorial",
     "language": "Change language",
@@ -304,6 +305,27 @@
     "export": "Export",
     "import": "Import"
   },
+  "products": {
+    "title": "Products",
+    "subtitle": "Register products for sale and mark them as sold.",
+    "newProduct": "New Product",
+    "editProduct": "Edit Product",
+    "name": "Name",
+    "weight": "Weight (g)",
+    "filament": "Filament",
+    "cost": "Cost (R$)",
+    "price": "Price (R$)",
+    "sold": "Sold",
+    "status": "Status",
+    "filterAll": "All",
+    "filterAvailable": "Available",
+    "filterSold": "Sold",
+    "noProducts": "No products registered yet",
+    "searchPlaceholder": "Search by name or filament...",
+    "deleteConfirm": "Are you sure you want to delete this product?",
+    "belowCostWarn": "Price below cost — warning only, saving is still allowed.",
+    "exportCsv": "Export CSV"
+  },
   "inventory": {
     "title": "Inventory",
     "newSpool": "New Spool",
@@ -451,7 +473,9 @@
     "watt": "W",
     "noData": "No data available",
     "units": "units",
-    "entries": "entries"
+    "entries": "entries",
+    "edit": "Edit",
+    "actions": "Actions"
   },
   "results": {
     "exportQuote": "Export Quote",

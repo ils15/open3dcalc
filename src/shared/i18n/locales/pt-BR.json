@@ -13,6 +13,7 @@
     "quotes": "Orçamentos",
     "changelog": "Novidades",
     "customers": "Clientes",
+    "products": "Produtos",
     "telegram": "Canal Telegram",
     "tutorial": "Tutorial",
     "language": "Mudar idioma",
@@ -304,6 +305,27 @@
     "export": "Exportar",
     "import": "Importar"
   },
+  "products": {
+    "title": "Produtos",
+    "subtitle": "Cadastre produtos à venda e marque como vendidos.",
+    "newProduct": "Novo Produto",
+    "editProduct": "Editar Produto",
+    "name": "Nome",
+    "weight": "Peso (g)",
+    "filament": "Filamento",
+    "cost": "Custo (R$)",
+    "price": "Preço (R$)",
+    "sold": "Vendido",
+    "status": "Status",
+    "filterAll": "Todos",
+    "filterAvailable": "Disponíveis",
+    "filterSold": "Vendidos",
+    "noProducts": "Nenhum produto cadastrado ainda",
+    "searchPlaceholder": "Buscar por nome ou filamento...",
+    "deleteConfirm": "Tem certeza que deseja excluir este produto?",
+    "belowCostWarn": "Preço abaixo do custo — apenas um aviso, o salvamento continua permitido.",
+    "exportCsv": "Exportar CSV"
+  },
   "inventory": {
     "title": "Estoque",
     "newSpool": "Novo Rolo",
@@ -451,7 +473,9 @@
     "watt": "W",
     "noData": "Nenhum dado disponível",
     "units": "unidades",
-    "entries": "entradas"
+    "entries": "entradas",
+    "edit": "Editar",
+    "actions": "Ações"
   },
   "results": {
     "exportQuote": "Exportar Cotação",
