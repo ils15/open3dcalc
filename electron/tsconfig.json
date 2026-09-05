@@ -17,14 +17,6 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": [
-    "main.ts",
-    "preload.cts",
-    "../db/**/*.ts"
-  ],
-  "exclude": [
-    "dist",
-    "../node_modules",
-    "../db/__tests__/**"
-  ]
+  "include": ["main.ts", "update.ts", "preload.cts", "../db/**/*.ts"],
+  "exclude": ["dist", "../node_modules", "../db/__tests__/**"]
 }

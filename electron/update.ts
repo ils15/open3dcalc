@@ -116,6 +116,51 @@ function setupEventListeners(): void {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Retry + friendly errors (Fase 1 #75)                               */
+/* ------------------------------------------------------------------ */
+
+const MAX_CHECK_ATTEMPTS = 3;
+const CHECK_RETRY_BASE_DELAY_MS = 1000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Remove tokens/credentials so logs and UI messages never leak secrets.
+ */
+function scrubSecrets(message: string): string {
+  return message
+    .replace(
+      /(token|secret|password|authorization|api[_-]?key)\s*[:=]\s*\S+/gi,
+      "$1=***",
+    )
+    .replace(/gh[pous]_[A-Za-z0-9_]+/g, "***")
+    .replace(/x-access-token:[^@\s]+@/gi, "***@");
+}
+
+/**
+ * Map technical failures to a friendly PT-BR message for the UI.
+ */
+function toFriendlyUpdateError(message: string): string {
+  const clean = scrubSecrets(message);
+  if (/ENOENT|channel file.*not found|latest\.ya?ml/i.test(clean)) {
+    return "Arquivo de atualização não encontrado. Verifique sua conexão e tente novamente.";
+  }
+  if (
+    /ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNRESET|network|offline|getaddrinfo|internet/i.test(
+      clean,
+    )
+  ) {
+    return "Sem conexão com o servidor de atualizações. Verifique sua internet e tente novamente.";
+  }
+  if (/\b404\b/.test(clean)) {
+    return "Informações da nova versão não encontradas no servidor. Tente novamente mais tarde.";
+  }
+  return "Não foi possível verificar atualizações. Tente novamente mais tarde.";
+}
+
+/* ------------------------------------------------------------------ */
 /*  Skip-Version Helpers                                               */
 /* ------------------------------------------------------------------ */
 
@@ -170,29 +215,43 @@ export async function checkForUpdates(): Promise<{
   available: boolean;
   version?: string;
   releaseNotes?: string;
+  error?: string;
 }> {
-  try {
-    const result = await autoUpdater.checkForUpdates();
-    if (!result) return { available: false };
-    updateCheckResult = result;
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= MAX_CHECK_ATTEMPTS; attempt++) {
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      if (!result) return { available: false };
+      updateCheckResult = result;
 
-    const skippedVersion = getSkippedVersion();
-    if (skippedVersion && result.updateInfo.version === skippedVersion) {
-      console.log(`[update] Version ${skippedVersion} was skipped — ignoring.`);
-      return { available: false };
+      const skippedVersion = getSkippedVersion();
+      if (skippedVersion && result.updateInfo.version === skippedVersion) {
+        console.log(
+          `[update] Version ${skippedVersion} was skipped — ignoring.`,
+        );
+        return { available: false };
+      }
+
+      return {
+        available:
+          result.updateInfo.version !== autoUpdater.currentVersion.format(),
+        version: result.updateInfo.version,
+        releaseNotes: extractReleaseNotes(result.updateInfo.releaseNotes),
+      };
+    } catch (error: unknown) {
+      lastError = error;
+      if (attempt < MAX_CHECK_ATTEMPTS) {
+        await sleep(CHECK_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1));
+      }
     }
-
-    return {
-      available:
-        result.updateInfo.version !== autoUpdater.currentVersion.format(),
-      version: result.updateInfo.version,
-      releaseNotes: extractReleaseNotes(result.updateInfo.releaseNotes),
-    };
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[update] Check failed:", message);
-    return { available: false };
   }
+  const raw =
+    lastError instanceof Error ? lastError.message : String(lastError);
+  const friendly = toFriendlyUpdateError(raw);
+  console.error("[update] Check failed:", friendly);
+  currentStatus = { status: "error", errorMessage: friendly };
+  mainWindow?.webContents.send("update:error", { message: friendly });
+  return { available: false, error: friendly };
 }
 
 export async function downloadUpdate(): Promise<void> {
@@ -234,10 +293,12 @@ export function getUpdateStatus(): {
   status: string;
   progress?: number;
   version?: string;
+  errorMessage?: string;
 } {
   return {
     status: currentStatus.status,
     progress: currentStatus.progress,
     version: currentStatus.version,
+    errorMessage: currentStatus.errorMessage,
   };
 }
