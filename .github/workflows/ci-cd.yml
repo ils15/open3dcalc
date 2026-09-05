@@ -15,13 +15,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality:
-    # Fork guard: pull_requests from forks NEVER execute on the self-hosted
-    # runner. Only trusted pushes to main and same-repo PRs run here.
-    if: |
-      github.event_name != 'pull_request' ||
-      (github.head_ref != '' &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+  checks:
+    # NOTE: runs on fork PRs too — public ubuntu-latest runner, read-only
+    # token, no writable secrets. Required check for external contributors.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -55,13 +51,6 @@ jobs:
       - name: 🔍 Lint
         run: npm run lint -- --max-warnings=0
       - run: npm run typecheck
-      - run: npm run test:run -- --coverage
-      - name: Upload coverage
-        if: always() && hashFiles('coverage/') != ''
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: coverage
-          path: coverage/
       - name: 🔔 Notify failure
         if: failure()
         shell: bash
@@ -73,8 +62,51 @@ jobs:
           echo "❌ CI/CD failed: $REPO@$REF"
           echo "  https://github.com/$REPO/actions/runs/$RUN_ID"
 
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: ⚡ Cache node_modules
+        id: npm-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+      - if: steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - if: steps.npm-cache.outputs.cache-hit == 'true'
+        run: echo "  ✓ node_modules restored from cache"
+      - name: Rebuild native modules
+        run: npm rebuild better-sqlite3
+      - run: npm run test:run -- --coverage
+      - name: 🔔 Notify failure
+        if: failure()
+        shell: bash
+        env:
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          echo "❌ CI/CD failed: $REPO@$REF"
+          echo "  https://github.com/$REPO/actions/runs/$RUN_ID"
+      - name: Upload coverage
+        if: always() && hashFiles('coverage/') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage
+          path: coverage/
+
   build-web:
-    needs: quality
+    needs: [checks, test]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -115,7 +147,7 @@ jobs:
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
 
   build-desktop:
-    needs: quality
+    needs: [checks, test]
     # Fork guard (same as the quality job): for PR workflows github.ref is
     # refs/pull/<number>/merge, so a ref-based condition would skip the
     # desktop build on every PR. Run on trusted pushes to main AND same-repo
