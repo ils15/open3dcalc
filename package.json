@@ -104,13 +104,19 @@
       "node_modules/bindings/**",
       "node_modules/file-uri-to-path/**"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ils15",
+        "repo": "open3dcalc"
+      }
+    ],
     "win": {
       "target": [
         {
           "target": "nsis",
           "arch": [
-            "x64",
-            "arm64"
+            "x64"
           ]
         }
       ],
