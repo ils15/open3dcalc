@@ -25,6 +25,7 @@ function emptySyncData(): SyncData {
     quotes: [],
     catalog: { printers: [], materials: [], marketplaces: [] },
     filaments: [],
+    products: [],
     theme: "",
     dashboard: {},
     sections: {},

@@ -205,10 +205,15 @@ export interface CalculationResult {
   breakEvenPrice: number;
   actualMargin: number;
   carbonFootprintGrams: number;
+  /** Net profit per billable hour, rounded to 2 decimals (Fase 2 #70). 0 when total hours <= 1e-9. */
+  profitPerHour?: number;
+  /** Billable hours behind profitPerHour: (print + post + setup minutes) / 60. */
+  totalHoursForProfit?: number;
 }
 
 export { type Customer, type CustomerFormData } from "./customer";
 export { type Quote, type QuoteItem, type QuoteFormData } from "./quote";
+export { type Product, type ProductFormData } from "./product";
 
 export interface HistoryItem {
   id: string;

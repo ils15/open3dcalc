@@ -46,6 +46,11 @@ export interface SyncData {
     marketplaces: unknown[];
   }; // open3dcalc_catalog_v1 (only custom: true)
   filaments: unknown[]; // open3dcalc_filaments
+  /**
+   * Product inventory. Optional for backward compatibility with bundles
+   * exported before Issue #68.
+   */
+  products?: unknown[]; // open3dcalc_products (zustand persist wrapper)
   theme: string; // open3dcalc_theme
   dashboard: Record<string, unknown>; // open3dcalc_dashboard_v1 + goal
   sections: Record<string, boolean>; // open3dcalc_sections
@@ -83,6 +88,7 @@ const KEYS = {
   quotes: "open3dcalc_quotes_v1",
   catalog: "open3dcalc_catalog_v1",
   filaments: "open3dcalc_filaments",
+  products: "open3dcalc_products",
   theme: "open3dcalc_theme",
   dashboard: "open3dcalc_dashboard_v1",
   dashboardGoal: "open3dcalc_dashboard_goal",
@@ -259,6 +265,14 @@ export function collectSyncData(): SyncData {
 
   const filamentsRaw = readPlainJSON<unknown>(KEYS.filaments, []);
 
+  const productsRaw = readPlainJSON<unknown>(KEYS.products, null);
+  const productsState = unwrapPersist(productsRaw);
+  const products = Array.isArray(productsState.products)
+    ? productsState.products
+    : Array.isArray(productsRaw)
+      ? productsRaw
+      : [];
+
   const dashboardRaw = readPlainJSON<Record<string, unknown>>(
     KEYS.dashboard,
     {},
@@ -283,6 +297,7 @@ export function collectSyncData(): SyncData {
       marketplaces: catalog.marketplaces?.filter(isCustomItem) ?? [],
     },
     filaments: Array.isArray(filamentsRaw) ? filamentsRaw : [],
+    products,
     theme: getRaw(KEYS.theme) ?? "",
     dashboard,
     sections,
@@ -306,6 +321,7 @@ function isSyncData(value: unknown): value is SyncData {
   if (!Array.isArray(d.customers)) return false;
   if (!Array.isArray(d.quotes)) return false;
   if (!Array.isArray(d.filaments)) return false;
+  if (d.products !== undefined && !Array.isArray(d.products)) return false;
   if (typeof d.theme !== "string") return false;
   if (
     !d.dashboard ||
@@ -566,6 +582,22 @@ export function applySyncData(
       if (c > 0) conflicts.push("filaments");
     }
     imported.push("filaments");
+  }
+
+  const incomingProducts = data.products ?? [];
+  if (incomingProducts.length > 0 || mode === "replace") {
+    const local = readPersistState(KEYS.products);
+    const localProducts = Array.isArray(local.state.products)
+      ? local.state.products
+      : [];
+    if (mode === "replace") {
+      writePersistState(KEYS.products, { products: incomingProducts });
+    } else {
+      const { merged, conflicts: c } = mergeById(localProducts, incomingProducts);
+      writePersistState(KEYS.products, { products: merged });
+      if (c > 0) conflicts.push("products");
+    }
+    imported.push("products");
   }
 
   if (data.theme !== "" || mode === "replace") {
