@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.20",
-    "@react-pdf/renderer": "^4.6.1",
+    "@react-pdf/renderer": "^4.9.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "better-sqlite3": "^13.0.3",
