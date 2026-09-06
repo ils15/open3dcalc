@@ -10,6 +10,7 @@
 - UI/UX improvements — STL support estimation, Resin preview, safety fixes ([#57](https://github.com/ils15/open3dcalc/pull/57))
 - **calc:** Exibe lucro por hora (profit/hr) FDM+Resina ([#77](https://github.com/ils15/open3dcalc/pull/77))
 - **products:** Cadastro produtos + vendido + CSV + sync ([#78](https://github.com/ils15/open3dcalc/pull/78))
+- **estimators:** Modos simple/advanced + G-code opcional ([#83](https://github.com/ils15/open3dcalc/pull/83))
 
 ### 🩹 Fixes
 
@@ -19,6 +20,7 @@
 - **estimators:** Casca por area de superficie e fisica da extrusao no… ([#73](https://github.com/ils15/open3dcalc/pull/73))
 - **release:** Windows exe + auto-update resiliente ([#76](https://github.com/ils15/open3dcalc/pull/76))
 - **release:** Join --body into single quoted string in release PR step ([#79](https://github.com/ils15/open3dcalc/pull/79))
+- **estimators:** Espessura de casca e média ponderada, não soma ([#82](https://github.com/ils15/open3dcalc/pull/82))
 
 ### ✅ Tests
 

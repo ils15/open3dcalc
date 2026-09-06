@@ -717,7 +717,8 @@
               "**sync:** Add text label to DataSyncButton for better visibility (a6da01d)",
               "UI/UX improvements — STL support estimation, Resin preview, safety fixes (#57)",
               "**calc:** Exibe lucro por hora (profit/hr) FDM+Resina (#77)",
-              "**products:** Cadastro produtos + vendido + CSV + sync (#78)"
+              "**products:** Cadastro produtos + vendido + CSV + sync (#78)",
+              "**estimators:** Modos simple/advanced + G-code opcional (#83)"
             ]
           },
           {
@@ -728,7 +729,8 @@
               "**3mf:** Segue p:path da production extension e corrige volume 3x maior (#72)",
               "**estimators:** Casca por area de superficie e fisica da extrusao no… (#73)",
               "**release:** Windows exe + auto-update resiliente (#76)",
-              "**release:** Join --body into single quoted string in release PR step (#79)"
+              "**release:** Join --body into single quoted string in release PR step (#79)",
+              "**estimators:** Espessura de casca e média ponderada, não soma (#82)"
             ]
           },
           {
@@ -745,10 +747,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -773,9 +772,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -812,9 +809,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -856,9 +851,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -942,9 +935,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -960,15 +951,11 @@
           },
           {
             "title": "🧹 Outros",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1000,10 +987,7 @@
           },
           {
             "title": "✅ Testes",
-            "items": [
-              "417 testes, 36/36 arquivos passando",
-              "Cobertura >80%"
-            ]
+            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
           }
         ]
       },
