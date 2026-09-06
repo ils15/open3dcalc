@@ -114,3 +114,23 @@ tem esses campos — só `infillPercent`. Ligar o perfil de impressão da UI aos
 estimadores exige adicionar `wallCount`/`lineWidthMm` (e, por coerência,
 `topLayers`/`bottomLayers`/`layerHeightMm`) à store, fora do escopo deste PR.
 Até lá, `StlPreview` segue com os defaults documentados no §2.
+
+## 10. G-code E paths can diverge (documented, no behavior change)
+
+Two readers extract filament from G-code E values with different rules:
+
+- Legacy file view (`src/shared/lib/gcodeParser.ts`, used by the `StlPreview`
+  G-code file tab): tracks **max-E**, the largest absolute `E` seen on
+  `G0`/`G1` moves. Simple and slicer-header friendly, but blind to resets.
+- Custom anchor (`src/shared/lib/gcodeTotals.ts`, used by the Custom
+  G-code anchor): **sums signed deltas** with `M82` (absolute, default) /
+  `M83` (relative) plus `G92 En` resets. In absolute mode only positive
+  deltas add (retraction is ignored without moving the baseline, so the
+  following de-retraction nets zero); in relative mode deltas add with sign
+  (negative retraction included).
+
+Consequence: on retraction-heavy or relative-extrusion files the two paths
+can report different E totals (max-E vs sum). This is expected and
+documented — do NOT "fix" one to match the other without a slicer-measured
+anchor. The UI surfaces this note under the Custom G-code upload
+(`stl.gcodeEPathsNote`).

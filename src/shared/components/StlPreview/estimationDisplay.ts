@@ -1,9 +1,11 @@
 import {
+  resolveAnchorGrams,
+  resolveAnchorMinutes,
   resolveCalibrationK,
   resolveFixedMinutes,
   type EstimationMode,
+  type GcodeAnchor,
 } from "@/shared/types/estimation";
-import type { GcodeAnchor } from "./EstimationModeSection";
 
 export interface DisplayEstimateInput {
   /** Base (simple) weight in grams. */
@@ -41,16 +43,12 @@ export function resolveDisplayEstimate(
   }
   const k = resolveCalibrationK({ mode, calibrationK });
   const fixed = resolveFixedMinutes({ mode, fixedMinutes });
-  const anchorGrams =
-    anchor && Number.isFinite(anchor.grams) && anchor.grams > 0
-      ? anchor.grams
-      : undefined;
+  // Anchor validation lives in estimation.ts (E1) — display only consumes.
+  const anchorGrams = resolveAnchorGrams(anchor);
+  const rawAnchorMinutes = resolveAnchorMinutes(anchor);
   const anchorMinutes =
-    anchor &&
-    anchor.minutes != null &&
-    Number.isFinite(anchor.minutes) &&
-    anchor.minutes > 0
-      ? Math.round(anchor.minutes + fixed)
+    rawAnchorMinutes !== undefined
+      ? Math.round(rawAnchorMinutes + fixed)
       : undefined;
   const displayWeight = anchorGrams ?? parseFloat((weight * k).toFixed(2));
   if (anchorMinutes !== undefined) {
@@ -72,7 +70,8 @@ export function resolveDisplayEstimate(
   const scaledMinutes = Math.round(minutes * k + fixed);
   return {
     weight: displayWeight,
-    hours: Math.round((scaledMinutes / 60) * 100) / 100,
+    // 1-decimal hours, same as the estimator (H1).
+    hours: Math.round((scaledMinutes / 60) * 10) / 10,
     weightFromGcode: anchorGrams !== undefined,
     timeFromGcode: false,
   };

@@ -456,7 +456,7 @@
     "triangles": "Triangles",
     "printTime": "Print Time",
     "printTimeProfitHint": "Time used in the profit-per-hour calculation",
-    "tooLarge": "File too large. Limit: 100 MB.",
+    "tooLarge": "File too large. Limit: 50 MB.",
     "tooComplex": "Mesh too complex. Limit: 2 million triangles.",
     "weight": "Estimated Weight",
     "dropzone": "Drag your 3D file here",
@@ -484,7 +484,8 @@
     "gcodeParseError": "Could not read the G-code.",
     "advancedUncertainty": "Pre-slice estimate (±30%). Slicer G-code is more accurate.",
     "estimatedBadge": "Estimated",
-    "gcodeBadge": "Accurate (G-code)"
+    "gcodeBadge": "Accurate (G-code)",
+    "gcodeEPathsNote": "G-code E paths can differ: file view uses max-E, the Custom anchor sums extrusion (M82/M83 + G92). Retraction-heavy or relative files may diverge."
   },
   "common": {
     "save": "Save",

@@ -447,7 +447,8 @@ describe("athena — fixedMinutes (t_real = t_fixed + k*t, default 0)", () => {
       anchor: null,
       fixedMinutes: 15,
     });
-    expect(d.hours).toBeCloseTo(1.25, 5);
+    // H1: 1-decimal hours like the estimator — 75 min -> 1.25h -> 1.3h.
+    expect(d.hours).toBeCloseTo(1.3, 5);
     expect(d.timeFromGcode).toBe(false);
   });
 });

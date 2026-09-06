@@ -24,6 +24,8 @@ import {
   EstimationModeSection,
   type GcodeAnchor,
 } from "./EstimationModeSection";
+// Single-source G-code upload cap (C1 — never duplicate the MB literal).
+import { DEFAULT_MAX_CHARS } from "@/shared/lib/gcodeTotals";
 
 export interface FileParseResult {
   geometry: BufferGeometry | null;
@@ -306,7 +308,7 @@ export function StlPreview({
         return;
       }
 
-      if (file.size > 100 * 1024 * 1024) {
+      if (file.size > DEFAULT_MAX_CHARS) {
         showError(t("stl.tooLarge"));
         return;
       }
@@ -319,7 +321,8 @@ export function StlPreview({
           const { parseGcode } = await import("@/shared/lib/gcodeParser");
           const text = await file.text();
           const gcode = parseGcode(text);
-          const hours = gcode.printTimeMinutes / 60;
+          // 1-decimal hours, same as the estimator (H1).
+          const hours = Math.round((gcode.printTimeMinutes / 60) * 10) / 10;
           const result: FileParseResult = {
             geometry: null,
             analysis: {
@@ -344,7 +347,7 @@ export function StlPreview({
             },
             volumeCm3: 0,
             weight: gcode.filamentUsedGrams,
-            printTimeHours: parseFloat(hours.toFixed(2)),
+            printTimeHours: hours,
             dimensions: {
               x: gcode.printSize.x,
               y: gcode.printSize.y,
