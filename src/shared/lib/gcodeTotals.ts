@@ -3,18 +3,28 @@
  *
  * Covers what the slicer knows and pre-slice does not: E sum over `G0`/`G1`
  * with `M82` (absolute, default) / `M83` (relative) plus `G92 En` resets, plus
- * `;TIME:seconds` (Cura) and `; estimated printing time ... = Xh Ym Zs`
- * (Prusa/Orca). No catastrophic regex: prefixes only plus one simple `\d`
- * per line. Anti-DoS caps with a friendly error.
+ * slicer time headers (Cura, Prusa/Orca, Bambu, Klipper — see
+ * `parseTimeHeaderSeconds`). With no header, time falls back to a
+ * move-based estimate from the parsed E total (APPROXIMATE — documented on
+ * `estimatePrintTimeFromFilamentMm`). No catastrophic regex: prefixes only
+ * plus one simple `\d` per line. Anti-DoS caps with a friendly error.
  */
+
+import { estimatePrintTimeFromFilamentMm } from "./printTimeEstimator";
 
 export interface GcodeTotals {
   /** Total extruded filament in mm (E sum). */
   extrudedMm: number;
   /** Estimated weight in grams (Ø 1.75 mm, PLA 1.24 g/cm³). */
   extrudedGrams: number;
-  /** Header time in minutes, when the G-code reports it. */
+  /** Header time in minutes: slicer header or move-based fallback. */
   timeMinutes?: number;
+  /**
+   * Where `timeMinutes` came from: `"header"` (slicer reported it) or
+   * `"moves"` (APPROXIMATE fallback from extruded E — no header found).
+   * Absent when `timeMinutes` is absent.
+   */
+  timeSource?: "header" | "moves";
 }
 
 export interface ParseGcodeTotalsOptions {
@@ -36,6 +46,51 @@ export interface ParseGcodeTotalsOptions {
 export const DEFAULT_MAX_CHARS = 50 * 1024 * 1024;
 export const DEFAULT_MAX_LINES = 2_000_000;
 
+/**
+ * Single-source filament defaults (W1 — never hard-code 1.75/1.24 elsewhere).
+ * Density matches the PLA entry of `filamentProfiles.ts`; callers that know
+ * the material resolve the density via `resolveFilamentDensity` and pass it
+ * through `ParseGcodeTotalsOptions`.
+ */
+export const DEFAULT_FILAMENT_DIAMETER_MM = 1.75;
+export const DEFAULT_FILAMENT_DENSITY_GCM3 = 1.24;
+
+/**
+ * Header seconds → whole minutes with the estimator rounding (T1/T2).
+ * Single converter consumed by both G-code readers.
+ */
+export function timeSecondsToMinutes(seconds: number): number {
+  return Math.round(seconds / 60);
+}
+
+/**
+ * First-header-wins policy (T1/T2): the first time header in the file wins,
+ * later headers are ignored. `undefined` means "no header seen yet".
+ */
+export function firstHeaderMinutes(
+  current: number | undefined,
+  headerSeconds: number | undefined,
+): number | undefined {
+  if (current !== undefined) return current;
+  if (headerSeconds === undefined) return current;
+  return timeSecondsToMinutes(headerSeconds);
+}
+
+/**
+ * Filament weight from extruded length (W1 — single formula, never duplicate).
+ * Volume = π r² L, with mm→cm³ conversion (/1000), times density.
+ */
+export function filamentWeightGrams(
+  lengthMm: number,
+  filamentDiameterMm: number = DEFAULT_FILAMENT_DIAMETER_MM,
+  densityGcm3: number = DEFAULT_FILAMENT_DENSITY_GCM3,
+): number {
+  if (!(lengthMm > 0)) return 0;
+  const radiusMm = filamentDiameterMm / 2;
+  const volumeCm3 = (Math.PI * radiusMm * radiusMm * lengthMm) / 1000;
+  return volumeCm3 * densityGcm3;
+}
+
 /** `E(-)12.34` — one number per line, no backtracking. */
 function readEValue(token: string): number | undefined {
   const idx = token.indexOf("E");
@@ -54,20 +109,14 @@ function readCuraTimeSeconds(trimmed: string): number | undefined {
   return Number.isFinite(v) && v > 0 ? v : undefined;
 }
 
-/** `... = 1h 23m 45s` (d/h/m/s) → seconds. Only past the `=`. */
-function readEstimatedPrintingTimeSeconds(trimmed: string): number | undefined {
-  if (!trimmed.toLowerCase().includes("estimated printing time")) {
-    return undefined;
-  }
-  const eq = trimmed.indexOf("=");
-  if (eq === -1) return undefined;
-  const part = trimmed.slice(eq + 1);
+/** `1h 23m 45s` (d/h/m/s pairs) → seconds. At most 16 pairs per line. */
+function readDurationTailSeconds(tail: string): number | undefined {
   const re = /(\d+)\s*([dhms])/gi;
   let total = 0;
   let m: RegExpExecArray | null;
   // Anti-loop guard: at most 16 pairs per comment line.
   let guard = 0;
-  while ((m = re.exec(part)) !== null && guard++ < 16) {
+  while ((m = re.exec(tail)) !== null && guard++ < 16) {
     const val = parseInt(m[1], 10);
     if (!Number.isFinite(val)) continue;
     const unit = m[2].toLowerCase();
@@ -81,17 +130,84 @@ function readEstimatedPrintingTimeSeconds(trimmed: string): number | undefined {
   return total > 0 ? total : undefined;
 }
 
+/** `... = 1h 23m 45s` (d/h/m/s) → seconds. Only past the `=`. */
+function readEstimatedPrintingTimeSeconds(trimmed: string): number | undefined {
+  if (!trimmed.toLowerCase().includes("estimated printing time")) {
+    return undefined;
+  }
+  const eq = trimmed.indexOf("=");
+  if (eq === -1) return undefined;
+  return readDurationTailSeconds(trimmed.slice(eq + 1));
+}
+
 /**
- * Unified time-header reader: Cura `;TIME:seconds` first, then Prusa/Orca
- * `estimated printing time`. Returns seconds, or undefined for other lines.
+ * Bambu Studio headers: `; model printing time: 1h 2m 3s` (structured block
+ * at the start), `; total print time: ...`, per-plate
+ * `; printing time for plate N: ...`. Duration tail past `:` or `=`.
+ * Prusa/Orca `estimated printing time` lines match the earlier cascade step,
+ * so reaching here means that reader found nothing usable.
+ */
+function readBambuTimeSeconds(trimmed: string): number | undefined {
+  if (!trimmed.startsWith(";")) return undefined;
+  const lower = trimmed.toLowerCase();
+  if (!lower.includes("printing time") && !lower.includes("print time")) {
+    return undefined;
+  }
+  const sep = trimmed.search(/[:=]/);
+  if (sep === -1) return undefined;
+  return readDurationTailSeconds(trimmed.slice(sep + 1));
+}
+
+/**
+ * Klipper estimator header: `;ESTIMATOR_ADD_TIME: 3600` (seconds, float).
+ * Comment-only: a move line merely mentioning the token must not match.
+ */
+function readKlipperEstimatorAddTimeSeconds(
+  trimmed: string,
+): number | undefined {
+  if (!trimmed.startsWith(";")) return undefined;
+  const key = "ESTIMATOR_ADD_TIME";
+  const idx = trimmed.toUpperCase().indexOf(key);
+  if (idx === -1) return undefined;
+  const m = /(-?\d+(?:\.\d+)?)/.exec(trimmed.slice(idx + key.length));
+  if (!m) return undefined;
+  const v = parseFloat(m[1]);
+  return Number.isFinite(v) && v > 0 ? v : undefined;
+}
+
+/**
+ * Klipper/M73 progress line: `M73 P10 R42` — `R` is remaining minutes, so
+ * the first such line approximates the total (progress ~0). Matches the
+ * command part only (before any trailing `; comment`).
+ */
+function readM73RemainingSeconds(trimmed: string): number | undefined {
+  const semi = trimmed.indexOf(";");
+  const code = (semi === -1 ? trimmed : trimmed.slice(0, semi)).trim();
+  if (!/^M73\b/i.test(code)) return undefined;
+  const m = /\bR(-?\d+(?:\.\d+)?)/i.exec(code);
+  if (!m) return undefined;
+  const minutes = parseFloat(m[1]);
+  if (!Number.isFinite(minutes) || minutes <= 0) return undefined;
+  return minutes * 60;
+}
+
+/**
+ * Unified time-header reader, first-wins cascade: Cura `;TIME:seconds`,
+ * then Prusa/Orca `estimated printing time`, then Bambu
+ * (`model printing time` / per-plate), then Klipper
+ * (`;ESTIMATOR_ADD_TIME`, `M73 R..`). Returns seconds, or undefined for
+ * other lines.
  *
- * Single place for every slicer time format — issue #84 (Klipper time-header
- * variants) will extend THIS function, and both `parseGcodeTotals` and the
- * legacy `parseGcode` reader already consume it.
+ * Single place for every slicer time format — both `parseGcodeTotals` and
+ * the legacy `parseGcode` reader consume it (first header wins).
  */
 export function parseTimeHeaderSeconds(trimmed: string): number | undefined {
   return (
-    readCuraTimeSeconds(trimmed) ?? readEstimatedPrintingTimeSeconds(trimmed)
+    readCuraTimeSeconds(trimmed) ??
+    readEstimatedPrintingTimeSeconds(trimmed) ??
+    readBambuTimeSeconds(trimmed) ??
+    readKlipperEstimatorAddTimeSeconds(trimmed) ??
+    readM73RemainingSeconds(trimmed)
   );
 }
 
@@ -107,8 +223,8 @@ export function parseGcodeTotals(
   const {
     maxChars = DEFAULT_MAX_CHARS,
     maxLines = DEFAULT_MAX_LINES,
-    filamentDiameterMm = 1.75,
-    densityGcm3 = 1.24,
+    filamentDiameterMm = DEFAULT_FILAMENT_DIAMETER_MM,
+    densityGcm3 = DEFAULT_FILAMENT_DENSITY_GCM3,
   } = options;
 
   if (typeof gcodeText !== "string") {
@@ -130,6 +246,7 @@ export function parseGcodeTotals(
   let lastRawE = 0;
   let totalMm = 0;
   let timeMinutes: number | undefined;
+  let timeSource: GcodeTotals["timeSource"];
 
   let lineCount = 0;
   let start = 0;
@@ -142,8 +259,10 @@ export function parseGcodeTotals(
     if (trimmed.length === 0) return;
 
     const timeS = parseTimeHeaderSeconds(trimmed);
-    if (timeS !== undefined && timeMinutes === undefined) {
-      timeMinutes = Math.round(timeS / 60);
+    const next = firstHeaderMinutes(timeMinutes, timeS);
+    if (next !== timeMinutes) {
+      timeMinutes = next;
+      timeSource = "header";
       return;
     }
 
@@ -204,14 +323,28 @@ export function parseGcodeTotals(
   // Clamp: total never negative (malformed G-code with negative balance).
   if (!(totalMm > 0)) totalMm = 0;
 
-  const radiusMm = filamentDiameterMm / 2;
-  const volumeCm3 =
-    totalMm > 0 ? (Math.PI * radiusMm * radiusMm * totalMm) / 1000 : 0;
-
   const result: GcodeTotals = {
     extrudedMm: totalMm,
-    extrudedGrams: volumeCm3 * densityGcm3,
+    extrudedGrams: filamentWeightGrams(
+      totalMm,
+      filamentDiameterMm,
+      densityGcm3,
+    ),
   };
-  if (timeMinutes !== undefined) result.timeMinutes = timeMinutes;
+  if (timeMinutes !== undefined) {
+    result.timeMinutes = timeMinutes;
+    result.timeSource = timeSource;
+  } else {
+    // No slicer header: APPROXIMATE move-based fallback from the parsed E
+    // total (single source in printTimeEstimator). Stays absent when nothing
+    // was extruded — no moves, no estimate.
+    const fallbackMinutes = estimatePrintTimeFromFilamentMm(totalMm, {
+      filamentDiameterMm,
+    });
+    if (fallbackMinutes !== undefined) {
+      result.timeMinutes = fallbackMinutes;
+      result.timeSource = "moves";
+    }
+  }
   return result;
 }

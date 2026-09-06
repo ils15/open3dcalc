@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { estimateWeight } from "@/shared/lib/stlParser";
-import { estimatePrintTime } from "@/shared/lib/printTimeEstimator";
+import {
+  estimatePrintTime,
+  estimatePrintTimeFromFilamentMm,
+} from "@/shared/lib/printTimeEstimator";
 import {
   parseGcodeTotals,
   parseTimeHeaderSeconds,
@@ -212,11 +215,64 @@ describe("parseGcodeTotals — soma E + resets + tempo", () => {
     expect(totals.timeMinutes).toBe(84);
   });
 
-  it("retorna gramas coerentes com o E somado", () => {
+  it("returns grams consistent with the summed E", () => {
     const totals = parseGcodeTotals("G1 X0 Y0 E10");
-    // 10mm de filamento 1.75mm PLA 1.24g/cm³ ≈ 0.0298g
+    // 10mm of 1.75mm PLA 1.24g/cm³ filament ≈ 0.0298g
     expect(totals.extrudedGrams).toBeGreaterThan(0);
     expect(totals.extrudedGrams).toBeCloseTo(0.0298, 3);
+  });
+});
+
+describe("parseTimeHeaderSeconds — Bambu/Klipper variants (issue #84)", () => {
+  it("reads the Bambu structured-block time (`model printing time`)", () => {
+    // 5025s / 60 = 83.75 → round 84 (same rounding as the legacy reader).
+    expect(parseTimeHeaderSeconds("; model printing time: 1h 23m 45s")).toBe(
+      5025,
+    );
+  });
+
+  it("reads the Bambu per-plate time", () => {
+    // 2h 5m = 7500s.
+    expect(
+      parseTimeHeaderSeconds("; estimated printing time for plate 1 = 2h 5m"),
+    ).toBe(7500);
+  });
+
+  it("reads the Klipper `;ESTIMATOR_ADD_TIME` seconds", () => {
+    expect(parseTimeHeaderSeconds(";ESTIMATOR_ADD_TIME: 3600")).toBe(3600);
+  });
+
+  it("reads the Klipper M73 remaining minutes (`M73 P.. R..`)", () => {
+    // R42 = 42 remaining minutes → 2520s (progress-line estimate).
+    expect(parseTimeHeaderSeconds("M73 P10 R42")).toBe(2520);
+  });
+
+  it("first header wins across formats (Cura beats a later Bambu line)", () => {
+    const totals = parseGcodeTotals(
+      [";TIME:7200", "; model printing time: 1h 23m 45s"].join("\n"),
+    );
+    expect(totals.timeMinutes).toBe(120);
+  });
+
+  it("returns undefined for unrelated lines", () => {
+    expect(parseTimeHeaderSeconds("; layer_height = 0.2")).toBeUndefined();
+  });
+});
+
+describe("parseGcodeTotals — moves fallback (issue #84)", () => {
+  it("estimates time from moves when no header is present (approximate)", () => {
+    const totals = parseGcodeTotals("G1 X0 Y0 E500\nG1 X10 Y10 E1000");
+    // Move-based fallback: documented as approximate, single source in
+    // printTimeEstimator (no slicer header to trust here).
+    expect(totals.timeSource).toBe("moves");
+    expect(totals.timeMinutes).toBe(estimatePrintTimeFromFilamentMm(1000));
+    expect(totals.timeMinutes).toBe(9);
+  });
+
+  it("omits time when there is no header and no extrusion", () => {
+    const totals = parseGcodeTotals("G1 X0 Y0\nG1 X10 Y10");
+    expect(totals.timeMinutes).toBeUndefined();
+    expect(totals.timeSource).toBeUndefined();
   });
 });
 
@@ -391,7 +447,8 @@ describe("athena — fixedMinutes (t_real = t_fixed + k*t, default 0)", () => {
       anchor: null,
       fixedMinutes: 15,
     });
-    expect(d.hours).toBeCloseTo(1.25, 5);
+    // H1: 1-decimal hours like the estimator — 75 min -> 1.25h -> 1.3h.
+    expect(d.hours).toBeCloseTo(1.3, 5);
     expect(d.timeFromGcode).toBe(false);
   });
 });
