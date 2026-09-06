@@ -24,9 +24,20 @@ import {
   ScrollText,
   Database,
   Share2,
+  Pencil,
+  Check,
+  X,
+  PackagePlus,
 } from "lucide-react";
 import { exportQuoteJson, downloadQuoteJson } from "@/shared/lib/quoteApi";
 import { generateShareUrl } from "@/shared/lib/calculationLink";
+import { reverseFromSellPrice } from "@/shared/lib/sellPriceOverride";
+import {
+  calculatorToProduct,
+  isDuplicateProductName,
+} from "@/shared/lib/calculatorToProduct";
+import { roundCurrency } from "@/shared/lib/currency";
+import { useProductInventory } from "@/shared/stores/productInventory";
 
 interface ResultsPanelProps {
   variant: "sidebar" | "mobile";
@@ -43,6 +54,9 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
     fdmType,
     resinType,
     lastDeductedInfo,
+    fdmSales,
+    resinSales,
+    selectedSpoolId,
   } = useCalculatorStore(
     useShallow((s) => ({
       results: s.results,
@@ -53,6 +67,9 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
       fdmType: s.fdmMaterial.type,
       resinType: s.resinMaterial.type,
       lastDeductedInfo: s.lastDeductedInfo,
+      fdmSales: s.fdmSales,
+      resinSales: s.resinSales,
+      selectedSpoolId: s.selectedSpoolId,
     })),
   );
   const setLastDeductedInfo = useCalculatorStore((s) => s.setLastDeductedInfo);
@@ -75,6 +92,20 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
   const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Display-local sell-price override (issue #85): never writes back to the
+  // store, so the global margin stays untouched — only this panel re-derives
+  // profit/margin from the overridden price.
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [priceDraft, setPriceDraft] = useState("");
+  const [priceError, setPriceError] = useState(false);
+  const [sellOverride, setSellOverride] = useState<number | null>(null);
+
+  // Calculator → product bridge feedback (success / duplicate-warn / error).
+  const [productMsg, setProductMsg] = useState<{
+    kind: "success" | "warn" | "error";
+    text: string;
+  } | null>(null);
 
   // Inventory deduction state
   const [showInventoryDropdown, setShowInventoryDropdown] = useState(false);
@@ -222,7 +253,93 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
     return items;
   }, [results, isFDM, t]);
 
+  // Re-derived pricing for the display-local override. Base is the
+  // break-even price (= total base cost); tax/fee rates come from the
+  // active tab's sales parameters.
+  const overrideCalc = useMemo(() => {
+    if (!results || sellOverride == null) return null;
+    const sales = activeTab === "fdm" ? fdmSales : resinSales;
+    return reverseFromSellPrice(
+      sellOverride,
+      results.breakEvenPrice,
+      sales.taxPercent,
+      sales.marketplaceFeePercent,
+    );
+  }, [results, sellOverride, activeTab, fdmSales, resinSales]);
+
+  const displaySellPrice = results ? (sellOverride ?? results.sellPrice) : 0;
+  const displayProfit = overrideCalc?.profit ?? results?.profit ?? 0;
+
   if (!results) return null;
+
+  const openPriceEditor = () => {
+    setPriceDraft(String(displaySellPrice));
+    setPriceError(false);
+    setIsEditingPrice(true);
+  };
+
+  const handleConfirmPrice = () => {
+    const parsed = parseFloat(priceDraft.replace(",", "."));
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setPriceError(true);
+      return;
+    }
+    setPriceError(false);
+    setSellOverride(roundCurrency(parsed));
+    setIsEditingPrice(false);
+  };
+
+  const handleCancelPrice = () => {
+    setIsEditingPrice(false);
+    setPriceError(false);
+  };
+
+  const handleResetPrice = () => {
+    setSellOverride(null);
+  };
+
+  const handleRegisterProduct = () => {
+    let name = productName.trim();
+    if (!name) {
+      const asked = window.prompt(t("results.productNamePrompt"));
+      if (asked == null) return;
+      name = asked.trim();
+      if (!name) {
+        setProductMsg({ kind: "error", text: t("results.productNeedsName") });
+        return;
+      }
+    }
+    // Single-spool decision (issue #85): prefer the calculator's selected
+    // spool, fall back to the first available spool for the current material.
+    // Multi-filament compositions are a follow-up.
+    const activeSpool =
+      spools.find((s) => s.id === selectedSpoolId) ??
+      availableSpools[0] ??
+      null;
+    const filamentType = activeSpool ? activeSpool.material : currentMaterial;
+    const data = calculatorToProduct({
+      productName: name,
+      unitWeight: results.unitWeight,
+      filamentType,
+      totalCost: results.totalCost,
+      displaySellPrice,
+    });
+    const duplicate = isDuplicateProductName(
+      name,
+      useProductInventory.getState().products,
+    );
+    useProductInventory.getState().addProduct(data);
+    setProductMsg({
+      kind: duplicate ? "warn" : "success",
+      text: duplicate
+        ? t("results.productDuplicateWarn")
+        : t("results.productRegistered"),
+    });
+  };
+
+  const handleGoToProducts = () => {
+    window.dispatchEvent(new CustomEvent("open3dcalc:go-products"));
+  };
 
   const handleShareLink = async () => {
     const state = useCalculatorStore.getState();
@@ -305,16 +422,110 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   const content = (
     <>
       <div className="result-hero rounded-xl p-3 sm:p-5 text-center">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-success)]/70 mb-1 sm:mb-2">
-          {t("calc.sellPrice")}
-        </div>
-        <div className="text-3xl sm:text-5xl font-black font-mono tracking-tight leading-none text-[var(--color-text-primary)]">
-          {fmtCurrency(results.sellPrice)}
-        </div>
-        {results.taxAmount > 0 && (
-          <div className="text-xs sm:text-sm text-[var(--color-success)]/80 mt-2">
-            incl. {fmtCurrency(results.taxAmount)} em taxas/marketplace
+        <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-success)]/70">
+            {t("calc.sellPrice")}
           </div>
+          {!isEditingPrice && (
+            <button
+              type="button"
+              onClick={openPriceEditor}
+              aria-label={t("calc.sellPriceEdit")}
+              className="p-1.5 rounded-lg text-[var(--color-success)]/70 hover:text-[var(--color-success)] hover:bg-[var(--color-success)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+        {isEditingPrice ? (
+          <div className="flex items-center justify-center gap-2">
+            <label htmlFor="sell-price-override" className="sr-only">
+              {t("calc.sellPriceInputLabel")}
+            </label>
+            <input
+              id="sell-price-override"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              autoFocus
+              value={priceDraft}
+              onChange={(e) => setPriceDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmPrice();
+                if (e.key === "Escape") handleCancelPrice();
+              }}
+              aria-label={t("calc.sellPriceInputLabel")}
+              aria-invalid={priceError}
+              aria-describedby={priceError ? "sell-price-error" : undefined}
+              className="w-36 sm:w-44 px-3 py-2 rounded-xl text-center text-lg sm:text-xl font-mono font-bold bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleConfirmPrice}
+              aria-label={t("calc.sellPriceConfirm")}
+              className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none flex items-center justify-center"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleCancelPrice}
+              aria-label={t("calc.sellPriceCancel")}
+              className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="text-3xl sm:text-5xl font-black font-mono tracking-tight leading-none text-[var(--color-text-primary)]">
+            {fmtCurrency(displaySellPrice)}
+          </div>
+        )}
+        {priceError && isEditingPrice && (
+          <p
+            id="sell-price-error"
+            role="alert"
+            className="text-xs sm:text-sm text-[var(--color-danger)] mt-2"
+          >
+            {t("calc.sellPriceInvalid")}
+          </p>
+        )}
+        {overrideCalc ? (
+          <div className="mt-2 space-y-1.5">
+            <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30">
+              {t("calc.sellPriceCustom")}
+            </span>
+            <p className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
+              {t("calc.profit")}: {fmtCurrency(overrideCalc.profit)} ·{" "}
+              {t("calc.actualMargin")}: {overrideCalc.marginReal.toFixed(1)}% ·{" "}
+              {t("calc.effectiveMarkup")}:{" "}
+              {overrideCalc.markupEffective.toFixed(1)}%
+            </p>
+            {overrideCalc.belowBreakEven && (
+              <p
+                role="alert"
+                className="text-xs sm:text-sm font-semibold text-[var(--color-danger)]"
+              >
+                {t("calc.belowBreakEven", {
+                  value: fmtCurrency(results.breakEvenPrice),
+                })}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleResetPrice}
+              className="text-[11px] sm:text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] underline underline-offset-2 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded"
+            >
+              {t("calc.sellPriceReset")}
+            </button>
+          </div>
+        ) : (
+          results.taxAmount > 0 && (
+            <div className="text-xs sm:text-sm text-[var(--color-success)]/80 mt-2">
+              incl. {fmtCurrency(results.taxAmount)} em taxas/marketplace
+            </div>
+          )
         )}
       </div>
 
@@ -353,7 +564,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
             {t("calc.profit")}
           </div>
           <div className="text-base sm:text-xl font-black text-[var(--color-warning)] font-mono">
-            {fmtCurrency(results.profit)}
+            {fmtCurrency(displayProfit)}
           </div>
           <span
             tabIndex={0}
@@ -461,6 +672,39 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
         <FolderOpen className="w-4 h-4" />
         {t("calc.addHistory")}
       </button>
+
+      <button
+        onClick={handleRegisterProduct}
+        className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]"
+      >
+        <PackagePlus className="w-4 h-4" />
+        {t("results.registerProduct")}
+      </button>
+
+      {productMsg && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`rounded-xl p-3 sm:p-4 text-center text-xs sm:text-sm font-medium border ${
+            productMsg.kind === "error"
+              ? "bg-[var(--color-danger)]/10 border-[var(--color-danger)]/30 text-[var(--color-danger)]"
+              : productMsg.kind === "warn"
+                ? "bg-[var(--color-warning-muted)] border-[var(--color-warning)]/30 text-[var(--color-warning)]"
+                : "bg-emerald-600/10 border-emerald-500/30 text-emerald-400"
+          }`}
+        >
+          <p>{productMsg.text}</p>
+          {productMsg.kind !== "error" && (
+            <button
+              type="button"
+              onClick={handleGoToProducts}
+              className="mt-1.5 underline underline-offset-2 font-semibold hover:opacity-80 transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded"
+            >
+              {t("results.viewProducts")}
+            </button>
+          )}
+        </div>
+      )}
 
       {recentEntries.length > 0 && (
         <div className="surface-elevated rounded-xl p-4 sm:p-5">

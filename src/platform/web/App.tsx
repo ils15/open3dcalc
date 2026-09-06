@@ -147,6 +147,15 @@ function App() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("calculator");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Deep-link from the calculator → product bridge (ResultsPanel dispatches
+  // "open3dcalc:go-products" after registering a product). Issue #85.
+  useEffect(() => {
+    const goToProducts = () => setActiveTab("products");
+    window.addEventListener("open3dcalc:go-products", goToProducts);
+    return () =>
+      window.removeEventListener("open3dcalc:go-products", goToProducts);
+  }, []);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const { symbol } = useCurrency();
   const currencySetting = useCalculatorStore((s) => s.currency);
