@@ -267,6 +267,83 @@ export function estimatedHoursPrecise(estimatedMinutes: number): number {
   return Math.round((estimatedMinutes / 60) * 100) / 100;
 }
 
+/** Speed/geometry overrides for the filament-based fallback (all optional). */
+export interface FilamentTimeOptions {
+  /** Filament diameter in mm (default 1.75). */
+  filamentDiameterMm?: number;
+  /** Layer height in mm (default 0.2). */
+  layerHeightMm?: number;
+  /** Extruded line width in mm (default 0.42 for a 0.4 nozzle). */
+  lineWidthMm?: number;
+  /** Print speed in mm/s (default 60, subject to the MVS clamp). */
+  printSpeedMmPerS?: number;
+  /** Travel speed in mm/s (default 150). */
+  travelSpeedMmPerS?: number;
+  /** Travel distance as a fraction of extrusion distance (default 0.25). */
+  travelRatio?: number;
+  /** Filament family for the MVS ceiling (default PLA). */
+  material?: FilamentFamily | string;
+}
+
+/**
+ * Move-based time fallback from extruded filament length.
+ *
+ * APPROXIMATE — same nominal speeds as `estimatePrintTime` but with no
+ * model geometry: layer-change overhead is skipped and travel is a fixed
+ * fraction of the extrusion distance. Used only when the G-code carries no
+ * slicer time header; prefer any header value when present.
+ *
+ * Returns whole minutes, or undefined for non-positive/invalid input.
+ */
+export function estimatePrintTimeFromFilamentMm(
+  filamentLengthMm: number,
+  options: FilamentTimeOptions = {},
+): number | undefined {
+  if (!Number.isFinite(filamentLengthMm) || filamentLengthMm <= 0) {
+    return undefined;
+  }
+  const {
+    filamentDiameterMm = 1.75,
+    layerHeightMm = DEFAULT_SETTINGS.layerHeightMm,
+    lineWidthMm = DEFAULT_SETTINGS.lineWidthMm,
+    printSpeedMmPerS = DEFAULT_SETTINGS.printSpeedMmPerS,
+    travelSpeedMmPerS = DEFAULT_SETTINGS.travelSpeedMmPerS,
+    travelRatio = DEFAULT_SETTINGS.travelRatio,
+    material = DEFAULT_FILAMENT_FAMILY,
+  } = options;
+  if (
+    !(filamentDiameterMm > 0) ||
+    !(layerHeightMm > 0) ||
+    !(lineWidthMm > 0) ||
+    !(printSpeedMmPerS > 0) ||
+    !(travelSpeedMmPerS > 0)
+  ) {
+    return undefined;
+  }
+  const radiusMm = filamentDiameterMm / 2;
+  const volumeMm3 = Math.PI * radiusMm * radiusMm * filamentLengthMm;
+  const crossSectionMm2 = layerHeightMm * lineWidthMm;
+  // Same MVS clamp as estimatePrintTime: nominal flow never exceeds the
+  // material ceiling, so the fallback cannot promise an impossible time.
+  const maxVolumetricSpeed = maxVolumetricSpeedFor(material);
+  const nominalFlowMm3PerS = crossSectionMm2 * printSpeedMmPerS;
+  const effectiveSpeedMmPerS =
+    nominalFlowMm3PerS > maxVolumetricSpeed
+      ? maxVolumetricSpeed / crossSectionMm2
+      : printSpeedMmPerS;
+  const printDistanceMm = volumeMm3 / crossSectionMm2;
+  const safeTravelRatio = Number.isFinite(travelRatio)
+    ? travelRatio
+    : DEFAULT_SETTINGS.travelRatio;
+  const clampedTravelRatio = Math.min(1, Math.max(0, safeTravelRatio));
+  const travelDistanceMm = printDistanceMm * clampedTravelRatio;
+  const totalSeconds =
+    printDistanceMm / effectiveSpeedMmPerS +
+    travelDistanceMm / travelSpeedMmPerS;
+  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return undefined;
+  return Math.round(totalSeconds / 60);
+}
+
 export function estimatePrintTimeFromDimensions(
   widthMm: number,
   depthMm: number,
