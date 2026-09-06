@@ -28,14 +28,14 @@ describe("EstimationModeSection", () => {
     vi.clearAllMocks();
   });
 
-  it("default simples: exibe o segmento sem controles avançados visíveis", () => {
+  it("default Padrão: exibe o segmento sem controles personalizados visíveis", () => {
     render(<EstimationModeSection {...baseProps} />);
 
     expect(
-      screen.getByRole("radio", { name: "stl.estimationModeSimple" }),
+      screen.getByRole("radio", { name: "stl.estimationModeStandard" }),
     ).toBeChecked();
     expect(
-      screen.getByRole("radio", { name: "stl.estimationModeAdvanced" }),
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
     ).not.toBeChecked();
     expect(screen.queryByRole("slider")).not.toBeInTheDocument();
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
@@ -45,7 +45,27 @@ describe("EstimationModeSection", () => {
     expect(screen.queryByText("stl.gcodeUpload")).not.toBeInTheDocument();
   });
 
-  it("clicar em Avançado troca o modo", async () => {
+  it("toggle exibe rótulos Padrão/Personalizada com descrições de 1 linha e ajuda", () => {
+    render(<EstimationModeSection {...baseProps} />);
+
+    expect(
+      screen.getByRole("radio", { name: "stl.estimationModeStandard" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("stl.estimationModeStandardDescription"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("stl.estimationModeCustomDescription"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "stl.estimationModeHelp" }),
+    ).toBeInTheDocument();
+  });
+
+  it("clicar em Personalizada troca o modo", async () => {
     const user = userEvent.setup();
     const onModeChange = vi.fn();
     render(
@@ -53,12 +73,12 @@ describe("EstimationModeSection", () => {
     );
 
     await user.click(
-      screen.getByRole("radio", { name: "stl.estimationModeAdvanced" }),
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
     );
     expect(onModeChange).toHaveBeenCalledWith("advanced");
   });
 
-  it("modo avançado revela k, upload de G-code e nota de incerteza", () => {
+  it("modo Personalizada revela k, upload de G-code e nota de incerteza", () => {
     render(<EstimationModeSection {...baseProps} mode="advanced" />);
 
     expect(

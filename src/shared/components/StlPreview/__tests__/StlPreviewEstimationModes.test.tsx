@@ -93,12 +93,12 @@ describe("StlPreview estimation modes", () => {
     return onFileParsed.mock.calls[0][0];
   }
 
-  it("default simples: sem controles avançados visíveis", async () => {
+  it("default Padrão: sem controles personalizados visíveis", async () => {
     const onFileParsed = vi.fn<(data: FileParseResult) => void>();
     const base = await loadMesh(onFileParsed);
 
     expect(
-      screen.getByRole("radio", { name: "stl.estimationModeSimple" }),
+      screen.getByRole("radio", { name: "stl.estimationModeStandard" }),
     ).toBeChecked();
     expect(screen.queryByRole("slider")).not.toBeInTheDocument();
     expect(
@@ -108,13 +108,45 @@ describe("StlPreview estimation modes", () => {
     expect(screen.queryByText("stl.estimatedBadge")).not.toBeInTheDocument();
   });
 
-  it("avançado com k=1 mantém valores e indica origem estimada", async () => {
+  it("toggle alterna Padrão/Personalizada com descrições e ajuda", async () => {
+    const onFileParsed = vi.fn<(data: FileParseResult) => void>();
+    await loadMesh(onFileParsed);
+
+    expect(
+      screen.getByRole("radio", { name: "stl.estimationModeStandard" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("stl.estimationModeStandardDescription"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("stl.estimationModeCustomDescription"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "stl.estimationModeHelp" }),
+    ).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
+    );
+    expect(
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "stl.estimationModeStandard" }),
+    ).not.toBeChecked();
+  });
+
+  it("Personalizada com k=1 mantém valores e indica origem estimada", async () => {
     const user = userEvent.setup();
     const onFileParsed = vi.fn<(data: FileParseResult) => void>();
     const base = await loadMesh(onFileParsed);
 
     await user.click(
-      screen.getByRole("radio", { name: "stl.estimationModeAdvanced" }),
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
     );
 
     expect(
@@ -131,7 +163,7 @@ describe("StlPreview estimation modes", () => {
     const base = await loadMesh(onFileParsed);
 
     await user.click(
-      screen.getByRole("radio", { name: "stl.estimationModeAdvanced" }),
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
     );
     fireEvent.change(screen.getByRole("slider", { name: "stl.calibrationK" }), {
       target: { value: "2" },
@@ -150,7 +182,7 @@ describe("StlPreview estimation modes", () => {
     const base = await loadMesh(onFileParsed);
 
     await user.click(
-      screen.getByRole("radio", { name: "stl.estimationModeAdvanced" }),
+      screen.getByRole("radio", { name: "stl.estimationModeCustom" }),
     );
 
     const gcode = gcodeFile(

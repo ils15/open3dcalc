@@ -330,7 +330,9 @@ describe("StlPreview", () => {
     it("keeps drop zone visible after GCODE for re-upload (no dead-end)", async () => {
       const onFileParsed = vi.fn();
       render(<StlPreview onFileParsed={onFileParsed} />);
-      const dropZone = screen.getByRole("button", { name: /stl\./ });
+      const dropZone = screen.getByRole("button", {
+        name: /stl\.(dropzone|tapToSelect|dropActive)/,
+      });
 
       const gcodeContent = "G1 X0 Y0 E0.5\nG1 X10 Y10 E1.5";
       const file = new File([gcodeContent], "reupload.gcode", { type: "" });
@@ -346,7 +348,11 @@ describe("StlPreview", () => {
 
       await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
       // drop zone must remain visible (modelInfo.geometry is null → !modelInfo?.geometry true)
-      expect(screen.getByRole("button", { name: /stl\./ })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: /stl\.(dropzone|tapToSelect|dropActive)/,
+        }),
+      ).toBeInTheDocument();
       // no 3D canvas for GCODE
       expect(screen.queryByTestId("r3f-canvas")).not.toBeInTheDocument();
     });
@@ -392,7 +398,11 @@ describe("StlPreview", () => {
       // geometry must be cleared — canvas removed
       expect(screen.queryByTestId("r3f-canvas")).not.toBeInTheDocument();
       // drop zone reappears for GCODE
-      expect(screen.getByRole("button", { name: /stl\./ })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          name: /stl\.(dropzone|tapToSelect|dropActive)/,
+        }),
+      ).toBeInTheDocument();
     });
 
     it("shows clear button for GCODE when onClear is provided (no geometry dead-end)", async () => {

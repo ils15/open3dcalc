@@ -1,6 +1,10 @@
 /**
  * Modos de estimativa — contrato ANTI-COMPLEXIDADE.
  *
+ * UI: `simple` = "Padrão" — cálculo instantâneo pelos parâmetros do perfil
+ * (aprox. ±30%); `advanced` = "Personalizada" — ajuste fino: fator k por
+ * material + G-code real como âncora.
+ *
  * - `simple` (default): path legado, byte-idêntico ao atual.
  *   `calibrationK` e âncoras G-code são ignoradas.
  * - `advanced`: aplica `calibrationK` (default 1.0) sobre peso/tempo final
@@ -9,7 +13,12 @@
  * YAGNI: sem classes, sem ML, sem histograma (futuro).
  */
 
-/** Modo de estimativa de peso/tempo. */
+/**
+ * Modo de estimativa de peso/tempo.
+ *
+ * - `"simple"` → UI "Padrão": cálculo instantâneo pelos parâmetros do perfil (aprox. ±30%).
+ * - `"advanced"` → UI "Personalizada": ajuste fino com fator k por material + G-code real como âncora.
+ */
 export type EstimationMode = "simple" | "advanced";
 
 /**

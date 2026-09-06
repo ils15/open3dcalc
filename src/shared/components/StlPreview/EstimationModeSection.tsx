@@ -31,8 +31,8 @@ function clampK(raw: number): number | undefined {
 }
 
 /**
- * Seletor Simples|Avançado (ANTI-COMPLEXIDADE: default simples, nada novo
- * visível) + seção avançada colapsada: k de calibração e âncora G-code local.
+ * Seletor Padrão|Personalizada (ANTI-COMPLEXIDADE: default Padrão, nada novo
+ * visível) + seção personalizada colapsada: k de calibração e âncora G-code local.
  */
 export function EstimationModeSection({
   mode,
@@ -87,21 +87,41 @@ export function EstimationModeSection({
   return (
     <div className="space-y-2">
       <fieldset>
-        <legend className="text-xs text-[var(--color-text-secondary)] mb-1">
-          {t("stl.estimationModeLabel")}
+        <legend className="mb-1">
+          <span className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+            {t("stl.estimationModeLabel")}
+            <Tooltip content={t("stl.estimationModeHelp")}>
+              <button
+                type="button"
+                aria-label={t("stl.estimationModeHelp")}
+                className="w-5 h-5 inline-flex items-center justify-center rounded-full text-[11px] text-[var(--color-text-muted)] border border-[var(--color-border)] hover:text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+              >
+                ?
+              </button>
+            </Tooltip>
+          </span>
         </legend>
         <div className="grid grid-cols-2 gap-1 p-1 rounded-xl surface">
           {(
             [
-              { value: "simple", label: t("stl.estimationModeSimple") },
-              { value: "advanced", label: t("stl.estimationModeAdvanced") },
+              {
+                value: "simple",
+                label: t("stl.estimationModeStandard"),
+                description: t("stl.estimationModeStandardDescription"),
+              },
+              {
+                value: "advanced",
+                label: t("stl.estimationModeCustom"),
+                description: t("stl.estimationModeCustomDescription"),
+              },
             ] as const
           ).map((opt) => {
             const active = mode === opt.value;
+            const descId = `estimation-mode-desc-${opt.value}`;
             return (
               <label
                 key={opt.value}
-                className={`min-h-[44px] flex items-center justify-center rounded-lg px-3 py-2 text-center text-xs font-medium cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:outline-none ${
+                className={`min-h-[44px] flex flex-col items-center justify-center rounded-lg px-3 py-2 text-center cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:outline-none ${
                   active
                     ? "bg-[var(--color-accent)] text-white"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
@@ -113,9 +133,21 @@ export function EstimationModeSection({
                   value={opt.value}
                   checked={active}
                   onChange={() => onModeChange(opt.value)}
+                  aria-label={opt.label}
+                  aria-describedby={descId}
                   className="sr-only"
                 />
-                <span>{opt.label}</span>
+                <span className="text-xs font-medium">{opt.label}</span>
+                <span
+                  id={descId}
+                  className={`mt-0.5 text-[10px] leading-tight font-normal ${
+                    active
+                      ? "text-white/80"
+                      : "text-[var(--color-text-muted)]"
+                  }`}
+                >
+                  {opt.description}
+                </span>
               </label>
             );
           })}

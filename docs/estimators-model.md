@@ -3,7 +3,9 @@
 ## 0. Aviso
 
 > Estimativas para precificação (rough ±30%, viés seguro p/ cima); único dado de verdade é o fatiador (G-code). Não usar como garantia de tempo/material.
-> Nomenclatura: modos `Simples`/`Avançado`; valor ancorado no G-code usa o badge `Preciso (G-code)`.
+> Nomenclatura: modos `Padrão`/`Personalizada`; valor ancorado no G-code usa o badge `Preciso (G-code)`.
+> - `Padrão`: cálculo instantâneo pelos parâmetros do perfil (aprox. ±30%).
+> - `Personalizada`: ajuste fino — fator k por material + G-code real como âncora.
 > Status: vigente a partir do PR #73 (branch `pr-73-hardening`).
 > Escopo: `src/shared/lib/stlParser.ts` (`estimateMaterialVolumeCm3`,
 > `estimateWeight`), `src/shared/lib/printTimeEstimator.ts`
