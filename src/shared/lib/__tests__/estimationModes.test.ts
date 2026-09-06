@@ -1,11 +1,23 @@
 import { describe, it, expect } from "vitest";
 import { estimateWeight } from "@/shared/lib/stlParser";
 import { estimatePrintTime } from "@/shared/lib/printTimeEstimator";
-import { parseGcodeTotals } from "@/shared/lib/gcodeTotals";
+import {
+  parseGcodeTotals,
+  parseTimeHeaderSeconds,
+  DEFAULT_MAX_CHARS,
+  DEFAULT_MAX_LINES,
+} from "@/shared/lib/gcodeTotals";
+import {
+  K_MIN,
+  K_MAX,
+  MODE_BEHAVIOR,
+  resolveFixedMinutes,
+} from "@/shared/types/estimation";
+import { resolveDisplayEstimate } from "@/shared/components/StlPreview/estimationDisplay";
 
 /**
- * Estimation modes — contrato ANTI-COMPLEXIDADE:
- * path default (simple/ausente) deve ficar byte-idêntico ao atual.
+ * Estimation modes — ANTI-COMPLEXITY contract:
+ * the default (simple/missing) path must stay byte-identical to current.
  */
 
 const CUBE_WEIGHT_ARGS = {
@@ -209,15 +221,15 @@ describe("parseGcodeTotals — soma E + resets + tempo", () => {
 });
 
 describe("parseGcodeTotals — caps anti-DoS", () => {
-  it("rejeita texto > 50MB com erro amigável", () => {
+  it("rejects text over the char cap with a friendly error", () => {
     const big = "x".repeat(51 * 1024 * 1024);
-    expect(() => parseGcodeTotals(big)).toThrow(/muito grande/i);
+    expect(() => parseGcodeTotals(big)).toThrow(/too large/i);
   });
 
-  it("rejeita linhas demais com erro amigável", () => {
+  it("rejects too many lines with a friendly error", () => {
     const many = Array(300001).fill("G1 X0 Y0").join("\n");
     expect(() => parseGcodeTotals(many, { maxLines: 300000 })).toThrow(
-      /muitas linhas/i,
+      /too many lines/i,
     );
   });
 });
@@ -249,5 +261,137 @@ describe("estimationModes — zero nunca vira NaN", () => {
     });
     expect(t.estimatedMinutes).toBe(0);
     expect(Number.isFinite(t.estimatedHours)).toBe(true);
+  });
+});
+
+describe("athena — caps single-source from gcodeTotals", () => {
+  it("exports DEFAULT_MAX_CHARS (50MB) and DEFAULT_MAX_LINES (2M)", () => {
+    expect(DEFAULT_MAX_CHARS).toBe(50 * 1024 * 1024);
+    expect(DEFAULT_MAX_LINES).toBe(2_000_000);
+  });
+
+  it("rejects text over DEFAULT_MAX_CHARS with a friendly EN error", () => {
+    const big = "x".repeat(DEFAULT_MAX_CHARS + 1);
+    expect(() => parseGcodeTotals(big)).toThrow(/too large/i);
+  });
+
+  it("rejects too many lines with a friendly EN error", () => {
+    const many = Array(11).fill("G1 X0 Y0").join("\n");
+    expect(() => parseGcodeTotals(many, { maxLines: 10 })).toThrow(
+      /too many lines/i,
+    );
+  });
+});
+
+describe("athena — domain exports K_MIN/K_MAX single-source", () => {
+  it("exports calibration bounds used by the UI slider", () => {
+    expect(K_MIN).toBe(0.5);
+    expect(K_MAX).toBe(2);
+  });
+
+  it("clamps out-of-range k into [K_MIN, K_MAX]", () => {
+    const base = estimateWeight(8, { ...CUBE_WEIGHT_ARGS });
+    const clampedHigh = estimateWeight(8, {
+      ...CUBE_WEIGHT_ARGS,
+      mode: "advanced",
+      calibrationK: 10,
+    });
+    expect(clampedHigh).toBeCloseTo(base * K_MAX, 6);
+    const clampedLow = estimateWeight(8, {
+      ...CUBE_WEIGHT_ARGS,
+      mode: "advanced",
+      calibrationK: 0.1,
+    });
+    expect(clampedLow).toBeCloseTo(base * K_MIN, 6);
+  });
+});
+
+describe("athena — MODE_BEHAVIOR OCP table", () => {
+  it("standard (simple) ignores k and anchors; custom (advanced) applies both", () => {
+    expect(MODE_BEHAVIOR.simple).toEqual({
+      applyCalibration: false,
+      applyAnchors: false,
+    });
+    expect(MODE_BEHAVIOR.advanced).toEqual({
+      applyCalibration: true,
+      applyAnchors: true,
+    });
+  });
+});
+
+describe("athena — unified parseTimeHeaderSeconds (see issue #84)", () => {
+  it("parses Cura ';TIME:' seconds", () => {
+    expect(parseTimeHeaderSeconds(";TIME:7200")).toBe(7200);
+  });
+
+  it("parses Prusa/Orca 'estimated printing time' to seconds", () => {
+    expect(
+      parseTimeHeaderSeconds(
+        "; estimated printing time (normal mode) = 1h 23m 45s",
+      ),
+    ).toBe(5025);
+  });
+
+  it("returns undefined for non-time headers", () => {
+    expect(parseTimeHeaderSeconds("G1 X0 Y0 E1")).toBeUndefined();
+    expect(parseTimeHeaderSeconds(";TIME:abc")).toBeUndefined();
+  });
+});
+
+describe("athena — fixedMinutes (t_real = t_fixed + k*t, default 0)", () => {
+  it("resolveFixedMinutes defaults invalid values to 0", () => {
+    expect(resolveFixedMinutes(undefined)).toBe(0);
+    expect(resolveFixedMinutes({})).toBe(0);
+    expect(resolveFixedMinutes({ fixedMinutes: NaN })).toBe(0);
+    expect(resolveFixedMinutes({ fixedMinutes: -5 })).toBe(0);
+    expect(resolveFixedMinutes({ fixedMinutes: 10 })).toBe(10);
+  });
+
+  it("advanced time adds fixed setup on top of k-scaled time", () => {
+    const base = estimatePrintTime({ ...CUBE_TIME_ARGS });
+    const withFixed = estimatePrintTime({
+      ...CUBE_TIME_ARGS,
+      mode: "advanced",
+      calibrationK: 1.2,
+      fixedMinutes: 10,
+    });
+    expect(withFixed.estimatedMinutes).toBe(
+      Math.round(base.estimatedMinutes * 1.2 + 10),
+    );
+  });
+
+  it("fixedMinutes stacks on top of the G-code time anchor", () => {
+    const t = estimatePrintTime({
+      ...CUBE_TIME_ARGS,
+      mode: "advanced",
+      gcodeMinutes: 42,
+      fixedMinutes: 10,
+    });
+    expect(t.estimatedMinutes).toBe(52);
+  });
+
+  it("simple mode ignores fixedMinutes (legacy byte-identical)", () => {
+    const base = estimatePrintTime({ ...CUBE_TIME_ARGS });
+    expect(
+      estimatePrintTime({
+        ...CUBE_TIME_ARGS,
+        mode: "simple",
+        fixedMinutes: 10,
+      }),
+    ).toEqual(base);
+  });
+
+  it("display estimate applies fixedMinutes to advanced time", () => {
+    const d = resolveDisplayEstimate({
+      weight: 10,
+      minutes: 60,
+      hours: 1,
+      mode: "advanced",
+      calibrationK: 1,
+      anchor: null,
+      fixedMinutes: 15,
+    });
+    expect(d.hours).toBeCloseTo(1.25, 5);
+    expect(d.timeFromGcode).toBe(false);
   });
 });

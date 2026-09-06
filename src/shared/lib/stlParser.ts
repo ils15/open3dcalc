@@ -1051,7 +1051,7 @@ export interface MaterialVolumeOptions {
   supportVolumeCm3?: number;
 }
 
-/** Opções do estimador de peso = volume + material + purga + modo de estimativa. */
+/** Weight estimator options = volume + material + purge + estimation mode. */
 export interface WeightOptions extends MaterialVolumeOptions, EstimateOptions {
   /**
    * Família do filamento (tabela `filamentProfiles`, default PLA).
@@ -1126,15 +1126,15 @@ export function estimateMaterialVolumeCm3(
 
   const wallMm = wallCount * lineWidthMm;
   const topBottomMm = ((topLayers + bottomLayers) * layerHeightMm) / 2;
-  // Cada face da peça é OU parede vertical (wallMm) OU topo/fundo horizontal
-  // (topBottomMm) — nunca as duas, então a espessura aplicada à área total é
-  // a MÉDIA PONDERADA das duas, não a soma. Somar contava a casca duas vezes:
-  // um cubo de 10 mm a 15% de infill dava 0,99 cm³ contra 0,51 cm³ da
-  // geometria exata (1,95×), e o erro persistia em 1,22× no cubo de 100 mm.
+  // Each face is EITHER a vertical wall (wallMm) OR a horizontal top/bottom
+  // (topBottomMm) — never both, so the thickness applied to the total area is
+  // the WEIGHTED AVERAGE of the two, not the sum. Summing double-counted the
+  // shell: a 10 mm cube at 15% infill gave 0.99 cm³ vs 0.51 cm³ of exact
+  // geometry (1.95×), and the error persisted at 1.22× on the 100 mm cube.
   //
-  // Sem a divisão real da área entre faces verticais e horizontais, usa a de
-  // um cubo — 4 verticais para 2 horizontais. Com os padrões isso dá 0,827 mm,
-  // que é exatamente a média ponderada real de um cubo (4×0,84 + 2×0,80)/6.
+  // Without the real area split between vertical and horizontal faces, use a
+  // cube's — 4 vertical to 2 horizontal. With defaults that gives 0.827 mm,
+  // exactly the true weighted average of a cube (4×0.84 + 2×0.80)/6.
   const effectiveShellMm = shellThicknessMm ?? (2 * wallMm + topBottomMm) / 3;
   // mm² → cm² (/100); cm² × mm = cm³/10 (1 cm² × 1 mm = 0,1 cm³)
   const shellCm3 = Math.min(
@@ -1146,13 +1146,14 @@ export function estimateMaterialVolumeCm3(
 }
 
 /**
- * Peso do plástico em gramas: `(volume efetivo + purga) × densidade`.
- * Estimativa p/ precificação (rough ±30%, viés p/ cima) — o único dado de verdade é o fatiador (G-code).
- * Volume ≤ 0 ou não-finito retorna 0.
+ * Plastic weight in grams: `(effective volume + purge) × density`.
+ * Pricing estimate (rough ±30%, biased upward) — the only ground truth is the slicer (G-code).
+ * Non-finite or ≤ 0 volume returns 0.
  *
- * Modos (`EstimateOptions`): `simple`/ausente devolve o legado byte-idêntico
- * (ignora `calibrationK`/`gcodeGrams`); `advanced` deixa a âncora `gcodeGrams`
- * vencer e escala o resto por `calibrationK` (default 1.0).
+ * Modes (`EstimateOptions`): `simple`/missing returns the byte-identical
+ * legacy result (ignores `calibrationK`/`gcodeGrams`); `advanced` lets the
+ * `gcodeGrams` anchor win and scales the rest by `calibrationK`
+ * (default 1.0). `fixedMinutes` is time-only and ignored here.
  */
 export function estimateWeight(
   volumeCm3: number,
@@ -1170,12 +1171,14 @@ export function estimateWeight(
     calibrationK: _calibrationK,
     gcodeGrams: _gcodeGrams,
     gcodeMinutes: _gcodeMinutes,
+    fixedMinutes: _fixedMinutes,
     ...volumeOptions
   } = options;
   void _mode;
   void _calibrationK;
   void _gcodeGrams;
   void _gcodeMinutes;
+  void _fixedMinutes;
 
   const density = resolveFilamentDensity(material, densityGcm3);
   // Mesmo guard anti-NaN do infill: NaN → 0% de purga (default).

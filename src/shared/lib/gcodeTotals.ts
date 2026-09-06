@@ -1,37 +1,42 @@
 /**
- * Totais puros de um G-code: filamento extrudado (E) + tempo de cabeçalho.
+ * Pure G-code totals: extruded filament (E) + header time.
  *
- * Cobre o que o slicer sabe e o pré-slice não: soma E de `G0`/`G1` com
- * `M82` (absoluto, default) / `M83` (relativo) e resets `G92 En`, mais
- * `;TIME:segundos` (Cura) e `; estimated printing time ... = Xh Ym Zs`
- * (Prusa/Orca). Sem regex catastrófico: só prefixos e um `\d` simples por
- * linha. Caps anti-DoS com erro amigável (pt-BR).
+ * Covers what the slicer knows and pre-slice does not: E sum over `G0`/`G1`
+ * with `M82` (absolute, default) / `M83` (relative) plus `G92 En` resets, plus
+ * `;TIME:seconds` (Cura) and `; estimated printing time ... = Xh Ym Zs`
+ * (Prusa/Orca). No catastrophic regex: prefixes only plus one simple `\d`
+ * per line. Anti-DoS caps with a friendly error.
  */
 
 export interface GcodeTotals {
-  /** Filamento total extrudado em mm (soma de E). */
+  /** Total extruded filament in mm (E sum). */
   extrudedMm: number;
-  /** Peso estimado em gramas (Ø 1,75 mm, PLA 1,24 g/cm³). */
+  /** Estimated weight in grams (Ø 1.75 mm, PLA 1.24 g/cm³). */
   extrudedGrams: number;
-  /** Tempo de cabeçalho em minutos, quando o G-code informa. */
+  /** Header time in minutes, when the G-code reports it. */
   timeMinutes?: number;
 }
 
 export interface ParseGcodeTotalsOptions {
-  /** Teto de tamanho em chars (default 50MB). */
+  /** Size cap in chars (default 50MB). */
   maxChars?: number;
-  /** Teto de linhas (default 2_000_000). */
+  /** Line cap (default 2_000_000). */
   maxLines?: number;
-  /** Diâmetro do filamento em mm (default 1,75). */
+  /** Filament diameter in mm (default 1.75). */
   filamentDiameterMm?: number;
-  /** Densidade em g/cm³ (default 1,24 PLA). */
+  /** Density in g/cm³ (default 1.24 PLA). */
   densityGcm3?: number;
 }
 
-const DEFAULT_MAX_CHARS = 50 * 1024 * 1024;
-const DEFAULT_MAX_LINES = 2_000_000;
+/**
+ * Single source for G-code upload caps (UI imports these — never duplicate).
+ * `file.size` (bytes) is checked against `DEFAULT_MAX_CHARS` as a close
+ * approximation: G-code is ASCII, so 1 byte ≈ 1 char.
+ */
+export const DEFAULT_MAX_CHARS = 50 * 1024 * 1024;
+export const DEFAULT_MAX_LINES = 2_000_000;
 
-/** `E(-)12.34` — um número por linha, sem backtracking. */
+/** `E(-)12.34` — one number per line, no backtracking. */
 function readEValue(token: string): number | undefined {
   const idx = token.indexOf("E");
   if (idx === -1) return undefined;
@@ -42,14 +47,14 @@ function readEValue(token: string): number | undefined {
   return Number.isFinite(v) ? v : undefined;
 }
 
-/** `;TIME:7200` → 120. Retorna undefined quando não é header de tempo. */
-function readTimeHeaderSeconds(trimmed: string): number | undefined {
+/** `;TIME:7200` → 7200 seconds. Returns undefined when not a TIME header. */
+function readCuraTimeSeconds(trimmed: string): number | undefined {
   if (!trimmed.startsWith(";TIME:")) return undefined;
   const v = parseFloat(trimmed.slice(6).trim());
   return Number.isFinite(v) && v > 0 ? v : undefined;
 }
 
-/** `... = 1h 23m 45s` (d/h/m/s) → segundos. Só após o `=`. */
+/** `... = 1h 23m 45s` (d/h/m/s) → seconds. Only past the `=`. */
 function readEstimatedPrintingTimeSeconds(trimmed: string): number | undefined {
   if (!trimmed.toLowerCase().includes("estimated printing time")) {
     return undefined;
@@ -60,7 +65,7 @@ function readEstimatedPrintingTimeSeconds(trimmed: string): number | undefined {
   const re = /(\d+)\s*([dhms])/gi;
   let total = 0;
   let m: RegExpExecArray | null;
-  // Guarda anti-loop: no máximo 16 pares por linha de comentário.
+  // Anti-loop guard: at most 16 pairs per comment line.
   let guard = 0;
   while ((m = re.exec(part)) !== null && guard++ < 16) {
     const val = parseInt(m[1], 10);
@@ -70,16 +75,30 @@ function readEstimatedPrintingTimeSeconds(trimmed: string): number | undefined {
     else if (unit === "h") total += val * 3600;
     else if (unit === "m") total += val * 60;
     else total += val;
-    // Evita loop vazio em regex global sem avanço.
+    // Avoid empty-loop on a global regex with no advance.
     if (m[0].length === 0) re.lastIndex++;
   }
   return total > 0 ? total : undefined;
 }
 
 /**
- * Soma E + lê tempo de cabeçalho. Pura, sem I/O.
+ * Unified time-header reader: Cura `;TIME:seconds` first, then Prusa/Orca
+ * `estimated printing time`. Returns seconds, or undefined for other lines.
  *
- * @throws Error amigável quando passa dos caps (`maxChars`/`maxLines`).
+ * Single place for every slicer time format — issue #84 (Klipper time-header
+ * variants) will extend THIS function, and both `parseGcodeTotals` and the
+ * legacy `parseGcode` reader already consume it.
+ */
+export function parseTimeHeaderSeconds(trimmed: string): number | undefined {
+  return (
+    readCuraTimeSeconds(trimmed) ?? readEstimatedPrintingTimeSeconds(trimmed)
+  );
+}
+
+/**
+ * E sum + header time. Pure, no I/O.
+ *
+ * @throws Friendly Error when over the caps (`maxChars`/`maxLines`).
  */
 export function parseGcodeTotals(
   gcodeText: string,
@@ -93,20 +112,21 @@ export function parseGcodeTotals(
   } = options;
 
   if (typeof gcodeText !== "string") {
-    throw new Error("G-code inválido: esperado texto.");
+    throw new Error("Invalid G-code: text expected.");
   }
   if (gcodeText.length > maxChars) {
     throw new Error(
-      `G-code muito grande (${(gcodeText.length / 1024 / 1024).toFixed(1)} MB, limite ${(maxChars / 1024 / 1024).toFixed(0)} MB). Envie um trecho menor.`,
+      `G-code too large (${(gcodeText.length / 1024 / 1024).toFixed(1)} MB, limit ${(maxChars / 1024 / 1024).toFixed(0)} MB). Upload a smaller snippet.`,
     );
   }
 
   let absolute = true; // M82 (default) vs M83
-  // Eprev: última referência absoluta. `G92 En` redefine Eprev sem somar.
-  // M82 soma só delta = E − Eprev quando delta > 0; retração (E recua sem
-  // zerar) é ignorada SEM mover Eprev, então o desretrair seguinte dá
-  // delta 0 — líquido zero, sem inflar o total. Restart implícito sem G92
-  // (troca de spool zera o E: E cai para ≤ 0) rebasa Eprev sem somar.
+  // Eprev: last absolute reference. `G92 En` redefines Eprev without adding.
+  // M82 only adds delta = E − Eprev when delta > 0; retraction (E steps back
+  // without zeroing) is ignored WITHOUT moving Eprev, so the following
+  // de-retraction yields delta 0 — net zero, no total inflation. Implicit
+  // restart without G92 (spool swap zeroes E: E drops to ≤ 0) re-bases Eprev
+  // without adding.
   let lastRawE = 0;
   let totalMm = 0;
   let timeMinutes: number | undefined;
@@ -115,24 +135,19 @@ export function parseGcodeTotals(
   let start = 0;
   const n = gcodeText.length;
 
-  // Iteração manual por linha: evita `split` de arquivo gigante.
+  // Manual per-line iteration: avoids `split` on a giant file.
   const visitLine = (line: string): void => {
     lineCount++;
     const trimmed = line.trim();
     if (trimmed.length === 0) return;
 
-    const timeS = readTimeHeaderSeconds(trimmed);
+    const timeS = parseTimeHeaderSeconds(trimmed);
     if (timeS !== undefined && timeMinutes === undefined) {
       timeMinutes = Math.round(timeS / 60);
       return;
     }
-    const estS = readEstimatedPrintingTimeSeconds(trimmed);
-    if (estS !== undefined && timeMinutes === undefined) {
-      timeMinutes = Math.round(estS / 60);
-      return;
-    }
 
-    // Remove comentário final (`G1 X0 E1 ; comentário`) antes de ler o comando.
+    // Strip trailing comment (`G1 X0 E1 ; comment`) before reading the command.
     const semi = trimmed.indexOf(";");
     const code = (semi === -1 ? trimmed : trimmed.slice(0, semi)).trim();
     if (code.length === 0) return;
@@ -147,46 +162,46 @@ export function parseGcodeTotals(
       return;
     }
     if (upper.startsWith("G92")) {
-      // `G92 En` redefine Eprev sem somar: próxima extrusão conta de n.
+      // `G92 En` redefines Eprev without adding: next extrusion counts from n.
       const e = readEValue(upper);
       if (e !== undefined) lastRawE = e;
       return;
     }
-    // Movimento linear G0/G00/G1/G01 (com ou sem espaço: `G1X0E1` vale).
-    // O lookahead rejeita G10/G11/G28 (`G` + dígitos diferentes de 0/1).
+    // Linear move G0/G00/G1/G01 (with or without space: `G1X0E1` counts).
+    // The lookahead rejects G10/G11/G28 (`G` + digits other than 0/1).
     if (!/^G(0{1,2}|1{1,2})(?![0-9])/u.test(upper)) return;
     const e = readEValue(upper);
     if (e === undefined) return;
     if (absolute) {
       if (e <= 0 && e < lastRawE) {
-        lastRawE = e; // restart implícito (spool zerou o E): rebasa sem somar
+        lastRawE = e; // implicit restart (spool zeroed E): re-base without adding
       } else if (e > lastRawE) {
-        totalMm += e - lastRawE; // delta > 0 soma; retração dá delta ≤ 0
+        totalMm += e - lastRawE; // delta > 0 adds; retraction yields delta ≤ 0
         lastRawE = e;
       }
-      // Retração: ignora SEM mover Eprev (desretrair → delta 0, líquido zero).
+      // Retraction: ignored WITHOUT moving Eprev (de-retraction → delta 0, net zero).
     } else {
-      // M83 relativo: soma deltas COM SINAL (retração negativa inclusa).
+      // M83 relative: sum deltas WITH SIGN (negative retraction included).
       totalMm += e;
     }
   };
 
   for (let i = 0; i <= n; i++) {
     if (i === n || gcodeText[i] === "\n") {
-      // Linha sem o `\n`; tolera `\r` do Windows.
+      // Line without `\n`; tolerate Windows `\r`.
       let line = gcodeText.slice(start, i);
       if (line.endsWith("\r")) line = line.slice(0, -1);
       visitLine(line);
       if (lineCount > maxLines) {
         throw new Error(
-          `G-code com muitas linhas (limite ${maxLines.toLocaleString("pt-BR")}). Envie um trecho menor.`,
+          `G-code has too many lines (limit ${maxLines.toLocaleString("en-US")}). Upload a smaller snippet.`,
         );
       }
       start = i + 1;
     }
   }
 
-  // Clamp: total nunca negativo (G-code malformado com saldo negativo).
+  // Clamp: total never negative (malformed G-code with negative balance).
   if (!(totalMm > 0)) totalMm = 0;
 
   const radiusMm = filamentDiameterMm / 2;

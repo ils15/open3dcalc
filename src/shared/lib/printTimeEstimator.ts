@@ -4,7 +4,9 @@ import {
   type FilamentFamily,
 } from "./filamentProfiles";
 import {
+  getModeBehavior,
   resolveCalibrationK,
+  resolveFixedMinutes,
   resolveTimeAnchor,
   type EstimateOptions,
 } from "@/shared/types/estimation";
@@ -96,7 +98,16 @@ function emptyEstimate(layers: number): PrintTimeEstimate {
   };
 }
 
-/** Estimativa p/ precificação (rough ±30%, viés p/ cima) — o único dado de verdade é o fatiador (G-code). */
+/**
+ * Pricing estimate (rough ±30%, biased upward) — the only ground truth is
+ * the slicer (G-code).
+ *
+ * Modes (`EstimateOptions`): `simple`/missing returns the byte-identical
+ * legacy result (ignores `calibrationK`/`gcodeMinutes`/`fixedMinutes`);
+ * `advanced` lets the `gcodeMinutes` anchor win, scales the rest by
+ * `calibrationK` (default 1.0), and adds `fixedMinutes` setup time on top
+ * (`t_real = t_fixed + k * t`, default 0 = current behavior).
+ */
 export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const {
     volumeCm3,
@@ -128,11 +139,14 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     !(printSpeedMmPerS > 0) ||
     !(travelSpeedMmPerS > 0)
   ) {
-    // Âncora do slicer vence até a geometria inválida (advanced):
-    // sem âncora, zeros explícitos como antes — nunca NaN.
+    // The slicer anchor wins even on invalid geometry (advanced):
+    // without anchor, explicit zeros as before — never NaN.
     const anchorMinutes = resolveTimeAnchor(params);
     if (anchorMinutes !== undefined) {
-      const anchoredMinutes = Math.round(anchorMinutes);
+      const fixed = getModeBehavior(params).applyCalibration
+        ? resolveFixedMinutes(params)
+        : 0;
+      const anchoredMinutes = Math.round(anchorMinutes + fixed);
       return {
         estimatedMinutes: anchoredMinutes,
         estimatedHours: Math.round((anchoredMinutes / 60) * 10) / 10,
@@ -215,10 +229,14 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     kind: "rough_estimate",
   };
 
-  // Modo default (simple/ausente): legado byte-idêntico — ignora k e âncoras.
+  // Default mode (simple/missing): byte-identical legacy — ignores k, anchors and fixed setup.
+  // Fixed setup time only applies in advanced mode (`t_real = t_fixed + k * t`).
+  const fixed = getModeBehavior(params).applyCalibration
+    ? resolveFixedMinutes(params)
+    : 0;
   const anchorMinutes = resolveTimeAnchor(params);
   if (anchorMinutes !== undefined) {
-    const anchoredMinutes = Math.round(anchorMinutes);
+    const anchoredMinutes = Math.round(anchorMinutes + fixed);
     return {
       ...base,
       estimatedMinutes: anchoredMinutes,
@@ -227,8 +245,8 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     };
   }
   const k = resolveCalibrationK(params);
-  if (k !== 1) {
-    const scaledMinutes = Math.round(estimatedMinutes * k);
+  if (k !== 1 || fixed !== 0) {
+    const scaledMinutes = Math.round(estimatedMinutes * k + fixed);
     return {
       ...base,
       estimatedMinutes: scaledMinutes,

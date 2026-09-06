@@ -2,7 +2,13 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, X } from "lucide-react";
 import { Tooltip } from "@/shared/components/ui/Tooltip";
-import type { EstimationMode } from "@/shared/types/estimation";
+import {
+  K_MAX,
+  K_MIN,
+  K_STEP,
+  type EstimationMode,
+} from "@/shared/types/estimation";
+import { DEFAULT_MAX_CHARS } from "@/shared/lib/gcodeTotals";
 
 export interface GcodeAnchor {
   fileName: string;
@@ -20,10 +26,10 @@ interface EstimationModeSectionProps {
   onClearGcodeAnchor: () => void;
 }
 
-const K_MIN = 0.5;
-const K_MAX = 2;
-const K_STEP = 0.05;
-const GCODE_MAX_BYTES = 50 * 1024 * 1024;
+// Caps and calibration bounds are single-sourced from the domain
+// (`@/shared/types/estimation`, `@/shared/lib/gcodeTotals`) — never duplicate
+// them here. `file.size` (bytes) is checked against `DEFAULT_MAX_CHARS` as a
+// close approximation (G-code is ASCII, so 1 byte ≈ 1 char).
 
 function clampK(raw: number): number | undefined {
   if (!Number.isFinite(raw)) return undefined;
@@ -31,8 +37,8 @@ function clampK(raw: number): number | undefined {
 }
 
 /**
- * Seletor Padrão|Personalizada (ANTI-COMPLEXIDADE: default Padrão, nada novo
- * visível) + seção personalizada colapsada: k de calibração e âncora G-code local.
+ * Standard|Custom selector (ANTI-COMPLEXITY: Standard by default, nothing new
+ * visible) + collapsed custom section: calibration k and local G-code anchor.
  */
 export function EstimationModeSection({
   mode,
@@ -57,7 +63,7 @@ export function EstimationModeSection({
       setGcodeError(t("stl.gcodeInvalidType"));
       return;
     }
-    if (file.size > GCODE_MAX_BYTES) {
+    if (file.size > DEFAULT_MAX_CHARS) {
       setGcodeError(t("stl.gcodeTooLarge"));
       return;
     }
@@ -141,9 +147,7 @@ export function EstimationModeSection({
                 <span
                   id={descId}
                   className={`mt-0.5 text-[10px] leading-tight font-normal ${
-                    active
-                      ? "text-white/80"
-                      : "text-[var(--color-text-muted)]"
+                    active ? "text-white/80" : "text-[var(--color-text-muted)]"
                   }`}
                 >
                   {opt.description}
