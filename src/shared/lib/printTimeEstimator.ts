@@ -96,6 +96,7 @@ function emptyEstimate(layers: number): PrintTimeEstimate {
   };
 }
 
+/** Estimativa p/ precificação (rough ±30%, viés p/ cima) — o único dado de verdade é o fatiador (G-code). */
 export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const {
     volumeCm3,

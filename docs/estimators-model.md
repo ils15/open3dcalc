@@ -1,5 +1,9 @@
 # Modelo dos estimadores FDM (peso + tempo)
 
+## 0. Aviso
+
+> Estimativas para precificação (rough ±30%, viés seguro p/ cima); único dado de verdade é o fatiador (G-code). Não usar como garantia de tempo/material.
+> Nomenclatura: modos `Simples`/`Avançado`; valor ancorado no G-code usa o badge `Preciso (G-code)`.
 > Status: vigente a partir do PR #73 (branch `pr-73-hardening`).
 > Escopo: `src/shared/lib/stlParser.ts` (`estimateMaterialVolumeCm3`,
 > `estimateWeight`), `src/shared/lib/printTimeEstimator.ts`

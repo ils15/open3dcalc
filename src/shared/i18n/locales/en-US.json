@@ -472,7 +472,7 @@
     "gcodeParseError": "Could not read the G-code.",
     "advancedUncertainty": "Pre-slice estimate (±30%). Slicer G-code is more accurate.",
     "estimatedBadge": "Estimated",
-    "gcodeBadge": "G-code"
+    "gcodeBadge": "Accurate (G-code)"
   },
   "common": {
     "save": "Save",

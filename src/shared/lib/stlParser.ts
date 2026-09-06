@@ -1147,6 +1147,7 @@ export function estimateMaterialVolumeCm3(
 
 /**
  * Peso do plástico em gramas: `(volume efetivo + purga) × densidade`.
+ * Estimativa p/ precificação (rough ±30%, viés p/ cima) — o único dado de verdade é o fatiador (G-code).
  * Volume ≤ 0 ou não-finito retorna 0.
  *
  * Modos (`EstimateOptions`): `simple`/ausente devolve o legado byte-idêntico

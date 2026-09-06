@@ -472,7 +472,7 @@
     "gcodeParseError": "Não foi possível ler o G-code.",
     "advancedUncertainty": "Estimativa pré-fatiamento (±30%). O G-code do fatiador é mais preciso.",
     "estimatedBadge": "Estimado",
-    "gcodeBadge": "G-code"
+    "gcodeBadge": "Preciso (G-code)"
   },
   "common": {
     "save": "Salvar",
