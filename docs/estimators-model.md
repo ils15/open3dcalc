@@ -1,5 +1,11 @@
 # Modelo dos estimadores FDM (peso + tempo)
 
+## 0. Aviso
+
+> Estimativas para precificação (rough ±30%, viés seguro p/ cima); único dado de verdade é o fatiador (G-code). Não usar como garantia de tempo/material.
+> Nomenclatura: modos `Padrão`/`Personalizada`; valor ancorado no G-code usa o badge `Preciso (G-code)`.
+> - `Padrão`: cálculo instantâneo pelos parâmetros do perfil (aprox. ±30%).
+> - `Personalizada`: ajuste fino — fator k por material + G-code real como âncora.
 > Status: vigente a partir do PR #73 (branch `pr-73-hardening`).
 > Escopo: `src/shared/lib/stlParser.ts` (`estimateMaterialVolumeCm3`,
 > `estimateWeight`), `src/shared/lib/printTimeEstimator.ts`
@@ -81,7 +87,26 @@ volume **pré-correção do #72**. Após o merge do #72, re-medir o mesmo projet
 e atualizar os testes/§2 se os números deslocarem. Os testes atuais ancoram
 o _comportamento_ (saturação no volume), não a medição exata, de propósito.
 
-## 7. Follow-up — fiação wall/lineWidth na store do Calculator (NÃO FEITO)
+## 8. Calibração k — só viés proporcional sistemático
+
+`calibrationK` (modo `advanced`) corrige SÓ viés proporcional sistemático —
+ex.: o slicer sempre estima 8% abaixo, em qualquer tamanho. Procedimento:
+`k = actual/estimated` por job, usa a MEDIANA de ≥ 10 jobs do MESMO perfil
+(impressora + material + perfil de fatiamento); nunca reaproveitar k entre
+materiais (densidade/MVS distintos quebram a proporcionalidade).
+
+Para tempo com overhead fixo (heating/probing), o modelo é `t_real = t_fixo
+
+- k·t_slicer`: estima `t_fixo` (minutos de aquecimento + sondagem, medido 1×
+  por impressora) e calibra k só sobre a parcela proporcional. k puro sobre o
+  total superestima peças curtas e subestima as longas.
+
+k NÃO corrige viés geométrico (ver comentário em `calibrationK`,
+`src/shared/types/estimation.ts`): o termo de arestas varia com o tamanho
+(+13% no cubo de 10 mm vs +0,4% no de 100 mm) e nenhum k único achata essa
+curva — isso se corrige na fórmula, não no fator.
+
+## 9. Follow-up — fiação wall/lineWidth na store do Calculator (NÃO FEITO)
 
 `wallCount`/`lineWidthMm` hoje vivem só nos defaults do estimador
 (`VOLUME_DEFAULTS`); a store do Calculator (`calculatorStore.types.ts`) não

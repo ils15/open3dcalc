@@ -3,6 +3,13 @@ import {
   maxVolumetricSpeedFor,
   type FilamentFamily,
 } from "./filamentProfiles";
+import {
+  getModeBehavior,
+  resolveCalibrationK,
+  resolveFixedMinutes,
+  resolveTimeAnchor,
+  type EstimateOptions,
+} from "@/shared/types/estimation";
 
 export interface PrintTimeEstimate {
   estimatedMinutes: number;
@@ -35,7 +42,7 @@ export interface DimensionsMm {
  * material (MVS). Unidades canônicas vão no nome. Defaults em
  * `docs/estimators-model.md`.
  */
-export interface PrintTimeParams {
+export interface PrintTimeParams extends EstimateOptions {
   /** Volume MACIÇO do modelo em cm³ (fallback quando sem `materialVolumeCm3`). */
   volumeCm3: number;
   /** Bounding box do modelo em mm (só `z` é usada, p/ contagem de camadas). */
@@ -91,6 +98,16 @@ function emptyEstimate(layers: number): PrintTimeEstimate {
   };
 }
 
+/**
+ * Pricing estimate (rough ±30%, biased upward) — the only ground truth is
+ * the slicer (G-code).
+ *
+ * Modes (`EstimateOptions`): `simple`/missing returns the byte-identical
+ * legacy result (ignores `calibrationK`/`gcodeMinutes`/`fixedMinutes`);
+ * `advanced` lets the `gcodeMinutes` anchor win, scales the rest by
+ * `calibrationK` (default 1.0), and adds `fixedMinutes` setup time on top
+ * (`t_real = t_fixed + k * t`, default 0 = current behavior).
+ */
 export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const {
     volumeCm3,
@@ -122,6 +139,24 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     !(printSpeedMmPerS > 0) ||
     !(travelSpeedMmPerS > 0)
   ) {
+    // The slicer anchor wins even on invalid geometry (advanced):
+    // without anchor, explicit zeros as before — never NaN.
+    const anchorMinutes = resolveTimeAnchor(params);
+    if (anchorMinutes !== undefined) {
+      const fixed = getModeBehavior(params).applyCalibration
+        ? resolveFixedMinutes(params)
+        : 0;
+      const anchoredMinutes = Math.round(anchorMinutes + fixed);
+      return {
+        estimatedMinutes: anchoredMinutes,
+        estimatedHours: Math.round((anchoredMinutes / 60) * 10) / 10,
+        layers,
+        travelDistanceMm: 0,
+        filamentLengthMm: 0,
+        confidence: "high",
+        kind: "rough_estimate",
+      };
+    }
     return emptyEstimate(layers);
   }
 
@@ -184,8 +219,7 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const confidence: PrintTimeEstimate["confidence"] = hasRealSettings
     ? "high"
     : "medium";
-
-  return {
+  const base: PrintTimeEstimate = {
     estimatedMinutes,
     estimatedHours,
     layers,
@@ -194,6 +228,32 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     confidence,
     kind: "rough_estimate",
   };
+
+  // Default mode (simple/missing): byte-identical legacy — ignores k, anchors and fixed setup.
+  // Fixed setup time only applies in advanced mode (`t_real = t_fixed + k * t`).
+  const fixed = getModeBehavior(params).applyCalibration
+    ? resolveFixedMinutes(params)
+    : 0;
+  const anchorMinutes = resolveTimeAnchor(params);
+  if (anchorMinutes !== undefined) {
+    const anchoredMinutes = Math.round(anchorMinutes + fixed);
+    return {
+      ...base,
+      estimatedMinutes: anchoredMinutes,
+      estimatedHours: Math.round((anchoredMinutes / 60) * 10) / 10,
+      confidence: "high",
+    };
+  }
+  const k = resolveCalibrationK(params);
+  if (k !== 1 || fixed !== 0) {
+    const scaledMinutes = Math.round(estimatedMinutes * k + fixed);
+    return {
+      ...base,
+      estimatedMinutes: scaledMinutes,
+      estimatedHours: Math.round((scaledMinutes / 60) * 10) / 10,
+    };
+  }
+  return base;
 }
 
 /**

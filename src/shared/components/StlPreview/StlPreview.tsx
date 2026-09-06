@@ -19,6 +19,11 @@ import {
   estimatePrintTime,
   estimatedHoursPrecise,
 } from "@/shared/lib/printTimeEstimator";
+import type { EstimationMode } from "@/shared/types/estimation";
+import {
+  EstimationModeSection,
+  type GcodeAnchor,
+} from "./EstimationModeSection";
 
 export interface FileParseResult {
   geometry: BufferGeometry | null;
@@ -33,6 +38,11 @@ export interface FileParseResult {
   /** Estimated support material weight in grams (only when estimateSupport is enabled). */
   supportWeightGrams?: number;
 }
+
+import {
+  resolveDisplayEstimate,
+  type DisplayEstimate,
+} from "./estimationDisplay";
 
 interface StlPreviewProps {
   onFileParsed?: (data: FileParseResult) => void;
@@ -234,6 +244,12 @@ export function StlPreview({
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [supportEnabled, setSupportEnabled] = useState(estimateSupport);
+  const [estimationMode, setEstimationMode] =
+    useState<EstimationMode>("simple");
+  const [calibrationK, setCalibrationK] = useState(1);
+  const [gcodeAnchor, setGcodeAnchor] = useState<GcodeAnchor | null>(null);
+  const [baseTimeMinutes, setBaseTimeMinutes] = useState<number | null>(null);
+  const lastEmittedRef = useRef<{ weight: number; hours: number } | null>(null);
   const isTouchDevice = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -260,6 +276,11 @@ export function StlPreview({
     setError(null);
     setParsing(false);
     setIsFullscreen(false);
+    setEstimationMode("simple");
+    setCalibrationK(1);
+    setGcodeAnchor(null);
+    setBaseTimeMinutes(null);
+    lastEmittedRef.current = null;
     onClear?.();
   }, [onClear]);
 
@@ -275,6 +296,9 @@ export function StlPreview({
   const processFile = useCallback(
     async (file: File, supportFlag?: boolean) => {
       const estimateSupportFlag = supportFlag ?? supportEnabled;
+      // Âncora G-code vale para a malha atual: arquivo novo invalida,
+      // re-parse do mesmo arquivo (toggle de suporte) mantém.
+      if (lastFileRef.current !== file) setGcodeAnchor(null);
       lastFileRef.current = file;
       const ext = file.name.split(".").pop()?.toLowerCase();
       if (!ext || !["stl", "obj", "3mf", "gcode"].includes(ext)) {
@@ -330,6 +354,11 @@ export function StlPreview({
           };
           setGeometry(null);
           setModelInfo(result);
+          setBaseTimeMinutes(gcode.printTimeMinutes);
+          lastEmittedRef.current = {
+            weight: result.weight,
+            hours: result.printTimeHours,
+          };
           onFileParsed?.(result);
         } else {
           const {
@@ -400,6 +429,11 @@ export function StlPreview({
                 : undefined,
           };
           setModelInfo(result);
+          setBaseTimeMinutes(timeEstimate.estimatedMinutes);
+          lastEmittedRef.current = {
+            weight: result.weight,
+            hours: result.printTimeHours,
+          };
           onFileParsed?.(result);
         }
       } catch {
@@ -420,6 +454,40 @@ export function StlPreview({
       supportEnabled,
     ],
   );
+
+  const displayEstimate = useMemo<DisplayEstimate | null>(() => {
+    if (!modelInfo) return null;
+    return resolveDisplayEstimate({
+      weight: modelInfo.weight,
+      minutes: baseTimeMinutes,
+      hours: modelInfo.printTimeHours,
+      mode: estimationMode,
+      calibrationK,
+      anchor: gcodeAnchor,
+    });
+  }, [modelInfo, baseTimeMinutes, estimationMode, calibrationK, gcodeAnchor]);
+
+  // Avançado ajusta peso/tempo exibidos: propaga para a calculadora.
+  useEffect(() => {
+    if (!modelInfo || !displayEstimate) return;
+    const last = lastEmittedRef.current;
+    if (
+      last &&
+      last.weight === displayEstimate.weight &&
+      last.hours === displayEstimate.hours
+    ) {
+      return;
+    }
+    lastEmittedRef.current = {
+      weight: displayEstimate.weight,
+      hours: displayEstimate.hours,
+    };
+    onFileParsed?.({
+      ...modelInfo,
+      weight: displayEstimate.weight,
+      printTimeHours: displayEstimate.hours,
+    });
+  }, [modelInfo, displayEstimate, onFileParsed]);
 
   const handleToggleSupport = useCallback(() => {
     const next = !supportEnabled;
@@ -599,6 +667,15 @@ export function StlPreview({
               {t("stl.estimateSupport")}
             </span>
           </label>
+          <EstimationModeSection
+            mode={estimationMode}
+            onModeChange={setEstimationMode}
+            calibrationK={calibrationK}
+            onCalibrationKChange={setCalibrationK}
+            gcodeAnchor={gcodeAnchor}
+            onGcodeAnchor={setGcodeAnchor}
+            onClearGcodeAnchor={() => setGcodeAnchor(null)}
+          />
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             {modelInfo.volumeCm3 > 0 && (
               <div className="surface rounded-lg p-2.5 text-center">
@@ -616,8 +693,17 @@ export function StlPreview({
                   {t("stl.weight")}
                 </p>
                 <p className="font-semibold text-[var(--color-text-primary)]">
-                  {modelInfo.weight.toFixed(1)} g
+                  {(displayEstimate?.weight ?? modelInfo.weight).toFixed(1)} g
                 </p>
+                {estimationMode === "advanced" && displayEstimate && (
+                  <p className="mt-1 inline-flex items-center rounded-full border border-[var(--color-border)]/60 px-1.5 py-0.5 text-[10px] text-[var(--color-text-muted)]">
+                    {t(
+                      displayEstimate.weightFromGcode
+                        ? "stl.gcodeBadge"
+                        : "stl.estimatedBadge",
+                    )}
+                  </p>
+                )}
                 {supportEnabled && modelInfo.supportWeightGrams != null && (
                   <p className="text-[10px] text-[var(--color-text-muted)] mt-1">
                     {t("stl.supportWeight")}:{" "}
@@ -654,15 +740,24 @@ export function StlPreview({
                 className="font-semibold text-emerald-400"
                 title={t("stl.printTimeProfitHint")}
                 aria-label={`${t("stl.printTime")}: ${
-                  modelInfo.printTimeHours > 0
-                    ? `${modelInfo.printTimeHours.toFixed(1)} h`
+                  (displayEstimate?.hours ?? modelInfo.printTimeHours) > 0
+                    ? `${(displayEstimate?.hours ?? modelInfo.printTimeHours).toFixed(1)} h`
                     : "—"
                 }`}
               >
-                {modelInfo.printTimeHours > 0
-                  ? `${modelInfo.printTimeHours.toFixed(1)} h`
+                {(displayEstimate?.hours ?? modelInfo.printTimeHours) > 0
+                  ? `${(displayEstimate?.hours ?? modelInfo.printTimeHours).toFixed(1)} h`
                   : "—"}
               </p>
+              {estimationMode === "advanced" && displayEstimate && (
+                <p className="mt-1 inline-flex items-center rounded-full border border-[var(--color-border)]/60 px-1.5 py-0.5 text-[10px] text-[var(--color-text-muted)]">
+                  {t(
+                    displayEstimate.timeFromGcode
+                      ? "stl.gcodeBadge"
+                      : "stl.estimatedBadge",
+                  )}
+                </p>
+              )}
             </div>
           </div>
         </div>
