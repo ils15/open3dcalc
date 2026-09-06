@@ -459,7 +459,20 @@
     "clear": "Clear model",
     "fit": "Fit view",
     "estimateSupport": "Estimate support",
-    "supportWeight": "Estimated support"
+    "supportWeight": "Estimated support",
+    "estimationModeLabel": "Estimation mode",
+    "estimationModeSimple": "Simple",
+    "estimationModeAdvanced": "Advanced",
+    "calibrationK": "Calibration (k)",
+    "calibrationKFormula": "Final weight and time × k — e.g.: 10 g × 1.2 = 12 g",
+    "gcodeUpload": "Use G-code as reference",
+    "gcodeClear": "Remove G-code",
+    "gcodeTooLarge": "G-code too large. Limit: 50 MB.",
+    "gcodeInvalidType": "Invalid file. Upload .g or .gcode.",
+    "gcodeParseError": "Could not read the G-code.",
+    "advancedUncertainty": "Pre-slice estimate (±30%). Slicer G-code is more accurate.",
+    "estimatedBadge": "Estimated",
+    "gcodeBadge": "G-code"
   },
   "common": {
     "save": "Save",

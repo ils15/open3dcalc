@@ -459,7 +459,20 @@
     "clear": "Limpar modelo",
     "fit": "Encaixar",
     "estimateSupport": "Estimar suporte",
-    "supportWeight": "Suporte estimado"
+    "supportWeight": "Suporte estimado",
+    "estimationModeLabel": "Modo de estimativa",
+    "estimationModeSimple": "Simples",
+    "estimationModeAdvanced": "Avançado",
+    "calibrationK": "Calibração (k)",
+    "calibrationKFormula": "Peso e tempo finais × k — ex.: 10 g × 1,2 = 12 g",
+    "gcodeUpload": "Usar G-code como referência",
+    "gcodeClear": "Remover G-code",
+    "gcodeTooLarge": "G-code muito grande. Limite: 50 MB.",
+    "gcodeInvalidType": "Arquivo inválido. Envie .g ou .gcode.",
+    "gcodeParseError": "Não foi possível ler o G-code.",
+    "advancedUncertainty": "Estimativa pré-fatiamento (±30%). O G-code do fatiador é mais preciso.",
+    "estimatedBadge": "Estimado",
+    "gcodeBadge": "G-code"
   },
   "common": {
     "save": "Salvar",
