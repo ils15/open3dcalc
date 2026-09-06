@@ -1126,7 +1126,16 @@ export function estimateMaterialVolumeCm3(
 
   const wallMm = wallCount * lineWidthMm;
   const topBottomMm = ((topLayers + bottomLayers) * layerHeightMm) / 2;
-  const effectiveShellMm = shellThicknessMm ?? wallMm + topBottomMm;
+  // Cada face da peça é OU parede vertical (wallMm) OU topo/fundo horizontal
+  // (topBottomMm) — nunca as duas, então a espessura aplicada à área total é
+  // a MÉDIA PONDERADA das duas, não a soma. Somar contava a casca duas vezes:
+  // um cubo de 10 mm a 15% de infill dava 0,99 cm³ contra 0,51 cm³ da
+  // geometria exata (1,95×), e o erro persistia em 1,22× no cubo de 100 mm.
+  //
+  // Sem a divisão real da área entre faces verticais e horizontais, usa a de
+  // um cubo — 4 verticais para 2 horizontais. Com os padrões isso dá 0,827 mm,
+  // que é exatamente a média ponderada real de um cubo (4×0,84 + 2×0,80)/6.
+  const effectiveShellMm = shellThicknessMm ?? (2 * wallMm + topBottomMm) / 3;
   // mm² → cm² (/100); cm² × mm = cm³/10 (1 cm² × 1 mm = 0,1 cm³)
   const shellCm3 = Math.min(
     volumeCm3,
