@@ -3,6 +3,11 @@ import {
   resolveFilamentDensity,
   type FilamentFamily,
 } from "./filamentProfiles";
+import {
+  resolveCalibrationK,
+  resolveWeightAnchor,
+  type EstimateOptions,
+} from "@/shared/types/estimation";
 
 export interface MeshAnalysis {
   triangleCount: number;
@@ -1046,8 +1051,8 @@ export interface MaterialVolumeOptions {
   supportVolumeCm3?: number;
 }
 
-/** Opções do estimador de peso = volume + material + purga. */
-export interface WeightOptions extends MaterialVolumeOptions {
+/** Opções do estimador de peso = volume + material + purga + modo de estimativa. */
+export interface WeightOptions extends MaterialVolumeOptions, EstimateOptions {
   /**
    * Família do filamento (tabela `filamentProfiles`, default PLA).
    * Só define a densidade de fallback — `densityGcm3` explícito vence.
@@ -1134,19 +1139,40 @@ export function estimateMaterialVolumeCm3(
 /**
  * Peso do plástico em gramas: `(volume efetivo + purga) × densidade`.
  * Volume ≤ 0 ou não-finito retorna 0.
+ *
+ * Modos (`EstimateOptions`): `simple`/ausente devolve o legado byte-idêntico
+ * (ignora `calibrationK`/`gcodeGrams`); `advanced` deixa a âncora `gcodeGrams`
+ * vencer e escala o resto por `calibrationK` (default 1.0).
  */
 export function estimateWeight(
   volumeCm3: number,
   options: WeightOptions = {},
 ): number {
   if (!Number.isFinite(volumeCm3) || volumeCm3 <= 0) return 0;
+  const anchor = resolveWeightAnchor(options);
+  if (anchor !== undefined) return anchor;
 
-  const { material, densityGcm3, purgePercent = 0, ...volumeOptions } = options;
+  const {
+    material,
+    densityGcm3,
+    purgePercent = 0,
+    mode: _mode,
+    calibrationK: _calibrationK,
+    gcodeGrams: _gcodeGrams,
+    gcodeMinutes: _gcodeMinutes,
+    ...volumeOptions
+  } = options;
+  void _mode;
+  void _calibrationK;
+  void _gcodeGrams;
+  void _gcodeMinutes;
 
   const density = resolveFilamentDensity(material, densityGcm3);
   // Mesmo guard anti-NaN do infill: NaN → 0% de purga (default).
   const safePurgePercent = Number.isFinite(purgePercent) ? purgePercent : 0;
   const purgeRatio = Math.min(100, Math.max(0, safePurgePercent)) / 100;
   const effectiveVolume = estimateMaterialVolumeCm3(volumeCm3, volumeOptions);
-  return effectiveVolume * (1 + purgeRatio) * density;
+  const base = effectiveVolume * (1 + purgeRatio) * density;
+  const k = resolveCalibrationK(options);
+  return k === 1 ? base : base * k;
 }

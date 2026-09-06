@@ -3,6 +3,11 @@ import {
   maxVolumetricSpeedFor,
   type FilamentFamily,
 } from "./filamentProfiles";
+import {
+  resolveCalibrationK,
+  resolveTimeAnchor,
+  type EstimateOptions,
+} from "@/shared/types/estimation";
 
 export interface PrintTimeEstimate {
   estimatedMinutes: number;
@@ -35,7 +40,7 @@ export interface DimensionsMm {
  * material (MVS). Unidades canônicas vão no nome. Defaults em
  * `docs/estimators-model.md`.
  */
-export interface PrintTimeParams {
+export interface PrintTimeParams extends EstimateOptions {
   /** Volume MACIÇO do modelo em cm³ (fallback quando sem `materialVolumeCm3`). */
   volumeCm3: number;
   /** Bounding box do modelo em mm (só `z` é usada, p/ contagem de camadas). */
@@ -122,6 +127,21 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     !(printSpeedMmPerS > 0) ||
     !(travelSpeedMmPerS > 0)
   ) {
+    // Âncora do slicer vence até a geometria inválida (advanced):
+    // sem âncora, zeros explícitos como antes — nunca NaN.
+    const anchorMinutes = resolveTimeAnchor(params);
+    if (anchorMinutes !== undefined) {
+      const anchoredMinutes = Math.round(anchorMinutes);
+      return {
+        estimatedMinutes: anchoredMinutes,
+        estimatedHours: Math.round((anchoredMinutes / 60) * 10) / 10,
+        layers,
+        travelDistanceMm: 0,
+        filamentLengthMm: 0,
+        confidence: "high",
+        kind: "rough_estimate",
+      };
+    }
     return emptyEstimate(layers);
   }
 
@@ -184,8 +204,7 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const confidence: PrintTimeEstimate["confidence"] = hasRealSettings
     ? "high"
     : "medium";
-
-  return {
+  const base: PrintTimeEstimate = {
     estimatedMinutes,
     estimatedHours,
     layers,
@@ -194,6 +213,28 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     confidence,
     kind: "rough_estimate",
   };
+
+  // Modo default (simple/ausente): legado byte-idêntico — ignora k e âncoras.
+  const anchorMinutes = resolveTimeAnchor(params);
+  if (anchorMinutes !== undefined) {
+    const anchoredMinutes = Math.round(anchorMinutes);
+    return {
+      ...base,
+      estimatedMinutes: anchoredMinutes,
+      estimatedHours: Math.round((anchoredMinutes / 60) * 10) / 10,
+      confidence: "high",
+    };
+  }
+  const k = resolveCalibrationK(params);
+  if (k !== 1) {
+    const scaledMinutes = Math.round(estimatedMinutes * k);
+    return {
+      ...base,
+      estimatedMinutes: scaledMinutes,
+      estimatedHours: Math.round((scaledMinutes / 60) * 10) / 10,
+    };
+  }
+  return base;
 }
 
 /**

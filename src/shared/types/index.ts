@@ -214,6 +214,7 @@ export interface CalculationResult {
 export { type Customer, type CustomerFormData } from "./customer";
 export { type Quote, type QuoteItem, type QuoteFormData } from "./quote";
 export { type Product, type ProductFormData } from "./product";
+export { type EstimationMode, type EstimateOptions } from "./estimation";
 
 export interface HistoryItem {
   id: string;
