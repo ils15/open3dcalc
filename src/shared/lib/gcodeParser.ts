@@ -1,4 +1,13 @@
-import { parseTimeHeaderSeconds } from "./gcodeTotals";
+import {
+  DEFAULT_FILAMENT_DIAMETER_MM,
+  filamentWeightGrams,
+  firstHeaderMinutes,
+  parseTimeHeaderSeconds,
+} from "./gcodeTotals";
+import {
+  resolveFilamentDensity,
+  type FilamentFamily,
+} from "./filamentProfiles";
 
 export interface GcodeInfo {
   printTimeMinutes: number;
@@ -12,7 +21,16 @@ export interface GcodeInfo {
   filamentType: string;
 }
 
-export function parseGcode(text: string): GcodeInfo {
+export interface ParseGcodeOptions {
+  /** Filament diameter in mm (default 1.75, single-sourced from gcodeTotals). */
+  filamentDiameterMm?: number;
+  /** Density in g/cm³ — explicit value wins over the family table. */
+  densityGcm3?: number;
+  /** Material family for density lookup (default PLA). */
+  filamentFamily?: FilamentFamily | string;
+}
+
+export function parseGcode(text: string, options: ParseGcodeOptions = {}): GcodeInfo {
   const info: GcodeInfo = {
     printTimeMinutes: 0,
     filamentUsedMm: 0,
@@ -27,15 +45,18 @@ export function parseGcode(text: string): GcodeInfo {
 
   const lines = text.split("\n");
 
+  // First-header-wins time: shared policy with parseGcodeTotals (T1/T2).
+  // `undefined` = no header seen yet; the finished info exposes 0 when absent.
+  let headerMinutes: number | undefined;
+
   for (const line of lines) {
     const trimmed = line.trim();
 
     // Slicer header time via the shared reader (Cura/Prusa/Orca — see
     // parseTimeHeaderSeconds; first header wins, matching parseGcodeTotals).
     const headerSeconds = parseTimeHeaderSeconds(trimmed);
-    if (headerSeconds !== undefined && info.printTimeMinutes === 0) {
-      info.printTimeMinutes = Math.round(headerSeconds / 60);
-    }
+    headerMinutes = firstHeaderMinutes(headerMinutes, headerSeconds);
+    if (headerMinutes !== undefined) info.printTimeMinutes = headerMinutes;
     if (trimmed.startsWith(";Filament used:")) {
       // Try meters pattern first (e.g. "2.34m"), convert to mm
       const metersMatch = trimmed.match(/([\d.]+)\s*m/);
@@ -118,13 +139,25 @@ export function parseGcode(text: string): GcodeInfo {
     }
   }
 
-  // Estimate filament weight from length (assuming 1.75mm filament)
-  // Volume = π * r² * length, weight = volume * density (PLA ~1.24 g/cm³)
+  // Estimate filament weight from length via the parameterized profile (W1):
+  // diameter defaults to DEFAULT_FILAMENT_DIAMETER_MM, density resolves from
+  // the family table (filamentProfiles) with an explicit override winning.
+  // NOTE (T3): this legacy path tracks max-E (largest absolute E seen), while
+  // parseGcodeTotals sums signed deltas with M82/M83 + G92 resets — the two
+  // can diverge on retraction-heavy or relative-extrusion files (no behavior
+  // change here; see docs/estimators-model.md §10).
   if (info.filamentUsedMm > 0) {
-    const radiusMm = 1.75 / 2;
-    const volumeCm3 =
-      Math.PI * Math.pow(radiusMm / 10, 2) * (info.filamentUsedMm / 10);
-    info.filamentUsedGrams = volumeCm3 * 1.24;
+    const diameterMm =
+      options.filamentDiameterMm ?? DEFAULT_FILAMENT_DIAMETER_MM;
+    const density = resolveFilamentDensity(
+      options.filamentFamily,
+      options.densityGcm3,
+    );
+    info.filamentUsedGrams = filamentWeightGrams(
+      info.filamentUsedMm,
+      diameterMm,
+      density,
+    );
   }
 
   return info;

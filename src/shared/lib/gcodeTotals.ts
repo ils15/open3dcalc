@@ -36,6 +36,51 @@ export interface ParseGcodeTotalsOptions {
 export const DEFAULT_MAX_CHARS = 50 * 1024 * 1024;
 export const DEFAULT_MAX_LINES = 2_000_000;
 
+/**
+ * Single-source filament defaults (W1 — never hard-code 1.75/1.24 elsewhere).
+ * Density matches the PLA entry of `filamentProfiles.ts`; callers that know
+ * the material resolve the density via `resolveFilamentDensity` and pass it
+ * through `ParseGcodeTotalsOptions`.
+ */
+export const DEFAULT_FILAMENT_DIAMETER_MM = 1.75;
+export const DEFAULT_FILAMENT_DENSITY_GCM3 = 1.24;
+
+/**
+ * Header seconds → whole minutes with the estimator rounding (T1/T2).
+ * Single converter consumed by both G-code readers.
+ */
+export function timeSecondsToMinutes(seconds: number): number {
+  return Math.round(seconds / 60);
+}
+
+/**
+ * First-header-wins policy (T1/T2): the first time header in the file wins,
+ * later headers are ignored. `undefined` means "no header seen yet".
+ */
+export function firstHeaderMinutes(
+  current: number | undefined,
+  headerSeconds: number | undefined,
+): number | undefined {
+  if (current !== undefined) return current;
+  if (headerSeconds === undefined) return current;
+  return timeSecondsToMinutes(headerSeconds);
+}
+
+/**
+ * Filament weight from extruded length (W1 — single formula, never duplicate).
+ * Volume = π r² L, with mm→cm³ conversion (/1000), times density.
+ */
+export function filamentWeightGrams(
+  lengthMm: number,
+  filamentDiameterMm: number = DEFAULT_FILAMENT_DIAMETER_MM,
+  densityGcm3: number = DEFAULT_FILAMENT_DENSITY_GCM3,
+): number {
+  if (!(lengthMm > 0)) return 0;
+  const radiusMm = filamentDiameterMm / 2;
+  const volumeCm3 = (Math.PI * radiusMm * radiusMm * lengthMm) / 1000;
+  return volumeCm3 * densityGcm3;
+}
+
 /** `E(-)12.34` — one number per line, no backtracking. */
 function readEValue(token: string): number | undefined {
   const idx = token.indexOf("E");
@@ -107,8 +152,8 @@ export function parseGcodeTotals(
   const {
     maxChars = DEFAULT_MAX_CHARS,
     maxLines = DEFAULT_MAX_LINES,
-    filamentDiameterMm = 1.75,
-    densityGcm3 = 1.24,
+    filamentDiameterMm = DEFAULT_FILAMENT_DIAMETER_MM,
+    densityGcm3 = DEFAULT_FILAMENT_DENSITY_GCM3,
   } = options;
 
   if (typeof gcodeText !== "string") {
@@ -142,8 +187,9 @@ export function parseGcodeTotals(
     if (trimmed.length === 0) return;
 
     const timeS = parseTimeHeaderSeconds(trimmed);
-    if (timeS !== undefined && timeMinutes === undefined) {
-      timeMinutes = Math.round(timeS / 60);
+    const next = firstHeaderMinutes(timeMinutes, timeS);
+    if (next !== timeMinutes) {
+      timeMinutes = next;
       return;
     }
 
@@ -204,13 +250,9 @@ export function parseGcodeTotals(
   // Clamp: total never negative (malformed G-code with negative balance).
   if (!(totalMm > 0)) totalMm = 0;
 
-  const radiusMm = filamentDiameterMm / 2;
-  const volumeCm3 =
-    totalMm > 0 ? (Math.PI * radiusMm * radiusMm * totalMm) / 1000 : 0;
-
   const result: GcodeTotals = {
     extrudedMm: totalMm,
-    extrudedGrams: volumeCm3 * densityGcm3,
+    extrudedGrams: filamentWeightGrams(totalMm, filamentDiameterMm, densityGcm3),
   };
   if (timeMinutes !== undefined) result.timeMinutes = timeMinutes;
   return result;

@@ -7,14 +7,13 @@ import {
   K_MIN,
   K_STEP,
   type EstimationMode,
+  type GcodeAnchor,
 } from "@/shared/types/estimation";
 import { DEFAULT_MAX_CHARS } from "@/shared/lib/gcodeTotals";
 
-export interface GcodeAnchor {
-  fileName: string;
-  grams: number;
-  minutes?: number;
-}
+// Canonical anchor type lives in estimation.ts (E1) — re-exported here so
+// existing imports keep working without a parallel declaration.
+export type { GcodeAnchor } from "@/shared/types/estimation";
 
 interface EstimationModeSectionProps {
   mode: EstimationMode;
@@ -270,6 +269,12 @@ export function EstimationModeSection({
 
           <p className="text-[11px] leading-relaxed text-[var(--color-text-muted)]">
             {t("stl.advancedUncertainty")}
+          </p>
+          <p
+            className="text-[11px] leading-relaxed text-[var(--color-text-muted)]"
+            title={t("stl.gcodeEPathsNote")}
+          >
+            {t("stl.gcodeEPathsNote")}
           </p>
         </div>
       )}

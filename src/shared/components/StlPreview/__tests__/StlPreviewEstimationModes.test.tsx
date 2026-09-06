@@ -171,8 +171,11 @@ describe("StlPreview estimation modes", () => {
 
     const doubled = `${(base.weight * 2).toFixed(1)} g`;
     expect(screen.getByText(doubled)).toBeInTheDocument();
-    await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(2));
-    const last = onFileParsed.mock.calls[1][0] as { weight: number };
+    // H1: advanced display rounds hours to 1 decimal while the mesh base keeps
+    // billing precision (2 decimals), so switching to Custom already propagates
+    // once (call 2) before the k change (call 3).
+    await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(3));
+    const last = onFileParsed.mock.calls[2][0] as { weight: number };
     expect(last.weight).toBeCloseTo(base.weight * 2, 2);
   });
 

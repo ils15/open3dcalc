@@ -143,6 +143,36 @@ export function resolveTimeAnchor(
 }
 
 /**
+ * Canonical G-code anchor (E1 — single place for anchor validation).
+ * The UI re-exports this type instead of declaring a parallel one.
+ */
+export interface GcodeAnchor {
+  fileName: string;
+  grams: number;
+  minutes?: number;
+}
+
+/**
+ * Valid anchored weight in grams: finite and > 0 (E1 — display only consumes).
+ */
+export function resolveAnchorGrams(
+  anchor: GcodeAnchor | null | undefined,
+): number | undefined {
+  const g = anchor?.grams;
+  return Number.isFinite(g) && (g as number) > 0 ? (g as number) : undefined;
+}
+
+/**
+ * Valid anchored time in minutes: finite and > 0 (E1 — display only consumes).
+ */
+export function resolveAnchorMinutes(
+  anchor: GcodeAnchor | null | undefined,
+): number | undefined {
+  const m = anchor?.minutes;
+  return Number.isFinite(m) && (m as number) > 0 ? (m as number) : undefined;
+}
+
+/**
  * Valid fixed setup time in minutes: finite and >= 0, otherwise 0.
  * Pure validation — mode gating happens at the call site via
  * `MODE_BEHAVIOR` (simple mode ignores every option).
