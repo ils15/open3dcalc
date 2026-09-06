@@ -170,20 +170,26 @@ describe("estimateMaterialVolumeCm3 — casca por área", () => {
   });
 
   it("deriva a casca de wallCount × lineWidthMm (sem 0,84 fixo)", () => {
-    // Cubo de 100 mm, infill 0: só casca. Padrão (2×0,42 + topo/base
-    // 8×0,2/2 = 1,64 mm) → 600×1,64/10 = 98,4 cm³.
+    // Cubo de 100 mm, infill 0: só casca. A espessura efetiva é a MÉDIA
+    // PONDERADA de parede e topo/base, não a soma: (2×0,84 + 0,80)/3 =
+    // 0,827 mm → 600×0,827/10 = 49,6 cm³.
+    //
+    // Este teste esperava 98,4 cm³ enquanto a implementação somava as duas
+    // espessuras e aplicava a soma à área inteira, contando a casca duas
+    // vezes. A geometria exata de um cubo oco de 100 mm a 0% de infill dá
+    // 47,9 cm³; os 98,4 anteriores eram mais que o dobro.
     const def = estimateMaterialVolumeCm3(1000, {
       infillPercent: 0,
       surfaceAreaMm2: 600 * 100,
     });
-    expect(def).toBeCloseTo(98.4, 1);
-    // 5 paredes: (5×0,42 + 0,8) = 2,9 mm → 600×2,9/10 = 174 cm³.
+    expect(def).toBeCloseTo(49.6, 1);
+    // 5 paredes: (2×2,10 + 0,80)/3 = 1,667 mm → 600×1,667/10 = 100 cm³.
     const thick = estimateMaterialVolumeCm3(1000, {
       infillPercent: 0,
       surfaceAreaMm2: 600 * 100,
       wallCount: 5,
     });
-    expect(thick).toBeCloseTo(174, 1);
+    expect(thick).toBeCloseTo(100, 1);
     expect(thick).toBeGreaterThan(def);
   });
 
@@ -198,8 +204,9 @@ describe("estimateMaterialVolumeCm3 — casca por área", () => {
       topLayers: 0,
       bottomLayers: 0,
     });
-    // Só as paredes: 600×0,84/10 = 50,4 cm³.
-    expect(noTop).toBeCloseTo(50.4, 1);
+    // Sem topo/base, sobram só as faces verticais no rateio:
+    // (2×0,84 + 0)/3 = 0,56 mm → 600×0,56/10 = 33,6 cm³.
+    expect(noTop).toBeCloseTo(33.6, 1);
     expect(noTop).toBeLessThan(def);
   });
 
@@ -290,5 +297,62 @@ describe("estimatePrintTime — física da extrusão", () => {
     });
     expect(t.estimatedHours).toBeGreaterThan(4);
     expect(t.estimatedHours).toBeLessThan(6);
+  });
+});
+
+describe("estimateMaterialVolumeCm3 — casca contra geometria exata", () => {
+  /**
+   * Verdade de referência para um cubo oco fatiado: a casca é o volume menos o
+   * miolo, e o miolo é o cubo encolhido pela espessura sólida de CADA face —
+   * paredes nas quatro laterais, camadas de topo/fundo em cima e embaixo.
+   * O miolo ainda recebe o infill.
+   *
+   * Só depende da geometria, não da fórmula sob teste — é por isso que este
+   * teste pega um erro de composição que uma asserção com número cravado
+   * (tirado da própria implementação) deixaria passar.
+   */
+  function cuboExatoCm3(ladoMm: number, infillPercent: number): number {
+    const paredeMm = 2 * 0.42; // wallCount 2 × lineWidth 0,42 (defaults)
+    const topoFundoMm = 4 * 0.2; // 4 camadas × 0,2 mm
+    const volume = ladoMm ** 3;
+    const miolo =
+      Math.max(0, ladoMm - 2 * paredeMm) ** 2 *
+      Math.max(0, ladoMm - 2 * topoFundoMm);
+    return (volume - miolo + miolo * (infillPercent / 100)) / 1000;
+  }
+
+  // Tolerância generosa de propósito: a fórmula é area x espessura, que conta
+  // os cantos duas vezes e por isso sempre fica um pouco acima do exato. O que
+  // este teste barra e o erro GROSSEIRO -- somar parede + topo/fundo dobrava a
+  // casca e dava 1,95x no cubo de 10 mm.
+  for (const ladoMm of [10, 20, 50, 100]) {
+    it(`cubo de ${ladoMm} mm a 15% fica dentro de 20% do exato`, () => {
+      const volumeCm3 = ladoMm ** 3 / 1000;
+      const areaMm2 = 6 * ladoMm ** 2;
+      const estimado = estimateMaterialVolumeCm3(volumeCm3, {
+        infillPercent: 15,
+        surfaceAreaMm2: areaMm2,
+      });
+      const exato = cuboExatoCm3(ladoMm, 15);
+
+      expect(estimado).toBeGreaterThanOrEqual(exato * 0.9);
+      expect(estimado).toBeLessThanOrEqual(exato * 1.2);
+    });
+  }
+
+  it("peça de parede fina satura no volume, sem depender do infill", () => {
+    // Litofania real: 92,52 cm³ de modelo com 113.400 mm² de área -> 1,63 mm
+    // de espessura média, menor que duas paredes de cada lado. Nao ha miolo,
+    // entao o infill nao pode alterar o resultado.
+    const semInfill = estimateMaterialVolumeCm3(92.52, {
+      infillPercent: 0,
+      surfaceAreaMm2: 113400,
+    });
+    const comInfill = estimateMaterialVolumeCm3(92.52, {
+      infillPercent: 100,
+      surfaceAreaMm2: 113400,
+    });
+    expect(semInfill).toBeCloseTo(92.52, 2);
+    expect(comInfill).toBeCloseTo(92.52, 2);
   });
 });
