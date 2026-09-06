@@ -20,7 +20,8 @@ const CUBE_TIME_ARGS = {
 
 describe("estimationModes — regressão simple byte-idêntica", () => {
   it("cubo 20mm: peso travado (shell path)", () => {
-    expect(estimateWeight(8, { ...CUBE_WEIGHT_ARGS })).toBeCloseTo(5.888512, 6);
+    // Pós-#82 (casca = média ponderada, não soma): 3.952128, não 5.888512.
+    expect(estimateWeight(8, { ...CUBE_WEIGHT_ARGS })).toBeCloseTo(3.952128, 6);
   });
 
   it("cubo 20mm: tempo travado", () => {
@@ -169,6 +170,21 @@ describe("parseGcodeTotals — soma E + resets + tempo", () => {
       ["M83", "G1 X0 Y0 E2", "G1 X10 Y10 E3"].join("\n"),
     );
     expect(totals.extrudedMm).toBeCloseTo(5, 5);
+  });
+
+  it("M83 relativo: retrair E-0.8/desretrair E+0.8 dá líquido zero", () => {
+    const totals = parseGcodeTotals(
+      ["M83", "G1 X0 Y0 E2", "G1 X1 Y1 E-0.8", "G1 X2 Y2 E0.8"].join("\n"),
+    );
+    // 2 − 0.8 + 0.8 = 2 (retração negativa inclusa, com sinal).
+    expect(totals.extrudedMm).toBeCloseTo(2, 5);
+    const bare = parseGcodeTotals(["M83", "G1 E-0.8", "G1 E0.8"].join("\n"));
+    expect(bare.extrudedMm).toBeCloseTo(0, 5);
+  });
+
+  it("M83 relativo: saldo negativo malformado nunca dá total negativo", () => {
+    const totals = parseGcodeTotals(["M83", "G1 X0 Y0 E-5"].join("\n"));
+    expect(totals.extrudedMm).toBe(0);
   });
 
   it("lê ;TIME: (segundos → minutos)", () => {

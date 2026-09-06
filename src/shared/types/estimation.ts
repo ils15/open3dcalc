@@ -22,6 +22,13 @@ export interface EstimateOptions {
   /**
    * Fator de calibração (default 1.0). Só vale em `advanced`:
    * multiplica peso/tempo final. Não-finito ou <= 0 cai para 1.0.
+   *
+   * LIMITE GEOMÉTRICO: k corrige SÓ viés proporcional sistemático
+   * (k = actual/estimated, mediana de ≥ 10 jobs, por perfil, nunca entre
+   * materiais — ver §8 de `docs/estimators-model.md`). Não corrige viés que
+   * varia com a geometria: a fórmula área×espessura conta as arestas 2×,
+   * resíduo de +13% no cubo de 10 mm contra +0,4% no de 100 mm — nenhum k
+   * único achata essa curva, isso se corrige na fórmula, não no fator.
    */
   calibrationK?: number;
   /**

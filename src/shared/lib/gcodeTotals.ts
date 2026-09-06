@@ -102,10 +102,11 @@ export function parseGcodeTotals(
   }
 
   let absolute = true; // M82 (default) vs M83
-  // Posição lógica = E cru + offsetMm. `G92 En` desloca a origem sem extrudar:
-  // offset = total − n. O total é o MÁXIMO lógico visto, então retrações
-  // (E que volta) nunca inflam a soma.
-  let offsetMm = 0;
+  // Eprev: última referência absoluta. `G92 En` redefine Eprev sem somar.
+  // M82 soma só delta = E − Eprev quando delta > 0; retração (E recua sem
+  // zerar) é ignorada SEM mover Eprev, então o desretrair seguinte dá
+  // delta 0 — líquido zero, sem inflar o total. Restart implícito sem G92
+  // (troca de spool zera o E: E cai para ≤ 0) rebasa Eprev sem somar.
   let lastRawE = 0;
   let totalMm = 0;
   let timeMinutes: number | undefined;
@@ -146,9 +147,9 @@ export function parseGcodeTotals(
       return;
     }
     if (upper.startsWith("G92")) {
-      // `G92 E0` redefine a origem: próxima extrusão conta do zero.
+      // `G92 En` redefine Eprev sem somar: próxima extrusão conta de n.
       const e = readEValue(upper);
-      if (e !== undefined && absolute) offsetMm = totalMm - e;
+      if (e !== undefined) lastRawE = e;
       return;
     }
     // Movimento linear G0/G00/G1/G01 (com ou sem espaço: `G1X0E1` vale).
@@ -157,14 +158,15 @@ export function parseGcodeTotals(
     const e = readEValue(upper);
     if (e === undefined) return;
     if (absolute) {
-      // Restart implícito sem G92 (troca de spool que zera o E): rebasa.
-      // Retração normal (E volta sem zerar) só baixa o lógico — o total,
-      // que é máximo, não mexe.
-      if (e < lastRawE && e <= 0) offsetMm = totalMm - e;
-      const logical = e + offsetMm;
-      if (logical > totalMm) totalMm = logical;
-      lastRawE = e;
-    } else if (e > 0) {
+      if (e <= 0 && e < lastRawE) {
+        lastRawE = e; // restart implícito (spool zerou o E): rebasa sem somar
+      } else if (e > lastRawE) {
+        totalMm += e - lastRawE; // delta > 0 soma; retração dá delta ≤ 0
+        lastRawE = e;
+      }
+      // Retração: ignora SEM mover Eprev (desretrair → delta 0, líquido zero).
+    } else {
+      // M83 relativo: soma deltas COM SINAL (retração negativa inclusa).
       totalMm += e;
     }
   };
@@ -183,6 +185,9 @@ export function parseGcodeTotals(
       start = i + 1;
     }
   }
+
+  // Clamp: total nunca negativo (G-code malformado com saldo negativo).
+  if (!(totalMm > 0)) totalMm = 0;
 
   const radiusMm = filamentDiameterMm / 2;
   const volumeCm3 =
