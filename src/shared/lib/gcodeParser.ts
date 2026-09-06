@@ -1,3 +1,5 @@
+import { parseTimeHeaderSeconds } from "./gcodeTotals";
+
 export interface GcodeInfo {
   printTimeMinutes: number;
   filamentUsedMm: number;
@@ -28,32 +30,11 @@ export function parseGcode(text: string): GcodeInfo {
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Cura/PrusaSlicer/Bambu Studio header comments
-    if (trimmed.startsWith(";TIME:")) {
-      info.printTimeMinutes = Math.round(
-        parseFloat(trimmed.split(":")[1]) / 60,
-      );
-    }
-    // PrusaSlicer/OrcaSlicer: "; estimated printing time (normal mode) = 1h 23m 45s" (also d/h/m/s combos)
-    if (trimmed.toLowerCase().includes("estimated printing time")) {
-      const eqIdx = trimmed.indexOf("=");
-      if (eqIdx !== -1) {
-        const timePart = trimmed.slice(eqIdx + 1).trim();
-        let totalSeconds = 0;
-        const re = /(\d+)\s*([dhms])/gi;
-        let m: RegExpExecArray | null;
-        while ((m = re.exec(timePart)) !== null) {
-          const val = parseInt(m[1], 10);
-          const unit = m[2].toLowerCase();
-          if (unit === "d") totalSeconds += val * 86400;
-          else if (unit === "h") totalSeconds += val * 3600;
-          else if (unit === "m") totalSeconds += val * 60;
-          else if (unit === "s") totalSeconds += val;
-        }
-        if (totalSeconds > 0 && info.printTimeMinutes === 0) {
-          info.printTimeMinutes = Math.round(totalSeconds / 60);
-        }
-      }
+    // Slicer header time via the shared reader (Cura/Prusa/Orca — see
+    // parseTimeHeaderSeconds; first header wins, matching parseGcodeTotals).
+    const headerSeconds = parseTimeHeaderSeconds(trimmed);
+    if (headerSeconds !== undefined && info.printTimeMinutes === 0) {
+      info.printTimeMinutes = Math.round(headerSeconds / 60);
     }
     if (trimmed.startsWith(";Filament used:")) {
       // Try meters pattern first (e.g. "2.34m"), convert to mm

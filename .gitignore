@@ -41,6 +41,7 @@ desktop/db/**/*.js.map
 .pantheon/
 docs/*
 !docs/estimators-model.md
+!docs/conventions.md
 
 # Logs
 logs/
