@@ -1,5 +1,56 @@
 # Changelog
 
+## v1.11.0
+
+[compare changes](https://github.com/ils15/open3dcalc/compare/v1.10.0...v1.11.0)
+
+### 🚀 Enhancements
+
+- **sync:** Add text label to DataSyncButton for better visibility ([a6da01d](https://github.com/ils15/open3dcalc/commit/a6da01d))
+- UI/UX improvements — STL support estimation, Resin preview, safety fixes ([#57](https://github.com/ils15/open3dcalc/pull/57))
+- **calc:** Exibe lucro por hora (profit/hr) FDM+Resina ([#77](https://github.com/ils15/open3dcalc/pull/77))
+- **products:** Cadastro produtos + vendido + CSV + sync ([#78](https://github.com/ils15/open3dcalc/pull/78))
+- **estimators:** Modos simple/advanced + G-code opcional ([#83](https://github.com/ils15/open3dcalc/pull/83))
+- **gcode:** Bambu/Klipper time headers + fallback por moves via `timeSource` HEADER/APPROXIMATE, cascata first-wins Cura > Prusa/Orca > Bambu > Klipper ([#86](https://github.com/ils15/open3dcalc/pull/86), closes [#84](https://github.com/ils15/open3dcalc/issues/84))
+- **calc:** Preço de venda editável (override display-local BRL) + ponte calculadora→produto com toast/evento e i18n pt-BR/en-US ([#87](https://github.com/ils15/open3dcalc/pull/87), closes [#85](https://github.com/ils15/open3dcalc/issues/85))
+
+### 🩹 Fixes
+
+- **ci:** Remove v1.10.0 exclusion and sync changelog ([7794266](https://github.com/ils15/open3dcalc/commit/7794266))
+- **dashboard:** Replace React.lazy with static recharts imports to fix #7463 crash ([#7463](https://github.com/ils15/open3dcalc/issues/7463))
+- **3mf:** Segue p:path da production extension e corrige volume 3x maior ([#72](https://github.com/ils15/open3dcalc/pull/72))
+- **estimators:** Casca por area de superficie e fisica da extrusao no… ([#73](https://github.com/ils15/open3dcalc/pull/73))
+- **release:** Windows exe + auto-update resiliente ([#76](https://github.com/ils15/open3dcalc/pull/76))
+- **release:** Join --body into single quoted string in release PR step ([#79](https://github.com/ils15/open3dcalc/pull/79))
+- **estimators:** Espessura de casca e média ponderada, não soma ([#82](https://github.com/ils15/open3dcalc/pull/82))
+- **gcode:** Dedup parsers, cap único 50MB single-source, helpers tempo/temperatura unificados, validação centralizada, arredondamento 1 casa, doc+tooltip i18n (`gcodeEPathsNote` pt-BR) ([#88](https://github.com/ils15/open3dcalc/pull/88))
+
+### 📦 Dependencies
+
+- Bump electron 43.4.1 → 44.1.1 ([#62](https://github.com/ils15/open3dcalc/pull/62))
+- Bump @react-pdf/renderer 4.6.1 → 4.9.0 ([#64](https://github.com/ils15/open3dcalc/pull/64))
+- Bump lucide-react 1.33.0 → 1.39.0 ([#66](https://github.com/ils15/open3dcalc/pull/66))
+- Bump lint-staged 17.3.0 → 17.4.1 ([#65](https://github.com/ils15/open3dcalc/pull/65))
+- Bump @vitejs/plugin-react 6.1.0 → 6.1.1 ([#67](https://github.com/ils15/open3dcalc/pull/67))
+- Bump @testing-library/react 16.3.2 → 16.3.3 ([#58](https://github.com/ils15/open3dcalc/pull/58))
+- Bump @types/node 26.2.0 → 26.4.1 ([#59](https://github.com/ils15/open3dcalc/pull/59))
+- Bump @types/react-dom 19.2.4 → 19.2.5 ([#60](https://github.com/ils15/open3dcalc/pull/60))
+- Bump pantheon-opencode 1.3.6 → 1.4.3 ([#61](https://github.com/ils15/open3dcalc/pull/61))
+- Bump anomalyco/opencode/github action ([#63](https://github.com/ils15/open3dcalc/pull/63))
+
+### ✅ Tests
+
+- Increase ChangelogPage test timeout to 15s for CI stability ([1bee06d](https://github.com/ils15/open3dcalc/commit/1bee06d))
+
+### 🤖 CI
+
+- Split quality into checks+test and run on fork PRs ([#74](https://github.com/ils15/open3dcalc/pull/74))
+
+### ❤️ Contributors
+
+- Ils15 ([@ils15](https://github.com/ils15))
+- Lupolima <lucasguilherme_@hotmail.com>
+
 ## v1.10.0
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.9.3...v1.10.0)
