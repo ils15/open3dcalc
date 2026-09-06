@@ -45,6 +45,7 @@ export function EstimationModeSection({
 }: EstimationModeSectionProps) {
   const { t } = useTranslation();
   const gcodeInputRef = useRef<HTMLInputElement>(null);
+  const gcodeUploadButtonRef = useRef<HTMLButtonElement>(null);
   const [gcodeError, setGcodeError] = useState<string | null>(null);
   const [parsingGcode, setParsingGcode] = useState(false);
 
@@ -65,6 +66,10 @@ export function EstimationModeSection({
       const text = await file.text();
       const { parseGcodeTotals } = await import("@/shared/lib/gcodeTotals");
       const totals = parseGcodeTotals(text);
+      if (!Number.isFinite(totals.extrudedGrams) || totals.extrudedGrams <= 0) {
+        setGcodeError(t("stl.gcodeParseError"));
+        return;
+      }
       onGcodeAnchor({
         fileName: file.name,
         grams: totals.extrudedGrams,
@@ -181,21 +186,31 @@ export function EstimationModeSection({
             />
             <button
               type="button"
+              ref={gcodeUploadButtonRef}
               onClick={() => gcodeInputRef.current?.click()}
               disabled={parsingGcode}
+              aria-busy={parsingGcode}
+              aria-describedby={gcodeError ? "gcode-error" : undefined}
               className="min-h-[44px] w-full inline-flex items-center justify-center gap-2 rounded-xl border border-dashed border-[var(--color-border)] px-3 py-2 text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-accent)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-70"
             >
               <Upload className="w-4 h-4" />
               {parsingGcode ? t("stl.processing") : t("stl.gcodeUpload")}
             </button>
             {gcodeError && (
-              <div role="alert" className="text-xs text-[var(--color-danger)]">
+              <div
+                id="gcode-error"
+                role="alert"
+                className="text-xs text-[var(--color-danger)]"
+              >
                 {gcodeError}
               </div>
             )}
             {gcodeAnchor && (
               <div className="flex items-center justify-between gap-2 rounded-lg surface px-2.5 py-2 text-xs">
-                <p className="text-[var(--color-text-secondary)]">
+                <p
+                  title={gcodeAnchor.fileName}
+                  className="min-w-0 flex-1 truncate text-[var(--color-text-secondary)]"
+                >
                   {gcodeAnchor.fileName} · {gcodeAnchor.grams.toFixed(1)} g
                   {gcodeAnchor.minutes != null
                     ? ` · ${gcodeAnchor.minutes} min`
@@ -203,7 +218,10 @@ export function EstimationModeSection({
                 </p>
                 <button
                   type="button"
-                  onClick={onClearGcodeAnchor}
+                  onClick={() => {
+                    onClearGcodeAnchor();
+                    gcodeUploadButtonRef.current?.focus();
+                  }}
                   aria-label={t("stl.gcodeClear")}
                   title={t("stl.gcodeClear")}
                   className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"

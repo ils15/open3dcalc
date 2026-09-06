@@ -180,4 +180,71 @@ describe("EstimationModeSection", () => {
     await user.click(screen.getByRole("button", { name: "stl.gcodeClear" }));
     expect(onClearGcodeAnchor).toHaveBeenCalledTimes(1);
   });
+
+  it("G-code sem extrusão mostra erro e não ancora", async () => {
+    const onGcodeAnchor = vi.fn();
+    render(
+      <EstimationModeSection
+        {...baseProps}
+        mode="advanced"
+        onGcodeAnchor={onGcodeAnchor}
+      />,
+    );
+
+    const file = gcodeFile("vazio.gcode", "G28\nM104 S200\n;TIME:600\n");
+    fireEvent.change(screen.getByLabelText("stl.gcodeUpload"), {
+      target: { files: [file] },
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "stl.gcodeParseError",
+    );
+    expect(onGcodeAnchor).not.toHaveBeenCalled();
+  });
+
+  it("erro de upload é associado ao botão via aria-describedby", async () => {
+    render(<EstimationModeSection {...baseProps} mode="advanced" />);
+
+    const file = gcodeFile("notas.txt", "G1 X0 E1\n");
+    fireEvent.change(screen.getByLabelText("stl.gcodeUpload"), {
+      target: { files: [file] },
+    });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveAttribute("id", "gcode-error");
+    expect(
+      screen.getByRole("button", { name: "stl.gcodeUpload" }),
+    ).toHaveAttribute("aria-describedby", "gcode-error");
+  });
+
+  it("limpar âncora devolve o foco ao botão de upload", async () => {
+    const user = userEvent.setup();
+    render(
+      <EstimationModeSection
+        {...baseProps}
+        mode="advanced"
+        gcodeAnchor={{ fileName: "peca.gcode", grams: 12.5, minutes: 60 }}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "stl.gcodeClear" }));
+    expect(
+      screen.getByRole("button", { name: "stl.gcodeUpload" }),
+    ).toHaveFocus();
+  });
+
+  it("nome longo do arquivo não estoura o layout (truncate + title)", () => {
+    const longName = `${"p".repeat(80)}.gcode`;
+    render(
+      <EstimationModeSection
+        {...baseProps}
+        mode="advanced"
+        gcodeAnchor={{ fileName: longName, grams: 12.5, minutes: 60 }}
+      />,
+    );
+
+    const text = screen.getByText(/p+\.gcode/);
+    expect(text).toHaveAttribute("title", longName);
+    expect(text.className).toMatch(/truncate/);
+  });
 });
