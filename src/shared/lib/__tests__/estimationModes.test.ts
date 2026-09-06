@@ -32,7 +32,7 @@ const CUBE_TIME_ARGS = {
 
 describe("estimationModes — regressão simple byte-idêntica", () => {
   it("cubo 20mm: peso travado (shell path)", () => {
-    // Pós-#82 (casca = média ponderada, não soma): 3.952128, não 5.888512.
+    // Post-#82: shell thickness is the weighted average (2*wall+topBottom)/3, not the sum -- 3.952128, not the old 5.888512. Do not 'fix' back: see PR #82 / issue #81.
     expect(estimateWeight(8, { ...CUBE_WEIGHT_ARGS })).toBeCloseTo(3.952128, 6);
   });
 
