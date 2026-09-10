@@ -733,53 +733,53 @@
           {
             "title": "🚀 Novidades",
             "items": [
-              "**sync:** Add text label to DataSyncButton for better visibility (a6da01d)",
-              "UI/UX improvements — STL support estimation, Resin preview, safety fixes (#57)",
-              "**calc:** Show profit/hr for FDM + Resin (#77)",
-              "**products:** Product registration + sold + CSV + sync (#78)",
-              "**estimators:** Simple/advanced modes + optional G-code (#83)",
-              "**gcode:** Bambu/Klipper time headers + fallback by moves via `timeSource` HEADER/APPROXIMATE, first-wins cascade Cura > Prusa/Orca > Bambu > Klipper (#86, closes #84)",
-              "**calc:** Editable sale price (display-local BRL override) + calculator→product bridge with toast/event and pt-BR/en-US i18n (#87, closes #85)"
+              "**sync:** Adiciona rótulo de texto ao DataSyncButton para melhor visibilidade (a6da01d)",
+              "Melhorias de UI/UX — estimativa de suporte STL, pré-visualização de resina, correções de segurança (#57)",
+              "**calc:** Exibe lucro/hora para FDM + Resina (#77)",
+              "**products:** Cadastro de produtos + vendidos + CSV + sync (#78)",
+              "**estimators:** Modos simples/avançado + G-code opcional (#83)",
+              "**gcode:** Cabeçalhos de tempo Bambu/Klipper + fallback por movimentos via `timeSource` HEADER/APPROXIMATE, cascata first-wins Cura > Prusa/Orca > Bambu > Klipper (#86, encerra #84)",
+              "**calc:** Preço de venda editável (override BRL local de exibição) + ponte calculadora→produto com toast/evento e i18n pt-BR/en-US (#87, encerra #85)"
             ]
           },
           {
             "title": "🐛 Correções",
             "items": [
-              "**ci:** Remove v1.10.0 exclusion and sync changelog (7794266)",
-              "**dashboard:** Replace React.lazy with static recharts imports to fix #7463 crash (#7463)",
-              "**3mf:** Follow p:path from the production extension and fix 3x larger volume (#72)",
-              "**estimators:** Surface-area shell and extrusion physics in… (#73)",
-              "**release:** Windows exe + resilient auto-update (#76)",
-              "**release:** Join --body into single quoted string in release PR step (#79)",
-              "**estimators:** Shell thickness and weighted average, not the sum (#82)",
-              "**gcode:** Dedup parsers, single-source 50MB cap, unified time/temperature helpers, centralized validation, 1-decimal rounding, i18n doc+tooltip (`gcodeEPathsNote` pt-BR) (#88)"
+              "**ci:** Remove a exclusão da v1.10.0 e sincroniza o changelog (7794266)",
+              "**dashboard:** Substitui React.lazy por imports estáticos do recharts para corrigir o crash #7463 (#7463)",
+              "**3mf:** Segue p:path da extensão de produção e corrige volume 3x maior (#72)",
+              "**estimators:** Casca por área de superfície e física de extrusão em… (#73)",
+              "**release:** Executável Windows + auto-update resiliente (#76)",
+              "**release:** Junta --body em uma única string entre aspas no passo de PR de release (#79)",
+              "**estimators:** Espessura de casca e média ponderada, não a soma (#82)",
+              "**gcode:** Desduplica parsers, limite único de 50MB, helpers unificados de tempo/temperatura, validação centralizada, arredondamento para 1 decimal, doc+tooltip i18n (`gcodeEPathsNote` pt-BR) (#88)"
             ]
           },
           {
             "title": "⬆️ Dependências",
             "items": [
-              "Bump electron 43.4.1 → 44.1.1 (#62)",
-              "Bump @react-pdf/renderer 4.6.1 → 4.9.0 (#64)",
-              "Bump lucide-react 1.33.0 → 1.39.0 (#66)",
-              "Bump lint-staged 17.3.0 → 17.4.1 (#65)",
-              "Bump @vitejs/plugin-react 6.1.0 → 6.1.1 (#67)",
-              "Bump @testing-library/react 16.3.2 → 16.3.3 (#58)",
-              "Bump @types/node 26.2.0 → 26.4.1 (#59)",
-              "Bump @types/react-dom 19.2.4 → 19.2.5 (#60)",
-              "Bump pantheon-opencode 1.3.6 → 1.4.3 (#61)",
-              "Bump anomalyco/opencode/github action (#63)"
+              "Atualiza electron 43.4.1 → 44.1.1 (#62)",
+              "Atualiza @react-pdf/renderer 4.6.1 → 4.9.0 (#64)",
+              "Atualiza lucide-react 1.33.0 → 1.39.0 (#66)",
+              "Atualiza lint-staged 17.3.0 → 17.4.1 (#65)",
+              "Atualiza @vitejs/plugin-react 6.1.0 → 6.1.1 (#67)",
+              "Atualiza @testing-library/react 16.3.2 → 16.3.3 (#58)",
+              "Atualiza @types/node 26.2.0 → 26.4.1 (#59)",
+              "Atualiza @types/react-dom 19.2.4 → 19.2.5 (#60)",
+              "Atualiza pantheon-opencode 1.3.6 → 1.4.3 (#61)",
+              "Atualiza a action anomalyco/opencode/github (#63)"
             ]
           },
           {
             "title": "✅ Tests",
             "items": [
-              "Increase ChangelogPage test timeout to 15s for CI stability (1bee06d)"
+              "Aumenta o timeout dos testes do ChangelogPage para 15s para estabilidade da CI (1bee06d)"
             ]
           },
           {
             "title": "🤖 CI/CD",
             "items": [
-              "Split quality into checks+test and run on fork PRs (#74)"
+              "Divide a qualidade em checks+test e roda em PRs de fork (#74)"
             ]
           },
           {
@@ -795,16 +795,16 @@
           {
             "title": "🚀 Novidades",
             "items": [
-              "**sync:** Cross-device data sync via encrypted export/import (#56, closes #55)"
+              "**sync:** Sincronização de dados entre dispositivos via export/import criptografado (#56, encerra #55)"
             ]
           },
           {
             "title": "🐛 Correções",
             "items": [
-              "**ci:** Fix npm ci failure — regenerate lock file with missing Windows-only optional deps",
-              "**ci:** Make postinstall (`electron-rebuild`) conditional — skips in CI environments",
-              "**vite:** Resolve CJS interop issues with `use-sync-external-store` and `scheduler`",
-              "**ui:** Resolve recharts infinite loop via i18n `useSuspense: false` workaround (recharts#7463)"
+              "**ci:** Corrige falha do npm ci — regenera o lock file com dependências opcionais exclusivas do Windows ausentes",
+              "**ci:** Torna o postinstall (`electron-rebuild`) condicional — pula em ambientes de CI",
+              "**vite:** Resolve problemas de interoperabilidade CJS com `use-sync-external-store` e `scheduler`",
+              "**ui:** Resolve o loop infinito do recharts via workaround de i18n `useSuspense: false` (recharts#7463)"
             ]
           },
           {
@@ -820,27 +820,27 @@
           {
             "title": "🚀 Novidades",
             "items": [
-              "**release:** Deterministic audited English release notes generator (dry-run) (#26)",
-              "**stlpreview:** Auto-fit camera, fullscreen overlay and clear model (#29)",
-              "**changelog:** Sync in-app changelog automatically on release (#31)"
+              "**release:** Gerador determinístico e auditado de release notes em inglês (dry-run) (#26)",
+              "**stlpreview:** Ajuste automático de câmera, overlay em tela cheia e limpar modelo (#29)",
+              "**changelog:** Sincroniza o changelog in-app automaticamente no release (#31)"
             ]
           },
           {
             "title": "🐛 Correções",
             "items": [
-              "**release:** Correct notes generator normalization and nested commit titles (#27)",
-              "**release:** Scope notes per tag range with root commit and hardened URLs (#28)",
-              "**layout:** Responsive calculator columns for complete mode (#30)",
-              "**changelog:** Localize version cards and polish header controls (#33)",
-              "**layout:** Results sidebar only with space, portal dropdowns, ultrawide shell (#34)",
-              "**gcode:** Do not ignore gcode without a TIME header and support Prusa/Orca (#32, #51)"
+              "**release:** Corrige a normalização do gerador de notes e títulos de commits aninhados (#27)",
+              "**release:** Limita os notes por intervalo de tag com commit raiz e URLs reforçadas (#28)",
+              "**layout:** Colunas responsivas da calculadora no modo completo (#30)",
+              "**changelog:** Localiza os cards de versão e refina os controles do cabeçalho (#33)",
+              "**layout:** Sidebar de resultados apenas com espaço, dropdowns em portal, shell ultrawide (#34)",
+              "**gcode:** Não ignora mais gcode sem cabeçalho TIME e suporta Prusa/Orca (#32, #51)"
             ]
           },
           {
             "title": "🧹 Outros",
             "items": [
-              "**ci:** Pre-commit — gitleaks + .env guardian + AI Bifrost (9afa29b)",
-              "**ci:** Security phase 2 — deepwork CI/CD, pre-commit and scan (fe56338)"
+              "**ci:** Pre-commit — gitleaks + guardião de .env + AI Bifrost (9afa29b)",
+              "**ci:** Fase 2 de segurança — CI/CD deepwork, pre-commit e scan (fe56338)"
             ]
           },
           {
@@ -856,33 +856,33 @@
           {
             "title": "🚀 Novidades",
             "items": [
-              "**ci:** Add AI code review workflow via Bifrost LLM Gateway (8287e51)",
-              "**ci:** Switch AI review to alibaba/open-code-review, fix release artifacts (#11)",
-              "Optimized CI/CD — self-hosted runner, husky-only, AI commit review, i18n (#12)",
-              "Auto-deduct filament + date filters (Issue #16) (#17, #16)",
-              "Phase 2+3 — STL & Dashboard optimization (dead code removal, calc integration) (#20)"
+              "**ci:** Adiciona workflow de revisão de código com IA via Bifrost LLM Gateway (8287e51)",
+              "**ci:** Muda a revisão de IA para alibaba/open-code-review e corrige artefatos de release (#11)",
+              "CI/CD otimizada — runner self-hosted, apenas husky, revisão de commits com IA, i18n (#12)",
+              "Dedução automática de filamento + filtros de data (Issue #16) (#17, #16)",
+              "Fase 2+3 — otimização de STL e Dashboard (remoção de código morto, integração com a calculadora) (#20)"
             ]
           },
           {
             "title": "🐛 Correções",
             "items": [
-              "**changelog:** Sort versions by semver + add v1.9.1 entry (ffc68bb)",
-              "Safety Sprint — security & quality hardening (#19)",
-              "**release:** Remove [skip ci] from release commit (#21)",
-              "**release:** Push tag only, use release branch + PR for version bump (#22)",
-              "**release:** Standardize protected and idempotent pipeline (#23)"
+              "**changelog:** Ordena versões por semver + adiciona entrada v1.9.1 (ffc68bb)",
+              "Sprint de Segurança — endurecimento de segurança e qualidade (#19)",
+              "**release:** Remove [skip ci] do commit de release (#21)",
+              "**release:** Envia apenas a tag e usa branch de release + PR para o bump de versão (#22)",
+              "**release:** Padroniza pipeline protegida e idempotente (#23)"
             ]
           },
           {
             "title": "🧹 Outros",
             "items": [
-              "Translate missing pt-BR keys, remove stale web/ and desktop/ copies (cc5b0e9)"
+              "Traduz chaves pt-BR ausentes e remove cópias obsoletas de web/ e desktop/ (cc5b0e9)"
             ]
           },
           {
             "title": "🤖 CI/CD",
             "items": [
-              "Remove themis review, add opencode github integration (#13)"
+              "Remove a revisão do themis e adiciona integração opencode github (#13)"
             ]
           },
           {
@@ -898,12 +898,12 @@
           {
             "title": "🎨 Visual Polish & Mobile",
             "items": [
-              "**Tutorial repositioned**: removed Floating UI, fixed card positioning (no drift)",
-              "**MobileBottomBar**: no horizontal scroll, flex-1 layout, z-50 above section nav",
-              "**SectionNav**: full page height, 'Seções' title, subtle borders",
-              "**QuickStartBanner**: dismissable (X button), compacted",
-              "**ResultsPanel**: compressed mobile padding",
-              "**Dual bottom bars**: main tabs + section nav, overflow-x-hidden"
+              "**Tutorial reposicionado**: removido Floating UI, posicionamento do card corrigido (sem drift)",
+              "**MobileBottomBar**: sem scroll horizontal, layout flex-1, z-50 acima da nav de seção",
+              "**SectionNav**: altura total da página, título 'Seções', bordas sutis",
+              "**QuickStartBanner**: dispensável (botão X), compactado",
+              "**ResultsPanel**: padding mobile comprimido",
+              "**Barras inferiores duplas**: abas principais + nav de seção, overflow-x-hidden"
             ]
           },
           {
@@ -926,8 +926,8 @@
           {
             "title": "📦 Auto-Update",
             "items": [
-              "**latest.yml** now included in GitHub releases — auto-updater finds updates",
-              "**Blockmap** for delta updates"
+              "**latest.yml** agora incluído nos releases do GitHub — o auto-updater encontra atualizações",
+              "**Blockmap** para atualizações delta"
             ]
           }
         ]
@@ -939,27 +939,27 @@
           {
             "title": "🚀 Novidades",
             "items": [
-              "**ui:** Usability improvements — tooltips, quick mode labels, tutorial overhaul (72720a4)",
-              "**ui:** Accessibility and i18n fixes (1e30bc0)",
-              "**ui:** Quick Start, Empty States, Scroll, Keyboard Shortcuts (80c2f29)"
+              "**ui:** Melhorias de usabilidade — tooltips, rótulos do modo rápido, reformulação do tutorial (72720a4)",
+              "**ui:** Correções de acessibilidade e i18n (1e30bc0)",
+              "**ui:** Início Rápido, Estados Vazios, Scroll, Atalhos de Teclado (80c2f29)"
             ]
           },
           {
             "title": "🐛 Correções",
             "items": [
-              "**release:** Use bash array for artifact upload (a719447)",
-              "**ui:** Resolve 5 audit bugs — tutorial navigation, H1, touch targets, export (5b032ca)",
-              "**ui:** Tutorial spotlight positioning + remaining touch targets (5d6b8ae)",
-              "**ui:** Remaining touch targets in SectionNav + MobileBottomBar (87e1cd9)",
-              "**ui:** Min-h-[44px] in SectionNav buttons (d875147)",
-              "Lint error in useKeyboardShortcuts + enforce CI/CD gate in AGENTS.md (60a72b1)",
-              "Type error document.querySelector().click() → cast to HTMLElement (61ebfab)"
+              "**release:** Usa array bash para upload de artefatos (a719447)",
+              "**ui:** Resolve 5 bugs de auditoria — navegação do tutorial, H1, alvos de toque, exportação (5b032ca)",
+              "**ui:** Posicionamento do spotlight do tutorial + alvos de toque restantes (5d6b8ae)",
+              "**ui:** Alvos de toque restantes na SectionNav + MobileBottomBar (87e1cd9)",
+              "**ui:** Min-h-[44px] nos botões da SectionNav (d875147)",
+              "Erro de lint em useKeyboardShortcuts + aplica o gate de CI/CD no AGENTS.md (60a72b1)",
+              "Erro de tipo document.querySelector().click() → cast para HTMLElement (61ebfab)"
             ]
           },
           {
             "title": "📖 Documentação",
             "items": [
-              "Add RELEASE.md with step-by-step release process (01d42fb)"
+              "Adiciona RELEASE.md com o processo de release passo a passo (01d42fb)"
             ]
           },
           {
@@ -982,7 +982,7 @@
           {
             "title": "🐛 Correções",
             "items": [
-              "**release:** Use bash array for artifact upload (a719447)"
+              "**release:** Usa array bash para upload de artefatos (a719447)"
             ]
           },
           {
@@ -1007,23 +1007,23 @@
           {
             "title": "🎨 UI/UX",
             "items": [
-              "Bifrost redesign: flat surfaces, no glassmorphism",
-              "Light/dark theme on web",
-              "Rectangular badges (6px), reduced border-radius (14px)",
-              "Unified CSS variables system"
+              "Redesign Bifrost: superfícies planas, sem glassmorphism",
+              "Tema claro/escuro na web",
+              "Badges retangulares (6px), border-radius reduzido (14px)",
+              "Sistema unificado de variáveis CSS"
             ]
           },
           {
             "title": "🔧 Technical",
             "items": [
-              "Unified codebase in a monorepo (`src/shared/` + `src/platform/`)",
-              "Git migrated to root (history preserved)",
-              "`web/` and `desktop/` kept for historical reference"
+              "Base de código unificada em um monorepo (`src/shared/` + `src/platform/`)",
+              "Git migrado para a raiz (histórico preservado)",
+              "`web/` e `desktop/` mantidos como referência histórica"
             ]
           },
           {
             "title": "✅ Tests",
-            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
+            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
           }
         ]
       },
