@@ -332,6 +332,85 @@ export const render = (catalog, repository = "repository") => {
   return lines.join("\n");
 };
 
+// Canonical GitHub publication sections: exact `###` heading (emoji included)
+// in the fixed public order and the audited catalog categories that feed each
+// one. Chores absorbs the audit-only Improvements/Other Changes buckets so the
+// chore/refactor/style commit types share a single public section. Empty
+// sections are omitted; Downloads/Checksums are deliberately never published.
+export const PUBLICATION_SECTIONS = [
+  { heading: "🚀 Features", categories: ["Features", "Highlights"] },
+  { heading: "🐛 Fixes", categories: ["Fixes"] },
+  {
+    heading: "🧹 Chores",
+    categories: ["Chores", "Improvements", "Other Changes"],
+  },
+  { heading: "📦 Dependencies", categories: ["Dependencies"] },
+  { heading: "🤖 CI/CD", categories: ["CI/CD"] },
+  { heading: "📚 Documentation", categories: ["Documentation"] },
+  { heading: "🔒 Security", categories: ["Security"] },
+  { heading: "⚠️ Breaking Changes", categories: ["Breaking Changes"] },
+];
+const isBotLogin = (login) => {
+  const value = String(login ?? "").toLowerCase();
+  return value === "unknown" || value.endsWith("[bot]") || BOTS.has(value);
+};
+const shortSha = (sha) => clean(sha, "").slice(0, 7);
+const publicationChangelog = (repository, tag, previousTag) => {
+  const repositoryUrl = `https://github.com/${escapeMarkdown(repository)}`;
+  const component = (value) => encodeURIComponent(String(value));
+  if (previousTag && tag)
+    return `${repositoryUrl}/compare/${component(previousTag)}...${component(tag)}`;
+  // First tagged release: only a commit list exists, mirroring the audit render.
+  if (tag) return `${repositoryUrl}/commits/${component(tag)}`;
+  return repositoryUrl;
+};
+/**
+ * Render the canonical GitHub release body (EN, emoji sections, deterministic).
+ *
+ * @param {object} catalog Normalized catalog returned by `normalize()`.
+ * @param {string} [repository] GitHub `owner/repo` slug.
+ * @param {{ tag?: string, previousTag?: string }} [range] Release tag and the
+ *   previous SemVer tag used to build the Full Changelog compare link.
+ * @returns {string} Markdown body, byte-identical across re-runs.
+ */
+export const renderPublication = (
+  catalog,
+  repository = "repository",
+  { tag, previousTag } = {},
+) => {
+  const releaseTag = tag ?? catalog.range?.release ?? null;
+  const priorTag = previousTag ?? catalog.range?.previous ?? null;
+  const lines = ["## What's Changed", ""];
+  for (const { heading, categories } of PUBLICATION_SECTIONS) {
+    const entries = catalog.items
+      .filter((item) => categories.includes(item.category))
+      .sort((a, b) => compare(a.title, b.title) || compare(a.key, b.key));
+    if (!entries.length) continue;
+    lines.push(`### ${heading}`, "");
+    for (const item of entries) {
+      const prNumber = validNumber(item.pr?.number);
+      const suffix = prNumber
+        ? `([#${item.pr.number}](https://github.com/${escapeMarkdown(repository)}/pull/${item.pr.number}))`
+        : `(commit ${escapeMarkdown(shortSha(item.sha))})`;
+      lines.push(`- ${escapeMarkdown(item.title)} ${suffix}`);
+    }
+    lines.push("");
+  }
+  const contributors = [...new Set(catalog.items.map((item) => item.author))]
+    .filter((author) => author && !isBotLogin(author))
+    .sort(compare);
+  if (contributors.length) {
+    lines.push("### ❤️ Contributors", "");
+    lines.push(...contributors.map((author) => `@${escapeMarkdown(author)}`));
+    lines.push("");
+  }
+  lines.push(
+    `**Full Changelog**: ${publicationChangelog(repository, releaseTag, priorTag)}`,
+    "",
+  );
+  return lines.join("\n");
+};
+
 class GitHubError extends Error {
   constructor(url, status, attempts) {
     super(`GitHub request failed with status ${status}`);
@@ -611,7 +690,7 @@ export async function collect(repository, release) {
 }
 
 const usage =
-  "Usage: node scripts/release-notes.mjs (--release vX.Y.Z | --all) [--dry-run] [--audit-only] [--input file] [--output dir]";
+  "Usage: node scripts/release-notes.mjs (--release vX.Y.Z | --all) [--dry-run] [--audit-only] [--input file] [--output dir] [--notes-file path]";
 const parseArgs = (argv) => {
   const allowed = new Set([
     "--dry-run",
@@ -621,6 +700,7 @@ const parseArgs = (argv) => {
     "--release",
     "--input",
     "--output",
+    "--notes-file",
   ]);
   for (const arg of argv)
     if (arg.startsWith("--") && !allowed.has(arg))
@@ -638,7 +718,7 @@ const parseArgs = (argv) => {
     throw new Error("--release must be a tag in vX.Y.Z format");
   if (!release && !argv.includes("--all"))
     throw new Error(`${usage}\nA release tag or --all is required.`);
-  for (const name of ["--release", "--input", "--output"])
+  for (const name of ["--release", "--input", "--output", "--notes-file"])
     if (argv.includes(name) && (!value(name) || value(name).startsWith("--")))
       throw new Error(`${name} requires a value`);
   return {
@@ -648,6 +728,7 @@ const parseArgs = (argv) => {
     auditOnly: argv.includes("--audit-only"),
     input: value("--input"),
     output: resolve(value("--output") ?? "release-notes-output"),
+    notesFile: value("--notes-file"),
   };
 };
 export async function main(argv = process.argv.slice(2)) {
@@ -670,6 +751,10 @@ export async function main(argv = process.argv.slice(2)) {
     outputSha256: sha256(render(catalog, repository)),
     catalog,
   };
+  const publication = renderPublication(catalog, repository, {
+    tag: options.release,
+    previousTag: catalog.range?.previous,
+  });
   await mkdir(options.output, { recursive: true });
   await writeFile(
     resolve(options.output, "inventory.json"),
@@ -689,7 +774,13 @@ export async function main(argv = process.argv.slice(2)) {
       resolve(options.output, "release-notes.diff"),
       `--- generated\n+++ audited\n@@\n+${markdown.split("\n").join("\n+\n")}`,
     );
+    await writeFile(
+      resolve(options.output, "release-notes-publication.md"),
+      `${publication}\n`,
+    );
   }
+  if (options.notesFile)
+    await writeFile(resolve(options.notesFile), `${publication}\n`);
   return audit;
 }
 if (import.meta.url === `file://${process.argv[1]}`)
