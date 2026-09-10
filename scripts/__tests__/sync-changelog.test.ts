@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildVersions,
   cleanItem,
@@ -11,9 +11,21 @@ import {
   parseArgs,
   parseChangelog,
   replaceVersionsArray,
+  resolveReleaseDate,
   sectionTitleFor,
   semverDesc,
 } from "../sync-changelog.mjs";
+
+// The offline date-fill path is gated on GH_TOKEN; keep it out of the way so
+// the deterministic suite never reaches for the network.
+const ORIGINAL_GH_TOKEN = process.env.GH_TOKEN;
+beforeEach(() => {
+  delete process.env.GH_TOKEN;
+});
+afterEach(() => {
+  if (ORIGINAL_GH_TOKEN === undefined) delete process.env.GH_TOKEN;
+  else process.env.GH_TOKEN = ORIGINAL_GH_TOKEN;
+});
 
 const FIXTURES = resolve("scripts/__fixtures__/changelog");
 const fixtureChangelog = () =>
@@ -175,6 +187,96 @@ describe("sync-changelog generation", () => {
   });
 });
 
+describe("sync-changelog translation durability", () => {
+  const localePath = (root: string, name: string) =>
+    resolve(root, "src/shared/i18n/locales", `${name}.json`);
+  const readLocale = async (root: string, name: string) =>
+    JSON.parse(await readFile(localePath(root, name), "utf8"));
+  const writeLocale = async (root: string, name: string, data: unknown) =>
+    writeFile(localePath(root, name), `${JSON.stringify(data, null, 2)}\n`);
+
+  it("preserves translated pt-BR items and appends only new items in English", async () => {
+    const root = await tempRoot();
+    // Seed pt-BR with a human translation in a section that matches the source.
+    const pt = await readLocale(root, "pt-BR");
+    pt.changelog.versions[0].sections = [
+      {
+        title: "🚀 Novidades",
+        items: ["**ui:** Adicionar modo escuro (abc123)"],
+      },
+    ];
+    await writeLocale(root, "pt-BR", pt);
+    // Seed en-US with stale text to prove the canonical locale still updates.
+    const en = await readLocale(root, "en-US");
+    en.changelog.versions[0].sections[0].items = ["**ui:** stale"];
+    await writeLocale(root, "en-US", en);
+
+    await main(["--write"], { root });
+
+    const ptAfter = await readLocale(root, "pt-BR");
+    const enAfter = await readLocale(root, "en-US");
+    const ptV120 = ptAfter.changelog.versions.find(
+      (entry: { version: string }) => entry.version === "1.2.0",
+    );
+    const enV120 = enAfter.changelog.versions.find(
+      (entry: { version: string }) => entry.version === "1.2.0",
+    );
+    // Existing translation survives by (version, section, item position)…
+    expect(ptV120.sections[0].items[0]).toBe(
+      "**ui:** Adicionar modo escuro (abc123)",
+    );
+    // …the genuinely new item enters in English for later translation.
+    expect(ptV120.sections[0].items[1]).toBe(
+      "**ci:** Ship release automation (#12)",
+    );
+    // en-US is the canonical locale: stale text is replaced by the source.
+    expect(enV120.sections[0].items).toEqual([
+      "**ui:** Add dark mode (abc123)",
+      "**ci:** Ship release automation (#12)",
+    ]);
+    // Version count and order are preserved.
+    expect(
+      ptAfter.changelog.versions.map(
+        (entry: { version: string }) => entry.version,
+      ),
+    ).toEqual(["1.2.0", "1.1.1", "1.1.0", "1.0.0"]);
+    // A locale-only version is still preserved untouched.
+    expect(
+      ptAfter.changelog.versions.find(
+        (entry: { version: string }) => entry.version === "1.0.0",
+      ),
+    ).toEqual(
+      pt.changelog.versions.find(
+        (entry: { version: string }) => entry.version === "1.0.0",
+      ),
+    );
+    // The preserved state is considered in sync.
+    await expect(main(["--check"], { root })).resolves.toMatchObject({
+      ok: true,
+    });
+  });
+
+  it("keeps a translated item stable across repeated --write runs", async () => {
+    const root = await tempRoot();
+    const pt = await readLocale(root, "pt-BR");
+    pt.changelog.versions[0].sections = [
+      {
+        title: "🚀 Novidades",
+        items: ["**ui:** Adicionar modo escuro (abc123)"],
+      },
+    ];
+    await writeLocale(root, "pt-BR", pt);
+
+    await main(["--write"], { root });
+    const first = await readFile(localePath(root, "pt-BR"), "utf8");
+    const report = await main(["--write"], { root });
+    const second = await readFile(localePath(root, "pt-BR"), "utf8");
+
+    expect(second).toBe(first);
+    expect(report.wrote).toBe(false);
+  });
+});
+
 describe("sync-changelog CLI", () => {
   it("parses flags and rejects conflicting or unknown ones", () => {
     expect(parseArgs([])).toEqual({
@@ -291,22 +393,24 @@ describe("sync-changelog CLI", () => {
     ].join("\n");
     const next = [{ version: "2.0.0", date: "", sections: [] }];
     const updated = replaceVersionsArray(raw, next);
-    expect(updated).toBe([
-      "{",
-      '  "changelog": {',
-      '    "header": "x",',
-      '    "versions": [',
-      "      {",
-      '        "version": "2.0.0",',
-      '        "date": "",',
-      '        "sections": []',
-      "      }",
-      "    ],",
-      '    "viewAllOnGitHub": "y"',
-      "  },",
-      '\t"legacy": "\tindented with a literal tab"',
-      "}",
-    ].join("\n"));
+    expect(updated).toBe(
+      [
+        "{",
+        '  "changelog": {',
+        '    "header": "x",',
+        '    "versions": [',
+        "      {",
+        '        "version": "2.0.0",',
+        '        "date": "",',
+        '        "sections": []',
+        "      }",
+        "    ],",
+        '    "viewAllOnGitHub": "y"',
+        "  },",
+        '\t"legacy": "\tindented with a literal tab"',
+        "}",
+      ].join("\n"),
+    );
     const span = findVersionsArraySpan(raw);
     expect(span).not.toBeNull();
     expect(raw.slice(span.start, span.start + 1)).toBe("[");
@@ -334,6 +438,309 @@ describe("sync-changelog CLI", () => {
       withTab.slice(0, beforeSpan.start),
     );
     expect(after.slice(versionsSpan.end)).toBe(withTab.slice(beforeSpan.end));
+  });
+});
+
+describe("sync-changelog GitHub dates", () => {
+  /**
+   * GitHub API stub. `commit`/`publishedAt` drive the two date sources:
+   * the tag commit (primary) and the release `published_at` (fallback).
+   */
+  const githubApi = ({
+    commit = { commit: { committer: { date: "2026-08-20T09:00:00Z" } } },
+    publishedAt = "2026-08-21T15:42:00Z",
+    commitStatus = 200,
+    releaseStatus = 200,
+  }: {
+    commit?: unknown;
+    publishedAt?: string | null;
+    commitStatus?: number;
+    releaseStatus?: number;
+  } = {}) => {
+    const respond = (status: number, body: unknown) =>
+      status === 200
+        ? Response.json(body)
+        : new Response("missing", { status });
+    return (url: string) => {
+      if (url.includes("/commits/v")) return respond(commitStatus, commit);
+      if (url.includes("/releases/tags/"))
+        return respond(releaseStatus, {
+          tag_name: "v1.9.2",
+          published_at: publishedAt,
+        });
+      if (url.includes("/releases"))
+        return Response.json([
+          { tag_name: "v1.9.2", target_commitish: "sha-192", assets: [] },
+        ]);
+      if (url.includes("/tags"))
+        return Response.json([{ name: "v1.9.2", commit: { sha: "sha-192" } }]);
+      if (url.includes("/commits/") && url.includes("/pulls"))
+        return Response.json([]);
+      if (url.includes("/commits"))
+        return Response.json([
+          { sha: "sha-192", commit: { message: "feat: ship" } },
+        ]);
+      if (url.includes("/compare/")) return Response.json({ commits: [] });
+      if (url.includes("/pulls")) return Response.json([]);
+      return Response.json([]);
+    };
+  };
+
+  it("prefers the immutable tag-commit date over published_at (--from-github)", async () => {
+    const root = await tempRoot();
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url);
+      return githubApi({
+        commit: { commit: { committer: { date: "2026-08-24T00:00:00Z" } } },
+        publishedAt: "2026-09-10T00:00:00Z",
+      })(url);
+    }) as typeof fetch;
+    try {
+      await main(["--from-github", "v1.9.2", "--write"], { root });
+      const written = JSON.parse(
+        await readFile(
+          resolve(root, "src/shared/i18n/locales/pt-BR.json"),
+          "utf8",
+        ),
+      );
+      const entry = written.changelog.versions.find(
+        (candidate: { version: string }) => candidate.version === "1.9.2",
+      );
+      expect(entry.date).toBe("2026-08-24");
+      expect(calls.some((call) => call.includes("/commits/v1.9.2"))).toBe(true);
+      // The fallback source is never consulted once the commit date resolves.
+      expect(calls.some((call) => call.includes("/releases/tags/"))).toBe(
+        false,
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("falls back to published_at when the tag commit lookup fails", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string) =>
+      githubApi({
+        commitStatus: 404,
+        publishedAt: "2026-08-21T15:42:00Z",
+      })(url)) as typeof fetch;
+    try {
+      await expect(
+        resolveReleaseDate("ils15/open3dcalc", "v1.9.2"),
+      ).resolves.toBe("2026-08-21");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("returns empty when published_at is null despite HTTP 200", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string) =>
+      githubApi({
+        commitStatus: 404,
+        publishedAt: null,
+        releaseStatus: 200,
+      })(url)) as typeof fetch;
+    try {
+      await expect(
+        resolveReleaseDate("ils15/open3dcalc", "v1.9.2"),
+      ).resolves.toBe("");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("returns an empty date instead of guessing when both sources fail", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response("boom", { status: 500 })) as typeof fetch;
+    try {
+      await expect(
+        resolveReleaseDate("ils15/open3dcalc", "v1.9.2"),
+      ).resolves.toBe("");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("survives a fetch that throws without rejecting", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      throw new Error("offline");
+    }) as typeof fetch;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await expect(
+        resolveReleaseDate("ils15/open3dcalc", "v1.9.2"),
+      ).resolves.toBe("");
+      expect(warn).toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("returns empty for an invalid tag without calling fetch", async () => {
+    const originalFetch = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return Response.json({});
+    }) as typeof fetch;
+    try {
+      await expect(
+        resolveReleaseDate("ils15/open3dcalc", "banana"),
+      ).resolves.toBe("");
+      await expect(resolveReleaseDate("ils15/open3dcalc", "")).resolves.toBe(
+        "",
+      );
+      expect(calls).toBe(0);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("rejects an invalid repository with a warning before interpolating", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const originalFetch = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return Response.json({});
+    }) as typeof fetch;
+    try {
+      await expect(resolveReleaseDate("not a repo", "v1.9.2")).resolves.toBe(
+        "",
+      );
+      await expect(resolveReleaseDate("../etc/passwd", "v1.9.2")).resolves.toBe(
+        "",
+      );
+      expect(calls).toBe(0);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("invalid repository"),
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+      warn.mockRestore();
+    }
+  });
+
+  it("warns on 403/rate-limit failures without leaking the token", async () => {
+    const originalFetch = globalThis.fetch;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    process.env.GH_TOKEN = "super-secret-token";
+    globalThis.fetch = (async (url: string) =>
+      githubApi({ commitStatus: 403, releaseStatus: 403 })(
+        url,
+      )) as typeof fetch;
+    try {
+      await expect(
+        resolveReleaseDate("ils15/open3dcalc", "v1.9.2"),
+      ).resolves.toBe("");
+      const messages = warn.mock.calls.map((call) => String(call[0]));
+      expect(messages.some((message) => message.includes("403"))).toBe(true);
+      expect(messages.join(" ")).not.toContain("super-secret-token");
+    } finally {
+      globalThis.fetch = originalFetch;
+      delete process.env.GH_TOKEN;
+      warn.mockRestore();
+    }
+  });
+
+  it("stays offline (no date lookup) without a token or fetch override", async () => {
+    const root = await tempRoot();
+    const originalFetch = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return Response.json({});
+    }) as typeof fetch;
+    try {
+      await main(["--write"], { root });
+      expect(calls).toBe(0);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("fills empty CHANGELOG.md dates via GitHub when a fetch override is given", async () => {
+    const root = await tempRoot();
+    const fetchImpl = githubApi({
+      commit: { commit: { committer: { date: "2026-05-25T00:00:00Z" } } },
+    });
+    const report = await main(["--write"], { root, fetch: fetchImpl });
+    const written = JSON.parse(
+      await readFile(
+        resolve(root, "src/shared/i18n/locales/pt-BR.json"),
+        "utf8",
+      ),
+    );
+    const v111 = written.changelog.versions.find(
+      (candidate: { version: string }) => candidate.version === "1.1.1",
+    );
+    expect(v111.date).toBe("2026-05-25");
+    expect(report.wrote).toBe(true);
+  });
+
+  it("enables offline date resolution in CI when GH_TOKEN is present", async () => {
+    const root = await tempRoot();
+    const originalFetch = globalThis.fetch;
+    process.env.GH_TOKEN = "ci-token";
+    globalThis.fetch = (async (url: string) =>
+      githubApi({
+        commit: { commit: { committer: { date: "2026-08-20T09:00:00Z" } } },
+      })(url)) as typeof fetch;
+    try {
+      await main(["--write"], { root });
+      const written = JSON.parse(
+        await readFile(
+          resolve(root, "src/shared/i18n/locales/pt-BR.json"),
+          "utf8",
+        ),
+      );
+      const v111 = written.changelog.versions.find(
+        (candidate: { version: string }) => candidate.version === "1.1.1",
+      );
+      expect(v111.date).toBe("2026-08-20");
+    } finally {
+      globalThis.fetch = originalFetch;
+      delete process.env.GH_TOKEN;
+    }
+  });
+
+  it("resolves every release date on the full --from-github list path", async () => {
+    const root = await tempRoot();
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    const stub = (url: string) => {
+      calls.push(url);
+      return githubApi({
+        commit: { commit: { committer: { date: "2026-08-20T09:00:00Z" } } },
+      })(url);
+    };
+    globalThis.fetch = (async (url: string) => stub(url)) as typeof fetch;
+    try {
+      await main(["--from-github", "--write"], {
+        root,
+        fetch: stub as unknown as typeof fetch,
+      });
+      const written = JSON.parse(
+        await readFile(
+          resolve(root, "src/shared/i18n/locales/pt-BR.json"),
+          "utf8",
+        ),
+      );
+      const entry = written.changelog.versions.find(
+        (candidate: { version: string }) => candidate.version === "1.9.2",
+      );
+      expect(entry.date).toBe("2026-08-20");
+      expect(calls.some((call) => call.includes("/releases"))).toBe(true);
+      expect(calls.some((call) => call.includes("/commits/v1.9.2"))).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
 
