@@ -570,6 +570,9 @@
     "start": "Começar",
     "startTutorial": "Começar Tutorial Interativo",
     "skip": "Pular",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "slideOf": "Slide {{current}} de {{total}}",
     "slide1": {
       "title": "O que é o Open3DCalc?",
       "description": "Uma calculadora gratuita e open-source para estimar custos de impressão 3D com precisão."
