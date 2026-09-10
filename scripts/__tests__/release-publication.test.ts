@@ -232,6 +232,72 @@ describe("renderPublication", () => {
     expect(first).not.toContain("Downloads");
     expect(first).not.toContain("Checksums");
   });
+
+  it("keeps inline parentheses, plus and hash unescaped in item titles", () => {
+    const markdown = renderPublication(
+      normalize({
+        pullRequests: [
+          {
+            number: 87,
+            title:
+              "feat(calc): preço de venda editável + ponte calculadora→produto (closes #85)",
+            merged: true,
+            user: { login: "alice" },
+          },
+        ],
+      }),
+      REPO,
+      { tag: "v1.1.0", previousTag: "v1.0.0" },
+    );
+    expect(markdown).toContain(
+      "- feat(calc): preço de venda editável + ponte calculadora→produto (closes #85) ([#87](https://github.com/ils15/open3dcalc/pull/87))",
+    );
+    expect(markdown).not.toContain("\\(");
+    expect(markdown).not.toContain("\\)");
+    expect(markdown).not.toContain("\\+");
+    expect(markdown).not.toContain("\\#");
+  });
+
+  it("neutralizes HTML in item titles without escaping the whole subject", () => {
+    const markdown = renderPublication(
+      normalize({
+        commits: [
+          {
+            sha: "abc1234def",
+            commit: { message: "docs: safe text <script>alert(1)</script>" },
+            author: { login: "dave" },
+          },
+        ],
+      }),
+      REPO,
+      { tag: "v1.0.0" },
+    );
+    expect(markdown).not.toContain("<script>");
+    expect(markdown).toContain("safe text");
+  });
+
+  it("uses only the bounded first line of a commit-only message", () => {
+    const subject = `chore(deps): batch update 34 dependencies Major bumps: ${"a".repeat(140)}`;
+    const markdown = renderPublication(
+      normalize({
+        commits: [
+          {
+            sha: "f467375abc",
+            commit: {
+              message: `${subject}\n\n## Body\nmore detail that must never leak`,
+            },
+            author: { login: "dave" },
+          },
+        ],
+      }),
+      REPO,
+      { tag: "v1.0.0" },
+    );
+    const item = markdown.split("\n").find((line) => line.startsWith("- "));
+    expect(item).toBe(`- ${subject.slice(0, 100)} (commit f467375)`);
+    expect(markdown).not.toContain("more detail");
+    expect(markdown).not.toContain("## Body");
+  });
 });
 
 describe("main --notes-file", () => {

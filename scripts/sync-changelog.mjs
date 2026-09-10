@@ -66,6 +66,7 @@ export const CATEGORY_KEYS = Object.freeze({
   "bug fixes": "fixes",
   fixes: "fixes",
   chore: "other",
+  chores: "other",
   "other changes": "other",
   other: "other",
   ci: "ci",
