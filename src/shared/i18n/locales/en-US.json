@@ -570,6 +570,9 @@
     "start": "Start",
     "startTutorial": "Start Interactive Tutorial",
     "skip": "Skip",
+    "previous": "Previous",
+    "next": "Next",
+    "slideOf": "Slide {{current}} of {{total}}",
     "slide1": {
       "title": "What is Open3DCalc?",
       "description": "A free and open-source calculator to accurately estimate 3D printing costs."
@@ -725,16 +728,18 @@
     "versions": [
       {
         "version": "1.11.0",
-        "date": "",
+        "date": "2026-09-06",
         "sections": [
           {
             "title": "🚀 Features",
             "items": [
               "**sync:** Add text label to DataSyncButton for better visibility (a6da01d)",
               "UI/UX improvements — STL support estimation, Resin preview, safety fixes (#57)",
-              "**calc:** Exibe lucro por hora (profit/hr) FDM+Resina (#77)",
-              "**products:** Cadastro produtos + vendido + CSV + sync (#78)",
-              "**estimators:** Modos simple/advanced + G-code opcional (#83)"
+              "**calc:** Show profit/hr for FDM + Resin (#77)",
+              "**products:** Product registration + sold + CSV + sync (#78)",
+              "**estimators:** Simple/advanced modes + optional G-code (#83)",
+              "**gcode:** Bambu/Klipper time headers + fallback by moves via `timeSource` HEADER/APPROXIMATE, first-wins cascade Cura > Prusa/Orca > Bambu > Klipper (#86, closes #84)",
+              "**calc:** Editable sale price (display-local BRL override) + calculator→product bridge with toast/event and pt-BR/en-US i18n (#87, closes #85)"
             ]
           },
           {
@@ -742,11 +747,27 @@
             "items": [
               "**ci:** Remove v1.10.0 exclusion and sync changelog (7794266)",
               "**dashboard:** Replace React.lazy with static recharts imports to fix #7463 crash (#7463)",
-              "**3mf:** Segue p:path da production extension e corrige volume 3x maior (#72)",
-              "**estimators:** Casca por area de superficie e fisica da extrusao no… (#73)",
-              "**release:** Windows exe + auto-update resiliente (#76)",
+              "**3mf:** Follow p:path from the production extension and fix 3x larger volume (#72)",
+              "**estimators:** Surface-area shell and extrusion physics in… (#73)",
+              "**release:** Windows exe + resilient auto-update (#76)",
               "**release:** Join --body into single quoted string in release PR step (#79)",
-              "**estimators:** Espessura de casca e média ponderada, não soma (#82)"
+              "**estimators:** Shell thickness and weighted average, not the sum (#82)",
+              "**gcode:** Dedup parsers, single-source 50MB cap, unified time/temperature helpers, centralized validation, 1-decimal rounding, i18n doc+tooltip (`gcodeEPathsNote` pt-BR) (#88)"
+            ]
+          },
+          {
+            "title": "⬆️ Dependencies",
+            "items": [
+              "Bump electron 43.4.1 → 44.1.1 (#62)",
+              "Bump @react-pdf/renderer 4.6.1 → 4.9.0 (#64)",
+              "Bump lucide-react 1.33.0 → 1.39.0 (#66)",
+              "Bump lint-staged 17.3.0 → 17.4.1 (#65)",
+              "Bump @vitejs/plugin-react 6.1.0 → 6.1.1 (#67)",
+              "Bump @testing-library/react 16.3.2 → 16.3.3 (#58)",
+              "Bump @types/node 26.2.0 → 26.4.1 (#59)",
+              "Bump @types/react-dom 19.2.4 → 19.2.5 (#60)",
+              "Bump pantheon-opencode 1.3.6 → 1.4.3 (#61)",
+              "Bump anomalyco/opencode/github action (#63)"
             ]
           },
           {
@@ -769,7 +790,7 @@
       },
       {
         "version": "1.10.0",
-        "date": "",
+        "date": "2026-08-24",
         "sections": [
           {
             "title": "🚀 Features",
@@ -794,7 +815,7 @@
       },
       {
         "version": "1.9.3",
-        "date": "",
+        "date": "2026-08-21",
         "sections": [
           {
             "title": "🚀 Features",
@@ -812,14 +833,13 @@
               "**layout:** Responsive calculator columns for complete mode (#30)",
               "**changelog:** Localize version cards and polish header controls (#33)",
               "**layout:** Results sidebar only with space, portal dropdowns, ultrawide shell (#34)",
-              "**gcode:** Não ignora gcode sem TIME header e suporta Prusa/Orca (#32, #51)",
-              "**gcode:** não ignora gcode sem TIME header e suporta formato Prusa/Orca (closes #32) — remove gate silencioso `if(printTimeMinutes>0)` em `StlPreview.tsx:242`, parser `d/h/m/s` (`1h 23m 45s`/`2d 5h`/`45m 30s`) em `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` no branch GCODE, drop zone permanece visível (`!modelInfo?.geometry`), botão `stl.clear` para GCODE, 13 testes novos (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolvido"
+              "**gcode:** Do not ignore gcode without a TIME header and support Prusa/Orca (#32, #51)"
             ]
           },
           {
             "title": "🧹 Other",
             "items": [
-              "**ci:** Pre-commit — gitleaks + guardião .env + AI Bifrost (9afa29b)",
+              "**ci:** Pre-commit — gitleaks + .env guardian + AI Bifrost (9afa29b)",
               "**ci:** Security phase 2 — deepwork CI/CD, pre-commit and scan (fe56338)"
             ]
           },
@@ -831,14 +851,14 @@
       },
       {
         "version": "1.9.2",
-        "date": "",
+        "date": "2026-07-31",
         "sections": [
           {
             "title": "🚀 Features",
             "items": [
               "**ci:** Add AI code review workflow via Bifrost LLM Gateway (8287e51)",
               "**ci:** Switch AI review to alibaba/open-code-review, fix release artifacts (#11)",
-              "CI/CD otimizado — self-hosted runner, husky-only, AI commit review, i18n (#12)",
+              "Optimized CI/CD — self-hosted runner, husky-only, AI commit review, i18n (#12)",
               "Auto-deduct filament + date filters (Issue #16) (#17, #16)",
               "Phase 2+3 — STL & Dashboard optimization (dead code removal, calc integration) (#20)"
             ]
@@ -850,7 +870,7 @@
               "Safety Sprint — security & quality hardening (#19)",
               "**release:** Remove [skip ci] from release commit (#21)",
               "**release:** Push tag only, use release branch + PR for version bump (#22)",
-              "**release:** Padronizar pipeline protegido e idempotente (#23)"
+              "**release:** Standardize protected and idempotent pipeline (#23)"
             ]
           },
           {
@@ -880,7 +900,7 @@
             "items": [
               "**Tutorial repositioned**: removed Floating UI, fixed card positioning (no drift)",
               "**MobileBottomBar**: no horizontal scroll, flex-1 layout, z-50 above section nav",
-              "**SectionNav**: full page height, 'Seções' title, subtle borders",
+              "**SectionNav**: full page height, 'Sections' title, subtle borders",
               "**QuickStartBanner**: dismissable (X button), compacted",
               "**ResultsPanel**: compressed mobile padding",
               "**Dual bottom bars**: main tabs + section nav, overflow-x-hidden"
@@ -889,18 +909,18 @@
           {
             "title": "🐛 Bug Fixes",
             "items": [
-              "**Electron CJS preload**: preload compilado em CommonJS para sandbox",
-              "**createRequire**: database.ts usa createRequire(import.meta.url) em vez de globalThis.require",
-              "**Lint errors**: SectionNav idx não usado, QuickStartBanner useEffect não usado, Tutorial setState em effect",
-              "**TypeScript scoping**: ElectronDBApi/ElectronUpdaterApi envoltos em declare global"
+              "**Electron CJS preload**: preload compiled to CommonJS for the sandbox",
+              "**createRequire**: database.ts uses createRequire(import.meta.url) instead of globalThis.require",
+              "**Lint errors**: unused SectionNav idx, unused QuickStartBanner useEffect, Tutorial setState in effect",
+              "**TypeScript scoping**: ElectronDBApi/ElectronUpdaterApi wrapped in declare global"
             ]
           },
           {
             "title": "🚪 Quality Gates",
             "items": [
-              "**Husky pre-commit**: ESLint roda nos arquivos staged antes de cada commit",
-              "**Husky pre-push**: typecheck + lint + test rodam antes de cada push",
-              "**CI/CD**: lint, typecheck e test rodam em todo push/PR"
+              "**Husky pre-commit**: ESLint runs on staged files before every commit",
+              "**Husky pre-push**: typecheck + lint + test run before every push",
+              "**CI/CD**: lint, typecheck and test run on every push/PR"
             ]
           },
           {
@@ -977,7 +997,7 @@
       },
       {
         "version": "1.8.1",
-        "date": "",
+        "date": "2026-06-29",
         "sections": []
       },
       {
@@ -987,23 +1007,23 @@
           {
             "title": "🎨 UI/UX",
             "items": [
-              "Redesign Bifrost: superfícies planas, sem glassmorphism",
-              "Tema claro/escuro no web",
-              "Badges retangulares (6px), border-radius reduzido (14px)",
-              "Sistema de CSS variables unificado"
+              "Bifrost redesign: flat surfaces, no glassmorphism",
+              "Light/dark theme on web",
+              "Rectangular badges (6px), reduced border-radius (14px)",
+              "Unified CSS variables system"
             ]
           },
           {
-            "title": "🔧 Técnico",
+            "title": "🔧 Technical",
             "items": [
-              "Codebase unificada em monorepo (`src/shared/` + `src/platform/`)",
-              "Git migrado para raiz (história preservada)",
-              "`web/` e `desktop/` mantidos para referência histórica"
+              "Unified codebase in a monorepo (`src/shared/` + `src/platform/`)",
+              "Git migrated to root (history preserved)",
+              "`web/` and `desktop/` kept for historical reference"
             ]
           },
           {
-            "title": "✅ Testes",
-            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
+            "title": "✅ Tests",
+            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
           }
         ]
       },
@@ -1014,87 +1034,87 @@
           {
             "title": "✨ Novo — Fase 5: Clientes & Orçamentos (LGPD-Safe)",
             "items": [
-              "**Cadastro de Clientes**: CRUD completo com busca por nome/empresa/email, export/import JSON, persistência em localStorage",
-              "**Orçamentos Multi-item**: crie orçamentos com múltiplos itens do histórico, vinculados a clientes, com cálculo automático de totais e descontos",
-              "**PDF Profissional**: template de orçamento com logo, dados do cliente, tabela de itens, condições de pagamento e nota de privacidade",
-              "**Dashboard de Orçamentos**: lista com filtros por status (Rascunho/Enviado/Aprovado/Recusado), busca e ordenação"
+              "**Customer Registration**: full CRUD with search by name/company/email, JSON export/import, localStorage persistence",
+              "**Multi-item Quotes**: create quotes with multiple items from history, linked to customers, with automatic totals and discounts calculation",
+              "**Professional PDF**: quote template with logo, customer data, item table, payment terms and privacy note",
+              "**Quotes Dashboard**: list with status filters (Draft/Sent/Approved/Rejected), search and sorting"
             ]
           },
           {
             "title": "✨ Novo — Fase 6: Edição de Impressoras",
             "items": [
-              "**Edição inline de impressoras**: botão ✏️ em todas as impressoras (inclusive padrão) com modal de edição para nome, marca, potência, valor, vida útil e manutenção/h",
-              "**Banco de dados expandido**: 385 impressoras de 56 marcas (era 143) com dados reais de build volume, velocidade máxima, preço EUR/USD/BRL",
-              "**Fonte de dados**: swordlab/open-3d-printer-database (CC-BY-4.0) integrado ao catálogo"
+              "**Inline printer editing**: ✏️ button on every printer (including the default) with an edit modal for name, brand, power, price, lifespan and maintenance/h",
+              "**Expanded database**: 385 printers from 56 brands (was 143) with real data for build volume, max speed and EUR/USD/BRL price",
+              "**Data source**: swordlab/open-3d-printer-database (CC-BY-4.0) integrated into the catalog"
             ]
           },
           {
             "title": "🔒 Privacidade (LGPD/GDPR)",
             "items": [
-              "**Banner de privacidade**: aviso fixo no topo informando \"Seus dados ficam apenas no seu navegador\"",
-              "**Modal de consentimento**: exibido na primeira vez que o usuário acessa Clientes/Orçamentos",
-              "**Política de privacidade inline**: 7 seções explicando o modelo de dados, direitos do titular e segurança"
+              "**Privacy banner**: fixed notice at the top stating \"Your data stays in your browser only\"",
+              "**Consent modal**: shown the first time the user opens Customers/Quotes",
+              "**Inline privacy policy**: 7 sections explaining the data model, data subject rights and security"
             ]
           },
           {
             "title": "🎨 UX",
             "items": [
-              "**9 abas no app**: Calculator, Catalog, Customers, Inventory, Quotes, History, Changelog, Dashboard, Settings",
-              "**Botão \"Criar Orçamento\"** no ResultsPanel para gerar orçamento a partir do cálculo atual",
-              "**Badges de impressora**: \"Padrão\" (verde) para impressoras default, \"Custom\" (indigo) para personalizadas"
+              "**9 tabs in the app**: Calculator, Catalog, Customers, Inventory, Quotes, History, Changelog, Dashboard, Settings",
+              "**\"Create Quote\" button** in ResultsPanel to generate a quote from the current calculation",
+              "**Printer badges**: \"Default\" (green) for default printers, \"Custom\" (indigo) for custom ones"
             ]
           },
           {
             "title": "🌐 i18n",
             "items": [
-              "Novas chaves: `customers`, `quotes`, `privacy` (banner, consent, policy) em pt-BR e en-US",
-              "`nav.customers`, `nav.quotes` para navegação",
+              "New keys: `customers`, `quotes`, `privacy` (banner, consent, policy) in pt-BR and en-US",
+              "`nav.customers`, `nav.quotes` for navigation",
               "`catalog.editPrinter`, `catalog.defaultPrinter`, `catalog.saveChanges`"
             ]
           },
           {
             "title": "🧪 Testes",
             "items": [
-              "**383 testes passando** (era 301) — 34 arquivos de teste, zero falhas",
-              "Novos: customerStore (21), quoteStore (31), consentStore (9), QuoteDoc (5), QuoteSection (3), CustomerTab (10), printer-edit (3)",
-              "Cobertura de todas as novas stores e componentes"
+              "**383 tests passing** (was 301) — 34 test files, zero failures",
+              "New: customerStore (21), quoteStore (31), consentStore (9), QuoteDoc (5), QuoteSection (3), CustomerTab (10), printer-edit (3)",
+              "Coverage for all new stores and components"
             ]
           },
           {
             "title": "📦 Dados",
             "items": [
-              "`src/data/printers-database.json` — 385 impressoras com specs detalhadas",
-              "`src/types/customer.ts` — interfaces Customer e CustomerFormData",
-              "`src/types/quote.ts` — interfaces Quote, QuoteItem, QuoteFormData"
+              "`src/data/printers-database.json` — 385 printers with detailed specs",
+              "`src/types/customer.ts` — Customer and CustomerFormData interfaces",
+              "`src/types/quote.ts` — Quote, QuoteItem, QuoteFormData interfaces"
             ]
           }
         ]
       },
       {
         "version": "1.6.0",
-        "date": "2026-06-27",
+        "date": "2026-06-28",
         "sections": [
           {
             "title": "✨ New",
             "items": [
-              "**Tutorial interativo**: assistência guiada com 7 passos, spotlight/tooltip, navegação por teclado e suporte a `prefers-reduced-motion`",
-              "**Canal Telegram**: link para o canal [Impressão 3D BR](https://t.me/Impressao3DBR) no header e sidebar",
-              "**Créditos do desenvolvedor**: `ofertachina.com.br` no rodapé"
+              "**Interactive tutorial**: guided assistance with 7 steps, spotlight/tooltip, keyboard navigation and `prefers-reduced-motion` support",
+              "**Telegram channel**: link to the [Impressão 3D BR](https://t.me/Impressao3DBR) channel in the header and sidebar",
+              "**Developer credits**: `ofertachina.com.br` in the footer"
             ]
           },
           {
             "title": "🎨 UX",
             "items": [
-              "**Internacionalização completa**: todas as strings hardcoded em português extraídas para chaves de tradução (pt-BR/en-US)",
-              "**Botão de ajuda**: ícone `?` no header para reiniciar o tutorial a qualquer momento",
-              "**Auto-trigger do tutorial**: inicia automaticamente na primeira visita após 1.5s"
+              "**Full internationalization**: all hardcoded Portuguese strings extracted into translation keys (pt-BR/en-US)",
+              "**Help button**: `?` icon in the header to restart the tutorial at any time",
+              "**Tutorial auto-trigger**: starts automatically on the first visit after 1.5s"
             ]
           },
           {
             "title": "🧪 Testes",
             "items": [
-              "301 testes passando, cobertura estable",
-              "Build limpo, TypeScript strict sem erros"
+              "301 tests passing, stable coverage",
+              "Clean build, TypeScript strict with no errors"
             ]
           }
         ]
@@ -1106,21 +1126,21 @@
           {
             "title": "🔧 Technical",
             "items": [
-              "**Calculator.tsx refatorado**: de 1459 para 234 linhas — 11 componentes extraídos (TechToggle, LevelToggle, ProductName, SectionNav, SectionRenderer, MobileBottomBar, SectionHeader, HardwareSection, OpsSection, SalesSection, Calculator.constants).",
-              "**calculatorStore.ts refatorado**: de 561 para 278 linhas — types, defaults, helpers e compute extraídos para 4 arquivos.",
-              "**calculatorStore.test.ts dividido**: de 1483 linhas para 4 arquivos independentes (fdm 406, resin 439, logic 354, test-utils 52) — todos ≤ 500 linhas.",
-              "**useShallow do Zustand**: aplicado em 10 componentes para eliminar re-renders desnecessários.",
-              "**Lazy load recharts**: bundle principal reduzido de 1.115 kB para 614 kB (-45%), recharts em chunk lazy separado.",
-              "**Dead code removido**: 7 arquivos eliminados (productStore, skuManager, ErrorBoundary, SummaryRow, PwaUpdatePrompt, useKeyboardShortcuts, usePwaUpdate).",
-              "**PDF/CSV Export mobile**: botões de exportação rápida na bottom bar da calculadora."
+              "**Calculator.tsx refactored**: from 1459 to 234 lines — 11 extracted components (TechToggle, LevelToggle, ProductName, SectionNav, SectionRenderer, MobileBottomBar, SectionHeader, HardwareSection, OpsSection, SalesSection, Calculator.constants).",
+              "**calculatorStore.ts refactored**: from 561 to 278 lines — types, defaults, helpers and compute extracted into 4 files.",
+              "**calculatorStore.test.ts split**: from 1483 lines into 4 independent files (fdm 406, resin 439, logic 354, test-utils 52) — all ≤ 500 lines.",
+              "**Zustand useShallow**: applied to 10 components to eliminate unnecessary re-renders.",
+              "**Lazy load recharts**: main bundle reduced from 1,115 kB to 614 kB (-45%), recharts in a separate lazy chunk.",
+              "**Dead code removed**: 7 files deleted (productStore, skuManager, ErrorBoundary, SummaryRow, PwaUpdatePrompt, useKeyboardShortcuts, usePwaUpdate).",
+              "**Mobile PDF/CSV export**: quick export buttons in the calculator bottom bar."
             ]
           },
           {
             "title": "✅ Testes",
             "items": [
-              "**301 testes** (era 207 no v1.5.0) — 27 arquivos de teste, 100% passando.",
-              "Novos testes: historyStore +12, filamentInventory +11, Calculator mobile export +3.",
-              "Cobertura de testes do calculatorStore mantida em 93%."
+              "**301 tests** (was 207 in v1.5.0) — 27 test files, 100% passing.",
+              "New tests: historyStore +12, filamentInventory +11, Calculator mobile export +3.",
+              "calculatorStore test coverage kept at 93%."
             ]
           }
         ]
@@ -1184,56 +1204,56 @@
           {
             "title": "✨ New",
             "items": [
-              "**Onboarding para Novos Usuários** — modal de boas-vindas com 3 slides (\"O que é\", \"Como calcular\", \"Como salvar\"), detecção de primeira visita via localStorage, navegação entre slides com bolinhas, botão \"Pular\" persistente.",
-              "**Tooltips Informativos** — sistema de tooltips com Floating UI, delay 400ms, posicionamento inteligente em campos não-óbvios (taxa de falha, vida útil da máquina, break-even).",
-              "**Atalhos de Teclado** — Ctrl/Cmd+S (salvar configurações), Ctrl/Cmd+H (navegar para histórico), Ctrl/Cmd+D (navegar para dashboard), Escape (fechar modais). Indicadores visuais nos botões de navegação.",
-              "**Inventário — Dedução Livre** — campo de input numérico para deduzir peso exato em cada carretel, validação de saldo, combinado com filtro por marca (pills clicáveis) e filtro de material.",
-              "**Catálogo — Edição Inline** — ícone ✏️ em cards de impressora/material/marketplace, input substitui texto com Enter/blur para salvar, Escape para cancelar.",
-              "**Error Boundaries** — envolve ResultsPanel, Dashboard e StlPreview com fallback estilizado, botões \"Tentar novamente\" e \"Resetar calculadora\".",
-              "**PWA & Offline** — service worker com cache total de assets, notificação \"Nova versão disponível\" com botão de atualização."
+              "**New User Onboarding** — welcome modal with 3 slides (\"What is it\", \"How to calculate\", \"How to save\"), first-visit detection via localStorage, dot navigation between slides, persistent \"Skip\" button.",
+              "**Informative Tooltips** — tooltip system with Floating UI, 400ms delay, smart positioning on non-obvious fields (failure rate, machine lifespan, break-even).",
+              "**Keyboard Shortcuts** — Ctrl/Cmd+S (save settings), Ctrl/Cmd+H (go to history), Ctrl/Cmd+D (go to dashboard), Escape (close modals). Visual indicators on navigation buttons.",
+              "**Inventory — Free Deduction** — numeric input to deduct the exact weight on each spool, balance validation, combined with brand filter (clickable pills) and material filter.",
+              "**Catalog — Inline Editing** — ✏️ icon on printer/material/marketplace cards, input replaces the text, Enter/blur to save, Escape to cancel.",
+              "**Error Boundaries** — wraps ResultsPanel, Dashboard and StlPreview with a styled fallback, \"Try again\" and \"Reset calculator\" buttons.",
+              "**PWA & Offline** — service worker with full asset caching, \"New version available\" notification with an update button."
             ]
           },
           {
             "title": "🎨 UX",
             "items": [
-              "Tooltips com ícone ⓘ nos InputGroup com delay de 400ms e posicionamento automático (Floating UI).",
-              "Filtro combinado de material + marca no inventário com feedback visual.",
-              "Indicadores de atalho de teclado nos botões de navegação (Ctrl+H, Ctrl+D).",
-              "Glassmorphism consistente em todos os novos componentes (OnboardingModal, Tooltip, ErrorBoundary, PwaUpdatePrompt).",
-              "Edição inline no catálogo com confirmação visual (check verde / X vermelho)."
+              "Tooltips with ⓘ icon in InputGroup with 400ms delay and automatic positioning (Floating UI).",
+              "Combined material + brand filter in the inventory with visual feedback.",
+              "Keyboard shortcut indicators on navigation buttons (Ctrl+H, Ctrl+D).",
+              "Consistent glassmorphism across all new components (OnboardingModal, Tooltip, ErrorBoundary, PwaUpdatePrompt).",
+              "Inline editing in the catalog with visual confirmation (green check / red X)."
             ]
           },
           {
             "title": "🔧 Technical",
             "items": [
-              "`src/hooks/useKeyboardShortcuts.ts` — hook de atalhos com supressão em inputs/textarea/select.",
-              "`src/hooks/usePwaUpdate.ts` — hook de atualização PWA com service worker registration.",
-              "`src/components/ui/OnboardingModal.tsx` — modal com 3 slides, Framer Motion `AnimatePresence`, lazy initializer.",
-              "`src/components/ui/Tooltip.tsx` — tooltip com Floating UI, `useMergeRefs`, suporte a 4 direções.",
-              "`src/components/ui/ErrorBoundary.tsx` — ErrorBoundary classe com `componentDidCatch`, fallback com retry e reset.",
-              "`src/components/ui/PwaUpdatePrompt.tsx` — banner de atualização com `skipWaiting()` + reload.",
-              "`src/components/Catalog/FilamentInventory.tsx` — input de dedução livre + brand filter pills.",
-              "`src/components/Catalog/CatalogTab.tsx` — componente `InlineField` para edição inline nos 3 gerenciadores.",
-              "`vite.config.ts` — PWA config com runtime caching e globPatterns completo.",
-              "`src/main.tsx` — integração do PwaUpdatePrompt no root."
+              "`src/hooks/useKeyboardShortcuts.ts` — shortcuts hook with suppression in inputs/textarea/select.",
+              "`src/hooks/usePwaUpdate.ts` — PWA update hook with service worker registration.",
+              "`src/components/ui/OnboardingModal.tsx` — modal with 3 slides, Framer Motion `AnimatePresence`, lazy initializer.",
+              "`src/components/ui/Tooltip.tsx` — tooltip with Floating UI, `useMergeRefs`, 4-direction support.",
+              "`src/components/ui/ErrorBoundary.tsx` — class ErrorBoundary with `componentDidCatch`, fallback with retry and reset.",
+              "`src/components/ui/PwaUpdatePrompt.tsx` — update banner with `skipWaiting()` + reload.",
+              "`src/components/Catalog/FilamentInventory.tsx` — free deduction input + brand filter pills.",
+              "`src/components/Catalog/CatalogTab.tsx` — `InlineField` component for inline editing in all 3 managers.",
+              "`vite.config.ts` — PWA config with runtime caching and full globPatterns.",
+              "`src/main.tsx` — PwaUpdatePrompt integrated into the root."
             ]
           },
           {
             "title": "📚 Quality",
             "items": [
-              "**53 testes unitários** em `calculator.ts` — cobertura de **99.19%** (statements) e **82.95%** (branches).",
-              "**25 testes de integração** nas stores (calculatorStore 8, historyStore 9, filamentInventory 8).",
-              "**79 testes no total** passando, 0 lint errors, build limpo.",
-              "Performance: memoização com `useMemo`/`useShallow`, lazy loading de StlPreview e PDF.",
-              "Error Boundaries nos 3 componentes críticos com fallback padronizado."
+              "**53 unit tests** in `calculator.ts` — **99.19%** coverage (statements) and **82.95%** (branches).",
+              "**25 integration tests** in the stores (calculatorStore 8, historyStore 9, filamentInventory 8).",
+              "**79 tests in total** passing, 0 lint errors, clean build.",
+              "Performance: memoization with `useMemo`/`useShallow`, lazy loading of StlPreview and PDF.",
+              "Error Boundaries on the 3 critical components with a standardized fallback."
             ]
           },
           {
             "title": "🤖 CI & Automation",
             "items": [
-              "**changelogen** configurado para geração de changelog a partir de conventional commits.",
-              "`.changelogenrc` com categorias em português e emojis personalizados.",
-              "Workflow de Release manual no GitHub Actions (`release.yml`) com bump semântico e GitHub Release."
+              "**changelogen** configured to generate the changelog from conventional commits.",
+              "`.changelogenrc` with Portuguese categories and custom emojis.",
+              "Manual Release workflow in GitHub Actions (`release.yml`) with semantic bump and GitHub Release."
             ]
           }
         ]
