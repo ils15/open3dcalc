@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### 🐛 Bug Fixes
+
+- **gcode:** no longer ignores gcode without a TIME header and supports the Prusa/Orca format (closes #32) — removes the silent `if(printTimeMinutes>0)` gate in `StlPreview.tsx:242`, `d/h/m/s` parser (`1h 23m 45s`/`2d 5h`/`45m 30s`) in `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` on the GCODE branch, drop zone stays visible (`!modelInfo?.geometry`), 🗑️ `stl.clear` button for GCODE, 13 new tests (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolved
+
 ## v1.11.0
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.10.0...v1.11.0)
@@ -8,22 +14,22 @@
 
 - **sync:** Add text label to DataSyncButton for better visibility ([a6da01d](https://github.com/ils15/open3dcalc/commit/a6da01d))
 - UI/UX improvements — STL support estimation, Resin preview, safety fixes ([#57](https://github.com/ils15/open3dcalc/pull/57))
-- **calc:** Exibe lucro por hora (profit/hr) FDM+Resina ([#77](https://github.com/ils15/open3dcalc/pull/77))
-- **products:** Cadastro produtos + vendido + CSV + sync ([#78](https://github.com/ils15/open3dcalc/pull/78))
-- **estimators:** Modos simple/advanced + G-code opcional ([#83](https://github.com/ils15/open3dcalc/pull/83))
-- **gcode:** Bambu/Klipper time headers + fallback por moves via `timeSource` HEADER/APPROXIMATE, cascata first-wins Cura > Prusa/Orca > Bambu > Klipper ([#86](https://github.com/ils15/open3dcalc/pull/86), closes [#84](https://github.com/ils15/open3dcalc/issues/84))
-- **calc:** Preço de venda editável (override display-local BRL) + ponte calculadora→produto com toast/evento e i18n pt-BR/en-US ([#87](https://github.com/ils15/open3dcalc/pull/87), closes [#85](https://github.com/ils15/open3dcalc/issues/85))
+- **calc:** Show profit/hr for FDM + Resin ([#77](https://github.com/ils15/open3dcalc/pull/77))
+- **products:** Product registration + sold + CSV + sync ([#78](https://github.com/ils15/open3dcalc/pull/78))
+- **estimators:** Simple/advanced modes + optional G-code ([#83](https://github.com/ils15/open3dcalc/pull/83))
+- **gcode:** Bambu/Klipper time headers + fallback by moves via `timeSource` HEADER/APPROXIMATE, first-wins cascade Cura > Prusa/Orca > Bambu > Klipper ([#86](https://github.com/ils15/open3dcalc/pull/86), closes [#84](https://github.com/ils15/open3dcalc/issues/84))
+- **calc:** Editable sale price (display-local BRL override) + calculator→product bridge with toast/event and pt-BR/en-US i18n ([#87](https://github.com/ils15/open3dcalc/pull/87), closes [#85](https://github.com/ils15/open3dcalc/issues/85))
 
 ### 🩹 Fixes
 
 - **ci:** Remove v1.10.0 exclusion and sync changelog ([7794266](https://github.com/ils15/open3dcalc/commit/7794266))
 - **dashboard:** Replace React.lazy with static recharts imports to fix #7463 crash ([#7463](https://github.com/ils15/open3dcalc/issues/7463))
-- **3mf:** Segue p:path da production extension e corrige volume 3x maior ([#72](https://github.com/ils15/open3dcalc/pull/72))
-- **estimators:** Casca por area de superficie e fisica da extrusao no… ([#73](https://github.com/ils15/open3dcalc/pull/73))
-- **release:** Windows exe + auto-update resiliente ([#76](https://github.com/ils15/open3dcalc/pull/76))
+- **3mf:** Follow p:path from the production extension and fix 3x larger volume ([#72](https://github.com/ils15/open3dcalc/pull/72))
+- **estimators:** Surface-area shell and extrusion physics in… ([#73](https://github.com/ils15/open3dcalc/pull/73))
+- **release:** Windows exe + resilient auto-update ([#76](https://github.com/ils15/open3dcalc/pull/76))
 - **release:** Join --body into single quoted string in release PR step ([#79](https://github.com/ils15/open3dcalc/pull/79))
-- **estimators:** Espessura de casca e média ponderada, não soma ([#82](https://github.com/ils15/open3dcalc/pull/82))
-- **gcode:** Dedup parsers, cap único 50MB single-source, helpers tempo/temperatura unificados, validação centralizada, arredondamento 1 casa, doc+tooltip i18n (`gcodeEPathsNote` pt-BR) ([#88](https://github.com/ils15/open3dcalc/pull/88))
+- **estimators:** Shell thickness and weighted average, not the sum ([#82](https://github.com/ils15/open3dcalc/pull/82))
+- **gcode:** Dedup parsers, single-source 50MB cap, unified time/temperature helpers, centralized validation, 1-decimal rounding, i18n doc+tooltip (`gcodeEPathsNote` pt-BR) ([#88](https://github.com/ils15/open3dcalc/pull/88))
 
 ### 📦 Dependencies
 
@@ -92,22 +98,16 @@
 - **layout:** Responsive calculator columns for complete mode ([#30](https://github.com/ils15/open3dcalc/pull/30))
 - **changelog:** Localize version cards and polish header controls ([#33](https://github.com/ils15/open3dcalc/pull/33))
 - **layout:** Results sidebar only with space, portal dropdowns, ultrawide shell ([#34](https://github.com/ils15/open3dcalc/pull/34))
-- **gcode:** Não ignora gcode sem TIME header e suporta Prusa/Orca ([#32](https://github.com/ils15/open3dcalc/pull/32), [#51](https://github.com/ils15/open3dcalc/pull/51))
+- **gcode:** Do not ignore gcode without a TIME header and support Prusa/Orca ([#32](https://github.com/ils15/open3dcalc/pull/32), [#51](https://github.com/ils15/open3dcalc/pull/51))
 
 ### 🏡 Chore
 
-- **ci:** Pre-commit — gitleaks + guardião .env + AI Bifrost ([9afa29b](https://github.com/ils15/open3dcalc/commit/9afa29b))
+- **ci:** Pre-commit — gitleaks + .env guardian + AI Bifrost ([9afa29b](https://github.com/ils15/open3dcalc/commit/9afa29b))
 - **ci:** Security phase 2 — deepwork CI/CD, pre-commit and scan ([fe56338](https://github.com/ils15/open3dcalc/commit/fe56338))
 
 ### ❤️ Contributors
 
 - Ils15 ([@ils15](https://github.com/ils15))
-
-## Unreleased
-
-### 🐛 Bug Fixes
-
-- **gcode:** não ignora gcode sem TIME header e suporta formato Prusa/Orca (closes #32) — remove gate silencioso `if(printTimeMinutes>0)` em `StlPreview.tsx:242`, parser `d/h/m/s` (`1h 23m 45s`/`2d 5h`/`45m 30s`) em `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` no branch GCODE, drop zone permanece visível (`!modelInfo?.geometry`), botão 🗑️ `stl.clear` para GCODE, 13 testes novos (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolvido
 
 ## v1.9.2
 
@@ -117,7 +117,7 @@
 
 - **ci:** Add AI code review workflow via Bifrost LLM Gateway ([8287e51](https://github.com/ils15/open3dcalc/commit/8287e51))
 - **ci:** Switch AI review to alibaba/open-code-review, fix release artifacts ([#11](https://github.com/ils15/open3dcalc/pull/11))
-- CI/CD otimizado — self-hosted runner, husky-only, AI commit review, i18n ([#12](https://github.com/ils15/open3dcalc/pull/12))
+- Optimized CI/CD — self-hosted runner, husky-only, AI commit review, i18n ([#12](https://github.com/ils15/open3dcalc/pull/12))
 - Auto-deduct filament + date filters (Issue #16) ([#17](https://github.com/ils15/open3dcalc/pull/17), [#16](https://github.com/ils15/open3dcalc/issues/16))
 - Phase 2+3 — STL & Dashboard optimization (dead code removal, calc integration) ([#20](https://github.com/ils15/open3dcalc/pull/20))
 
@@ -127,7 +127,7 @@
 - Safety Sprint — security & quality hardening ([#19](https://github.com/ils15/open3dcalc/pull/19))
 - **release:** Remove [skip ci] from release commit ([#21](https://github.com/ils15/open3dcalc/pull/21))
 - **release:** Push tag only, use release branch + PR for version bump ([#22](https://github.com/ils15/open3dcalc/pull/22))
-- **release:** Padronizar pipeline protegido e idempotente ([#23](https://github.com/ils15/open3dcalc/pull/23))
+- **release:** Standardize protected and idempotent pipeline ([#23](https://github.com/ils15/open3dcalc/pull/23))
 
 ### 🏡 Chore
 
@@ -194,26 +194,28 @@
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.8.0...v1.8.1)
 
+_Hotfix release; no user-facing changes._
+
 ## v1.8.0 — Bifrost UI Redesign (2026-06-29)
 
 ### 🎨 UI/UX
 
-- Redesign Bifrost: superfícies planas, sem glassmorphism
-- Tema claro/escuro no web
-- Badges retangulares (6px), border-radius reduzido (14px)
-- Sistema de CSS variables unificado
+- Bifrost redesign: flat surfaces, no glassmorphism
+- Light/dark theme on web
+- Rectangular badges (6px), reduced border-radius (14px)
+- Unified CSS variables system
 
-### 🔧 Técnico
+### 🔧 Technical
 
-- Codebase unificada em monorepo (`src/shared/` + `src/platform/`)
-- Git migrado para raiz (história preservada)
-- `web/` e `desktop/` mantidos para referência histórica
+- Unified codebase in a monorepo (`src/shared/` + `src/platform/`)
+- Git migrated to root (history preserved)
+- `web/` and `desktop/` kept for historical reference
 
-### ✅ Testes
+### ✅ Tests
 
-- 417 testes, 36/36 arquivos passando
-- Cobertura >80%
+- 417 tests, 36/36 files passing
+- Coverage >80%
 
 ---
 
-Para histórico completo anterior à v1.8.0, veja as [releases no GitHub](https://github.com/ils15/open3dcalc/releases).
+For the complete history before v1.8.0, see the [GitHub releases](https://github.com/ils15/open3dcalc/releases).

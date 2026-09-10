@@ -735,9 +735,11 @@
             "items": [
               "**sync:** Add text label to DataSyncButton for better visibility (a6da01d)",
               "UI/UX improvements — STL support estimation, Resin preview, safety fixes (#57)",
-              "**calc:** Exibe lucro por hora (profit/hr) FDM+Resina (#77)",
-              "**products:** Cadastro produtos + vendido + CSV + sync (#78)",
-              "**estimators:** Modos simple/advanced + G-code opcional (#83)"
+              "**calc:** Show profit/hr for FDM + Resin (#77)",
+              "**products:** Product registration + sold + CSV + sync (#78)",
+              "**estimators:** Simple/advanced modes + optional G-code (#83)",
+              "**gcode:** Bambu/Klipper time headers + fallback by moves via `timeSource` HEADER/APPROXIMATE, first-wins cascade Cura > Prusa/Orca > Bambu > Klipper (#86, closes #84)",
+              "**calc:** Editable sale price (display-local BRL override) + calculator→product bridge with toast/event and pt-BR/en-US i18n (#87, closes #85)"
             ]
           },
           {
@@ -745,11 +747,27 @@
             "items": [
               "**ci:** Remove v1.10.0 exclusion and sync changelog (7794266)",
               "**dashboard:** Replace React.lazy with static recharts imports to fix #7463 crash (#7463)",
-              "**3mf:** Segue p:path da production extension e corrige volume 3x maior (#72)",
-              "**estimators:** Casca por area de superficie e fisica da extrusao no… (#73)",
-              "**release:** Windows exe + auto-update resiliente (#76)",
+              "**3mf:** Follow p:path from the production extension and fix 3x larger volume (#72)",
+              "**estimators:** Surface-area shell and extrusion physics in… (#73)",
+              "**release:** Windows exe + resilient auto-update (#76)",
               "**release:** Join --body into single quoted string in release PR step (#79)",
-              "**estimators:** Espessura de casca e média ponderada, não soma (#82)"
+              "**estimators:** Shell thickness and weighted average, not the sum (#82)",
+              "**gcode:** Dedup parsers, single-source 50MB cap, unified time/temperature helpers, centralized validation, 1-decimal rounding, i18n doc+tooltip (`gcodeEPathsNote` pt-BR) (#88)"
+            ]
+          },
+          {
+            "title": "⬆️ Dependencies",
+            "items": [
+              "Bump electron 43.4.1 → 44.1.1 (#62)",
+              "Bump @react-pdf/renderer 4.6.1 → 4.9.0 (#64)",
+              "Bump lucide-react 1.33.0 → 1.39.0 (#66)",
+              "Bump lint-staged 17.3.0 → 17.4.1 (#65)",
+              "Bump @vitejs/plugin-react 6.1.0 → 6.1.1 (#67)",
+              "Bump @testing-library/react 16.3.2 → 16.3.3 (#58)",
+              "Bump @types/node 26.2.0 → 26.4.1 (#59)",
+              "Bump @types/react-dom 19.2.4 → 19.2.5 (#60)",
+              "Bump pantheon-opencode 1.3.6 → 1.4.3 (#61)",
+              "Bump anomalyco/opencode/github action (#63)"
             ]
           },
           {
@@ -815,14 +833,13 @@
               "**layout:** Responsive calculator columns for complete mode (#30)",
               "**changelog:** Localize version cards and polish header controls (#33)",
               "**layout:** Results sidebar only with space, portal dropdowns, ultrawide shell (#34)",
-              "**gcode:** Não ignora gcode sem TIME header e suporta Prusa/Orca (#32, #51)",
-              "**gcode:** não ignora gcode sem TIME header e suporta formato Prusa/Orca (closes #32) — remove gate silencioso `if(printTimeMinutes>0)` em `StlPreview.tsx:242`, parser `d/h/m/s` (`1h 23m 45s`/`2d 5h`/`45m 30s`) em `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` no branch GCODE, drop zone permanece visível (`!modelInfo?.geometry`), botão `stl.clear` para GCODE, 13 testes novos (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolvido"
+              "**gcode:** Do not ignore gcode without a TIME header and support Prusa/Orca (#32, #51)"
             ]
           },
           {
             "title": "🧹 Other",
             "items": [
-              "**ci:** Pre-commit — gitleaks + guardião .env + AI Bifrost (9afa29b)",
+              "**ci:** Pre-commit — gitleaks + .env guardian + AI Bifrost (9afa29b)",
               "**ci:** Security phase 2 — deepwork CI/CD, pre-commit and scan (fe56338)"
             ]
           },
@@ -841,7 +858,7 @@
             "items": [
               "**ci:** Add AI code review workflow via Bifrost LLM Gateway (8287e51)",
               "**ci:** Switch AI review to alibaba/open-code-review, fix release artifacts (#11)",
-              "CI/CD otimizado — self-hosted runner, husky-only, AI commit review, i18n (#12)",
+              "Optimized CI/CD — self-hosted runner, husky-only, AI commit review, i18n (#12)",
               "Auto-deduct filament + date filters (Issue #16) (#17, #16)",
               "Phase 2+3 — STL & Dashboard optimization (dead code removal, calc integration) (#20)"
             ]
@@ -853,7 +870,7 @@
               "Safety Sprint — security & quality hardening (#19)",
               "**release:** Remove [skip ci] from release commit (#21)",
               "**release:** Push tag only, use release branch + PR for version bump (#22)",
-              "**release:** Padronizar pipeline protegido e idempotente (#23)"
+              "**release:** Standardize protected and idempotent pipeline (#23)"
             ]
           },
           {
@@ -990,23 +1007,23 @@
           {
             "title": "🎨 UI/UX",
             "items": [
-              "Redesign Bifrost: superfícies planas, sem glassmorphism",
-              "Tema claro/escuro no web",
-              "Badges retangulares (6px), border-radius reduzido (14px)",
-              "Sistema de CSS variables unificado"
+              "Bifrost redesign: flat surfaces, no glassmorphism",
+              "Light/dark theme on web",
+              "Rectangular badges (6px), reduced border-radius (14px)",
+              "Unified CSS variables system"
             ]
           },
           {
-            "title": "🔧 Técnico",
+            "title": "🔧 Technical",
             "items": [
-              "Codebase unificada em monorepo (`src/shared/` + `src/platform/`)",
-              "Git migrado para raiz (história preservada)",
-              "`web/` e `desktop/` mantidos para referência histórica"
+              "Unified codebase in a monorepo (`src/shared/` + `src/platform/`)",
+              "Git migrated to root (history preserved)",
+              "`web/` and `desktop/` kept for historical reference"
             ]
           },
           {
-            "title": "✅ Testes",
-            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
+            "title": "✅ Tests",
+            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
           }
         ]
       },
