@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildVersions,
   cleanItem,
+  fetchReleaseDate,
   findVersionsArraySpan,
   formatReport,
   main,
@@ -291,22 +292,24 @@ describe("sync-changelog CLI", () => {
     ].join("\n");
     const next = [{ version: "2.0.0", date: "", sections: [] }];
     const updated = replaceVersionsArray(raw, next);
-    expect(updated).toBe([
-      "{",
-      '  "changelog": {',
-      '    "header": "x",',
-      '    "versions": [',
-      "      {",
-      '        "version": "2.0.0",',
-      '        "date": "",',
-      '        "sections": []',
-      "      }",
-      "    ],",
-      '    "viewAllOnGitHub": "y"',
-      "  },",
-      '\t"legacy": "\tindented with a literal tab"',
-      "}",
-    ].join("\n"));
+    expect(updated).toBe(
+      [
+        "{",
+        '  "changelog": {',
+        '    "header": "x",',
+        '    "versions": [',
+        "      {",
+        '        "version": "2.0.0",',
+        '        "date": "",',
+        '        "sections": []',
+        "      }",
+        "    ],",
+        '    "viewAllOnGitHub": "y"',
+        "  },",
+        '\t"legacy": "\tindented with a literal tab"',
+        "}",
+      ].join("\n"),
+    );
     const span = findVersionsArraySpan(raw);
     expect(span).not.toBeNull();
     expect(raw.slice(span.start, span.start + 1)).toBe("[");
@@ -334,6 +337,88 @@ describe("sync-changelog CLI", () => {
       withTab.slice(0, beforeSpan.start),
     );
     expect(after.slice(versionsSpan.end)).toBe(withTab.slice(beforeSpan.end));
+  });
+});
+
+describe("sync-changelog GitHub dates", () => {
+  /** GitHub API stub: releases, tags, commits, PRs and the release/tag date. */
+  const githubApi = (publishedAt: string | null) => (url: string) => {
+    if (url.includes("/releases/tags/"))
+      return publishedAt
+        ? Response.json({ tag_name: "v1.9.2", published_at: publishedAt })
+        : new Response("missing", { status: 404 });
+    if (url.includes("/releases?"))
+      return Response.json([
+        { tag_name: "v1.9.2", target_commitish: "sha-192", assets: [] },
+      ]);
+    if (url.includes("/tags?"))
+      return Response.json([{ name: "v1.9.2", commit: { sha: "sha-192" } }]);
+    if (url.includes("/commits?"))
+      return Response.json([
+        { sha: "sha-192", commit: { message: "feat: ship" } },
+      ]);
+    return Response.json([]);
+  };
+
+  it("fills a version date from the GitHub release published_at (--from-github)", async () => {
+    const root = await tempRoot();
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url);
+      return githubApi("2026-08-21T15:42:00Z")(url);
+    }) as typeof fetch;
+    try {
+      await main(["--from-github", "v1.9.2", "--write"], { root });
+      const written = JSON.parse(
+        await readFile(
+          resolve(root, "src/shared/i18n/locales/pt-BR.json"),
+          "utf8",
+        ),
+      );
+      const entry = written.changelog.versions.find(
+        (candidate: { version: string }) => candidate.version === "1.9.2",
+      );
+      expect(entry.date).toBe("2026-08-21");
+      expect(calls.some((call) => call.includes("/releases/tags/v1.9.2"))).toBe(
+        true,
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("falls back to the tag commit date when the release API fails", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      if (url.includes("/releases/tags/"))
+        return new Response("missing", { status: 404 });
+      if (url.includes("/commits/v1.9.2"))
+        return Response.json({
+          commit: { committer: { date: "2026-08-20T09:00:00Z" } },
+        });
+      return new Response("unexpected", { status: 500 });
+    }) as typeof fetch;
+    try {
+      await expect(
+        fetchReleaseDate("ils15/open3dcalc", "v1.9.2"),
+      ).resolves.toBe("2026-08-20");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("returns an empty date instead of guessing when both sources fail", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response("boom", { status: 500 })) as typeof fetch;
+    try {
+      await expect(
+        fetchReleaseDate("ils15/open3dcalc", "v1.9.2"),
+      ).resolves.toBe("");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
 

@@ -55,6 +55,60 @@ const EMOJI = /[\p{Extended_Pictographic}\uFE0F\u200D]/gu;
 const LEADING_EMOJI = /^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u;
 const SEMVER = /^(\d+)\.(\d+)\.(\d+)$/;
 const RELEASE_TAG = /^v\d+\.\d+\.\d+$/;
+const GITHUB_API = "https://api.github.com";
+const ISO_DATE = /^(\d{4}-\d{2}-\d{2})/;
+
+/** Normalize an ISO timestamp to the `YYYY-MM-DD` day used by the locales. */
+export const isoDay = (value) => {
+  const match = ISO_DATE.exec(String(value ?? ""));
+  return match ? match[1] : "";
+};
+
+const githubHeaders = () => ({
+  accept: "application/vnd.github+json",
+  ...(process.env.GH_TOKEN
+    ? { authorization: `Bearer ${process.env.GH_TOKEN}` }
+    : {}),
+});
+
+/**
+ * Resolve a release tag's publication date as `YYYY-MM-DD`.
+ *
+ * Primary source: `GET /repos/{owner}/{repo}/releases/tags/{tag}` →
+ * `published_at`. When that call fails (404/network) or omits the field, fall
+ * back to the deterministic committer date of the tag commit
+ * (`GET /repos/{owner}/{repo}/commits/{tag}`). Returns `""` when neither source
+ * yields a date — never a guessed value.
+ */
+export async function fetchReleaseDate(repository, tag, fetchImpl = fetch) {
+  if (!tag || !RELEASE_TAG.test(tag)) return "";
+  const base = `${GITHUB_API}/repos/${repository}`;
+  try {
+    const response = await fetchImpl(`${base}/releases/tags/${tag}`, {
+      method: "GET",
+      headers: githubHeaders(),
+    });
+    if (response.ok) {
+      const date = isoDay((await response.json())?.published_at);
+      if (date) return date;
+    }
+  } catch {
+    // Network/parse failure: the deterministic commit fallback still applies.
+  }
+  try {
+    const response = await fetchImpl(`${base}/commits/${tag}`, {
+      method: "GET",
+      headers: githubHeaders(),
+    });
+    if (response.ok) {
+      const commit = await response.json();
+      return isoDay(commit?.commit?.committer?.date);
+    }
+  } catch {
+    // Both sources failed; leave the date empty instead of guessing.
+  }
+  return "";
+}
 
 /**
  * CHANGELOG.md headings (emoji-stripped, lowercased) and release-notes.mjs
@@ -326,9 +380,19 @@ function entryFromCatalog(catalog) {
 }
 
 /** Fallback source: audited per-release catalogs from release-notes.mjs. */
-async function entriesFromGitHub(repository, tag) {
+async function entriesFromGitHub(repository, tag, fetchImpl = fetch) {
   const { collect } = await import("./release-notes.mjs");
-  if (tag) return [entryFromCatalog(await collect(repository, tag))];
+  const withReleaseDate = async (entry, releaseTag) => ({
+    ...entry,
+    date: await fetchReleaseDate(repository, releaseTag, fetchImpl),
+  });
+  if (tag)
+    return [
+      await withReleaseDate(
+        entryFromCatalog(await collect(repository, tag)),
+        tag,
+      ),
+    ];
   const catalog = await collect(repository);
   const tags = catalog.releases
     .map((release) => release.tag)
@@ -336,7 +400,12 @@ async function entriesFromGitHub(repository, tag) {
     .sort((a, b) => semverDesc(a.replace("v", ""), b.replace("v", "")));
   const entries = [];
   for (const releaseTag of tags)
-    entries.push(entryFromCatalog(await collect(repository, releaseTag)));
+    entries.push(
+      await withReleaseDate(
+        entryFromCatalog(await collect(repository, releaseTag)),
+        releaseTag,
+      ),
+    );
   return entries;
 }
 
@@ -389,7 +458,7 @@ export async function main(argv = process.argv.slice(2), overrides = {}) {
     overrides.localesDir ?? resolve(root, "src/shared/i18n/locales");
   const repository = process.env.GITHUB_REPOSITORY ?? DEFAULT_REPOSITORY;
   const parsed = options.fromGithub
-    ? await entriesFromGitHub(repository, options.githubTag)
+    ? await entriesFromGitHub(repository, options.githubTag, overrides.fetch)
     : parseChangelog(await readFile(changelogPath, "utf8"));
 
   const reports = {};
