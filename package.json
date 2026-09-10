@@ -84,7 +84,7 @@
     "typescript-eslint": "^8.67.0",
     "vite": "^8.2.2",
     "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   },
   "build": {
     "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
