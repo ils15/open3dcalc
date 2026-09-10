@@ -13,6 +13,39 @@ Notes are English Markdown with the sections **Highlights**, **Features**,
 omitted). External text is escaped and length-limited; it is data only and is
 never executed.
 
+## Canonical publication format
+
+`renderPublication(catalog, repository, { tag, previousTag })` renders the body
+actually published to GitHub. It is English, deterministic (byte-identical
+across re-runs), and uses the `## What's Changed` wrapper with emoji `###`
+sections in this fixed order: **🚀 Features**, **🐛 Fixes**, **🧹 Chores**,
+**📦 Dependencies**, **🤖 CI/CD**, optional **📚 Documentation**,
+**🔒 Security**, **⚠️ Breaking Changes**, and **❤️ Contributors**. Empty
+sections are omitted; Downloads/Checksums are never published (they duplicate
+the assets and `SHA256SUMS`). Items are
+`- <title> ([#NN](https://github.com/<owner>/<repo>/pull/NN))` when a PR is
+known, otherwise `- <title> (commit <sha7>)`. Contributors are deduplicated
+`@login` handles, excluding bots and `Unknown`. The body ends with a bold
+`**Full Changelog**: <url>` line (never a heading).
+
+Generate the body with:
+
+```
+node scripts/release-notes.mjs --release vX.Y.Z --notes-file release-notes.md
+```
+
+Validate it (also available as `npm run release:notes:validate`):
+
+```
+node scripts/validate-release-notes.mjs --file release-notes.md --tag vX.Y.Z
+node scripts/validate-release-notes.mjs --release vX.Y.Z   # fetch via gh api
+```
+
+The validator fails closed on a wrong wrapper, an unknown/out-of-order emoji
+section, malformed PR links, a missing or duplicated `**Full Changelog**`, a
+Downloads/Checksums mention, non-bullet content, or audit artifacts
+(`# Release notes`, `— PR #`, inline author links).
+
 ## Evidence and attribution
 
 The inventory is sourced from paginated releases, tags, commits, closed pull

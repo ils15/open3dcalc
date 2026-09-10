@@ -526,7 +526,13 @@ describe("audited release notes", () => {
       "Improvements",
     );
     expect(categoryFor({ commit: { message: "refactor: split module" } })).toBe(
-      "Improvements",
+      "Chores",
+    );
+    expect(categoryFor({ commit: { message: "style: format files" } })).toBe(
+      "Chores",
+    );
+    expect(categoryFor({ commit: { message: "test: add coverage" } })).toBe(
+      "Chores",
     );
     expect(categoryFor({ commit: { message: "ci: run checks" } })).toBe(
       "CI/CD",
@@ -542,6 +548,11 @@ describe("audited release notes", () => {
     );
     expect(
       categoryFor({ commit: { message: "chore(release): cut v1.9.2" } }),
+    ).toBe("Chores");
+    expect(
+      categoryFor({
+        commit: { message: "chore(ci): bump the workflow action" },
+      }),
     ).toBe("CI/CD");
     expect(
       categoryFor({ commit: { message: "fix(api)!: breaking change" } }),
@@ -552,6 +563,42 @@ describe("audited release notes", () => {
     // Conventional prefixes win over generic keywords in the body/title.
     expect(categoryFor({ title: "feat: fix calculator" })).toBe("Features");
   });
+  it("classifies from the subject, never from prose in the body", () => {
+    // Regression: "breaking intencional" in a PR body must not elevate a
+    // chore(gcode) into Breaking Changes.
+    expect(
+      categoryFor({
+        title: "chore(gcode): dedup parsers, caps e arredondamento",
+        body: "## Resumo\n\nC1 50MB single-source (breaking intencional de limite)",
+      }),
+    ).toBe("Chores");
+    // Only the explicit Conventional Commits footer triggers Breaking.
+    expect(
+      categoryFor({
+        title: "chore(gcode): dedup parsers",
+        body: "BREAKING CHANGE: the 50MB cap now rejects larger files",
+      }),
+    ).toBe("Breaking Changes");
+    // A breaking footer after a plain subject is still honoured.
+    expect(
+      categoryFor({
+        commit: {
+          message: "feat: new api\n\nBREAKING CHANGE: removed legacy mode",
+        },
+      }),
+    ).toBe("Breaking Changes");
+    // Scope wins for dependency chores; the body is irrelevant.
+    expect(
+      categoryFor({
+        title: "chore(deps-dev): bump electron from 43 to 44",
+        body: "Fixes a security issue and breaks nothing",
+      }),
+    ).toBe("Dependencies");
+    // Dependency-bot titles without a Conventional prefix still map.
+    expect(categoryFor({ title: "Bump lodash from 4.17.20 to 4.17.21" })).toBe(
+      "Dependencies",
+    );
+  });
   it("never routes calculator/calculadora to CI/CD", () => {
     // P4: /ci/ matched "calculator" — anchored \bci\b must not.
     expect(categoryFor({ title: "calculator" })).not.toBe("CI/CD");
@@ -561,7 +608,7 @@ describe("audited release notes", () => {
     expect(categoryFor({ title: "add calculator support" })).not.toBe("CI/CD");
     expect(categoryFor({ title: "ci: build pipeline" })).toBe("CI/CD");
     expect(categoryFor({ title: "workflow: publish" })).toBe("CI/CD");
-    expect(categoryFor({ title: "build: package" })).toBe("CI/CD");
+    expect(categoryFor({ title: "build: package" })).toBe("Chores");
   });
   it("scopes --release catalogs to the previous...tag range only", async () => {
     const originalFetch = globalThis.fetch;
@@ -657,13 +704,15 @@ describe("audited release notes", () => {
       // compare API excludes its base (the default-branch root), so the
       // root commit is prepended back onto the scoped commit list and ends
       // up as a commit-only item (no PR association).
+      // Categories sort lexicographically: Chores ("chore: init") precedes
+      // Features, so the commit-only root item leads the list.
       expect(v150.items.map((item) => item.pr?.number)).toEqual([
-        20,
         undefined,
+        20,
       ]);
       expect(v150.items.map((item) => item.title)).toEqual([
-        "feat: v1.5.0 feature",
         "chore: init",
+        "feat: v1.5.0 feature",
       ]);
       expect(v150.items.some((item) => item.sha === oldestSha)).toBe(true);
       expect(v150.items.map((item) => item.title)).not.toContain(

@@ -66,6 +66,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: write
+      pull-requests: read
     steps:
       - name: Checkout immutable tag commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -140,6 +141,21 @@ jobs:
           merge-multiple: true
           path: dist-electron
 
+      - name: Generate and validate publication notes
+        id: release-notes
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          rm -rf release-notes-output
+          node scripts/release-notes.mjs --release "$TAG" \
+            --notes-file release-notes.md
+          node scripts/validate-release-notes.mjs \
+            --file release-notes.md --tag "$TAG"
+
       - name: Create or repair GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -180,8 +196,17 @@ jobs:
                  "$TAG_SHA; preserving release." >&2
                exit 1
              }
-             gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" \
-               --target "$TAG_SHA"
+            PREVIOUS_BODY=release-publish-diagnostics/previous-release-body.md
+            jq -r '.body // ""' "$RELEASE_JSON" >"$PREVIOUS_BODY"
+            if [ -f release-notes.md ] \
+              && [ "$(cat "$PREVIOUS_BODY")" = "$(cat release-notes.md)" ]; then
+              echo "Release body already matches release-notes.md; skipping."
+              gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" \
+                --target "$TAG_SHA"
+            else
+              gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" \
+                --target "$TAG_SHA" --notes-file release-notes.md
+            fi
             EXISTING_ASSETS=release-publish-diagnostics/assets.json
              gh api --paginate --slurp \
                 "repos/$REPOSITORY/releases/$RELEASE_ID/assets?per_page=100" \
@@ -214,7 +239,8 @@ jobs:
             done
            else
              gh release create "$TAG" --repo "$REPOSITORY" --title "$TAG" \
-               --generate-notes --target "$TAG_SHA" "${UPLOAD_ITEMS[@]}"
+               --notes-file release-notes.md --target "$TAG_SHA" \
+               "${UPLOAD_ITEMS[@]}"
            fi
 
       - name: Validate published tag, release, and assets
@@ -346,6 +372,10 @@ jobs:
             SHA256SUMS
             release-publish-diagnostics/
             release-validation-diagnostics/
+            release-notes.md
+            release-notes-output/inventory.json
+            release-notes-output/audit.json
+            release-notes-output/release-notes.diff
 
       - name: Remove release branch after confirmed publication
         if: success()
