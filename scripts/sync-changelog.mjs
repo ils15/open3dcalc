@@ -6,11 +6,19 @@
  * `changelog.versions` section of src/shared/i18n/locales/{pt-BR,en-US}.json.
  *
  * Merge semantics:
- * - Versions defined by CHANGELOG.md win: the app entry is regenerated from
+ * - en-US is canonical: its items always follow CHANGELOG.md, regenerated from
  *   the markdown sections (per-locale section titles, raw item text).
- * - Versions present only in the locale files are preserved untouched (the
- *   rich handwritten entries for releases the root changelog does not cover,
- *   e.g. 1.9.1/1.7.0) so the in-app history is never gutted.
+ * - pt-BR is durable: for a version already present in the locale, item text is
+ *   preserved by (version, section title, item index). The locale file is the
+ *   home of the human translations, so a resync must never overwrite an existing
+ *   translation with the English source. Only items beyond the existing section
+ *   length are genuinely new; they enter with the canonical (English) text,
+ *   ready for later translation.
+ * - Versions defined by CHANGELOG.md win for structure and section titles (with
+ *   the item-text exception above). Versions present only in the locale files
+ *   are preserved untouched (the rich handwritten entries for releases the root
+ *   changelog does not cover, e.g. 1.9.1/1.7.0) so the in-app history is never
+ *   gutted.
  * - Dates: inline `(YYYY-MM-DD)` in the version heading wins; otherwise the
  *   existing locale date is kept; otherwise empty.
  * - The final list is sorted by SemVer descending.
@@ -27,6 +35,8 @@
  *
  * Only `changelog.versions` is touched; every other JSON key is preserved
  * byte-for-byte (same 2-space indentation, key order, trailing newline).
+ * `--write` is a no-op when the array is already in sync, so durable
+ * translations are never rewritten or reformatted.
  */
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -36,6 +46,8 @@ export const LOCALE_NAMES = ["pt-BR", "en-US"];
 const DEFAULT_REPOSITORY = "ils15/open3dcalc";
 /** File basename → SECTION_TITLES key. */
 const LOCALE_KEYS = Object.freeze({ "pt-BR": "pt", "en-US": "en" });
+/** Locale whose item text is the canonical source (never translated in place). */
+export const CANONICAL_LOCALE = "en";
 
 // Lazy: under vitest's module runner import.meta.url is not a file:// URL.
 const repoRoot = () => {
@@ -277,6 +289,35 @@ export function localizeSections(locale, sections) {
 }
 
 /**
+ * Preserve already-translated item text for a non-canonical locale.
+ *
+ * Items are matched by position: `parsedSections` come from the canonical
+ * source and carry English item text, while `existingSections` are the locale's
+ * durable translations. For every section whose title matches, the existing item
+ * at each index wins; only indices beyond the existing array (genuinely new
+ * items) keep the canonical text. Positional matching is deterministic and
+ * intentionally simple — the changelog appends items, it does not reorder them.
+ */
+export function preserveTranslatedItems(parsedSections, existingSections) {
+  const existingByTitle = new Map(
+    (existingSections ?? []).map((section) => [
+      section.title,
+      Array.isArray(section.items) ? section.items : [],
+    ]),
+  );
+  return parsedSections.map((section) => {
+    const existingItems = existingByTitle.get(section.title);
+    if (!existingItems) return section;
+    return {
+      ...section,
+      items: section.items.map((item, index) =>
+        index < existingItems.length ? existingItems[index] : item,
+      ),
+    };
+  });
+}
+
+/**
  * CHANGELOG.md wins for the versions it defines; locale-only versions are
  * preserved. Missing dates fall back to the existing locale entry date.
  */
@@ -296,11 +337,20 @@ export function mergeEntries(parsed, existing) {
 }
 
 export function buildVersions(locale, parsed, existing) {
-  const localized = parsed.map((entry) => ({
-    version: entry.version,
-    date: entry.date,
-    sections: localizeSections(locale, entry.sections),
-  }));
+  const existingByVersion = new Map(
+    existing.map((entry) => [entry.version, entry]),
+  );
+  const localized = parsed.map((entry) => {
+    const sections = localizeSections(locale, entry.sections);
+    const old = existingByVersion.get(entry.version);
+    // Only the canonical locale regenerates item text; translated locales keep
+    // their existing items and receive genuinely new ones in English.
+    const reconciled =
+      locale !== CANONICAL_LOCALE && old
+        ? preserveTranslatedItems(sections, old.sections)
+        : sections;
+    return { version: entry.version, date: entry.date, sections: reconciled };
+  });
   return mergeEntries(localized, existing);
 }
 
@@ -530,9 +580,14 @@ export async function main(argv = process.argv.slice(2), overrides = {}) {
       ? data.changelog.versions
       : [];
     const versions = buildVersions(LOCALE_KEYS[name], parsed, existing);
-    reports[name] = diffVersions(existing, versions);
-    if (options.mode === "--write") {
-      // Surgical splice keeps every byte outside changelog.versions intact.
+    const report = diffVersions(existing, versions);
+    reports[name] = report;
+    const stale =
+      report.added.length || report.removed.length || report.changed.length;
+    if (options.mode === "--write" && stale) {
+      // Surgical splice keeps every byte outside changelog.versions intact; a
+      // no-op sync leaves the file untouched so preserved translations are never
+      // reformatted or rewritten.
       await writeFile(filePath, replaceVersionsArray(raw, versions), "utf8");
     }
   }

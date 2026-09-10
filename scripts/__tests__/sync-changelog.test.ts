@@ -187,6 +187,96 @@ describe("sync-changelog generation", () => {
   });
 });
 
+describe("sync-changelog translation durability", () => {
+  const localePath = (root: string, name: string) =>
+    resolve(root, "src/shared/i18n/locales", `${name}.json`);
+  const readLocale = async (root: string, name: string) =>
+    JSON.parse(await readFile(localePath(root, name), "utf8"));
+  const writeLocale = async (root: string, name: string, data: unknown) =>
+    writeFile(localePath(root, name), `${JSON.stringify(data, null, 2)}\n`);
+
+  it("preserves translated pt-BR items and appends only new items in English", async () => {
+    const root = await tempRoot();
+    // Seed pt-BR with a human translation in a section that matches the source.
+    const pt = await readLocale(root, "pt-BR");
+    pt.changelog.versions[0].sections = [
+      {
+        title: "🚀 Novidades",
+        items: ["**ui:** Adicionar modo escuro (abc123)"],
+      },
+    ];
+    await writeLocale(root, "pt-BR", pt);
+    // Seed en-US with stale text to prove the canonical locale still updates.
+    const en = await readLocale(root, "en-US");
+    en.changelog.versions[0].sections[0].items = ["**ui:** stale"];
+    await writeLocale(root, "en-US", en);
+
+    await main(["--write"], { root });
+
+    const ptAfter = await readLocale(root, "pt-BR");
+    const enAfter = await readLocale(root, "en-US");
+    const ptV120 = ptAfter.changelog.versions.find(
+      (entry: { version: string }) => entry.version === "1.2.0",
+    );
+    const enV120 = enAfter.changelog.versions.find(
+      (entry: { version: string }) => entry.version === "1.2.0",
+    );
+    // Existing translation survives by (version, section, item position)…
+    expect(ptV120.sections[0].items[0]).toBe(
+      "**ui:** Adicionar modo escuro (abc123)",
+    );
+    // …the genuinely new item enters in English for later translation.
+    expect(ptV120.sections[0].items[1]).toBe(
+      "**ci:** Ship release automation (#12)",
+    );
+    // en-US is the canonical locale: stale text is replaced by the source.
+    expect(enV120.sections[0].items).toEqual([
+      "**ui:** Add dark mode (abc123)",
+      "**ci:** Ship release automation (#12)",
+    ]);
+    // Version count and order are preserved.
+    expect(
+      ptAfter.changelog.versions.map(
+        (entry: { version: string }) => entry.version,
+      ),
+    ).toEqual(["1.2.0", "1.1.1", "1.1.0", "1.0.0"]);
+    // A locale-only version is still preserved untouched.
+    expect(
+      ptAfter.changelog.versions.find(
+        (entry: { version: string }) => entry.version === "1.0.0",
+      ),
+    ).toEqual(
+      pt.changelog.versions.find(
+        (entry: { version: string }) => entry.version === "1.0.0",
+      ),
+    );
+    // The preserved state is considered in sync.
+    await expect(main(["--check"], { root })).resolves.toMatchObject({
+      ok: true,
+    });
+  });
+
+  it("keeps a translated item stable across repeated --write runs", async () => {
+    const root = await tempRoot();
+    const pt = await readLocale(root, "pt-BR");
+    pt.changelog.versions[0].sections = [
+      {
+        title: "🚀 Novidades",
+        items: ["**ui:** Adicionar modo escuro (abc123)"],
+      },
+    ];
+    await writeLocale(root, "pt-BR", pt);
+
+    await main(["--write"], { root });
+    const first = await readFile(localePath(root, "pt-BR"), "utf8");
+    const report = await main(["--write"], { root });
+    const second = await readFile(localePath(root, "pt-BR"), "utf8");
+
+    expect(second).toBe(first);
+    expect(report.wrote).toBe(false);
+  });
+});
+
 describe("sync-changelog CLI", () => {
   it("parses flags and rejects conflicting or unknown ones", () => {
     expect(parseArgs([])).toEqual({
@@ -421,7 +511,9 @@ describe("sync-changelog GitHub dates", () => {
       expect(entry.date).toBe("2026-08-24");
       expect(calls.some((call) => call.includes("/commits/v1.9.2"))).toBe(true);
       // The fallback source is never consulted once the commit date resolves.
-      expect(calls.some((call) => call.includes("/releases/tags/"))).toBe(false);
+      expect(calls.some((call) => call.includes("/releases/tags/"))).toBe(
+        false,
+      );
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -501,7 +593,9 @@ describe("sync-changelog GitHub dates", () => {
       await expect(
         resolveReleaseDate("ils15/open3dcalc", "banana"),
       ).resolves.toBe("");
-      await expect(resolveReleaseDate("ils15/open3dcalc", "")).resolves.toBe("");
+      await expect(resolveReleaseDate("ils15/open3dcalc", "")).resolves.toBe(
+        "",
+      );
       expect(calls).toBe(0);
     } finally {
       globalThis.fetch = originalFetch;
@@ -517,12 +611,12 @@ describe("sync-changelog GitHub dates", () => {
       return Response.json({});
     }) as typeof fetch;
     try {
-      await expect(
-        resolveReleaseDate("not a repo", "v1.9.2"),
-      ).resolves.toBe("");
-      await expect(
-        resolveReleaseDate("../etc/passwd", "v1.9.2"),
-      ).resolves.toBe("");
+      await expect(resolveReleaseDate("not a repo", "v1.9.2")).resolves.toBe(
+        "",
+      );
+      await expect(resolveReleaseDate("../etc/passwd", "v1.9.2")).resolves.toBe(
+        "",
+      );
       expect(calls).toBe(0);
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining("invalid repository"),
@@ -538,7 +632,9 @@ describe("sync-changelog GitHub dates", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     process.env.GH_TOKEN = "super-secret-token";
     globalThis.fetch = (async (url: string) =>
-      githubApi({ commitStatus: 403, releaseStatus: 403 })(url)) as typeof fetch;
+      githubApi({ commitStatus: 403, releaseStatus: 403 })(
+        url,
+      )) as typeof fetch;
     try {
       await expect(
         resolveReleaseDate("ils15/open3dcalc", "v1.9.2"),
