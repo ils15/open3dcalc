@@ -55,6 +55,8 @@ const EMOJI = /[\p{Extended_Pictographic}\uFE0F\u200D]/gu;
 const LEADING_EMOJI = /^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u;
 const SEMVER = /^(\d+)\.(\d+)\.(\d+)$/;
 const RELEASE_TAG = /^v\d+\.\d+\.\d+$/;
+/** `owner/repo` slugs only — validated before any URL interpolation. */
+const REPOSITORY = /^[\w.-]+\/[\w.-]+$/;
 const GITHUB_API = "https://api.github.com";
 const ISO_DATE = /^(\d{4}-\d{2}-\d{2})/;
 
@@ -72,29 +74,34 @@ const githubHeaders = () => ({
 });
 
 /**
- * Resolve a release tag's publication date as `YYYY-MM-DD`.
+ * Resolve a release's date as `YYYY-MM-DD`, preferring the tag commit.
  *
- * Primary source: `GET /repos/{owner}/{repo}/releases/tags/{tag}` →
- * `published_at`. When that call fails (404/network) or omits the field, fall
- * back to the deterministic committer date of the tag commit
- * (`GET /repos/{owner}/{repo}/commits/{tag}`). Returns `""` when neither source
+ * Preference order — the immutable tag-commit date
+ * (`GET /repos/{owner}/{repo}/commits/{tag}` → `commit.committer.date`) is the
+ * primary source: GitHub releases are often backfilled after the fact, so
+ * their `published_at` can be the backfill day rather than the historical
+ * release day. `published_at`
+ * (`GET /repos/{owner}/{repo}/releases/tags/{tag}`) is only a fallback when the
+ * commit lookup fails or omits the field. Returns `""` when neither source
  * yields a date — never a guessed value.
+ *
+ * Network, auth and rate-limit failures are non-fatal: they emit a token-free
+ * `console.warn` and degrade to the next source.
  */
-export async function fetchReleaseDate(repository, tag, fetchImpl = fetch) {
+export async function resolveReleaseDate(repository, tag, fetchImpl = fetch) {
   if (!tag || !RELEASE_TAG.test(tag)) return "";
-  const base = `${GITHUB_API}/repos/${repository}`;
-  try {
-    const response = await fetchImpl(`${base}/releases/tags/${tag}`, {
-      method: "GET",
-      headers: githubHeaders(),
-    });
-    if (response.ok) {
-      const date = isoDay((await response.json())?.published_at);
-      if (date) return date;
-    }
-  } catch {
-    // Network/parse failure: the deterministic commit fallback still applies.
+  if (!REPOSITORY.test(String(repository ?? ""))) {
+    console.warn(
+      `sync-changelog: invalid repository "${repository}"; skipping date lookup`,
+    );
+    return "";
   }
+  const base = `${GITHUB_API}/repos/${repository}`;
+  const warnFailure = (source, outcome) => {
+    // A missing release/tag/commit (404) is an expected fallback, not an error.
+    if (outcome === 404) return;
+    console.warn(`sync-changelog: ${source} failed for ${tag} (${outcome})`);
+  };
   try {
     const response = await fetchImpl(`${base}/commits/${tag}`, {
       method: "GET",
@@ -102,10 +109,25 @@ export async function fetchReleaseDate(repository, tag, fetchImpl = fetch) {
     });
     if (response.ok) {
       const commit = await response.json();
-      return isoDay(commit?.commit?.committer?.date);
+      const date = isoDay(commit?.commit?.committer?.date);
+      if (date) return date;
+    } else {
+      warnFailure("tag commit lookup", response.status);
     }
-  } catch {
+  } catch (error) {
+    // Network/parse failure: the release fallback still applies.
+    warnFailure("tag commit lookup", error?.message ?? "network error");
+  }
+  try {
+    const response = await fetchImpl(`${base}/releases/tags/${tag}`, {
+      method: "GET",
+      headers: githubHeaders(),
+    });
+    if (response.ok) return isoDay((await response.json())?.published_at);
+    warnFailure("release lookup", response.status);
+  } catch (error) {
     // Both sources failed; leave the date empty instead of guessing.
+    warnFailure("release lookup", error?.message ?? "network error");
   }
   return "";
 }
@@ -384,7 +406,7 @@ async function entriesFromGitHub(repository, tag, fetchImpl = fetch) {
   const { collect } = await import("./release-notes.mjs");
   const withReleaseDate = async (entry, releaseTag) => ({
     ...entry,
-    date: await fetchReleaseDate(repository, releaseTag, fetchImpl),
+    date: await resolveReleaseDate(repository, releaseTag, fetchImpl),
   });
   if (tag)
     return [
@@ -407,6 +429,39 @@ async function entriesFromGitHub(repository, tag, fetchImpl = fetch) {
       ),
     );
   return entries;
+}
+
+/**
+ * Whether the offline CHANGELOG.md path may reach for GitHub to complete
+ * missing dates. Off by default so the local/offline run stays deterministic;
+ * enabled in CI by `GH_TOKEN`, or in tests by an explicit fetch override.
+ */
+const shouldResolveOfflineDates = (overrides) =>
+  Boolean(overrides.fetch) || Boolean(process.env.GH_TOKEN);
+
+/**
+ * Best-effort completion of parsed CHANGELOG.md entries via the GitHub API.
+ *
+ * Only invoked when {@link shouldResolveOfflineDates} is true. Every lookup is
+ * swallowed on failure (`resolveReleaseDate` returns `""`), so a missing
+ * token/network keeps the previous empty-date behavior instead of breaking the
+ * run.
+ */
+async function fillMissingDates(repository, entries, fetchImpl) {
+  const filled = [];
+  for (const entry of entries) {
+    if (entry.date) {
+      filled.push(entry);
+      continue;
+    }
+    const date = await resolveReleaseDate(
+      repository,
+      `v${entry.version}`,
+      fetchImpl,
+    );
+    filled.push(date ? { ...entry, date } : entry);
+  }
+  return filled;
 }
 
 const usage = [
@@ -457,9 +512,13 @@ export async function main(argv = process.argv.slice(2), overrides = {}) {
   const localesDir =
     overrides.localesDir ?? resolve(root, "src/shared/i18n/locales");
   const repository = process.env.GITHUB_REPOSITORY ?? DEFAULT_REPOSITORY;
-  const parsed = options.fromGithub
+  let parsed = options.fromGithub
     ? await entriesFromGitHub(repository, options.githubTag, overrides.fetch)
     : parseChangelog(await readFile(changelogPath, "utf8"));
+  // Offline runs may still complete missing dates from GitHub (CI with a
+  // token). Without a token/network this is a no-op and stays deterministic.
+  if (!options.fromGithub && shouldResolveOfflineDates(overrides))
+    parsed = await fillMissingDates(repository, parsed, overrides.fetch);
 
   const reports = {};
   for (const name of LOCALE_NAMES) {
