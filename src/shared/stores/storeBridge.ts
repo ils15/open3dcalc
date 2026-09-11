@@ -1,36 +1,41 @@
-import { useCalculatorStore } from '@/shared/stores/calculatorStore'
-import { useCatalogStore } from '@/shared/stores/catalogStore'
-import type { FilamentSpool } from '@/shared/stores/filamentInventory'
-import type { Product } from '@/shared/types'
-import type { PrinterProfile, Marketplace } from '@/shared/types'
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
+import type { FilamentSpool } from "@/shared/stores/filamentInventory";
+import type { Product } from "@/shared/types";
+import type { PrinterProfile, Marketplace } from "@/shared/types";
+import { guardedStorage } from "@/shared/lib/manifestStorage";
 
 export function selectSpool(spool: FilamentSpool) {
-  const state = useCalculatorStore.getState()
+  const state = useCalculatorStore.getState();
   useCalculatorStore.getState().setFdmMaterial({
     ...state.fdmMaterial,
     type: spool.material,
     costPerKg: spool.costPerKg,
-  })
+  });
 }
 
-export function selectProduct(product: Pick<Product, 'name'>) {
-  useCalculatorStore.getState().setProductName(product.name)
+export function selectProduct(product: Pick<Product, "name">) {
+  useCalculatorStore.getState().setProductName(product.name);
 }
 
 export function restoreAutoSnapshot(): boolean {
-  if (typeof window === 'undefined') return false
+  if (typeof window === "undefined") return false;
   try {
-    const raw = localStorage.getItem('open3dcalc_settings_v2')
-    if (!raw) return false
-    const data = JSON.parse(raw)
-    const calc = useCalculatorStore.getState()
-    const catalogPrinters = useCatalogStore.getState().printers
-    const catalogMarketplaces = useCatalogStore.getState().marketplaces
-    const printer = catalogPrinters.find((p: { id: string }) => p.id === data.selectedPrinterId)
-    const marketplace = catalogMarketplaces.find((m: { id: string }) => m.id === data.selectedMarketplaceId)
+    const raw = guardedStorage.getItem("open3dcalc_settings_v2");
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    const calc = useCalculatorStore.getState();
+    const catalogPrinters = useCatalogStore.getState().printers;
+    const catalogMarketplaces = useCatalogStore.getState().marketplaces;
+    const printer = catalogPrinters.find(
+      (p: { id: string }) => p.id === data.selectedPrinterId,
+    );
+    const marketplace = catalogMarketplaces.find(
+      (m: { id: string }) => m.id === data.selectedMarketplaceId,
+    );
 
     useCalculatorStore.setState({
-      activeTab: data.activeTab || 'fdm',
+      activeTab: data.activeTab || "fdm",
       fdmMaterial: data.fdmMaterial || calc.fdmMaterial,
       fdmPrintParams: data.fdmPrintParams || calc.fdmPrintParams,
       fdmAmsEnabled: data.fdmAmsEnabled ?? false,
@@ -58,11 +63,13 @@ export function restoreAutoSnapshot(): boolean {
       infillPercent: data.infillPercent ?? calc.infillPercent,
       targetMarginMode: data.targetMarginMode ?? calc.targetMarginMode,
       enabledSections: data.enabledSections || calc.enabledSections,
-      selectedPrinter: (printer || catalogPrinters[0]) as unknown as PrinterProfile,
-      selectedMarketplace: (marketplace || catalogMarketplaces[0]) as unknown as Marketplace,
-    })
-    return true
+      selectedPrinter: (printer ||
+        catalogPrinters[0]) as unknown as PrinterProfile,
+      selectedMarketplace: (marketplace ||
+        catalogMarketplaces[0]) as unknown as Marketplace,
+    });
+    return true;
   } catch {
-    return false
+    return false;
   }
 }

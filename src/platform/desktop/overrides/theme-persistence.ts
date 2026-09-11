@@ -11,15 +11,16 @@
  * then fires-and-forgets the SQLite write for durability.
  */
 
-export type ThemeMode = 'dark' | 'light' | 'system'
+import { guardedStorage } from "@/shared/lib/manifestStorage";
 
-const THEME_KEY = 'open3dcalc_theme'
+export type ThemeMode = "dark" | "light" | "system";
 
-const VALID_MODES: readonly ThemeMode[] = ['dark', 'light', 'system']
+const THEME_KEY = "open3dcalc_theme";
 
+const VALID_MODES: readonly ThemeMode[] = ["dark", "light", "system"];
 /** Type guard — narrows a string to ThemeMode. */
 function isThemeMode(value: string): value is ThemeMode {
-  return (VALID_MODES as readonly string[]).includes(value)
+  return (VALID_MODES as readonly string[]).includes(value);
 }
 
 /* ------------------------------------------------------------------ */
@@ -27,15 +28,15 @@ function isThemeMode(value: string): value is ThemeMode {
 /* ------------------------------------------------------------------ */
 
 function isElectron(): boolean {
-  return typeof window !== 'undefined' && !!window.electronAPI?.db
+  return typeof window !== "undefined" && !!window.electronAPI?.db;
 }
 
 /** Fire-and-forget SQLite write via IPC. Errors logged, never thrown. */
 function persistToSQLite(mode: ThemeMode): void {
-  if (!isElectron()) return
+  if (!isElectron()) return;
   window.electronAPI!.db.save(THEME_KEY, mode).catch((err) => {
-    console.warn('[theme-persistence] Failed to persist to SQLite:', err)
-  })
+    console.warn("[theme-persistence] Failed to persist to SQLite:", err);
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -54,27 +55,30 @@ export async function loadThemePreference(): Promise<ThemeMode> {
   // 1. Try SQLite (most durable source)
   if (isElectron()) {
     try {
-      const raw = await window.electronAPI!.db.load(THEME_KEY)
+      const raw = await window.electronAPI!.db.load(THEME_KEY);
       if (raw !== null && isThemeMode(raw)) {
         // Sync to localStorage so the value is immediately available
-        localStorage.setItem(THEME_KEY, raw)
-        return raw
+        guardedStorage.setItem(THEME_KEY, raw);
+        return raw;
       }
     } catch (err) {
-      console.warn('[theme-persistence] SQLite load failed, falling back:', err)
+      console.warn(
+        "[theme-persistence] SQLite load failed, falling back:",
+        err,
+      );
     }
   }
 
   // 2. Fallback to localStorage
-  const stored = localStorage.getItem(THEME_KEY)
+  const stored = guardedStorage.getItem(THEME_KEY);
   if (stored !== null && isThemeMode(stored)) {
     // If Electron is available, push to SQLite in background
-    persistToSQLite(stored)
-    return stored
+    persistToSQLite(stored);
+    return stored;
   }
 
   // 3. Default
-  return 'system'
+  return "system";
 }
 
 /**
@@ -86,13 +90,13 @@ export async function loadThemePreference(): Promise<ThemeMode> {
  */
 export async function saveThemePreference(mode: ThemeMode): Promise<void> {
   if (!isThemeMode(mode)) {
-    console.error(`[theme-persistence] Invalid theme mode: "${mode}"`)
-    return
+    console.error(`[theme-persistence] Invalid theme mode: "${mode}"`);
+    return;
   }
 
   // 1. localStorage — immediate availability
-  localStorage.setItem(THEME_KEY, mode)
+  guardedStorage.setItem(THEME_KEY, mode);
 
   // 2. SQLite — durable persistence
-  persistToSQLite(mode)
+  persistToSQLite(mode);
 }

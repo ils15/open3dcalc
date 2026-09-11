@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, ChevronRight, ArrowLeft, Play } from "lucide-react";
 import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
+import { guardedStorage } from "@/shared/lib/manifestStorage";
 
 const ONBOARDING_KEY = "open3dcalc_onboarded";
 
@@ -31,7 +32,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
   const prefersReduced = useReducedMotion();
   const [[slideIndex, direction], setSlideState] = useState([0, 0]);
   const [visible, setVisible] = useState(
-    () => !localStorage.getItem(ONBOARDING_KEY),
+    () => !guardedStorage.getItem(ONBOARDING_KEY),
   );
 
   const totalSlides = 3;
@@ -61,13 +62,13 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
   const handleStartTutorial = useCallback(() => {
     startTutorial();
-    localStorage.setItem(ONBOARDING_KEY, "true");
+    guardedStorage.setItem(ONBOARDING_KEY, "true");
     setVisible(false);
     onComplete?.();
   }, [startTutorial, onComplete]);
 
   const dismiss = useCallback(() => {
-    localStorage.setItem(ONBOARDING_KEY, "true");
+    guardedStorage.setItem(ONBOARDING_KEY, "true");
     setVisible(false);
     onComplete?.();
   }, [onComplete]);

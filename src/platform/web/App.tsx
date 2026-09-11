@@ -12,6 +12,7 @@ import { CustomerTab } from "@/shared/components/Catalog/CustomerTab";
 import { ProductInventory } from "@/shared/components/Catalog/ProductInventory";
 import { QuoteSection } from "@/shared/components/Calculator/QuoteSection";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
+import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { computeStoreResults } from "@/shared/stores/calculatorStore.compute";
@@ -170,14 +171,14 @@ function App() {
       const existing = historyStore.entries.length;
 
       // Skip if already migrated
-      if (localStorage.getItem("open3dcalc_migration_done_v2")) return;
+      if (guardedStorage.getItem("open3dcalc_migration_done_v2")) return;
 
       // Only migrate if historyStore is empty (prevent duplicates)
       if (existing > 0) return;
 
       // Migrar productStore antigo
       try {
-        const oldProducts = localStorage.getItem("open3dcalc_products");
+        const oldProducts = guardedStorage.getItem("open3dcalc_products");
         if (oldProducts) {
           const parsed = JSON.parse(oldProducts) as unknown;
           if (Array.isArray(parsed)) {
@@ -201,7 +202,7 @@ function App() {
               });
             });
           }
-          localStorage.removeItem("open3dcalc_products");
+          guardedStorage.removeItem("open3dcalc_products");
         }
       } catch (error) {
         console.warn("Failed to migrate open3dcalc_products", error);
@@ -209,7 +210,7 @@ function App() {
 
       // Migrar calculatorStore.history antigo (v1)
       try {
-        const oldHistory = localStorage.getItem("open3dcalc_history_v2");
+        const oldHistory = guardedStorage.getItem("open3dcalc_history_v2");
         if (oldHistory) {
           const parsed = JSON.parse(oldHistory) as unknown;
           if (Array.isArray(parsed)) {
@@ -251,7 +252,7 @@ function App() {
                 snapshot: legacyItem.snapshot || null,
               });
             });
-            localStorage.removeItem("open3dcalc_history_v2");
+            guardedStorage.removeItem("open3dcalc_history_v2");
           }
         }
       } catch (error) {
@@ -295,7 +296,7 @@ function App() {
         targetMarginMode: calc.targetMarginMode,
         enabledSections: calc.enabledSections,
       };
-      localStorage.setItem("open3dcalc_settings_v2", JSON.stringify(data));
+      guardedStorage.setItem("open3dcalc_settings_v2", JSON.stringify(data));
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -379,7 +380,7 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       // Don't start tutorial if onboarding is still pending
-      const onboardingDone = localStorage.getItem("open3dcalc_onboarded");
+      const onboardingDone = guardedStorage.getItem("open3dcalc_onboarded");
       if (!onboardingDone) return;
 
       const store = useTutorialStore.getState();
