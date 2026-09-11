@@ -15,6 +15,8 @@
  * Zero external dependencies — browser-native Web Crypto only.
  */
 
+import { guardedStorage } from "@/shared/lib/manifestStorage";
+
 export const SYNC_FORMAT = "open3dcalc-export" as const;
 export const SYNC_VERSION = "1.0" as const;
 /** Kept in sync with package.json version. */
@@ -120,7 +122,7 @@ function base64ToBytes(b64: string): Uint8Array {
 function getRaw(key: string): string | null {
   if (typeof window === "undefined") return null;
   try {
-    return localStorage.getItem(key);
+    return guardedStorage.getItem(key);
   } catch {
     return null;
   }
@@ -187,7 +189,7 @@ function writeJSON(key: string, value: unknown): void {
     try {
       const parsed = JSON.parse(raw);
       if (isPersistWrapper(parsed)) {
-        localStorage.setItem(
+        guardedStorage.setItem(
           key,
           JSON.stringify({ state: value, version: parsed.version }),
         );
@@ -197,13 +199,13 @@ function writeJSON(key: string, value: unknown): void {
       /* ignore malformed value */
     }
   }
-  localStorage.setItem(key, JSON.stringify(value));
+  guardedStorage.setItem(key, JSON.stringify(value));
 }
 
 /** Patch a persist-wrapped key, keeping its other state fields and version. */
 function writePersistState(key: string, patch: Record<string, unknown>): void {
   const { state, version } = readPersistState(key);
-  localStorage.setItem(
+  guardedStorage.setItem(
     key,
     JSON.stringify({ state: { ...state, ...patch }, version }),
   );
@@ -593,7 +595,10 @@ export function applySyncData(
     if (mode === "replace") {
       writePersistState(KEYS.products, { products: incomingProducts });
     } else {
-      const { merged, conflicts: c } = mergeById(localProducts, incomingProducts);
+      const { merged, conflicts: c } = mergeById(
+        localProducts,
+        incomingProducts,
+      );
       writePersistState(KEYS.products, { products: merged });
       if (c > 0) conflicts.push("products");
     }
@@ -601,7 +606,7 @@ export function applySyncData(
   }
 
   if (data.theme !== "" || mode === "replace") {
-    localStorage.setItem(KEYS.theme, data.theme);
+    guardedStorage.setItem(KEYS.theme, data.theme);
     imported.push("theme");
   }
 
@@ -609,7 +614,7 @@ export function applySyncData(
     const { goal, ...dashboardV1 } = data.dashboard;
     writeJSON(KEYS.dashboard, dashboardV1);
     if (typeof goal === "string" && goal !== "") {
-      localStorage.setItem(KEYS.dashboardGoal, goal);
+      guardedStorage.setItem(KEYS.dashboardGoal, goal);
     }
     imported.push("dashboard");
   }

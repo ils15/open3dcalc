@@ -1,15 +1,16 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { manifestStorage } from "@/shared/lib/manifestStorage";
 
 interface ConsentStore {
-  privacyBannerDismissed: boolean
-  consentGiven: boolean
-  consentDate: number | null
+  privacyBannerDismissed: boolean;
+  consentGiven: boolean;
+  consentDate: number | null;
 
-  dismissBanner(): void
-  giveConsent(): void
-  resetConsent(): void
-  needsConsent(): boolean
+  dismissBanner(): void;
+  giveConsent(): void;
+  resetConsent(): void;
+  needsConsent(): boolean;
 }
 
 export const useConsentStore = create<ConsentStore>()(
@@ -19,8 +20,7 @@ export const useConsentStore = create<ConsentStore>()(
       consentGiven: false,
       consentDate: null,
 
-      dismissBanner: () =>
-        set({ privacyBannerDismissed: true }),
+      dismissBanner: () => set({ privacyBannerDismissed: true }),
 
       giveConsent: () =>
         set({
@@ -39,8 +39,9 @@ export const useConsentStore = create<ConsentStore>()(
       needsConsent: () => !get().consentGiven,
     }),
     {
-      name: 'open3dcalc_consent_v1',
+      name: "open3dcalc_consent_v1",
       version: 1,
+      storage: manifestStorage(),
     },
   ),
-)
+);
