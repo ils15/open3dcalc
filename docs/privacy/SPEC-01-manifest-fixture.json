@@ -1,6 +1,6 @@
 {
   "manifest_version": "1.0",
-  "policy_version": "1.0",
+  "policy_version": "1.1",
   "keys": [
     {
       "key": "open3dcalc_consent_v1",
@@ -35,7 +35,7 @@
       "version": "1.0"
     },
     {
-      "key": "open3dcalc_migration_flags",
+      "key": "open3dcalc_migration_done_v2",
       "surface": "localStorage",
       "platforms": ["electron", "web", "pwa"],
       "class": "onboarding_flag",
@@ -45,23 +45,55 @@
       "export": "never",
       "erasure": "erase_on_delete_all",
       "retention": { "policy": "user_controlled", "max_days": 0 },
-      "purpose": "One-shot migration markers (e.g., settings v1->v2) so migrations run once; local-only.",
+      "purpose": "One-shot marker for the v2 localStorage-to-SQLite migration so it runs once; local-only. Key renamed from the D1.0 fixture to match the shipped code.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
+      "version": "1.1"
+    },
+    {
+      "key": "open3dcalc_quickstart_dismissed",
+      "surface": "localStorage",
+      "platforms": ["electron", "web", "pwa"],
+      "class": "onboarding_flag",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "erase_on_delete_all",
+      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "purpose": "Quick Start banner dismissal flag; local-only, never a consent substitute. Key renamed from the D1.0 fixture to match the shipped code.",
+      "legal_basis": "not_personal_data",
+      "owner": "aphrodite",
+      "version": "1.1"
+    },
+    {
+      "key": "open3dcalc_onboarded",
+      "surface": "localStorage",
+      "platforms": ["electron", "web", "pwa"],
+      "class": "onboarding_flag",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "erase_on_delete_all",
+      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "purpose": "Onboarding completion flag so the intro modal is not re-shown; local-only, never a consent substitute.",
+      "legal_basis": "not_personal_data",
+      "owner": "aphrodite",
       "version": "1.0"
     },
     {
-      "key": "open3dcalc_quickstart_done",
+      "key": "i18nextLng",
       "surface": "localStorage",
       "platforms": ["electron", "web", "pwa"],
-      "class": "onboarding_flag",
+      "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
       "retention": { "policy": "user_controlled", "max_days": 0 },
-      "purpose": "Quickstart overlay dismissal flag; local-only, never a consent substitute.",
+      "purpose": "Interface language cached by the i18next browser language detector; local-only, falls back to navigator when absent.",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
       "version": "1.0"
