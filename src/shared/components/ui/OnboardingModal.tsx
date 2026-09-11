@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import { AnimatePresence, motion } from 'framer-motion'
-import { X, ChevronRight, ArrowLeft, Play } from 'lucide-react'
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { useTutorialStore } from '@/shared/stores/tutorialStore'
+import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "framer-motion";
+import { X, ChevronRight, ArrowLeft, Play } from "lucide-react";
+import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
+import { useTutorialStore } from "@/shared/stores/tutorialStore";
 
-const ONBOARDING_KEY = 'open3dcalc_onboarded'
+const ONBOARDING_KEY = "open3dcalc_onboarded";
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -20,94 +20,99 @@ const slideVariants = {
     x: direction < 0 ? 300 : -300,
     opacity: 0,
   }),
-}
+};
 
 interface OnboardingModalProps {
-  onComplete?: () => void
+  onComplete?: () => void;
 }
 
 export function OnboardingModal({ onComplete }: OnboardingModalProps) {
-  const { t } = useTranslation()
-  const prefersReduced = useReducedMotion()
-  const [[slideIndex, direction], setSlideState] = useState([0, 0])
-  const [visible, setVisible] = useState(() => !localStorage.getItem(ONBOARDING_KEY))
+  const { t } = useTranslation();
+  const prefersReduced = useReducedMotion();
+  const [[slideIndex, direction], setSlideState] = useState([0, 0]);
+  const [visible, setVisible] = useState(
+    () => !localStorage.getItem(ONBOARDING_KEY),
+  );
 
-  const totalSlides = 3
-  const isLastSlide = slideIndex === totalSlides - 1
-  const isFirstSlide = slideIndex === 0
+  const totalSlides = 3;
+  const isLastSlide = slideIndex === totalSlides - 1;
+  const isFirstSlide = slideIndex === 0;
 
-  const goToSlide = useCallback((index: number) => {
-    setSlideState([index, index > slideIndex ? 1 : -1])
-  }, [slideIndex])
+  const goToSlide = useCallback(
+    (index: number) => {
+      setSlideState([index, index > slideIndex ? 1 : -1]);
+    },
+    [slideIndex],
+  );
 
   const nextSlide = useCallback(() => {
     if (slideIndex < totalSlides - 1) {
-      goToSlide(slideIndex + 1)
+      goToSlide(slideIndex + 1);
     }
-  }, [slideIndex, goToSlide])
+  }, [slideIndex, goToSlide]);
 
   const prevSlide = useCallback(() => {
     if (slideIndex > 0) {
-      goToSlide(slideIndex - 1)
+      goToSlide(slideIndex - 1);
     }
-  }, [slideIndex, goToSlide])
+  }, [slideIndex, goToSlide]);
 
-  const startTutorial = useTutorialStore(s => s.startTutorial)
+  const startTutorial = useTutorialStore((s) => s.startTutorial);
 
   const handleStartTutorial = useCallback(() => {
-    startTutorial()
-    localStorage.setItem(ONBOARDING_KEY, 'true')
-    setVisible(false)
-    onComplete?.()
-  }, [startTutorial, onComplete])
+    startTutorial();
+    localStorage.setItem(ONBOARDING_KEY, "true");
+    setVisible(false);
+    onComplete?.();
+  }, [startTutorial, onComplete]);
 
   const dismiss = useCallback(() => {
-    localStorage.setItem(ONBOARDING_KEY, 'true')
-    setVisible(false)
-    onComplete?.()
-  }, [onComplete])
+    localStorage.setItem(ONBOARDING_KEY, "true");
+    setVisible(false);
+    onComplete?.();
+  }, [onComplete]);
 
-  if (!visible) return null
+  if (!visible) return null;
 
   const slides = [
     {
-      icon: '🧮',
-      title: t('onboarding.slide1.title'),
-      description: t('onboarding.slide1.description'),
+      icon: "🧮",
+      title: t("onboarding.slide1.title"),
+      description: t("onboarding.slide1.description"),
     },
     {
-      icon: '⚙️',
-      title: t('onboarding.slide2.title'),
-      description: t('onboarding.slide2.description'),
+      icon: "⚙️",
+      title: t("onboarding.slide2.title"),
+      description: t("onboarding.slide2.description"),
     },
     {
-      icon: '💾',
-      title: t('onboarding.slide3.title'),
-      description: t('onboarding.slide3.description'),
+      icon: "💾",
+      title: t("onboarding.slide3.title"),
+      description: t("onboarding.slide3.description"),
     },
-  ]
+  ];
 
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0, 0, 0, 0.6)' }}
+      style={{ background: "rgba(0, 0, 0, 0.6)" }}
       role="dialog"
       aria-modal="true"
-      aria-label={t('onboarding.title')}
+      aria-label={t("onboarding.title")}
     >
       <div
         className="relative w-full max-w-md rounded-xl overflow-hidden"
         style={{
-          background: 'var(--color-bg-elevated)',
-          border: '1px solid var(--color-border)',
-          boxShadow: 'var(--shadow-md)',
+          background: "var(--color-bg-elevated)",
+          border: "1px solid var(--color-border)",
+          boxShadow: "var(--shadow-md)",
         }}
       >
         {/* Close / Skip button */}
         <button
           onClick={dismiss}
           className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-          aria-label={t('common.close')}
+          aria-label={t("common.close")}
         >
           <X className="w-4 h-4" />
         </button>
@@ -122,7 +127,10 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: prefersReduced ? 0 : 0.25, ease: 'easeInOut' }}
+              transition={{
+                duration: prefersReduced ? 0 : 0.25,
+                ease: "easeInOut",
+              }}
               className="flex flex-col items-center gap-4 w-full"
             >
               <span className="text-5xl" role="img" aria-hidden="true">
@@ -142,7 +150,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                   className="inline-flex items-center gap-2 mt-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
                 >
                   <Play className="w-4 h-4" />
-                  {t('onboarding.startTutorial')}
+                  {t("onboarding.startTutorial")}
                 </button>
               )}
             </motion.div>
@@ -157,10 +165,10 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
             disabled={isFirstSlide}
             className={`p-2 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
               isFirstSlide
-                ? 'text-gray-700 cursor-not-allowed'
-                : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
+                ? "text-gray-700 cursor-not-allowed"
+                : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
             }`}
-            aria-label="Anterior"
+            aria-label={t("onboarding.previous")}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -173,10 +181,13 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
                 onClick={() => goToSlide(i)}
                 className={`w-2 h-2 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
                   i === slideIndex
-                    ? 'bg-[var(--color-accent)] w-5'
-                    : 'bg-[var(--color-bg-hover)] hover:bg-[var(--color-bg-hover)]'
+                    ? "bg-[var(--color-accent)] w-5"
+                    : "bg-[var(--color-bg-hover)] hover:bg-[var(--color-bg-hover)]"
                 }`}
-                aria-label={`Slide ${i + 1}`}
+                aria-label={t("onboarding.slideOf", {
+                  current: i + 1,
+                  total: totalSlides,
+                })}
               />
             ))}
           </div>
@@ -187,14 +198,14 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
               onClick={dismiss}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
             >
-              {t('onboarding.start')}
+              {t("onboarding.start")}
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button
               onClick={nextSlide}
               className="p-2 rounded-xl text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-              aria-label="Próximo"
+              aria-label={t("onboarding.next")}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -202,5 +213,5 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

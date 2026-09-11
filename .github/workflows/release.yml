@@ -112,6 +112,8 @@ jobs:
 
       - name: Sync in-app changelog
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node scripts/sync-changelog.mjs --write
 
       - name: Validate changed release files

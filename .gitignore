@@ -62,3 +62,8 @@ yarn-debug.log*
 *.env
 *.secret
 *.pem
+
+# Release notes automation — local backfill snapshots and generated output
+release-notes-snapshots/
+release-notes-output/
+

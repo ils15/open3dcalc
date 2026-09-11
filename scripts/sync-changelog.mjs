@@ -6,11 +6,19 @@
  * `changelog.versions` section of src/shared/i18n/locales/{pt-BR,en-US}.json.
  *
  * Merge semantics:
- * - Versions defined by CHANGELOG.md win: the app entry is regenerated from
+ * - en-US is canonical: its items always follow CHANGELOG.md, regenerated from
  *   the markdown sections (per-locale section titles, raw item text).
- * - Versions present only in the locale files are preserved untouched (the
- *   rich handwritten entries for releases the root changelog does not cover,
- *   e.g. 1.9.1/1.7.0) so the in-app history is never gutted.
+ * - pt-BR is durable: for a version already present in the locale, item text is
+ *   preserved by (version, section title, item index). The locale file is the
+ *   home of the human translations, so a resync must never overwrite an existing
+ *   translation with the English source. Only items beyond the existing section
+ *   length are genuinely new; they enter with the canonical (English) text,
+ *   ready for later translation.
+ * - Versions defined by CHANGELOG.md win for structure and section titles (with
+ *   the item-text exception above). Versions present only in the locale files
+ *   are preserved untouched (the rich handwritten entries for releases the root
+ *   changelog does not cover, e.g. 1.9.1/1.7.0) so the in-app history is never
+ *   gutted.
  * - Dates: inline `(YYYY-MM-DD)` in the version heading wins; otherwise the
  *   existing locale date is kept; otherwise empty.
  * - The final list is sorted by SemVer descending.
@@ -27,6 +35,8 @@
  *
  * Only `changelog.versions` is touched; every other JSON key is preserved
  * byte-for-byte (same 2-space indentation, key order, trailing newline).
+ * `--write` is a no-op when the array is already in sync, so durable
+ * translations are never rewritten or reformatted.
  */
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -36,6 +46,8 @@ export const LOCALE_NAMES = ["pt-BR", "en-US"];
 const DEFAULT_REPOSITORY = "ils15/open3dcalc";
 /** File basename → SECTION_TITLES key. */
 const LOCALE_KEYS = Object.freeze({ "pt-BR": "pt", "en-US": "en" });
+/** Locale whose item text is the canonical source (never translated in place). */
+export const CANONICAL_LOCALE = "en";
 
 // Lazy: under vitest's module runner import.meta.url is not a file:// URL.
 const repoRoot = () => {
@@ -55,6 +67,82 @@ const EMOJI = /[\p{Extended_Pictographic}\uFE0F\u200D]/gu;
 const LEADING_EMOJI = /^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u;
 const SEMVER = /^(\d+)\.(\d+)\.(\d+)$/;
 const RELEASE_TAG = /^v\d+\.\d+\.\d+$/;
+/** `owner/repo` slugs only — validated before any URL interpolation. */
+const REPOSITORY = /^[\w.-]+\/[\w.-]+$/;
+const GITHUB_API = "https://api.github.com";
+const ISO_DATE = /^(\d{4}-\d{2}-\d{2})/;
+
+/** Normalize an ISO timestamp to the `YYYY-MM-DD` day used by the locales. */
+export const isoDay = (value) => {
+  const match = ISO_DATE.exec(String(value ?? ""));
+  return match ? match[1] : "";
+};
+
+const githubHeaders = () => ({
+  accept: "application/vnd.github+json",
+  ...(process.env.GH_TOKEN
+    ? { authorization: `Bearer ${process.env.GH_TOKEN}` }
+    : {}),
+});
+
+/**
+ * Resolve a release's date as `YYYY-MM-DD`, preferring the tag commit.
+ *
+ * Preference order — the immutable tag-commit date
+ * (`GET /repos/{owner}/{repo}/commits/{tag}` → `commit.committer.date`) is the
+ * primary source: GitHub releases are often backfilled after the fact, so
+ * their `published_at` can be the backfill day rather than the historical
+ * release day. `published_at`
+ * (`GET /repos/{owner}/{repo}/releases/tags/{tag}`) is only a fallback when the
+ * commit lookup fails or omits the field. Returns `""` when neither source
+ * yields a date — never a guessed value.
+ *
+ * Network, auth and rate-limit failures are non-fatal: they emit a token-free
+ * `console.warn` and degrade to the next source.
+ */
+export async function resolveReleaseDate(repository, tag, fetchImpl = fetch) {
+  if (!tag || !RELEASE_TAG.test(tag)) return "";
+  if (!REPOSITORY.test(String(repository ?? ""))) {
+    console.warn(
+      `sync-changelog: invalid repository "${repository}"; skipping date lookup`,
+    );
+    return "";
+  }
+  const base = `${GITHUB_API}/repos/${repository}`;
+  const warnFailure = (source, outcome) => {
+    // A missing release/tag/commit (404) is an expected fallback, not an error.
+    if (outcome === 404) return;
+    console.warn(`sync-changelog: ${source} failed for ${tag} (${outcome})`);
+  };
+  try {
+    const response = await fetchImpl(`${base}/commits/${tag}`, {
+      method: "GET",
+      headers: githubHeaders(),
+    });
+    if (response.ok) {
+      const commit = await response.json();
+      const date = isoDay(commit?.commit?.committer?.date);
+      if (date) return date;
+    } else {
+      warnFailure("tag commit lookup", response.status);
+    }
+  } catch (error) {
+    // Network/parse failure: the release fallback still applies.
+    warnFailure("tag commit lookup", error?.message ?? "network error");
+  }
+  try {
+    const response = await fetchImpl(`${base}/releases/tags/${tag}`, {
+      method: "GET",
+      headers: githubHeaders(),
+    });
+    if (response.ok) return isoDay((await response.json())?.published_at);
+    warnFailure("release lookup", response.status);
+  } catch (error) {
+    // Both sources failed; leave the date empty instead of guessing.
+    warnFailure("release lookup", error?.message ?? "network error");
+  }
+  return "";
+}
 
 /**
  * CHANGELOG.md headings (emoji-stripped, lowercased) and release-notes.mjs
@@ -66,6 +154,7 @@ export const CATEGORY_KEYS = Object.freeze({
   "bug fixes": "fixes",
   fixes: "fixes",
   chore: "other",
+  chores: "other",
   "other changes": "other",
   other: "other",
   ci: "ci",
@@ -201,6 +290,35 @@ export function localizeSections(locale, sections) {
 }
 
 /**
+ * Preserve already-translated item text for a non-canonical locale.
+ *
+ * Items are matched by position: `parsedSections` come from the canonical
+ * source and carry English item text, while `existingSections` are the locale's
+ * durable translations. For every section whose title matches, the existing item
+ * at each index wins; only indices beyond the existing array (genuinely new
+ * items) keep the canonical text. Positional matching is deterministic and
+ * intentionally simple — the changelog appends items, it does not reorder them.
+ */
+export function preserveTranslatedItems(parsedSections, existingSections) {
+  const existingByTitle = new Map(
+    (existingSections ?? []).map((section) => [
+      section.title,
+      Array.isArray(section.items) ? section.items : [],
+    ]),
+  );
+  return parsedSections.map((section) => {
+    const existingItems = existingByTitle.get(section.title);
+    if (!existingItems) return section;
+    return {
+      ...section,
+      items: section.items.map((item, index) =>
+        index < existingItems.length ? existingItems[index] : item,
+      ),
+    };
+  });
+}
+
+/**
  * CHANGELOG.md wins for the versions it defines; locale-only versions are
  * preserved. Missing dates fall back to the existing locale entry date.
  */
@@ -220,11 +338,20 @@ export function mergeEntries(parsed, existing) {
 }
 
 export function buildVersions(locale, parsed, existing) {
-  const localized = parsed.map((entry) => ({
-    version: entry.version,
-    date: entry.date,
-    sections: localizeSections(locale, entry.sections),
-  }));
+  const existingByVersion = new Map(
+    existing.map((entry) => [entry.version, entry]),
+  );
+  const localized = parsed.map((entry) => {
+    const sections = localizeSections(locale, entry.sections);
+    const old = existingByVersion.get(entry.version);
+    // Only the canonical locale regenerates item text; translated locales keep
+    // their existing items and receive genuinely new ones in English.
+    const reconciled =
+      locale !== CANONICAL_LOCALE && old
+        ? preserveTranslatedItems(sections, old.sections)
+        : sections;
+    return { version: entry.version, date: entry.date, sections: reconciled };
+  });
   return mergeEntries(localized, existing);
 }
 
@@ -326,9 +453,19 @@ function entryFromCatalog(catalog) {
 }
 
 /** Fallback source: audited per-release catalogs from release-notes.mjs. */
-async function entriesFromGitHub(repository, tag) {
+async function entriesFromGitHub(repository, tag, fetchImpl = fetch) {
   const { collect } = await import("./release-notes.mjs");
-  if (tag) return [entryFromCatalog(await collect(repository, tag))];
+  const withReleaseDate = async (entry, releaseTag) => ({
+    ...entry,
+    date: await resolveReleaseDate(repository, releaseTag, fetchImpl),
+  });
+  if (tag)
+    return [
+      await withReleaseDate(
+        entryFromCatalog(await collect(repository, tag)),
+        tag,
+      ),
+    ];
   const catalog = await collect(repository);
   const tags = catalog.releases
     .map((release) => release.tag)
@@ -336,8 +473,46 @@ async function entriesFromGitHub(repository, tag) {
     .sort((a, b) => semverDesc(a.replace("v", ""), b.replace("v", "")));
   const entries = [];
   for (const releaseTag of tags)
-    entries.push(entryFromCatalog(await collect(repository, releaseTag)));
+    entries.push(
+      await withReleaseDate(
+        entryFromCatalog(await collect(repository, releaseTag)),
+        releaseTag,
+      ),
+    );
   return entries;
+}
+
+/**
+ * Whether the offline CHANGELOG.md path may reach for GitHub to complete
+ * missing dates. Off by default so the local/offline run stays deterministic;
+ * enabled in CI by `GH_TOKEN`, or in tests by an explicit fetch override.
+ */
+const shouldResolveOfflineDates = (overrides) =>
+  Boolean(overrides.fetch) || Boolean(process.env.GH_TOKEN);
+
+/**
+ * Best-effort completion of parsed CHANGELOG.md entries via the GitHub API.
+ *
+ * Only invoked when {@link shouldResolveOfflineDates} is true. Every lookup is
+ * swallowed on failure (`resolveReleaseDate` returns `""`), so a missing
+ * token/network keeps the previous empty-date behavior instead of breaking the
+ * run.
+ */
+async function fillMissingDates(repository, entries, fetchImpl) {
+  const filled = [];
+  for (const entry of entries) {
+    if (entry.date) {
+      filled.push(entry);
+      continue;
+    }
+    const date = await resolveReleaseDate(
+      repository,
+      `v${entry.version}`,
+      fetchImpl,
+    );
+    filled.push(date ? { ...entry, date } : entry);
+  }
+  return filled;
 }
 
 const usage = [
@@ -388,9 +563,13 @@ export async function main(argv = process.argv.slice(2), overrides = {}) {
   const localesDir =
     overrides.localesDir ?? resolve(root, "src/shared/i18n/locales");
   const repository = process.env.GITHUB_REPOSITORY ?? DEFAULT_REPOSITORY;
-  const parsed = options.fromGithub
-    ? await entriesFromGitHub(repository, options.githubTag)
+  let parsed = options.fromGithub
+    ? await entriesFromGitHub(repository, options.githubTag, overrides.fetch)
     : parseChangelog(await readFile(changelogPath, "utf8"));
+  // Offline runs may still complete missing dates from GitHub (CI with a
+  // token). Without a token/network this is a no-op and stays deterministic.
+  if (!options.fromGithub && shouldResolveOfflineDates(overrides))
+    parsed = await fillMissingDates(repository, parsed, overrides.fetch);
 
   const reports = {};
   for (const name of LOCALE_NAMES) {
@@ -402,9 +581,14 @@ export async function main(argv = process.argv.slice(2), overrides = {}) {
       ? data.changelog.versions
       : [];
     const versions = buildVersions(LOCALE_KEYS[name], parsed, existing);
-    reports[name] = diffVersions(existing, versions);
-    if (options.mode === "--write") {
-      // Surgical splice keeps every byte outside changelog.versions intact.
+    const report = diffVersions(existing, versions);
+    reports[name] = report;
+    const stale =
+      report.added.length || report.removed.length || report.changed.length;
+    if (options.mode === "--write" && stale) {
+      // Surgical splice keeps every byte outside changelog.versions intact; a
+      // no-op sync leaves the file untouched so preserved translations are never
+      // reformatted or rewritten.
       await writeFile(filePath, replaceVersionsArray(raw, versions), "utf8");
     }
   }

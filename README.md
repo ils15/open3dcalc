@@ -277,12 +277,41 @@ O deploy da web é **automático** via GitHub Actions (`ci-cd.yml`) em todo push
 
 ### Desktop — GitHub Releases
 
-O release é **manual** via GitHub Actions (`release.yml`):
+O release é um processo de **duas fases** (preparação + publicação), detalhado em [RELEASE.md](RELEASE.md).
 
-1. Dispare o workflow **Release** no GitHub
-2. Escolha o bump (auto/patch/minor/major)
-3. O workflow: bump version → build ambos → electron-builder (Linux) → commit/tag → cria GitHub Release com artifacts
-4. Para Windows, execute `npx electron-builder --win` localmente
+**Preparação** (GitHub Actions):
+
+1. Em _Actions → Release preparation → Run workflow_, selecione `main` e o bump desejado
+2. O workflow cria `release/vX.Y.Z`, atualiza versão com _changelogen 0.6.2_, sincroniza o changelog in-app, roda lint/typecheck/testes/build e abre um PR para `main`
+3. Revise e faça o merge do PR
+
+**Publicação** (tag local):
+
+```bash
+git fetch origin main && git switch main && git pull --ff-only origin main
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+O workflow _Release publication_ valida a tag, cria a GitHub Release com nome `Open3DCalc vX.Y.Z` e anexa os artefatos Windows/Linux. A branch `release/vX.Y.Z` é removida após confirmação.
+
+### Notas de release automáticas
+
+As notas de cada GitHub Release usam um **formato canônico** renderizado por `scripts/release-notes.mjs` (`renderPublication()`) e validado por um gate _fail-closed_ antes da publicação:
+
+```bash
+npm run release:notes:validate -- --file release-notes.md --tag vX.Y.Z
+```
+
+O workflow _Release publication_ gera o corpo com `--notes-file` (em vez de `--generate-notes`) e só publica se o validador aprovar. As seções emoji têm ordem fixa: 🚀 Features, 🐛 Fixes, 🧹 Chores, 📦 Dependencies, 🤖 CI/CD e ❤️ Contributors (além de 📚 Documentation, 🔒 Security e ⚠️ Breaking Changes quando houver conteúdo).
+
+O backfill de releases antigas é idempotente e reversível por snapshot local (`release-notes-snapshots/`):
+
+```bash
+node scripts/backfill-release-notes.mjs --dry-run --all
+node scripts/backfill-release-notes.mjs --apply --all
+node scripts/backfill-release-notes.mjs --restore vX.Y.Z
+```
 
 ---
 

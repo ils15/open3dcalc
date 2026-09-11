@@ -8,6 +8,7 @@ export const CATEGORIES = [
   "Highlights",
   "Features",
   "Improvements",
+  "Chores",
   "Fixes",
   "Security",
   "CI/CD",
@@ -39,47 +40,82 @@ const isBot = (person) => {
 };
 export const escapeMarkdown = (value) =>
   clean(value, "Not available").replace(/([\\`*_{}\[\]()<>#+.!|])/g, "\\$1");
+// Inline-safe escaping for item titles. Parentheses, plus signs, hashes and
+// exclamation marks are legitimate conventional-commit subject characters and
+// cannot start a heading inside a `- ` bullet, so they stay literal. Only the
+// characters that can break inline Markdown or inject HTML are escaped.
+export const escapeInline = (value) =>
+  clean(value, "Not available").replace(/([\\`*_[\]<>|])/g, "\\$1");
 export const sha256 = (value) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const CONVENTIONAL_PREFIXES = {
   feat: "Features",
   fix: "Fixes",
   perf: "Improvements",
-  refactor: "Improvements",
-  style: "Improvements",
+  refactor: "Chores",
+  style: "Chores",
+  test: "Chores",
+  build: "Chores",
+  chore: "Chores",
   docs: "Documentation",
   ci: "CI/CD",
-  build: "CI/CD",
   deps: "Dependencies",
+  security: "Security",
 };
 const HIGHLIGHT_LIMIT = 3;
+export const SUBJECT_LIMIT = 100;
+// First physical line of a raw message; commit bodies never survive this.
+const firstLine = (value) =>
+  String(value ?? "")
+    .split(/\r?\n/, 1)[0]
+    .replace(/[\u0000-\u001f]/g, " ")
+    .trim();
+// Commit-only items render just the subject, bounded to a readable length.
+const commitSubject = (value) => {
+  const line = firstLine(value).slice(0, SUBJECT_LIMIT);
+  return line || clean(value);
+};
+const breakingBody = (item) =>
+  [item?.body, item?.commit?.message, item?.message]
+    .filter((value) => typeof value === "string" && value.length)
+    .join("\n");
 export const categoryFor = (item) => {
-  // Raw commit payloads carry the title in commit.message (or a flat message),
-  // not in title — normalize before classifying so Conventional Commit
-  // prefixes win over generic keyword scanning (e.g. "feat: fix calculator"
-  // must be Features, and "calculator" must never match /\bci\b/).
-  const title = clean(
+  // Classify from the conventional-commit subject (first line) plus, only for
+  // the explicit footer, the message body. The body is never keyword-scanned:
+  // prose like "breaking intencional" must not elevate an item.
+  const subject = firstLine(
     item?.title ?? item?.message ?? item?.commit?.message ?? item?.pr?.title,
   );
-  const text =
-    `${title} ${item?.body ?? ""} ${(item?.labels ?? []).map((label) => label.name ?? label).join(" ")}`.toLowerCase();
-  const conventional = /^([a-z]+)(?:\(([^)]*)\))?(!)?:/.exec(text);
+  const lower = subject.toLowerCase();
+  if (subject.includes("!:") || /^BREAKING[ -]CHANGE\b/.test(subject))
+    return "Breaking Changes";
+  // The explicit Conventional Commits footer wins over the type/scope mapping.
+  if (/\bBREAKING[ -]CHANGE\b/.test(breakingBody(item)))
+    return "Breaking Changes";
+  const conventional = /^([a-z]+)(?:\(([^)]*)\))?(!)?:/.exec(lower);
   if (conventional) {
-    const [, prefix, scope, bang] = conventional;
-    if (bang) return "Breaking Changes";
-    if (scope && /deps?/.test(scope)) return "Dependencies";
+    const [, prefix, scope] = conventional;
+    if (scope && /(?:^|[-_])deps?(?:$|[-_])|dependencies/.test(scope))
+      return "Dependencies";
+    if (prefix === "chore" && scope === "ci") return "CI/CD";
     if (CONVENTIONAL_PREFIXES[prefix]) return CONVENTIONAL_PREFIXES[prefix];
-    if (prefix === "chore" && /^chore\(release\)/.test(text)) return "CI/CD";
   }
-  if (/breaking|!:|major change/.test(text)) return "Breaking Changes";
-  if (/security|cve|vulnerab|dependabot|renovate/.test(text))
-    return text.includes("depend") ? "Dependencies" : "Security";
+  // Subject-only fallbacks for non-conventional titles (dependency bots,
+  // free-form prose, maintenance types).
+  if (
+    /\bbump\b[\s\S]*\bfrom\b[\s\S]*\bto\b|\bdependabot\b|\brenovate\b/.test(
+      lower,
+    )
+  )
+    return "Dependencies";
+  if (/security|cve|vulnerab/.test(lower)) return "Security";
   // Anchored \bci\b so "calculator"/"calculadora" never land in CI/CD.
-  if (/\bci\b|workflow|github action|pipeline|build/.test(text)) return "CI/CD";
-  if (/doc|readme|typo/.test(text)) return "Documentation";
-  if (/fix|bug|patch|regression/.test(text)) return "Fixes";
-  if (/feature|add|support|implement/.test(text)) return "Features";
-  if (/improv|refactor|perf|enhanc/.test(text)) return "Improvements";
+  if (/\bci\b|workflow|github action|pipeline/.test(lower)) return "CI/CD";
+  if (/doc|readme|typo/.test(lower)) return "Documentation";
+  if (/fix|bug|patch|regression/.test(lower)) return "Fixes";
+  if (/feature|add|support|implement/.test(lower)) return "Features";
+  if (/improv|perf|enhanc/.test(lower)) return "Improvements";
+  if (/chore|refactor|style|test|build|tidy/.test(lower)) return "Chores";
   return "Other Changes";
 };
 const personLogin = (person) => clean(person?.login ?? person?.name);
@@ -212,9 +248,10 @@ export const normalize = (input) => {
       .find(Boolean);
     const current = existingKey ? seen.get(existingKey) : undefined;
     if (current && !(pr?.merged === true && !current.pr?.merged)) return;
-    const title = clean(
-      pr?.title ?? commit?.message ?? commit?.commit?.message,
-    );
+    const rawTitle = pr?.title ?? commit?.message ?? commit?.commit?.message;
+    // PR titles are single-line by contract; commit-only items must keep just
+    // the conventional-commit subject so multi-line bodies never leak in.
+    const title = pr?.title ? clean(rawTitle) : commitSubject(rawTitle);
     const item = {
       key,
       sha: clean(commit?.sha ?? pr?.merge_commit_sha),
@@ -300,7 +337,7 @@ export const render = (catalog, repository = "repository") => {
         item.author === "Unknown"
           ? "Unknown"
           : `[${escapeMarkdown(item.author)}](https://github.com/${encodeURIComponent(item.author)})`;
-      lines.push(`- ${escapeMarkdown(item.title)} (${author})${suffix}`);
+      lines.push(`- ${escapeInline(item.title)} (${author})${suffix}`);
     }
     lines.push("");
   }
@@ -327,6 +364,85 @@ export const render = (catalog, repository = "repository") => {
     "## Full Changelog",
     "",
     changelogEntry(repository, catalog.range, catalog.releases),
+    "",
+  );
+  return lines.join("\n");
+};
+
+// Canonical GitHub publication sections: exact `###` heading (emoji included)
+// in the fixed public order and the audited catalog categories that feed each
+// one. Chores absorbs the audit-only Improvements/Other Changes buckets so the
+// chore/refactor/style commit types share a single public section. Empty
+// sections are omitted; Downloads/Checksums are deliberately never published.
+export const PUBLICATION_SECTIONS = [
+  { heading: "🚀 Features", categories: ["Features", "Highlights"] },
+  { heading: "🐛 Fixes", categories: ["Fixes"] },
+  {
+    heading: "🧹 Chores",
+    categories: ["Chores", "Improvements", "Other Changes"],
+  },
+  { heading: "📦 Dependencies", categories: ["Dependencies"] },
+  { heading: "🤖 CI/CD", categories: ["CI/CD"] },
+  { heading: "📚 Documentation", categories: ["Documentation"] },
+  { heading: "🔒 Security", categories: ["Security"] },
+  { heading: "⚠️ Breaking Changes", categories: ["Breaking Changes"] },
+];
+const isBotLogin = (login) => {
+  const value = String(login ?? "").toLowerCase();
+  return value === "unknown" || value.endsWith("[bot]") || BOTS.has(value);
+};
+const shortSha = (sha) => clean(sha, "").slice(0, 7);
+const publicationChangelog = (repository, tag, previousTag) => {
+  const repositoryUrl = `https://github.com/${escapeMarkdown(repository)}`;
+  const component = (value) => encodeURIComponent(String(value));
+  if (previousTag && tag)
+    return `${repositoryUrl}/compare/${component(previousTag)}...${component(tag)}`;
+  // First tagged release: only a commit list exists, mirroring the audit render.
+  if (tag) return `${repositoryUrl}/commits/${component(tag)}`;
+  return repositoryUrl;
+};
+/**
+ * Render the canonical GitHub release body (EN, emoji sections, deterministic).
+ *
+ * @param {object} catalog Normalized catalog returned by `normalize()`.
+ * @param {string} [repository] GitHub `owner/repo` slug.
+ * @param {{ tag?: string, previousTag?: string }} [range] Release tag and the
+ *   previous SemVer tag used to build the Full Changelog compare link.
+ * @returns {string} Markdown body, byte-identical across re-runs.
+ */
+export const renderPublication = (
+  catalog,
+  repository = "repository",
+  { tag, previousTag } = {},
+) => {
+  const releaseTag = tag ?? catalog.range?.release ?? null;
+  const priorTag = previousTag ?? catalog.range?.previous ?? null;
+  const lines = ["## What's Changed", ""];
+  for (const { heading, categories } of PUBLICATION_SECTIONS) {
+    const entries = catalog.items
+      .filter((item) => categories.includes(item.category))
+      .sort((a, b) => compare(a.title, b.title) || compare(a.key, b.key));
+    if (!entries.length) continue;
+    lines.push(`### ${heading}`, "");
+    for (const item of entries) {
+      const prNumber = validNumber(item.pr?.number);
+      const suffix = prNumber
+        ? `([#${item.pr.number}](https://github.com/${escapeMarkdown(repository)}/pull/${item.pr.number}))`
+        : `(commit ${escapeMarkdown(shortSha(item.sha))})`;
+      lines.push(`- ${escapeInline(item.title)} ${suffix}`);
+    }
+    lines.push("");
+  }
+  const contributors = [...new Set(catalog.items.map((item) => item.author))]
+    .filter((author) => author && !isBotLogin(author))
+    .sort(compare);
+  if (contributors.length) {
+    lines.push("### ❤️ Contributors", "");
+    lines.push(...contributors.map((author) => `@${escapeMarkdown(author)}`));
+    lines.push("");
+  }
+  lines.push(
+    `**Full Changelog**: ${publicationChangelog(repository, releaseTag, priorTag)}`,
     "",
   );
   return lines.join("\n");
@@ -611,7 +727,7 @@ export async function collect(repository, release) {
 }
 
 const usage =
-  "Usage: node scripts/release-notes.mjs (--release vX.Y.Z | --all) [--dry-run] [--audit-only] [--input file] [--output dir]";
+  "Usage: node scripts/release-notes.mjs (--release vX.Y.Z | --all) [--dry-run] [--audit-only] [--input file] [--output dir] [--notes-file path]";
 const parseArgs = (argv) => {
   const allowed = new Set([
     "--dry-run",
@@ -621,6 +737,7 @@ const parseArgs = (argv) => {
     "--release",
     "--input",
     "--output",
+    "--notes-file",
   ]);
   for (const arg of argv)
     if (arg.startsWith("--") && !allowed.has(arg))
@@ -638,7 +755,7 @@ const parseArgs = (argv) => {
     throw new Error("--release must be a tag in vX.Y.Z format");
   if (!release && !argv.includes("--all"))
     throw new Error(`${usage}\nA release tag or --all is required.`);
-  for (const name of ["--release", "--input", "--output"])
+  for (const name of ["--release", "--input", "--output", "--notes-file"])
     if (argv.includes(name) && (!value(name) || value(name).startsWith("--")))
       throw new Error(`${name} requires a value`);
   return {
@@ -648,6 +765,7 @@ const parseArgs = (argv) => {
     auditOnly: argv.includes("--audit-only"),
     input: value("--input"),
     output: resolve(value("--output") ?? "release-notes-output"),
+    notesFile: value("--notes-file"),
   };
 };
 export async function main(argv = process.argv.slice(2)) {
@@ -670,6 +788,10 @@ export async function main(argv = process.argv.slice(2)) {
     outputSha256: sha256(render(catalog, repository)),
     catalog,
   };
+  const publication = renderPublication(catalog, repository, {
+    tag: options.release,
+    previousTag: catalog.range?.previous,
+  });
   await mkdir(options.output, { recursive: true });
   await writeFile(
     resolve(options.output, "inventory.json"),
@@ -689,7 +811,13 @@ export async function main(argv = process.argv.slice(2)) {
       resolve(options.output, "release-notes.diff"),
       `--- generated\n+++ audited\n@@\n+${markdown.split("\n").join("\n+\n")}`,
     );
+    await writeFile(
+      resolve(options.output, "release-notes-publication.md"),
+      `${publication}\n`,
+    );
   }
+  if (options.notesFile)
+    await writeFile(resolve(options.notesFile), `${publication}\n`);
   return audit;
 }
 if (import.meta.url === `file://${process.argv[1]}`)

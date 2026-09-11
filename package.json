@@ -16,6 +16,7 @@
     "preview:web": "vite preview --config vite.web.config.ts",
     "test": "vitest",
     "test:run": "vitest run",
+    "release:notes:validate": "node scripts/validate-release-notes.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "verify:electron": "node scripts/verify-electron-imports.mjs",
     "typecheck:electron": "tsc -p electron/tsconfig.json --noEmit",
