@@ -20,12 +20,12 @@ No significant change goes directly to `main`. Every new feature, improvement, o
 
 ### 2. Branch naming
 
-| Type | Prefix | Example |
-|------|--------|---------|
-| Feature | `feat/` | `feat/dark-mode-pdf-export` |
-| Fix | `fix/` | `fix/currency-conversion-bug` |
-| Infra/Docs | `chore/` | `chore/update-docker-compose` |
-| Release | `release/` | `release/v1.9.0` |
+| Type       | Prefix     | Example                       |
+| ---------- | ---------- | ----------------------------- |
+| Feature    | `feat/`    | `feat/dark-mode-pdf-export`   |
+| Fix        | `fix/`     | `fix/currency-conversion-bug` |
+| Infra/Docs | `chore/`   | `chore/update-docker-compose` |
+| Release    | `release/` | `release/v1.9.0`              |
 
 ### 3. Post-merge cleanup
 
@@ -42,10 +42,19 @@ For complex tasks (multi-turn, multi-agent), the flow continues via `/deepwork`,
 
 ### 5. Current branches
 
-| Branch | Status | Action |
-|--------|--------|--------|
-| `feature/fase2-complete` | ✅ Deleted | Already implemented in main (v1.8 Bifrost) |
-| `feature/fase2-historico-unificado` | ✅ Deleted | Contained in fase2-complete (also already in main) |
+Last sweep: **2026-09-11** — 25 local and 23 `origin` stale branches, 4 stale fork
+remotes, 3 stale worktrees, and 1 stale lint-staged stash were removed after verifying
+their content was fully contained in `main` (via merged PRs or content checks).
+Branches with **open PRs are never deleted** (D1.1 S1 + dependabot bumps).
+
+| Branch                                     | Status                    | Action                                             |
+| ------------------------------------------ | ------------------------- | -------------------------------------------------- |
+| `main`                                     | ✅ Active                 | Development default branch                         |
+| `feat/d1-s1-manifest-loader`               | 🔄 Open PR #107           | D1.1 S1 — SPEC-01 manifest loader                  |
+| `dependabot/*` (12)                        | 🔄 Open PRs #53, #90–#101 | Dependency bumps pending review                    |
+| `feature/fase2-complete`                   | ✅ Deleted                | Already implemented in main (v1.8 Bifrost)         |
+| `feature/fase2-historico-unificado`        | ✅ Deleted                | Contained in fase2-complete (also already in main) |
+| `feat/*`, `fix/*`, `chore/*` (pre-2026-09) | ✅ Deleted                | All squash-merged via PRs #29, #51–#106            |
 
 ---
 
