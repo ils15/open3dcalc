@@ -10,6 +10,32 @@
 export interface ElectronAPI {
   db: ElectronDBApi;
   updater: ElectronUpdaterApi;
+  crypto: ElectronCryptoApi;
+}
+
+/** Crypto capability operations available through IPC (D1.1 S2). */
+declare global {
+  interface ElectronCryptoApi {
+    /**
+     * Current ADR-001 §2.3 capability decision (main-process memory only;
+     * no key material or passphrase crosses IPC).
+     */
+    capability: () => Promise<{
+      mode: "safe_storage" | "passphrase" | "denied";
+      piiPersistence: "encrypted_at_rest" | "denied";
+      reason: string;
+    }>;
+
+    /**
+     * Adopt the session passphrase into main-process memory only
+     * (SPEC-01 `session_passphrase_key`). Never echoed back, never
+     * persisted. The renderer must not retain the value after the call.
+     */
+    setPassphrase: (passphrase: string) => Promise<void>;
+
+    /** Zeroize the session passphrase (irreversible). */
+    lock: () => Promise<void>;
+  }
 }
 
 declare global {

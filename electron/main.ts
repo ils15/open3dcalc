@@ -23,6 +23,12 @@ import {
 } from "./update.js";
 
 // ESM compatibility: __dirname is not available in ES modules
+import {
+  getCapability,
+  adoptSessionPassphrase,
+  lockCryptoSession,
+} from "./cryptoCapability.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -518,6 +524,51 @@ function setupIpcHandlers(): void {
       throw error;
     }
   });
+
+  // ── crypto:capability (D1.1 S2 — ADR-001 §2.3) ──────────────────────
+  // Reports the current capability decision. Probe results stay in main
+  // memory; no key material or passphrase ever crosses IPC.
+  ipcMain.handle("crypto:capability", () => {
+    try {
+      return getCapability();
+    } catch (error) {
+      console.error("[crypto:capability] Error:", error);
+      throw error;
+    }
+  });
+
+  // ── crypto:set-passphrase ───────────────────────────────────────────
+  // Adopts the session passphrase into MAIN-process memory only (SPEC-01
+  // `session_passphrase_key`: surface memory, sync never, export never).
+  // It is never echoed back, never persisted, never logged.
+  ipcMain.handle(
+    "crypto:set-passphrase",
+    async (event, passphrase: string): Promise<void> => {
+      try {
+        assertTrustedSender(event);
+        if (typeof passphrase !== "string" || passphrase.length === 0) {
+          throw new Error("Passphrase must be a non-empty string");
+        }
+        adoptSessionPassphrase(passphrase);
+      } catch (error) {
+        console.error("[crypto:set-passphrase] Error:", error);
+        throw error;
+      }
+    },
+  );
+
+  // ── crypto:lock ─────────────────────────────────────────────────────
+  // Zeroizes the session passphrase (irreversible). PII capability
+  // degrades to DENIED until a new passphrase is adopted.
+  ipcMain.handle("crypto:lock", async (event): Promise<void> => {
+    try {
+      assertTrustedSender(event);
+      lockCryptoSession();
+    } catch (error) {
+      console.error("[crypto:lock] Error:", error);
+      throw error;
+    }
+  });
 }
 
 /**
@@ -586,6 +637,12 @@ app.whenReady().then(async () => {
       await createWindow();
     }
   });
+});
+
+// Zeroize the session passphrase on quit (ADR-001 §2.1 — best-effort
+// within JS limits; the hard guarantee is that nothing was persisted).
+app.on("before-quit", () => {
+  lockCryptoSession();
 });
 
 app.on("window-all-closed", () => {
