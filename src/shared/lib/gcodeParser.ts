@@ -1,8 +1,10 @@
 import {
   DEFAULT_FILAMENT_DIAMETER_MM,
+  DEFAULT_MAX_CHARS,
   filamentWeightGrams,
   firstHeaderMinutes,
   parseTimeHeaderSeconds,
+  parseGcodeTotals,
 } from "./gcodeTotals";
 import {
   resolveFilamentDensity,
@@ -30,6 +32,29 @@ export interface ParseGcodeOptions {
   filamentFamily?: FilamentFamily | string;
 }
 
+/**
+ * Parse the supported filament total formats without accepting partial or
+ * non-finite values. Plain numbers are millimetres; an `m` suffix is metres.
+ */
+function parseFilamentHeaderMm(trimmed: string): number | undefined {
+  const match = trimmed.match(
+    /^;Filament used:\s*([+]?((?:\d+(?:\.\d*)?)|(?:\.\d+)))\s*(mm|m)?\s*$/i,
+  );
+  if (!match) return undefined;
+
+  const value = Number(match[1]);
+  const unit = match[3]?.toLowerCase();
+  const millimetres = unit === "m" ? value * 1000 : value;
+  if (
+    !Number.isFinite(millimetres) ||
+    millimetres < 0 ||
+    millimetres > DEFAULT_MAX_CHARS
+  ) {
+    return undefined;
+  }
+  return millimetres;
+}
+
 export function parseGcode(text: string, options: ParseGcodeOptions = {}): GcodeInfo {
   const info: GcodeInfo = {
     printTimeMinutes: 0,
@@ -48,6 +73,7 @@ export function parseGcode(text: string, options: ParseGcodeOptions = {}): Gcode
   // First-header-wins time: shared policy with parseGcodeTotals (T1/T2).
   // `undefined` = no header seen yet; the finished info exposes 0 when absent.
   let headerMinutes: number | undefined;
+  let filamentHeaderMm: number | undefined;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -57,16 +83,12 @@ export function parseGcode(text: string, options: ParseGcodeOptions = {}): Gcode
     const headerSeconds = parseTimeHeaderSeconds(trimmed);
     headerMinutes = firstHeaderMinutes(headerMinutes, headerSeconds);
     if (headerMinutes !== undefined) info.printTimeMinutes = headerMinutes;
-    if (trimmed.startsWith(";Filament used:")) {
-      // Try meters pattern first (e.g. "2.34m"), convert to mm
-      const metersMatch = trimmed.match(/([\d.]+)\s*m/);
-      if (metersMatch) {
-        info.filamentUsedMm = parseFloat(metersMatch[1]) * 1000;
-      } else {
-        // Fallback to plain number (already in mm)
-        const mmMatch = trimmed.match(/([\d.]+)/);
-        if (mmMatch) info.filamentUsedMm = parseFloat(mmMatch[1]);
-      }
+    const parsedFilamentHeaderMm = parseFilamentHeaderMm(trimmed);
+    if (parsedFilamentHeaderMm !== undefined) {
+      // A valid header is authoritative. Preserve the established last-valid
+      // header precedence while preventing moves from replacing its value.
+      filamentHeaderMm = parsedFilamentHeaderMm;
+      info.filamentUsedMm = parsedFilamentHeaderMm;
     }
     if (trimmed.startsWith(";MINX:")) {
       const minX = parseFloat(trimmed.split(":")[1]);
@@ -134,9 +156,25 @@ export function parseGcode(text: string, options: ParseGcodeOptions = {}): Gcode
       const eMatch = trimmed.match(/E([\d.]+)/);
       if (eMatch) {
         const e = parseFloat(eMatch[1]);
-        if (e > info.filamentUsedMm) info.filamentUsedMm = e;
+        if (filamentHeaderMm === undefined && e > info.filamentUsedMm) {
+          info.filamentUsedMm = e;
+        }
       }
     }
+  }
+
+  // A G-code header is the slicer's authoritative total when present. Without
+  // one, use the stateful totals reader so absolute E resets, relative E and
+  // retractions are handled instead of taking the largest raw E value.
+  if (filamentHeaderMm === undefined) {
+    const totals = parseGcodeTotals(text, {
+      filamentDiameterMm: options.filamentDiameterMm,
+      densityGcm3: resolveFilamentDensity(
+        options.filamentFamily,
+        options.densityGcm3,
+      ),
+    });
+    info.filamentUsedMm = totals.extrudedMm;
   }
 
   // Estimate filament weight from length via the parameterized profile (W1):
