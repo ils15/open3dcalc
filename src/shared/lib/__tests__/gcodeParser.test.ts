@@ -20,6 +20,61 @@ describe("gcodeParser", () => {
   });
 
   describe("Filament used parsing", () => {
+    it("keeps a valid header authoritative before and after movements", () => {
+      const before = parseGcode(";Filament used: 500\nG0 E900");
+      const after = parseGcode("G1 E900\n;Filament used: 500\nG0 E1200");
+
+      expect(before.filamentUsedMm).toBe(500);
+      expect(after.filamentUsedMm).toBe(500);
+    });
+
+    it("falls back to stateful totals when a filament header is malformed", () => {
+      const result = parseGcode(
+        ";Filament used: NaN\nM83\nG1 E10\nG1 E-2\nM82\nG92 E0\nG1 E7",
+      );
+
+      expect(result.filamentUsedMm).toBe(15);
+    });
+
+    it("preserves supported multiple-header precedence and units", () => {
+      const result = parseGcode(
+        [
+          ";Filament used: 2.34m",
+          "G1 E999",
+          ";Filament used: 500 mm",
+          "G1 E1200",
+        ].join("\n"),
+      );
+
+      // Existing behavior is last valid header wins; movement never wins.
+      expect(result.filamentUsedMm).toBe(500);
+    });
+
+    it.each([
+      ";Filament used: -5",
+      ";Filament used: Infinity",
+      ";Filament used: 1e999",
+      ";Filament used: 1000000000000",
+    ])("uses stateful fallback for unsafe header %s", (header) => {
+      const result = parseGcode(`${header}\nM82\nG92 E0\nG1 E25`);
+
+      expect(result.filamentUsedMm).toBe(25);
+    });
+
+    it("sums absolute E across repeated G92 resets instead of taking max E", () => {
+      const layers = Array.from({ length: 3_800 }, () => "G92 E0\nG1 E9").join(
+        "\n",
+      );
+
+      const result = parseGcode(`M82\n${layers}`);
+
+      // 3,800 × 9 mm of 1.75 mm PLA ≈ 102.06 g. The old max-E fallback
+      // returned exactly the reported issue's 0.026842945729516288 g.
+      expect(result.filamentUsedMm).toBe(34_200);
+      expect(result.filamentUsedGrams).toBeCloseTo(102.00319377216188, 8);
+      expect(result.filamentUsedGrams).toBeGreaterThan(100);
+    });
+
     it("extracts filament used in meters (e.g., 2.34m)", () => {
       const result = parseGcode(";Filament used: 2.34m");
       expect(result.filamentUsedMm).toBe(2340);
