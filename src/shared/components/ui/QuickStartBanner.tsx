@@ -1,20 +1,23 @@
-import { Zap, RotateCcw, X } from 'lucide-react'
-import { useCalculatorStore } from '@/shared/stores/calculatorStore'
-import { useState } from 'react'
+import { Zap, RotateCcw, X } from "lucide-react";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useState } from "react";
+import { guardedStorage } from "@/shared/lib/manifestStorage";
 
-const BANNER_KEY = 'open3dcalc_quickstart_dismissed'
+const BANNER_KEY = "open3dcalc_quickstart_dismissed";
 
 export function QuickStartBanner() {
-  const setQuickStart = useCalculatorStore((s) => s.setQuickStart)
-  const resetCalculator = useCalculatorStore((s) => s.resetCalculator)
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem(BANNER_KEY) === 'true')
+  const setQuickStart = useCalculatorStore((s) => s.setQuickStart);
+  const resetCalculator = useCalculatorStore((s) => s.resetCalculator);
+  const [dismissed, setDismissed] = useState(
+    () => guardedStorage.getItem(BANNER_KEY) === "true",
+  );
 
   const dismiss = () => {
-    setDismissed(true)
-    localStorage.setItem(BANNER_KEY, 'true')
-  }
+    setDismissed(true);
+    guardedStorage.setItem(BANNER_KEY, "true");
+  };
 
-  if (dismissed) return null
+  if (dismissed) return null;
 
   return (
     <div className="surface rounded-xl p-3 sm:p-4 border border-[var(--color-accent)]/20 bg-gradient-to-r from-[var(--color-accent)]/5 to-transparent relative">
@@ -32,7 +35,8 @@ export function QuickStartBanner() {
             Quer ver como funciona?
           </p>
           <p className="text-[10px] sm:text-xs text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">
-            Preencha a calculadora com valores realistas para um exemplo de peça 3D
+            Preencha a calculadora com valores realistas para um exemplo de peça
+            3D
           </p>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -55,5 +59,5 @@ export function QuickStartBanner() {
         </div>
       </div>
     </div>
-  )
+  );
 }

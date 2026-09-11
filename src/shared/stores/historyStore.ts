@@ -1,57 +1,65 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { HistoryEntry } from '@/shared/types'
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { manifestStorage } from "@/shared/lib/manifestStorage";
+import type { HistoryEntry } from "@/shared/types";
 
 interface HistoryStore {
-  entries: HistoryEntry[]
-  search: string
-  sortBy: 'date' | 'price' | 'profit' | 'name'
-  sortOrder: 'asc' | 'desc'
-  filterType: 'all' | 'fdm' | 'resin'
-  dateFrom: number | null
-  dateTo: number | null
+  entries: HistoryEntry[];
+  search: string;
+  sortBy: "date" | "price" | "profit" | "name";
+  sortOrder: "asc" | "desc";
+  filterType: "all" | "fdm" | "resin";
+  dateFrom: number | null;
+  dateTo: number | null;
 
   addEntry: (
-    entry: Omit<HistoryEntry, 'id' | 'timestamp'> & Partial<Pick<HistoryEntry, 'id' | 'timestamp'>>,
-  ) => string
-  removeEntry: (id: string) => void
-  clearHistory: () => void
-  getEntry: (id: string) => HistoryEntry | undefined
+    entry: Omit<HistoryEntry, "id" | "timestamp"> &
+      Partial<Pick<HistoryEntry, "id" | "timestamp">>,
+  ) => string;
+  removeEntry: (id: string) => void;
+  clearHistory: () => void;
+  getEntry: (id: string) => HistoryEntry | undefined;
 
-  setSearch: (search: string) => void
-  setSortBy: (sortBy: HistoryStore['sortBy']) => void
-  setSortOrder: (order: 'asc' | 'desc') => void
-  setFilterType: (type: 'all' | 'fdm' | 'resin') => void
-  setDateFrom: (date: number | null) => void
-  setDateTo: (date: number | null) => void
+  setSearch: (search: string) => void;
+  setSortBy: (sortBy: HistoryStore["sortBy"]) => void;
+  setSortOrder: (order: "asc" | "desc") => void;
+  setFilterType: (type: "all" | "fdm" | "resin") => void;
+  setDateFrom: (date: number | null) => void;
+  setDateTo: (date: number | null) => void;
 
-  getFilteredEntries: () => HistoryEntry[]
-  getTopPrinters: (limit?: number) => Array<{ name: string; profit: number; count: number }>
-  getTopMaterials: (limit?: number) => Array<{ name: string; count: number; totalCost: number }>
-  exportJson: () => string
-  importJson: (json: string) => { imported: number; skipped: number }
+  getFilteredEntries: () => HistoryEntry[];
+  getTopPrinters: (
+    limit?: number,
+  ) => Array<{ name: string; profit: number; count: number }>;
+  getTopMaterials: (
+    limit?: number,
+  ) => Array<{ name: string; count: number; totalCost: number }>;
+  exportJson: () => string;
+  importJson: (json: string) => { imported: number; skipped: number };
 }
 
 export const useHistoryStore = create<HistoryStore>()(
   persist(
     (set, get) => ({
       entries: [],
-      search: '',
-      sortBy: 'date',
-      sortOrder: 'desc',
-      filterType: 'all',
+      search: "",
+      sortBy: "date",
+      sortOrder: "desc",
+      filterType: "all",
       dateFrom: null,
       dateTo: null,
 
       addEntry: (entry) => {
-        const id = entry.id || `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+        const id =
+          entry.id ||
+          `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
         const newEntry: HistoryEntry = {
           ...entry,
           id,
           timestamp: entry.timestamp ?? Date.now(),
-        }
-        set((state) => ({ entries: [newEntry, ...state.entries] }))
-        return id
+        };
+        set((state) => ({ entries: [newEntry, ...state.entries] }));
+        return id;
       },
 
       removeEntry: (id) =>
@@ -71,144 +79,165 @@ export const useHistoryStore = create<HistoryStore>()(
       setDateTo: (dateTo) => set({ dateTo }),
 
       getFilteredEntries: () => {
-        const { entries, search, filterType, sortBy, sortOrder, dateFrom, dateTo } = get()
-        let filtered = [...entries]
+        const {
+          entries,
+          search,
+          filterType,
+          sortBy,
+          sortOrder,
+          dateFrom,
+          dateTo,
+        } = get();
+        let filtered = [...entries];
 
-        if (filterType !== 'all') {
-          filtered = filtered.filter((e) => e.type === filterType)
+        if (filterType !== "all") {
+          filtered = filtered.filter((e) => e.type === filterType);
         }
         if (search) {
-          const q = search.toLowerCase()
+          const q = search.toLowerCase();
           filtered = filtered.filter(
             (e) =>
               e.name.toLowerCase().includes(q) ||
               e.summary.toLowerCase().includes(q),
-          )
+          );
         }
         if (dateFrom !== null) {
-          filtered = filtered.filter((e) => e.timestamp >= dateFrom)
+          filtered = filtered.filter((e) => e.timestamp >= dateFrom);
         }
         if (dateTo !== null) {
-          const endOfDay = dateTo + 86399999
-          filtered = filtered.filter((e) => e.timestamp <= endOfDay)
+          const endOfDay = dateTo + 86399999;
+          filtered = filtered.filter((e) => e.timestamp <= endOfDay);
         }
 
         filtered.sort((a, b) => {
-          let cmp = 0
+          let cmp = 0;
           switch (sortBy) {
-            case 'date':
-              cmp = a.timestamp - b.timestamp
-              break
-            case 'price':
-              cmp = a.sellPrice - b.sellPrice
-              break
-            case 'profit':
-              cmp = a.profit - b.profit
-              break
-            case 'name':
-              cmp = a.name.localeCompare(b.name)
-              break
+            case "date":
+              cmp = a.timestamp - b.timestamp;
+              break;
+            case "price":
+              cmp = a.sellPrice - b.sellPrice;
+              break;
+            case "profit":
+              cmp = a.profit - b.profit;
+              break;
+            case "name":
+              cmp = a.name.localeCompare(b.name);
+              break;
           }
-          return sortOrder === 'desc' ? -cmp : cmp
-        })
+          return sortOrder === "desc" ? -cmp : cmp;
+        });
 
-        return filtered
+        return filtered;
       },
 
       getTopPrinters: (limit = 5) => {
-        const entries = get().entries
-        const map = new Map<string, { profit: number; count: number }>()
+        const entries = get().entries;
+        const map = new Map<string, { profit: number; count: number }>();
         for (const e of entries) {
-          const name = e.snapshot?.selectedPrinterId || (e.type === 'resin' ? 'Impressora Resina' : 'Impressora FDM')
-          const existing = map.get(name) || { profit: 0, count: 0 }
-          existing.profit += e.profit
-          existing.count++
-          map.set(name, existing)
+          const name =
+            e.snapshot?.selectedPrinterId ||
+            (e.type === "resin" ? "Impressora Resina" : "Impressora FDM");
+          const existing = map.get(name) || { profit: 0, count: 0 };
+          existing.profit += e.profit;
+          existing.count++;
+          map.set(name, existing);
         }
         return Array.from(map.entries())
           .map(([name, data]) => ({ name, ...data }))
           .sort((a, b) => b.profit - a.profit)
-          .slice(0, limit)
+          .slice(0, limit);
       },
 
       getTopMaterials: (limit = 5) => {
-        const entries = get().entries
-        const map = new Map<string, { count: number; totalCost: number }>()
+        const entries = get().entries;
+        const map = new Map<string, { count: number; totalCost: number }>();
         for (const e of entries) {
-          const type = e.snapshot?.fdmMaterial?.type || e.snapshot?.resinMaterial?.type || e.type
-          const existing = map.get(type) || { count: 0, totalCost: 0 }
-          existing.count++
-          existing.totalCost += e.totalCost
-          map.set(type, existing)
+          const type =
+            e.snapshot?.fdmMaterial?.type ||
+            e.snapshot?.resinMaterial?.type ||
+            e.type;
+          const existing = map.get(type) || { count: 0, totalCost: 0 };
+          existing.count++;
+          existing.totalCost += e.totalCost;
+          map.set(type, existing);
         }
         return Array.from(map.entries())
           .map(([name, data]) => ({ name, ...data }))
           .sort((a, b) => b.count - a.count)
-          .slice(0, limit)
+          .slice(0, limit);
       },
 
       exportJson: () => {
         return JSON.stringify(
           {
             entries: get().entries,
-            version: '2.0',
+            version: "2.0",
             exportedAt: new Date().toISOString(),
           },
           null,
           2,
-        )
+        );
       },
 
       importJson: (json) => {
         try {
-          const data = JSON.parse(json)
-          const incoming = Array.isArray(data.entries) ? data.entries : []
-          let imported = 0
-          let skipped = 0
+          const data = JSON.parse(json);
+          const incoming = Array.isArray(data.entries) ? data.entries : [];
+          let imported = 0;
+          let skipped = 0;
 
           set((state) => {
-            const existingIds = new Set(state.entries.map((e) => e.id))
-            const newEntries = incoming.flatMap((entry: unknown) => {
-              const e = entry as Partial<HistoryEntry>
-              if (!e || typeof e !== 'object' || !e.result) {
-                skipped++
-                return []
-              }
-              const normalized: HistoryEntry = {
-                id: typeof e.id === 'string' && e.id.trim()
-                  ? e.id
-                  : `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-                timestamp: typeof e.timestamp === 'number' ? e.timestamp : Date.now(),
-                type: e.type === 'resin' ? 'resin' : 'fdm',
-                name: typeof e.name === 'string' && e.name.trim() ? e.name : 'Histórico',
-                summary: typeof e.summary === 'string' ? e.summary : '',
-                totalCost: Number(e.totalCost || 0),
-                sellPrice: Number(e.sellPrice || 0),
-                profit: Number(e.profit || 0),
-                result: e.result,
-                snapshot: e.snapshot ?? null,
-              }
-              return [normalized]
-            }).filter((e: HistoryEntry) => {
-              if (existingIds.has(e.id)) {
-                skipped++
-                return false
-              }
-              imported++
-              return true
-            })
-            return { entries: [...state.entries, ...newEntries] }
-          })
+            const existingIds = new Set(state.entries.map((e) => e.id));
+            const newEntries = incoming
+              .flatMap((entry: unknown) => {
+                const e = entry as Partial<HistoryEntry>;
+                if (!e || typeof e !== "object" || !e.result) {
+                  skipped++;
+                  return [];
+                }
+                const normalized: HistoryEntry = {
+                  id:
+                    typeof e.id === "string" && e.id.trim()
+                      ? e.id
+                      : `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                  timestamp:
+                    typeof e.timestamp === "number" ? e.timestamp : Date.now(),
+                  type: e.type === "resin" ? "resin" : "fdm",
+                  name:
+                    typeof e.name === "string" && e.name.trim()
+                      ? e.name
+                      : "Histórico",
+                  summary: typeof e.summary === "string" ? e.summary : "",
+                  totalCost: Number(e.totalCost || 0),
+                  sellPrice: Number(e.sellPrice || 0),
+                  profit: Number(e.profit || 0),
+                  result: e.result,
+                  snapshot: e.snapshot ?? null,
+                };
+                return [normalized];
+              })
+              .filter((e: HistoryEntry) => {
+                if (existingIds.has(e.id)) {
+                  skipped++;
+                  return false;
+                }
+                imported++;
+                return true;
+              });
+            return { entries: [...state.entries, ...newEntries] };
+          });
 
-          return { imported, skipped }
+          return { imported, skipped };
         } catch {
-          return { imported: 0, skipped: 0 }
+          return { imported: 0, skipped: 0 };
         }
       },
     }),
     {
-      name: 'open3dcalc_history_v2',
+      name: "open3dcalc_history_v2",
       version: 2,
+      storage: manifestStorage(),
     },
   ),
-)
+);

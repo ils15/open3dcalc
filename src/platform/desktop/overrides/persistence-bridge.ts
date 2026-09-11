@@ -15,12 +15,14 @@
  * double-serialization because localStorage already stores JSON strings.
  */
 
+import { isKeyAllowed } from "@/shared/lib/manifestGate";
+
 /* ------------------------------------------------------------------ */
 /*  Error tracking                                                      */
 /* ------------------------------------------------------------------ */
 
-let consecutiveDbFailures = 0
-const MAX_FAILURES_BEFORE_WARN = 5
+let consecutiveDbFailures = 0;
+const MAX_FAILURES_BEFORE_WARN = 5;
 
 /* ------------------------------------------------------------------ */
 /*  Known localStorage keys used throughout the app                    */
@@ -28,19 +30,19 @@ const MAX_FAILURES_BEFORE_WARN = 5
 /* ------------------------------------------------------------------ */
 
 const LOCALSTORAGE_KEYS = [
-  'open3dcalc_settings_v2',
-  'open3dcalc_history_v2',
-  'open3dcalc_customers_v1',
-  'open3dcalc_quotes_v1',
-  'open3dcalc_catalog_v1',
-  'open3dcalc_filaments',
-  'open3dcalc_consent_v1',
-  'open3dcalc_tutorial_v1',
-  'open3dcalc_onboarded',
-  'open3dcalc_dashboard_v1',
-  'open3dcalc_migration_done_v2',
-  'open3dcalc_sections',
-  'open3dcalc_theme',
+  "open3dcalc_settings_v2",
+  "open3dcalc_history_v2",
+  "open3dcalc_customers_v1",
+  "open3dcalc_quotes_v1",
+  "open3dcalc_catalog_v1",
+  "open3dcalc_filaments",
+  "open3dcalc_consent_v1",
+  "open3dcalc_tutorial_v1",
+  "open3dcalc_onboarded",
+  "open3dcalc_dashboard_v1",
+  "open3dcalc_migration_done_v2",
+  "open3dcalc_sections",
+  "open3dcalc_theme",
 ] as const;
 
 /* ------------------------------------------------------------------ */
@@ -51,7 +53,7 @@ const LOCALSTORAGE_KEYS = [
  * Check whether we're running inside Electron with the IPC bridge available.
  */
 function isElectron(): boolean {
-  return typeof window !== 'undefined' && !!window.electronAPI?.db;
+  return typeof window !== "undefined" && !!window.electronAPI?.db;
 }
 
 /**
@@ -80,6 +82,8 @@ async function loadFromDatabase(): Promise<void> {
 
     for (const key of keys) {
       const raw = await db().load(key);
+      // SPEC-01 gate: unknown keys are never materialized locally.
+      if (!isKeyAllowed(key)) continue;
       if (raw !== null && raw !== undefined) {
         localStorage.setItem(key, raw);
         loaded++;
@@ -91,16 +95,19 @@ async function loadFromDatabase(): Promise<void> {
     );
   } catch (error) {
     console.warn(
-      '[persistence-bridge] Failed to load from SQLite, using localStorage fallback:',
+      "[persistence-bridge] Failed to load from SQLite, using localStorage fallback:",
       error,
     );
-    consecutiveDbFailures++
+    consecutiveDbFailures++;
     if (consecutiveDbFailures === MAX_FAILURES_BEFORE_WARN) {
-      if (typeof document !== 'undefined') {
-        const event = new CustomEvent('open3dcalc:db-error', {
-          detail: { message: 'Database unavailable — data will not persist between sessions.' }
-        })
-        document.dispatchEvent(event)
+      if (typeof document !== "undefined") {
+        const event = new CustomEvent("open3dcalc:db-error", {
+          detail: {
+            message:
+              "Database unavailable — data will not persist between sessions.",
+          },
+        });
+        document.dispatchEvent(event);
       }
     }
   }
@@ -118,6 +125,8 @@ async function saveToDatabase(): Promise<void> {
 
     // 1. Save known keys from the static list
     for (const key of LOCALSTORAGE_KEYS) {
+      // SPEC-01 gate: unknown keys are denied and never copied to SQLite.
+      if (!isKeyAllowed(key)) continue;
       const raw = localStorage.getItem(key);
       if (raw !== null) {
         await db().save(key, raw);
@@ -130,9 +139,12 @@ async function saveToDatabase(): Promise<void> {
       const key = localStorage.key(i);
       if (
         key &&
-        !LOCALSTORAGE_KEYS.includes(key as (typeof LOCALSTORAGE_KEYS)[number]) &&
-        key.startsWith('open3dcalc_')
+        !LOCALSTORAGE_KEYS.includes(
+          key as (typeof LOCALSTORAGE_KEYS)[number],
+        ) &&
+        key.startsWith("open3dcalc_")
       ) {
+        if (!isKeyAllowed(key)) continue;
         const raw = localStorage.getItem(key);
         if (raw !== null) {
           await db().save(key, raw);
@@ -143,14 +155,17 @@ async function saveToDatabase(): Promise<void> {
 
     console.log(`[persistence-bridge] Saved ${saved} keys to SQLite`);
   } catch (error) {
-    console.warn('[persistence-bridge] Failed to save to SQLite:', error);
-    consecutiveDbFailures++
+    console.warn("[persistence-bridge] Failed to save to SQLite:", error);
+    consecutiveDbFailures++;
     if (consecutiveDbFailures === MAX_FAILURES_BEFORE_WARN) {
-      if (typeof document !== 'undefined') {
-        const event = new CustomEvent('open3dcalc:db-error', {
-          detail: { message: 'Database unavailable — data will not persist between sessions.' }
-        })
-        document.dispatchEvent(event)
+      if (typeof document !== "undefined") {
+        const event = new CustomEvent("open3dcalc:db-error", {
+          detail: {
+            message:
+              "Database unavailable — data will not persist between sessions.",
+          },
+        });
+        document.dispatchEvent(event);
       }
     }
   }
@@ -176,7 +191,7 @@ async function deleteStaleKeys(): Promise<void> {
       }
     }
   } catch (error) {
-    console.warn('[persistence-bridge] Failed to clean stale keys:', error);
+    console.warn("[persistence-bridge] Failed to clean stale keys:", error);
   }
 }
 
@@ -191,18 +206,18 @@ async function migrateIfNeeded(): Promise<void> {
     if (existingKeys.length > 0) {
       // SQLite already has data — skip migration
       console.log(
-        '[persistence-bridge] SQLite has data, skipping localStorage migration',
+        "[persistence-bridge] SQLite has data, skipping localStorage migration",
       );
       return;
     }
 
     // SQLite is empty — migrate from localStorage
     console.log(
-      '[persistence-bridge] First run detected — migrating localStorage → SQLite',
+      "[persistence-bridge] First run detected — migrating localStorage → SQLite",
     );
     await saveToDatabase();
   } catch (error) {
-    console.warn('[persistence-bridge] Migration check failed:', error);
+    console.warn("[persistence-bridge] Migration check failed:", error);
   }
 }
 
@@ -225,7 +240,7 @@ async function migrateIfNeeded(): Promise<void> {
 export async function initPersistenceBridge(): Promise<void> {
   if (!isElectron()) {
     console.log(
-      '[persistence-bridge] Not running in Electron — using localStorage only',
+      "[persistence-bridge] Not running in Electron — using localStorage only",
     );
     return;
   }
@@ -242,7 +257,7 @@ export async function initPersistenceBridge(): Promise<void> {
   // Electron's IPC invoke returns a Promise; we await it to flush.
   // As a safety net, the 30 s periodic save guards against data loss
   // if beforeunload doesn't fully complete.
-  window.addEventListener('beforeunload', () => {
+  window.addEventListener("beforeunload", () => {
     saveToDatabase();
   });
 
@@ -255,7 +270,7 @@ export async function initPersistenceBridge(): Promise<void> {
   }, AUTO_SAVE_INTERVAL_MS);
 
   console.log(
-    '[persistence-bridge] Initialized — localStorage ↔ SQLite sync active',
+    "[persistence-bridge] Initialized — localStorage ↔ SQLite sync active",
   );
 }
 

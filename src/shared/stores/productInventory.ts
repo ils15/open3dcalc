@@ -1,23 +1,27 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { Product, ProductFormData } from '@/shared/types'
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { manifestStorage } from "@/shared/lib/manifestStorage";
+import type { Product, ProductFormData } from "@/shared/types";
 
 function generateId(): string {
-  return `prod_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+  return `prod_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
 /** True when the sale price is below cost. Warn-only — never blocks saving. */
-export function isBelowCost(p: Pick<Product, 'costPrice' | 'salePrice'>): boolean {
-  return p.salePrice < p.costPrice
+export function isBelowCost(
+  p: Pick<Product, "costPrice" | "salePrice">,
+): boolean {
+  return p.salePrice < p.costPrice;
 }
 
 function escapeCsvCell(value: string | number): string {
-  const s = String(value)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  const s = String(value);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 export function exportProductsCSV(): string {
-  const header = 'id,name,weightGrams,filamentType,costPrice,salePrice,sold,createdAt,updatedAt'
+  const header =
+    "id,name,weightGrams,filamentType,costPrice,salePrice,sold,createdAt,updatedAt";
   const rows = useProductInventory
     .getState()
     .products.map((p) =>
@@ -33,22 +37,22 @@ export function exportProductsCSV(): string {
         p.updatedAt,
       ]
         .map(escapeCsvCell)
-        .join(','),
-    )
-  return [header, ...rows].join('\n')
+        .join(","),
+    );
+  return [header, ...rows].join("\n");
 }
 
 interface ProductInventoryState {
-  products: Product[]
+  products: Product[];
 
-  addProduct: (data: ProductFormData) => string
-  updateProduct: (id: string, data: Partial<ProductFormData>) => void
-  removeProduct: (id: string) => void
-  markSold: (id: string, sold: boolean) => void
+  addProduct: (data: ProductFormData) => string;
+  updateProduct: (id: string, data: Partial<ProductFormData>) => void;
+  removeProduct: (id: string) => void;
+  markSold: (id: string, sold: boolean) => void;
 
-  getProduct: (id: string) => Product | undefined
-  searchProducts: (query: string) => Product[]
-  getAllProducts: () => Product[]
+  getProduct: (id: string) => Product | undefined;
+  searchProducts: (query: string) => Product[];
+  getAllProducts: () => Product[];
 }
 
 export const useProductInventory = create<ProductInventoryState>()(
@@ -57,25 +61,25 @@ export const useProductInventory = create<ProductInventoryState>()(
       products: [],
 
       addProduct: (data) => {
-        const name = data.name.trim()
+        const name = data.name.trim();
         if (name.length < 2) {
-          throw new Error('Name must be at least 2 characters')
+          throw new Error("Name must be at least 2 characters");
         }
-        const now = Date.now()
-        const id = generateId()
+        const now = Date.now();
+        const id = generateId();
         const product: Product = {
           id,
           name,
           weightGrams: data.weightGrams || 0,
-          filamentType: data.filamentType || '',
+          filamentType: data.filamentType || "",
           costPrice: data.costPrice || 0,
           salePrice: data.salePrice || 0,
           sold: false,
           createdAt: now,
           updatedAt: now,
-        }
-        set((state) => ({ products: [...state.products, product] }))
-        return id
+        };
+        set((state) => ({ products: [...state.products, product] }));
+        return id;
       },
 
       updateProduct: (id, data) => {
@@ -85,15 +89,23 @@ export const useProductInventory = create<ProductInventoryState>()(
               ? {
                   ...p,
                   ...(data.name !== undefined ? { name: data.name } : {}),
-                  ...(data.weightGrams !== undefined ? { weightGrams: data.weightGrams } : {}),
-                  ...(data.filamentType !== undefined ? { filamentType: data.filamentType } : {}),
-                  ...(data.costPrice !== undefined ? { costPrice: data.costPrice } : {}),
-                  ...(data.salePrice !== undefined ? { salePrice: data.salePrice } : {}),
+                  ...(data.weightGrams !== undefined
+                    ? { weightGrams: data.weightGrams }
+                    : {}),
+                  ...(data.filamentType !== undefined
+                    ? { filamentType: data.filamentType }
+                    : {}),
+                  ...(data.costPrice !== undefined
+                    ? { costPrice: data.costPrice }
+                    : {}),
+                  ...(data.salePrice !== undefined
+                    ? { salePrice: data.salePrice }
+                    : {}),
                   updatedAt: Date.now(),
                 }
               : p,
           ),
-        }))
+        }));
       },
 
       removeProduct: (id) =>
@@ -111,21 +123,22 @@ export const useProductInventory = create<ProductInventoryState>()(
       getProduct: (id) => get().products.find((p) => p.id === id),
 
       searchProducts: (query) => {
-        const { products } = get()
-        if (!query) return [...products]
-        const q = query.toLowerCase()
+        const { products } = get();
+        if (!query) return [...products];
+        const q = query.toLowerCase();
         return products.filter(
           (p) =>
             p.name.toLowerCase().includes(q) ||
             (p.filamentType && p.filamentType.toLowerCase().includes(q)),
-        )
+        );
       },
 
       getAllProducts: () => [...get().products],
     }),
     {
-      name: 'open3dcalc_products',
+      name: "open3dcalc_products",
       version: 1,
+      storage: manifestStorage(),
     },
   ),
-)
+);
