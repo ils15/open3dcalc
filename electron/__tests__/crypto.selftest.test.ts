@@ -60,6 +60,43 @@ function ensureElectronBuild(): void {
   });
 }
 
+function reportFrom(stdout: string): SelftestReport | null {
+  const lines = stdout
+    .split("\n")
+    .filter((l) => l.startsWith("__CRYPTO_SELFTEST__"));
+  if (lines.length === 0) return null;
+  return JSON.parse(
+    lines[lines.length - 1].slice("__CRYPTO_SELFTEST__ ".length),
+  ) as SelftestReport;
+}
+
+function spawnAttempt(
+  command: string,
+  args: string[],
+  timeoutMs: number,
+): { report: SelftestReport | null; stderr: string } {
+  const res = spawnSync(command, args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    timeout: timeoutMs,
+    env: { ...process.env, ELECTRON_DISABLE_SECURITY_WARNINGS: "1" },
+  });
+  return {
+    report: reportFrom(res.stdout ?? ""),
+    stderr: (res.stderr ?? "").slice(0, 400),
+  };
+}
+
+/**
+ * Spawn strategies, in order, until one produces a report:
+ *  1. Direct spawn (local runs with a display / WSLg).
+ *  2. Chromium ozone headless (headless CI runners — no X server needed;
+ *     verified against Electron 43).
+ *  3. xvfb-run, when installed (classic CI fallback).
+ * Each attempt gets a short timeout — a failed strategy dies fast (the
+ * "Missing X server" failure exits immediately), and the whole chain must
+ * fit inside the vitest test timeout.
+ */
 function runSelftest(): SelftestReport {
   ensureElectronBuild();
   const require = createRequire(import.meta.url);
@@ -67,29 +104,37 @@ function runSelftest(): SelftestReport {
   if (typeof electronBinary !== "string") {
     throw new Error("electron binary path not resolvable in node context");
   }
-  const args = [selftestJs];
-  // Linux CI/root needs --no-sandbox for the binary to start at all.
-  if (process.platform === "linux") args.push("--no-sandbox");
-  const res = spawnSync(electronBinary, args, {
-    cwd: repoRoot,
-    encoding: "utf8",
-    timeout: 120_000,
-    env: { ...process.env, ELECTRON_DISABLE_SECURITY_WARNINGS: "1" },
-  });
-  const lines = (res.stdout ?? "")
-    .split("\n")
-    .filter((l) => l.startsWith("__CRYPTO_SELFTEST__"));
-  if (lines.length === 0) {
-    throw new Error(
-      `selftest produced no report (exit=${res.status}, stderr=${(res.stderr ?? "").slice(0, 400)})`,
-    );
-  }
-  return JSON.parse(
-    lines[lines.length - 1].slice("__CRYPTO_SELFTEST__ ".length),
-  ) as SelftestReport;
-}
 
-// createRequire is imported from node:module above (ESM-safe).
+  const baseArgs =
+    process.platform === "linux"
+      ? [selftestJs, "--no-sandbox"]
+      : [selftestJs];
+
+  const attempts: Array<{ command: string; args: string[] }> = [
+    { command: electronBinary, args: baseArgs },
+    {
+      command: electronBinary,
+      args: [...baseArgs, "--ozone-platform=headless", "--disable-gpu"],
+    },
+  ];
+  if (process.platform === "linux") {
+    const probe = spawnSync("which", ["xvfb-run"], { encoding: "utf8" });
+    if (probe.status === 0) {
+      attempts.push({
+        command: "xvfb-run",
+        args: ["-a", electronBinary, ...baseArgs],
+      });
+    }
+  }
+
+  const failures: string[] = [];
+  for (const attempt of attempts) {
+    const { report, stderr } = spawnAttempt(attempt.command, attempt.args, 45_000);
+    if (report) return report;
+    failures.push(`${attempt.command}: ${stderr || "no report"}`);
+  }
+  throw new Error(`selftest produced no report via any strategy: ${failures.join(" | ")}`);
+}
 
 describe("crypto self-test (real Electron, real SQLite)", () => {
   it("ADR-001 §2.3 capability matrix + zero-plaintext at rest", async () => {
