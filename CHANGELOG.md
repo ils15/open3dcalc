@@ -39,6 +39,8 @@
 - **deps-dev:** Bump typescript-eslint from 8.67.0 to 8.69.0 ([#95](https://github.com/ils15/open3dcalc/pull/95))
 - **deps-dev:** Bump @types/react-dom from 19.2.5 to 19.2.7 ([#96](https://github.com/ils15/open3dcalc/pull/96))
 
+> **Nota (LGPD/privacidade):** o `db:export` (cópia bruta do banco SQLite) não é mais um recurso de usuário — foi reclassificado como backup diagnóstico interno com gate de desenvolvimento, redação e retenção de 14 dias. A exportação do usuário passa a ser exclusivamente o pacote criptografado (SPEC-03 v1.1) da aba 🔒 Privacidade.
+
 ### ❤️ Contributors
 
 - Ils15 ([@ils15](https://github.com/ils15))
