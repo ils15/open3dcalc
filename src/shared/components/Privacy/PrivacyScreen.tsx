@@ -154,6 +154,56 @@ export function PrivacyScreen() {
     [privacyApi, t, loadReport],
   );
 
+  // ── SPEC-04 consent receipt (D1.1 S8) ───────────────────────────────
+  const [consentStatus, setConsentStatus] = useState<{
+    status: string;
+    consentGiven: boolean;
+    currentPolicyVersion: string;
+  } | null>(null);
+  const [consentBusy, setConsentBusy] = useState(false);
+
+  const loadConsentStatus = useCallback(async () => {
+    const { useConsentStore } = await import("@/shared/stores/consentStore");
+    const { receipt, receiptDigest: digest } = useConsentStore.getState();
+    const { evaluateReceipt } = await import("@/shared/lib/consentReceipt");
+    const evaluation = await evaluateReceipt(
+      receipt && digest ? { receipt, digest } : null,
+    );
+    setConsentStatus({
+      status: evaluation.status,
+      consentGiven: evaluation.consentGiven,
+      currentPolicyVersion: evaluation.currentPolicyVersion,
+    });
+  }, []);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => {
+      void loadConsentStatus();
+    });
+  }, [loadConsentStatus]);
+
+  const handleGrant = useCallback(async () => {
+    setConsentBusy(true);
+    try {
+      const { useConsentStore } = await import("@/shared/stores/consentStore");
+      await useConsentStore.getState().giveConsent();
+      await loadConsentStatus();
+    } finally {
+      setConsentBusy(false);
+    }
+  }, [loadConsentStatus]);
+
+  const handleWithdraw = useCallback(async () => {
+    setConsentBusy(true);
+    try {
+      const { useConsentStore } = await import("@/shared/stores/consentStore");
+      await useConsentStore.getState().withdrawConsent();
+      await loadConsentStatus();
+    } finally {
+      setConsentBusy(false);
+    }
+  }, [loadConsentStatus]);
+
   // ── SPEC-02 delete-all saga (D1.1 S7) ───────────────────────────────
   const [erasing, setErasing] = useState(false);
   const [erasureReceipt, setErasureReceipt] = useState<{
@@ -342,6 +392,53 @@ export function PrivacyScreen() {
       <p className="text-[11px] text-[var(--color-text-muted)]">
         {t("privacy.quarantine.readNote")}
       </p>
+
+      {/* ── SPEC-04 consent receipt ─────────────────────────────────── */}
+      <div className="surface rounded-xl p-4 space-y-3">
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+          {t("privacy.consent.title")}
+        </h3>
+        {consentStatus === null ? (
+          <p className="text-xs text-[var(--color-text-muted)]">…</p>
+        ) : consentStatus.consentGiven ? (
+          <div className="space-y-2">
+            <p className="text-xs text-emerald-400">
+              {t("privacy.consent.granted", {
+                version: consentStatus.currentPolicyVersion,
+              })}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(t("privacy.consent.withdrawConfirm"))) {
+                  void handleWithdraw();
+                }
+              }}
+              disabled={consentBusy}
+              className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-bg-elevated)] text-red-400 hover:bg-[var(--color-bg-hover)] border border-red-500/30 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
+            >
+              {t("privacy.consent.withdraw")}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              {t("privacy.consent.absent")}
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleGrant()}
+              disabled={consentBusy}
+              className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
+            >
+              {t("privacy.consent.grant")}
+            </button>
+          </div>
+        )}
+        <p className="text-[11px] text-[var(--color-text-muted)]">
+          {t("privacy.consent.flagsNote")}
+        </p>
+      </div>
 
       {/* ── SPEC-02 delete-all ──────────────────────────────────────── */}
       <div className="surface rounded-xl p-4 border border-red-500/30 space-y-3">

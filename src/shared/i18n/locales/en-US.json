@@ -647,6 +647,15 @@
       "externalCopies": "External copies the app cannot erase:",
       "confirm": "Delete ALL your data? An encrypted snapshot allows rollback for up to 7 days in case of failure. Once committed, removal is permanent. Continue?",
       "failed": "Erasure failed — your data was restored from the safety snapshot (when available) and nothing was lost."
+    },
+    "consent_receipt": {
+      "title": "Consent",
+      "granted": "Consent active for policy v{{version}} (verified receipt).",
+      "absent": "No valid consent recorded — consent-gated features stay blocked.",
+      "grant": "Consent to the current policy",
+      "withdraw": "Withdraw consent",
+      "withdrawConfirm": "Withdraw consent? Data collected under it will be erased per policy (SPEC-04 §6) and the affected features will be blocked.",
+      "flagsNote": "Tutorial, onboarding or banner flags never substitute consent — only the receipt counts (SPEC-04 §2)."
     }
   },
   "tooltip": {

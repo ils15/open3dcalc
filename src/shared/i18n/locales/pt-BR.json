@@ -647,6 +647,15 @@
       "externalCopies": "Cópias externas que o aplicativo não pode apagar:",
       "confirm": "Apagar TODOS os seus dados? Um snapshot criptografado permite reverter por até 7 dias em caso de falha. Depois de concluído, a remoção é definitiva. Continuar?",
       "failed": "Falha no apagamento — seus dados foram restaurados do snapshot de segurança (se disponível) e nada foi perdido."
+    },
+    "consent_receipt": {
+      "title": "Consentimento",
+      "granted": "Consentimento ativo para a política v{{version}} (recibo verificado).",
+      "absent": "Nenhum consentimento válido registrado — os recursos que dependem de consentimento permanecem bloqueados.",
+      "grant": "Consentir com a política atual",
+      "withdraw": "Retirar consentimento",
+      "withdrawConfirm": "Retirar o consentimento? Os dados coletados sob essa permissão serão apagados conforme a política (SPEC-04 §6) e os recursos afetados serão bloqueados.",
+      "flagsNote": "Flags de tutorial, onboarding ou banner nunca substituem o consentimento — apenas o recibo conta (SPEC-04 §2)."
     }
   },
   "tooltip": {
