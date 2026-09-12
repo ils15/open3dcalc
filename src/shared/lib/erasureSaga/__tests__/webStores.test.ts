@@ -99,7 +99,7 @@ describe("webSnapshotStore (SPEC-02 §5 — encrypted, TTL)", () => {
       "Fernanda Sintética",
     );
     store.destroy("saga-1");
-    expect(store.restore("saga-1", capability)).rejects.toThrow();
+    await expect(store.restore("saga-1", capability)).rejects.toThrow();
   });
 
   it("sweepExpired destroys snapshots past their TTL", async () => {
@@ -107,6 +107,6 @@ describe("webSnapshotStore (SPEC-02 §5 — encrypted, TTL)", () => {
     await store.write("saga-ttl", "x", capability);
     const future = new Date(Date.now() + 8 * 86_400_000);
     expect(store.sweepExpired(future)).toContain("saga-ttl");
-    expect(store.restore("saga-ttl", capability)).rejects.toThrow();
+    await expect(store.restore("saga-ttl", capability)).rejects.toThrow();
   });
 });
