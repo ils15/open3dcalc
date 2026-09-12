@@ -24,7 +24,11 @@
     "cryptoCapability.ts",
     "selftest/crypto-selftest.ts",
     "../src/shared/lib/crypto/**/*.ts",
-    "../db/**/*.ts"
+    "../db/**/*.ts",
+    "persistGate.ts",
+    "legacyScan.ts",
+    "manifestSource.ts",
+    "../src/shared/lib/dataManifest.ts"
   ],
   "exclude": [
     "dist",

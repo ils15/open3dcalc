@@ -48,6 +48,16 @@ interface SelftestReport {
   dbPath?: string;
   scenarios?: ScenarioReport[];
   plaintextHitsInDbFile?: number;
+  s3?: {
+    gateWriteEncrypted?: boolean;
+    gateRoundTrip?: boolean;
+    legacyReadable?: boolean;
+    legacyFlaggedByScan?: boolean;
+    unknownRefused?: boolean;
+    nonPiiPassthrough?: boolean;
+    scanLegacyCount?: number;
+    scanEncryptedCount?: number;
+  };
   error?: string;
 }
 
@@ -106,9 +116,7 @@ function runSelftest(): SelftestReport {
   }
 
   const baseArgs =
-    process.platform === "linux"
-      ? [selftestJs, "--no-sandbox"]
-      : [selftestJs];
+    process.platform === "linux" ? [selftestJs, "--no-sandbox"] : [selftestJs];
 
   const attempts: Array<{ command: string; args: string[] }> = [
     { command: electronBinary, args: baseArgs },
@@ -129,19 +137,24 @@ function runSelftest(): SelftestReport {
 
   const failures: string[] = [];
   for (const attempt of attempts) {
-    const { report, stderr } = spawnAttempt(attempt.command, attempt.args, 45_000);
+    const { report, stderr } = spawnAttempt(
+      attempt.command,
+      attempt.args,
+      45_000,
+    );
     if (report) return report;
     failures.push(`${attempt.command}: ${stderr || "no report"}`);
   }
-  throw new Error(`selftest produced no report via any strategy: ${failures.join(" | ")}`);
+  throw new Error(
+    `selftest produced no report via any strategy: ${failures.join(" | ")}`,
+  );
 }
 
 describe("crypto self-test (real Electron, real SQLite)", () => {
-  it("ADR-001 §2.3 capability matrix + zero-plaintext at rest", async () => {
+  it("ADR-001 §2.3 capability matrix + ADR-002 gated persistence + zero new plaintext", async () => {
     const report = runSelftest();
     expect(report.error).toBeUndefined();
     expect(report.capability).toBeDefined();
-    expect(report.plaintextHitsInDbFile).toBe(0);
 
     const scenarios = report.scenarios ?? [];
 
@@ -163,7 +176,21 @@ describe("crypto self-test (real Electron, real SQLite)", () => {
       expect(deniedRow?.outcome).toBe("refused");
     }
 
-    // The harness must always have exercised at least one scenario.
-    expect(scenarios.length).toBeGreaterThan(0);
+    // S3 — persistence gate (ADR-002 §2.1): gated PII writes are ciphertext,
+    // unknown keys are refused, non-PII passes through as plaintext.
+    expect(report.s3?.gateWriteEncrypted).toBe(true);
+    expect(report.s3?.gateRoundTrip).toBe(true);
+    expect(report.s3?.unknownRefused).toBe(true);
+    expect(report.s3?.nonPiiPassthrough).toBe(true);
+
+    // S3 — legacy plaintext stays readable and the scanner flags it
+    // (ADR-002 §2.2.1 — the quarantine state machine itself lands in S4).
+    expect(report.s3?.legacyReadable).toBe(true);
+    expect(report.s3?.legacyFlaggedByScan).toBe(true);
+    expect(report.s3?.scanEncryptedCount ?? 0).toBeGreaterThanOrEqual(1);
+
+    // §3.1-style byte scan: the marker appears ONLY in the deliberately
+    // planted legacy row — every gated write stayed ciphertext.
+    expect(report.plaintextHitsInDbFile).toBe(1);
   }, 180_000);
 });

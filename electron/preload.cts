@@ -158,6 +158,21 @@ const electronAPI = {
     /** Zeroize the session passphrase (irreversible). */
     lock: (): Promise<void> => ipcRenderer.invoke("crypto:lock"),
   },
+
+  privacy: {
+    /**
+     * On-demand ADR-002 §2.3 legacy-plaintext scan. Metadata only:
+     * key NAMES and counts, never stored values.
+     */
+    scanReport: (): Promise<{
+      scannedAt: string;
+      entries: Array<{ key: string; surface: string; status: string }>;
+      legacyCount: number;
+      encryptedCount: number;
+      domainTables: { customers: number; quotes: number; quote_items: number };
+      manifestAvailable: boolean;
+    }> => ipcRenderer.invoke("privacy:scan-report"),
+  },
 } as const;
 
 contextBridge.exposeInMainWorld("electronAPI", electronAPI);
