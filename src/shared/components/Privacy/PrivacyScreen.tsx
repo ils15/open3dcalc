@@ -62,9 +62,36 @@ export function PrivacyScreen() {
           migrateKey: (key: string) => Promise<unknown>;
           eliminateKey: (key: string) => Promise<unknown>;
         };
+        erasure?: {
+          start: (rendererReport?: Record<string, unknown>) => Promise<{
+            receipt: {
+              stores_completed: string[];
+              external_copies_notice: string[];
+              rollback_unavailable?: { reason: string; at: string };
+            };
+            rolledBack: boolean;
+          }>;
+          status: () => Promise<{ active: boolean }>;
+        };
       };
     }
   ).electronAPI?.privacy;
+  const erasureApi = (
+    window as unknown as {
+      electronAPI?: {
+        erasure?: {
+          start: (rendererReport?: Record<string, unknown>) => Promise<{
+            receipt: {
+              stores_completed: string[];
+              external_copies_notice: string[];
+              rollback_unavailable?: { reason: string; at: string };
+            };
+            rolledBack: boolean;
+          }>;
+        };
+      };
+    }
+  ).electronAPI?.erasure;
 
   const loadReport = useCallback(async () => {
     if (!privacyApi) return;
@@ -126,6 +153,38 @@ export function PrivacyScreen() {
     },
     [privacyApi, t, loadReport],
   );
+
+  // ── SPEC-02 delete-all saga (D1.1 S7) ───────────────────────────────
+  const [erasing, setErasing] = useState(false);
+  const [erasureReceipt, setErasureReceipt] = useState<{
+    stores_completed: string[];
+    external_copies_notice: string[];
+    rollback_unavailable?: { reason: string; at: string };
+  } | null>(null);
+  const [erasureError, setErasureError] = useState<string | null>(null);
+
+  const handleDeleteAll = useCallback(async () => {
+    if (!erasureApi) return;
+    const confirmed = window.confirm(t("privacy.erasure.confirm"));
+    if (!confirmed) return;
+    setErasing(true);
+    setErasureError(null);
+    try {
+      // The renderer purges its own surfaces first (localStorage sweep,
+      // IndexedDB, OPFS, caches) and hands the report to the main-process
+      // saga, which covers every durable surface.
+      const { purgeRendererStores } =
+        await import("@/shared/lib/erasureSaga/rendererSweep");
+      const report = await purgeRendererStores();
+      const { receipt } = await erasureApi.start(report);
+      setErasureReceipt(receipt);
+      setReport((await privacyApi?.quarantineReport()) ?? null);
+    } catch {
+      setErasureError(t("privacy.erasure.failed"));
+    } finally {
+      setErasing(false);
+    }
+  }, [erasureApi, t]);
 
   if (!privacyApi) {
     return (
@@ -283,6 +342,45 @@ export function PrivacyScreen() {
       <p className="text-[11px] text-[var(--color-text-muted)]">
         {t("privacy.quarantine.readNote")}
       </p>
+
+      {/* ── SPEC-02 delete-all ──────────────────────────────────────── */}
+      <div className="surface rounded-xl p-4 border border-red-500/30 space-y-3">
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+          {t("privacy.erasure.title")}
+        </h3>
+        <p className="text-xs text-[var(--color-text-secondary)]">
+          {t("privacy.erasure.description")}
+        </p>
+        {erasureError && (
+          <p role="alert" className="text-xs text-red-400">
+            {erasureError}
+          </p>
+        )}
+        {erasureReceipt && (
+          <div
+            role="status"
+            className="text-xs rounded-lg px-3 py-2 border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 space-y-1"
+          >
+            <p>{t("privacy.erasure.done")}</p>
+            <p className="text-[var(--color-text-secondary)]">
+              {t("privacy.erasure.externalCopies")}
+            </p>
+            <ul className="list-disc list-inside">
+              {erasureReceipt.external_copies_notice.map((notice) => (
+                <li key={notice}>{notice}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => void handleDeleteAll()}
+          disabled={erasing}
+          className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-semibold bg-red-500/90 text-white hover:bg-red-500 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
+        >
+          {erasing ? t("privacy.erasure.working") : t("privacy.erasure.button")}
+        </button>
+      </div>
     </div>
   );
 }

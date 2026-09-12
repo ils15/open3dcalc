@@ -12,6 +12,34 @@ export interface ElectronAPI {
   updater: ElectronUpdaterApi;
   crypto: ElectronCryptoApi;
   privacy: ElectronPrivacyApi;
+  erasure: ElectronErasureApi;
+}
+
+/** Erasure saga operations available through IPC (D1.1 S7). */
+declare global {
+  interface ElectronErasureApi {
+    start: (
+      rendererReport?: Record<
+        string,
+        { purged: number; remaining: string[] } | undefined
+      >,
+    ) => Promise<{
+      receipt: {
+        saga_id: string;
+        committed_at: string;
+        policy_version: string;
+        stores_completed: string[];
+        external_copies_notice: string[];
+        rollback_unavailable?: { reason: string; at: string };
+      };
+      rolledBack: boolean;
+    }>;
+    status: () => Promise<{
+      active: boolean;
+      state?: string;
+      stores?: Array<{ store: string; state: string; attempts: number }>;
+    }>;
+  }
 }
 
 /** Privacy scan operations available through IPC (D1.1 S3). */

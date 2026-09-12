@@ -1,18 +1,25 @@
 {
   "manifest_version": "1.0",
-  "policy_version": "1.1",
+  "policy_version": "1.2",
   "keys": [
     {
       "key": "open3dcalc_consent_v1",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "consent_record",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Records the privacy consent flag and date; local-only state, never a consent proof (proof lives in the SPEC-04 receipt).",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
@@ -21,14 +28,21 @@
     {
       "key": "open3dcalc_tutorial_v1",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "onboarding_flag",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Tutorial completion flag so the walkthrough is not re-shown; never satisfies consent (SPEC-04).",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
@@ -37,14 +51,21 @@
     {
       "key": "open3dcalc_migration_done_v2",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "onboarding_flag",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "One-shot marker for the v2 localStorage-to-SQLite migration so it runs once; local-only. Key renamed from the D1.0 fixture to match the shipped code.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
@@ -53,14 +74,21 @@
     {
       "key": "open3dcalc_quickstart_dismissed",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "onboarding_flag",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Quick Start banner dismissal flag; local-only, never a consent substitute. Key renamed from the D1.0 fixture to match the shipped code.",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
@@ -69,14 +97,21 @@
     {
       "key": "open3dcalc_onboarded",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "onboarding_flag",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Onboarding completion flag so the intro modal is not re-shown; local-only, never a consent substitute.",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
@@ -85,14 +120,21 @@
     {
       "key": "i18nextLng",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Interface language cached by the i18next browser language detector; local-only, falls back to navigator when absent.",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
@@ -101,14 +143,21 @@
     {
       "key": "open3dcalc_customers_v1",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Customer directory (name, company, email, phone, address, notes) used to issue quotes.",
       "legal_basis": "consent",
       "owner": "hermes",
@@ -117,14 +166,19 @@
     {
       "key": "customers",
       "surface": "sqlite_domain_tables",
-      "platforms": ["electron"],
+      "platforms": [
+        "electron"
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "never",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Normalized customer records mirrored from the customer store into the desktop database.",
       "legal_basis": "consent",
       "owner": "demeter",
@@ -133,14 +187,21 @@
     {
       "key": "open3dcalc_quotes_v1",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Quotes including customerSnapshot blobs (name, company, email, phone).",
       "legal_basis": "consent",
       "owner": "hermes",
@@ -149,14 +210,19 @@
     {
       "key": "quotes",
       "surface": "sqlite_domain_tables",
-      "platforms": ["electron"],
+      "platforms": [
+        "electron"
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "never",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Normalized quote records (with customerSnapshot JSON) in the desktop database.",
       "legal_basis": "consent",
       "owner": "demeter",
@@ -165,14 +231,21 @@
     {
       "key": "open3dcalc_history_v2",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Calculation history entries; PII-derived because entries can reference product/customer names.",
       "legal_basis": "consent",
       "owner": "hermes",
@@ -181,14 +254,21 @@
     {
       "key": "open3dcalc_settings_v2",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Calculator settings, selected printer/marketplace, and section toggles; no personal data.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
@@ -197,14 +277,21 @@
     {
       "key": "open3dcalc_sections",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "ui_state",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Enabled/disabled state of calculator sections.",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
@@ -213,14 +300,21 @@
     {
       "key": "open3dcalc_theme",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Selected UI theme.",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
@@ -229,14 +323,21 @@
     {
       "key": "open3dcalc_dashboard_v1",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "derived_analytics",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Dashboard aggregates over user history; PII-derived because aggregates reference user content.",
       "legal_basis": "consent",
       "owner": "hermes",
@@ -245,14 +346,21 @@
     {
       "key": "open3dcalc_dashboard_goal",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Monthly revenue goal number set by the user.",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
@@ -261,14 +369,21 @@
     {
       "key": "open3dcalc_catalog_v1",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Custom printers/materials/marketplaces added by the user (seed catalog is code, not data).",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
@@ -277,14 +392,21 @@
     {
       "key": "open3dcalc_filaments",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_content",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Filament spool inventory (material, cost, remaining grams); no personal data.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
@@ -293,14 +415,21 @@
     {
       "key": "open3dcalc_products",
       "surface": "localStorage",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "user_content",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "opt_in",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Product inventory (names, costs, margins); business data, not personal data.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
@@ -309,14 +438,19 @@
     {
       "key": "storage",
       "surface": "sqlite_storage_table",
-      "platforms": ["electron"],
+      "platforms": [
+        "electron"
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "never",
       "export": "diagnostic_only",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
       "purpose": "Key-value mirror of renderer state in the desktop database; rows inherit the policy of the mirrored key; PII rows must be encrypted (ADR-001).",
       "legal_basis": "consent",
       "owner": "demeter",
@@ -325,14 +459,19 @@
     {
       "key": "sw_cache_entries",
       "surface": "cache_api",
-      "platforms": ["pwa"],
+      "platforms": [
+        "pwa"
+      ],
       "class": "cache",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "session_only", "max_days": 30 },
+      "retention": {
+        "policy": "session_only",
+        "max_days": 30
+      },
       "purpose": "Service worker precache of static assets; must never contain PII-bearing responses (ADR-001 §2.2).",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
@@ -341,14 +480,20 @@
     {
       "key": "idb_reports_staging",
       "surface": "indexeddb",
-      "platforms": ["web", "pwa"],
+      "platforms": [
+        "web",
+        "pwa"
+      ],
       "class": "cache",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "session_only", "max_days": 1 },
+      "retention": {
+        "policy": "session_only",
+        "max_days": 1
+      },
       "purpose": "Transient staging of generated report documents (may embed customer names); encrypted, short-lived, cleared on erasure.",
       "legal_basis": "consent",
       "owner": "aphrodite",
@@ -357,14 +502,20 @@
     {
       "key": "opfs_export_staging",
       "surface": "opfs",
-      "platforms": ["web", "pwa"],
+      "platforms": [
+        "web",
+        "pwa"
+      ],
       "class": "cache",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "session_only", "max_days": 1 },
+      "retention": {
+        "policy": "session_only",
+        "max_days": 1
+      },
       "purpose": "Origin-private filesystem staging for in-progress export envelopes; encrypted, discarded on crash (SPEC-03 §7).",
       "legal_basis": "consent",
       "owner": "hermes",
@@ -373,14 +524,19 @@
     {
       "key": "appdata_logs",
       "surface": "logs",
-      "platforms": ["electron"],
+      "platforms": [
+        "electron"
+      ],
       "class": "diagnostic",
       "pii": false,
       "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "diagnostic_only",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "fixed", "max_days": 14 },
+      "retention": {
+        "policy": "fixed",
+        "max_days": 14
+      },
       "purpose": "Application logs; MUST be scrubbed of PII at write time (never log customer data); egress only via engineering path.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
@@ -389,14 +545,19 @@
     {
       "key": "appdata_temp_staging",
       "surface": "temp_staging",
-      "platforms": ["electron"],
+      "platforms": [
+        "electron"
+      ],
       "class": "cache",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "session_only", "max_days": 1 },
+      "retention": {
+        "policy": "session_only",
+        "max_days": 1
+      },
       "purpose": "Temp files for in-progress operations (import staging, snapshots); encrypted; inside erasure scope (SPEC-02 §4).",
       "legal_basis": "consent",
       "owner": "hermes",
@@ -405,14 +566,21 @@
     {
       "key": "erasure_snapshots",
       "surface": "snapshots",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "snapshot",
       "pii": true,
       "persistence": "encrypted_at_rest",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "fixed", "max_days": 7 },
+      "retention": {
+        "policy": "fixed",
+        "max_days": 7
+      },
       "purpose": "Pre-erasure safety snapshots (SPEC-02 §5): encrypted with TTL, destroyed after commit, inside erasure scope.",
       "legal_basis": "consent",
       "owner": "hermes",
@@ -421,16 +589,67 @@
     {
       "key": "session_passphrase_key",
       "surface": "memory",
-      "platforms": ["electron", "web", "pwa"],
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
       "class": "ephemeral_key",
       "pii": false,
       "persistence": "memory_only",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
-      "retention": { "policy": "session_only", "max_days": 0 },
+      "retention": {
+        "policy": "session_only",
+        "max_days": 0
+      },
       "purpose": "Passphrase-derived session key (ADR-001 fallback); memory only, zeroized on exit; never persisted or logged.",
       "legal_basis": "not_personal_data",
+      "owner": "hermes",
+      "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_erasure_journal",
+      "surface": "localStorage",
+      "platforms": [
+        "web",
+        "pwa"
+      ],
+      "class": "diagnostic",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "diagnostic_only",
+      "erasure": "erase_on_delete_all",
+      "retention": {
+        "policy": "fixed",
+        "max_days": 30
+      },
+      "purpose": "SPEC-02 erasure saga journal: saga id, per-store states and timestamps only — never user content. Web platform; desktop keeps the journal in userData.",
+      "legal_basis": "not_personal_data",
+      "owner": "hermes",
+      "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_erasure_snapshot",
+      "surface": "localStorage",
+      "platforms": [
+        "web",
+        "pwa"
+      ],
+      "class": "snapshot",
+      "pii": true,
+      "persistence": "encrypted_at_rest",
+      "sync": "never",
+      "export": "never",
+      "erasure": "erase_on_delete_all",
+      "retention": {
+        "policy": "fixed",
+        "max_days": 7
+      },
+      "purpose": "Encrypted rollback snapshot of the current erasure saga (AES-256-GCM via the ADR-001 capability); destroyed on commit/rollback or after the 7-day TTL.",
+      "legal_basis": "contract_performance",
       "owner": "hermes",
       "version": "1.0"
     }

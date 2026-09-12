@@ -637,6 +637,16 @@
       "otherData": "Other local data",
       "readNote": "Quarantine never resolves on its own: the only exits are migrate or eliminate, always through your explicit action.",
       "loadError": "Could not load the quarantine report."
+    },
+    "erasure": {
+      "title": "Delete all my data",
+      "description": "Removes all your data from every app storage surface (database, files, caches and internal backups), verifiably and with a receipt. Export packages you saved outside the app are out of reach.",
+      "button": "Delete all my data",
+      "working": "Erasing… this may take a moment.",
+      "done": "Erasure completed and verified. All stores have been wiped.",
+      "externalCopies": "External copies the app cannot erase:",
+      "confirm": "Delete ALL your data? An encrypted snapshot allows rollback for up to 7 days in case of failure. Once committed, removal is permanent. Continue?",
+      "failed": "Erasure failed — your data was restored from the safety snapshot (when available) and nothing was lost."
     }
   },
   "tooltip": {
