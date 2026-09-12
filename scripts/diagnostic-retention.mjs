@@ -53,7 +53,7 @@ export function scanBackups(dir, now = new Date()) {
   const backups = files.map((base) => {
     const filePath = path.join(dir, `${base}.sqlite3`);
     const metaPath = `${filePath}.meta.json`;
-    let meta = null;
+    let meta;
     try {
       meta = JSON.parse(fs.readFileSync(metaPath, "utf8"));
     } catch {
