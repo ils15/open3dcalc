@@ -1,59 +1,52 @@
-# Deepwork D1.1 S7 — Erasure (delete-all) saga (SPEC-02)
+# Deepwork D1.1 S8 — Consent receipt (SPEC-04)
 
-- **Branch/worktree:** `feat/d1-s7-erasure-saga` / `../open3dcalc-d1-s7-erasure`
+- **Branch/worktree:** `feat/d1-s8-consent-receipt` / `../open3dcalc-d1-s8-consent`
 - **Status:** implementation complete — local gates green; awaiting Themis review (PR next).
-- **Scope (OWNERS-RUNBOOK §6 declared):** SPEC-02 erasure saga — pure state-machine
-  engine (prepared → snapshot_taken → deleting → committed | rolled_back) with a
-  resumable per-store journal (atomic writes, attempts ≤3, no re-prompt), an
-  encrypted TTL'd safety snapshot with the §5 rollback window, the §6 post-condition
-  rescan (zero PII before commit), desktop + renderer store adapters, the erasure
-  IPC surface, the delete-all flow in the privacy screen, and REAL crash-injection
-  tests (SIGKILL-equivalent at exact durable journal points). Contract change:
-  SPEC-01 fixture registers the web journal + snapshot keys and bumps
-  `policy_version` 1.1 → 1.2 (per OWNERS-RUNBOOK §6).
-- **Base:** `main` @ `9e57800` (includes PR #112 D1.1 S5, PR #113 D1.1 S6 and the
-  node_modules repair).
+- **Scope (OWNERS-RUNBOOK §6 declared):** SPEC-04 consent receipt — policy-bound,
+  tamper-evident, canonicalized receipt (issue/verify/withdraw/policy-delta),
+  consentStore rewired so `consentGiven` is derived from a VALID receipt
+  (default-deny), withdrawal executing the manifest-derived erasure plan, and the
+  consent section in the privacy screen. No contract documents modified (no policy
+  bump — the receipt is stored inside the existing `open3dcalc_consent_v1`
+  consent_record key, sync never, export never).
+- **Base:** `main` @ `a851bc1` (includes PR #114 D1.1 S7).
 
 ## What landed in this slice
 
-- `src/shared/lib/erasureSaga/` — pure engine (no Electron/DOM):
-  - `engine.ts` — §2 state machine with a real commit point: commit only after
-    every store row is `done` AND the §6 rescan finds zero PII; pre-commit
-    unrecoverable failure ⇒ rollback (snapshot restore); impossible rollback
-    (§5: capability denied / TTL expired / key lost) ⇒ completes `committed` with
-    a `rollback_unavailable` annotation — never a silent partial state; the
-    in_progress journal row is persisted BEFORE each purge (resume seam).
-  - `journal.ts` (disk) / `webStores.ts` (localStorage) — metadata-only journal,
-    atomic write-temp+fsync+rename.
-  - `snapshot.ts` / `webStores.ts` — encrypted snapshot (capability-injected),
-    TTL sweep on every entry into `deleting`, destroy-on-commit
-    (overwrite+unlink / remove).
-  - `rendererSweep.ts` — granular renderer adapters: localStorage (manifest keys +
-    unknown `open3dcalc_*` sweep, R1), IndexedDB, OPFS, Cache API/SW.
-- `electron/erasureStores.ts` + `electron/erasure.ts` — desktop adapters (domain
-  tables, storage rows, WAL/SHM checkpoint+verify, appdata files, logs, staging,
-  snapshots) with VACUUM after table deletion; safeStorage-backed snapshot
-  capability; startup resume of non-terminal sagas.
-- IPC `erasure:start`/`erasure:status` + preload + typed `electron.d.ts`.
-- PrivacyScreen — "Delete all my data": renderer purges first, main saga covers
-  the durable surfaces, §7 `external_copies_notice` shown on the completion
-  receipt. i18n pt-BR/en-US.
-- SPEC-01 fixture: `policy_version` 1.2; new web keys `open3dcalc_erasure_journal`
-  (diagnostic) and `open3dcalc_erasure_snapshot` (class snapshot, encrypted at
-  rest, 7-day retention).
+- `src/shared/lib/consentReceipt.ts`:
+  - `issueReceipt` — receipt bound to the CURRENT policy (`policy_hash` = sha256 of
+    the canonical SPEC-01 manifest, deterministic across platforms, §4);
+  - `evaluateReceipt` — digest recomputed on every load (§5): tampered ⇒ invalid ⇒
+    default-deny; withdrawn ⇒ not given (audit record kept); policy
+    version/hash mismatch ⇒ `policy_mismatch` ⇒ re-consent required, old receipt
+    retained for the delta view (§6);
+  - `consentErasurePlan` — the §6.1 withdrawal plan derived from the manifest:
+    every `legal_basis: consent` key partitioned by `erasure`
+    (erase_on_delete_all vs retain_anonymized);
+  - `anonymizeRecord` — strips identifying fields for `retain_anonymized` keys,
+    keeping non-identifying aggregates.
+- `consentStore` — `giveConsent` issues and VERIFIES the receipt before marking
+  consent; `withdrawConsent` annotates `withdrawn_at`, erases the consent-basis
+  localStorage keys per the plan (desktop durable copies go through the S4
+  `privacy:eliminate-key` flow) and keeps the withdrawn receipt in an audit list;
+  stored via the gated storage (consent_record: sync never, export never).
+- PrivacyScreen — consent section: status (valid/absent/tampered/policy-mismatch),
+  grant/withdraw actions, and the SPEC-04 §2 note that flags never substitute
+  consent. i18n pt-BR/en-US.
 
-## Verification (TEST-MATRIX §6)
+## Verification (TEST-MATRIX §8)
 
-- 6.1 happy path · 6.2 death after snapshot_taken ⇒ idempotent resume commits
-  without re-prompt (journal durable, confirmation preserved) · 6.3 death mid-
-  deleting (first store done) ⇒ resumes from the first incomplete store ·
-  6.4 store failing 3× ⇒ rollback restores the snapshot payload · 6.5 post-erasure
-  byte scan: zero PII markers in the SQLite file (VACUUM) · 6.6 TTL sweep +
-  destroy-on-commit · 6.7 key lost ⇒ completes with `rollback_unavailable` ·
-  6.8 rescan finding PII ⇒ store failed, never success.
-- 1,366 tests across 107 files; typecheck (app + Electron), strict lint, builds.
-- Rollback (OWNERS-RUNBOOK §7): the saga is user-triggered; rollback = disable the
-  delete-all entry (flag) while journal+resume logic stays enabled (§7 S7 row).
+- 8.1 issue + digest verification (policy hash compared against an independent
+  sha256 over the canonical fixture) · 8.2 tamper ⇒ default-deny, never repaired ·
+  8.3 flags-only state ⇒ consent NOT given · 8.4 withdrawal: annotation kept,
+  erasure plan derived from the manifest, anonymization strips identifying fields
+  while keeping aggregates · 8.5 policy change ⇒ mismatch + old receipt retained ·
+  8.6 the SPEC-03 envelope never contains receipt material (strict field allowlist).
+- 1,377 tests across 108 files; typecheck (app + Electron), strict lint, builds.
+- Coverage on the receipt module: 95.5% lines / 92.6% branches.
+- Rollback (OWNERS-RUNBOOK §7): flag off ⇒ boolean-consent behavior returns; any
+  receipts already issued stay stored (inert); re-enabling re-validates digests.
 
-**D1.1 S7 is pending Themis review. S8 (consent receipt, SPEC-04) depends on this
-slice and is next.**
+**D1.1 S8 closes the D1 track (S1–S8): the SPEC-01 manifest, ADR-001 capability,
+ADR-002 default-deny/quarantine, SPEC-03 envelope and SPEC-02 saga are all
+implemented and enforced at runtime.**
