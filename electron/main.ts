@@ -28,6 +28,8 @@ import {
   adoptSessionPassphrase,
   lockCryptoSession,
 } from "./cryptoCapability.js";
+import { saveGated, loadGated } from "./persistGate.js";
+import { buildScanReport, summarizeReport } from "./legacyScan.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -212,12 +214,11 @@ function setupIpcHandlers(): void {
         if (typeof key !== "string" || key.trim().length === 0) {
           throw new Error("Key must be a non-empty string");
         }
-        // Use the storage table — key/value pairs
-        const stmt = db.$client.prepare(
-          "SELECT value FROM storage WHERE key = ?",
-        );
-        const row = stmt.get(key) as { value: string } | undefined;
-        return row ? row.value : null;
+        // ADR-002 §2.1: the persistence gate classifies the key against the
+        // SPEC-01 manifest — non-PII passes through, PII is decrypted from
+        // its ADR-001 capability blob, legacy plaintext stays readable
+        // (quarantined in S4), unknown keys return null (default-deny).
+        return await loadGated(db.$client, key);
       } catch (error) {
         console.error("[db:load] Error:", error);
         throw error;
@@ -237,10 +238,10 @@ function setupIpcHandlers(): void {
         if (typeof value !== "string") {
           throw new Error("Value must be a string");
         }
-        const stmt = db.$client.prepare(
-          "INSERT INTO storage (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
-        );
-        stmt.run(key, value, Date.now());
+        // ADR-002 §2.1 default-deny: PII is encrypted through the ADR-001
+        // capability layer; without a capability the write is REFUSED —
+        // never downgraded to plaintext.
+        await saveGated(db.$client, key, value);
       } catch (error) {
         console.error("[db:save] Error:", error);
         throw error;
@@ -569,6 +570,58 @@ function setupIpcHandlers(): void {
       throw error;
     }
   });
+
+  // ── privacy:scan-report (D1.1 S3 — ADR-002 §2.3) ────────────────────
+  // On-demand re-run of the legacy plaintext scan. Metadata only: key
+  // NAMES and counts, never stored values.
+  ipcMain.handle("privacy:scan-report", () => {
+    try {
+      return runPrivacyScan();
+    } catch (error) {
+      console.error("[privacy:scan-report] Error:", error);
+      throw error;
+    }
+  });
+}
+
+/**
+ * ADR-002 §2.3 startup scan: classify every storage-table row against the
+ * manifest's expected encrypted form and count the plaintext domain tables.
+ * Logs a METADATA-ONLY summary (key names, counts — never values).
+ * Returns the report for the privacy:scan-report IPC (S4 wires the
+ * quarantine state machine and the privacy screen on top of this).
+ */
+function runPrivacyScan(): ReturnType<typeof buildScanReport> {
+  const rows = db.$client
+    .prepare("SELECT key, value FROM storage")
+    .all() as Array<{
+    key: string;
+    value: string;
+  }>;
+  const countRows = (table: string): number =>
+    (
+      db.$client.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as {
+        c: number;
+      }
+    ).c;
+  const report = buildScanReport(rows, {
+    customers: countRows("customers"),
+    quotes: countRows("quotes"),
+    quote_items: countRows("quote_items"),
+  });
+  const summary = summarizeReport(report);
+  const domainPlaintext =
+    report.domainTables.customers +
+    report.domainTables.quotes +
+    report.domainTables.quote_items;
+  if (report.legacyCount > 0 || domainPlaintext > 0) {
+    console.warn(
+      `[privacy] legacy plaintext PII detected (ADR-002 §2.2): ${summary}`,
+    );
+  } else {
+    console.log(`[privacy] at-rest scan clean: ${summary}`);
+  }
+  return report;
 }
 
 /**
@@ -618,6 +671,8 @@ process.on("unhandledRejection", (reason: unknown) => {
 app.whenReady().then(async () => {
   try {
     setupIpcHandlers();
+    // ADR-002 §2.3: startup scan of persisted PII (metadata-only summary).
+    runPrivacyScan();
     await createWindow();
     if (mainWindow) {
       initUpdateService(mainWindow, db);

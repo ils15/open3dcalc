@@ -11,6 +11,25 @@ export interface ElectronAPI {
   db: ElectronDBApi;
   updater: ElectronUpdaterApi;
   crypto: ElectronCryptoApi;
+  privacy: ElectronPrivacyApi;
+}
+
+/** Privacy scan operations available through IPC (D1.1 S3). */
+declare global {
+  interface ElectronPrivacyApi {
+    /**
+     * On-demand ADR-002 §2.3 legacy-plaintext scan. Metadata only:
+     * key NAMES and counts, never stored values.
+     */
+    scanReport: () => Promise<{
+      scannedAt: string;
+      entries: Array<{ key: string; surface: string; status: string }>;
+      legacyCount: number;
+      encryptedCount: number;
+      domainTables: { customers: number; quotes: number; quote_items: number };
+      manifestAvailable: boolean;
+    }>;
+  }
 }
 
 /** Crypto capability operations available through IPC (D1.1 S2). */

@@ -12,14 +12,16 @@
  */
 
 import {
-  getShippedPolicyVersion,
-  loadManifest,
-  loadShippedManifest,
   type ManifestDocument,
   type ManifestEntry,
   type ManifestIndex,
   ManifestError,
-} from "./dataManifest";
+  loadManifest,
+} from "./dataManifest.js";
+import {
+  getShippedPolicyVersion,
+  loadShippedManifest,
+} from "./shippedManifest.js";
 
 export { ManifestError };
 

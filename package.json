@@ -97,7 +97,8 @@
       "electron/dist/**/*",
       "dist/**/*",
       "package.json",
-      "db/migrations/*.sql"
+      "db/migrations/*.sql",
+      "docs/privacy/SPEC-01-manifest-fixture.json"
     ],
     "asar": true,
     "asarUnpack": [
