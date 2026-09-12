@@ -29,6 +29,8 @@
     "legacyScan.ts",
     "quarantine.ts",
     "manifestSource.ts",
+    "diagnosticBackup.ts",
+    "diagnosticGate.ts",
     "../src/shared/lib/dataManifest.ts"
   ],
   "exclude": [

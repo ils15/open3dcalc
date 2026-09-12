@@ -1,52 +1,51 @@
-# Deepwork D1.1 S5 — Export envelope v1.1, producer + consumer (SPEC-03)
+# Deepwork D1.1 S6 — db:export reclassification: dev gate, redaction, retention (ADR-003)
 
-- **Branch/worktree:** `feat/d1-s5-export-envelope` / `../open3dcalc-d1-s5-envelope`
+- **Branch/worktree:** `feat/d1-s6-dbexport` / `../open3dcalc-d1-s6-dbexport`
 - **Status:** implementation complete — local gates green; awaiting Themis review (PR next).
-- **Scope (OWNERS-RUNBOOK §6 declared):** SPEC-03 export envelope v1.1 — producer and
-  consumer (canonical JSON plaintext, SHA-256 digest, PBKDF2-SHA256 exactly 310k,
-  AES-256-GCM with the header bound as AAD, §7 limits, strict unknown-field and
-  unknown-version rejection), wired into the sync UI (export always encrypted; import
-  accepts v1.1 + legacy v1.0 per §8). No contract documents modified (no policy bump).
-- **Base:** `main` @ `4929271` (includes PR #111 D1.1 S4 and the node_modules
-  symlink repair).
+- **Scope (OWNERS-RUNBOOK §6 declared):** ADR-003 §2.2 — the raw SQLite `db:export`
+  reclassified as an engineering/diagnostic backup: explicit diagnostic gate
+  (fail-closed), manifest-driven redaction mode, retention sidecars, and the
+  retention/disposal tooling script (OWNERS-RUNBOOK §5). No user-facing UI entry
+  existed or returns. No contract documents modified (no policy bump).
+- **Base:** `main` @ `9e57800` (includes PR #112 D1.1 S5).
 
 ## What landed in this slice
 
-- `src/shared/lib/exportEnvelope.ts` — normative v1.1 envelope:
-  - producer enforces §7 limits (50,000 records / 50 MiB) BEFORE encrypting and
-    refuses passwordless exports (§1: the user export is always encrypted);
-  - consumer validates strictly per §5: strict header field allowlist (unknown
-    fields ⇒ reject), parameter allowlist (§4), GCM auth with the AAD binding
-    (wrong password and tamper indistinguishable), digest verification over the
-    canonical plaintext, then limits, then parse;
-  - unknown versions (0.9, 9.9, anything ≠ 1.1) rejected without best-effort
-    parsing (§7/§8);
-  - canonicalization is a documented RFC 8785-equivalent (sorted keys, ECMAScript
-    number serialization, no whitespace, UTF-8) with vector tests (§3).
-- `src/shared/lib/dataSync.ts` — `exportData` produces the v1.1 envelope
-  (PASSWORD_REQUIRED without a password); `importData` routes v1.1 envelopes
-  through the new consumer and legacy `1.0` bundles through the untouched §8 path;
-  `isEncrypted` recognizes v1.1. The legacy `exportBundle` producer remains only as
-  the §8 import-compatibility baseline.
-- `DataSyncModal` — export is always encrypted: the optional-encryption toggle is
-  gone, the password field is always visible, and the export button stays disabled
-  until a password is set (tests updated accordingly).
-- §9 note: the browser envelope path materializes the full payload in memory and
-  applies per-store after full validation (atomic per-store swaps — the documented
-  §9 equivalent for the renderer; no partial file is ever produced by the blob
-  download). File-system staging discipline lands with S6/S7 fs flows.
+- `electron/diagnosticGate.ts` — authorized-access gate (§2.2.1): `--diagnostic`
+  CLI switch or `OPEN3DCALC_DIAGNOSTIC=1`; fail-closed by default in production
+  builds and un-flagged dev runs.
+- `electron/diagnosticBackup.ts` — the gated backup operation (§2.2.2/§2.2.4):
+  non-redacted straight copy (PII-bearing, 14-day retention sidecar written);
+  redaction mode stages a copy, masks every manifest-`pii` storage row (unknown
+  keys fail-closed as PII), strips the PII domain tables, `VACUUM`s so masked
+  content is not retained in free pages, then atomically renames. Every backup
+  writes a `<target>.meta.json` sidecar (createdAt, redacted, retentionDays).
+- `main.ts` — `db:export` handler refuses without the gate, delegates to the
+  diagnostic module, and the save dialog is retitled as an engineering artifact.
+  No renderer UI invokes it (verified: zero `exportDatabase` call sites in src).
+- `scripts/diagnostic-retention.mjs` (+ npm `diagnostic:retention`) — retention
+  tooling (§2.2.4 / OWNERS-RUNBOOK §5): CHECK mode flags unredacted backups past
+  their deadline and exits 1 (CI-failing); `--dispose` securely destroys them
+  (overwrite with zeros + unlink, sidecar included) and appends a metadata-only
+  line to `diagnostic-disposal.log`. Sidecar-less files are fail-closed (judged
+  unredacted, aged by mtime).
+- User export remains the SPEC-03 envelope only (§2.1): quarantined/excluded
+  policies continue to apply there.
 
-## Verification
+## Verification (TEST-MATRIX §5)
 
-- 1,344 tests across 102 files; typecheck, strict lint, desktop/web builds green.
-- TEST-MATRIX §7 rows encoded: 7.1 (round-trip, byte-stable canonicalization),
-  7.2/7.3/7.4 (tamper/wrong-password/corruption), 7.5 (downgrade), 7.6 (unknown
-  fields), 7.7 (legacy 1.0 import honored via the untouched path; re-export
-  produces 1.1), 7.8 (limits), 7.10 (password never logged). Coverage on the
-  envelope module: 93.0% lines / 88.2% branches.
-- Rollback (OWNERS-RUNBOOK §7): producer flag off ⇒ exports return to the legacy
-  bundle path (kept intact); import keeps accepting 1.0 and 1.1 — never removes
-  either.
+- 5.1: without the gate the handler refuses — no artifact is written.
+- 5.2: with the gate, an unredacted backup lands locally with the retention
+  sidecar; the module performs zero network I/O (local file only, §2.2.3).
+- 5.3: redacted backup masks manifest-PII storage rows (`[REDACTED]`), leaves
+  non-PII rows intact, strips the domain tables, and the marker is provably gone
+  from the file bytes.
+- 5.4: the retention script flags unredacted backups past 14 days (exit 1) and
+  `--dispose` removes them with an audit log; redacted backups are retained.
+- 1,350 tests across 104 files; typecheck (app + Electron), strict lint, builds.
+- Rollback (OWNERS-RUNBOOK §7): flag off ⇒ previous behavior returns — requires
+  user sign-off per the runbook (re-exposes raw PII copy); the preferred path is
+  keeping the gate and fixing forward.
 
-**D1.1 S5 is pending Themis review. S6 (db:export reclassification) can proceed in
-parallel; S7 (erasure saga) depends on S1+S2 and formalizes S4's elimination.**
+**D1.1 S6 is pending Themis review. S7 (erasure saga, SPEC-02) is next; S8
+(consent receipt, SPEC-04) depends on S7.**
