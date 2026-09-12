@@ -111,7 +111,7 @@ describe("§8.3 flags-only state — consent NOT given", () => {
 
 describe("§8.4 withdrawal — exact effect per the manifest", () => {
   it("annotates withdrawn_at and keeps the receipt as the audit record", async () => {
-    const { receipt, digest } = await issueReceipt(SCOPE, PURPOSES);
+    const { receipt } = await issueReceipt(SCOPE, PURPOSES);
     const withdrawn = annotateWithdrawn(receipt, "2026-09-12T00:00:00Z");
     expect(withdrawn.withdrawn_at).toBe("2026-09-12T00:00:00Z");
     const evaluation = await evaluateReceipt({
