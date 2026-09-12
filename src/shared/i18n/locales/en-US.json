@@ -21,7 +21,8 @@
     "quotes": "Quotes",
     "more": "More",
     "menu": "Menu",
-    "settings": "Settings"
+    "settings": "Settings",
+    "privacy": "Privacy"
   },
   "dashboard": {
     "totalCost": "Total Cost",
@@ -611,6 +612,31 @@
       "section8Item3": "No data is transmitted to any server during export or import",
       "section8Item4": "You can encrypt bundles with your own password",
       "section8Lgpd": "In compliance with LGPD Art. 18 (right to data portability), you can export your data at any time and import it on another device."
+    },
+    "quarantine": {
+      "title": "Legacy data quarantine",
+      "subtitle": "Personal data written in plaintext by older versions is quarantined: readable, but blocked from new writes until you choose to migrate (encrypt) or eliminate it.",
+      "desktopOnly": "Legacy data quarantine is available only in the desktop app, where data is durable in SQLite. On the web, your data stays local to the browser.",
+      "refresh": "Re-scan",
+      "noQuarantined": "No data in quarantine. Everything stored is already encrypted or is not personal data.",
+      "statusQuarantined": "Quarantined (read-only)",
+      "statusEncrypted": "Encrypted at rest",
+      "statusAbsent": "Absent",
+      "statusNonPii": "Not personal data",
+      "statusUnknown": "Unknown key (denied)",
+      "records": "{{count}} record(s)",
+      "migrate": "Migrate",
+      "eliminate": "Eliminate",
+      "working": "Working…",
+      "confirmMigrate": "Migrate \"{{key}}\" to encryption at rest? The plaintext copy is only destroyed after the encrypted copy is verified.",
+      "confirmEliminate": "Permanently eliminate the quarantined data of \"{{key}}\"? This action cannot be undone.",
+      "migrated": "\"{{key}}\" migrated and verified.",
+      "eliminated": "\"{{key}}\" eliminated.",
+      "migrateFailed": "Failed to migrate \"{{key}}\" — nothing was lost; please try again.",
+      "eliminateFailed": "Failed to eliminate \"{{key}}\" — the data stays quarantined.",
+      "otherData": "Other local data",
+      "readNote": "Quarantine never resolves on its own: the only exits are migrate or eliminate, always through your explicit action.",
+      "loadError": "Could not load the quarantine report."
     }
   },
   "tooltip": {

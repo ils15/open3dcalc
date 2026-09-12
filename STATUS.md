@@ -1,63 +1,65 @@
-# Deepwork D1.1 S3 — PII encryption on write paths + startup scan (ADR-002)
+# Deepwork D1.1 S4 — Legacy quarantine state + privacy screen + migrate/eliminate (ADR-002)
 
-- **Branch/worktree:** `feat/d1-s3-pii-encryption` / `../open3dcalc-d1-s3-pii`
+- **Branch/worktree:** `feat/d1-s4-quarantine` / `../open3dcalc-d1-s4-quarantine`
 - **Status:** implementation complete — local gates green; awaiting Themis review (PR next).
-- **Scope (OWNERS-RUNBOOK §6 declared):** ADR-002 §2.1 default-deny enforced at the
-  desktop storage write path (`db:save`/`db:load` gated per-key by the SPEC-01
-  manifest `pii` flag through the S2 capability layer), the ADR-002 §2.3 startup
-  legacy-plaintext scanner (same classifier the SPEC-02 saga will reuse), the
-  `privacy:scan-report` IPC, and the dataManifest/shippedManifest module split that
-  lets the main process consume the manifest without an ESM JSON import. Packaging
-  ships the fixture inside the asar. No contract documents modified (no policy bump).
-- **Base:** `main` @ `f6c8734` (includes PR #109 D1.1 S2).
+- **Scope (OWNERS-RUNBOOK §6 declared):** ADR-002 §2.2 legacy plaintext quarantine —
+  quarantine state derived from the §2.3 scan (a PII key holding legacy plaintext is
+  quarantined), read-only enforcement at the persistence gate, the two explicit exits
+  (migrate with verify-then-destroy + VACUUM scrub; eliminate with verified absence),
+  the quarantine/migrate/eliminate IPC surface, and the dedicated privacy screen
+  (new nav tab, pt-BR/en-US i18n) reachable in the app. No contract documents modified
+  (no policy bump): the state needs no new storage key — it is derived from the scan.
+- **Base:** `main` @ `26eb0d3` (includes PR #110 D1.1 S3).
 
 ## What landed in this slice
 
-- `electron/persistGate.ts` — the write-path choke point: unknown keys are denied
-  (SPEC-01 default-deny), non-PII keys pass through (plaintext_allowed only for
-  pii:false, schema-enforced), PII keys go through `encryptForStorage` and the write
-  is REFUSED when no ADR-001 capability exists (fail-closed, never downgraded).
-  Loads decrypt capability blobs; legacy plaintext stays READABLE
-  (ADR-002 §2.2.1) and is classified as `legacy_plaintext` for the S4 quarantine.
-- `electron/legacyScan.ts` — ADR-002 §2.3 startup scanner: classifies every storage
-  row against the manifest's expected encrypted form, counts the plaintext domain
-  tables (customers/quotes/quote_items), and produces a METADATA-ONLY report
-  (key names + counts, never values — TEST-MATRIX §3.2).
-- `electron/manifestSource.ts` — main-process manifest loader via fs with
-  dev/packaged/self-test candidate paths (fail-closed: unreadable fixture denies
-  every key).
-- `main.ts` — `db:save`/`db:load` now route through the gate; the scan runs at
-  startup (metadata-only summary logged) and on demand via `privacy:scan-report`;
-  `preload.cts` exposes `window.electronAPI.privacy.scanReport` (typed in
-  `electron.d.ts`).
-- `src/shared/lib/dataManifest.ts` / `shippedManifest.ts` split — pure validation
-  stays importable by the compiled main process (node16 ESM cannot execute a static
-  JSON import); the renderer keeps the same S1 API via `manifestGate`.
-- `package.json` (electron-builder `files`) — ships the SPEC-01 fixture inside the
-  asar so the packaged main process reads the same manifest file.
+- `electron/quarantine.ts` — state machine per ADR-002 §2.3:
+  `legacy_plaintext ⇒ QUARANTINED` (read-only, never auto-resolves);
+  MIGRATE encrypts through the ADR-001 capability, replaces the row, verifies the
+  encrypted copy reads back identical, and only then considers the plaintext
+  destroyed — with `VACUUM` scrubbing freed pages (physical destruction; WAL/SHM
+  handling is finalized by the SPEC-02 saga in S7). ELIMINATE deletes the quarantined
+  rows and verifies absence. Migration restores the plaintext row if verification
+  fails — data loss is impossible by construction. Deny-path platforms can only
+  eliminate (no capability ⇒ migration refused).
+- `electron/persistGate.ts` — §2.2.1 read-only enforcement: gated writes over a
+  quarantined key are refused (`quarantined_read_only`) until the user acts; writes
+  over encrypted or non-PII keys are unaffected.
+- IPC + preload + types: `privacy:quarantine-report`, `privacy:migrate-key`,
+  `privacy:eliminate-key` (all metadata-only in logs).
+- `PrivacyScreen` (`src/shared/components/Privacy/`) — new "Privacy" nav tab: lists
+  quarantined keys with record counts, offers migrate/eliminate with confirmations,
+  shows per-action results, never renders quarantined VALUES (metadata only), and
+  degrades to a desktop-only notice on web. i18n keys in pt-BR + en-US
+  (TEST-MATRIX §9.2).
 
 ## Verified by the real-Electron self-test (no mocks, real SQLite file)
 
-- Gated PII write lands as ciphertext (`enc1:*` prefix); gated load round-trips.
-- Unknown keys are refused and never written; non-PII passes through as plaintext.
-- Deliberately planted legacy plaintext row: readable through the gate, flagged by
-  the scanner (`legacyCount`/key names in report), and the DB-file byte scan shows
-  the synthetic marker ONLY in that planted row — every gated write stayed
-  ciphertext.
+- Quarantined key detected (with record count); gated write over it REFUSED.
+- MIGRATE: row becomes ciphertext, reads back verified, plaintext physically gone.
+- ELIMINATE: second planted legacy key deleted, absence verified.
+- After both exits the quarantine report is empty and the DB-file byte scan finds
+  ZERO occurrences of the synthetic PII marker (S3 left exactly the planted rows;
+  S4's explicit flows destroyed them).
 
-## S4 boundary
+## S5+ boundary
 
-Renderer localStorage keeps working as today (plaintext working cache); its
-encrypted-at-rest wiring plus the quarantine state machine (read-only enforcement,
-sync/export exclusions, privacy screen, passphrase UX, migrate/eliminate flows) is
-S4. Domain tables have no runtime writers today; the scan counts their rows so any
-future writer is automatically covered.
+Sync/export exclusion of quarantined data becomes enforceable where those flows are
+reclassified: SPEC-03 envelope replaces the legacy bundle in S5 (quarantined
+localStorage data never reaches it — the legacy bundle keeps its own S7-era
+treatment), and ADR-003 gates the raw `db:export` in S6. The SPEC-02 saga (S7)
+absorbs the per-key elimination performed here into the resumable cross-surface
+flow with receipts.
 
 ## Verification
 
-- 1,319 tests across 96 files; typecheck (app + Electron), lint, desktop/web builds.
-- Coverage on the S3 contract modules: 88.3% lines / 84.1% branches.
-- Rollback (OWNERS-RUNBOOK §7): revert — no data migration happened; values written
-  encrypted under this slice remain readable only via the gate (decrypt path kept).
+- 1,332 tests across 101 files; typecheck (app + Electron), lint, desktop/web
+  builds, pre-push gate — all green.
+- Coverage on the S4 contract modules: 87.9% lines / 84.6% branches.
+- Rollback (OWNERS-RUNBOOK §7): revert — the screen disappears and the gate stops
+  refusing quarantined writes; no data migration happens without explicit user
+  action, so nothing needs reversing.
 
-**D1.1 S3 is pending Themis review. S4 (quarantine + privacy screen) is next.**
+**D1.1 S4 is pending Themis review. S5 (export envelope v1.1) and S6 (db:export
+reclassification) can proceed in parallel; S7 (erasure saga) depends on S1+S2 and
+absorbs S4's elimination into the full saga.**

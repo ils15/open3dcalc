@@ -121,14 +121,37 @@ export interface MinimalStorageDb {
   prepare(sql: string): {
     get(...params: unknown[]): unknown;
     run(...params: unknown[]): unknown;
+    all(...params: unknown[]): unknown[];
   };
+  /** Optional for callers like the real better-sqlite3 client (VACUUM etc.). */
+  exec?(sql: string): void;
 }
 
 const STORAGE_COLUMNS = "value FROM storage WHERE key = ?";
 
+export function writeStoredRow(
+  db: MinimalStorageDb,
+  key: string,
+  value: string,
+): void {
+  db.prepare(
+    "INSERT INTO storage (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+  ).run(key, value, Date.now());
+}
+
+function readStoredRow(db: MinimalStorageDb, key: string): string | null {
+  const row = db.prepare(`SELECT ${STORAGE_COLUMNS}`).get(key) as
+    { value: string } | undefined;
+  return row ? row.value : null;
+}
+
 /**
  * Gate and write a key/value pair into the storage table.
  * Throws on denial (fail-closed refusal — ADR-002 §2.1) and on SQL errors.
+ * S4 (ADR-002 §2.2.1): a PII key holding legacy plaintext is QUARANTINED —
+ * writes to it are refused (read-only) until the user migrates or
+ * eliminates it via the privacy screen. Non-PII and encrypted states are
+ * unaffected.
  */
 export async function saveGated(
   db: MinimalStorageDb,
@@ -139,9 +162,13 @@ export async function saveGated(
   if (outcome.action === "denied") {
     throw new CryptoDeniedError(outcome.reason);
   }
-  db.prepare(
-    "INSERT INTO storage (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
-  ).run(key, outcome.value, Date.now());
+  if (outcome.action === "encrypted") {
+    const current = readStoredRow(db, key);
+    if (current !== null && !current.startsWith("enc1:")) {
+      throw new CryptoDeniedError("quarantined_read_only");
+    }
+  }
+  writeStoredRow(db, key, outcome.value);
 }
 
 /**

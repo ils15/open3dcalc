@@ -58,6 +58,14 @@ interface SelftestReport {
     scanLegacyCount?: number;
     scanEncryptedCount?: number;
   };
+  s4?: {
+    quarantinedDetected?: boolean;
+    quarantinedWriteRefused?: boolean;
+    legacyMigrated?: boolean;
+    migrationVerified?: boolean;
+    legacyEliminated?: boolean;
+    quarantineCleared?: boolean;
+  };
   error?: string;
 }
 
@@ -189,8 +197,17 @@ describe("crypto self-test (real Electron, real SQLite)", () => {
     expect(report.s3?.legacyFlaggedByScan).toBe(true);
     expect(report.s3?.scanEncryptedCount ?? 0).toBeGreaterThanOrEqual(1);
 
-    // §3.1-style byte scan: the marker appears ONLY in the deliberately
-    // planted legacy row — every gated write stayed ciphertext.
-    expect(report.plaintextHitsInDbFile).toBe(1);
+    // S4 — quarantine (ADR-002 §2.2): detected, read-only, and resolved
+    // ONLY through the explicit migrate/eliminate exits.
+    expect(report.s4?.quarantinedDetected).toBe(true);
+    expect(report.s4?.quarantinedWriteRefused).toBe(true);
+    expect(report.s4?.legacyMigrated).toBe(true);
+    expect(report.s4?.migrationVerified).toBe(true);
+    expect(report.s4?.legacyEliminated).toBe(true);
+    expect(report.s4?.quarantineCleared).toBe(true);
+
+    // §3.1-style byte scan: after migration (plaintext destroyed) and
+    // elimination (rows deleted), ZERO marker hits remain in the file.
+    expect(report.plaintextHitsInDbFile).toBe(0);
   }, 180_000);
 });

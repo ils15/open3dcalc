@@ -10,6 +10,7 @@ import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculato
 import { FilamentInventory } from "@/shared/components/Catalog/FilamentInventory";
 import { CustomerTab } from "@/shared/components/Catalog/CustomerTab";
 import { ProductInventory } from "@/shared/components/Catalog/ProductInventory";
+import { PrivacyScreen } from "@/shared/components/Privacy/PrivacyScreen";
 import { QuoteSection } from "@/shared/components/Calculator/QuoteSection";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
@@ -37,6 +38,7 @@ import {
   FileText,
   Users,
   Package,
+  ShieldCheck,
 } from "lucide-react";
 
 type Tab =
@@ -49,7 +51,8 @@ type Tab =
   | "changelog"
   | "quotes"
   | "customers"
-  | "products";
+  | "products"
+  | "privacy";
 type LegacyProduct = {
   name?: string;
   result?: CalculationResult;
@@ -131,6 +134,12 @@ const TABS: {
     icon: <Package className="w-[18px] h-[18px]" />,
     labelKey: "nav.products",
     label: "Produtos",
+  },
+  {
+    id: "privacy",
+    icon: <ShieldCheck className="w-[18px] h-[18px]" />,
+    labelKey: "nav.privacy",
+    label: "Privacidade",
   },
 ];
 
@@ -477,6 +486,7 @@ function App() {
             {activeTab === "quotes" && <QuoteSection />}
             {activeTab === "customers" && <CustomerTab />}
             {activeTab === "products" && <ProductInventory />}
+            {activeTab === "privacy" && <PrivacyScreen />}
           </div>
         </main>
       </div>

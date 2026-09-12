@@ -27,6 +27,7 @@
     "../db/**/*.ts",
     "persistGate.ts",
     "legacyScan.ts",
+    "quarantine.ts",
     "manifestSource.ts",
     "../src/shared/lib/dataManifest.ts"
   ],

@@ -21,7 +21,8 @@
     "mainNavigation": "Navegação principal",
     "more": "Mais",
     "menu": "Menu",
-    "settings": "Configurações"
+    "settings": "Configurações",
+    "privacy": "Privacidade"
   },
   "dashboard": {
     "totalCost": "Custo Total",
@@ -611,6 +612,31 @@
       "section8Item3": "Nenhum dado é transmitido a qualquer servidor durante a exportação ou importação",
       "section8Item4": "Você pode criptografar os pacotes com sua própria senha",
       "section8Lgpd": "Em conformidade com o Art. 18 da LGPD (direito à portabilidade dos dados), você pode exportar seus dados a qualquer momento e importá-los em outro dispositivo."
+    },
+    "quarantine": {
+      "title": "Quarentena de dados legados",
+      "subtitle": "Dados pessoais gravados em texto puro por versões antigas ficam em quarentena: legíveis, mas bloqueados para novas gravações até você escolher migrar (criptografar) ou eliminar.",
+      "desktopOnly": "A quarentena de dados legados está disponível apenas no aplicativo desktop, onde os dados são duráveis em SQLite. Na web, seus dados continuam locais no navegador.",
+      "refresh": "Reverificar",
+      "noQuarantined": "Nenhum dado em quarentena. Tudo que está gravado já está criptografado ou não é dado pessoal.",
+      "statusQuarantined": "Em quarentena (somente leitura)",
+      "statusEncrypted": "Criptografado em repouso",
+      "statusAbsent": "Ausente",
+      "statusNonPii": "Não é dado pessoal",
+      "statusUnknown": "Chave desconhecida (negada)",
+      "records": "{{count}} registro(s)",
+      "migrate": "Migrar",
+      "eliminate": "Eliminar",
+      "working": "Processando…",
+      "confirmMigrate": "Migrar \"{{key}}\" para criptografia em repouso? A cópia em texto puro só é destruída depois que a cópia criptografada for verificada.",
+      "confirmEliminate": "Eliminar definitivamente os dados em quarentena de \"{{key}}\"? Essa ação não pode ser desfeita.",
+      "migrated": "\"{{key}}\" migrado e verificado.",
+      "eliminated": "\"{{key}}\" eliminado.",
+      "migrateFailed": "Falha ao migrar \"{{key}}\" — nada foi perdido; tente novamente.",
+      "eliminateFailed": "Falha ao eliminar \"{{key}}\" — os dados permanecem em quarentena.",
+      "otherData": "Outros dados locais",
+      "readNote": "A quarentena nunca se resolve sozinha: as únicas saídas são migrar ou eliminar, sempre por uma ação sua explícita.",
+      "loadError": "Não foi possível carregar o relatório de quarentena."
     }
   },
   "tooltip": {
