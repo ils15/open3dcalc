@@ -40,6 +40,11 @@ import {
   DiagnosticGateError,
 } from "./diagnosticBackup.js";
 import { isDiagnosticGateEnabled } from "./diagnosticGate.js";
+import {
+  runDesktopErasure,
+  resumeErasureIfNeeded,
+  erasureStatus,
+} from "./erasure.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -347,6 +352,35 @@ function setupIpcHandlers(): void {
       }
     },
   );
+
+  // ── erasure:start (D1.1 S7 — SPEC-02 delete-all saga) ───────────────
+  // The renderer purges its own surfaces first and passes the report; the
+  // main process runs the resumable saga over every durable surface and
+  // returns the completion receipt (with external_copies_notice).
+  ipcMain.handle(
+    "erasure:start",
+    async (event, rendererReport?: Parameters<typeof runDesktopErasure>[1]) => {
+      try {
+        assertTrustedSender(event);
+        return await runDesktopErasure(db, rendererReport);
+      } catch (error) {
+        console.error("[erasure:start] Error:", error);
+        throw error;
+      }
+    },
+  );
+
+  // ── erasure:status ──────────────────────────────────────────────────
+  // Metadata-only journal state for the privacy screen.
+  ipcMain.handle("erasure:status", (event) => {
+    try {
+      assertTrustedSender(event);
+      return erasureStatus();
+    } catch (error) {
+      console.error("[erasure:status] Error:", error);
+      throw error;
+    }
+  });
 
   // ── update:check ────────────────────────────────────────────────────
   ipcMain.handle(
@@ -758,6 +792,10 @@ app.whenReady().then(async () => {
     setupIpcHandlers();
     // ADR-002 §2.3: startup scan of persisted PII (metadata-only summary).
     runPrivacyScan();
+    // SPEC-02 §2: resume a non-terminal erasure saga (never re-prompts).
+    void resumeErasureIfNeeded(db).catch((error) => {
+      console.error("[erasure] resume failed:", error);
+    });
     await createWindow();
     if (mainWindow) {
       initUpdateService(mainWindow, db);

@@ -637,6 +637,16 @@
       "otherData": "Outros dados locais",
       "readNote": "A quarentena nunca se resolve sozinha: as únicas saídas são migrar ou eliminar, sempre por uma ação sua explícita.",
       "loadError": "Não foi possível carregar o relatório de quarentena."
+    },
+    "erasure": {
+      "title": "Apagar todos os meus dados",
+      "description": "Remove todos os seus dados de todas as superfícies de armazenamento do aplicativo (banco de dados, arquivos, caches e backups internos), de forma verificável e com recibo. Pacotes de exportação que você salvou fora do app não são alcançáveis.",
+      "button": "Apagar todos os meus dados",
+      "working": "Apagando… isso pode levar alguns instantes.",
+      "done": "Apagamento concluído e verificado. Todos os armazenamentos foram limpos.",
+      "externalCopies": "Cópias externas que o aplicativo não pode apagar:",
+      "confirm": "Apagar TODOS os seus dados? Um snapshot criptografado permite reverter por até 7 dias em caso de falha. Depois de concluído, a remoção é definitiva. Continuar?",
+      "failed": "Falha no apagamento — seus dados foram restaurados do snapshot de segurança (se disponível) e nada foi perdido."
     }
   },
   "tooltip": {

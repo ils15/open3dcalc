@@ -1,51 +1,59 @@
-# Deepwork D1.1 S6 — db:export reclassification: dev gate, redaction, retention (ADR-003)
+# Deepwork D1.1 S7 — Erasure (delete-all) saga (SPEC-02)
 
-- **Branch/worktree:** `feat/d1-s6-dbexport` / `../open3dcalc-d1-s6-dbexport`
+- **Branch/worktree:** `feat/d1-s7-erasure-saga` / `../open3dcalc-d1-s7-erasure`
 - **Status:** implementation complete — local gates green; awaiting Themis review (PR next).
-- **Scope (OWNERS-RUNBOOK §6 declared):** ADR-003 §2.2 — the raw SQLite `db:export`
-  reclassified as an engineering/diagnostic backup: explicit diagnostic gate
-  (fail-closed), manifest-driven redaction mode, retention sidecars, and the
-  retention/disposal tooling script (OWNERS-RUNBOOK §5). No user-facing UI entry
-  existed or returns. No contract documents modified (no policy bump).
-- **Base:** `main` @ `9e57800` (includes PR #112 D1.1 S5).
+- **Scope (OWNERS-RUNBOOK §6 declared):** SPEC-02 erasure saga — pure state-machine
+  engine (prepared → snapshot_taken → deleting → committed | rolled_back) with a
+  resumable per-store journal (atomic writes, attempts ≤3, no re-prompt), an
+  encrypted TTL'd safety snapshot with the §5 rollback window, the §6 post-condition
+  rescan (zero PII before commit), desktop + renderer store adapters, the erasure
+  IPC surface, the delete-all flow in the privacy screen, and REAL crash-injection
+  tests (SIGKILL-equivalent at exact durable journal points). Contract change:
+  SPEC-01 fixture registers the web journal + snapshot keys and bumps
+  `policy_version` 1.1 → 1.2 (per OWNERS-RUNBOOK §6).
+- **Base:** `main` @ `9e57800` (includes PR #112 D1.1 S5, PR #113 D1.1 S6 and the
+  node_modules repair).
 
 ## What landed in this slice
 
-- `electron/diagnosticGate.ts` — authorized-access gate (§2.2.1): `--diagnostic`
-  CLI switch or `OPEN3DCALC_DIAGNOSTIC=1`; fail-closed by default in production
-  builds and un-flagged dev runs.
-- `electron/diagnosticBackup.ts` — the gated backup operation (§2.2.2/§2.2.4):
-  non-redacted straight copy (PII-bearing, 14-day retention sidecar written);
-  redaction mode stages a copy, masks every manifest-`pii` storage row (unknown
-  keys fail-closed as PII), strips the PII domain tables, `VACUUM`s so masked
-  content is not retained in free pages, then atomically renames. Every backup
-  writes a `<target>.meta.json` sidecar (createdAt, redacted, retentionDays).
-- `main.ts` — `db:export` handler refuses without the gate, delegates to the
-  diagnostic module, and the save dialog is retitled as an engineering artifact.
-  No renderer UI invokes it (verified: zero `exportDatabase` call sites in src).
-- `scripts/diagnostic-retention.mjs` (+ npm `diagnostic:retention`) — retention
-  tooling (§2.2.4 / OWNERS-RUNBOOK §5): CHECK mode flags unredacted backups past
-  their deadline and exits 1 (CI-failing); `--dispose` securely destroys them
-  (overwrite with zeros + unlink, sidecar included) and appends a metadata-only
-  line to `diagnostic-disposal.log`. Sidecar-less files are fail-closed (judged
-  unredacted, aged by mtime).
-- User export remains the SPEC-03 envelope only (§2.1): quarantined/excluded
-  policies continue to apply there.
+- `src/shared/lib/erasureSaga/` — pure engine (no Electron/DOM):
+  - `engine.ts` — §2 state machine with a real commit point: commit only after
+    every store row is `done` AND the §6 rescan finds zero PII; pre-commit
+    unrecoverable failure ⇒ rollback (snapshot restore); impossible rollback
+    (§5: capability denied / TTL expired / key lost) ⇒ completes `committed` with
+    a `rollback_unavailable` annotation — never a silent partial state; the
+    in_progress journal row is persisted BEFORE each purge (resume seam).
+  - `journal.ts` (disk) / `webStores.ts` (localStorage) — metadata-only journal,
+    atomic write-temp+fsync+rename.
+  - `snapshot.ts` / `webStores.ts` — encrypted snapshot (capability-injected),
+    TTL sweep on every entry into `deleting`, destroy-on-commit
+    (overwrite+unlink / remove).
+  - `rendererSweep.ts` — granular renderer adapters: localStorage (manifest keys +
+    unknown `open3dcalc_*` sweep, R1), IndexedDB, OPFS, Cache API/SW.
+- `electron/erasureStores.ts` + `electron/erasure.ts` — desktop adapters (domain
+  tables, storage rows, WAL/SHM checkpoint+verify, appdata files, logs, staging,
+  snapshots) with VACUUM after table deletion; safeStorage-backed snapshot
+  capability; startup resume of non-terminal sagas.
+- IPC `erasure:start`/`erasure:status` + preload + typed `electron.d.ts`.
+- PrivacyScreen — "Delete all my data": renderer purges first, main saga covers
+  the durable surfaces, §7 `external_copies_notice` shown on the completion
+  receipt. i18n pt-BR/en-US.
+- SPEC-01 fixture: `policy_version` 1.2; new web keys `open3dcalc_erasure_journal`
+  (diagnostic) and `open3dcalc_erasure_snapshot` (class snapshot, encrypted at
+  rest, 7-day retention).
 
-## Verification (TEST-MATRIX §5)
+## Verification (TEST-MATRIX §6)
 
-- 5.1: without the gate the handler refuses — no artifact is written.
-- 5.2: with the gate, an unredacted backup lands locally with the retention
-  sidecar; the module performs zero network I/O (local file only, §2.2.3).
-- 5.3: redacted backup masks manifest-PII storage rows (`[REDACTED]`), leaves
-  non-PII rows intact, strips the domain tables, and the marker is provably gone
-  from the file bytes.
-- 5.4: the retention script flags unredacted backups past 14 days (exit 1) and
-  `--dispose` removes them with an audit log; redacted backups are retained.
-- 1,350 tests across 104 files; typecheck (app + Electron), strict lint, builds.
-- Rollback (OWNERS-RUNBOOK §7): flag off ⇒ previous behavior returns — requires
-  user sign-off per the runbook (re-exposes raw PII copy); the preferred path is
-  keeping the gate and fixing forward.
+- 6.1 happy path · 6.2 death after snapshot_taken ⇒ idempotent resume commits
+  without re-prompt (journal durable, confirmation preserved) · 6.3 death mid-
+  deleting (first store done) ⇒ resumes from the first incomplete store ·
+  6.4 store failing 3× ⇒ rollback restores the snapshot payload · 6.5 post-erasure
+  byte scan: zero PII markers in the SQLite file (VACUUM) · 6.6 TTL sweep +
+  destroy-on-commit · 6.7 key lost ⇒ completes with `rollback_unavailable` ·
+  6.8 rescan finding PII ⇒ store failed, never success.
+- 1,366 tests across 107 files; typecheck (app + Electron), strict lint, builds.
+- Rollback (OWNERS-RUNBOOK §7): the saga is user-triggered; rollback = disable the
+  delete-all entry (flag) while journal+resume logic stays enabled (§7 S7 row).
 
-**D1.1 S6 is pending Themis review. S7 (erasure saga, SPEC-02) is next; S8
-(consent receipt, SPEC-04) depends on S7.**
+**D1.1 S7 is pending Themis review. S8 (consent receipt, SPEC-04) depends on this
+slice and is next.**
