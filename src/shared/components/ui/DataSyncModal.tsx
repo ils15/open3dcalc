@@ -76,8 +76,6 @@ function DataSyncModalContent({
   const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Export state
-  // SPEC-03 §1: the user export is always an encrypted envelope.
-  const [encryptEnabled, setEncryptEnabled] = useState(true);
   const [exportPassword, setExportPassword] = useState("");
   const [showExportPassword, setShowExportPassword] = useState(false);
   const [exportPhase, setExportPhase] = useState<Phase>("idle");
@@ -273,8 +271,6 @@ function DataSyncModalContent({
         >
           {activeTab === "export" ? (
             <ExportTab
-              encryptEnabled={encryptEnabled}
-              setEncryptEnabled={setEncryptEnabled}
               exportPassword={exportPassword}
               setExportPassword={setExportPassword}
               showExportPassword={showExportPassword}
@@ -355,8 +351,6 @@ function TabButton({ id, active, label, onSelect }: TabButtonProps) {
 }
 
 interface ExportTabProps {
-  encryptEnabled: boolean;
-  setEncryptEnabled: (v: boolean) => void;
   exportPassword: string;
   setExportPassword: (v: string) => void;
   showExportPassword: boolean;
@@ -367,8 +361,6 @@ interface ExportTabProps {
 }
 
 function ExportTab({
-  encryptEnabled,
-  setEncryptEnabled,
   exportPassword,
   setExportPassword,
   showExportPassword,
