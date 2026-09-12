@@ -80,7 +80,11 @@ export function PrivacyScreen() {
   }, [privacyApi, t]);
 
   useEffect(() => {
-    void loadReport();
+    // Deferred to a microtask so the fetch never triggers cascading
+    // synchronous renders from within the effect body.
+    void Promise.resolve().then(() => {
+      void loadReport();
+    });
   }, [loadReport]);
 
   const handleMigrate = useCallback(

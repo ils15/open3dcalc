@@ -26,7 +26,6 @@ import {
   readStoredRow,
 } from "../quarantine.js";
 import { saveGated } from "../persistGate.js";
-import { CryptoDeniedError } from "../cryptoCapability.js";
 import {
   setSessionPassphrase,
   zeroizeSessionPassphrase,
