@@ -222,7 +222,6 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
 
   it("6.6: expired snapshots are swept and destroyed", async () => {
     const { options, h } = makeHarness();
-    h.snapshots.store;
     await startSaga(options);
     // Snapshot destroyed on commit:
     const ids = Object.keys(h.snapshots.blobs);

@@ -184,7 +184,7 @@ export function PrivacyScreen() {
     } finally {
       setErasing(false);
     }
-  }, [erasureApi, t]);
+  }, [erasureApi, privacyApi, t]);
 
   if (!privacyApi) {
     return (
