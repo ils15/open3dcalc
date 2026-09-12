@@ -772,6 +772,62 @@
     },
     "versions": [
       {
+        "version": "1.12.0",
+        "date": "",
+        "sections": [
+          {
+            "title": "🚀 Novidades",
+            "items": [
+              "**release:** Automated canonical release notes (#104)",
+              "**privacy:** D1.1 S1 — SPEC-01 manifest loader, gate and gated storage (#107)",
+              "**privacy:** D1.1 S2 — crypto capability layer (ADR-001) (#109)",
+              "**privacy:** D1.1 S3 — PII encryption on write paths + legacy plaintext scanner (ADR-002) (#110)",
+              "**privacy:** D1.1 S4 — legacy plaintext quarantine + privacy screen (ADR-002) (#111)",
+              "**privacy:** D1.1 S5 — SPEC-03 export envelope v1.1 (producer + consumer) (#112)",
+              "**privacy:** D1.1 S6 — db:export reclassified as gated diagnostic backup (ADR-003) (#113)",
+              "**privacy:** D1.1 S7 — resumable delete-all erasure saga (SPEC-02) (#114)",
+              "**privacy:** D1.1 S8 — policy-bound consent receipt (SPEC-04) (#115)"
+            ]
+          },
+          {
+            "title": "🐛 Correções",
+            "items": [
+              "**changelog:** Canonical dates, i18n locale, and release backfill (#103)",
+              "**gcode:** Preserve filament totals across extruder resets (#105)",
+              "**build:** Remove accidentally tracked node_modules symlink (4929271)",
+              "**gcode:** no longer ignores gcode without a TIME header and supports the Prusa/Orca format (closes #32) — removes the silent `if(printTimeMinutes>0)` gate in `StlPreview.tsx:242`, `d/h/m/s` parser (`1h 23m 45s`/`2d 5h`/`45m 30s`) in `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` on the GCODE branch, drop zone stays visible (`!modelInfo?.geometry`), `stl.clear` button for GCODE, 13 new tests (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolved"
+            ]
+          },
+          {
+            "title": "📖 Documentação",
+            "items": [
+              "**privacy:** D1.0 data contracts — manifest, erasure, export envelope, consent receipt (Themis approved) (#106)",
+              "User guide for the privacy tab, encrypted export and diagnostic backups (#116)"
+            ]
+          },
+          {
+            "title": "🧹 Outros",
+            "items": [
+              "Remove dead code and document branch sweep (#108)",
+              "**ci:** Bump actions/deploy-pages in /.github/workflows (#90)",
+              "**ci:** Bump actions/download-artifact in /.github/workflows (#92)",
+              "**ci:** Bump anomalyco/opencode/github in /.github/workflows (#97)",
+              "**deps-dev:** Bump tsx from 4.23.12 to 4.23.13 (#98)",
+              "**deps-dev:** Bump @testing-library/user-event from 14.6.6 to 14.6.7 (#101)",
+              "**deps-dev:** Bump globals from 17.11.0 to 17.12.0 (#94)",
+              "**deps-dev:** Bump typescript-eslint from 8.67.0 to 8.69.0 (#95)",
+              "**deps-dev:** Bump @types/react-dom from 19.2.5 to 19.2.7 (#96)"
+            ]
+          },
+          {
+            "title": "❤️ Contribuidores",
+            "items": [
+              "Ils15 (@ils15)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "1.11.0",
         "date": "2026-09-06",
         "sections": [
@@ -829,7 +885,10 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)", "Lupolima"]
+            "items": [
+              "Ils15 (@ils15)",
+              "Lupolima"
+            ]
           }
         ]
       },
@@ -854,7 +913,9 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -890,7 +951,9 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -932,7 +995,9 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1016,13 +1081,15 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
       {
         "version": "1.8.2",
-        "date": "2026-06-29",
+        "date": "2026-06-30",
         "sections": [
           {
             "title": "🐛 Correções",
@@ -1032,11 +1099,15 @@
           },
           {
             "title": "🧹 Outros",
-            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
+            "items": [
+              "**release:** V1.8.1 [skip ci] (079945e)"
+            ]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1068,7 +1139,10 @@
           },
           {
             "title": "✅ Tests",
-            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
+            "items": [
+              "417 testes, 36/36 arquivos passando",
+              "Cobertura >80%"
+            ]
           }
         ]
       },
