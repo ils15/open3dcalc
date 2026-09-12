@@ -18,9 +18,11 @@
  *  - duplicate keys (1.11, uniqueness enforced by the loader)
  *
  * No real PII is ever handled here — keys are metadata only.
+ *
+ * NOTE: the shipped fixture loading lives in `shippedManifest.ts` so the
+ * pure half of this module stays importable by the Electron main process
+ * (node16 ESM output cannot execute a static JSON import).
  */
-
-import manifestFixture from "../../../docs/privacy/SPEC-01-manifest-fixture.json";
 
 /* ------------------------------------------------------------------ */
 /*  Normative vocabularies (mirror SPEC-01 schema $defs)               */
@@ -386,11 +388,6 @@ export function loadManifest(doc: unknown): ManifestIndex {
   return index;
 }
 
-/** The shipped SPEC-01 fixture as a validated runtime index. */
-export function loadShippedManifest(): ManifestIndex {
-  return loadManifest(manifestFixture as ManifestDocument);
-}
-
 /** Document-level policy version (binds SPEC-04 receipts). */
 export function getPolicyVersion(doc: unknown): string {
   if (typeof doc !== "object" || doc === null) {
@@ -401,11 +398,6 @@ export function getPolicyVersion(doc: unknown): string {
     throw new ManifestError('policy_version must match "N.M"');
   }
   return version;
-}
-
-/** Policy version of the shipped fixture. */
-export function getShippedPolicyVersion(): string {
-  return getPolicyVersion(manifestFixture as ManifestDocument);
 }
 
 /* ------------------------------------------------------------------ */

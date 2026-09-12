@@ -8,7 +8,6 @@ import {
   getEntry,
   findOrphanKeys,
   getPolicyVersion,
-  getShippedPolicyVersion,
   ManifestError,
   SURFACES,
   PLATFORMS,
@@ -21,6 +20,7 @@ import {
   RETENTION_POLICIES,
   type ManifestDocument,
 } from "@/shared/lib/dataManifest";
+import { getShippedPolicyVersion } from "@/shared/lib/shippedManifest";
 
 // ---------------------------------------------------------------------------
 // Helpers (synthetic data only — never real PII)
