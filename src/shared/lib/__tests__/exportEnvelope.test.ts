@@ -6,7 +6,6 @@ import {
   EXPORT_FORMAT,
   EXPORT_VERSION,
   MAX_RECORDS,
-  EnvelopeError,
 } from "@/shared/lib/exportEnvelope";
 import { canonicalJson } from "@/shared/lib/crypto/envelope";
 
