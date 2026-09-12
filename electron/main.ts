@@ -35,6 +35,11 @@ import {
   migrateKey,
   eliminateKey,
 } from "./quarantine.js";
+import {
+  createDiagnosticBackup,
+  DiagnosticGateError,
+} from "./diagnosticBackup.js";
+import { isDiagnosticGateEnabled } from "./diagnosticGate.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -282,42 +287,66 @@ function setupIpcHandlers(): void {
     }
   });
 
-  // ── db:export ────────────────────────────────────────────────────
-  ipcMain.handle("db:export", async (event): Promise<string> => {
-    try {
-      assertTrustedSender(event);
-      const dbPath = getDbPath();
+  // ── db:export (D1.1 S6 — ADR-003 §2.2 reclassification) ─────────────
+  // The raw SQLite copy is a DIAGNOSTIC backup, not a user feature: it is
+  // gated behind the diagnostic flag, refuses to run in production without
+  // it, and supports manifest-driven redaction. Users export via the
+  // SPEC-03 envelope instead. No renderer UI invokes this.
+  ipcMain.handle(
+    "db:export",
+    async (event, options?: { redact?: boolean }): Promise<string> => {
+      try {
+        assertTrustedSender(event);
+        const redact = options?.redact === true;
+        const dbPath = getDbPath();
 
-      if (!mainWindow) {
-        throw new Error("No active window");
+        // §2.2.1 authorized access only — fail-closed without the gate.
+        if (!isDiagnosticGateEnabled()) {
+          throw new DiagnosticGateError();
+        }
+
+        if (!mainWindow) {
+          throw new Error("No active window");
+        }
+
+        const suffix = redact ? "redacted" : "full";
+        const result = await dialog.showSaveDialog(mainWindow, {
+          title: "Backup diagnóstico (engenharia) — uso interno",
+          defaultPath: `diagnostic-backup-${suffix}-${new Date()
+            .toISOString()
+            .slice(0, 10)}.sqlite3`,
+          filters: [
+            { name: "SQLite Database", extensions: ["sqlite3", "db"] },
+            { name: "All Files", extensions: ["*"] },
+          ],
+        });
+
+        if (result.canceled || !result.filePath) {
+          throw new Error("Export cancelled");
+        }
+
+        const backup = await createDiagnosticBackup({
+          dbPath,
+          targetPath: result.filePath,
+          redact,
+          checkpoint: () => {
+            // Checkpoint first so the copy includes all WAL data.
+            if (db && db.$client) {
+              db.$client.pragma("wal_checkpoint(TRUNCATE)");
+            }
+          },
+        });
+        console.log(
+          `[db:export] diagnostic backup (${suffix}) written by operator: ` +
+            `${path.basename(backup.targetPath)}`,
+        );
+        return backup.targetPath;
+      } catch (error) {
+        console.error("[db:export] Error:", error);
+        throw error;
       }
-
-      const result = await dialog.showSaveDialog(mainWindow, {
-        title: "Exportar Banco de Dados",
-        defaultPath: `open3dcalc-backup-${new Date().toISOString().slice(0, 10)}.sqlite3`,
-        filters: [
-          { name: "SQLite Database", extensions: ["sqlite3", "db"] },
-          { name: "All Files", extensions: ["*"] },
-        ],
-      });
-
-      if (result.canceled || !result.filePath) {
-        throw new Error("Export cancelled");
-      }
-
-      // Checkpoint first so the exported single file includes all WAL data
-      // (otherwise the copy could silently omit recent writes).
-      if (db && db.$client) {
-        db.$client.pragma("wal_checkpoint(TRUNCATE)");
-      }
-
-      await fs.copyFile(dbPath, result.filePath);
-      return result.filePath;
-    } catch (error) {
-      console.error("[db:export] Error:", error);
-      throw error;
-    }
-  });
+    },
+  );
 
   // ── update:check ────────────────────────────────────────────────────
   ipcMain.handle(

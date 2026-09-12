@@ -24,7 +24,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx db/migrate.ts",
     "postinstall": "node -e \"if (!process.env.CI) require('child_process').execSync('electron-rebuild -f -w better-sqlite3', { stdio: 'inherit' })\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "diagnostic:retention": "node scripts/diagnostic-retention.mjs"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.20",
