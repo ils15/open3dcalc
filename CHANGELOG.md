@@ -1,5 +1,48 @@
 # Changelog
 
+## v1.12.0
+
+[compare changes](https://github.com/ils15/open3dcalc/compare/v1.11.0...v1.12.0)
+
+### 🚀 Enhancements
+
+- **release:** Automated canonical release notes ([#104](https://github.com/ils15/open3dcalc/pull/104))
+- **privacy:** D1.1 S1 — SPEC-01 manifest loader, gate and gated storage ([#107](https://github.com/ils15/open3dcalc/pull/107))
+- **privacy:** D1.1 S2 — crypto capability layer (ADR-001) ([#109](https://github.com/ils15/open3dcalc/pull/109))
+- **privacy:** D1.1 S3 — PII encryption on write paths + legacy plaintext scanner (ADR-002) ([#110](https://github.com/ils15/open3dcalc/pull/110))
+- **privacy:** D1.1 S4 — legacy plaintext quarantine + privacy screen (ADR-002) ([#111](https://github.com/ils15/open3dcalc/pull/111))
+- **privacy:** D1.1 S5 — SPEC-03 export envelope v1.1 (producer + consumer) ([#112](https://github.com/ils15/open3dcalc/pull/112))
+- **privacy:** D1.1 S6 — db:export reclassified as gated diagnostic backup (ADR-003) ([#113](https://github.com/ils15/open3dcalc/pull/113))
+- **privacy:** D1.1 S7 — resumable delete-all erasure saga (SPEC-02) ([#114](https://github.com/ils15/open3dcalc/pull/114))
+- **privacy:** D1.1 S8 — policy-bound consent receipt (SPEC-04) ([#115](https://github.com/ils15/open3dcalc/pull/115))
+
+### 🩹 Fixes
+
+- **changelog:** Canonical dates, i18n locale, and release backfill ([#103](https://github.com/ils15/open3dcalc/pull/103))
+- **gcode:** Preserve filament totals across extruder resets ([#105](https://github.com/ils15/open3dcalc/pull/105))
+- **build:** Remove accidentally tracked node_modules symlink ([4929271](https://github.com/ils15/open3dcalc/commit/4929271))
+
+### 📖 Documentation
+
+- **privacy:** D1.0 data contracts — manifest, erasure, export envelope, consent receipt (Themis approved) ([#106](https://github.com/ils15/open3dcalc/pull/106))
+- User guide for the privacy tab, encrypted export and diagnostic backups ([#116](https://github.com/ils15/open3dcalc/pull/116))
+
+### 🏡 Chore
+
+- Remove dead code and document branch sweep ([#108](https://github.com/ils15/open3dcalc/pull/108))
+- **ci:** Bump actions/deploy-pages in /.github/workflows ([#90](https://github.com/ils15/open3dcalc/pull/90))
+- **ci:** Bump actions/download-artifact in /.github/workflows ([#92](https://github.com/ils15/open3dcalc/pull/92))
+- **ci:** Bump anomalyco/opencode/github in /.github/workflows ([#97](https://github.com/ils15/open3dcalc/pull/97))
+- **deps-dev:** Bump tsx from 4.23.12 to 4.23.13 ([#98](https://github.com/ils15/open3dcalc/pull/98))
+- **deps-dev:** Bump @testing-library/user-event from 14.6.6 to 14.6.7 ([#101](https://github.com/ils15/open3dcalc/pull/101))
+- **deps-dev:** Bump globals from 17.11.0 to 17.12.0 ([#94](https://github.com/ils15/open3dcalc/pull/94))
+- **deps-dev:** Bump typescript-eslint from 8.67.0 to 8.69.0 ([#95](https://github.com/ils15/open3dcalc/pull/95))
+- **deps-dev:** Bump @types/react-dom from 19.2.5 to 19.2.7 ([#96](https://github.com/ils15/open3dcalc/pull/96))
+
+### ❤️ Contributors
+
+- Ils15 ([@ils15](https://github.com/ils15))
+
 ## Unreleased
 
 ### 🐛 Bug Fixes
