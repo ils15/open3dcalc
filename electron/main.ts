@@ -30,6 +30,11 @@ import {
 } from "./cryptoCapability.js";
 import { saveGated, loadGated } from "./persistGate.js";
 import { buildScanReport, summarizeReport } from "./legacyScan.js";
+import {
+  buildQuarantineReport,
+  migrateKey,
+  eliminateKey,
+} from "./quarantine.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -579,6 +584,57 @@ function setupIpcHandlers(): void {
       return runPrivacyScan();
     } catch (error) {
       console.error("[privacy:scan-report] Error:", error);
+      throw error;
+    }
+  });
+
+  // ── privacy:quarantine-report (D1.1 S4 — ADR-002 §2.2) ──────────────
+  // Quarantine state derived from the scan: PII keys holding legacy
+  // plaintext are quarantined (read-only) until migrate/eliminate.
+  ipcMain.handle("privacy:quarantine-report", (event) => {
+    try {
+      assertTrustedSender(event);
+      return buildQuarantineReport(db.$client);
+    } catch (error) {
+      console.error("[privacy:quarantine-report] Error:", error);
+      throw error;
+    }
+  });
+
+  // ── privacy:migrate-key (ADR-002 §2.2.3) ────────────────────────────
+  // Encrypt the quarantined plaintext with the ADR-001 capability, verify
+  // the encrypted copy reads back, then consider the plaintext destroyed.
+  ipcMain.handle("privacy:migrate-key", async (event, key: string) => {
+    try {
+      assertTrustedSender(event);
+      if (typeof key !== "string" || key.trim().length === 0) {
+        throw new Error("Key must be a non-empty string");
+      }
+      const result = await migrateKey(db.$client, key);
+      console.log(
+        `[privacy] migrated key "${key}" (verified=${result.verified})`,
+      );
+      return result;
+    } catch (error) {
+      console.error("[privacy:migrate-key] Error:", error);
+      throw error;
+    }
+  });
+
+  // ── privacy:eliminate-key (ADR-002 §2.2.3) ──────────────────────────
+  // Delete the quarantined rows for a PII key (SPEC-02 saga in S7
+  // formalizes the cross-surface erasure with receipts).
+  ipcMain.handle("privacy:eliminate-key", async (event, key: string) => {
+    try {
+      assertTrustedSender(event);
+      if (typeof key !== "string" || key.trim().length === 0) {
+        throw new Error("Key must be a non-empty string");
+      }
+      const result = eliminateKey(db.$client, key);
+      console.log(`[privacy] eliminated key "${key}"`);
+      return result;
+    } catch (error) {
+      console.error("[privacy:eliminate-key] Error:", error);
       throw error;
     }
   });

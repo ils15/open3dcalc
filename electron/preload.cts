@@ -172,6 +172,37 @@ const electronAPI = {
       domainTables: { customers: number; quotes: number; quote_items: number };
       manifestAvailable: boolean;
     }> => ipcRenderer.invoke("privacy:scan-report"),
+
+    /**
+     * ADR-002 §2.2 quarantine report: PII keys holding legacy plaintext
+     * (quarantined, read-only) and their record counts.
+     */
+    quarantineReport: (): Promise<{
+      scannedAt: string;
+      entries: Array<{
+        key: string;
+        status: string;
+        recordCount?: number;
+      }>;
+      quarantinedKeys: string[];
+    }> => ipcRenderer.invoke("privacy:quarantine-report"),
+
+    /**
+     * ADR-002 §2.2.3 migrate: encrypt the quarantined plaintext with the
+     * ADR-001 capability and verify before the plaintext is destroyed.
+     */
+    migrateKey: (
+      key: string,
+    ): Promise<{ key: string; migrated: boolean; verified: boolean }> =>
+      ipcRenderer.invoke("privacy:migrate-key", key),
+
+    /**
+     * ADR-002 §2.2.3 eliminate: delete the quarantined rows for a PII key.
+     */
+    eliminateKey: (
+      key: string,
+    ): Promise<{ key: string; eliminated: boolean }> =>
+      ipcRenderer.invoke("privacy:eliminate-key", key),
   },
 } as const;
 

@@ -35,6 +35,11 @@ import {
 } from "../cryptoCapability.js";
 import { saveGated, loadGated, gateLoad } from "../persistGate.js";
 import { buildScanReport } from "../legacyScan.js";
+import {
+  buildQuarantineReport,
+  migrateKey,
+  eliminateKey,
+} from "../quarantine.js";
 
 const MARKER = "Fernanda Sintética <fernanda@exemplo.teste>";
 const PII_KEY = "open3dcalc_customers_v1";
@@ -61,6 +66,15 @@ interface S3Report {
   scanEncryptedCount: number;
 }
 
+interface S4Report {
+  quarantinedDetected: boolean;
+  quarantinedWriteRefused: boolean;
+  legacyMigrated: boolean;
+  migrationVerified: boolean;
+  legacyEliminated: boolean;
+  quarantineCleared: boolean;
+}
+
 interface SelftestReport {
   capability: ReturnType<typeof getCapability>;
   safeStorageProbe: boolean;
@@ -68,6 +82,7 @@ interface SelftestReport {
   scenarios: ScenarioReport[];
   plaintextHitsInDbFile: number;
   s3?: S3Report;
+  s4?: S4Report;
   error?: string;
 }
 
@@ -176,8 +191,10 @@ async function runSelftest(): Promise<SelftestReport> {
     scanEncryptedCount: 0,
   };
 
-  // §2.2 setup: plant pre-D1.1 plaintext PII exactly as legacy users have.
-  insertRaw.run(LEGACY_KEY, MARKER, Date.now() - 1000);
+  // §2.2 setup: plant pre-D1.1 plaintext PII exactly as legacy users have
+  // (a JSON array of records, the shape the stores persist).
+  const LEGACY_PLAINTEXT = JSON.stringify([{ name: MARKER }]);
+  insertRaw.run(LEGACY_KEY, LEGACY_PLAINTEXT, Date.now() - 1000);
 
   // §2.1: gated write of a PII key goes through the capability layer.
   await saveGated(db, PII_KEY, MARKER);
@@ -188,7 +205,7 @@ async function runSelftest(): Promise<SelftestReport> {
   s3.gateRoundTrip = (await loadGated(db, PII_KEY)) === MARKER;
 
   // §2.2: legacy plaintext PII stays readable through the gate...
-  s3.legacyReadable = (await loadGated(db, LEGACY_KEY)) === MARKER;
+  s3.legacyReadable = (await loadGated(db, LEGACY_KEY)) === LEGACY_PLAINTEXT;
   const legacyOutcome = await gateLoad(
     LEGACY_KEY,
     readRow(db, LEGACY_KEY) ?? "",
@@ -226,7 +243,73 @@ async function runSelftest(): Promise<SelftestReport> {
   );
   report.s3 = s3;
 
-  // §3.1-style byte scan: the marker appears ONLY in the planted legacy row.
+  // ------------------------------------------------------------------
+  // S4 — quarantine state + migrate/eliminate flows (ADR-002 §2.2)
+  // ------------------------------------------------------------------
+  const s4: S4Report = {
+    quarantinedDetected: false,
+    quarantinedWriteRefused: false,
+    legacyMigrated: false,
+    migrationVerified: false,
+    legacyEliminated: false,
+    quarantineCleared: false,
+  };
+
+  // §2.2: the quarantined key shows in the report...
+  let qReport = buildQuarantineReport(db);
+  s4.quarantinedDetected =
+    qReport.quarantinedKeys.includes(LEGACY_KEY) &&
+    (qReport.entries.find((e) => e.key === LEGACY_KEY)?.recordCount ?? 0) >= 1;
+
+  // §2.2.1: gated writes over the quarantined key are refused (read-only).
+  try {
+    await saveGated(db, LEGACY_KEY, '{"n":9}');
+    s4.quarantinedWriteRefused = false;
+  } catch (error) {
+    s4.quarantinedWriteRefused =
+      error instanceof CryptoDeniedError &&
+      error.message.includes("quarantined_read_only");
+  }
+
+  // §2.2.3 MIGRATE: encrypt, verify, plaintext destroyed.
+  const migrated = await migrateKey(db, LEGACY_KEY);
+  s4.legacyMigrated = migrated.migrated && migrated.verified;
+  s4.migrationVerified = readRow(db, LEGACY_KEY)?.startsWith("enc1:") === true;
+  const afterMigration = await gateLoad(
+    LEGACY_KEY,
+    readRow(db, LEGACY_KEY) ?? "",
+  );
+  s4.migrationVerified =
+    s4.migrationVerified && afterMigration.action === "decrypted";
+
+  // §2.2.3 ELIMINATE: plant another legacy key, then eliminate it.
+  const HISTORY_KEY = "open3dcalc_history_v2";
+  insertRaw.run(HISTORY_KEY, MARKER, Date.now());
+  qReport = buildQuarantineReport(db);
+  const historyQuarantined = qReport.quarantinedKeys.includes(HISTORY_KEY);
+  try {
+    await saveGated(db, HISTORY_KEY, "{}");
+    s4.quarantinedWriteRefused = false;
+  } catch (error) {
+    s4.quarantinedWriteRefused =
+      s4.quarantinedWriteRefused &&
+      error instanceof CryptoDeniedError &&
+      error.message.includes("quarantined_read_only");
+  }
+  const eliminated = eliminateKey(db, HISTORY_KEY);
+  s4.legacyEliminated =
+    eliminated.eliminated &&
+    historyQuarantined &&
+    readRow(db, HISTORY_KEY) === null;
+
+  // §2.2.5: after both explicit exits, quarantine is empty — never
+  // auto-resolved, only by the user actions above.
+  qReport = buildQuarantineReport(db);
+  s4.quarantineCleared = qReport.quarantinedKeys.length === 0;
+  report.s4 = s4;
+
+  // §3.1-style byte scan: after migrate (plaintext destroyed) and eliminate
+  // (rows deleted), the synthetic marker must have ZERO hits in the file.
   report.plaintextHitsInDbFile = countMarkerHits(readFileSync(dbPath));
 
   db.close();
