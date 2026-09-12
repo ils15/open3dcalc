@@ -76,7 +76,8 @@ function DataSyncModalContent({
   const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Export state
-  const [encryptEnabled, setEncryptEnabled] = useState(false);
+  // SPEC-03 §1: the user export is always an encrypted envelope.
+  const [encryptEnabled, setEncryptEnabled] = useState(true);
   const [exportPassword, setExportPassword] = useState("");
   const [showExportPassword, setShowExportPassword] = useState(false);
   const [exportPhase, setExportPhase] = useState<Phase>("idle");
@@ -154,7 +155,7 @@ function DataSyncModalContent({
     setExportResult(null);
     try {
       const result = await exportData({
-        password: encryptEnabled && exportPassword ? exportPassword : undefined,
+        password: exportPassword || undefined,
       });
       setExportResult(result);
       setExportPhase("success");
@@ -384,65 +385,45 @@ function ExportTab({
         {t("sync.export.description")}
       </p>
 
-      <label className="flex items-start gap-3 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={encryptEnabled}
-          onChange={(e) => {
-            setEncryptEnabled(e.target.checked);
-            if (!e.target.checked) setExportPassword("");
-          }}
-          className="mt-0.5 w-4 h-4 rounded accent-[var(--color-accent)]"
-        />
-        <span className="text-sm text-[var(--color-text-secondary)]">
-          {t("sync.export.encrypt")}
-        </span>
-      </label>
-
-      {encryptEnabled && (
-        <div className="space-y-1.5">
-          <label
-            htmlFor="sync-export-password"
-            className="block text-xs font-medium text-[var(--color-text-secondary)]"
+      <div className="space-y-1.5">
+        <label
+          htmlFor="sync-export-password"
+          className="block text-xs font-medium text-[var(--color-text-secondary)]"
+        >
+          {t("sync.export.password")}
+        </label>
+        <div className="relative">
+          <input
+            id="sync-export-password"
+            type={showExportPassword ? "text" : "password"}
+            value={exportPassword}
+            onChange={(e) => setExportPassword(e.target.value)}
+            placeholder={t("sync.export.passwordPlaceholder")}
+            className="w-full pr-10 px-3.5 py-2.5 rounded-xl text-sm bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          />
+          <button
+            type="button"
+            onClick={() => setShowExportPassword((v) => !v)}
+            aria-label={
+              showExportPassword
+                ? t("sync.export.passwordHide", "Ocultar senha")
+                : t("sync.export.passwordShow", "Mostrar senha")
+            }
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
-            {t("sync.export.password")}
-          </label>
-          <div className="relative">
-            <input
-              id="sync-export-password"
-              type={showExportPassword ? "text" : "password"}
-              value={exportPassword}
-              onChange={(e) => {
-                setExportPassword(e.target.value);
-                if (e.target.value) setEncryptEnabled(true);
-              }}
-              placeholder={t("sync.export.passwordPlaceholder")}
-              className="w-full pr-10 px-3.5 py-2.5 rounded-xl text-sm bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-            />
-            <button
-              type="button"
-              onClick={() => setShowExportPassword((v) => !v)}
-              aria-label={
-                showExportPassword
-                  ? t("sync.export.passwordHide", "Ocultar senha")
-                  : t("sync.export.passwordShow", "Mostrar senha")
-              }
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-            >
-              {showExportPassword ? (
-                <Unlock className="w-4 h-4" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
-            </button>
-          </div>
+            {showExportPassword ? (
+              <Unlock className="w-4 h-4" />
+            ) : (
+              <Lock className="w-4 h-4" />
+            )}
+          </button>
         </div>
-      )}
+      </div>
 
       <div className="space-y-3">
         <button
           onClick={onExport}
-          disabled={phase === "working"}
+          disabled={phase === "working" || !exportPassword}
           className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           <Download className="w-4 h-4" />

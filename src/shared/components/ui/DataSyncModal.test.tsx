@@ -64,11 +64,20 @@ describe("DataSyncModal", () => {
       sizeBytes: 2048,
     });
     render(<DataSyncModal open={true} />);
+    // SPEC-03: export is always encrypted — the password is required.
+    const button = screen.getByRole("button", { name: "sync.export.button" });
+    expect(button).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("sync.export.password"), {
+      target: { value: "senha-sintética" },
+    });
+    expect(button).toBeEnabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "sync.export.button" }));
+    fireEvent.click(button);
 
     expect(mockExportData).toHaveBeenCalledTimes(1);
-    expect(mockExportData).toHaveBeenCalledWith({ password: undefined });
+    expect(mockExportData).toHaveBeenCalledWith({
+      password: "senha-sintética",
+    });
     expect(await screen.findByText(/backup.open3dcalc/)).toBeInTheDocument();
     expect(screen.getByText(/sync.export.success/)).toBeInTheDocument();
   });
@@ -76,12 +85,7 @@ describe("DataSyncModal", () => {
   it("toggles password field visibility", () => {
     render(<DataSyncModal open={true} />);
 
-    // Password field hidden until encryption is enabled
-    expect(
-      screen.queryByLabelText("sync.export.password"),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("checkbox"));
+    // SPEC-03: encryption is mandatory — the field is always visible.
     const input = screen.getByLabelText(
       "sync.export.password",
     ) as HTMLInputElement;
@@ -96,21 +100,6 @@ describe("DataSyncModal", () => {
       screen.getByRole("button", { name: "sync.export.passwordHide" }),
     );
     expect(input.type).toBe("password");
-  });
-
-  it("hides and clears password when encryption is unchecked", () => {
-    render(<DataSyncModal open={true} />);
-    fireEvent.click(screen.getByRole("checkbox"));
-    const input = screen.getByLabelText(
-      "sync.export.password",
-    ) as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "secret" } });
-    expect(input.value).toBe("secret");
-
-    fireEvent.click(screen.getByRole("checkbox"));
-    expect(
-      screen.queryByLabelText("sync.export.password"),
-    ).not.toBeInTheDocument();
   });
 
   it("accepts .open3dcalc files in the import picker", () => {
@@ -224,9 +213,6 @@ describe("DataSyncModal", () => {
     expect(
       screen.getByRole("tab", { name: "sync.import.tab" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("checkbox")).toHaveAccessibleName(
-      "sync.export.encrypt",
-    );
     expect(
       screen.getByRole("button", { name: "sync.export.button" }),
     ).toBeInTheDocument();
