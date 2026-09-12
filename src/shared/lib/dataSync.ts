@@ -16,6 +16,11 @@
  */
 
 import { guardedStorage } from "@/shared/lib/manifestStorage";
+import {
+  createExportEnvelope,
+  readExportEnvelope,
+  EnvelopeError,
+} from "./exportEnvelope";
 
 export const SYNC_FORMAT = "open3dcalc-export" as const;
 export const SYNC_VERSION = "1.0" as const;
@@ -869,11 +874,11 @@ export interface DataSyncImportResult {
 }
 
 export interface DataSyncError extends Error {
-  code?: "INVALID_FILE" | "WRONG_PASSWORD";
+  code?: "INVALID_FILE" | "WRONG_PASSWORD" | "PASSWORD_REQUIRED";
 }
 
 function dataSyncError(
-  code: "INVALID_FILE" | "WRONG_PASSWORD",
+  code: "INVALID_FILE" | "WRONG_PASSWORD" | "PASSWORD_REQUIRED",
   message: string,
 ): DataSyncError {
   const err = new Error(message) as DataSyncError;
@@ -903,11 +908,23 @@ function syncFileName(date = new Date()): string {
  * UI wrapper: build a bundle from localStorage, trigger the browser
  * download and return file metadata for the success message.
  */
+/**
+ * UI wrapper (SPEC-03 §1/§2): build the collected payload and produce the
+ * always-encrypted v1.1 export envelope, then trigger the browser download.
+ * A password is mandatory — there is no plaintext user export.
+ */
 export async function exportData(options: {
   password?: string;
 }): Promise<DataSyncExportResult> {
-  const bundle = await exportBundle(options.password);
-  const blob = new Blob([JSON.stringify(bundle)], { type: "application/json" });
+  if (!options.password) {
+    throw dataSyncError(
+      "PASSWORD_REQUIRED",
+      "O pacote de exportação é sempre criptografado: informe uma senha.",
+    );
+  }
+  const payload = collectSyncData();
+  const envelope = await createExportEnvelope(payload, options.password);
+  const blob = new Blob([envelope], { type: "application/json" });
   const fileName = syncFileName();
   triggerDownload(blob, fileName);
   return { fileName, sizeBytes: blob.size };
@@ -917,28 +934,66 @@ export async function exportData(options: {
  * UI wrapper: read a bundle File, import it (merge or replace) and return
  * the applied/conflict counts. Errors carry a `code` so the UI can show the
  * right message ('WRONG_PASSWORD' | 'INVALID_FILE').
+ *
+ * Accepts both the SPEC-03 v1.1 envelope (full validation, §5) and the
+ * legacy `1.0` bundle (§8 — honored for import only; re-export produces
+ * v1.1).
  */
 export async function importData(
   file: File,
   options: { password?: string; mode: "merge" | "replace" },
 ): Promise<DataSyncImportResult> {
-  let bundle: unknown;
+  const fileText = await file.text();
+  let parsed: unknown;
   try {
-    bundle = JSON.parse(await file.text());
+    parsed = JSON.parse(fileText);
   } catch {
     throw dataSyncError(
       "INVALID_FILE",
       "Formato de arquivo de exportação inválido ou não suportado.",
     );
   }
-  if (!validateBundle(bundle)) {
+
+  // SPEC-03 v1.1 envelope path (§5 — validate strictly, then apply).
+  if (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    (parsed as Record<string, unknown>).version === "1.1" &&
+    (parsed as Record<string, unknown>).format === SYNC_FORMAT
+  ) {
+    if (!options.password) {
+      throw dataSyncError(
+        "WRONG_PASSWORD",
+        "Este pacote é criptografado: informe a senha de exportação.",
+      );
+    }
+    try {
+      const payload = await readExportEnvelope(fileText, options.password);
+      const result = applySyncData(payload, options.mode);
+      return {
+        imported: result.imported.length,
+        conflicts: result.conflicts.length,
+        errors: 0,
+      };
+    } catch (error) {
+      if (error instanceof EnvelopeError) {
+        const code =
+          error.code === "AUTH_FAILED" ? "WRONG_PASSWORD" : "INVALID_FILE";
+        throw dataSyncError(code, error.message);
+      }
+      throw error;
+    }
+  }
+
+  // Legacy 1.0 bundle path (§8 — unchanged semantics).
+  if (!validateBundle(parsed)) {
     throw dataSyncError(
       "INVALID_FILE",
       "Formato de arquivo de exportação inválido ou não suportado.",
     );
   }
   try {
-    const result = await applyImport(bundle, options.password, options.mode);
+    const result = await applyImport(parsed, options.password, options.mode);
     return {
       imported: result.imported.length,
       conflicts: result.conflicts.length,
@@ -961,6 +1016,8 @@ export async function importData(
 export async function isEncrypted(file: File): Promise<boolean> {
   try {
     const parsed = JSON.parse(await file.text()) as Record<string, unknown>;
+    // SPEC-03 v1.1 envelopes are always encrypted.
+    if (parsed.version === "1.1" && parsed.format === SYNC_FORMAT) return true;
     return parsed.encrypted === true;
   } catch {
     return false;
