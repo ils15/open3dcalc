@@ -17,6 +17,19 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["main.ts", "update.ts", "preload.cts", "../db/**/*.ts"],
-  "exclude": ["dist", "../node_modules", "../db/__tests__/**"]
+  "include": [
+    "main.ts",
+    "update.ts",
+    "preload.cts",
+    "cryptoCapability.ts",
+    "selftest/crypto-selftest.ts",
+    "../src/shared/lib/crypto/**/*.ts",
+    "../db/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "../node_modules",
+    "../db/__tests__/**",
+    "../src/shared/lib/crypto/__tests__/**"
+  ]
 }

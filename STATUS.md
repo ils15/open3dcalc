@@ -1,61 +1,64 @@
-# Deepwork D1.1 S1 — SPEC-01 manifest loader + gated storage
+# Deepwork D1.1 S2 — Crypto capability layer (ADR-001)
 
-- **Branch/worktree:** `feat/d1-s1-manifest-loader` / `../open3dcalc-d1-s1-manifest`
+- **Branch/worktree:** `feat/d1-s2-crypto-capability` / `../open3dcalc-d1-s2-crypto`
 - **Status:** implementation complete — local gates green; awaiting Themis review (PR next).
-- **Scope (OWNERS-RUNBOOK §6 declared):** SPEC-01 manifest loader + validation, manifest
-  gate, gated storage wrappers, gate wiring into all localStorage writers, fixture
-  registration of the runtime key set, contract tests (TEST-MATRIX §1 rows + S1 wiring).
-  No other contract documents touched; `policy_version` bumped for the fixture edit.
-- **Base:** `main` @ `cc90ae4` (includes PR #105 D0 fix and PR #106 D1.0 contracts).
+- **Scope (OWNERS-RUNBOOK §6 declared):** crypto capability layer per ADR-001 —
+  capability decision engine, at-rest passphrase envelope (SPEC-03 parameters),
+  memory-only passphrase session, main-process safeStorage/envelope/deny wiring,
+  capability IPC (main + preload + renderer types), and the real-Electron contract
+  harness (TEST-MATRIX §2 rows 2.1–2.3 + §3.1-style zero-plaintext scan). No contract
+  documents modified (no policy bump); no new storage keys (the session passphrase is
+  surface `memory`, already declared as `session_passphrase_key` in SPEC-01).
+- **Base:** `main` @ `0cc4718` (includes PR #107 D1.1 S1 and PR #108 cleanup).
 
 ## What landed in this slice
 
-- `src/shared/lib/dataManifest.ts` — normative vocabularies mirrored from SPEC-01
-  `$defs`, entry/document validation (TEST-MATRIX 1.2–1.11), loader with duplicate-key
-  rejection, shipped-fixture loader, policy-version accessors, orphan-key enumeration.
-- `src/shared/lib/manifestGate.ts` — fail-closed choke point: known keys pass with their
-  full policy record; unknown keys throw `ManifestError` in dev and deny-safely in
-  production; unreadable manifest denies everything; `isKeyAllowed` non-throwing variant
-  for bulk paths. Logs carry key NAMES only (TEST-MATRIX 3.2).
-- `src/shared/lib/manifestStorage.ts` — `manifestStorage()` (zustand `PersistStorage`
-  drop-in) and `guardedStorage` (localStorage-shaped facade). Deny is a true no-op
-  (reads return null, writes/removed are skipped); unavailable backing storage degrades
-  to no-ops.
-- Fixture (`SPEC-01-manifest-fixture.json`): `policy_version` 1.0 → 1.1; renamed
-  `open3dcalc_migration_flags` → `open3dcalc_migration_done_v2` and
-  `open3dcalc_quickstart_done` → `open3dcalc_quickstart_dismissed` to match shipped code;
-  registered `open3dcalc_onboarded` and `i18nextLng` (i18next detector cache). 27 keys.
-- Gate wiring: zustand persist stores (consent, customer, history, product, quote) via
-  `manifestStorage()`; direct-localStorage writers (calculator store + helpers, catalog,
-  filaments, tutorial, storeBridge, web/desktop App migration + onboarding + settings,
-  Dashboard, QuickStartBanner, OnboardingModal, useTheme, theme-persistence, dataSync)
-  via `guardedStorage`; desktop persistence-bridge gates SQLite↔localStorage copies and
-  skips unknown keys without aborting the whole backup (fail-closed per key).
+- `src/shared/lib/crypto/capability.ts` — pure ADR-001 §2.3 decision table
+  (`safe_storage` / `passphrase` / `denied`) with fail-closed semantics: missing,
+  failed, or ambiguous probes resolve to `denied`, never to a plaintext path.
+- `src/shared/lib/crypto/envelope.ts` — at-rest passphrase envelope using the
+  normative SPEC-03 parameters: AES-256-GCM (128-bit tag), PBKDF2-SHA256 with exactly
+  310,000 iterations, 128-bit salt, 96-bit IV, canonical-JSON AAD binding
+  (purpose + key name). Wrong-passphrase, tamper, unknown-version, and parameter-drift
+  all reject with the same indistinguishable error. Web Crypto only — runs unchanged
+  in Electron main, web renderer, and tests.
+- `src/shared/lib/crypto/passphraseSession.ts` — memory-only session passphrase
+  (SPEC-01 `session_passphrase_key`: surface `memory`, sync never, export never),
+  best-effort zeroize, no storage/log surface ever touched.
+- `electron/cryptoCapability.ts` — main-process layer: fail-closed safeStorage probe,
+  prefixed blob formats (`enc1:safeStorage:` / `enc1:envelope:`), `encryptForStorage`
+  / `decryptFromStorage`, deny path (`CryptoDeniedError`), and
+  `CRYPTO_WRITE_PATH_ENABLED` rollback flag (flip disables NEW encrypted writes; the
+  decrypt path stays enabled per OWNERS-RUNBOOK §7). Legacy/unknown blobs raise
+  `UnknownBlobError` — they belong to the ADR-002 quarantine (S4), never silently
+  re-read or re-encrypted.
+- IPC surface: `crypto:capability`, `crypto:set-passphrase` (passphrase adopted into
+  main-process memory only — never echoed, persisted, or logged), `crypto:lock`
+  (zeroize), plus zeroize on `before-quit`; exposed via `preload.cts` as
+  `window.electronAPI.crypto` and typed in `electron.d.ts`.
+- `electron/selftest/crypto-selftest.ts` + `electron/__tests__/crypto.selftest.test.ts`
+  — real-Electron contract harness (TEST-MATRIX §0): spawns the actual Electron binary,
+  writes through the layer into a real better-sqlite3 temp DB, and raw-scans the file
+  bytes for the synthetic PII marker.
 
 ## Verification
 
-- Contract tests: 35 tests across `dataManifest.test.ts` (loader + TEST-MATRIX 1.1–1.11),
-  `manifestGate.test.ts` (deny paths, fail-closed, reset semantics) and
-  `manifestStorage.test.ts` (pass-through, dev-throw, production safe-deny, no-value
-  logging, SSR no-op). Coverage on the three contract modules: 94.6% / 91.9% / 96% lines
-  (≥80% bar of TEST-MATRIX §9.1).
-- Full suite: 1,275 passed across 92 files. Typecheck (app + Electron), lint, desktop and
-  web builds passed. Build emits pre-existing Vite warnings only.
-- `SPEC-01-manifest-fixture.json` validated against `SPEC-01-manifest.schema.json`
-  (draft 2020-12) with `jsonschema`.
+- Unit/contract tests (real Web Crypto, no mocks): envelope round-trip + SPEC-03
+  parameter assertions, randomness, AAD drift, indistinguishable rejection, decision
+  table rows 1–6 + fail-closed, session memory-only/zeroize/no-storage/no-log.
+- Real-Electron self-test (this environment has no keyring, so rows 2.2/2.3 execute;
+  row 2.1 runs wherever `safeStorage` is available): envelope blob written and
+  round-tripped, deny path refused, `plaintextHitsInDbFile: 0` on the real DB file.
+- Coverage on the contract modules: 96.8% lines / 86.1% branches (capability and
+  passphraseSession at 100%).
+- Full suite: 1,303 passed across 95 files. Typecheck (app + Electron), lint, desktop
+  and web builds green.
 
-## Defects found and fixed during the slice
+## S3 boundary
 
-- Production fail-open: the original gate wrappers discarded `checkKey`'s decision and
-  wrote anyway when it returned `{ allowed: false }` (production safe-deny path). Deny is
-  now a real no-op; regression tests cover both environments.
-- `guardedStorage` crashed when `window.localStorage` was unavailable (the zustand
-  wrapper already degraded); facade now shares the same no-op fallback.
+S3 wires `encryptForStorage`/`decryptFromStorage` into the `db:save`/`db:load` write
+and read paths (per-key, manifest `pii` flag) plus the startup scan. This slice
+deliberately does not change any persisted byte: no migration, rollback is a revert.
 
-## Rollback (OWNERS-RUNBOOK §7)
-
-Single-slice flag flip: reverting the branch returns stores to direct-key behavior; the
-fixture remains a read-only document. No data migration happened in S1.
-
-**D1.1 S1 is pending Themis review. S2 (crypto capability) is the next dependency-free
-slice after S1 lands.**
+**D1.1 S2 is pending Themis review. S3 (PII at-rest encryption on write paths) and
+S5/S6 may proceed after S2 lands.**
