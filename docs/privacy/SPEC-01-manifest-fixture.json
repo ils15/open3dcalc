@@ -1,6 +1,6 @@
 {
   "manifest_version": "1.0",
-  "policy_version": "1.2",
+  "policy_version": "1.3",
   "keys": [
     {
       "key": "open3dcalc_consent_v1",
@@ -651,6 +651,29 @@
       "purpose": "Encrypted rollback snapshot of the current erasure saga (AES-256-GCM via the ADR-001 capability); destroyed on commit/rollback or after the 7-day TTL.",
       "legal_basis": "contract_performance",
       "owner": "hermes",
+      "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_model_comparison",
+      "surface": "localStorage",
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
+      "class": "derived_analytics",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "opt_in",
+      "export": "user_export",
+      "erasure": "erase_on_delete_all",
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
+      "purpose": "Model comparison panel: file names, dimensions, weights and print times of models the user explicitly added to the comparison (derived metadata, no PII).",
+      "legal_basis": "not_personal_data",
+      "owner": "aphrodite",
       "version": "1.0"
     }
   ]

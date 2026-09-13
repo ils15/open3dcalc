@@ -486,7 +486,33 @@
     "advancedUncertainty": "Pre-slice estimate (±30%). Slicer G-code is more accurate.",
     "estimatedBadge": "Estimated",
     "gcodeBadge": "Accurate (G-code)",
-    "gcodeEPathsNote": "G-code E paths can differ: file view uses max-E, the Custom anchor sums extrusion (M82/M83 + G92). Retraction-heavy or relative files may diverge."
+    "gcodeEPathsNote": "G-code E paths can differ: file view uses max-E, the Custom anchor sums extrusion (M82/M83 + G92). Retraction-heavy or relative files may diverge.",
+    "tech": {
+      "title": "Suggested technology: {{tech}}",
+      "resin": "Resin",
+      "fdm": "FDM",
+      "confidence": {
+        "high": "high confidence",
+        "medium": "medium confidence",
+        "low": "light suggestion"
+      },
+      "switchResin": "Switch to resin calculator",
+      "switchFdm": "Switch to FDM calculator",
+      "resinTooLargeForResin": "part larger than typical resin printer volume",
+      "fdmTooLargeForResin": "part larger than typical resin printer volume ({{dim}} mm)",
+      "resinFitsBuildVolume": "fits comfortably in a resin printer build volume ({{dim}} mm)",
+      "resinFitsWithMargin": "fits a resin printer build volume ({{dim}} mm, no margin)",
+      "fdmLargePart": "large part ({{dim}} mm) — FDM is more economical at this size",
+      "resinDetail": "highly detailed mesh ({{tris}} triangles) — resin captures detail better",
+      "resinSomeDetail": "moderate detail level",
+      "fdmLowDetail": "simple mesh — FDM handles it without resin cost",
+      "resinMiniature": "miniature profile: small and highly detailed part"
+    },
+    "layers": {
+      "slider": "Layer preview height",
+      "full": "full part",
+      "at": "up to {{z}} mm"
+    }
   },
   "common": {
     "save": "Save",
@@ -821,9 +847,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -885,10 +909,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -913,9 +934,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -951,9 +970,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -995,9 +1012,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1081,9 +1096,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1099,15 +1112,11 @@
           },
           {
             "title": "🧹 Other",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1139,10 +1148,7 @@
           },
           {
             "title": "✅ Tests",
-            "items": [
-              "417 tests, 36/36 files passing",
-              "Coverage >80%"
-            ]
+            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
           }
         ]
       },

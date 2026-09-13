@@ -486,7 +486,33 @@
     "advancedUncertainty": "Estimativa pré-fatiamento (±30%). O G-code do fatiador é mais preciso.",
     "estimatedBadge": "Estimado",
     "gcodeBadge": "Preciso (G-code)",
-    "gcodeEPathsNote": "Caminhos E do G-code podem divergir: a visão do arquivo usa E-máx, a âncora Custom soma a extrusão (M82/M83 + G92). Arquivos relativos ou com muita retração podem divergir."
+    "gcodeEPathsNote": "Caminhos E do G-code podem divergir: a visão do arquivo usa E-máx, a âncora Custom soma a extrusão (M82/M83 + G92). Arquivos relativos ou com muita retração podem divergir.",
+    "tech": {
+      "title": "Tecnologia sugerida: {{tech}}",
+      "resin": "Resina",
+      "fdm": "FDM",
+      "confidence": {
+        "high": "alta confiança",
+        "medium": "confiança média",
+        "low": "sugestão leve"
+      },
+      "switchResin": "Trocar para calculadora de resina",
+      "switchFdm": "Trocar para calculadora FDM",
+      "resinTooLargeForResin": "peça maior que o volume típico de impressoras de resina",
+      "fdmTooLargeForResin": "peça maior que o volume típico de impressoras de resina ({{dim}} mm)",
+      "resinFitsBuildVolume": "cabe com folga no volume de uma impressora de resina ({{dim}} mm)",
+      "resinFitsWithMargin": "cabe no volume de uma impressora de resina ({{dim}} mm, sem folga)",
+      "fdmLargePart": "peça grande ({{dim}} mm) — FDM é mais econômico nesse porte",
+      "resinDetail": "malha muito detalhada ({{tris}} triângulos) — resina captura melhor o detalhe",
+      "resinSomeDetail": "nível de detalhe moderado",
+      "fdmLowDetail": "malha simples — FDM atende sem custo de resina",
+      "resinMiniature": "perfil de miniatura: peça pequena e altamente detalhada"
+    },
+    "layers": {
+      "slider": "Altura da camada em visualização",
+      "full": "peça inteira",
+      "at": "até {{z}} mm"
+    }
   },
   "common": {
     "save": "Salvar",
@@ -821,9 +847,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -885,10 +909,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -913,9 +934,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -951,9 +970,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -995,9 +1012,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1081,9 +1096,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1099,15 +1112,11 @@
           },
           {
             "title": "🧹 Outros",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1139,10 +1148,7 @@
           },
           {
             "title": "✅ Tests",
-            "items": [
-              "417 testes, 36/36 arquivos passando",
-              "Cobertura >80%"
-            ]
+            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
           }
         ]
       },

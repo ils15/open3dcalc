@@ -11,9 +11,15 @@ import {
   X,
   Trash2,
   Crosshair,
+  Layers,
 } from "lucide-react";
+import * as THREE from "three";
 import type { BufferGeometry } from "three";
 import type { MeshAnalysis } from "@/shared/lib/stlParser";
+import {
+  recommendTechnology,
+  type TechRecommendation,
+} from "@/shared/lib/techRecommendation";
 import type { FilamentFamily } from "@/shared/lib/filamentProfiles";
 import {
   estimatePrintTime,
@@ -26,6 +32,8 @@ import {
 } from "./EstimationModeSection";
 // Single-source G-code upload cap (C1 — never duplicate the MB literal).
 import { DEFAULT_MAX_CHARS } from "@/shared/lib/gcodeTotals";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useModelComparison } from "@/shared/stores/modelComparison";
 
 export interface FileParseResult {
   geometry: BufferGeometry | null;
@@ -73,8 +81,20 @@ interface StlPreviewProps {
   onClear?: () => void;
 }
 
-function Model({ geometry }: { geometry: BufferGeometry }) {
+function Model({
+  geometry,
+  clipHeightMm,
+}: {
+  geometry: BufferGeometry;
+  clipHeightMm?: number | null;
+}) {
   const geo = useMemo(() => geometry.clone(), [geometry]);
+  // Fase 2: layer visualization — a horizontal clipping plane at
+  // clipHeightMm shows the part up to that Z height (slicing preview).
+  const clippingPlanes = useMemo(() => {
+    if (clipHeightMm == null) return undefined;
+    return [new THREE.Plane(new THREE.Vector3(0, -1, 0), clipHeightMm)];
+  }, [clipHeightMm]);
   return (
     <Center>
       <mesh geometry={geo} scale={0.01}>
@@ -83,6 +103,7 @@ function Model({ geometry }: { geometry: BufferGeometry }) {
           metalness={0.3}
           roughness={0.6}
           wireframe={false}
+          clippingPlanes={clippingPlanes}
         />
       </mesh>
       <mesh geometry={geo} scale={0.01}>
@@ -91,6 +112,7 @@ function Model({ geometry }: { geometry: BufferGeometry }) {
           wireframe
           opacity={0.15}
           transparent
+          clippingPlanes={clippingPlanes}
         />
       </mesh>
     </Center>
@@ -142,17 +164,21 @@ function PreviewCanvas({
 }: PreviewCanvasProps) {
   const { t } = useTranslation();
   const boundsApi = useRef<BoundsApi | null>(null);
+  // Fase 2: layer slider — 0 = off, else the Z height (mm) being previewed.
+  const maxZ = Math.max(geometry.boundingBox?.max.z ?? 0, 1);
+  const [layerZ, setLayerZ] = useState<number | null>(null);
   return (
     <div className="relative w-full h-full group">
       <Canvas
         camera={{ position: [5, 5, 5], fov: 45, near: 0.01, far: 2000 }}
+        gl={{ localClippingEnabled: true }}
         key={geometry.uuid}
       >
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={0.8} />
         <directionalLight position={[-5, -5, -5]} intensity={0.3} />
         <Bounds fit clip margin={1.2}>
-          <Model geometry={geometry} />
+          <Model geometry={geometry} clipHeightMm={layerZ} />
         </Bounds>
         <BoundsBridge apiRef={boundsApi} />
         <OrbitControls
@@ -206,6 +232,29 @@ function PreviewCanvas({
           </button>
         )}
       </div>
+
+      {/* Fase 2: layer (slicing) preview slider */}
+      <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2 rounded-lg bg-[var(--color-bg-elevated)]/85 backdrop-blur-sm border border-[var(--color-border)]/60 px-2 py-1">
+        <Layers className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-muted)]" />
+        <input
+          type="range"
+          min={0}
+          max={Math.ceil(maxZ)}
+          step={0.5}
+          value={layerZ ?? Math.ceil(maxZ)}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setLayerZ(v >= Math.ceil(maxZ) ? null : v);
+          }}
+          aria-label={t("stl.layers.slider")}
+          className="w-full accent-[var(--color-accent)]"
+        />
+        <span className="text-[10px] text-[var(--color-text-muted)] shrink-0 w-14 text-right">
+          {layerZ == null
+            ? t("stl.layers.full")
+            : t("stl.layers.at", { z: layerZ.toFixed(1) })}
+        </span>
+      </div>
     </div>
   );
 }
@@ -235,6 +284,7 @@ export function StlPreview({
   onClear,
 }: StlPreviewProps) {
   const { t } = useTranslation();
+  const store = useCalculatorStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastFileRef = useRef<File | null>(null);
   const [geometry, setGeometry] = useState<BufferGeometry | null>(
@@ -302,6 +352,7 @@ export function StlPreview({
       // re-parse do mesmo arquivo (toggle de suporte) mantém.
       if (lastFileRef.current !== file) setGcodeAnchor(null);
       lastFileRef.current = file;
+      lastFileNameRef.current = file.name;
       const ext = file.name.split(".").pop()?.toLowerCase();
       if (!ext || !["stl", "obj", "3mf", "gcode"].includes(ext)) {
         showError(t("stl.invalidFile"));
@@ -456,6 +507,20 @@ export function StlPreview({
       material,
       supportEnabled,
     ],
+  );
+
+  const comparisonEntries = useModelComparison((s) => s.entries);
+  const addComparison = useModelComparison((s) => s.add);
+  const removeComparison = useModelComparison((s) => s.remove);
+  const clearComparison = useModelComparison((s) => s.clear);
+  const lastFileNameRef = useRef<string | null>(null);
+
+  // Fase 2: per-model FDM vs Resin suggestion — informational only, the
+  // user stays in control (no auto-switching).
+  const techRecommendation = useMemo<TechRecommendation | null>(
+    () =>
+      modelInfo?.analysis ? recommendTechnology(modelInfo.analysis) : null,
+    [modelInfo?.analysis],
   );
 
   const displayEstimate = useMemo<DisplayEstimate | null>(() => {
@@ -763,6 +828,55 @@ export function StlPreview({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Fase 2: technology suggestion banner */}
+      {modelInfo && techRecommendation && (
+        <div
+          data-testid="tech-recommendation"
+          className="surface rounded-xl p-3 space-y-2 border border-[var(--color-accent)]/20"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+              {t("stl.tech.title", {
+                tech: t(
+                  techRecommendation.recommended === "resin"
+                    ? "stl.tech.resin"
+                    : "stl.tech.fdm",
+                ),
+              })}
+            </p>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                techRecommendation.confidence === "high"
+                  ? "border-emerald-500/40 text-emerald-400"
+                  : techRecommendation.confidence === "medium"
+                    ? "border-amber-500/40 text-amber-400"
+                    : "border-[var(--color-border)] text-[var(--color-text-muted)]"
+              }`}
+            >
+              {t(`stl.tech.confidence.${techRecommendation.confidence}`)}
+            </span>
+          </div>
+          <ul className="text-[11px] text-[var(--color-text-secondary)] space-y-0.5">
+            {techRecommendation.reasons.map((reason) => (
+              <li key={reason.key}>• {t(reason.key, reason.params ?? {})}</li>
+            ))}
+          </ul>
+          {store.activeTab !== techRecommendation.recommended && (
+            <button
+              type="button"
+              onClick={() => store.setActiveTab(techRecommendation.recommended)}
+              className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            >
+              {t(
+                techRecommendation.recommended === "resin"
+                  ? "stl.tech.switchResin"
+                  : "stl.tech.switchFdm",
+              )}
+            </button>
+          )}
         </div>
       )}
 
