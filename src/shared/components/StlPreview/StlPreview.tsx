@@ -516,12 +516,11 @@ export function StlPreview({
   const lastFileNameRef = useRef<string | null>(null);
 
   // Fase 2: per-model FDM vs Resin suggestion — informational only, the
-  // user stays in control (no auto-switching).
-  const techRecommendation = useMemo<TechRecommendation | null>(
-    () =>
-      modelInfo?.analysis ? recommendTechnology(modelInfo.analysis) : null,
-    [modelInfo?.analysis],
-  );
+  // user stays in control (no auto-switching). Pure arithmetic — no
+  // memoization needed (react-compiler friendly).
+  const techRecommendation: TechRecommendation | null = modelInfo?.analysis
+    ? recommendTechnology(modelInfo.analysis)
+    : null;
 
   const displayEstimate = useMemo<DisplayEstimate | null>(() => {
     if (!modelInfo) return null;
