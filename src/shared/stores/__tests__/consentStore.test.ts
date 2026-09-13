@@ -47,7 +47,7 @@ describe("useConsentStore", () => {
     expect(state.consentDate!).toBeLessThanOrEqual(after);
     // SPEC-04 §3: the proof of consent is the receipt, not the flag.
     expect(state.receipt).not.toBeNull();
-    expect(state.receipt!.policy_version).toBe("1.2");
+    expect(state.receipt!.policy_version).toBe("1.3");
     expect(state.receiptDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
 

@@ -100,7 +100,9 @@ describe("StlPreview estimation modes", () => {
     expect(
       screen.getByRole("radio", { name: "stl.estimationModeStandard" }),
     ).toBeChecked();
-    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+    // Only the layer-preview slider exists (always available); the
+    // estimation-mode controls must not appear in the default mode.
+    expect(screen.getAllByRole("slider")).toHaveLength(1);
     expect(
       screen.queryByText("stl.advancedUncertainty"),
     ).not.toBeInTheDocument();

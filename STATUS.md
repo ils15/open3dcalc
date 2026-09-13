@@ -1,52 +1,33 @@
-# Deepwork D1.1 S8 — Consent receipt (SPEC-04)
+# Fase 2 (conclusão) — Model analysis: tech suggestion, comparison, layers
 
-- **Branch/worktree:** `feat/d1-s8-consent-receipt` / `../open3dcalc-d1-s8-consent`
-- **Status:** implementation complete — local gates green; awaiting Themis review (PR next).
-- **Scope (OWNERS-RUNBOOK §6 declared):** SPEC-04 consent receipt — policy-bound,
-  tamper-evident, canonicalized receipt (issue/verify/withdraw/policy-delta),
-  consentStore rewired so `consentGiven` is derived from a VALID receipt
-  (default-deny), withdrawal executing the manifest-derived erasure plan, and the
-  consent section in the privacy screen. No contract documents modified (no policy
-  bump — the receipt is stored inside the existing `open3dcalc_consent_v1`
-  consent_record key, sync never, export never).
-- **Base:** `main` @ `a851bc1` (includes PR #114 D1.1 S7).
+- **Branch/worktree:** `feat/fase2-model-analysis` / `../open3dcalc-f2-roadmap`
+- **Status:** implementation complete — local gates green; PR next.
+- **Scope:** closes the three remaining Fase 2 roadmap items — automatic FDM vs
+  Resin suggestion, multiple-model comparison, and layer (slicing) preview.
+  Contract change: SPEC-01 fixture `policy_version` 1.2 → 1.3, registering
+  `open3dcalc_model_comparison` (derived_analytics, no PII).
+- **Base:** `main` @ `296460f` (v1.12.0 release + #119 changelog fix).
 
-## What landed in this slice
+## What landed
 
-- `src/shared/lib/consentReceipt.ts`:
-  - `issueReceipt` — receipt bound to the CURRENT policy (`policy_hash` = sha256 of
-    the canonical SPEC-01 manifest, deterministic across platforms, §4);
-  - `evaluateReceipt` — digest recomputed on every load (§5): tampered ⇒ invalid ⇒
-    default-deny; withdrawn ⇒ not given (audit record kept); policy
-    version/hash mismatch ⇒ `policy_mismatch` ⇒ re-consent required, old receipt
-    retained for the delta view (§6);
-  - `consentErasurePlan` — the §6.1 withdrawal plan derived from the manifest:
-    every `legal_basis: consent` key partitioned by `erasure`
-    (erase_on_delete_all vs retain_anonymized);
-  - `anonymizeRecord` — strips identifying fields for `retain_anonymized` keys,
-    keeping non-identifying aggregates.
-- `consentStore` — `giveConsent` issues and VERIFIES the receipt before marking
-  consent; `withdrawConsent` annotates `withdrawn_at`, erases the consent-basis
-  localStorage keys per the plan (desktop durable copies go through the S4
-  `privacy:eliminate-key` flow) and keeps the withdrawn receipt in an audit list;
-  stored via the gated storage (consent_record: sync never, export never).
-- PrivacyScreen — consent section: status (valid/absent/tampered/policy-mismatch),
-  grant/withdraw actions, and the SPEC-04 §2 note that flags never substitute
-  consent. i18n pt-BR/en-US.
+- `src/shared/lib/techRecommendation.ts` — documented heuristic model: resin build
+  volume is a LIMITATION (big parts score FDM), detail (triangle count/density)
+  scores resin, miniature profile (≤80 mm + dense) is the strong resin signal,
+  ties default to FDM (cheaper, safer). Output = suggestion + confidence +
+  i18n-keyed reasons — informational only, the user stays in control.
+- StlPreview — suggestion banner: recommended technology, confidence badge, reason
+  list, and an opt-in "switch calculator" button (never auto-switching).
+- `src/shared/stores/modelComparison.ts` — comparison store (max 4 entries,
+  same-file replacement, persisted via the gated storage; manifest-registered key).
+- StlPreview comparison panel — side-by-side table (weight/print time/volume) with
+  the heaviest model highlighted and per-row removal.
+- StlPreviewCanvas — layer (slicing) preview: a horizontal THREE.Plane clipping
+  the model at a user-chosen Z height with a slider (0 = off), `localClippingEnabled`.
+- i18n pt-BR/en-US for all new strings; estimation-modes test updated (the layer
+  slider is always available; estimation controls still scope-checked).
 
-## Verification (TEST-MATRIX §8)
+## Verification
 
-- 8.1 issue + digest verification (policy hash compared against an independent
-  sha256 over the canonical fixture) · 8.2 tamper ⇒ default-deny, never repaired ·
-  8.3 flags-only state ⇒ consent NOT given · 8.4 withdrawal: annotation kept,
-  erasure plan derived from the manifest, anonymization strips identifying fields
-  while keeping aggregates · 8.5 policy change ⇒ mismatch + old receipt retained ·
-  8.6 the SPEC-03 envelope never contains receipt material (strict field allowlist).
-- 1,377 tests across 108 files; typecheck (app + Electron), strict lint, builds.
-- Coverage on the receipt module: 95.5% lines / 92.6% branches.
-- Rollback (OWNERS-RUNBOOK §7): flag off ⇒ boolean-consent behavior returns; any
-  receipts already issued stay stored (inert); re-enabling re-validates digests.
-
-**D1.1 S8 closes the D1 track (S1–S8): the SPEC-01 manifest, ADR-001 capability,
-ADR-002 default-deny/quarantine, SPEC-03 envelope and SPEC-02 saga are all
-implemented and enforced at runtime.**
+- 1,386 tests across 110 files; typecheck (app + Electron), strict lint, builds.
+- Roadmap acceptance: "suggestion is informational, user stays in control" honored;
+  no automatic FDM-vs-Resin comparison (roadmap out-of-scope item respected).
