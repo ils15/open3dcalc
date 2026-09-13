@@ -877,6 +877,102 @@ export function StlPreview({
               )}
             </button>
           )}
+          {modelInfo && (
+            <button
+              type="button"
+              onClick={() => {
+                const info = modelInfo;
+                addComparison({
+                  fileName: lastFileNameRef.current ?? `model-${Date.now()}`,
+                  dimensions: info.dimensions,
+                  volumeCm3: info.volumeCm3,
+                  weight: displayEstimate?.weight ?? info.weight,
+                  printTimeHours:
+                    displayEstimate?.hours ?? info.printTimeHours,
+                  triangleCount: info.triangleCount,
+                });
+              }}
+              className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            >
+              {t("stl.compare.add")}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Fase 2: model comparison panel */}
+      {comparisonEntries.length > 0 && (
+        <div
+          data-testid="model-comparison"
+          className="surface rounded-xl p-3 space-y-2"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+              {t("stl.compare.title")}
+            </p>
+            <button
+              type="button"
+              onClick={clearComparison}
+              className="text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+            >
+              {t("stl.compare.clear")}
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="text-[var(--color-text-muted)] text-left">
+                  <th className="pr-2 pb-1">{t("stl.compare.model")}</th>
+                  <th className="pr-2 pb-1">{t("stl.weight")}</th>
+                  <th className="pr-2 pb-1">{t("stl.printTime")}</th>
+                  <th className="pr-2 pb-1">{t("stl.volume")}</th>
+                  <th className="pb-1" />
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonEntries.map((entry) => {
+                  const heaviest = Math.max(
+                    ...comparisonEntries.map((e) => e.weight),
+                  );
+                  return (
+                    <tr
+                      key={entry.id}
+                      className="border-t border-[var(--color-border)]/60"
+                    >
+                      <td className="pr-2 py-1 font-semibold text-[var(--color-text-primary)]">
+                        {entry.fileName}
+                      </td>
+                      <td
+                        className={`pr-2 py-1 ${
+                          entry.weight === heaviest
+                            ? "text-amber-400 font-semibold"
+                            : ""
+                        }`}
+                      >
+                        {entry.weight.toFixed(1)} g
+                      </td>
+                      <td className="pr-2 py-1">
+                        {entry.printTimeHours.toFixed(1)} h
+                      </td>
+                      <td className="pr-2 py-1">
+                        {entry.volumeCm3.toFixed(1)} cm³
+                      </td>
+                      <td className="py-1 text-right">
+                        <button
+                          type="button"
+                          onClick={() => removeComparison(entry.id)}
+                          aria-label={t("stl.compare.remove")}
+                          className="text-[var(--color-text-muted)] hover:text-red-400 min-h-[36px] min-w-[36px]"
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
