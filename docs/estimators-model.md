@@ -88,6 +88,75 @@ volume **pré-correção do #72**. Após o merge do #72, re-medir o mesmo projet
 e atualizar os testes/§2 se os números deslocarem. Os testes atuais ancoram
 o _comportamento_ (saturação no volume), não a medição exata, de propósito.
 
+## 7. Fator empírico de geometria no tempo (D-EA3)
+
+O tempo de §3 assume **velocidade constante**: não modela accel/jerk. Peças
+pequenas/detalhadas têm muitas mudanças de direção e um travel
+proporcionalmente maior, de modo que o modelo as **subestima de forma
+sistemática** — a causa residual dominante de divergência após a fiação do
+perfil do slicer (D-EA1).
+
+**Decisão YAGNI:** a física de accel/jerk completa é deliberadamente diferida
+(decisão registrada no plano do deepwork `estimation-accuracy`, fase D-EA3).
+A aceleração real depende de firmware, junction deviation e do próprio
+caminho do slicer — variáveis que uma estimativa pré-slice não tem. Em vez
+disso, aplica-se um **fator bornceado e clampado** derivado da razão
+**superfície/volume** (SA/V), que é o proxy mais barato de nível de detalhe:
+
+```
+SA/V = surfaceAreaMm2 / (volumeCm3 × 1000)     # mm⁻¹
+
+fator = 1                                         se SA/V ≤ 0,2
+      = 1,3                                       se SA/V ≥ 1,0
+      = 1 + 0,3 × (SA/V − 0,2) / 0,8             caso contrário (rampa linear)
+```
+
+Constantes em `GEOMETRY_FACTOR` (`printTimeEstimator.ts`); curva implementada
+por `geometryTimeFactor(surfaceAreaMm2, volumeCm3)`.
+
+| Geometria       | SA/V (mm⁻¹) | Fator | Efeito            |
+| --------------- | ----------- | ----- | ----------------- |
+| Cubo 100 mm     | 0,06        | 1,00  | inalterado        |
+| Cilindro Ø20×20 | 0,30        | 1,04  | +3,3% (movimento) |
+| Cubo 10 mm      | 0,60        | 1,15  | +15% (movimento)  |
+| Cubo 3 mm       | 2,00        | 1,30  | clamp             |
+
+**Aplicação e bornceamento.** O fator multiplica **só o termo de movimento**
+(extrusão + travel); o overhead de troca de camada (+2 s/camada) já é um proxy
+flat do mesmo efeito e é somado intacto — o bornceamento dilui o fator no
+total (cubo de 10 mm: fator 1,15 no movimento → +10,3% no total), mantendo o
+resultado **dentro do envelope ±30%** em todos os casos (o clamp de 1,3 é o
+próprio teto do envelope). A **âncora G-code** (modo `advanced`) não é
+afetada: ela sobrescreve o resultado no final, e dado de verdade do slicer não
+se mistura com fator de estimativa.
+
+**Por que o clamp existe.** Sem ele, uma miniatura de 1 mm receberia fator
+absurdo (SA/V = 6) e violaria a política de produto (±30%, viés seguro para
+cima — §5). O clamp de 1,3 é calibrado no pior caso: peça minúscula/detalhada
+nunca custa mais que 30% acima do estimado.
+
+**Backward-compat e robustez.** `surfaceAreaMm2` ausente, `NaN`, ≤ 0 ou
+volume inválido → fator neutro 1,0 e a estimativa é **byte-identical** à
+versão sem geometria (calls existentes não quebram; zeros explícitos, nunca
+NaN). Não há novo parâmetro de store — o fator é derivado puro da forma, sem
+knob do usuário (YAGNI; a calibração proporcional continua com `calibrationK`,
+§8, que por design não achata viés que varia com a geometria).
+
+**Fiação (contrato).** `surfaceAreaMm2` vem do `MeshAnalysis.surfaceArea` já
+calculado por `analyzeMeshFile` (mm², mesma origem do `volumeCm3`) — o
+chamador (`StlPreview`) o passa exatamente como já faz para
+`estimateWeight`/`estimateMaterialVolumeCm3`:
+
+```ts
+const timeEstimate = estimatePrintTime({
+  volumeCm3,
+  materialVolumeCm3,
+  dimensions: analysis.dimensions,
+  surfaceAreaMm2: analysis.surfaceArea, // D-EA3 — fator de geometria
+  // ...perfil do slicer (D-EA1) e âncora (modo avançado) conforme aplicável
+});
+```
+
 ## 8. Calibração k — só viés proporcional sistemático
 
 `calibrationK` (modo `advanced`) corrige SÓ viés proporcional sistemático —

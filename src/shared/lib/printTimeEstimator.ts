@@ -49,6 +49,14 @@ export interface PrintTimeParams extends EstimateOptions {
   /** Bounding box do modelo em mm (só `z` é usada, p/ contagem de camadas). */
   dimensions: DimensionsMm;
   /**
+   * Área de superfície da malha em mm² (unidade canônica do `MeshAnalysis`;
+   * conversão para cm² acontece aqui, como em `estimateWeight`).
+   * Base do fator empírico de geometria (D-EA3, §7): peças pequenas/detalhadas
+   * (SA/V alto) perdem mais tempo com accel/decel do que o modelo de velocidade
+   * constante assume. Ausente/≤ 0/NaN → fator neutro, estimativa inalterada.
+   */
+  surfaceAreaMm2?: number;
+  /**
    * Plástico REALMENTE extrudado em cm³ (casca + infill + suporte).
    * Quando ausente, usa `volumeCm3` — superestima peça oca como se sólida.
    */
@@ -93,6 +101,58 @@ export const DEFAULT_SETTINGS = {
 /** Segundos de overhead por troca de camada (home da aproximação). */
 const LAYER_CHANGE_SECONDS = 2;
 
+/**
+ * Constantes do fator empírico de geometria (D-EA3 — §7 de
+ * `docs/estimators-model.md`).
+ *
+ * O estimador assume velocidade constante: não modela accel/jerk. Peças
+ * pequenas/detalhadas têm muitas mudanças de direção e travel proporcionalmente
+ * maior, então são subestimadas de forma sistemática. Em vez da física
+ * completa (YAGNI explícito do deepwork `estimation-accuracy`: a aceleração
+ * real depende da firmware/junction-deviation, e o fator captura o viés
+ * residual dominante), aplica-se um fator bornceado e clampado derivado da
+ * razão superfície/volume — proxy de detalhe que cresce com a complexidade:
+ * cubo de 100 mm → SA/V 0,06 mm⁻¹; de 10 mm → 0,6; de 3 mm → 2,0.
+ */
+export const GEOMETRY_FACTOR = {
+  /** SA/V (mm⁻¹) abaixo da qual a peça é "grande/simples": fator neutro (1,0). */
+  lowRatio: 0.2,
+  /** SA/V (mm⁻¹) em que o fator satura no clamp. */
+  highRatio: 1.0,
+  /** Teto do fator: peças minúsculas nunca custam > 30% a mais (envelope ±30%). */
+  max: 1.3,
+} as const;
+
+/**
+ * Fator multiplicativo do tempo de MOVIMENTO, derivado da geometria.
+ *
+ * Rampa linear bornceada entre `lowRatio` e `highRatio`, clampada em `max`.
+ * Entrada ausente/não-finita, ou volume ≤ 0/NaN → fator neutro 1,0
+ * (estimativa inalterada; a regra "zeros explícitos, nunca NaN" se mantém).
+ * `surfaceAreaMm2` e `volumeCm3` vêm do `MeshAnalysis` já calculado — sem
+ * reprocessar a malha e sem novos parâmetros de store (fator é puro da forma).
+ */
+export function geometryTimeFactor(
+  surfaceAreaMm2?: number,
+  volumeCm3?: number,
+): number {
+  if (!Number.isFinite(surfaceAreaMm2) || (surfaceAreaMm2 as number) <= 0) {
+    return 1;
+  }
+  if (!Number.isFinite(volumeCm3) || (volumeCm3 as number) <= 0) return 1;
+  // Ambas as entradas são finitas e > 0 → a razão é finita e positiva por
+  // construção (denominador = volume × 1000 ≥ 1.000); sem guardas de NaN aqui.
+  const ratio = (surfaceAreaMm2 as number) / ((volumeCm3 as number) * 1000);
+  if (ratio <= GEOMETRY_FACTOR.lowRatio) return 1;
+  if (ratio >= GEOMETRY_FACTOR.highRatio) return GEOMETRY_FACTOR.max;
+  return (
+    1 +
+    (GEOMETRY_FACTOR.max - 1) *
+      ((ratio - GEOMETRY_FACTOR.lowRatio) /
+        (GEOMETRY_FACTOR.highRatio - GEOMETRY_FACTOR.lowRatio))
+  );
+}
+
 function emptyEstimate(layers: number): PrintTimeEstimate {
   return {
     estimatedMinutes: 0,
@@ -119,6 +179,7 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const {
     volumeCm3,
     dimensions,
+    surfaceAreaMm2,
     materialVolumeCm3,
     layerHeightMm = DEFAULT_SETTINGS.layerHeightMm,
     lineWidthMm = DEFAULT_SETTINGS.lineWidthMm,
@@ -207,11 +268,18 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const printTimeSeconds = printDistanceMm / effectiveSpeedMmPerS;
   const travelTimeSeconds = travelDistanceMm / travelSpeedMmPerS;
 
+  // D-EA3: fator de geometria (SA/V) bornceado e clampado no termo de
+  // movimento (extrusão + travel) — corrige a subestimação sistemática de
+  // peças pequenas/detalhadas sem modelar accel/jerk (§7). O overhead de
+  // troca de camada é somado DEPOIS: ele já é um proxy flat do mesmo efeito.
+  // A âncora G-code (modo avançado) não é tocada — ela sobrescreve o resultado.
+  const geometryFactor = geometryTimeFactor(surfaceAreaMm2, volumeCm3);
+  const motionSeconds = (printTimeSeconds + travelTimeSeconds) * geometryFactor;
+
   // Add layer change overhead (~2 seconds per layer)
   const layerChangeSeconds = layers * LAYER_CHANGE_SECONDS;
 
-  const totalSeconds =
-    printTimeSeconds + travelTimeSeconds + layerChangeSeconds;
+  const totalSeconds = motionSeconds + layerChangeSeconds;
   const estimatedMinutes = Math.round(totalSeconds / 60);
   const estimatedHours = Math.round((estimatedMinutes / 60) * 10) / 10;
 
