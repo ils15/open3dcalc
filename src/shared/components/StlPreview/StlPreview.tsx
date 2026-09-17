@@ -41,7 +41,7 @@ export interface FileParseResult {
   volumeCm3: number;
   weight: number;
   printTimeHours: number;
-  dimensions: { x: number; y: number; z: number };
+  dimensions: { x: number; y: number; z: number } | null;
   triangleCount: number;
   /** Estimated support material volume in cm³ (only when estimateSupport is enabled). */
   supportVolumeCm3?: number;
@@ -396,6 +396,15 @@ export function StlPreview({
           });
           // 1-decimal hours, same as the estimator (H1).
           const hours = Math.round((gcode.printTimeMinutes / 60) * 10) / 10;
+          // D-EA6 (P1): printSize only carries a real measurement when the
+          // slicer reported part extents (`;MINX:`, Cura) or the parser found
+          // a positioned-move bbox — otherwise it degrades to zeros, which
+          // must render as "—" (never a fake 0.0×0.0×0.0). A part with any
+          // real extent always has a non-zero printSize.
+          const measurable =
+            gcode.printSize.x > 0 ||
+            gcode.printSize.y > 0 ||
+            gcode.printSize.z > 0;
           const result: FileParseResult = {
             geometry: null,
             analysis: {
@@ -423,11 +432,13 @@ export function StlPreview({
             // E→grams conversion can carry float noise to the display.
             weight: parseFloat(gcode.filamentUsedGrams.toFixed(2)),
             printTimeHours: hours,
-            dimensions: {
-              x: gcode.printSize.x,
-              y: gcode.printSize.y,
-              z: gcode.printSize.z,
-            },
+            dimensions: measurable
+              ? {
+                  x: gcode.printSize.x,
+                  y: gcode.printSize.y,
+                  z: gcode.printSize.z,
+                }
+              : null,
             triangleCount: 0,
           };
           setGeometry(null);
@@ -828,9 +839,9 @@ export function StlPreview({
                 {t("stl.dimensions")}
               </p>
               <p className="font-semibold text-[var(--color-text-primary)] text-[11px]">
-                {modelInfo.dimensions.x.toFixed(1)}×
-                {modelInfo.dimensions.y.toFixed(1)}×
-                {modelInfo.dimensions.z.toFixed(1)} mm
+                {modelInfo.dimensions
+                  ? `${modelInfo.dimensions.x.toFixed(1)}×${modelInfo.dimensions.y.toFixed(1)}×${modelInfo.dimensions.z.toFixed(1)} mm`
+                  : "—"}
               </p>
             </div>
             {modelInfo.triangleCount > 0 && (
@@ -940,7 +951,8 @@ export function StlPreview({
                 addComparison({
                   fileName: lastFileNameRef.current ?? `model-${Date.now()}`,
                   dimensions: info.dimensions,
-                  volumeCm3: info.volumeCm3,
+                  // G-code has no mesh: volume is unknown, never a fake 0.0.
+                  volumeCm3: info.geometry ? info.volumeCm3 : null,
                   weight: displayEstimate?.weight ?? info.weight,
                   printTimeHours: displayEstimate?.hours ?? info.printTimeHours,
                   triangleCount: info.triangleCount,
@@ -1009,7 +1021,9 @@ export function StlPreview({
                         {entry.printTimeHours.toFixed(1)} h
                       </td>
                       <td className="pr-2 py-1">
-                        {entry.volumeCm3.toFixed(1)} cm³
+                        {entry.volumeCm3 !== null
+                          ? `${entry.volumeCm3.toFixed(1)} cm³`
+                          : "—"}
                       </td>
                       <td className="py-1 text-right">
                         <button

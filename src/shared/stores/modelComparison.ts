@@ -11,8 +11,17 @@ import { manifestStorage } from "@/shared/lib/manifestStorage";
 export interface ComparisonEntry {
   id: string;
   fileName: string;
-  dimensions: { x: number; y: number; z: number };
-  volumeCm3: number;
+  /**
+   * Part extents in mm, or `null` when the file carries no measurable
+   * geometry (D-EA6: G-code without positioned moves or `;MINX:` metadata —
+   * the UI shows "—" instead of a fake `0.0×0.0×0.0`).
+   */
+  dimensions: { x: number; y: number; z: number } | null;
+  /**
+   * Mesh volume in cm³, or `null` when there is no mesh to measure (D-EA6:
+   * G-code has real weight/time but no volume — the cell shows "—").
+   */
+  volumeCm3: number | null;
   weight: number;
   printTimeHours: number;
   triangleCount: number;
@@ -48,6 +57,9 @@ export const useModelComparison = create<ModelComparisonStore>()(
     }),
     {
       name: "open3dcalc_model_comparison",
+      // D-EA6: the nullable fields above only WIDEN the shape — persisted v1
+      // entries always carried concrete numbers, so they stay valid and no
+      // state transform (version bump) is required.
       version: 1,
       storage: manifestStorage(),
     },
