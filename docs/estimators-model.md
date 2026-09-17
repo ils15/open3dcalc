@@ -4,13 +4,14 @@
 
 > Estimativas para precificação (rough ±30%, viés seguro p/ cima); único dado de verdade é o fatiador (G-code). Não usar como garantia de tempo/material.
 > Nomenclatura: modos `Padrão`/`Personalizada`; valor ancorado no G-code usa o badge `Preciso (G-code)`.
+>
 > - `Padrão`: cálculo instantâneo pelos parâmetros do perfil (aprox. ±30%).
 > - `Personalizada`: ajuste fino — fator k por material + G-code real como âncora.
-> Status: vigente a partir do PR #73 (branch `pr-73-hardening`).
-> Escopo: `src/shared/lib/stlParser.ts` (`estimateMaterialVolumeCm3`,
-> `estimateWeight`), `src/shared/lib/printTimeEstimator.ts`
-> (`estimatePrintTime`), `src/shared/lib/filamentProfiles.ts`, único
-> consumidor `StlPreview.tsx`.
+>   Status: vigente a partir do PR #73 (branch `pr-73-hardening`).
+>   Escopo: `src/shared/lib/stlParser.ts` (`estimateMaterialVolumeCm3`,
+>   `estimateWeight`), `src/shared/lib/printTimeEstimator.ts`
+>   (`estimatePrintTime`), `src/shared/lib/filamentProfiles.ts`, único
+>   consumidor `StlPreview.tsx`.
 
 ## 1. Fórmula canônica
 
@@ -106,14 +107,28 @@ k NÃO corrige viés geométrico (ver comentário em `calibrationK`,
 (+13% no cubo de 10 mm vs +0,4% no de 100 mm) e nenhum k único achata essa
 curva — isso se corrige na fórmula, não no fator.
 
-## 9. Follow-up — fiação wall/lineWidth na store do Calculator (NÃO FEITO)
+## 9. Perfil do slicer na store do Calculator — DONE (D-EA1)
 
-`wallCount`/`lineWidthMm` hoje vivem só nos defaults do estimador
-(`VOLUME_DEFAULTS`); a store do Calculator (`calculatorStore.types.ts`) não
-tem esses campos — só `infillPercent`. Ligar o perfil de impressão da UI aos
-estimadores exige adicionar `wallCount`/`lineWidthMm` (e, por coerência,
-`topLayers`/`bottomLayers`/`layerHeightMm`) à store, fora do escopo deste PR.
-Até lá, `StlPreview` segue com os defaults documentados no §2.
+`wallCount`/`lineWidthMm`/`topLayers`/`bottomLayers`/`layerHeightMm`/
+`printSpeedMmPerS` agora vivem no slice persistido `fdmSlicerProfile`
+(`calculatorStore.types.ts`) e são passados pelo `MaterialSection` ao
+`StlPreview`, que os encaminha a `estimateWeight`/`estimateMaterialVolumeCm3`/
+`estimatePrintTime`. O estimador deixou de rodar cegamente em
+`VOLUME_DEFAULTS` — esses defaults permanecem apenas como fallback guardado
+para entrada ausente/NaN/inválida (GA-1).
+
+Migration-safe: estado persistido em localStorage sem o campo cai no
+default-on-missing (nunca quebra estado existente); NaN/Infinity/fora-de-domínio
+são descartados em `sanitizeFdmSlicerProfile` antes de chegar ao cálculo.
+
+O byte-identical backward-compat é garantido por teste: perfil default ==
+saída legada sem perfil, no mesmo mesh. O `material` (família) também passou a
+ser wired — **`FILAMENT_PROFILES` é case-sensitive** (`"pla"`, não `"PLA"`), o
+chamador normaliza com `.toLowerCase()`; família desconhecida cai no teto MVS
+seguro.
+
+Pendências intencionais desta fase: `purgePercent` segue hardcoded `10` no
+`StlPreview` (D-EA2) e o `filamentDiameterMm` segue `1.75` (D-EA2).
 
 ## 10. G-code E paths can diverge (documented, no behavior change)
 

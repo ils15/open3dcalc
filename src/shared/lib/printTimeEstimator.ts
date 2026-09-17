@@ -73,7 +73,7 @@ export interface PrintTimeParams extends EstimateOptions {
   material?: FilamentFamily | string;
 }
 
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   layerHeightMm: 0.2,
   // Largura da linha extrudada. Bico de 0,4 mm deposita ~0,42 mm nos perfis
   // padrão de Bambu Studio, OrcaSlicer e PrusaSlicer.

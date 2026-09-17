@@ -97,6 +97,30 @@ export interface PrintParameters {
   heatUpPowerPercent: number;
 }
 
+/**
+ * Perfil de fatiamento FDM do usuário — espelha as premissas reais do slicer
+ * para o estimador parar de rodar em constantes (D-EA1, GA-1).
+ *
+ * Defaults idênticos aos fallbacks dos estimadores (`VOLUME_DEFAULTS` em
+ * `stlParser.ts` + `DEFAULT_SETTINGS.printSpeedMmPerS` em
+ * `printTimeEstimator.ts`); entrada ausente/NaN/inválida cai neles
+ * (migration-safe, nunca propaga NaN para o cálculo).
+ */
+export interface FdmSlicerProfile {
+  /** Perímetros laterais. Padrão 2. */
+  wallCount: number;
+  /** Largura da linha extrudada em mm. Padrão 0,42 (bico de 0,4). */
+  lineWidthMm: number;
+  /** Camadas sólidas de topo. Padrão 4. */
+  topLayers: number;
+  /** Camadas sólidas de base. Padrão 4. */
+  bottomLayers: number;
+  /** Altura de camada em mm. Padrão 0,2. */
+  layerHeightMm: number;
+  /** Velocidade de impressão em mm/s. Padrão 60. */
+  printSpeedMmPerS: number;
+}
+
 export interface MachineCosts {
   enabled: boolean;
   machineCost: number;
@@ -280,6 +304,8 @@ export interface CalculationSnapshot {
   fdmAmsSlots?: AMSSlot[];
   fdmMaterial: MaterialStateFDM;
   fdmPrintParams: PrintParameters;
+  /** Slicer profile used by the STL estimators (D-EA1). Absent on old snapshots → keep current. */
+  fdmSlicerProfile?: FdmSlicerProfile;
   fdmMachine: MachineCosts;
   fdmHardware: FDMHardware;
   fdmFinishing: FDMFinishing;

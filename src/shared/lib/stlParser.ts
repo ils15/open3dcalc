@@ -1064,7 +1064,7 @@ export interface WeightOptions extends MaterialVolumeOptions, EstimateOptions {
   purgePercent?: number;
 }
 
-const VOLUME_DEFAULTS = {
+export const VOLUME_DEFAULTS = {
   infillPercent: 20,
   wallCount: 2,
   lineWidthMm: 0.42,

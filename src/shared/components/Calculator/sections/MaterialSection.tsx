@@ -281,6 +281,18 @@ export function MaterialSection({
                   onClear={handleStlClear}
                   materialDensity={store.fdmMaterial.density}
                   infillPercent={store.infillPercent}
+                  // D-EA1: o estimador passa a usar o perfil de fatiamento
+                  // real do usuário em vez de VOLUME_DEFAULTS (GA-1).
+                  layerHeight={store.fdmSlicerProfile.layerHeightMm}
+                  speed={store.fdmSlicerProfile.printSpeedMmPerS}
+                  wallCount={store.fdmSlicerProfile.wallCount}
+                  lineWidthMm={store.fdmSlicerProfile.lineWidthMm}
+                  topLayers={store.fdmSlicerProfile.topLayers}
+                  bottomLayers={store.fdmSlicerProfile.bottomLayers}
+                  // FILAMENT_PROFILES é case-sensitive ("pla", não "PLA"):
+                  // sem a normalização, "PLA" cai no MVS fallback 10 e quebra
+                  // o byte-identical do default.
+                  material={store.fdmMaterial.type.toLowerCase()}
                 />
               </div>
             </>
@@ -435,6 +447,18 @@ export function MaterialSection({
                   onClear={handleStlClear}
                   materialDensity={store.fdmMaterial.density}
                   infillPercent={store.infillPercent}
+                  // D-EA1: o estimador passa a usar o perfil de fatiamento
+                  // real do usuário em vez de VOLUME_DEFAULTS (GA-1).
+                  layerHeight={store.fdmSlicerProfile.layerHeightMm}
+                  speed={store.fdmSlicerProfile.printSpeedMmPerS}
+                  wallCount={store.fdmSlicerProfile.wallCount}
+                  lineWidthMm={store.fdmSlicerProfile.lineWidthMm}
+                  topLayers={store.fdmSlicerProfile.topLayers}
+                  bottomLayers={store.fdmSlicerProfile.bottomLayers}
+                  // FILAMENT_PROFILES é case-sensitive ("pla", não "PLA"):
+                  // sem a normalização, "PLA" cai no MVS fallback 10 e quebra
+                  // o byte-identical do default.
+                  material={store.fdmMaterial.type.toLowerCase()}
                 />
               </div>
             </div>

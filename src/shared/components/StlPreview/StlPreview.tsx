@@ -68,13 +68,25 @@ interface StlPreviewProps {
   layerHeight?: number;
   /** Print speed in mm/s (from store fdmPrintParams). Default 60. */
   speed?: number;
-  /** Number of perimeter walls (from store fdmPrintParams). Default 2. */
+  /** Number of perimeter walls (from store fdmSlicerProfile). Default 2. */
   wallCount?: number;
   /**
+   * Extruded line width in mm (from store fdmSlicerProfile). Default 0,42.
+   * Feeds the shell thickness derivation of the volume estimator.
+   */
+  lineWidthMm?: number;
+  /** Solid top layers (from store fdmSlicerProfile). Default 4. */
+  topLayers?: number;
+  /** Solid bottom layers (from store fdmSlicerProfile). Default 4. */
+  bottomLayers?: number;
+  /**
    * Filament family for the MVS speed clamp (default PLA).
+   * Accepts the store's free-form material name — `FILAMENT_PROFILES` is
+   * case-sensitive ("pla", not "PLA"), so callers MUST normalize to
+   * lowercase; unknown families fall back to the safe MVS ceiling.
    * Density still comes from `materialDensity` when provided.
    */
-  material?: FilamentFamily;
+  material?: FilamentFamily | string;
   /** When true, estimates support material volume from overhang triangles. Default false. */
   estimateSupport?: boolean;
   /** Called when the user clears the loaded model from the viewer. */
@@ -279,6 +291,9 @@ export function StlPreview({
   layerHeight,
   speed,
   wallCount,
+  lineWidthMm,
+  topLayers,
+  bottomLayers,
   material,
   estimateSupport = false,
   onClear,
@@ -447,6 +462,10 @@ export function StlPreview({
             purgePercent: 10,
             surfaceAreaMm2: analysis.surfaceArea,
             wallCount,
+            lineWidthMm,
+            topLayers,
+            bottomLayers,
+            layerHeightMm: layerHeight,
             supportVolumeCm3: analysis.supportVolumeCm3,
           });
           // O tempo tem que usar o plástico REALMENTE extrudado, não o volume
@@ -455,6 +474,10 @@ export function StlPreview({
             infillPercent: infill,
             surfaceAreaMm2: analysis.surfaceArea,
             wallCount,
+            lineWidthMm,
+            topLayers,
+            bottomLayers,
+            layerHeightMm: layerHeight,
             supportVolumeCm3: analysis.supportVolumeCm3,
           });
           const timeEstimate = estimatePrintTime({
@@ -504,6 +527,9 @@ export function StlPreview({
       layerHeight,
       speed,
       wallCount,
+      lineWidthMm,
+      topLayers,
+      bottomLayers,
       material,
       supportEnabled,
     ],
@@ -886,8 +912,7 @@ export function StlPreview({
                   dimensions: info.dimensions,
                   volumeCm3: info.volumeCm3,
                   weight: displayEstimate?.weight ?? info.weight,
-                  printTimeHours:
-                    displayEstimate?.hours ?? info.printTimeHours,
+                  printTimeHours: displayEstimate?.hours ?? info.printTimeHours,
                   triangleCount: info.triangleCount,
                 });
               }}
