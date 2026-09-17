@@ -489,6 +489,7 @@ export function StlPreview({
             volumeCm3,
             materialVolumeCm3,
             dimensions: analysis.dimensions,
+            surfaceAreaMm2: analysis.surfaceArea,
             layerHeightMm: layerHeight,
             printSpeedMmPerS: speed,
             material,
