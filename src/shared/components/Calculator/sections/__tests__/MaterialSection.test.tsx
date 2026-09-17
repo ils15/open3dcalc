@@ -91,6 +91,7 @@ const createMockStore = (
     setResinMaterial: vi.fn(),
     setFdmAmsEnabled: vi.fn(),
     setFdmAmsSlot: vi.fn(),
+    setFdmSlicerProfile: vi.fn(),
     ...overrides,
   }) as unknown as CalculatorState;
 
@@ -509,5 +510,58 @@ describe("MaterialSection", () => {
     const wrapper = stl!.parentElement!;
     expect(wrapper.className).toContain("mt-3");
     expect(wrapper.className).not.toContain("col-span-2");
+  });
+
+  it("renders the slicer profile fields in advanced mode (D-EA1)", () => {
+    const store = createMockStore();
+    render(<MaterialSection {...defaultProps} store={store} isFDM={true} />);
+
+    // O grupo só aparece quando isFieldVisible libera as chaves do slicer
+    // (ausentes de BASIC/INTERMEDIATE_FIELDS → advanced apenas).
+    expect(screen.getByRole("group")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("calc.slicer.layerHeightMm"),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the slicer profile fields outside advanced mode", () => {
+    const store = createMockStore();
+    render(
+      <MaterialSection
+        {...defaultProps}
+        store={store}
+        isFDM={true}
+        // Emula calcLevel basic: só campos de BASIC_FIELDS são visíveis.
+        isFieldVisible={vi.fn((_section, fieldId) =>
+          ["type", "costPerKg", "weightUsed"].includes(fieldId),
+        )}
+      />,
+    );
+
+    expect(
+      screen.queryByLabelText("calc.slicer.layerHeightMm"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("commits slicer profile edits to the store (D-EA1)", () => {
+    const store = createMockStore();
+    // handleInput real: sem ele o commit nunca chega ao setter.
+    const handleInput = (value: string, setter: (v: number) => void) => {
+      setter(value === "" ? 0 : parseFloat(value) || 0);
+    };
+    render(
+      <MaterialSection
+        {...defaultProps}
+        store={store}
+        isFDM={true}
+        handleInput={handleInput}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("calc.slicer.wallCount"), {
+      target: { value: "4" },
+    });
+
+    expect(store.setFdmSlicerProfile).toHaveBeenCalledWith({ wallCount: 4 });
   });
 });

@@ -78,6 +78,17 @@
     "density": "Density",
     "volumeMl": "Volume Used",
     "wasteMargin": "Waste Margin",
+    "slicerProfile": "Slicer Profile",
+    "slicer": {
+      "wallCount": "Walls",
+      "lineWidthMm": "Line Width",
+      "topLayers": "Top Layers",
+      "bottomLayers": "Bottom Layers",
+      "layerHeightMm": "Layer Height",
+      "printSpeedMmPerS": "Speed",
+      "errorCount": "Use a whole number greater than or equal to zero.",
+      "errorPositive": "Use a number greater than zero."
+    },
     "printParams": "Print Parameters",
     "printTime": "Print Time",
     "printerPower": "Printer Power",
@@ -732,7 +743,14 @@
     "costPerLiter": "Average price per liter of resin. Standard ~$30-50/L.",
     "volumeMl": "Volume of resin used in the part in milliliters.",
     "weightUsed": "Weight of the part in grams. Use the value from your slicer.",
-    "filamentType": "Type of filament. PLA for beginners, PETG for strength, ABS for high temperature."
+    "filamentType": "Type of filament. PLA for beginners, PETG for strength, ABS for high temperature.",
+    "slicerProfile": "Your slicer's actual parameters. They feed the weight and time estimate of the 3D file — the closer they match your slicer, the more accurate the estimate (±30% envelope).",
+    "slicerWallCount": "Number of outer perimeters (walls). 2 is standard; 3+ for functional parts. 0 = vase mode (shell only, no solid wall).",
+    "slicerLineWidth": "Extruded line width in mm. Usually matches the nozzle diameter (0.4 nozzle → 0.42 mm).",
+    "slicerTopLayers": "Solid layers on top of the part. 4 layers at 0.2 mm ≈ 0.8 mm top.",
+    "slicerBottomLayers": "Solid layers at the base of the part. 4 layers at 0.2 mm ≈ 0.8 mm base.",
+    "slicerLayerHeight": "Height of each layer in mm. 0.08 = high quality, 0.2 = standard, 0.28 = economical.",
+    "slicerPrintSpeed": "Average print speed in mm/s. Higher speeds shorten the time but require more hotend volumetric flow."
   },
   "settings": {
     "currency": "Currency",

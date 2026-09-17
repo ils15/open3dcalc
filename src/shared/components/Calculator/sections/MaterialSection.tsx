@@ -16,6 +16,7 @@ import type { AMSSlot } from "@/shared/types";
 import { selectSpool } from "@/shared/stores/storeBridge";
 import type { FileParseResult } from "@/shared/components/StlPreview/StlPreview";
 import { StlPreview } from "@/shared/components/StlPreview/StlPreview";
+import { SlicerProfileFields } from "./SlicerProfileFields";
 
 export interface MaterialSectionProps {
   renderSectionHeader: (
@@ -463,6 +464,17 @@ export function MaterialSection({
               </div>
             </div>
           )}
+
+          {/* D-EA1: perfil de fatiamento real do usuário. O gating por
+              calcLevel fica no `isFieldVisible` — as chaves do slicer não
+              constam de BASIC/INTERMEDIATE_FIELDS, então só aparecem no
+              modo avançado. Renderiza null nos outros modos. */}
+          <SlicerProfileFields
+            store={store}
+            t={t}
+            handleInput={handleInput}
+            isFieldVisible={isFieldVisible}
+          />
 
           {/* Auto-deduction Spool Selector — FDM non-AMS only */}
           {isFDM &&
