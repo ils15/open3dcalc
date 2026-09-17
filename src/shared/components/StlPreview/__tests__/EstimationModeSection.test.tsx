@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EstimationModeSection } from "../EstimationModeSection";
+import { DEFAULT_FDM_SLICER_PROFILE } from "@/shared/stores/calculatorStore.defaults";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -22,6 +23,8 @@ describe("EstimationModeSection", () => {
     gcodeAnchor: null,
     onGcodeAnchor: vi.fn(),
     onClearGcodeAnchor: vi.fn(),
+    fdmSlicerProfile: { ...DEFAULT_FDM_SLICER_PROFILE },
+    onSlicerProfileFill: vi.fn(),
   };
 
   beforeEach(() => {
@@ -136,6 +139,80 @@ describe("EstimationModeSection", () => {
     expect(anchor.fileName).toBe("peca.gcode");
     expect(anchor.grams).toBeGreaterThan(0);
     expect(anchor.minutes).toBe(60);
+  });
+
+  it("D-EA6b: preenche layerHeightMm/lineWidthMm do G-code nos campos ainda no default", async () => {
+    const onGcodeAnchor = vi.fn();
+    const onSlicerProfileFill = vi.fn();
+    render(
+      <EstimationModeSection
+        {...baseProps}
+        mode="advanced"
+        onGcodeAnchor={onGcodeAnchor}
+        onSlicerProfileFill={onSlicerProfileFill}
+      />,
+    );
+
+    const file = gcodeFile(
+      "peca.gcode",
+      "; layer_height = 0.16\n; line_width = 0.45\nG1 X0 Y0 Z0.16 E100\n;TIME:3600\n",
+    );
+    fireEvent.change(screen.getByLabelText("stl.gcodeUpload"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => expect(onGcodeAnchor).toHaveBeenCalledTimes(1));
+    expect(onSlicerProfileFill).toHaveBeenCalledWith({
+      layerHeightMm: 0.16,
+      lineWidthMm: 0.45,
+    });
+  });
+
+  it("D-EA6b: não sobrescreve campo que o usuário já customizou", async () => {
+    const onGcodeAnchor = vi.fn();
+    const onSlicerProfileFill = vi.fn();
+    render(
+      <EstimationModeSection
+        {...baseProps}
+        mode="advanced"
+        fdmSlicerProfile={{ ...DEFAULT_FDM_SLICER_PROFILE, layerHeightMm: 0.3 }}
+        onGcodeAnchor={onGcodeAnchor}
+        onSlicerProfileFill={onSlicerProfileFill}
+      />,
+    );
+
+    const file = gcodeFile(
+      "peca.gcode",
+      "; layer_height = 0.16\n; line_width = 0.45\nG1 X0 Y0 Z0.16 E100\n;TIME:3600\n",
+    );
+    fireEvent.change(screen.getByLabelText("stl.gcodeUpload"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => expect(onGcodeAnchor).toHaveBeenCalledTimes(1));
+    // layerHeightMm stays at the user's 0.3; only lineWidthMm (still default) fills.
+    expect(onSlicerProfileFill).toHaveBeenCalledWith({ lineWidthMm: 0.45 });
+  });
+
+  it("D-EA6b: não preenche nada quando o G-code não reporta o perfil", async () => {
+    const onGcodeAnchor = vi.fn();
+    const onSlicerProfileFill = vi.fn();
+    render(
+      <EstimationModeSection
+        {...baseProps}
+        mode="advanced"
+        onGcodeAnchor={onGcodeAnchor}
+        onSlicerProfileFill={onSlicerProfileFill}
+      />,
+    );
+
+    const file = gcodeFile("peca.gcode", "G1 X0 Y0 Z0.2 E100\n;TIME:3600\n");
+    fireEvent.change(screen.getByLabelText("stl.gcodeUpload"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => expect(onGcodeAnchor).toHaveBeenCalledTimes(1));
+    expect(onSlicerProfileFill).not.toHaveBeenCalled();
   });
 
   it("arquivo acima de 50MB mostra erro e não ancora", async () => {

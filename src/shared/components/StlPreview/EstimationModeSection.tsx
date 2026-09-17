@@ -10,6 +10,8 @@ import {
   type GcodeAnchor,
 } from "@/shared/types/estimation";
 import { DEFAULT_MAX_CHARS } from "@/shared/lib/gcodeTotals";
+import { DEFAULT_FDM_SLICER_PROFILE } from "@/shared/stores/calculatorStore.defaults";
+import type { FdmSlicerProfile } from "@/shared/types";
 
 // Canonical anchor type lives in estimation.ts (E1) — re-exported here so
 // existing imports keep working without a parallel declaration.
@@ -28,6 +30,14 @@ interface EstimationModeSectionProps {
    * non-1.75 spool converts correctly. Defaults to the single-source constant.
    */
   filamentDiameterMm?: number;
+  /**
+   * Current slicing profile (D-EA6b). G-code geometry metadata only fills
+   * fields that are still at their default — user customization is never
+   * overwritten.
+   */
+  fdmSlicerProfile?: FdmSlicerProfile;
+  /** Partial profile merge (store `setFdmSlicerProfile`). */
+  onSlicerProfileFill?: (partial: Partial<FdmSlicerProfile>) => void;
 }
 
 // Caps and calibration bounds are single-sourced from the domain
@@ -53,6 +63,8 @@ export function EstimationModeSection({
   onGcodeAnchor,
   onClearGcodeAnchor,
   filamentDiameterMm,
+  fdmSlicerProfile,
+  onSlicerProfileFill,
 }: EstimationModeSectionProps) {
   const { t } = useTranslation();
   const gcodeInputRef = useRef<HTMLInputElement>(null);
@@ -83,6 +95,29 @@ export function EstimationModeSection({
       if (!Number.isFinite(totals.extrudedGrams) || totals.extrudedGrams <= 0) {
         setGcodeError(t("stl.gcodeParseError"));
         return;
+      }
+      // D-EA6b: the slicer's own geometry metadata (`; layer_height`,
+      // `; line_width`, Cura `;HEIGHT:`/`;WIDTH:`) pre-fills the slicing
+      // profile — only fields still at the default, so a value the user set
+      // is never overwritten. Anchor grams/time stay the totals reader's.
+      const profileFill: Partial<FdmSlicerProfile> = {};
+      if (
+        totals.layerHeightMm !== undefined &&
+        totals.layerHeightMm > 0 &&
+        fdmSlicerProfile?.layerHeightMm ===
+          DEFAULT_FDM_SLICER_PROFILE.layerHeightMm
+      ) {
+        profileFill.layerHeightMm = totals.layerHeightMm;
+      }
+      if (
+        totals.lineWidthMm !== undefined &&
+        totals.lineWidthMm > 0 &&
+        fdmSlicerProfile?.lineWidthMm === DEFAULT_FDM_SLICER_PROFILE.lineWidthMm
+      ) {
+        profileFill.lineWidthMm = totals.lineWidthMm;
+      }
+      if (Object.keys(profileFill).length > 0) {
+        onSlicerProfileFill?.(profileFill);
       }
       onGcodeAnchor({
         fileName: file.name,

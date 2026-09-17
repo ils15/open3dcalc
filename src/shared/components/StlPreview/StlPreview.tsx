@@ -419,7 +419,9 @@ export function StlPreview({
               integrity: { valid: true, issues: [] },
             },
             volumeCm3: 0,
-            weight: gcode.filamentUsedGrams,
+            // Same 2-decimal rounding as the STL branch (:507) — the raw
+            // E→grams conversion can carry float noise to the display.
+            weight: parseFloat(gcode.filamentUsedGrams.toFixed(2)),
             printTimeHours: hours,
             dimensions: {
               x: gcode.printSize.x,
@@ -782,6 +784,8 @@ export function StlPreview({
             onGcodeAnchor={setGcodeAnchor}
             onClearGcodeAnchor={() => setGcodeAnchor(null)}
             filamentDiameterMm={fdmFilament.filamentDiameterMm}
+            fdmSlicerProfile={store.fdmSlicerProfile}
+            onSlicerProfileFill={store.setFdmSlicerProfile}
           />
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             {modelInfo.volumeCm3 > 0 && (

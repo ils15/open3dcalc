@@ -507,6 +507,13 @@
     "estimatedBadge": "Estimated",
     "gcodeBadge": "Accurate (G-code)",
     "gcodeEPathsNote": "G-code E paths can differ: file view uses max-E, the Custom anchor sums extrusion (M82/M83 + G92). Retraction-heavy or relative files may diverge.",
+    "compare": {
+      "add": "Add to comparison",
+      "title": "Compare models",
+      "clear": "Clear",
+      "model": "Model",
+      "remove": "Remove"
+    },
     "assumptionsTitle": "Assumptions used",
     "assumptionsTooltip": "The parameters that fed this estimate. Edit them in the Complete (advanced) mode — slicing profile and filament parameters.",
     "assumptionsMode": "Mode",

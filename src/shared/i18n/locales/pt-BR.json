@@ -507,6 +507,13 @@
     "estimatedBadge": "Estimado",
     "gcodeBadge": "Preciso (G-code)",
     "gcodeEPathsNote": "Caminhos E do G-code podem divergir: a visão do arquivo usa E-máx, a âncora Custom soma a extrusão (M82/M83 + G92). Arquivos relativos ou com muita retração podem divergir.",
+    "compare": {
+      "add": "Adicionar à comparação",
+      "title": "Comparar modelos",
+      "clear": "Limpar",
+      "model": "Modelo",
+      "remove": "Remover"
+    },
     "assumptionsTitle": "Premissas usadas",
     "assumptionsTooltip": "Os parâmetros que alimentaram esta estimativa. Edite-os no modo Completo (avançado) — perfil de fatiamento e parâmetros do filamento.",
     "assumptionsMode": "Modo",

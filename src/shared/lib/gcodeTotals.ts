@@ -15,6 +15,7 @@ import {
   DEFAULT_FILAMENT_DIAMETER_MM,
   DEFAULT_FILAMENT_DENSITY_GCM3,
 } from "./filamentDefaults";
+import { readSlicerGeometryComment } from "./gcodeGeometry";
 
 export interface GcodeTotals {
   /** Total extruded filament in mm (E sum). */
@@ -29,6 +30,17 @@ export interface GcodeTotals {
    * Absent when `timeMinutes` is absent.
    */
   timeSource?: "header" | "moves";
+  /**
+   * Slicer-reported layer height in mm (D-EA6b): `; layer_height` or Cura
+   * `;HEIGHT:`. Absent when the slicer reports nothing. Used to auto-fill the
+   * slicing profile only for fields still at their default.
+   */
+  layerHeightMm?: number;
+  /**
+   * Slicer-reported extrusion line width in mm (D-EA6b): `; line_width` or
+   * `;WIDTH:`. Same auto-fill policy as `layerHeightMm`.
+   */
+  lineWidthMm?: number;
 }
 
 export interface ParseGcodeTotalsOptions {
@@ -254,6 +266,9 @@ export function parseGcodeTotals(
   let totalMm = 0;
   let timeMinutes: number | undefined;
   let timeSource: GcodeTotals["timeSource"];
+  // D-EA6b: slicer-reported extrusion geometry (first valid value wins).
+  let layerHeightMm: number | undefined;
+  let lineWidthMm: number | undefined;
 
   let lineCount = 0;
   let start = 0;
@@ -264,6 +279,27 @@ export function parseGcodeTotals(
     lineCount++;
     const trimmed = line.trim();
     if (trimmed.length === 0) return;
+
+    // D-EA6b: slicer geometry comments (`; layer_height`, `; line_width`,
+    // Cura `;HEIGHT:`/`;WIDTH:`) — read before comment-stripping below, since
+    // these are whole-line comments. First valid value wins.
+    const geometry = readSlicerGeometryComment(trimmed);
+    if (geometry.layerHeightMm !== undefined && layerHeightMm === undefined) {
+      layerHeightMm = geometry.layerHeightMm;
+    } else if (
+      geometry.perLayerHeightMm !== undefined &&
+      layerHeightMm === undefined
+    ) {
+      layerHeightMm = geometry.perLayerHeightMm;
+    } else if (
+      geometry.initialLayerHeightMm !== undefined &&
+      layerHeightMm === undefined
+    ) {
+      layerHeightMm = geometry.initialLayerHeightMm;
+    }
+    if (geometry.lineWidthMm !== undefined && lineWidthMm === undefined) {
+      lineWidthMm = geometry.lineWidthMm;
+    }
 
     const timeS = parseTimeHeaderSeconds(trimmed);
     const next = firstHeaderMinutes(timeMinutes, timeS);
@@ -353,5 +389,7 @@ export function parseGcodeTotals(
       result.timeSource = "moves";
     }
   }
+  if (layerHeightMm !== undefined) result.layerHeightMm = layerHeightMm;
+  if (lineWidthMm !== undefined) result.lineWidthMm = lineWidthMm;
   return result;
 }

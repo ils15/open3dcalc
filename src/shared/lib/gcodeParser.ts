@@ -10,15 +10,32 @@ import {
   resolveFilamentDensity,
   type FilamentFamily,
 } from "./filamentProfiles";
+import {
+  GcodeBounds,
+  readSlicerGeometryComment,
+  type GcodeBoundsResult,
+} from "./gcodeGeometry";
 
 export interface GcodeInfo {
   printTimeMinutes: number;
   filamentUsedMm: number;
   filamentUsedGrams: number;
   layerHeight: number;
+  /**
+   * Extrusion line width in mm when the slicer reports it (`; line_width`,
+   * Cura `;WIDTH:`). D-EA6b: auto-fills the slicing profile. Absent when the
+   * slicer reports nothing.
+   */
+  lineWidthMm?: number;
   nozzleTemp: number;
   bedTemp: number;
   printSize: { x: number; y: number; z: number };
+  /**
+   * Toolhead bounding box from G0/G1/G2/G3 moves (D-EA6). `null` when no
+   * positioned move was seen — the UI shows "—" instead of a fake
+   * `0.0×0.0×0.0`. `printSize` keeps its own precedence (metadata > bbox).
+   */
+  bounds?: GcodeBoundsResult | null;
   slicer: string;
   filamentType: string;
 }
@@ -30,6 +47,16 @@ export interface ParseGcodeOptions {
   densityGcm3?: number;
   /** Material family for density lookup (default PLA). */
   filamentFamily?: FilamentFamily | string;
+}
+
+/**
+ * `parseFloat` that rejects NaN/Infinity so malformed `;MINX:`-style metadata
+ * can never poison the dimensions (falls back to the move bbox instead).
+ */
+function parseFiniteFloat(raw: string | undefined): number | undefined {
+  if (raw === undefined) return undefined;
+  const value = parseFloat(raw);
+  return Number.isFinite(value) ? value : undefined;
 }
 
 /**
@@ -55,7 +82,10 @@ function parseFilamentHeaderMm(trimmed: string): number | undefined {
   return millimetres;
 }
 
-export function parseGcode(text: string, options: ParseGcodeOptions = {}): GcodeInfo {
+export function parseGcode(
+  text: string,
+  options: ParseGcodeOptions = {},
+): GcodeInfo {
   const info: GcodeInfo = {
     printTimeMinutes: 0,
     filamentUsedMm: 0,
@@ -70,6 +100,13 @@ export function parseGcode(text: string, options: ParseGcodeOptions = {}): Gcode
 
   const lines = text.split("\n");
 
+  // D-EA6: toolhead bounding box from G0/G1/G2/G3 moves, accumulated in the
+  // same single pass (xyz-tools/gcode-preview approach, reimplemented).
+  const bounds = new GcodeBounds();
+  // Slicer geometry metadata per axis: `;MINX:` & friends win over the bbox
+  // (they describe the PART, the box describes the TOOLHEAD).
+  const metaSize: { x?: number; y?: number; z?: number } = {};
+
   // First-header-wins time: shared policy with parseGcodeTotals (T1/T2).
   // `undefined` = no header seen yet; the finished info exposes 0 when absent.
   let headerMinutes: number | undefined;
@@ -77,6 +114,33 @@ export function parseGcode(text: string, options: ParseGcodeOptions = {}): Gcode
 
   for (const line of lines) {
     const trimmed = line.trim();
+
+    // Bounding box sees every line (moves + G90/G91/G92/G28 state machine).
+    bounds.visitLine(trimmed);
+
+    // D-EA6b: slicer-reported extrusion geometry (`; layer_height`,
+    // `; line_width`, Cura `;HEIGHT:`/`;WIDTH:`). The config block is
+    // authoritative; per-layer/initial values only fill what is still empty.
+    const geometryComment = readSlicerGeometryComment(trimmed);
+    if (geometryComment.layerHeightMm !== undefined) {
+      info.layerHeight = geometryComment.layerHeightMm;
+    } else if (
+      geometryComment.perLayerHeightMm !== undefined &&
+      !(info.layerHeight > 0)
+    ) {
+      info.layerHeight = geometryComment.perLayerHeightMm;
+    } else if (
+      geometryComment.initialLayerHeightMm !== undefined &&
+      !(info.layerHeight > 0)
+    ) {
+      info.layerHeight = geometryComment.initialLayerHeightMm;
+    }
+    if (
+      geometryComment.lineWidthMm !== undefined &&
+      (info.lineWidthMm ?? 0) <= 0
+    ) {
+      info.lineWidthMm = geometryComment.lineWidthMm;
+    }
 
     // Slicer header time via the shared reader (Cura/Prusa/Orca — see
     // parseTimeHeaderSeconds; first header wins, matching parseGcodeTotals).
@@ -91,22 +155,26 @@ export function parseGcode(text: string, options: ParseGcodeOptions = {}): Gcode
       info.filamentUsedMm = parsedFilamentHeaderMm;
     }
     if (trimmed.startsWith(";MINX:")) {
-      const minX = parseFloat(trimmed.split(":")[1]);
+      const minX = parseFiniteFloat(trimmed.split(":")[1]);
       const maxXLine = lines.find((l) => l.trim().startsWith(";MAXX:"));
       const minYLine = lines.find((l) => l.trim().startsWith(";MINY:"));
       const maxYLine = lines.find((l) => l.trim().startsWith(";MAXY:"));
       const minZLine = lines.find((l) => l.trim().startsWith(";MINZ:"));
       const maxZLine = lines.find((l) => l.trim().startsWith(";MAXZ:"));
-      if (maxXLine)
-        info.printSize.x = parseFloat(maxXLine.trim().split(":")[1]) - minX;
-      if (minYLine && maxYLine)
-        info.printSize.y =
-          parseFloat(maxYLine.trim().split(":")[1]) -
-          parseFloat(minYLine.trim().split(":")[1]);
-      if (minZLine && maxZLine)
-        info.printSize.z =
-          parseFloat(maxZLine.trim().split(":")[1]) -
-          parseFloat(minZLine.trim().split(":")[1]);
+      if (minX !== undefined && maxXLine) {
+        const maxX = parseFiniteFloat(maxXLine.trim().split(":")[1]);
+        if (maxX !== undefined) metaSize.x = maxX - minX;
+      }
+      if (minYLine && maxYLine) {
+        const minY = parseFiniteFloat(minYLine.trim().split(":")[1]);
+        const maxY = parseFiniteFloat(maxYLine.trim().split(":")[1]);
+        if (minY !== undefined && maxY !== undefined) metaSize.y = maxY - minY;
+      }
+      if (minZLine && maxZLine) {
+        const minZ = parseFiniteFloat(minZLine.trim().split(":")[1]);
+        const maxZ = parseFiniteFloat(maxZLine.trim().split(":")[1]);
+        if (minZ !== undefined && maxZ !== undefined) metaSize.z = maxZ - minZ;
+      }
     }
     if (trimmed.startsWith("; generated by")) {
       info.slicer = trimmed.replace("; generated by", "").trim();
@@ -119,17 +187,6 @@ export function parseGcode(text: string, options: ParseGcodeOptions = {}): Gcode
     }
     if (trimmed.startsWith(";Material:")) {
       info.filamentType = trimmed.split(":")[1].trim();
-    }
-    if (trimmed.startsWith("; layer_height")) {
-      info.layerHeight = parseFloat(
-        trimmed.split("=")[1] || trimmed.split(":")[1],
-      );
-    }
-    if (trimmed.startsWith("; initial_layer_line_height")) {
-      if (!info.layerHeight)
-        info.layerHeight = parseFloat(
-          trimmed.split("=")[1] || trimmed.split(":")[1],
-        );
     }
     if (trimmed.startsWith("; nozzle_temperature")) {
       info.nozzleTemp = parseFloat(
@@ -197,6 +254,17 @@ export function parseGcode(text: string, options: ParseGcodeOptions = {}): Gcode
       density,
     );
   }
+
+  // D-EA6: dimensions precedence — slicer metadata (`;MINX:`, part extents)
+  // > move bounding box (toolhead extents) > zeros. `bounds === null` flags
+  // "no geometry at all" so the UI can show "—" instead of a fake 0.0.
+  const bboxSize = bounds.size;
+  info.printSize = {
+    x: metaSize.x ?? bboxSize?.x ?? 0,
+    y: metaSize.y ?? bboxSize?.y ?? 0,
+    z: metaSize.z ?? bboxSize?.z ?? 0,
+  };
+  info.bounds = bounds.bounds;
 
   return info;
 }

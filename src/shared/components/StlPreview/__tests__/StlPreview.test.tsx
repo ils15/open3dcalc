@@ -274,6 +274,31 @@ describe("StlPreview", () => {
       expect(screen.getByText("—")).toBeInTheDocument();
     });
 
+    it("rounds the GCODE weight to 2 decimals, same util as the STL path", async () => {
+      const onFileParsed = vi.fn();
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      const dropZone = screen.getByRole("button", { name: /stl\./ });
+
+      // E500 mm at Ø1.75 / PLA 1.24 → ≈1.4913 g (more than 2 decimals raw).
+      const gcodeContent = "G1 X0 Y0 Z0.2 E500";
+      const file = new File([gcodeContent], "round.gcode", { type: "" });
+      Object.defineProperty(file, "text", {
+        value: vi.fn().mockResolvedValue(gcodeContent),
+        writable: true,
+        configurable: true,
+      });
+
+      fireEvent.drop(dropZone, {
+        dataTransfer: { files: [file], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      const result = onFileParsed.mock.calls[0][0];
+      expect(result.weight).toBeGreaterThan(0);
+      // Same precision as the STL branch (parseFloat(x.toFixed(2))).
+      expect(result.weight).toBe(Math.round(result.weight * 100) / 100);
+    });
+
     it("parses PrusaSlicer estimated time format via drop and reports correct hours", async () => {
       const onFileParsed = vi.fn();
       render(<StlPreview onFileParsed={onFileParsed} />);
