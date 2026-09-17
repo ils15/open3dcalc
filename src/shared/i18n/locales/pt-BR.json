@@ -89,6 +89,15 @@
       "errorCount": "Use um número inteiro maior ou igual a zero.",
       "errorPositive": "Use um número maior que zero."
     },
+    "filamentProfile": "Filamento",
+    "filament": {
+      "purgePercent": "Purga",
+      "filamentDiameterMm": "Diâmetro do Filamento",
+      "maxVolumetricSpeedMm3PerS": "Vazão Máxima (MVS)",
+      "mvsPlaceholder": "Tabela do material",
+      "errorNonNegative": "Use um número maior ou igual a zero.",
+      "errorPositive": "Use um número maior que zero."
+    },
     "printParams": "Parâmetros de Impressão",
     "printTime": "Tempo de Impressão",
     "printerPower": "Potência da Impressora",
@@ -498,6 +507,24 @@
     "estimatedBadge": "Estimado",
     "gcodeBadge": "Preciso (G-code)",
     "gcodeEPathsNote": "Caminhos E do G-code podem divergir: a visão do arquivo usa E-máx, a âncora Custom soma a extrusão (M82/M83 + G92). Arquivos relativos ou com muita retração podem divergir.",
+    "assumptionsTitle": "Premissas usadas",
+    "assumptionsTooltip": "Os parâmetros que alimentaram esta estimativa. Edite-os no modo Completo (avançado) — perfil de fatiamento e parâmetros do filamento.",
+    "assumptionsMode": "Modo",
+    "assumptionsModeSimple": "Standard (STL)",
+    "assumptionsModeCustom": "Custom (G-code)",
+    "assumptionsRoughBadge": "±30%",
+    "assumptionsRoughTooltip": "Aproximação pré-fatia: só o seu slicer conhece retrações, aceleração e suportes reais. Por isso o modo é conservador (erra para cima).",
+    "assumptionsSlicerGroup": "Fatiamento",
+    "assumptionsFilamentGroup": "Filamento",
+    "assumptionsMaterial": "Material",
+    "assumptionsMvs": "Vazão máx.",
+    "assumptionsMvsTable": "tabela",
+    "assumptionsMvsOverride": "override",
+    "assumptionsWeight": "Peso",
+    "assumptionsTime": "Tempo",
+    "assumptionsWhyTitle": "Por que não bate com meu slicer?",
+    "assumptionsWhyText": "Esta é uma estimativa pré-fatia (±30%): ela não vê retrações, saltos, aceleração nem suportes. Para casar com o slicer, use o modo Custom com o G-code real como âncora — ele substitui peso e tempo pelos valores exatos.",
+    "assumptionsCtaCustom": "Abrir modo Custom (G-code)",
     "tech": {
       "title": "Tecnologia sugerida: {{tech}}",
       "resin": "Resina",
@@ -750,7 +777,11 @@
     "slicerTopLayers": "Camadas sólidas no topo da peça. 4 camadas a 0,2 mm ≈ 0,8 mm de topo.",
     "slicerBottomLayers": "Camadas sólidas na base da peça. 4 camadas a 0,2 mm ≈ 0,8 mm de base.",
     "slicerLayerHeight": "Altura de cada camada em mm. 0,08 = alta qualidade, 0,2 = padrão, 0,28 = econômico.",
-    "slicerPrintSpeed": "Velocidade média de impressão em mm/s. Velocidades mais altas encurtam o tempo, mas exigem maior vazão do hotend."
+    "slicerPrintSpeed": "Velocidade média de impressão em mm/s. Velocidades mais altas encurtam o tempo, mas exigem maior vazão do hotend.",
+    "filamentProfile": "Parâmetros físicos do filamento que alimentam a estimativa de peso e tempo. São preferências locais — nenhum dado é coletado ou sincronizado.",
+    "filamentPurgePercent": "Porcentagem de purga/wipe somada ao peso extrudado (troca de cor AMS, wipe tower no infill). Padrão 10%; 0 desativa a purga.",
+    "filamentDiameter": "Diâmetro do filamento em mm. 1,75 é o padrão de fato; tolerâncias de ±0,05 mm já mudam o volume em ~5,7%.",
+    "filamentMvs": "Vazão volumétrica máxima (mm³/s) que o hotend entrega. Vazio = tabela do material (conservadora). Hotends high-flow (volcano/CHT) dobram o MVS real — preencha se o seu for rápido."
   },
   "settings": {
     "currency": "Moeda",

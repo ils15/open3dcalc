@@ -89,6 +89,15 @@
       "errorCount": "Use a whole number greater than or equal to zero.",
       "errorPositive": "Use a number greater than zero."
     },
+    "filamentProfile": "Filament",
+    "filament": {
+      "purgePercent": "Purge",
+      "filamentDiameterMm": "Filament Diameter",
+      "maxVolumetricSpeedMm3PerS": "Max Volumetric Speed (MVS)",
+      "mvsPlaceholder": "Material table",
+      "errorNonNegative": "Use a number greater than or equal to zero.",
+      "errorPositive": "Use a number greater than zero."
+    },
     "printParams": "Print Parameters",
     "printTime": "Print Time",
     "printerPower": "Printer Power",
@@ -498,6 +507,24 @@
     "estimatedBadge": "Estimated",
     "gcodeBadge": "Accurate (G-code)",
     "gcodeEPathsNote": "G-code E paths can differ: file view uses max-E, the Custom anchor sums extrusion (M82/M83 + G92). Retraction-heavy or relative files may diverge.",
+    "assumptionsTitle": "Assumptions used",
+    "assumptionsTooltip": "The parameters that fed this estimate. Edit them in the Complete (advanced) mode — slicing profile and filament parameters.",
+    "assumptionsMode": "Mode",
+    "assumptionsModeSimple": "Standard (STL)",
+    "assumptionsModeCustom": "Custom (G-code)",
+    "assumptionsRoughBadge": "±30%",
+    "assumptionsRoughTooltip": "Pre-slice approximation: only your slicer knows the real retractions, acceleration and supports. That's why this mode is conservative (errs on the high side).",
+    "assumptionsSlicerGroup": "Slicing",
+    "assumptionsFilamentGroup": "Filament",
+    "assumptionsMaterial": "Material",
+    "assumptionsMvs": "Max flow",
+    "assumptionsMvsTable": "table",
+    "assumptionsMvsOverride": "override",
+    "assumptionsWeight": "Weight",
+    "assumptionsTime": "Time",
+    "assumptionsWhyTitle": "Why doesn't it match my slicer?",
+    "assumptionsWhyText": "This is a pre-slice estimate (±30%): it can't see retractions, travel, acceleration or supports. To match your slicer, use Custom mode with the real G-code as an anchor — it replaces weight and time with exact values.",
+    "assumptionsCtaCustom": "Open Custom mode (G-code)",
     "tech": {
       "title": "Suggested technology: {{tech}}",
       "resin": "Resin",
@@ -750,7 +777,11 @@
     "slicerTopLayers": "Solid layers on top of the part. 4 layers at 0.2 mm ≈ 0.8 mm top.",
     "slicerBottomLayers": "Solid layers at the base of the part. 4 layers at 0.2 mm ≈ 0.8 mm base.",
     "slicerLayerHeight": "Height of each layer in mm. 0.08 = high quality, 0.2 = standard, 0.28 = economical.",
-    "slicerPrintSpeed": "Average print speed in mm/s. Higher speeds shorten the time but require more hotend volumetric flow."
+    "slicerPrintSpeed": "Average print speed in mm/s. Higher speeds shorten the time but require more hotend volumetric flow.",
+    "filamentProfile": "Physical filament parameters that feed the weight and time estimate. These are local preferences only — no data is collected or synced.",
+    "filamentPurgePercent": "Purge/wipe percentage added on top of the extruded weight (AMS color changes, wipe tower into infill). Default 10%; 0 disables purge.",
+    "filamentDiameter": "Filament diameter in mm. 1.75 is the de facto standard; ±0.05 mm tolerances already shift volume by ~5.7%.",
+    "filamentMvs": "Maximum volumetric flow (mm³/s) the hotend delivers. Empty = material table (conservative). High-flow hotends (volcano/CHT) double the real MVS — fill it in if yours is fast."
   },
   "settings": {
     "currency": "Currency",

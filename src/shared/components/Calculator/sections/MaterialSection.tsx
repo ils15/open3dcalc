@@ -17,6 +17,7 @@ import { selectSpool } from "@/shared/stores/storeBridge";
 import type { FileParseResult } from "@/shared/components/StlPreview/StlPreview";
 import { StlPreview } from "@/shared/components/StlPreview/StlPreview";
 import { SlicerProfileFields } from "./SlicerProfileFields";
+import { FilamentAssumptionsFields } from "./FilamentAssumptionsFields";
 
 export interface MaterialSectionProps {
   renderSectionHeader: (
@@ -470,6 +471,17 @@ export function MaterialSection({
               constam de BASIC/INTERMEDIATE_FIELDS, então só aparecem no
               modo avançado. Renderiza null nos outros modos. */}
           <SlicerProfileFields
+            store={store}
+            t={t}
+            handleInput={handleInput}
+            isFieldVisible={isFieldVisible}
+          />
+
+          {/* D-EA5 (GA-2): parâmetros físicos do filamento — purge %, diâmetro
+              e override de MVS. Mesmo gating do D-EA1 (só modo avançado); a
+              store já sanitiza, não revalidamos aqui. Espelha
+              SlicerProfileFields. */}
+          <FilamentAssumptionsFields
             store={store}
             t={t}
             handleInput={handleInput}

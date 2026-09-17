@@ -53,6 +53,7 @@ import {
   resolveDisplayEstimate,
   type DisplayEstimate,
 } from "./estimationDisplay";
+import { AssumptionsPanel } from "./AssumptionsPanel";
 
 interface StlPreviewProps {
   onFileParsed?: (data: FileParseResult) => void;
@@ -866,6 +867,18 @@ export function StlPreview({
               )}
             </div>
           </div>
+
+          {/* D-EA5 (GA-3): painel "Premissas usadas" — transparência total
+              sobre os parâmetros que alimentaram o estimador. Read-only,
+              valores 100% da store. */}
+          <AssumptionsPanel
+            store={store}
+            mode={estimationMode}
+            weightFromGcode={displayEstimate?.weightFromGcode ?? false}
+            timeFromGcode={displayEstimate?.timeFromGcode ?? false}
+            t={t}
+            onSwitchToCustom={() => setEstimationMode("advanced")}
+          />
         </div>
       )}
 

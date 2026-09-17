@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { MaterialSection } from "../MaterialSection";
 import type { CalculatorState } from "@/shared/stores/calculatorStore";
-import { DEFAULT_FDM_SLICER_PROFILE } from "@/shared/stores/calculatorStore.defaults";
+import {
+  DEFAULT_FDM_FILAMENT,
+  DEFAULT_FDM_SLICER_PROFILE,
+} from "@/shared/stores/calculatorStore.defaults";
 
 // Mock StlPreview so tests can drive the onClear wiring without 3D setup
 vi.mock("@/shared/components/StlPreview/StlPreview", () => ({
@@ -40,6 +43,9 @@ const createMockStore = (
       heatUpTimeMinutes: 10,
     },
     fdmSlicerProfile: { ...DEFAULT_FDM_SLICER_PROFILE },
+    // D-EA5: FilamentAssumptionsFields lê store.fdmFilament[...] — a store
+    // real sempre tem esse objeto (default); o fixture espelha fdmSlicerProfile.
+    fdmFilament: { ...DEFAULT_FDM_FILAMENT },
     resinPrintParams: {
       printTimeHours: 0,
       heatUpTimeMinutes: 0,
@@ -92,6 +98,7 @@ const createMockStore = (
     setFdmAmsEnabled: vi.fn(),
     setFdmAmsSlot: vi.fn(),
     setFdmSlicerProfile: vi.fn(),
+    setFdmFilament: vi.fn(),
     ...overrides,
   }) as unknown as CalculatorState;
 
@@ -517,8 +524,15 @@ describe("MaterialSection", () => {
     render(<MaterialSection {...defaultProps} store={store} isFDM={true} />);
 
     // O grupo só aparece quando isFieldVisible libera as chaves do slicer
-    // (ausentes de BASIC/INTERMEDIATE_FIELDS → advanced apenas).
-    expect(screen.getByRole("group")).toBeInTheDocument();
+    // (ausentes de BASIC/INTERMEDIATE_FIELDS → advanced apenas). D-EA5
+    // adiciona o grupo de parâmetros do filamento; o do slicer é o que
+    // abriga o label de layerHeight (intent do D-EA1 mantido).
+    const slicerGroup = screen
+      .getAllByRole("group")
+      .find((group) =>
+        within(group).queryByLabelText("calc.slicer.layerHeightMm"),
+      );
+    expect(slicerGroup).toBeInTheDocument();
     expect(
       screen.getByLabelText("calc.slicer.layerHeightMm"),
     ).toBeInTheDocument();
