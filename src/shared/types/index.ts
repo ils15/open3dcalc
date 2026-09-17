@@ -76,6 +76,36 @@ export interface MaterialStateFDM {
   spoolEfficiency: number;
 }
 
+/**
+ * Physical filament parameters consumed by the estimation path (D-EA2, GA-2).
+ *
+ * Both fields are FDM-only (resin has no filament) and previously lived as
+ * hardcoded literals at the call sites: `purgePercent: 10` in `StlPreview`
+ * (the sole consumer, inflating every weight by 10% with no control) and
+ * `1.75` in the time estimator / G-code anchor (±0.05 mm ≈ 5.7% volume).
+ *
+ * Kept in a dedicated slice — NOT in `MaterialStateFDM`, which is the
+ * cost/material state (`ComputeStoreInput`, pricing) and already carries a
+ * `purgeWeight` in grams (cost-side) that is a different concept from an
+ * estimation-side percentage. Mirrors the `fdmSlicerProfile` slice (D-EA1):
+ * default constant + sanitize + resolve + migration on every persistence
+ * path.
+ */
+export interface FdmFilamentParams {
+  /**
+   * Purge/wipe percentage added on top of the extruded weight (AMS color
+   * changes, wipe tower into infill). Default 10 — behavior-preserving with
+   * the previous hardcoded literal; 0 disables purge entirely.
+   */
+  purgePercent: number;
+  /**
+   * Filament diameter in mm. Default 1.75 (single-sourced from
+   * `DEFAULT_FILAMENT_DIAMETER_MM`). Tolerance ±0.05 mm ≈ 5.7% volume
+   * variance, now modeled instead of assumed.
+   */
+  filamentDiameterMm: number;
+}
+
 export interface MaterialStateResin {
   type: string;
   volumeUsedMl: number;
@@ -306,6 +336,11 @@ export interface CalculationSnapshot {
   fdmPrintParams: PrintParameters;
   /** Slicer profile used by the STL estimators (D-EA1). Absent on old snapshots → keep current. */
   fdmSlicerProfile?: FdmSlicerProfile;
+  /**
+   * D-EA2 filament params (purge/diameter). Optional: snapshots written
+   * before D-EA2 lack it and fall back to the store defaults on restore.
+   */
+  fdmFilament?: FdmFilamentParams;
   fdmMachine: MachineCosts;
   fdmHardware: FDMHardware;
   fdmFinishing: FDMFinishing;

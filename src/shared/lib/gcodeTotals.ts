@@ -11,6 +11,10 @@
  */
 
 import { estimatePrintTimeFromFilamentMm } from "./printTimeEstimator";
+import {
+  DEFAULT_FILAMENT_DIAMETER_MM,
+  DEFAULT_FILAMENT_DENSITY_GCM3,
+} from "./filamentDefaults";
 
 export interface GcodeTotals {
   /** Total extruded filament in mm (E sum). */
@@ -48,12 +52,15 @@ export const DEFAULT_MAX_LINES = 2_000_000;
 
 /**
  * Single-source filament defaults (W1 — never hard-code 1.75/1.24 elsewhere).
- * Density matches the PLA entry of `filamentProfiles.ts`; callers that know
- * the material resolve the density via `resolveFilamentDensity` and pass it
- * through `ParseGcodeTotalsOptions`.
+ *
+ * The physical constants live in the leaf `filamentDefaults` (no imports —
+ * safe to consume from `printTimeEstimator`, which this module imports, without
+ * creating a cycle) and are re-exported here so existing import paths
+ * (`gcodeParser`, store defaults) keep working. Density matches the PLA entry
+ * of `filamentProfiles.ts`; callers that know the material resolve the density
+ * via `resolveFilamentDensity` and pass it through `ParseGcodeTotalsOptions`.
  */
-export const DEFAULT_FILAMENT_DIAMETER_MM = 1.75;
-export const DEFAULT_FILAMENT_DENSITY_GCM3 = 1.24;
+export { DEFAULT_FILAMENT_DIAMETER_MM, DEFAULT_FILAMENT_DENSITY_GCM3 };
 
 /**
  * Header seconds → whole minutes with the estimator rounding (T1/T2).

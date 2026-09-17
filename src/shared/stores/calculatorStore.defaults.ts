@@ -16,7 +16,9 @@ import type {
   FixedCosts,
   VolumeDiscount,
   FdmSlicerProfile,
+  FdmFilamentParams,
 } from "@/shared/types";
+import { DEFAULT_FILAMENT_DIAMETER_MM } from "@/shared/lib/filamentDefaults";
 
 export const DEFAULT_FDM_MATERIAL: MaterialStateFDM = {
   type: "PLA",
@@ -35,6 +37,16 @@ export const DEFAULT_FDM_PARAMS: PrintParameters = {
   riskMultiplier: 1,
   heatUpTimeMinutes: 5,
   heatUpPowerPercent: 150,
+};
+/**
+ * D-EA2 (GA-2): physical filament params feeding the estimation path.
+ * `purgePercent: 10` is behavior-preserving with the literal hardcoded in
+ * `StlPreview` (the sole consumer); the diameter is single-sourced from the
+ * leaf constant (never duplicated).
+ */
+export const DEFAULT_FDM_FILAMENT: FdmFilamentParams = {
+  purgePercent: 10,
+  filamentDiameterMm: DEFAULT_FILAMENT_DIAMETER_MM,
 };
 export const DEFAULT_FDM_MACHINE: MachineCosts = {
   enabled: true,

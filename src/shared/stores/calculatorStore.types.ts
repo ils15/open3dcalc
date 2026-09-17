@@ -18,6 +18,7 @@ import type {
   AMSSlot,
   FixedCosts,
   FdmSlicerProfile,
+  FdmFilamentParams,
 } from "@/shared/types";
 import { marketplaces } from "@/shared/lib/marketplace";
 import { printers } from "@/shared/lib/printers";
@@ -42,6 +43,9 @@ export interface CalculatorState {
   fdmSlicerProfile: FdmSlicerProfile;
   /** Merge parcial; valores NaN/inválidos caem no default (never propagate). */
   setFdmSlicerProfile: (v: Partial<FdmSlicerProfile>) => void;
+  /** D-EA2 (GA-2): physical filament params (purge %, diameter) feeding estimation. */
+  fdmFilament: FdmFilamentParams;
+  setFdmFilament: (v: Partial<FdmFilamentParams>) => void;
   fdmMachine: MachineCosts;
   setFdmMachine: (v: MachineCosts) => void;
   fdmHardware: FDMHardware;

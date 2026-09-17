@@ -23,6 +23,11 @@ interface EstimationModeSectionProps {
   gcodeAnchor: GcodeAnchor | null;
   onGcodeAnchor: (anchor: GcodeAnchor) => void;
   onClearGcodeAnchor: () => void;
+  /**
+   * Filament diameter in mm (D-EA2, GA-2) — feeds the E→grams anchor so a
+   * non-1.75 spool converts correctly. Defaults to the single-source constant.
+   */
+  filamentDiameterMm?: number;
 }
 
 // Caps and calibration bounds are single-sourced from the domain
@@ -47,6 +52,7 @@ export function EstimationModeSection({
   gcodeAnchor,
   onGcodeAnchor,
   onClearGcodeAnchor,
+  filamentDiameterMm,
 }: EstimationModeSectionProps) {
   const { t } = useTranslation();
   const gcodeInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +76,10 @@ export function EstimationModeSection({
     try {
       const text = await file.text();
       const { parseGcodeTotals } = await import("@/shared/lib/gcodeTotals");
-      const totals = parseGcodeTotals(text);
+      // D-EA2: o diâmetro da store converte o total de E em gramas (âncora).
+      const totals = parseGcodeTotals(text, {
+        filamentDiameterMm: filamentDiameterMm,
+      });
       if (!Number.isFinite(totals.extrudedGrams) || totals.extrudedGrams <= 0) {
         setGcodeError(t("stl.gcodeParseError"));
         return;

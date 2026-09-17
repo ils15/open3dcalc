@@ -3,6 +3,7 @@ import {
   maxVolumetricSpeedFor,
   type FilamentFamily,
 } from "./filamentProfiles";
+import { DEFAULT_FILAMENT_DIAMETER_MM } from "./filamentDefaults";
 import {
   getModeBehavior,
   resolveCalibrationK,
@@ -71,6 +72,12 @@ export interface PrintTimeParams extends EstimateOptions {
    * 300 mm/s não gera tempo impossível — gera o tempo do teto físico.
    */
   material?: FilamentFamily | string;
+  /**
+   * Diâmetro do filamento em mm (default 1.75, single-sourced de
+   * `filamentDefaults`). Só afeta o `filamentLengthMm` reportado — o tempo
+   * depende do volume depositado, não da espessura do filamento. D-EA2 (GA-2).
+   */
+  filamentDiameterMm?: number;
 }
 
 export const DEFAULT_SETTINGS = {
@@ -119,6 +126,7 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     travelSpeedMmPerS = DEFAULT_SETTINGS.travelSpeedMmPerS,
     travelRatio = DEFAULT_SETTINGS.travelRatio,
     material = DEFAULT_FILAMENT_FAMILY,
+    filamentDiameterMm = DEFAULT_FILAMENT_DIAMETER_MM,
   } = params;
 
   // Geometria inválida → zeros explícitos, nunca NaN. (Camadas ainda são
@@ -137,7 +145,8 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     !(layerHeightMm > 0) ||
     !(lineWidthMm > 0) ||
     !(printSpeedMmPerS > 0) ||
-    !(travelSpeedMmPerS > 0)
+    !(travelSpeedMmPerS > 0) ||
+    !(filamentDiameterMm > 0)
   ) {
     // The slicer anchor wins even on invalid geometry (advanced):
     // without anchor, explicit zeros as before — never NaN.
@@ -161,8 +170,9 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   }
 
   // Comprimento de filamento CONSUMIDO (só para relatório).
-  // Volume = π * r² * comprimento
-  const filamentRadiusMm = 1.75 / 2;
+  // Volume = π * r² * comprimento — o diâmetro vem da store (D-EA2), não é
+  // mais um literal 1.75 inline.
+  const filamentRadiusMm = filamentDiameterMm / 2;
   const volumeMm3 = effectiveVolumeCm3 * 1000;
   const filamentLengthMm =
     volumeMm3 / (Math.PI * filamentRadiusMm * filamentRadiusMm);
@@ -303,7 +313,7 @@ export function estimatePrintTimeFromFilamentMm(
     return undefined;
   }
   const {
-    filamentDiameterMm = 1.75,
+    filamentDiameterMm = DEFAULT_FILAMENT_DIAMETER_MM,
     layerHeightMm = DEFAULT_SETTINGS.layerHeightMm,
     lineWidthMm = DEFAULT_SETTINGS.lineWidthMm,
     printSpeedMmPerS = DEFAULT_SETTINGS.printSpeedMmPerS,

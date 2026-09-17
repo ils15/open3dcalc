@@ -1,6 +1,8 @@
 import type { CalcLevel, CalculatorState } from "./calculatorStore.types";
 import type { FdmSlicerProfile } from "@/shared/types";
 import { DEFAULT_FDM_SLICER_PROFILE } from "./calculatorStore.defaults";
+import type { FdmFilamentParams } from "@/shared/types";
+import { DEFAULT_FDM_FILAMENT } from "./calculatorStore.defaults";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -14,6 +16,7 @@ export function debouncedAutoSave(getState: () => CalculatorState) {
       fdmMaterial: s.fdmMaterial,
       fdmPrintParams: s.fdmPrintParams,
       fdmSlicerProfile: s.fdmSlicerProfile,
+      fdmFilament: s.fdmFilament,
       fdmMachine: s.fdmMachine,
       fdmHardware: s.fdmHardware,
       fdmFinishing: s.fdmFinishing,
@@ -104,6 +107,40 @@ export function sanitizeFdmSlicerProfile(
 }
 
 /**
+ * Campos estritamente positivos no estimador (divisão por r² → zero/NaN
+ * fora do domínio). `purgePercent` aceita 0 (sem purge).
+ */
+const POSITIVE_FILAMENT_FIELDS: ReadonlyArray<keyof FdmFilamentParams> = [
+  "filamentDiameterMm",
+];
+
+/**
+ * Filtra campos inválidos dos params de filamento (D-EA2, GA-2).
+ *
+ * Regra: ausente, não-numérico, NaN/Infinity ou fora do domínio → DESCARTADO
+ * (cai no default na resolução). Garante que uma store persistida corrompida,
+ * um `NaN` de input ou um JSON antigo nunca propaguem um valor inválido para
+ * o estimador — o caminho crítico de preço. Espelha `sanitizeFdmSlicerProfile`.
+ */
+export function sanitizeFdmFilament(
+  input: Partial<FdmFilamentParams> | undefined | null,
+): Partial<FdmFilamentParams> {
+  if (!input || typeof input !== "object") return {};
+
+  const valid: Partial<FdmFilamentParams> = {};
+  for (const key of Object.keys(input) as (keyof FdmFilamentParams)[]) {
+    const value = input[key];
+    if (typeof value !== "number" || !Number.isFinite(value)) continue;
+    const isPositiveField = POSITIVE_FILAMENT_FIELDS.includes(key);
+    if (isPositiveField ? value > 0 : value >= 0) {
+      valid[key] = value;
+    }
+  }
+  return valid;
+}
+
+/**
+/**
  * Resolve o perfil final: defaults + campos válidos passados.
  * Migration-safe por construção — blob antigo sem o campo, parcial ou
  * corrompido sempre termina num perfil completo e válido.
@@ -112,4 +149,15 @@ export function resolveFdmSlicerProfile(
   input: Partial<FdmSlicerProfile> | undefined | null,
 ): FdmSlicerProfile {
   return { ...DEFAULT_FDM_SLICER_PROFILE, ...sanitizeFdmSlicerProfile(input) };
+}
+
+/**
+ * Resolve os params finais: defaults + campos válidos passados.
+ * Migration-safe por construção — blob antigo sem o campo, parcial ou
+ * corrompido sempre termina num objeto completo e válido.
+ */
+export function resolveFdmFilament(
+  input: Partial<FdmFilamentParams> | undefined | null,
+): FdmFilamentParams {
+  return { ...DEFAULT_FDM_FILAMENT, ...sanitizeFdmFilament(input) };
 }

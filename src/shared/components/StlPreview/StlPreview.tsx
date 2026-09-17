@@ -300,6 +300,9 @@ export function StlPreview({
 }: StlPreviewProps) {
   const { t } = useTranslation();
   const store = useCalculatorStore();
+  // D-EA2 (GA-2): purge % e diâmetro saem da store — não são mais literais.
+  // Defaults (10 / 1.75) = byte-identical ao comportamento anterior.
+  const fdmFilament = store.fdmFilament;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastFileRef = useRef<File | null>(null);
   const [geometry, setGeometry] = useState<BufferGeometry | null>(
@@ -386,7 +389,9 @@ export function StlPreview({
         if (ext === "gcode") {
           const { parseGcode } = await import("@/shared/lib/gcodeParser");
           const text = await file.text();
-          const gcode = parseGcode(text);
+          const gcode = parseGcode(text, {
+            filamentDiameterMm: fdmFilament.filamentDiameterMm,
+          });
           // 1-decimal hours, same as the estimator (H1).
           const hours = Math.round((gcode.printTimeMinutes / 60) * 10) / 10;
           const result: FileParseResult = {
@@ -459,7 +464,7 @@ export function StlPreview({
             densityGcm3: density,
             material,
             infillPercent: infill,
-            purgePercent: 10,
+            purgePercent: fdmFilament.purgePercent,
             surfaceAreaMm2: analysis.surfaceArea,
             wallCount,
             lineWidthMm,
@@ -487,6 +492,7 @@ export function StlPreview({
             layerHeightMm: layerHeight,
             printSpeedMmPerS: speed,
             material,
+            filamentDiameterMm: fdmFilament.filamentDiameterMm,
           });
           const result: FileParseResult = {
             geometry: parsedGeometry,
@@ -532,6 +538,7 @@ export function StlPreview({
       bottomLayers,
       material,
       supportEnabled,
+      fdmFilament,
     ],
   );
 
@@ -768,6 +775,7 @@ export function StlPreview({
             gcodeAnchor={gcodeAnchor}
             onGcodeAnchor={setGcodeAnchor}
             onClearGcodeAnchor={() => setGcodeAnchor(null)}
+            filamentDiameterMm={fdmFilament.filamentDiameterMm}
           />
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             {modelInfo.volumeCm3 > 0 && (
