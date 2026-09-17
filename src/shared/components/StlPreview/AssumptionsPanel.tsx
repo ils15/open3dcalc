@@ -129,6 +129,10 @@ export function AssumptionsPanel({
   );
 
   const isSimple = mode !== "advanced";
+  // Rough ±30% (GA rough_estimate) sempre que NÃO há âncora G-code real
+  // (peso E tempo estimados) — vale no Simple e no Custom sem G-code. O
+  // caveat só some com uma âncora real (D-EA5 gate note).
+  const isRough = !weightFromGcode && !timeFromGcode;
 
   return (
     <div
@@ -157,10 +161,10 @@ export function AssumptionsPanel({
               ? "stl.assumptionsModeSimple"
               : "stl.assumptionsModeCustom",
           )}
-          // simple = rough ±30% (GA/contrato rough_estimate); a provenência
-          // peso/tempo do modo Custom vem nas linhas dedicadas abaixo.
-          source={isSimple ? t("stl.assumptionsRoughBadge") : undefined}
-          tooltip={isSimple ? t("stl.assumptionsRoughTooltip") : undefined}
+          // Sem âncora G-code: rough ±30% (GA/contrato rough_estimate). A
+          // proveniência peso/tempo do modo Custom vem nas linhas dedicadas.
+          source={isRough ? t("stl.assumptionsRoughBadge") : undefined}
+          tooltip={isRough ? t("stl.assumptionsRoughTooltip") : undefined}
         />
         {!isSimple && (
           <>
@@ -179,7 +183,7 @@ export function AssumptionsPanel({
       </dl>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-3">
-        <div>
+        <div role="group" aria-labelledby={slicerGroupId}>
           <p
             id={slicerGroupId}
             className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1"
@@ -199,7 +203,7 @@ export function AssumptionsPanel({
           </dl>
         </div>
 
-        <div>
+        <div role="group" aria-labelledby={filamentGroupId}>
           <p
             id={filamentGroupId}
             className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1"

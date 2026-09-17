@@ -65,7 +65,11 @@ describe("AssumptionsPanel", () => {
     it("renders the group role with a labelled heading", () => {
       renderPanel();
 
-      const group = screen.getByRole("group");
+      // Sub-seções slicer/filament também são groups rotulados (D-EA5 gate
+      // note) — o painel principal é único quando escopado pelo nome do título.
+      const group = screen.getByRole("group", {
+        name: "stl.assumptionsTitle",
+      });
       const labelledBy = group.getAttribute("aria-labelledby");
       expect(labelledBy).toBeTruthy();
       expect(screen.getByText("stl.assumptionsTitle")).toHaveAttribute(
@@ -174,7 +178,7 @@ describe("AssumptionsPanel", () => {
       expect(screen.queryByText("stl.assumptionsWeight")).toBeNull();
     });
 
-    it("labels the mode as Custom in advanced mode without anchor badges", () => {
+    it("labels the mode as Custom and keeps the ±30% badge without a G-code anchor", () => {
       renderPanel(createMockStore(), {
         mode: "advanced",
         weightFromGcode: false,
@@ -182,7 +186,7 @@ describe("AssumptionsPanel", () => {
       });
 
       expect(screen.getByText("stl.assumptionsModeCustom")).toBeInTheDocument();
-      expect(screen.queryByText("stl.assumptionsRoughBadge")).toBeNull();
+      expect(screen.getByText("stl.assumptionsRoughBadge")).toBeInTheDocument();
       // Sem âncora: peso e tempo vindos da estimativa STL (uma badge por linha).
       expect(screen.getAllByText("stl.estimatedBadge")).toHaveLength(2);
     });
@@ -194,6 +198,8 @@ describe("AssumptionsPanel", () => {
         timeFromGcode: true,
       });
 
+      // Com âncora real a estimativa não é rough: o caveat ±30% fica oculto.
+      expect(screen.queryByText("stl.assumptionsRoughBadge")).toBeNull();
       expect(screen.getAllByText("stl.gcodeBadge").length).toBeGreaterThan(0);
     });
   });
@@ -251,6 +257,15 @@ describe("AssumptionsPanel", () => {
       "stl.assumptionsWhyTitle",
       "stl.assumptionsWhyText",
       "stl.assumptionsCtaCustom",
+      "stl.gcodeBadge",
+      "stl.estimatedBadge",
+      "calc.density",
+      "calc.slicer.layerHeightMm",
+      "calc.slicer.wallCount",
+      "calc.slicer.lineWidthMm",
+      "calc.slicer.printSpeedMmPerS",
+      "calc.slicer.topLayers",
+      "calc.slicer.bottomLayers",
       "calc.filamentProfile",
       "calc.filament.purgePercent",
       "calc.filament.filamentDiameterMm",
