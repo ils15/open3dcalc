@@ -601,23 +601,50 @@ async function readZipEntryText(
           chunks.push(value);
         }
       })();
+      // The read loop can reject while `writer.write`/`writer.close` are still
+      // settling (a zip bomb detected mid-stream, or a corrupt stream that
+      // surfaces its zlib error on read). Awaiting `pump` only after the
+      // writes complete would leave that rejection handlerless for a tick, so
+      // attach a handler up front; the cause still propagates through every
+      // `await pump` below.
+      pump.catch(() => {
+        /* reported by whichever `await pump` runs below — never orphaned */
+      });
       try {
-        await writer.write(compressed);
-        await writer.close();
-      } catch (writeErr) {
-        // If the write side fails, unblock the pending read so `pump`
-        // never hangs forever, then let the outer catch wrap the error.
         try {
-          await reader.cancel();
-        } catch {
-          /* reader already settled — pump carries the real error */
+          await writer.write(compressed);
+          await writer.close();
+        } catch (writeErr) {
+          // If the write side fails, unblock the pending read so `pump`
+          // never hangs forever, then let the outer catch wrap the error.
+          try {
+            await reader.cancel();
+          } catch {
+            /* reader already settled — pump carries the real error */
+          }
+          // The read loop rejects with the same root cause as `writeErr`
+          // (e.g. zlib Z_DATA_ERROR). Absorb it here so the rejection is
+          // never left unhandled alongside the error rethrown below.
+          try {
+            await pump;
+          } catch {
+            /* same root cause as writeErr — reported via writeErr below */
+          }
+          throw writeErr;
+        } finally {
+          writer.releaseLock();
         }
-        throw writeErr;
+        await pump;
       } finally {
-        writer.releaseLock();
+        // Always detach the reader, including when `pump` rejected mid-loop
+        // and we bail out: tearing the stream down with a locked reader emits
+        // an error that has no consumer.
+        try {
+          reader.releaseLock();
+        } catch {
+          /* reader already detached or stream already settled */
+        }
       }
-      await pump;
-      reader.releaseLock();
       const totalLen = chunks.reduce((sum, c) => sum + c.length, 0);
       const decompressed = new Uint8Array(totalLen);
       let pos = 0;
