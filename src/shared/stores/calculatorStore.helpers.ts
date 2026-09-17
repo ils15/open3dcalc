@@ -108,14 +108,18 @@ export function sanitizeFdmSlicerProfile(
 
 /**
  * Campos estritamente positivos no estimador (divisão por r² → zero/NaN
- * fora do domínio). `purgePercent` aceita 0 (sem purge).
+ * fora do domínio). `purgePercent` aceita 0 (sem purge). D-EA4:
+ * `maxVolumetricSpeedMm3PerS` é teto de vazão — 0/negativo geraria divisão
+ * por zero no clamp (`effectiveSpeed = MVS / seção`), então é > 0.
  */
 const POSITIVE_FILAMENT_FIELDS: ReadonlyArray<keyof FdmFilamentParams> = [
   "filamentDiameterMm",
+  "maxVolumetricSpeedMm3PerS",
 ];
 
 /**
- * Filtra campos inválidos dos params de filamento (D-EA2, GA-2).
+ * Filtra campos inválidos dos params de filamento (D-EA2, GA-2; D-EA4 adiciona
+ * o override de MVS).
  *
  * Regra: ausente, não-numérico, NaN/Infinity ou fora do domínio → DESCARTADO
  * (cai no default na resolução). Garante que uma store persistida corrompida,
@@ -139,7 +143,6 @@ export function sanitizeFdmFilament(
   return valid;
 }
 
-/**
 /**
  * Resolve o perfil final: defaults + campos válidos passados.
  * Migration-safe por construção — blob antigo sem o campo, parcial ou

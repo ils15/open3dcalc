@@ -192,12 +192,22 @@ são descartados em `sanitizeFdmSlicerProfile` antes de chegar ao cálculo.
 
 O byte-identical backward-compat é garantido por teste: perfil default ==
 saída legada sem perfil, no mesmo mesh. O `material` (família) também passou a
-ser wired — **`FILAMENT_PROFILES` é case-sensitive** (`"pla"`, não `"PLA"`), o
-chamador normaliza com `.toLowerCase()`; família desconhecida cai no teto MVS
-seguro.
+ser wired — o lookup em `FILAMENT_PROFILES` é **case-insensitive** (D-EA4: o
+nome vem de fonte externa — loja/fabricante — `"PLA"`/`"PlA"` matcheiam
+`"pla"`; a normalização toca só a chave de lookup, nunca o que o usuário
+persistiu); família desconhecida cai no teto MVS seguro.
 
-Pendências intencionais desta fase: `purgePercent` segue hardcoded `10` no
-`StlPreview` (D-EA2) e o `filamentDiameterMm` segue `1.75` (D-EA2).
+O slice `fdmFilament` (D-EA2) completou a remoção de literais físicos do path:
+`purgePercent` (era `10` hardcoded em `StlPreview`) e `filamentDiameterMm` (era
+`1.75` inline em `gcodeTotals`/`printTimeEstimator`) agora são store-driven,
+com os mesmos sanitize/resolve/migration. D-EA4 adicionou ao mesmo slice o
+**override manual do MVS**, `maxVolumetricSpeedMm3PerS` (mm³/s): ausente ou
+inválido = tabela do material (byte-identical ao pré-D-EA4 — é deliberadamente
+`undefined` no default, pois um número fixo quebraria a byte-identicality por
+material: PLA 15, PETG 12, TPU 5); um valor finito e > 0 vence a tabela no
+clamp de `estimatePrintTime` — high-flow (volcano/CHT) dobra o MVS de uma boca
+stock. Toggle de modo e UI de input são D-EA5; a store não persiste nada além
+da preferência local (LGPD).
 
 ## 10. G-code E paths can diverge (documented, no behavior change)
 

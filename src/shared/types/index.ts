@@ -104,6 +104,21 @@ export interface FdmFilamentParams {
    * variance, now modeled instead of assumed.
    */
   filamentDiameterMm: number;
+  /**
+   * Override manual da vazão volumétrica máxima (MVS) em mm³/s (D-EA4).
+   *
+   * Não é um limite de velocidade — é o teto de VAZÃO (`Q = layerH × lineW ×
+   * speed`) que o hotend entrega: high-flow (volcano/CHT) dobra o MVS de uma
+   * boca stock, e sem esse campo o estimador promete tempos impossíveis para
+   * quem tem hardware rápido (root cause #8). O campo é AUSENTE por default —
+   * sem override, o estimador usa a tabela do material (`filamentProfiles`),
+   * byte-identical ao comportamento pré-D-EA4; um default numérico fixo
+   * quebraria essa byte-identicality (PLA 15 vs PETG 12 vs TPU 5).
+   *
+   * Validação: finito e > 0 sobrevivem (`sanitizeFdmFilament`); 0/negativo
+   * geraria divisão por zero no clamp. LGPD: preferência local, sem coleta.
+   */
+  maxVolumetricSpeedMm3PerS?: number;
 }
 
 export interface MaterialStateResin {

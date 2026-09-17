@@ -43,6 +43,12 @@ export const DEFAULT_FDM_PARAMS: PrintParameters = {
  * `purgePercent: 10` is behavior-preserving with the literal hardcoded in
  * `StlPreview` (the sole consumer); the diameter is single-sourced from the
  * leaf constant (never duplicated).
+ *
+ * D-EA4: `maxVolumetricSpeedMm3PerS` is DELIBERATELY ABSENT — "no override".
+ * Without it the estimator resolves the MVS from the material table
+ * (`filamentProfiles`), which is byte-identical to the pre-D-EA4 behavior;
+ * a fixed numeric default here would break that byte-identicality per
+ * material (PLA 15 vs PETG 12 vs TPU 5). Users opt in by setting the field.
  */
 export const DEFAULT_FDM_FILAMENT: FdmFilamentParams = {
   purgePercent: 10,

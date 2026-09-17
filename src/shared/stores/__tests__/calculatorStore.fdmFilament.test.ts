@@ -361,4 +361,187 @@ describe("CalculatorStore — fdmFilament slice (D-EA2, GA-2)", () => {
 
     expect(useCalculatorStore.getState().fdmFilament).toEqual(DEFAULT_FILAMENT);
   });
+
+  // ── D-EA4: override de MVS (maxVolumetricSpeedMm3PerS) ───────────────
+  // Campo numérico único no slice fdmFilament. Default = AUSENTE (undefined):
+  // sem override o estimador usa a tabela do material (byte-identical ao
+  // comportamento pré-D-EA4 — PLA 15, PETG 12, …; um default numérico fixo
+  // quebraria a byte-identicality por material).
+
+  it("inicia sem override de MVS (undefined → lookup da tabela)", () => {
+    expect(
+      useCalculatorStore.getState().fdmFilament.maxVolumetricSpeedMm3PerS,
+    ).toBeUndefined();
+  });
+
+  it("setFdmFilament aceita override de MVS preservando os outros campos", () => {
+    useCalculatorStore
+      .getState()
+      .setFdmFilament({ maxVolumetricSpeedMm3PerS: 30 });
+    const after = useCalculatorStore.getState().fdmFilament;
+    expect(after.maxVolumetricSpeedMm3PerS).toBe(30);
+    expect(after.purgePercent).toBe(DEFAULT_FILAMENT.purgePercent);
+    expect(after.filamentDiameterMm).toBe(DEFAULT_FILAMENT.filamentDiameterMm);
+  });
+
+  it.each([NaN, Infinity, 0, -5])(
+    "override de MVS inválido (%s) é descartado — nunca chega ao estimador",
+    (bad) => {
+      useCalculatorStore.getState().setFdmFilament({
+        maxVolumetricSpeedMm3PerS: bad,
+      });
+      expect(
+        useCalculatorStore.getState().fdmFilament.maxVolumetricSpeedMm3PerS,
+      ).toBeUndefined();
+    },
+  );
+
+  it("override de MVS NaN não corrompe os outros campos válidos", () => {
+    useCalculatorStore
+      .getState()
+      .setFdmFilament({ maxVolumetricSpeedMm3PerS: 30 });
+    useCalculatorStore.getState().setFdmFilament({
+      purgePercent: 5,
+      maxVolumetricSpeedMm3PerS: NaN,
+    });
+    const f = useCalculatorStore.getState().fdmFilament;
+    expect(f.purgePercent).toBe(5);
+    expect(f.maxVolumetricSpeedMm3PerS).toBeUndefined();
+  });
+
+  it("limpar o override (undefined) volta ao comportamento da tabela", () => {
+    useCalculatorStore
+      .getState()
+      .setFdmFilament({ maxVolumetricSpeedMm3PerS: 30 });
+    expect(
+      useCalculatorStore.getState().fdmFilament.maxVolumetricSpeedMm3PerS,
+    ).toBe(30);
+
+    useCalculatorStore.getState().setFdmFilament({
+      maxVolumetricSpeedMm3PerS: undefined,
+    });
+    expect(
+      useCalculatorStore.getState().fdmFilament.maxVolumetricSpeedMm3PerS,
+    ).toBeUndefined();
+  });
+
+  it("persiste o override no localStorage após o debounce", () => {
+    vi.useFakeTimers();
+    try {
+      useCalculatorStore
+        .getState()
+        .setFdmFilament({ maxVolumetricSpeedMm3PerS: 24 });
+      vi.advanceTimersByTime(900);
+
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
+      expect(saved.fdmFilament.maxVolumetricSpeedMm3PerS).toBe(24);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("localStorage com override de MVS é migrado (default-on-missing nos outros)", async () => {
+    vi.resetModules();
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({
+        fdmFilament: { maxVolumetricSpeedMm3PerS: 18 },
+      }),
+    );
+
+    const { useCalculatorStore: freshStore } =
+      await import("../calculatorStore");
+    const f = freshStore.getState().fdmFilament;
+    expect(f.maxVolumetricSpeedMm3PerS).toBe(18);
+    expect(f.purgePercent).toBe(DEFAULT_FILAMENT.purgePercent);
+    expect(f.filamentDiameterMm).toBe(DEFAULT_FILAMENT.filamentDiameterMm);
+  });
+
+  it("localStorage com override de MVS inválido → descartado na migração", async () => {
+    vi.resetModules();
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({
+        fdmFilament: { maxVolumetricSpeedMm3PerS: "muita", purgePercent: 9 },
+      }),
+    );
+
+    const { useCalculatorStore: freshStore } =
+      await import("../calculatorStore");
+    const f = freshStore.getState().fdmFilament;
+    expect(f.maxVolumetricSpeedMm3PerS).toBeUndefined();
+    expect(f.purgePercent).toBe(9);
+  });
+
+  it("snapshot da história com override de MVS é restaurado", () => {
+    const snap = buildSnapshot({
+      fdmFilament: {
+        purgePercent: 3,
+        filamentDiameterMm: 1.6,
+        maxVolumetricSpeedMm3PerS: 20,
+      },
+    });
+
+    useCalculatorStore.getState().loadHistoryItem(snap);
+
+    expect(useCalculatorStore.getState().fdmFilament).toEqual({
+      purgePercent: 3,
+      filamentDiameterMm: 1.6,
+      maxVolumetricSpeedMm3PerS: 20,
+    });
+  });
+
+  it("snapshot da história com override inválido → fallback graceful", () => {
+    const snap = buildSnapshot({
+      fdmFilament: {
+        purgePercent: 3,
+        filamentDiameterMm: 1.6,
+        maxVolumetricSpeedMm3PerS: 0,
+      },
+    });
+
+    useCalculatorStore.getState().loadHistoryItem(snap);
+
+    expect(useCalculatorStore.getState().fdmFilament).toEqual({
+      purgePercent: 3,
+      filamentDiameterMm: 1.6,
+    });
+  });
+
+  it("restoreAutoSnapshot aplica o override do blob", () => {
+    localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify({
+        selectedPrinterId: "p1",
+        selectedMarketplaceId: "m1",
+        fdmFilament: {
+          purgePercent: 5,
+          filamentDiameterMm: 1.6,
+          maxVolumetricSpeedMm3PerS: 26,
+        },
+      }),
+    );
+
+    expect(restoreAutoSnapshot()).toBe(true);
+    expect(useCalculatorStore.getState().fdmFilament).toEqual({
+      purgePercent: 5,
+      filamentDiameterMm: 1.6,
+      maxVolumetricSpeedMm3PerS: 26,
+    });
+  });
+
+  it("resetCalculator limpa o override de MVS", () => {
+    useCalculatorStore
+      .getState()
+      .setFdmFilament({ maxVolumetricSpeedMm3PerS: 30 });
+    expect(
+      useCalculatorStore.getState().fdmFilament.maxVolumetricSpeedMm3PerS,
+    ).toBe(30);
+
+    useCalculatorStore.getState().resetCalculator();
+
+    expect(
+      useCalculatorStore.getState().fdmFilament.maxVolumetricSpeedMm3PerS,
+    ).toBeUndefined();
+  });
 });

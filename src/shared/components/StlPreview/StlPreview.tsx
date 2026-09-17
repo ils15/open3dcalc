@@ -81,10 +81,11 @@ interface StlPreviewProps {
   bottomLayers?: number;
   /**
    * Filament family for the MVS speed clamp (default PLA).
-   * Accepts the store's free-form material name — `FILAMENT_PROFILES` is
-   * case-sensitive ("pla", not "PLA"), so callers MUST normalize to
-   * lowercase; unknown families fall back to the safe MVS ceiling.
-   * Density still comes from `materialDensity` when provided.
+   * Accepts the store's free-form material name — the lookup in
+   * `filamentProfiles` is case-INsensitive (D-EA4), so "PLA"/"PlA" match the
+   * "pla" profile; unknown families fall back to the safe MVS ceiling.
+   * Density still comes from `materialDensity` when provided. The MVS itself
+   * may be overridden via `fdmFilament.maxVolumetricSpeedMm3PerS`.
    */
   material?: FilamentFamily | string;
   /** When true, estimates support material volume from overhang triangles. Default false. */
@@ -494,6 +495,9 @@ export function StlPreview({
             printSpeedMmPerS: speed,
             material,
             filamentDiameterMm: fdmFilament.filamentDiameterMm,
+            // D-EA4: override manual do MVS (high-flow). Ausente/inválido na
+            // slice → undefined → estimador usa a tabela do material.
+            maxVolumetricSpeedMm3PerS: fdmFilament.maxVolumetricSpeedMm3PerS,
           });
           const result: FileParseResult = {
             geometry: parsedGeometry,

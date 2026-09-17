@@ -86,6 +86,13 @@ export interface PrintTimeParams extends EstimateOptions {
    * depende do volume depositado, não da espessura do filamento. D-EA2 (GA-2).
    */
   filamentDiameterMm?: number;
+  /**
+   * Override manual do teto MVS em mm³/s (D-EA4). Vem do slice `fdmFilament`
+   * (hotend high-flow volcano/CHT dobra o MVS real). Vence a tabela do
+   * `material` quando finito e > 0; ausente/NaN/≤ 0 = tabela,
+   * byte-identical ao pré-D-EA4.
+   */
+  maxVolumetricSpeedMm3PerS?: number;
 }
 
 export const DEFAULT_SETTINGS = {
@@ -188,6 +195,9 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     travelRatio = DEFAULT_SETTINGS.travelRatio,
     material = DEFAULT_FILAMENT_FAMILY,
     filamentDiameterMm = DEFAULT_FILAMENT_DIAMETER_MM,
+    // D-EA4: override manual do MVS (slice fdmFilament). Ausente/inválido =
+    // tabela do material (byte-identical ao pré-D-EA4).
+    maxVolumetricSpeedMm3PerS,
   } = params;
 
   // Geometria inválida → zeros explícitos, nunca NaN. (Camadas ainda são
@@ -246,7 +256,12 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   // Clamp MVS: Q = seção × velocidade não passa do teto do material.
   // Sem isso, 300 mm/s em PLA (Q ≈ 25 mm³/s, teto 15) promete um tempo que o
   // hotend nunca entrega. O clamp troca a velocidade pedida pela máxima física.
-  const maxVolumetricSpeed = maxVolumetricSpeedFor(material);
+  // D-EA4: o teto aceita override manual (high-flow); sem override válido,
+  // cai na tabela do material — byte-identical ao pré-D-EA4.
+  const maxVolumetricSpeed = maxVolumetricSpeedFor(
+    material,
+    maxVolumetricSpeedMm3PerS,
+  );
   const nominalFlowMm3PerS = extrusionCrossSectionMm2 * printSpeedMmPerS;
   const effectiveSpeedMmPerS =
     nominalFlowMm3PerS > maxVolumetricSpeed
@@ -361,6 +376,11 @@ export interface FilamentTimeOptions {
   travelRatio?: number;
   /** Filament family for the MVS ceiling (default PLA). */
   material?: FilamentFamily | string;
+  /**
+   * Manual MVS override in mm³/s (D-EA4, slice `fdmFilament`). Wins over the
+   * material table when finite and > 0; absent/invalid = table (byte-identical).
+   */
+  maxVolumetricSpeedMm3PerS?: number;
 }
 
 /**
@@ -388,6 +408,8 @@ export function estimatePrintTimeFromFilamentMm(
     travelSpeedMmPerS = DEFAULT_SETTINGS.travelSpeedMmPerS,
     travelRatio = DEFAULT_SETTINGS.travelRatio,
     material = DEFAULT_FILAMENT_FAMILY,
+    // D-EA4: mesmo override do clamp de `estimatePrintTime` (high-flow).
+    maxVolumetricSpeedMm3PerS,
   } = options;
   if (
     !(filamentDiameterMm > 0) ||
@@ -403,7 +425,11 @@ export function estimatePrintTimeFromFilamentMm(
   const crossSectionMm2 = layerHeightMm * lineWidthMm;
   // Same MVS clamp as estimatePrintTime: nominal flow never exceeds the
   // material ceiling, so the fallback cannot promise an impossible time.
-  const maxVolumetricSpeed = maxVolumetricSpeedFor(material);
+  // D-EA4: override (high-flow) vence a tabela; ausente = tabela.
+  const maxVolumetricSpeed = maxVolumetricSpeedFor(
+    material,
+    maxVolumetricSpeedMm3PerS,
+  );
   const nominalFlowMm3PerS = crossSectionMm2 * printSpeedMmPerS;
   const effectiveSpeedMmPerS =
     nominalFlowMm3PerS > maxVolumetricSpeed

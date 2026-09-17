@@ -290,9 +290,9 @@ export function MaterialSection({
                   lineWidthMm={store.fdmSlicerProfile.lineWidthMm}
                   topLayers={store.fdmSlicerProfile.topLayers}
                   bottomLayers={store.fdmSlicerProfile.bottomLayers}
-                  // FILAMENT_PROFILES é case-sensitive ("pla", não "PLA"):
-                  // sem a normalização, "PLA" cai no MVS fallback 10 e quebra
-                  // o byte-identical do default.
+                  // D-EA4: o lookup em filamentProfiles é case-insensitive
+                  // ("PLA"/"PlA" matcheiam "pla"); a normalização abaixo é
+                  // inofensiva e mantém o nome canônico na store (type "PLA").
                   material={store.fdmMaterial.type.toLowerCase()}
                 />
               </div>
@@ -456,9 +456,9 @@ export function MaterialSection({
                   lineWidthMm={store.fdmSlicerProfile.lineWidthMm}
                   topLayers={store.fdmSlicerProfile.topLayers}
                   bottomLayers={store.fdmSlicerProfile.bottomLayers}
-                  // FILAMENT_PROFILES é case-sensitive ("pla", não "PLA"):
-                  // sem a normalização, "PLA" cai no MVS fallback 10 e quebra
-                  // o byte-identical do default.
+                  // D-EA4: o lookup em filamentProfiles é case-insensitive
+                  // ("PLA"/"PlA" matcheiam "pla"); a normalização abaixo é
+                  // inofensiva e mantém o nome canônico na store (type "PLA").
                   material={store.fdmMaterial.type.toLowerCase()}
                 />
               </div>
