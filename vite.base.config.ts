@@ -3,8 +3,17 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 
+// D-CL5 — toolpath preview flag default. Dogfood in dev, OFF in prod; an
+// explicit VITE_TOOLPATH_PREVIEW env var always wins (see featureFlags.ts).
+const TOOLPATH_PREVIEW =
+  process.env.VITE_TOOLPATH_PREVIEW ??
+  (process.env.NODE_ENV === "development" ? "true" : "false");
+
 export default defineConfig({
   base: "./",
+  define: {
+    "import.meta.env.VITE_TOOLPATH_PREVIEW": JSON.stringify(TOOLPATH_PREVIEW),
+  },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

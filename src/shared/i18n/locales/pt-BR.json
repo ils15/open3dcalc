@@ -567,7 +567,9 @@
       "partial": "Malha grande demais para validação completa (parcial)",
       "tooltip": "O volume estimado pode estar subestimado para esta malha — o algoritmo de volume só é exato para malhas fechadas e com orientação consistente.",
       "badge": "estimativa pode não ser confiável"
-    }
+    },
+    "previewToolpath": "Pré-visualizar caminho de ferramenta",
+    "previewToolpathHint": "Ver o G-code em 3D (caminho de impressão)"
   },
   "common": {
     "save": "Salvar",
@@ -1648,5 +1650,24 @@
     },
     "lgpd_notice": "Todos os dados permanecem no seu navegador. Nenhum dado é enviado a servidores externos. Consulte nossa Política de Privacidade.",
     "privacy_link": "Política de Privacidade"
+  },
+  "gcodePreview": {
+    "containerLabel": "Pré-visualização 3D do caminho de ferramenta do G-code",
+    "emptyTitle": "Nenhum G-code carregado",
+    "emptyDescription": "Carregue um arquivo G-code para visualizar o caminho de impressão em 3D.",
+    "close": "Fechar visualização",
+    "fit": "Encaixar caminho na tela",
+    "parseError": "Não foi possível ler o G-code. Verifique se o arquivo é um G-code válido.",
+    "readFailed": "Não foi possível ler o arquivo.",
+    "tooLarge": "G-code muito grande para o visualizador. Limite: {{mb}} MB.",
+    "tooManyLines": "G-code com muitas linhas. Limite: {{lines}} linhas.",
+    "stage": {
+      "reading": "Lendo arquivo…",
+      "parsing": "Analisando G-code…",
+      "classifying": "Classificando movimentos…",
+      "building-geometry": "Construindo geometria do caminho…",
+      "preparing-gpu": "Preparando a GPU…",
+      "ready": "Pronto"
+    }
   }
 }

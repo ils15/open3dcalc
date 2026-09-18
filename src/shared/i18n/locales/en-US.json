@@ -567,7 +567,9 @@
       "partial": "Mesh too large for full validation (partial)",
       "tooltip": "The estimated volume may be underestimated for this mesh — the volume algorithm is only exact for closed, consistently-oriented meshes.",
       "badge": "estimate may not be reliable"
-    }
+    },
+    "previewToolpath": "Preview toolpath",
+    "previewToolpathHint": "See the G-code in 3D (print path)"
   },
   "common": {
     "save": "Save",
@@ -1648,5 +1650,24 @@
     },
     "lgpd_notice": "All data stays in your browser. No data is sent to external servers. See our Privacy Policy.",
     "privacy_link": "Privacy Policy"
+  },
+  "gcodePreview": {
+    "containerLabel": "3D G-code toolpath preview",
+    "emptyTitle": "No G-code loaded",
+    "emptyDescription": "Load a G-code file to preview the print path in 3D.",
+    "close": "Close preview",
+    "fit": "Fit toolpath to view",
+    "parseError": "Could not read the G-code. Make sure the file is valid G-code.",
+    "readFailed": "Could not read the file.",
+    "tooLarge": "G-code too large for the viewer. Limit: {{mb}} MB.",
+    "tooManyLines": "G-code has too many lines. Limit: {{lines}} lines.",
+    "stage": {
+      "reading": "Reading file…",
+      "parsing": "Parsing G-code…",
+      "classifying": "Classifying moves…",
+      "building-geometry": "Building toolpath geometry…",
+      "preparing-gpu": "Preparing GPU…",
+      "ready": "Ready"
+    }
   }
 }

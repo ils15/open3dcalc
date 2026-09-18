@@ -287,9 +287,10 @@ npm run db:migrate
 
 Optional environment variables:
 
-| Variable             | Purpose                                |
-| -------------------- | -------------------------------------- |
-| `OPEN3DCALC_DB_PATH` | Custom path to SQLite file (tests/CLI) |
+| Variable                | Purpose                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| `OPEN3DCALC_DB_PATH`    | Custom path to SQLite file (tests/CLI)                   |
+| `VITE_TOOLPATH_PREVIEW` | Enable the 3D G-code toolpath preview (dev ON, prod OFF) |
 
 ---
 
