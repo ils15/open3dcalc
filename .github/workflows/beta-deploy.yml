@@ -16,11 +16,28 @@ name: Beta deploy
 # GITHUB_TOKEN): the tag itself was pushed with that PAT, and GITHUB_TOKEN
 # would be enough for the gh-pages deploy but cannot reliably create the
 # release in the same run. See README.md > Canal Beta.
+#
+# Re-deploying an already-pushed immutable tag uses workflow_dispatch with the
+# "tag" input: a tag cannot be re-pushed to retrigger the push event, and the
+# workflow file that runs is the one on the dispatched ref, so the corrected
+# copy on the default branch is used. BETA_TAG (job env) resolves the tag for
+# both trigger paths and every step reads the tag from it.
 
 "on":
   push:
     tags:
       - "v*-beta.*"
+
+  # Manual re-deploy of an existing beta tag. The tag input is optional only
+  # because this same file still serves the push trigger (where it stays
+  # empty); a dispatch without it resolves BETA_TAG to the branch name and is
+  # rejected by the preflight guard below.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing beta tag to re-deploy (e.g. v1.13.0-beta.1). Required when dispatching manually.'
+        required: false
+        type: string
 
 concurrency:
   group: gh-pages-deploy
@@ -36,6 +53,11 @@ jobs:
       # pages: write scope of the retired deploy-pages job is unused here (the
       # Pages source is the gh-pages branch, not an Actions artifact).
       contents: write
+    env:
+      # Single source of truth for the beta tag across every step. On a tag
+      # push inputs.tag is empty and github.ref_name is the tag that triggered
+      # the run; on a manual dispatch it is the tag passed in the input.
+      BETA_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - name: Verify beta release token is configured
         env:
@@ -43,15 +65,28 @@ jobs:
         run: |
           if [ -z "$BETA_TOKEN" ]; then
             echo "❌ Repository secret BETA_RELEASE_TOKEN is not configured." >&2
-            echo "   The prerelease for $GITHUB_REF_NAME cannot be created" >&2
+            echo "   The prerelease for $BETA_TAG cannot be created" >&2
             echo "   without it. See README.md > Canal Beta." >&2
+            exit 1
+          fi
+          # Preflight: the resolved tag must be a beta tag before anything is
+          # built or published. A manual dispatch without the tag input
+          # resolves to the branch name (e.g. "main"); failing here keeps the
+          # release step from ever touching a non-beta release.
+          if ! printf '%s' "$BETA_TAG" \
+            | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$'; then
+            echo "❌ BETA_TAG \"$BETA_TAG\" is not a beta tag (expected vX.Y.Z-beta.N)." >&2
+            echo "   On a manual run, pass the existing tag in the 'tag' input." >&2
             exit 1
           fi
 
       - name: Checkout beta tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.ref }}
+          # Accepts a tag name: on a dispatch this is the input tag, on a push
+          # it is the tag that triggered the run. Detached HEAD at the tag in
+          # both cases, so changelogen's implicit --to HEAD is the tag commit.
+          ref: ${{ env.BETA_TAG }}
           fetch-depth: 0
           persist-credentials: true
           token: ${{ secrets.BETA_RELEASE_TOKEN }}
@@ -110,22 +145,22 @@ jobs:
             echo "" > beta-notes.md
           fi
           # Idempotent: re-running the workflow refreshes the notes in place.
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+          if gh release view "$BETA_TAG" >/dev/null 2>&1; then
             # Guard: this step must never downgrade a stable release to
             # prerelease. Only beta tags reach this workflow (the v*-beta.*
             # trigger), but refuse explicitly if a non-beta tag slips through.
-            if ! printf '%s' "$GITHUB_REF_NAME" \
+            if ! printf '%s' "$BETA_TAG" \
               | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$'; then
-              echo "Tag não-beta encontrada ($GITHUB_REF_NAME); recusando editar release estável." >&2
+              echo "Tag não-beta encontrada ($BETA_TAG); recusando editar release estável." >&2
               exit 1
             fi
-            gh release edit "$GITHUB_REF_NAME" \
+            gh release edit "$BETA_TAG" \
               --prerelease \
-              --title "Beta $GITHUB_REF_NAME" \
+              --title "Beta $BETA_TAG" \
               --notes-file beta-notes.md
           else
-            gh release create "$GITHUB_REF_NAME" \
+            gh release create "$BETA_TAG" \
               --prerelease \
-              --title "Beta $GITHUB_REF_NAME" \
+              --title "Beta $BETA_TAG" \
               --notes-file beta-notes.md
           fi
