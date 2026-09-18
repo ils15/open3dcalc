@@ -205,10 +205,10 @@ jobs:
             if [ -f release-notes.md ] \
               && [ "$(cat "$PREVIOUS_BODY")" = "$(cat release-notes.md)" ]; then
               echo "Release body already matches release-notes.md; skipping."
-              gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" \
+              gh release edit "$TAG" --repo "$REPOSITORY" --title "Open3DCalc $TAG" \
                 --target "$TAG_SHA"
             else
-              gh release edit "$TAG" --repo "$REPOSITORY" --title "$TAG" \
+              gh release edit "$TAG" --repo "$REPOSITORY" --title "Open3DCalc $TAG" \
                 --target "$TAG_SHA" --notes-file release-notes.md
             fi
             EXISTING_ASSETS=release-publish-diagnostics/assets.json
@@ -242,7 +242,7 @@ jobs:
               fi
             done
            else
-             gh release create "$TAG" --repo "$REPOSITORY" --title "$TAG" \
+             gh release create "$TAG" --repo "$REPOSITORY" --title "Open3DCalc $TAG" \
                --notes-file release-notes.md --target "$TAG_SHA" \
                "${UPLOAD_ITEMS[@]}"
            fi

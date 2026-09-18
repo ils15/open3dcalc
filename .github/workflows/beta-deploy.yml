@@ -156,11 +156,11 @@ jobs:
             fi
             gh release edit "$BETA_TAG" \
               --prerelease \
-              --title "Beta $BETA_TAG" \
+              --title "Open3DCalc Beta $BETA_TAG" \
               --notes-file beta-notes.md
           else
             gh release create "$BETA_TAG" \
               --prerelease \
-              --title "Beta $BETA_TAG" \
+              --title "Open3DCalc Beta $BETA_TAG" \
               --notes-file beta-notes.md
           fi
