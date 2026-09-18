@@ -844,8 +844,32 @@ interface GraphWalkState {
   entries: Map<string, ZipEntry>;
   cache: ModelDocCache;
   budget: ZipBudget;
-  positions: number[];
-  normals: number[];
+  /**
+   * Flat positions and normals (9 floats per triangle). Preallocated and
+   * grown by doubling — the old `number[]` reallocated on every `push`
+   * (9 per triangle, millions of times on a large multi-colour mesh).
+   * `positionsUsed` marks the real end; the arrays may be over-allocated.
+   */
+  positions: Float32Array;
+  normals: Float32Array;
+  positionsUsed: number;
+}
+
+/**
+ * Guarantees room for `needed` more floats in the shared accumulator, growing
+ * both arrays by doubling so the amortised cost per triangle stays O(1).
+ */
+function ensureCapacity(state: GraphWalkState, needed: number): void {
+  const required = state.positionsUsed + needed;
+  if (required <= state.positions.length) return;
+  let capacity = state.positions.length || needed;
+  while (capacity < required) capacity *= 2;
+  const grownPositions = new Float32Array(capacity);
+  const grownNormals = new Float32Array(capacity);
+  grownPositions.set(state.positions.subarray(0, state.positionsUsed));
+  grownNormals.set(state.normals.subarray(0, state.positionsUsed));
+  state.positions = grownPositions;
+  state.normals = grownNormals;
 }
 
 /**
@@ -886,7 +910,7 @@ async function walkObjectGraph(
   try {
     const mesh = obj.querySelector("mesh");
     if (mesh) {
-      appendMesh(mesh, transform, state.positions, state.normals);
+      appendMesh(mesh, transform, state);
     }
 
     for (const component of Array.from(obj.querySelectorAll("component"))) {
@@ -931,14 +955,15 @@ async function collect3mfTriangles(
   entries: Map<string, ZipEntry>,
   rootPath: string,
   budget: ZipBudget,
-): Promise<{ positions: number[]; normals: number[] }> {
+): Promise<{ positions: Float32Array; normals: Float32Array }> {
   const state: GraphWalkState = {
     uint8,
     entries,
     cache: new Map<string, Document>(),
     budget,
-    positions: [],
-    normals: [],
+    positions: new Float32Array(0),
+    normals: new Float32Array(0),
+    positionsUsed: 0,
   };
 
   const rootDoc = await loadModelPart(
@@ -969,41 +994,52 @@ async function collect3mfTriangles(
 
   // Last resort: packages without a usable <build> (or whose items resolved
   // to nothing) still yield geometry if a loose mesh sits in <resources>.
-  if (state.positions.length === 0) {
+  if (state.positionsUsed === 0) {
     for (const mesh of Array.from(rootDoc.querySelectorAll("object mesh"))) {
-      appendMesh(mesh, IDENTITY_3MF, state.positions, state.normals);
+      appendMesh(mesh, IDENTITY_3MF, state);
     }
   }
 
-  return { positions: state.positions, normals: state.normals };
+  // Trim to the exact data written (skipped triangles leave the tail empty).
+  return {
+    positions: state.positions.subarray(0, state.positionsUsed),
+    normals: state.normals.subarray(0, state.positionsUsed),
+  };
 }
 
 /** Converts one 3MF `<mesh>` into loose triangles, applying the matrix. */
-function appendMesh(
-  mesh: Element,
-  m: Mat3mf,
-  positions: number[],
-  normals: number[],
-): void {
+function appendMesh(mesh: Element, m: Mat3mf, state: GraphWalkState): void {
   const vertices = mesh.querySelectorAll("vertex");
+  const triangles = mesh.querySelectorAll("triangle");
+  if (triangles.length === 0) return;
+
   // Already-transformed coordinates, in a flat array: 3 numbers per vertex.
   const coords = new Float64Array(vertices.length * 3);
   let i = 0;
-  for (const v of Array.from(vertices)) {
-    const x = parseFloat(v.getAttribute("x") || "0");
-    const y = parseFloat(v.getAttribute("y") || "0");
-    const z = parseFloat(v.getAttribute("z") || "0");
+  for (let v = 0; v < vertices.length; v++) {
+    const vertex = vertices[v];
+    const x = parseFloat(vertex.getAttribute("x") || "0");
+    const y = parseFloat(vertex.getAttribute("y") || "0");
+    const z = parseFloat(vertex.getAttribute("z") || "0");
     coords[i++] = x * m[0] + y * m[3] + z * m[6] + m[9];
     coords[i++] = x * m[1] + y * m[4] + z * m[7] + m[10];
     coords[i++] = x * m[2] + y * m[5] + z * m[8] + m[11];
   }
 
-  const vertexCount = vertices.length;
-  for (const t of Array.from(mesh.querySelectorAll("triangle"))) {
-    const v1 = parseInt(t.getAttribute("v1") || "0");
-    const v2 = parseInt(t.getAttribute("v2") || "0");
-    const v3 = parseInt(t.getAttribute("v3") || "0");
-    if (v1 >= vertexCount || v2 >= vertexCount || v3 >= vertexCount) continue;
+  // Reserve the worst case once: each surviving triangle writes 9 floats.
+  // Out-of-range triangles are skipped and simply leave the tail unused.
+  ensureCapacity(state, triangles.length * 9);
+  const positions = state.positions;
+  const normals = state.normals;
+  let w = state.positionsUsed;
+
+  for (let t = 0; t < triangles.length; t++) {
+    const triangle = triangles[t];
+    const v1 = parseInt(triangle.getAttribute("v1") || "0");
+    const v2 = parseInt(triangle.getAttribute("v2") || "0");
+    const v3 = parseInt(triangle.getAttribute("v3") || "0");
+    if (v1 >= vertices.length || v2 >= vertices.length || v3 >= vertices.length)
+      continue;
 
     const x1 = coords[v1 * 3],
       y1 = coords[v1 * 3 + 1],
@@ -1015,7 +1051,15 @@ function appendMesh(
       y3 = coords[v3 * 3 + 1],
       z3 = coords[v3 * 3 + 2];
 
-    positions.push(x1, y1, z1, x2, y2, z2, x3, y3, z3);
+    positions[w] = x1;
+    positions[w + 1] = y1;
+    positions[w + 2] = z1;
+    positions[w + 3] = x2;
+    positions[w + 4] = y2;
+    positions[w + 5] = z2;
+    positions[w + 6] = x3;
+    positions[w + 7] = y3;
+    positions[w + 8] = z3;
 
     // Face normal, computed after the transform — so mirroring and rotation
     // come baked in, with no need to transform normals separately.
@@ -1032,8 +1076,15 @@ function appendMesh(
     nx /= len;
     ny /= len;
     nz /= len;
-    for (let k = 0; k < 3; k++) normals.push(nx, ny, nz);
+    for (let k = 0; k < 3; k++) {
+      normals[w + k * 3] = nx;
+      normals[w + k * 3 + 1] = ny;
+      normals[w + k * 3 + 2] = nz;
+    }
+    w += 9;
   }
+
+  state.positionsUsed = w;
 }
 
 async function parse3mf(
@@ -1059,8 +1110,8 @@ async function parse3mf(
 }
 
 function build3mfGeometry(
-  allPositions: number[],
-  allNormals: number[],
+  allPositions: Float32Array,
+  allNormals: Float32Array,
   THREE: typeof import("three"),
   options: ParseOptions = {},
 ): { geometry: THREE.BufferGeometry; analysis: MeshAnalysis } {

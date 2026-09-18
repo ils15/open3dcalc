@@ -389,3 +389,63 @@ ${objects}  </resources>
     );
   });
 });
+
+describe("3MF — preallocated position buffer", () => {
+  it("accumulates meshes across capacity growth without dropping triangles", async () => {
+    // Three items referencing the same 12-triangle cube: the shared typed
+    // array must grow (12 → 24 → 36 triangles) and keep the exact totals.
+    // Without the growth path, the second appendMesh would overwrite the first.
+    const zip = makeZip({
+      "3D/3dmodel.model": `<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
+  <resources><object id="1" type="model">${CUBE_MESH}</object></resources>
+  <build>
+    <item objectid="1"/>
+    <item objectid="1" transform="1 0 0 0 1 0 0 0 1 30 0 0"/>
+    <item objectid="1" transform="1 0 0 0 1 0 0 0 1 60 0 0"/>
+  </build>
+</model>`,
+    });
+
+    const { analysis, geometry } = await analyzeMeshFile(file3mf(zip));
+    expect(analysis.triangleCount).toBe(36);
+    expect(geometry.attributes.position.count).toBe(108);
+    // 0..10, 30..40 e 60..70 em X.
+    expect(analysis.dimensions.x).toBeCloseTo(70);
+    expect(analysis.dimensions.y).toBeCloseTo(10);
+    expect(analysis.volume).toBeCloseTo(3000);
+  });
+
+  it("skips out-of-range triangles without corrupting the following ones", async () => {
+    // The write cursor only advances for valid triangles, so a bad index in
+    // the middle must not shift the data of the meshes after it.
+    const zip = makeZip({
+      "3D/3dmodel.model": `<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
+  <resources>
+    <object id="1" type="model">
+      <mesh>
+        <vertices>
+          <vertex x="0" y="0" z="0"/><vertex x="10" y="0" z="0"/><vertex x="0" y="10" z="0"/>
+        </vertices>
+        <triangles>
+          <triangle v1="0" v2="1" v3="2"/>
+          <triangle v1="0" v2="1" v3="42"/>
+        </triangles>
+      </mesh>
+    </object>
+    <object id="2" type="model">${CUBE_MESH}</object>
+  </resources>
+  <build>
+    <item objectid="1"/>
+    <item objectid="2" transform="1 0 0 0 1 0 0 0 1 100 0 0"/>
+  </build>
+</model>`,
+    });
+
+    const { analysis, geometry } = await analyzeMeshFile(file3mf(zip));
+    // 1 valid triangle (the v3="42" one is dropped) + the 12-triangle cube.
+    expect(analysis.triangleCount).toBe(13);
+    expect(geometry.attributes.position.count).toBe(39);
+  });
+});
