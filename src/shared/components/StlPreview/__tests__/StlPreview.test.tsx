@@ -10,10 +10,25 @@ import userEvent from "@testing-library/user-event";
 import { StlPreview } from "../StlPreview";
 import { useModelComparison } from "@/shared/stores/modelComparison";
 
-// Mock R3F — Canvas doesn't work well in jsdom
+// Mock R3F — Canvas doesn't work well in jsdom. Props are mirrored onto data
+// attributes so render-level props (frameloop, dpr) can be asserted.
 vi.mock("@react-three/fiber", () => ({
-  Canvas: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="r3f-canvas">{children}</div>
+  Canvas: ({
+    children,
+    frameloop,
+    dpr,
+  }: {
+    children: React.ReactNode;
+    frameloop?: string;
+    dpr?: number | [number, number];
+  }) => (
+    <div
+      data-testid="r3f-canvas"
+      data-frameloop={frameloop}
+      data-dpr={JSON.stringify(dpr)}
+    >
+      {children}
+    </div>
   ),
 }));
 

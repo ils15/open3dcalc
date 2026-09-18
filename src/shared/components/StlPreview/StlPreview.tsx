@@ -188,6 +188,15 @@ function PreviewCanvas({
       <Canvas
         camera={{ position: [5, 5, 5], fov: 45, near: 0.01, far: 2000 }}
         gl={{ localClippingEnabled: true }}
+        // The previewed model is static: render only when something actually
+        // changed (orbit drag, Bounds fit, clipping-plane slider) instead of
+        // spinning a continuous loop. R3F invalidates on every scene-graph
+        // commit, so prop updates still repaint; drei's OrbitControls/Bounds
+        // call invalidate() on their own events.
+        frameloop="demand"
+        // Cap the pixel budget: the default [1,2] renders up to 4M+ pixels per
+        // frame on retina/4K panels for a model that isn't moving.
+        dpr={[1, 1.5]}
         key={geometry.uuid}
       >
         <ambientLight intensity={0.5} />
