@@ -153,3 +153,23 @@ describe("i18n locales (gcodePreview.*) — D-CL5", () => {
     }
   });
 });
+
+/**
+ * Embedded sample loader (3DBenchy, CC0): the empty-state buttons, the
+ * download feedback and the fetch-failure toast all emit `stl.samples.*`.
+ * A missing key renders the raw key — a regression users see directly.
+ */
+const STL_SAMPLE_KEYS = ["title", "stl", "gcode", "loading", "error"] as const;
+
+describe("i18n locales (stl.samples.*) — sample loader", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every stl.samples.* key in %s", (_locale, dict) => {
+    for (const key of STL_SAMPLE_KEYS) {
+      const value = resolve(dict, ["stl", "samples", key]);
+      expect(typeof value, `stl.samples.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+});

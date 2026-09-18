@@ -20,6 +20,7 @@ import {
   Crosshair,
   Layers,
   FileCode2,
+  Box,
 } from "lucide-react";
 import * as THREE from "three";
 import type { BufferGeometry } from "three";
@@ -173,6 +174,17 @@ const toolbarButtonClass =
   "bg-[var(--color-bg-elevated)]/85 backdrop-blur-sm border border-[var(--color-border)]/60 " +
   "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] " +
   "hover:bg-[var(--color-bg-elevated)] transition-colors " +
+  "focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none";
+
+// Embedded sample buttons (3DBenchy, CC0): secondary action under the drop
+// zone. aria-label pins the accessible name so the loading spinner/text can
+// swap inside without changing it (tests + screen readers rely on stability).
+const sampleButtonClass =
+  "flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 " +
+  "rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] " +
+  "px-3 py-2 text-sm text-[var(--color-text-secondary)] " +
+  "hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] " +
+  "transition-colors disabled:opacity-60 disabled:cursor-not-allowed " +
   "focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none";
 
 interface PreviewCanvasProps {
@@ -709,6 +721,47 @@ export function StlPreview({
     fileInputRef.current?.click();
   }, []);
 
+  // Filename of the embedded sample currently downloading (null = idle).
+  const [sampleLoading, setSampleLoading] = useState<string | null>(null);
+
+  /**
+   * Fetches an embedded sample from `public/samples/` and feeds it through the
+   * same `processFile` pipeline as a drag-and-drop upload.
+   *
+   * URL resolution: the app has NO router and ships with a relative base
+   * (`base: "./"`), deployed both at the repo root and under the `/beta/`
+   * subpath. Resolving against `document.baseURI` (the index.html location)
+   * yields `<deployRoot>/samples/...` in both cases — static hosts (incl.
+   * GitHub Pages) canonicalize the deploy directory with a trailing slash.
+   * Query/hash are stripped so they can't shift resolution off the root.
+   */
+  const loadSample = useCallback(
+    async (filename: string) => {
+      const base = new URL(document.baseURI);
+      base.search = "";
+      base.hash = "";
+      const url = new URL(`samples/${filename}`, base).href;
+      setSampleLoading(filename);
+      setError(null);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`sample fetch failed: ${res.status}`);
+        const blob = await res.blob();
+        const file = new File([blob], filename, {
+          type: blob.type || "application/octet-stream",
+        });
+        await processFile(file);
+      } catch {
+        // Network failure / non-200 — friendly message, never a crash. The
+        // user can still upload their own file (drop zone stays available).
+        showError(t("stl.samples.error"));
+      } finally {
+        setSampleLoading(null);
+      }
+    },
+    [processFile, showError, t],
+  );
+
   const dropZoneText = parsing
     ? t("stl.processing")
     : isDragOver
@@ -729,15 +782,16 @@ export function StlPreview({
         aria-hidden="true"
       />
 
-      {/* Drag-and-drop zone */}
+      {/* Drag-and-drop zone + embedded samples (empty state) */}
       {(!geometry || standalone) && !modelInfo?.geometry && (
-        <button
-          type="button"
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={handleClick}
-          className={`
+        <>
+          <button
+            type="button"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleClick}
+            className={`
             w-full min-h-[44px] border-2 border-dashed rounded-xl p-6
             text-center cursor-pointer transition-all duration-200
             focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none
@@ -749,39 +803,87 @@ export function StlPreview({
             }
             ${parsing ? "pointer-events-none opacity-70" : ""}
           `}
-          aria-label={dropZoneText}
-        >
-          {parsing ? (
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-6 h-6 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-[var(--color-accent)]">
-                {dropZoneText}
-              </p>
-            </div>
-          ) : (
-            <>
-              <Upload
-                className={`w-6 h-6 transition-colors ${
-                  isDragOver
-                    ? "text-[var(--color-accent)]"
-                    : "text-[var(--color-text-muted)]"
-                }`}
-              />
-              <p
-                className={`text-sm transition-colors ${
-                  isDragOver
-                    ? "text-[var(--color-accent)] font-medium"
-                    : "text-[var(--color-text-secondary)]"
-                }`}
+            aria-label={dropZoneText}
+          >
+            {parsing ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-6 h-6 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-[var(--color-accent)]">
+                  {dropZoneText}
+                </p>
+              </div>
+            ) : (
+              <>
+                <Upload
+                  className={`w-6 h-6 transition-colors ${
+                    isDragOver
+                      ? "text-[var(--color-accent)]"
+                      : "text-[var(--color-text-muted)]"
+                  }`}
+                />
+                <p
+                  className={`text-sm transition-colors ${
+                    isDragOver
+                      ? "text-[var(--color-accent)] font-medium"
+                      : "text-[var(--color-text-secondary)]"
+                  }`}
+                >
+                  {dropZoneText}
+                </p>
+                <p className="text-[10px] text-[var(--color-text-muted)]">
+                  STL, OBJ, 3MF, GCODE &mdash; max 100 MB
+                </p>
+              </>
+            )}
+          </button>
+
+          {/* Embedded 3DBenchy samples (CC0 / public domain — CreativeTools):
+          try the viewer without having your own file. STL runs the mesh
+          pipeline (volume/weight); G-code runs the toolpath preview. */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-[var(--color-text-muted)] text-center">
+              {t("stl.samples.title")}
+            </p>
+            <div className="flex flex-col min-[400px]:flex-row gap-2">
+              <button
+                type="button"
+                aria-label={t("stl.samples.stl")}
+                onClick={() => void loadSample("3DBenchy.stl")}
+                disabled={parsing || sampleLoading !== null}
+                className={sampleButtonClass}
               >
-                {dropZoneText}
-              </p>
-              <p className="text-[10px] text-[var(--color-text-muted)]">
-                STL, OBJ, 3MF, GCODE &mdash; max 100 MB
-              </p>
-            </>
-          )}
-        </button>
+                {sampleLoading === "3DBenchy.stl" ? (
+                  <span className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Box className="w-4 h-4 shrink-0" />
+                )}
+                <span>
+                  {sampleLoading === "3DBenchy.stl"
+                    ? t("stl.samples.loading")
+                    : t("stl.samples.stl")}
+                </span>
+              </button>
+              <button
+                type="button"
+                aria-label={t("stl.samples.gcode")}
+                onClick={() => void loadSample("3DBenchy.gcode")}
+                disabled={parsing || sampleLoading !== null}
+                className={sampleButtonClass}
+              >
+                {sampleLoading === "3DBenchy.gcode" ? (
+                  <span className="w-4 h-4 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <FileCode2 className="w-4 h-4 shrink-0" />
+                )}
+                <span>
+                  {sampleLoading === "3DBenchy.gcode"
+                    ? t("stl.samples.loading")
+                    : t("stl.samples.gcode")}
+                </span>
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Error toast */}
