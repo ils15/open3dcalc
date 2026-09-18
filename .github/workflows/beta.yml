@@ -27,6 +27,14 @@ name: Beta channel
         required: false
         type: string
         default: ""
+      ref:
+        description: >-
+          Branch base para cortar o beta. Cortes beta devem partir de main
+          (onde CL1-CL6 já mergearam), mas o input permite cortar de qualquer
+          branch em casos excepcionais. Default: main.
+        required: false
+        type: string
+        default: "main"
 
 concurrency:
   group: beta-channel
@@ -53,10 +61,10 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout beta branch
+      - name: Checkout base branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: feat/beta-channel
+          ref: ${{ inputs.ref }}
           fetch-depth: 0
           persist-credentials: true
           # PAT, not GITHUB_TOKEN — the push must trigger beta-deploy.yml.
@@ -80,6 +88,15 @@ jobs:
           if [ -n "$VERSION_INPUT" ]; then
             BASE="${VERSION_INPUT#v}"
             BASE="${BASE%%-*}"
+            # Fail fast on typos: the base must be a plain X.Y.Z, otherwise the
+            # derived tag (vX.Y.Z-beta.N) would not match the v*.*.* stable-tag
+            # trigger of ci-cd.yml nor LAST_STABLE detection in beta-deploy.yml.
+            if ! printf '%s' "$BASE" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "❌ Invalid version input: '$VERSION_INPUT'" >&2
+              echo "   Use the format X.Y.Z, ex: 1.13.0 (a leading 'v' and a" >&2
+              echo "   prerelease suffix such as -beta.2 are tolerated)." >&2
+              exit 1
+            fi
           else
             BASE=$(node -e '
               const pkg = require("./package.json");
@@ -130,6 +147,7 @@ jobs:
         shell: bash
         env:
           TAG: ${{ steps.beta.outputs.tag }}
+          REF: ${{ inputs.ref }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -138,5 +156,5 @@ jobs:
           git add package.json
           git commit --no-verify -m "chore(beta): $TAG"
           git tag -a "$TAG" -m "Beta $TAG"
-          git push origin feat/beta-channel --follow-tags
-          echo "Cut and pushed $TAG"
+          git push origin "$REF" --follow-tags
+          echo "Cut and pushed $TAG on $REF"

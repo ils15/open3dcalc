@@ -7,8 +7,8 @@ name: Beta deploy
 # gh-pages branch and creates (or refreshes) the prerelease GitHub Release whose
 # body carries the beta changelog.
 #
-# The tag filter v*-* matches vX.Y.Z-beta.N and never a stable vX.Y.Z, so this
-# workflow and release-publish.yml are mutually exclusive.
+# The tag filter v*-beta.* matches only vX.Y.Z-beta.N and never a stable
+# vX.Y.Z, so this workflow and release-publish.yml are mutually exclusive.
 #
 # Electron is never built for the beta channel: betas are web-only.
 #
@@ -20,7 +20,7 @@ name: Beta deploy
 "on":
   push:
     tags:
-      - "v*-*"
+      - "v*-beta.*"
 
 concurrency:
   group: gh-pages-deploy
@@ -32,8 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      # peaceiris only needs contents: write to push the gh-pages branch; the
+      # pages: write scope of the retired deploy-pages job is unused here (the
+      # Pages source is the gh-pages branch, not an Actions artifact).
       contents: write
-      pages: write
     steps:
       - name: Verify beta release token is configured
         env:
@@ -69,7 +71,13 @@ jobs:
           VITE_BETA_CHANNEL: "true"
 
       - name: SPA routing fallback
-        run: cp dist-web/index.web.html dist-web/404.html
+        # GitHub Pages serves index.html for directory requests; without it,
+        # /open3dcalc/beta/ would fall through to the root 404.html (the stable
+        # shell, whose /assets/ do not exist under /beta/). Mirror the pattern
+        # used by ci-cd.yml and seed-gh-pages.yml.
+        run: |
+          cp dist-web/index.web.html dist-web/404.html
+          cp dist-web/index.web.html dist-web/index.html
 
       # keep_files: true so the stable root of gh-pages is never clobbered.
       # The shared gh-pages-deploy concurrency group serializes this with the
@@ -80,6 +88,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           destination_dir: beta
+          # The web build writes to dist-web, not the action default ./public.
+          # Without publish_dir the action does fs.readdir('./public') and
+          # fails with ENOENT.
+          publish_dir: dist-web
           keep_files: true
 
       - name: Create or refresh the prerelease
@@ -99,6 +111,14 @@ jobs:
           fi
           # Idempotent: re-running the workflow refreshes the notes in place.
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # Guard: this step must never downgrade a stable release to
+            # prerelease. Only beta tags reach this workflow (the v*-beta.*
+            # trigger), but refuse explicitly if a non-beta tag slips through.
+            if ! printf '%s' "$GITHUB_REF_NAME" \
+              | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$'; then
+              echo "Tag não-beta encontrada ($GITHUB_REF_NAME); recusando editar release estável." >&2
+              exit 1
+            fi
             gh release edit "$GITHUB_REF_NAME" \
               --prerelease \
               --title "Beta $GITHUB_REF_NAME" \

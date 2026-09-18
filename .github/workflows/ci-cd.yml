@@ -118,12 +118,20 @@ jobs:
     # Tag-gated: the stable Pages bundle is published from the immutable stable
     # tag, not from main pushes. Beta tags (vX.Y.Z-beta.N) are excluded here —
     # beta-deploy.yml publishes those under /beta/ instead.
+    #
+    # Silent-stop hazard: this deploy only fires on stable tags pushed by a
+    # non-GITHUB_TOKEN identity (release.yml is manual and cuts tags with a
+    # PAT). GitHub suppresses workflow runs for events caused by GITHUB_TOKEN
+    # (anti-recursion), so a GITHUB_TOKEN-pushed tag would leave the stable web
+    # bundle quietly frozen with no failing job.
     if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      # peaceiris only needs contents: write to push the gh-pages branch; the
+      # pages: write scope of the retired deploy-pages job is unused here (the
+      # Pages source is the gh-pages branch, not an Actions artifact).
       contents: write
-      pages: write
     # Shared with beta-deploy.yml and seed-gh-pages.yml: serializes every write
     # to gh-pages so the stable root and the /beta/ subpath never clobber each
     # other mid-deploy.
@@ -163,6 +171,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           destination_dir: .
+          # The web build writes to dist-web, not the action default ./public.
+          # Without publish_dir the action does fs.readdir('./public') and
+          # fails with ENOENT.
+          publish_dir: dist-web
           keep_files: true
 
   build-desktop:
