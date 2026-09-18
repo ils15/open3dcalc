@@ -927,9 +927,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -983,9 +981,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1047,10 +1043,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -1075,9 +1068,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1113,9 +1104,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1157,9 +1146,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1243,9 +1230,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1261,15 +1246,11 @@
           },
           {
             "title": "🧹 Outros",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1301,10 +1282,7 @@
           },
           {
             "title": "✅ Tests",
-            "items": [
-              "417 testes, 36/36 arquivos passando",
-              "Cobertura >80%"
-            ]
+            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
           }
         ]
       },
