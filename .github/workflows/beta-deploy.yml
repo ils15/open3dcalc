@@ -126,7 +126,6 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" \
               --prerelease \
-              --target "$GITHUB_REF_NAME" \
               --title "Beta $GITHUB_REF_NAME" \
               --notes-file beta-notes.md
           fi
