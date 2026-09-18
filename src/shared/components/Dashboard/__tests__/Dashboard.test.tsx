@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
 import { Dashboard } from "../Dashboard";
@@ -362,5 +362,106 @@ describe("Dashboard advanced features", () => {
     expect(screen.getByText("Low Margin Item")).toBeInTheDocument();
     // The margin percentage for entry 5: 5/100 = 5%
     expect(screen.getByText("5.0%")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fase 3: history-based KPIs + monthly profit projection
+// ---------------------------------------------------------------------------
+describe("Dashboard KPIs and monthly projection (Fase 3)", () => {
+  beforeEach(() => {
+    mockEntries = [...sampleEntries];
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it("renders the history-based KPI row and the monthly projection card", () => {
+    render(<Dashboard />);
+
+    expect(screen.getByTestId("dashboard-kpis")).toBeInTheDocument();
+    expect(screen.getByTestId("dashboard-projection")).toBeInTheDocument();
+    // Section title makes the history-based scope explicit (Decision B)
+    expect(screen.getByText("dashboard.kpis.title")).toBeInTheDocument();
+    expect(screen.getByText("dashboard.kpis.totalProfit")).toBeInTheDocument();
+    expect(
+      screen.getByText("dashboard.kpis.avgCostPerPrint"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("dashboard.kpis.avgMargin")).toBeInTheDocument();
+    expect(screen.getByText("dashboard.kpis.prints")).toBeInTheDocument();
+    expect(screen.getByText("dashboard.projection.title")).toBeInTheDocument();
+    expect(
+      screen.getByText("dashboard.projection.projectedProfit"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("dashboard.projection.inputLabel"),
+    ).toBeInTheDocument();
+  });
+
+  it("computes KPI values from the filtered history", () => {
+    render(<Dashboard />);
+
+    const kpis = within(screen.getByTestId("dashboard-kpis"));
+    // totalProfit = 30 + 50 + 40 + 80 + 5 + 90 = 295
+    expect(kpis.getByText("R$ 295.00")).toBeInTheDocument();
+    // totalCost = 70 + 150 + 110 + 120 + 95 + 210 = 755; 755 / 6 = 125.83
+    expect(kpis.getByText("R$ 125.83")).toBeInTheDocument();
+    // margins 30/25/26.67/40/5/30 -> avg 26.1%
+    expect(kpis.getByText("26.1%")).toBeInTheDocument();
+    // print count
+    expect(kpis.getByText("6")).toBeInTheDocument();
+  });
+
+  it("projects monthly profit as avgProfitPerPrint x printsPerMonth", () => {
+    render(<Dashboard />);
+
+    const card = within(screen.getByTestId("dashboard-projection"));
+    // avgProfitPerPrint = 295 / 6 ~= 49.1667; default printsPerMonth = 30
+    // -> 49.1667 * 30 = 1475.00
+    expect(card.getByText("R$ 1475.00")).toBeInTheDocument();
+
+    // Lowering the volume to 10 parts/month scales the projection linearly
+    const input = screen.getByLabelText("dashboard.projection.inputLabel");
+    fireEvent.change(input, { target: { value: "10" } });
+    expect(card.getByText("R$ 491.67")).toBeInTheDocument();
+  });
+
+  it("reflects the date-range filter in the history KPIs", () => {
+    render(<Dashboard />);
+    const dateInputs =
+      document.querySelectorAll<HTMLInputElement>('input[type="date"]');
+
+    // Keep only entry 1 (2020-09-13): profit 30, cost 70, margin 30%
+    fireEvent.change(dateInputs[0], { target: { value: "2020-09-13" } });
+    fireEvent.change(dateInputs[1], { target: { value: "2020-09-13" } });
+
+    const kpis = within(screen.getByTestId("dashboard-kpis"));
+    expect(kpis.getByText("R$ 30.00")).toBeInTheDocument();
+    expect(kpis.getByText("R$ 70.00")).toBeInTheDocument();
+    expect(kpis.getByText("30.0%")).toBeInTheDocument();
+    expect(kpis.getByText("1")).toBeInTheDocument();
+  });
+
+  it("computes KPIs and projection for a single history entry", () => {
+    mockEntries = [sampleEntries[0]];
+    render(<Dashboard />);
+
+    const kpis = within(screen.getByTestId("dashboard-kpis"));
+    expect(kpis.getByText("R$ 30.00")).toBeInTheDocument();
+    expect(kpis.getByText("R$ 70.00")).toBeInTheDocument();
+    expect(kpis.getByText("30.0%")).toBeInTheDocument();
+
+    // avgProfitPerPrint = 30; 30 * 30 (default printsPerMonth) = 900.00
+    const card = within(screen.getByTestId("dashboard-projection"));
+    expect(card.getByText("R$ 900.00")).toBeInTheDocument();
+  });
+
+  it("hides the KPI row and projection card when there is no history", () => {
+    mockEntries = [];
+    render(<Dashboard />);
+
+    expect(screen.queryByTestId("dashboard-kpis")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("dashboard-projection"),
+    ).not.toBeInTheDocument();
   });
 });
