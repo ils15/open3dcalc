@@ -311,6 +311,8 @@ O deploy da web é **automático** via GitHub Actions (`ci-cd.yml`) a cada **tag
 
 O canal beta publica builds **web-only** (Electron nunca é buildado) num subpath isolado do GitHub Pages, permitindo validar mudanças antes de promover a estável.
 
+> 🐕 **Dogfood:** a beta liga o **preview 3D do G-code** (D-CL5/D-CL6) via `VITE_TOOLPATH_PREVIEW=true` — a raiz estável mantém a feature **desligada** até ela amadurecer (padrão dev ON / prod OFF; veja a tabela de env vars acima).
+
 |           | Estável                               | Beta                                       |
 | --------- | ------------------------------------- | ------------------------------------------ |
 | URL       | `https://ils15.github.io/open3dcalc/` | `https://ils15.github.io/open3dcalc/beta/` |
