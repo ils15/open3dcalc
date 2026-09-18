@@ -41,7 +41,7 @@ export interface FileParseResult {
   volumeCm3: number;
   weight: number;
   printTimeHours: number;
-  dimensions: { x: number; y: number; z: number };
+  dimensions: { x: number; y: number; z: number } | null;
   triangleCount: number;
   /** Estimated support material volume in cm³ (only when estimateSupport is enabled). */
   supportVolumeCm3?: number;
@@ -53,6 +53,9 @@ import {
   resolveDisplayEstimate,
   type DisplayEstimate,
 } from "./estimationDisplay";
+import { AssumptionsPanel } from "./AssumptionsPanel";
+import { MeshWarning } from "./MeshWarning";
+import { isMeshSuspicious } from "@/shared/lib/meshValidation";
 
 interface StlPreviewProps {
   onFileParsed?: (data: FileParseResult) => void;
@@ -68,13 +71,26 @@ interface StlPreviewProps {
   layerHeight?: number;
   /** Print speed in mm/s (from store fdmPrintParams). Default 60. */
   speed?: number;
-  /** Number of perimeter walls (from store fdmPrintParams). Default 2. */
+  /** Number of perimeter walls (from store fdmSlicerProfile). Default 2. */
   wallCount?: number;
   /**
-   * Filament family for the MVS speed clamp (default PLA).
-   * Density still comes from `materialDensity` when provided.
+   * Extruded line width in mm (from store fdmSlicerProfile). Default 0,42.
+   * Feeds the shell thickness derivation of the volume estimator.
    */
-  material?: FilamentFamily;
+  lineWidthMm?: number;
+  /** Solid top layers (from store fdmSlicerProfile). Default 4. */
+  topLayers?: number;
+  /** Solid bottom layers (from store fdmSlicerProfile). Default 4. */
+  bottomLayers?: number;
+  /**
+   * Filament family for the MVS speed clamp (default PLA).
+   * Accepts the store's free-form material name — the lookup in
+   * `filamentProfiles` is case-INsensitive (D-EA4), so "PLA"/"PlA" match the
+   * "pla" profile; unknown families fall back to the safe MVS ceiling.
+   * Density still comes from `materialDensity` when provided. The MVS itself
+   * may be overridden via `fdmFilament.maxVolumetricSpeedMm3PerS`.
+   */
+  material?: FilamentFamily | string;
   /** When true, estimates support material volume from overhang triangles. Default false. */
   estimateSupport?: boolean;
   /** Called when the user clears the loaded model from the viewer. */
@@ -279,12 +295,18 @@ export function StlPreview({
   layerHeight,
   speed,
   wallCount,
+  lineWidthMm,
+  topLayers,
+  bottomLayers,
   material,
   estimateSupport = false,
   onClear,
 }: StlPreviewProps) {
   const { t } = useTranslation();
   const store = useCalculatorStore();
+  // D-EA2 (GA-2): purge % e diâmetro saem da store — não são mais literais.
+  // Defaults (10 / 1.75) = byte-identical ao comportamento anterior.
+  const fdmFilament = store.fdmFilament;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const lastFileRef = useRef<File | null>(null);
   const [geometry, setGeometry] = useState<BufferGeometry | null>(
@@ -371,9 +393,20 @@ export function StlPreview({
         if (ext === "gcode") {
           const { parseGcode } = await import("@/shared/lib/gcodeParser");
           const text = await file.text();
-          const gcode = parseGcode(text);
+          const gcode = parseGcode(text, {
+            filamentDiameterMm: fdmFilament.filamentDiameterMm,
+          });
           // 1-decimal hours, same as the estimator (H1).
           const hours = Math.round((gcode.printTimeMinutes / 60) * 10) / 10;
+          // D-EA6 (P1): printSize only carries a real measurement when the
+          // slicer reported part extents (`;MINX:`, Cura) or the parser found
+          // a positioned-move bbox — otherwise it degrades to zeros, which
+          // must render as "—" (never a fake 0.0×0.0×0.0). A part with any
+          // real extent always has a non-zero printSize.
+          const measurable =
+            gcode.printSize.x > 0 ||
+            gcode.printSize.y > 0 ||
+            gcode.printSize.z > 0;
           const result: FileParseResult = {
             geometry: null,
             analysis: {
@@ -397,13 +430,17 @@ export function StlPreview({
               integrity: { valid: true, issues: [] },
             },
             volumeCm3: 0,
-            weight: gcode.filamentUsedGrams,
+            // Same 2-decimal rounding as the STL branch (:507) — the raw
+            // E→grams conversion can carry float noise to the display.
+            weight: parseFloat(gcode.filamentUsedGrams.toFixed(2)),
             printTimeHours: hours,
-            dimensions: {
-              x: gcode.printSize.x,
-              y: gcode.printSize.y,
-              z: gcode.printSize.z,
-            },
+            dimensions: measurable
+              ? {
+                  x: gcode.printSize.x,
+                  y: gcode.printSize.y,
+                  z: gcode.printSize.z,
+                }
+              : null,
             triangleCount: 0,
           };
           setGeometry(null);
@@ -444,9 +481,13 @@ export function StlPreview({
             densityGcm3: density,
             material,
             infillPercent: infill,
-            purgePercent: 10,
+            purgePercent: fdmFilament.purgePercent,
             surfaceAreaMm2: analysis.surfaceArea,
             wallCount,
+            lineWidthMm,
+            topLayers,
+            bottomLayers,
+            layerHeightMm: layerHeight,
             supportVolumeCm3: analysis.supportVolumeCm3,
           });
           // O tempo tem que usar o plástico REALMENTE extrudado, não o volume
@@ -455,15 +496,24 @@ export function StlPreview({
             infillPercent: infill,
             surfaceAreaMm2: analysis.surfaceArea,
             wallCount,
+            lineWidthMm,
+            topLayers,
+            bottomLayers,
+            layerHeightMm: layerHeight,
             supportVolumeCm3: analysis.supportVolumeCm3,
           });
           const timeEstimate = estimatePrintTime({
             volumeCm3,
             materialVolumeCm3,
             dimensions: analysis.dimensions,
+            surfaceAreaMm2: analysis.surfaceArea,
             layerHeightMm: layerHeight,
             printSpeedMmPerS: speed,
             material,
+            filamentDiameterMm: fdmFilament.filamentDiameterMm,
+            // D-EA4: override manual do MVS (high-flow). Ausente/inválido na
+            // slice → undefined → estimador usa a tabela do material.
+            maxVolumetricSpeedMm3PerS: fdmFilament.maxVolumetricSpeedMm3PerS,
           });
           const result: FileParseResult = {
             geometry: parsedGeometry,
@@ -504,8 +554,12 @@ export function StlPreview({
       layerHeight,
       speed,
       wallCount,
+      lineWidthMm,
+      topLayers,
+      bottomLayers,
       material,
       supportEnabled,
+      fdmFilament,
     ],
   );
 
@@ -742,7 +796,20 @@ export function StlPreview({
             gcodeAnchor={gcodeAnchor}
             onGcodeAnchor={setGcodeAnchor}
             onClearGcodeAnchor={() => setGcodeAnchor(null)}
+            filamentDiameterMm={fdmFilament.filamentDiameterMm}
+            fdmSlicerProfile={store.fdmSlicerProfile}
+            onSlicerProfileFill={store.setFdmSlicerProfile}
           />
+          {/* D-EA7: guarda de malha — aviso âmbar NÃO-bloqueador. Malha íntegra
+              renders null (sem ruído); malha doente só sinaliza, sem alterar a
+              estimativa. */}
+          {modelInfo.analysis.meshValidation &&
+            isMeshSuspicious(modelInfo.analysis.meshValidation) && (
+              <MeshWarning
+                validation={modelInfo.analysis.meshValidation}
+                t={t}
+              />
+            )}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             {modelInfo.volumeCm3 > 0 && (
               <div className="surface rounded-lg p-2.5 text-center">
@@ -784,9 +851,9 @@ export function StlPreview({
                 {t("stl.dimensions")}
               </p>
               <p className="font-semibold text-[var(--color-text-primary)] text-[11px]">
-                {modelInfo.dimensions.x.toFixed(1)}×
-                {modelInfo.dimensions.y.toFixed(1)}×
-                {modelInfo.dimensions.z.toFixed(1)} mm
+                {modelInfo.dimensions
+                  ? `${modelInfo.dimensions.x.toFixed(1)}×${modelInfo.dimensions.y.toFixed(1)}×${modelInfo.dimensions.z.toFixed(1)} mm`
+                  : "—"}
               </p>
             </div>
             {modelInfo.triangleCount > 0 && (
@@ -827,6 +894,18 @@ export function StlPreview({
               )}
             </div>
           </div>
+
+          {/* D-EA5 (GA-3): painel "Premissas usadas" — transparência total
+              sobre os parâmetros que alimentaram o estimador. Read-only,
+              valores 100% da store. */}
+          <AssumptionsPanel
+            store={store}
+            mode={estimationMode}
+            weightFromGcode={displayEstimate?.weightFromGcode ?? false}
+            timeFromGcode={displayEstimate?.timeFromGcode ?? false}
+            t={t}
+            onSwitchToCustom={() => setEstimationMode("advanced")}
+          />
         </div>
       )}
 
@@ -884,10 +963,10 @@ export function StlPreview({
                 addComparison({
                   fileName: lastFileNameRef.current ?? `model-${Date.now()}`,
                   dimensions: info.dimensions,
-                  volumeCm3: info.volumeCm3,
+                  // G-code has no mesh: volume is unknown, never a fake 0.0.
+                  volumeCm3: info.geometry ? info.volumeCm3 : null,
                   weight: displayEstimate?.weight ?? info.weight,
-                  printTimeHours:
-                    displayEstimate?.hours ?? info.printTimeHours,
+                  printTimeHours: displayEstimate?.hours ?? info.printTimeHours,
                   triangleCount: info.triangleCount,
                 });
               }}
@@ -954,7 +1033,9 @@ export function StlPreview({
                         {entry.printTimeHours.toFixed(1)} h
                       </td>
                       <td className="pr-2 py-1">
-                        {entry.volumeCm3.toFixed(1)} cm³
+                        {entry.volumeCm3 !== null
+                          ? `${entry.volumeCm3.toFixed(1)} cm³`
+                          : "—"}
                       </td>
                       <td className="py-1 text-right">
                         <button

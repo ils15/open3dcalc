@@ -1,4 +1,6 @@
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { resolveFdmSlicerProfile } from "@/shared/stores/calculatorStore.helpers";
+import { resolveFdmFilament } from "@/shared/stores/calculatorStore.helpers";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import type { FilamentSpool } from "@/shared/stores/filamentInventory";
 import type { Product } from "@/shared/types";
@@ -38,6 +40,15 @@ export function restoreAutoSnapshot(): boolean {
       activeTab: data.activeTab || "fdm",
       fdmMaterial: data.fdmMaterial || calc.fdmMaterial,
       fdmPrintParams: data.fdmPrintParams || calc.fdmPrintParams,
+      fdmSlicerProfile:
+        data.fdmSlicerProfile !== undefined
+          ? resolveFdmSlicerProfile(data.fdmSlicerProfile)
+          : calc.fdmSlicerProfile,
+      // D-EA2: blob antigo sem o campo → mantém os params atuais.
+      fdmFilament:
+        data.fdmFilament !== undefined
+          ? resolveFdmFilament(data.fdmFilament)
+          : calc.fdmFilament,
       fdmAmsEnabled: data.fdmAmsEnabled ?? false,
       fdmAmsSlots: data.fdmAmsSlots || calc.fdmAmsSlots,
       fdmMachine: data.fdmMachine || calc.fdmMachine,

@@ -36,11 +36,15 @@ import {
   DEFAULT_FIXED_COSTS,
   DEFAULT_AMS_SLOTS,
   DEFAULT_VOLUME_DISCOUNTS,
+  DEFAULT_FDM_SLICER_PROFILE,
+  DEFAULT_FDM_FILAMENT,
 } from "./calculatorStore.defaults";
 import {
   debouncedAutoSave,
   loadStr,
   migrateQuickMode,
+  resolveFdmSlicerProfile,
+  resolveFdmFilament,
 } from "./calculatorStore.helpers";
 import { computeStoreResults } from "./calculatorStore.compute";
 
@@ -61,6 +65,8 @@ function captureSnapshot(s: CalculatorState): string {
     activeTab: s.activeTab,
     fdmMaterial: s.fdmMaterial,
     fdmPrintParams: s.fdmPrintParams,
+    fdmSlicerProfile: s.fdmSlicerProfile,
+    fdmFilament: s.fdmFilament,
     fdmMachine: s.fdmMachine,
     fdmHardware: s.fdmHardware,
     fdmFinishing: s.fdmFinishing,
@@ -119,6 +125,12 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     activeTab: "fdm" as const,
     fdmMaterial: { ...DEFAULT_FDM_MATERIAL, ...loadStr("fdmMaterial", {}) },
     fdmPrintParams: { ...DEFAULT_FDM_PARAMS, ...loadStr("fdmPrintParams", {}) },
+    // D-EA1: perfil do slicer do usuário. Blob antigo sem o campo, parcial ou
+    // corrompido → resolve nos defaults dos estimadores (migration-safe).
+    fdmSlicerProfile: resolveFdmSlicerProfile(loadStr("fdmSlicerProfile", {})),
+    // D-EA2 (GA-2): params físicos do filamento (purge/diâmetro). Blob antigo
+    // sem o campo, parcial ou corrompido → resolve nos defaults (migration-safe).
+    fdmFilament: resolveFdmFilament(loadStr("fdmFilament", {})),
     fdmMachine: { ...DEFAULT_FDM_MACHINE, ...loadStr("fdmMachine", {}) },
     fdmHardware: { ...DEFAULT_FDM_HARDWARE, ...loadStr("fdmHardware", {}) },
     fdmFinishing: { ...DEFAULT_FDM_FINISHING, ...loadStr("fdmFinishing", {}) },
@@ -199,6 +211,22 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     setFdmMaterial: (v) => setWithCompute({ fdmMaterial: v }),
     setFdmPrintParams: (v) => setWithCompute({ fdmPrintParams: v }),
+    setFdmSlicerProfile: (v) =>
+      setWithCompute((state) => ({
+        // Merge parcial sobre o perfil atual; NaN/inválido → default do campo.
+        fdmSlicerProfile: resolveFdmSlicerProfile({
+          ...state.fdmSlicerProfile,
+          ...v,
+        }),
+      })),
+    setFdmFilament: (v) =>
+      setWithCompute((state) => ({
+        // Merge parcial sobre os params atuais; NaN/inválido → default do campo.
+        fdmFilament: resolveFdmFilament({
+          ...state.fdmFilament,
+          ...v,
+        }),
+      })),
     setFdmMachine: (v) => setWithCompute({ fdmMachine: v }),
     setFdmHardware: (v) => setWithCompute({ fdmHardware: v }),
     setFdmFinishing: (v) => setWithCompute({ fdmFinishing: v }),
@@ -417,6 +445,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       setWithCompute({
         fdmMaterial: { ...DEFAULT_FDM_MATERIAL },
         fdmPrintParams: { ...DEFAULT_FDM_PARAMS },
+        fdmSlicerProfile: { ...DEFAULT_FDM_SLICER_PROFILE },
+        fdmFilament: { ...DEFAULT_FDM_FILAMENT },
         fdmMachine: { ...DEFAULT_FDM_MACHINE },
         fdmHardware: { ...DEFAULT_FDM_HARDWARE },
         fdmFinishing: { ...DEFAULT_FDM_FINISHING },
@@ -471,6 +501,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         fixedCosts: s.fixedCosts,
         fdmMaterial: s.fdmMaterial,
         fdmPrintParams: s.fdmPrintParams,
+        fdmSlicerProfile: s.fdmSlicerProfile,
+        fdmFilament: s.fdmFilament,
         fdmMachine: s.fdmMachine,
         fdmHardware: s.fdmHardware,
         fdmFinishing: s.fdmFinishing,
@@ -539,6 +571,18 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         fixedCosts: snapshot.fixedCosts ?? { ...DEFAULT_FIXED_COSTS },
         fdmMaterial: snapshot.fdmMaterial,
         fdmPrintParams: snapshot.fdmPrintParams,
+        // Snapshot antigo (pré-D-EA1) sem o campo → mantém o perfil atual.
+        ...(snapshot.fdmSlicerProfile
+          ? {
+              fdmSlicerProfile: resolveFdmSlicerProfile(
+                snapshot.fdmSlicerProfile,
+              ),
+            }
+          : {}),
+        // Snapshot antigo (pré-D-EA2) sem o campo → mantém os params atuais.
+        ...(snapshot.fdmFilament
+          ? { fdmFilament: resolveFdmFilament(snapshot.fdmFilament) }
+          : {}),
         fdmMachine: snapshot.fdmMachine,
         fdmHardware: snapshot.fdmHardware,
         fdmFinishing: snapshot.fdmFinishing,
@@ -570,6 +614,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       const data = {
         fdmMaterial: s.fdmMaterial,
         fdmPrintParams: s.fdmPrintParams,
+        fdmSlicerProfile: s.fdmSlicerProfile,
+        fdmFilament: s.fdmFilament,
         fdmMachine: s.fdmMachine,
         fdmHardware: s.fdmHardware,
         fdmFinishing: s.fdmFinishing,

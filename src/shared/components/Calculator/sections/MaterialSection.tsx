@@ -16,6 +16,8 @@ import type { AMSSlot } from "@/shared/types";
 import { selectSpool } from "@/shared/stores/storeBridge";
 import type { FileParseResult } from "@/shared/components/StlPreview/StlPreview";
 import { StlPreview } from "@/shared/components/StlPreview/StlPreview";
+import { SlicerProfileFields } from "./SlicerProfileFields";
+import { FilamentAssumptionsFields } from "./FilamentAssumptionsFields";
 
 export interface MaterialSectionProps {
   renderSectionHeader: (
@@ -281,6 +283,18 @@ export function MaterialSection({
                   onClear={handleStlClear}
                   materialDensity={store.fdmMaterial.density}
                   infillPercent={store.infillPercent}
+                  // D-EA1: o estimador passa a usar o perfil de fatiamento
+                  // real do usuário em vez de VOLUME_DEFAULTS (GA-1).
+                  layerHeight={store.fdmSlicerProfile.layerHeightMm}
+                  speed={store.fdmSlicerProfile.printSpeedMmPerS}
+                  wallCount={store.fdmSlicerProfile.wallCount}
+                  lineWidthMm={store.fdmSlicerProfile.lineWidthMm}
+                  topLayers={store.fdmSlicerProfile.topLayers}
+                  bottomLayers={store.fdmSlicerProfile.bottomLayers}
+                  // D-EA4: o lookup em filamentProfiles é case-insensitive
+                  // ("PLA"/"PlA" matcheiam "pla"); a normalização abaixo é
+                  // inofensiva e mantém o nome canônico na store (type "PLA").
+                  material={store.fdmMaterial.type.toLowerCase()}
                 />
               </div>
             </>
@@ -435,10 +449,44 @@ export function MaterialSection({
                   onClear={handleStlClear}
                   materialDensity={store.fdmMaterial.density}
                   infillPercent={store.infillPercent}
+                  // D-EA1: o estimador passa a usar o perfil de fatiamento
+                  // real do usuário em vez de VOLUME_DEFAULTS (GA-1).
+                  layerHeight={store.fdmSlicerProfile.layerHeightMm}
+                  speed={store.fdmSlicerProfile.printSpeedMmPerS}
+                  wallCount={store.fdmSlicerProfile.wallCount}
+                  lineWidthMm={store.fdmSlicerProfile.lineWidthMm}
+                  topLayers={store.fdmSlicerProfile.topLayers}
+                  bottomLayers={store.fdmSlicerProfile.bottomLayers}
+                  // D-EA4: o lookup em filamentProfiles é case-insensitive
+                  // ("PLA"/"PlA" matcheiam "pla"); a normalização abaixo é
+                  // inofensiva e mantém o nome canônico na store (type "PLA").
+                  material={store.fdmMaterial.type.toLowerCase()}
                 />
               </div>
             </div>
           )}
+
+          {/* D-EA1: perfil de fatiamento real do usuário. O gating por
+              calcLevel fica no `isFieldVisible` — as chaves do slicer não
+              constam de BASIC/INTERMEDIATE_FIELDS, então só aparecem no
+              modo avançado. Renderiza null nos outros modos. */}
+          <SlicerProfileFields
+            store={store}
+            t={t}
+            handleInput={handleInput}
+            isFieldVisible={isFieldVisible}
+          />
+
+          {/* D-EA5 (GA-2): parâmetros físicos do filamento — purge %, diâmetro
+              e override de MVS. Mesmo gating do D-EA1 (só modo avançado); a
+              store já sanitiza, não revalidamos aqui. Espelha
+              SlicerProfileFields. */}
+          <FilamentAssumptionsFields
+            store={store}
+            t={t}
+            handleInput={handleInput}
+            isFieldVisible={isFieldVisible}
+          />
 
           {/* Auto-deduction Spool Selector — FDM non-AMS only */}
           {isFDM &&

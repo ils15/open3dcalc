@@ -156,7 +156,9 @@ describe("StlPreview estimation modes", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("stl.advancedUncertainty")).toBeInTheDocument();
     expect(screen.getByText(`${base.weight.toFixed(1)} g`)).toBeInTheDocument();
-    expect(screen.getAllByText("stl.estimatedBadge")).toHaveLength(2);
+    // D-EA5: badges de proveniência aparecem nos cards de resultado E nas
+    // linhas de peso/tempo do AssumptionsPanel (2 + 2 = 4).
+    expect(screen.getAllByText("stl.estimatedBadge")).toHaveLength(4);
   });
 
   it("k dobra o peso exibido e propaga para onFileParsed", async () => {
@@ -198,9 +200,10 @@ describe("StlPreview estimation modes", () => {
       target: { files: [gcode] },
     });
 
-    // E=100mm → ~0.3 g; ;TIME:1800 → 30 min → 0.5 h
+    // E=100mm → ~0.3 g; ;TIME:1800 → 30 min → 0.5 h. D-EA5: badges now also
+    // render in the AssumptionsPanel provenance rows (cards + panel = 4).
     await waitFor(() =>
-      expect(screen.getAllByText("stl.gcodeBadge")).toHaveLength(2),
+      expect(screen.getAllByText("stl.gcodeBadge")).toHaveLength(4),
     );
     expect(screen.getByText("0.3 g")).toBeInTheDocument();
     expect(screen.getByText("0.5 h")).toBeInTheDocument();
@@ -208,7 +211,7 @@ describe("StlPreview estimation modes", () => {
     await user.click(screen.getByRole("button", { name: "stl.gcodeClear" }));
 
     await waitFor(() =>
-      expect(screen.getAllByText("stl.estimatedBadge")).toHaveLength(2),
+      expect(screen.getAllByText("stl.estimatedBadge")).toHaveLength(4),
     );
     expect(screen.getByText(`${base.weight.toFixed(1)} g`)).toBeInTheDocument();
   });

@@ -8,7 +8,7 @@ import {
   resolveWeightAnchor,
   type EstimateOptions,
 } from "@/shared/types/estimation";
-
+import { analyzeMeshTopology, type MeshValidation } from "./meshValidation";
 export interface MeshAnalysis {
   triangleCount: number;
   vertexCount: number;
@@ -20,6 +20,12 @@ export interface MeshAnalysis {
     max: { x: number; y: number; z: number };
   };
   integrity: { valid: boolean; issues: string[] };
+  /**
+   * Topology guards (D-EA7): winding/open/non-manifold/degenerate metrics.
+   * Optional so persisted results from before D-EA7 stay valid (widening).
+   * Detection only — the estimate is never blocked or "repaired".
+   */
+  meshValidation?: MeshValidation;
   /** Estimated support material volume in cm³. Only present when `estimateSupport` is enabled. */
   supportVolumeCm3?: number;
 }
@@ -237,7 +243,26 @@ function analyzeGeometry(
       },
     },
     integrity: validateMesh(geometry),
+    // D-EA7: guards de topologia — detecção NÃO-bloqueadora. Malha íntegra
+    // produz zeros/false (byte-identical ao pré-D-EA7); malha doente só avisa.
+    meshValidation: analyzeMeshTopology(geometry),
   };
+
+  // D-EA7 GA-9: espelha os achados topológicos em integrity.issues para que o
+  // sinal viva onde a letra do gate exige. Não-bloqueador — `valid` não é
+  // recomputado; malha íntegra não adiciona nada (byte-identical ao pré-D-EA7).
+  // `partial` pula: só a checagem O(1) rodou, os zeros não são garantia.
+  const topology = analysis.meshValidation;
+  if (topology && !topology.partial) {
+    if (topology.windingInconsistent)
+      analysis.integrity.issues.push("Inconsistent face winding detected");
+    if (topology.openEdges > 0)
+      analysis.integrity.issues.push("Open edges detected");
+    if (topology.nonManifoldEdges > 0)
+      analysis.integrity.issues.push("Non-manifold edges detected");
+    if (topology.degenerateTriangles > 0)
+      analysis.integrity.issues.push("Degenerate triangles detected");
+  }
 
   if (options.estimateSupport) {
     analysis.supportVolumeCm3 = +estimateSupportVolume(
@@ -1091,7 +1116,7 @@ export interface WeightOptions extends MaterialVolumeOptions, EstimateOptions {
   purgePercent?: number;
 }
 
-const VOLUME_DEFAULTS = {
+export const VOLUME_DEFAULTS = {
   infillPercent: 20,
   wallCount: 2,
   lineWidthMm: 0.42,

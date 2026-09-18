@@ -3,6 +3,7 @@ import {
   maxVolumetricSpeedFor,
   type FilamentFamily,
 } from "./filamentProfiles";
+import { DEFAULT_FILAMENT_DIAMETER_MM } from "./filamentDefaults";
 import {
   getModeBehavior,
   resolveCalibrationK,
@@ -48,6 +49,14 @@ export interface PrintTimeParams extends EstimateOptions {
   /** Bounding box do modelo em mm (só `z` é usada, p/ contagem de camadas). */
   dimensions: DimensionsMm;
   /**
+   * Área de superfície da malha em mm² (unidade canônica do `MeshAnalysis`;
+   * conversão para cm² acontece aqui, como em `estimateWeight`).
+   * Base do fator empírico de geometria (D-EA3, §7): peças pequenas/detalhadas
+   * (SA/V alto) perdem mais tempo com accel/decel do que o modelo de velocidade
+   * constante assume. Ausente/≤ 0/NaN → fator neutro, estimativa inalterada.
+   */
+  surfaceAreaMm2?: number;
+  /**
    * Plástico REALMENTE extrudado em cm³ (casca + infill + suporte).
    * Quando ausente, usa `volumeCm3` — superestima peça oca como se sólida.
    */
@@ -71,9 +80,22 @@ export interface PrintTimeParams extends EstimateOptions {
    * 300 mm/s não gera tempo impossível — gera o tempo do teto físico.
    */
   material?: FilamentFamily | string;
+  /**
+   * Diâmetro do filamento em mm (default 1.75, single-sourced de
+   * `filamentDefaults`). Só afeta o `filamentLengthMm` reportado — o tempo
+   * depende do volume depositado, não da espessura do filamento. D-EA2 (GA-2).
+   */
+  filamentDiameterMm?: number;
+  /**
+   * Override manual do teto MVS em mm³/s (D-EA4). Vem do slice `fdmFilament`
+   * (hotend high-flow volcano/CHT dobra o MVS real). Vence a tabela do
+   * `material` quando finito e > 0; ausente/NaN/≤ 0 = tabela,
+   * byte-identical ao pré-D-EA4.
+   */
+  maxVolumetricSpeedMm3PerS?: number;
 }
 
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   layerHeightMm: 0.2,
   // Largura da linha extrudada. Bico de 0,4 mm deposita ~0,42 mm nos perfis
   // padrão de Bambu Studio, OrcaSlicer e PrusaSlicer.
@@ -85,6 +107,58 @@ const DEFAULT_SETTINGS = {
 
 /** Segundos de overhead por troca de camada (home da aproximação). */
 const LAYER_CHANGE_SECONDS = 2;
+
+/**
+ * Constantes do fator empírico de geometria (D-EA3 — §7 de
+ * `docs/estimators-model.md`).
+ *
+ * O estimador assume velocidade constante: não modela accel/jerk. Peças
+ * pequenas/detalhadas têm muitas mudanças de direção e travel proporcionalmente
+ * maior, então são subestimadas de forma sistemática. Em vez da física
+ * completa (YAGNI explícito do deepwork `estimation-accuracy`: a aceleração
+ * real depende da firmware/junction-deviation, e o fator captura o viés
+ * residual dominante), aplica-se um fator bornceado e clampado derivado da
+ * razão superfície/volume — proxy de detalhe que cresce com a complexidade:
+ * cubo de 100 mm → SA/V 0,06 mm⁻¹; de 10 mm → 0,6; de 3 mm → 2,0.
+ */
+export const GEOMETRY_FACTOR = {
+  /** SA/V (mm⁻¹) abaixo da qual a peça é "grande/simples": fator neutro (1,0). */
+  lowRatio: 0.2,
+  /** SA/V (mm⁻¹) em que o fator satura no clamp. */
+  highRatio: 1.0,
+  /** Teto do fator: peças minúsculas nunca custam > 30% a mais (envelope ±30%). */
+  max: 1.3,
+} as const;
+
+/**
+ * Fator multiplicativo do tempo de MOVIMENTO, derivado da geometria.
+ *
+ * Rampa linear bornceada entre `lowRatio` e `highRatio`, clampada em `max`.
+ * Entrada ausente/não-finita, ou volume ≤ 0/NaN → fator neutro 1,0
+ * (estimativa inalterada; a regra "zeros explícitos, nunca NaN" se mantém).
+ * `surfaceAreaMm2` e `volumeCm3` vêm do `MeshAnalysis` já calculado — sem
+ * reprocessar a malha e sem novos parâmetros de store (fator é puro da forma).
+ */
+export function geometryTimeFactor(
+  surfaceAreaMm2?: number,
+  volumeCm3?: number,
+): number {
+  if (!Number.isFinite(surfaceAreaMm2) || (surfaceAreaMm2 as number) <= 0) {
+    return 1;
+  }
+  if (!Number.isFinite(volumeCm3) || (volumeCm3 as number) <= 0) return 1;
+  // Ambas as entradas são finitas e > 0 → a razão é finita e positiva por
+  // construção (denominador = volume × 1000 ≥ 1.000); sem guardas de NaN aqui.
+  const ratio = (surfaceAreaMm2 as number) / ((volumeCm3 as number) * 1000);
+  if (ratio <= GEOMETRY_FACTOR.lowRatio) return 1;
+  if (ratio >= GEOMETRY_FACTOR.highRatio) return GEOMETRY_FACTOR.max;
+  return (
+    1 +
+    (GEOMETRY_FACTOR.max - 1) *
+      ((ratio - GEOMETRY_FACTOR.lowRatio) /
+        (GEOMETRY_FACTOR.highRatio - GEOMETRY_FACTOR.lowRatio))
+  );
+}
 
 function emptyEstimate(layers: number): PrintTimeEstimate {
   return {
@@ -112,6 +186,7 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const {
     volumeCm3,
     dimensions,
+    surfaceAreaMm2,
     materialVolumeCm3,
     layerHeightMm = DEFAULT_SETTINGS.layerHeightMm,
     lineWidthMm = DEFAULT_SETTINGS.lineWidthMm,
@@ -119,6 +194,10 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     travelSpeedMmPerS = DEFAULT_SETTINGS.travelSpeedMmPerS,
     travelRatio = DEFAULT_SETTINGS.travelRatio,
     material = DEFAULT_FILAMENT_FAMILY,
+    filamentDiameterMm = DEFAULT_FILAMENT_DIAMETER_MM,
+    // D-EA4: override manual do MVS (slice fdmFilament). Ausente/inválido =
+    // tabela do material (byte-identical ao pré-D-EA4).
+    maxVolumetricSpeedMm3PerS,
   } = params;
 
   // Geometria inválida → zeros explícitos, nunca NaN. (Camadas ainda são
@@ -137,7 +216,8 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
     !(layerHeightMm > 0) ||
     !(lineWidthMm > 0) ||
     !(printSpeedMmPerS > 0) ||
-    !(travelSpeedMmPerS > 0)
+    !(travelSpeedMmPerS > 0) ||
+    !(filamentDiameterMm > 0)
   ) {
     // The slicer anchor wins even on invalid geometry (advanced):
     // without anchor, explicit zeros as before — never NaN.
@@ -161,8 +241,9 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   }
 
   // Comprimento de filamento CONSUMIDO (só para relatório).
-  // Volume = π * r² * comprimento
-  const filamentRadiusMm = 1.75 / 2;
+  // Volume = π * r² * comprimento — o diâmetro vem da store (D-EA2), não é
+  // mais um literal 1.75 inline.
+  const filamentRadiusMm = filamentDiameterMm / 2;
   const volumeMm3 = effectiveVolumeCm3 * 1000;
   const filamentLengthMm =
     volumeMm3 / (Math.PI * filamentRadiusMm * filamentRadiusMm);
@@ -175,7 +256,12 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   // Clamp MVS: Q = seção × velocidade não passa do teto do material.
   // Sem isso, 300 mm/s em PLA (Q ≈ 25 mm³/s, teto 15) promete um tempo que o
   // hotend nunca entrega. O clamp troca a velocidade pedida pela máxima física.
-  const maxVolumetricSpeed = maxVolumetricSpeedFor(material);
+  // D-EA4: o teto aceita override manual (high-flow); sem override válido,
+  // cai na tabela do material — byte-identical ao pré-D-EA4.
+  const maxVolumetricSpeed = maxVolumetricSpeedFor(
+    material,
+    maxVolumetricSpeedMm3PerS,
+  );
   const nominalFlowMm3PerS = extrusionCrossSectionMm2 * printSpeedMmPerS;
   const effectiveSpeedMmPerS =
     nominalFlowMm3PerS > maxVolumetricSpeed
@@ -197,11 +283,18 @@ export function estimatePrintTime(params: PrintTimeParams): PrintTimeEstimate {
   const printTimeSeconds = printDistanceMm / effectiveSpeedMmPerS;
   const travelTimeSeconds = travelDistanceMm / travelSpeedMmPerS;
 
+  // D-EA3: fator de geometria (SA/V) bornceado e clampado no termo de
+  // movimento (extrusão + travel) — corrige a subestimação sistemática de
+  // peças pequenas/detalhadas sem modelar accel/jerk (§7). O overhead de
+  // troca de camada é somado DEPOIS: ele já é um proxy flat do mesmo efeito.
+  // A âncora G-code (modo avançado) não é tocada — ela sobrescreve o resultado.
+  const geometryFactor = geometryTimeFactor(surfaceAreaMm2, volumeCm3);
+  const motionSeconds = (printTimeSeconds + travelTimeSeconds) * geometryFactor;
+
   // Add layer change overhead (~2 seconds per layer)
   const layerChangeSeconds = layers * LAYER_CHANGE_SECONDS;
 
-  const totalSeconds =
-    printTimeSeconds + travelTimeSeconds + layerChangeSeconds;
+  const totalSeconds = motionSeconds + layerChangeSeconds;
   const estimatedMinutes = Math.round(totalSeconds / 60);
   const estimatedHours = Math.round((estimatedMinutes / 60) * 10) / 10;
 
@@ -283,6 +376,11 @@ export interface FilamentTimeOptions {
   travelRatio?: number;
   /** Filament family for the MVS ceiling (default PLA). */
   material?: FilamentFamily | string;
+  /**
+   * Manual MVS override in mm³/s (D-EA4, slice `fdmFilament`). Wins over the
+   * material table when finite and > 0; absent/invalid = table (byte-identical).
+   */
+  maxVolumetricSpeedMm3PerS?: number;
 }
 
 /**
@@ -303,13 +401,15 @@ export function estimatePrintTimeFromFilamentMm(
     return undefined;
   }
   const {
-    filamentDiameterMm = 1.75,
+    filamentDiameterMm = DEFAULT_FILAMENT_DIAMETER_MM,
     layerHeightMm = DEFAULT_SETTINGS.layerHeightMm,
     lineWidthMm = DEFAULT_SETTINGS.lineWidthMm,
     printSpeedMmPerS = DEFAULT_SETTINGS.printSpeedMmPerS,
     travelSpeedMmPerS = DEFAULT_SETTINGS.travelSpeedMmPerS,
     travelRatio = DEFAULT_SETTINGS.travelRatio,
     material = DEFAULT_FILAMENT_FAMILY,
+    // D-EA4: mesmo override do clamp de `estimatePrintTime` (high-flow).
+    maxVolumetricSpeedMm3PerS,
   } = options;
   if (
     !(filamentDiameterMm > 0) ||
@@ -325,7 +425,11 @@ export function estimatePrintTimeFromFilamentMm(
   const crossSectionMm2 = layerHeightMm * lineWidthMm;
   // Same MVS clamp as estimatePrintTime: nominal flow never exceeds the
   // material ceiling, so the fallback cannot promise an impossible time.
-  const maxVolumetricSpeed = maxVolumetricSpeedFor(material);
+  // D-EA4: override (high-flow) vence a tabela; ausente = tabela.
+  const maxVolumetricSpeed = maxVolumetricSpeedFor(
+    material,
+    maxVolumetricSpeedMm3PerS,
+  );
   const nominalFlowMm3PerS = crossSectionMm2 * printSpeedMmPerS;
   const effectiveSpeedMmPerS =
     nominalFlowMm3PerS > maxVolumetricSpeed

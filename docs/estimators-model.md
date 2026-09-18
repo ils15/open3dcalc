@@ -4,13 +4,14 @@
 
 > Estimativas para precificação (rough ±30%, viés seguro p/ cima); único dado de verdade é o fatiador (G-code). Não usar como garantia de tempo/material.
 > Nomenclatura: modos `Padrão`/`Personalizada`; valor ancorado no G-code usa o badge `Preciso (G-code)`.
+>
 > - `Padrão`: cálculo instantâneo pelos parâmetros do perfil (aprox. ±30%).
 > - `Personalizada`: ajuste fino — fator k por material + G-code real como âncora.
-> Status: vigente a partir do PR #73 (branch `pr-73-hardening`).
-> Escopo: `src/shared/lib/stlParser.ts` (`estimateMaterialVolumeCm3`,
-> `estimateWeight`), `src/shared/lib/printTimeEstimator.ts`
-> (`estimatePrintTime`), `src/shared/lib/filamentProfiles.ts`, único
-> consumidor `StlPreview.tsx`.
+>   Status: vigente a partir do PR #73 (branch `pr-73-hardening`).
+>   Escopo: `src/shared/lib/stlParser.ts` (`estimateMaterialVolumeCm3`,
+>   `estimateWeight`), `src/shared/lib/printTimeEstimator.ts`
+>   (`estimatePrintTime`), `src/shared/lib/filamentProfiles.ts`, único
+>   consumidor `StlPreview.tsx`.
 
 ## 1. Fórmula canônica
 
@@ -87,6 +88,75 @@ volume **pré-correção do #72**. Após o merge do #72, re-medir o mesmo projet
 e atualizar os testes/§2 se os números deslocarem. Os testes atuais ancoram
 o _comportamento_ (saturação no volume), não a medição exata, de propósito.
 
+## 7. Fator empírico de geometria no tempo (D-EA3)
+
+O tempo de §3 assume **velocidade constante**: não modela accel/jerk. Peças
+pequenas/detalhadas têm muitas mudanças de direção e um travel
+proporcionalmente maior, de modo que o modelo as **subestima de forma
+sistemática** — a causa residual dominante de divergência após a fiação do
+perfil do slicer (D-EA1).
+
+**Decisão YAGNI:** a física de accel/jerk completa é deliberadamente diferida
+(decisão registrada no plano do deepwork `estimation-accuracy`, fase D-EA3).
+A aceleração real depende de firmware, junction deviation e do próprio
+caminho do slicer — variáveis que uma estimativa pré-slice não tem. Em vez
+disso, aplica-se um **fator bornceado e clampado** derivado da razão
+**superfície/volume** (SA/V), que é o proxy mais barato de nível de detalhe:
+
+```
+SA/V = surfaceAreaMm2 / (volumeCm3 × 1000)     # mm⁻¹
+
+fator = 1                                         se SA/V ≤ 0,2
+      = 1,3                                       se SA/V ≥ 1,0
+      = 1 + 0,3 × (SA/V − 0,2) / 0,8             caso contrário (rampa linear)
+```
+
+Constantes em `GEOMETRY_FACTOR` (`printTimeEstimator.ts`); curva implementada
+por `geometryTimeFactor(surfaceAreaMm2, volumeCm3)`.
+
+| Geometria       | SA/V (mm⁻¹) | Fator | Efeito            |
+| --------------- | ----------- | ----- | ----------------- |
+| Cubo 100 mm     | 0,06        | 1,00  | inalterado        |
+| Cilindro Ø20×20 | 0,30        | 1,04  | +3,3% (movimento) |
+| Cubo 10 mm      | 0,60        | 1,15  | +15% (movimento)  |
+| Cubo 3 mm       | 2,00        | 1,30  | clamp             |
+
+**Aplicação e bornceamento.** O fator multiplica **só o termo de movimento**
+(extrusão + travel); o overhead de troca de camada (+2 s/camada) já é um proxy
+flat do mesmo efeito e é somado intacto — o bornceamento dilui o fator no
+total (cubo de 10 mm: fator 1,15 no movimento → +10,3% no total), mantendo o
+resultado **dentro do envelope ±30%** em todos os casos (o clamp de 1,3 é o
+próprio teto do envelope). A **âncora G-code** (modo `advanced`) não é
+afetada: ela sobrescreve o resultado no final, e dado de verdade do slicer não
+se mistura com fator de estimativa.
+
+**Por que o clamp existe.** Sem ele, uma miniatura de 1 mm receberia fator
+absurdo (SA/V = 6) e violaria a política de produto (±30%, viés seguro para
+cima — §5). O clamp de 1,3 é calibrado no pior caso: peça minúscula/detalhada
+nunca custa mais que 30% acima do estimado.
+
+**Backward-compat e robustez.** `surfaceAreaMm2` ausente, `NaN`, ≤ 0 ou
+volume inválido → fator neutro 1,0 e a estimativa é **byte-identical** à
+versão sem geometria (calls existentes não quebram; zeros explícitos, nunca
+NaN). Não há novo parâmetro de store — o fator é derivado puro da forma, sem
+knob do usuário (YAGNI; a calibração proporcional continua com `calibrationK`,
+§8, que por design não achata viés que varia com a geometria).
+
+**Fiação (contrato).** `surfaceAreaMm2` vem do `MeshAnalysis.surfaceArea` já
+calculado por `analyzeMeshFile` (mm², mesma origem do `volumeCm3`) — o
+chamador (`StlPreview`) o passa exatamente como já faz para
+`estimateWeight`/`estimateMaterialVolumeCm3`:
+
+```ts
+const timeEstimate = estimatePrintTime({
+  volumeCm3,
+  materialVolumeCm3,
+  dimensions: analysis.dimensions,
+  surfaceAreaMm2: analysis.surfaceArea, // D-EA3 — fator de geometria
+  // ...perfil do slicer (D-EA1) e âncora (modo avançado) conforme aplicável
+});
+```
+
 ## 8. Calibração k — só viés proporcional sistemático
 
 `calibrationK` (modo `advanced`) corrige SÓ viés proporcional sistemático —
@@ -106,14 +176,38 @@ k NÃO corrige viés geométrico (ver comentário em `calibrationK`,
 (+13% no cubo de 10 mm vs +0,4% no de 100 mm) e nenhum k único achata essa
 curva — isso se corrige na fórmula, não no fator.
 
-## 9. Follow-up — fiação wall/lineWidth na store do Calculator (NÃO FEITO)
+## 9. Perfil do slicer na store do Calculator — DONE (D-EA1)
 
-`wallCount`/`lineWidthMm` hoje vivem só nos defaults do estimador
-(`VOLUME_DEFAULTS`); a store do Calculator (`calculatorStore.types.ts`) não
-tem esses campos — só `infillPercent`. Ligar o perfil de impressão da UI aos
-estimadores exige adicionar `wallCount`/`lineWidthMm` (e, por coerência,
-`topLayers`/`bottomLayers`/`layerHeightMm`) à store, fora do escopo deste PR.
-Até lá, `StlPreview` segue com os defaults documentados no §2.
+`wallCount`/`lineWidthMm`/`topLayers`/`bottomLayers`/`layerHeightMm`/
+`printSpeedMmPerS` agora vivem no slice persistido `fdmSlicerProfile`
+(`calculatorStore.types.ts`) e são passados pelo `MaterialSection` ao
+`StlPreview`, que os encaminha a `estimateWeight`/`estimateMaterialVolumeCm3`/
+`estimatePrintTime`. O estimador deixou de rodar cegamente em
+`VOLUME_DEFAULTS` — esses defaults permanecem apenas como fallback guardado
+para entrada ausente/NaN/inválida (GA-1).
+
+Migration-safe: estado persistido em localStorage sem o campo cai no
+default-on-missing (nunca quebra estado existente); NaN/Infinity/fora-de-domínio
+são descartados em `sanitizeFdmSlicerProfile` antes de chegar ao cálculo.
+
+O byte-identical backward-compat é garantido por teste: perfil default ==
+saída legada sem perfil, no mesmo mesh. O `material` (família) também passou a
+ser wired — o lookup em `FILAMENT_PROFILES` é **case-insensitive** (D-EA4: o
+nome vem de fonte externa — loja/fabricante — `"PLA"`/`"PlA"` matcheiam
+`"pla"`; a normalização toca só a chave de lookup, nunca o que o usuário
+persistiu); família desconhecida cai no teto MVS seguro.
+
+O slice `fdmFilament` (D-EA2) completou a remoção de literais físicos do path:
+`purgePercent` (era `10` hardcoded em `StlPreview`) e `filamentDiameterMm` (era
+`1.75` inline em `gcodeTotals`/`printTimeEstimator`) agora são store-driven,
+com os mesmos sanitize/resolve/migration. D-EA4 adicionou ao mesmo slice o
+**override manual do MVS**, `maxVolumetricSpeedMm3PerS` (mm³/s): ausente ou
+inválido = tabela do material (byte-identical ao pré-D-EA4 — é deliberadamente
+`undefined` no default, pois um número fixo quebraria a byte-identicality por
+material: PLA 15, PETG 12, TPU 5); um valor finito e > 0 vence a tabela no
+clamp de `estimatePrintTime` — high-flow (volcano/CHT) dobra o MVS de uma boca
+stock. Toggle de modo e UI de input são D-EA5; a store não persiste nada além
+da preferência local (LGPD).
 
 ## 10. G-code E paths can diverge (documented, no behavior change)
 
