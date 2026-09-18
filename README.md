@@ -51,6 +51,19 @@ O Open3DCalc é **local-first**: seus dados vivem no seu dispositivo e nada é e
 
 ---
 
+## 🎯 Estimativa de precisão
+
+O motor de estimativa agora vai além do volume da malha — ele considera a configuração real da sua impressão e do seu filamento para calcular tempo, peso e custo.
+
+- **Perfil de fatiamento configurável** (modo avançado): altura de camada, diâmetro do bico, velocidade e demais parâmetros de fatiamento agora alimentam a estimativa de tempo e material.
+- **Calibração de filamento** (modo avançado): porcentagem de purge, diâmetro do filamento e velocidade volumétrica máxima (MVS) — com override para filamentos high-flow. A correspondência de perfis de filamento é _case-insensitive_.
+- **Fator geométrico:** peças pequenas ou com muitos detalhes recebem um ajuste no tempo estimado (limitado a ±30%), pois exigem mais movimentos por unidade de volume.
+- **Transparência total:** o painel **"premissas usadas"** mostra exatamente quais valores o estimador consumiu — sem caixa-preta.
+- **Geometria via G-code:** quando o slicer não fornece metadata, as dimensões são extraídas dos movimentos do G-code; o perfil de fatiamento é auto-preenchido a partir do G-code **sem sobrescrever** sua customização.
+- **Validação de malha:** aviso **não-bloqueante** quando a malha pode estar subestimando o volume (winding inconsistente, bordas abertas, geometria não-manifold ou triângulos degenerados). Malhas com mais de 1 milhão de triângulos usam validação parcial para não travar a interface.
+
+---
+
 ## 🏗️ Project Structure
 
 ```
@@ -127,11 +140,11 @@ open3dcalc/
 
 O preview 3D (`StlPreview`) aceita arrastar/soltar ou selecionar via explorador de arquivos:
 
-| Formato | Extensão               | Notas                                                                                                                                                                                                                                                     |
-| ------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| STL     | `.stl`                 | binário e ASCII                                                                                                                                                                                                                                           |
-| OBJ     | `.obj`                 | Wavefront                                                                                                                                                                                                                                                 |
-| 3MF     | `.3mf`                 | XML 3D Manufacturing                                                                                                                                                                                                                                      |
+| Formato | Extensão               | Notas                                                                                                                                                                                                                                                                                                         |
+| ------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| STL     | `.stl`                 | binário e ASCII                                                                                                                                                                                                                                                                                               |
+| OBJ     | `.obj`                 | Wavefront                                                                                                                                                                                                                                                                                                     |
+| 3MF     | `.3mf`                 | XML 3D Manufacturing                                                                                                                                                                                                                                                                                          |
 | GCODE   | `.gcode`, `.gco`, `.g` | Cura (`;TIME:` em segundos) + PrusaSlicer/OrcaSlicer (`; estimated printing time = 1h 23m 45s`, suporta `d/h/m/s` combinados) — se o header de tempo não existir o arquivo ainda abre (tempo = `—`) e exibe dimensões/peso estimados pelo total de extrusão `E`, incluindo resets `G92` e modo relativo `M83` |
 
 > **Troubleshooting GCODE (issue #32):** se o tempo aparecer como `—`, seu slicer não incluiu header de tempo ou usa formato não reconhecido — o arquivo continua sendo aceito (sem gate silencioso). Após carregar um GCODE a drop zone permanece visível e o botão 🗑️ (`stl.clear`) limpa o estado para novo upload sem dead-end.
