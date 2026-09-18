@@ -28,6 +28,11 @@
     "diagnostic:retention": "node scripts/diagnostic-retention.mjs"
   },
   "dependencies": {
+    "@chestnutlabs/gcode-dialects": "0.20.1",
+    "@chestnutlabs/gcode-model-renderer": "0.20.1",
+    "@chestnutlabs/gcode-parser": "0.20.1",
+    "@chestnutlabs/gcode-preview-react": "0.20.1",
+    "@chestnutlabs/toolpath-core": "0.20.1",
     "@floating-ui/react": "^0.27.20",
     "@react-pdf/renderer": "^4.9.0",
     "@react-three/drei": "^10.7.8",
@@ -44,7 +49,7 @@
     "react-dom": "^19.2.8",
     "react-i18next": "^17.0.12",
     "recharts": "^3.10.1",
-    "three": "^0.185.1",
+    "three": "0.185.1",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -86,6 +91,18 @@
     "vite": "^8.2.2",
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "^5.0.0"
+  },
+  "overrides": {
+    "three": "0.185.1",
+    "@chestnutlabs/gcode-preview-react": {
+      "three": "0.185.1"
+    },
+    "@chestnutlabs/gcode-model-renderer": {
+      "three": "0.185.1"
+    },
+    "@chestnutlabs/gcode-renderer-three": {
+      "three": "0.185.1"
+    }
   },
   "build": {
     "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
