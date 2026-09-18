@@ -42,8 +42,11 @@ vi.mock("three/examples/jsm/loaders/STLLoader", () => ({ STLLoader: vi.fn() }));
 vi.mock("three/examples/jsm/loaders/OBJLoader", () => ({ OBJLoader: vi.fn() }));
 
 // Mock the STL parser so STL drops can be tested without real parsing
-const { mockAnalyzeMeshFile } = vi.hoisted(() => ({
+const { mockAnalyzeMeshFile, mockEstimateTriangles } = vi.hoisted(() => ({
   mockAnalyzeMeshFile: vi.fn(),
+  // Default `undefined` keeps the guard inert (undefined > limit is false),
+  // so existing drops still reach the mocked analyzeMeshFile.
+  mockEstimateTriangles: vi.fn(),
 }));
 
 vi.mock("@/shared/lib/stlParser", async (importOriginal) => {
@@ -52,6 +55,7 @@ vi.mock("@/shared/lib/stlParser", async (importOriginal) => {
   return {
     ...actual,
     analyzeMeshFile: mockAnalyzeMeshFile,
+    estimateTriangleCount: mockEstimateTriangles,
   };
 });
 
@@ -788,6 +792,95 @@ describe("StlPreview", () => {
 
       await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
       expect(screen.getByText("stl.meshWarning.partial")).toBeInTheDocument();
+    });
+  });
+
+  describe("complexity guard — reject before the expensive parse", () => {
+    const stlFile = () =>
+      new File([new Uint8Array(84)], "mesh.stl", { type: "model/stl" });
+
+    const baseAnalysis = {
+      triangleCount: 12,
+      vertexCount: 36,
+      dimensions: { x: 10, y: 10, z: 10 },
+      volume: 1000,
+      surfaceArea: 600,
+      boundingBox: {
+        min: { x: 0, y: 0, z: 0 },
+        max: { x: 10, y: 10, z: 10 },
+      },
+      integrity: { valid: true, issues: [] },
+    };
+
+    it("refuses an over-complex STL without ever parsing it", async () => {
+      const onFileParsed = vi.fn();
+      // 3M triangles declared in the 84-byte header — rejected in O(1).
+      mockEstimateTriangles.mockResolvedValue(3_000_000);
+      mockAnalyzeMeshFile.mockResolvedValue({
+        geometry: createMockGeometry(),
+        analysis: baseAnalysis,
+      });
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      // The analysis never runs: the whole point is skipping it.
+      await waitFor(() =>
+        expect(screen.getByRole("alert")).toHaveTextContent("stl.tooComplex"),
+      );
+      expect(mockAnalyzeMeshFile).not.toHaveBeenCalled();
+      expect(onFileParsed).not.toHaveBeenCalled();
+    });
+
+    it("proceeds to the parse when the estimate is under the limit", async () => {
+      const onFileParsed = vi.fn();
+      mockEstimateTriangles.mockResolvedValue(100);
+      mockAnalyzeMeshFile.mockResolvedValue({
+        geometry: createMockGeometry(),
+        analysis: baseAnalysis,
+      });
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      expect(mockAnalyzeMeshFile).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("falls back to the post-analysis guard when no estimate exists", async () => {
+      // OBJ/3MF: estimateTriangleCount devolve null e o fluxo segue igual.
+      const onFileParsed = vi.fn();
+      mockEstimateTriangles.mockResolvedValue(null);
+      mockAnalyzeMeshFile.mockResolvedValue({
+        geometry: createMockGeometry(),
+        analysis: baseAnalysis,
+      });
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      expect(mockAnalyzeMeshFile).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("static preview render budget", () => {
+    it("renders on demand with a capped dpr (no continuous 4K repaints)", () => {
+      render(
+        <StlPreview
+          initialGeometry={createMockGeometry()}
+          onFileParsed={mockOnFileParsed}
+        />,
+      );
+      const canvas = screen.getByTestId("r3f-canvas");
+      // A stationary model must not spin the render loop; the pixel budget is
+      // capped instead of defaulting to [1,2] on retina panels.
+      expect(canvas).toHaveAttribute("data-frameloop", "demand");
+      expect(canvas).toHaveAttribute("data-dpr", "[1,1.5]");
     });
   });
 });

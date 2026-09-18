@@ -274,6 +274,52 @@ function analyzeGeometry(
   return analysis;
 }
 
+/**
+ * Hard cap on triangles the preview accepts. Above it, the mesh analysis
+ * (normals, volume, area, topology) costs seconds of frozen UI for a model
+ * the user can't preview anyway, so the file is refused instead.
+ */
+export const MAX_PREVIEW_TRIANGLES = 2_000_000;
+
+/**
+ * Cheap triangle-count estimate taken BEFORE the expensive parse, so
+ * over-complex meshes are refused without any normals/volume/topology work.
+ *
+ * - Binary STL: the count is an exact uint32 LE sitting at offset 80 of the
+ *   80-byte header — 84 bytes are enough. A valid binary STL is exactly
+ *   `84 + n * 50` bytes; that size check is also the binary/ASCII
+ *   discriminator, since binary headers frequently contain the word "solid"
+ *   (a plain prefix check is NOT reliable).
+ * - ASCII STL: one scan counting `facet` lines (one per triangle).
+ *
+ * Returns `null` when no trustworthy count exists before parsing — OBJ and
+ * 3MF (compressed; the count is only visible after the ZIP + XML walk) and
+ * G-code keep the post-analysis guard in the caller. On a size-mismatched or
+ * otherwise unparseable STL it also returns null, falling back to the same
+ * guard, so behaviour never regresses.
+ */
+export async function estimateTriangleCount(
+  file: File,
+): Promise<number | null> {
+  const ext = file.name.split(".").pop()?.toLowerCase();
+  if (ext !== "stl") return null;
+
+  // Binary header: 80 bytes of comment + the exact triangle count.
+  const header = new Uint8Array(await file.slice(0, 84).arrayBuffer());
+  if (header.byteLength >= 84) {
+    const declared = new DataView(header.buffer).getUint32(80, true);
+    if (declared > 0 && 84 + declared * 50 === file.size) return declared;
+  }
+
+  // ASCII: count `facet` lines in a single lazy scan — no match array is
+  // materialised for a multi-million facet file.
+  const text = await file.text();
+  const facetRe = /^facet\b/gm;
+  let facets = 0;
+  while (facetRe.exec(text) !== null) facets++;
+  return facets > 0 ? facets : null;
+}
+
 export async function analyzeMeshFile(
   file: File,
   options: ParseOptions = {},

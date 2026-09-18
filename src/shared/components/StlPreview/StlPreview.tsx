@@ -457,7 +457,24 @@ export function StlPreview({
             volumeToCm3,
             estimateWeight,
             estimateMaterialVolumeCm3,
+            estimateTriangleCount,
+            MAX_PREVIEW_TRIANGLES,
           } = await import("@/shared/lib/stlParser");
+          // Guard de complexidade ANTES do trabalho pesado: um STL binário
+          // expõe a contagem exata nos 84 bytes do header, então uma malha de
+          // 5M triângulos é recusada em O(1) em vez de só depois de normais,
+          // volume, área e topologia. OBJ/3MF não têm contagem barata
+          // pré-parse (estimateTriangleCount devolve null) e continuam no
+          // guard pós-análise abaixo — mesma mensagem, mesma UX.
+          const estimatedTriangles = await estimateTriangleCount(file);
+          if (
+            estimatedTriangles !== null &&
+            estimatedTriangles > MAX_PREVIEW_TRIANGLES
+          ) {
+            showError(t("stl.tooComplex"));
+            setParsing(false);
+            return;
+          }
           const { geometry: parsedGeometry, analysis } = await analyzeMeshFile(
             file,
             {
@@ -466,7 +483,7 @@ export function StlPreview({
               supportDensity: 0.15,
             },
           );
-          if (analysis.triangleCount > 2_000_000) {
+          if (analysis.triangleCount > MAX_PREVIEW_TRIANGLES) {
             showError(t("stl.tooComplex"));
             setParsing(false);
             return;
