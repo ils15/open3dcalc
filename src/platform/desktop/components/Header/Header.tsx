@@ -18,6 +18,7 @@ import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
 import { ThemeToggle } from "@/shared/components/Header/ThemeToggle";
 import { useUpdaterStore } from "../UpdateNotification/UpdaterStore";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
+import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -84,9 +85,7 @@ export function Header() {
               <span className="text-[17px] sm:text-[19px] font-black tracking-tight gradient-text">
                 {t("app.title")}
               </span>
-              <span className="badge badge-indigo hidden sm:inline-flex">
-                Beta
-              </span>
+              <BetaBadge />
             </div>
             <p className="text-[11px] sm:text-[12px] text-[var(--color-text-muted)] uppercase tracking-widest mt-0.5 hidden sm:block">
               {t("app.subtitle")}

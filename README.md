@@ -287,9 +287,10 @@ npm run db:migrate
 
 Optional environment variables:
 
-| Variable             | Purpose                                |
-| -------------------- | -------------------------------------- |
-| `OPEN3DCALC_DB_PATH` | Custom path to SQLite file (tests/CLI) |
+| Variable             | Values           | Purpose                                | Default |
+| -------------------- | ---------------- | -------------------------------------- | ------- |
+| `OPEN3DCALC_DB_PATH` | path string      | Custom path to SQLite file (tests/CLI) | —       |
+| `VITE_BETA_CHANNEL`  | `true` / `false` | Selo visual de beta no app web         | `false` |
 
 ---
 
@@ -297,11 +298,63 @@ Optional environment variables:
 
 ### Web — GitHub Pages
 
-O deploy da web é **automático** via GitHub Actions (`ci-cd.yml`) em todo push na branch `main`:
+O deploy da web é **automático** via GitHub Actions (`ci-cd.yml`) a cada **tag estável** imutável (`vX.Y.Z`):
 
-1. CI roda lint, typecheck, testes e build
-2. Web build é publicado em **https://ils15.github.io/open3dcalc/**
-3. O arquivo `404.html` é gerado para roteamento SPA
+1. CI roda lint, typecheck, testes e build na tag
+2. O web build é publicado na **branch `gh-pages`** (raiz) via `peaceiris/actions-gh-pages`
+3. Os arquivos `404.html` e `index.html` são gerados para roteamento SPA
+
+> A branch `gh-pages` é **branch-based** (não artifact-based) justamente para que o canal beta possa viver no subpath `/beta/` sem clobberar a raiz estável. Veja a mudança da fonte do Pages em [Canal Beta](#canal-beta-web) abaixo.
+
+### Canal Beta (web)
+
+O canal beta publica builds **web-only** (Electron nunca é buildado) num subpath isolado do GitHub Pages, permitindo validar mudanças antes de promover a estável.
+
+|                | Estável                                   | Beta                                       |
+| -------------- | ----------------------------------------- | ------------------------------------------ |
+| URL            | `https://ils15.github.io/open3dcalc/`     | `https://ils15.github.io/open3dcalc/beta/` |
+| Versão         | `vX.Y.Z`                                  | `vX.Y.Z-beta.N`                            |
+| Origem         | tag estáável (`ci-cd.yml`)                | tag beta (`beta-deploy.yml`)               |
+| Build          | web + desktop                             | **web-only**                               |
+| Changelog      | `CHANGELOG.md` + GitHub Release           | somente no corpo da GitHub Release         |
+
+**Cortando uma beta**
+
+1. Vá em _Actions → Beta channel → Run workflow_
+2. O workflow (`beta.yml`):
+   - Calcula a próxima versão (_auto_: próximo minor da versão atual; ou a base informada no input)
+   - Bumpa `package.json`, faz commit e cria a **tag anotada imutável** `vX.Y.Z-beta.N`
+   - Empurra commit + tag com o PAT `BETA_RELEASE_TOKEN`
+3. A tag dispara o `beta-deploy.yml`, que:
+   - Builda a web com `VITE_BETA_CHANNEL=true` (selo visual de beta)
+   - Publica em `gh-pages/beta/` sem tocar na raiz estáável (`keep_files: true`)
+   - Cria (ou atualiza) a GitHub Release **prerelease** `Beta vX.Y.Z-beta.N`
+
+As tags beta são **imutáveis**: nunca reescreva ou delete uma tag já publicada — corte uma nova beta (`beta.N+1`) caso precise ajustar algo. O `beta-deploy.yml` é idempotente, então re-executá-lo na mesma tag apenas refresca a release.
+
+O changelog do beta existe **somente no corpo da GitHub Release** — `CHANGELOG.md` e o changelog in-app nunca carregam betas, pois o parser de `scripts/sync-changelog.mjs` colidiria em chaves como `1.13.0` vs `1.13.0-beta.1`.
+
+**Promover beta → estável**: o fluxo normal de release (`release.yml`) consolida **todos** os commits desde a última tag estável, então o changelog da release estável já inclui todo o período das betas. Veja [RELEASE.md](RELEASE.md).
+
+> 🔑 **`BETA_RELEASE_TOKEN` (obrigatório)**
+>
+> O GitHub **suprime** novas execuções de workflow causadas pelo `GITHUB_TOKEN` (anti-recursão). A tag beta **precisa** ser empurrada por um **Personal Access Token (classic)** com escopo `contents: write`; caso contrário a tag é criada, mas o `beta-deploy.yml` nunca dispara.
+>
+> Como configurar:
+> 1. _Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token_
+> 2. Escopo: **`repo`** (ou no mínimo `contents: write`); o selo `workflow` **não** é necessário
+> 3. _Settings → Secrets and variables → Actions → New repository secret_ → nome `BETA_RELEASE_TOKEN`, valor = token
+>
+> Tanto `beta.yml` quanto `beta-deploy.yml` fazem **fail-fast** logo no início se o secret estiver vazio, explicando o problema no log.
+
+**Mudança da fonte do Pages (cutover, uma vez)**
+
+Como o beta vive em `gh-pages/beta/` e a raiz de `gh-pages` é a estável, a fonte do GitHub Pages precisa mudar de _GitHub Actions_ para a **branch `gh-pages`**:
+
+1. Rode uma vez _Actions → **Seed gh-pages (one-off)** → Run workflow_ com o input `ref` apontando para `main` (ou a tag estável mais recente) — isso popula a raiz sem apagar `/beta/`
+2. _Settings → Pages → Build and deployment → Source: **Deploy from a branch**_
+3. Branch: **`gh-pages`** / pasta **`/ (root)`** → Save
+4. **Delete o arquivo `.github/workflows/seed-gh-pages.yml`** — ele existe apenas para o cutover
 
 ### Desktop — GitHub Releases
 
