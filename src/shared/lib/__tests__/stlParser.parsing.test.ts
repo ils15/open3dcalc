@@ -340,6 +340,8 @@ describe("analyzeMeshFile — guards de topologia (D-EA7)", () => {
     });
     // Contrato inalterado: o aviso NÃO toca na estimativa.
     expect(analysis.integrity.valid).toBe(true);
+    // GA-9: malha íntegra → issues permanece vazio (byte-identical).
+    expect(analysis.integrity.issues).toHaveLength(0);
     expect(analysis.volume).toBeCloseTo(1000, 6);
     expect(analysis.surfaceArea).toBeCloseTo(600, 6);
   });
@@ -350,6 +352,8 @@ describe("analyzeMeshFile — guards de topologia (D-EA7)", () => {
       file(asciiStl(open), "open-cube.stl"),
     );
     expect(analysis.meshValidation?.openEdges).toBe(4);
+    // GA-9 backfill: o sinal topológico também aparece em integrity.issues.
+    expect(analysis.integrity.issues).toEqual(["Open edges detected"]);
     // Não-bloqueador: o volume ainda é calculado (não é "corrigido").
     expect(analysis.volume).toBeGreaterThan(0);
   });
@@ -362,5 +366,9 @@ describe("analyzeMeshFile — guards de topologia (D-EA7)", () => {
       file(asciiStl(flipped), "flipped.stl"),
     );
     expect(analysis.meshValidation?.windingInconsistent).toBe(true);
+    // GA-9 backfill: winding espelhado em integrity.issues.
+    expect(analysis.integrity.issues).toEqual([
+      "Inconsistent face winding detected",
+    ]);
   });
 });

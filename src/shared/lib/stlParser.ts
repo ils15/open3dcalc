@@ -248,6 +248,22 @@ function analyzeGeometry(
     meshValidation: analyzeMeshTopology(geometry),
   };
 
+  // D-EA7 GA-9: espelha os achados topológicos em integrity.issues para que o
+  // sinal viva onde a letra do gate exige. Não-bloqueador — `valid` não é
+  // recomputado; malha íntegra não adiciona nada (byte-identical ao pré-D-EA7).
+  // `partial` pula: só a checagem O(1) rodou, os zeros não são garantia.
+  const topology = analysis.meshValidation;
+  if (topology && !topology.partial) {
+    if (topology.windingInconsistent)
+      analysis.integrity.issues.push("Inconsistent face winding detected");
+    if (topology.openEdges > 0)
+      analysis.integrity.issues.push("Open edges detected");
+    if (topology.nonManifoldEdges > 0)
+      analysis.integrity.issues.push("Non-manifold edges detected");
+    if (topology.degenerateTriangles > 0)
+      analysis.integrity.issues.push("Degenerate triangles detected");
+  }
+
   if (options.estimateSupport) {
     analysis.supportVolumeCm3 = +estimateSupportVolume(
       extractTriangles(geometry),
