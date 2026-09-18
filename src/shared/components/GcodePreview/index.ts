@@ -6,6 +6,8 @@ export {
   MAX_TOOLPATH_LINES,
 } from "./useOwnedBytes";
 export type { OwnedBytesStatus, UseOwnedBytesResult } from "./useOwnedBytes";
+export { useObjectDimensions } from "./useObjectDimensions";
+export type { DimensionsStatus, ChestnutBounds } from "./useObjectDimensions";
 
 /**
  * The only code-split boundary for the toolpath viewer.

@@ -94,6 +94,26 @@ const GCODE_STAGE_KEYS = [
   "ready",
 ] as const;
 
+/**
+ * D-CL6: keys the layer slider and object-dimensions chip emit via `t(...)`.
+ * Interpolated keys are checked with their placeholders resolved (the raw
+ * `{{current}}` form is not a usable string), and provenance is asserted on
+ * both locales so the honesty tooltip never regresses to a raw key.
+ */
+const GCODE_LAYER_KEYS = [
+  "layerSliderLabel",
+  "layerFull",
+  "objectDimensions",
+  "dimensionsObject",
+  "dimensionsExtrusion",
+  "dimensionsUnavailable",
+] as const;
+
+// `layerValue` is interpolated; verify the placeholder exists instead of the
+// literal string, so a locale that drops `{{current}}`/`{{total}}` fails here.
+const GCODE_LAYER_VALUE_KEY = "layerValue";
+const LAYER_VALUE_PLACEHOLDERS = ["{{current}}", "{{total}}"] as const;
+
 const STL_TOOLPATH_KEYS = ["previewToolpath", "previewToolpathHint"] as const;
 
 describe("i18n locales (gcodePreview.*) — D-CL5", () => {
@@ -110,6 +130,20 @@ describe("i18n locales (gcodePreview.*) — D-CL5", () => {
       const value = resolve(dict, ["gcodePreview", "stage", key]);
       expect(typeof value, `gcodePreview.stage.${key}`).toBe("string");
       expect((value as string).length).toBeGreaterThan(0);
+    }
+    // D-CL6: the layer slider / dimensions chip.
+    for (const key of GCODE_LAYER_KEYS) {
+      const value = resolve(dict, ["gcodePreview", key]);
+      expect(typeof value, `gcodePreview.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+    const layerValue = resolve(dict, ["gcodePreview", GCODE_LAYER_VALUE_KEY]);
+    expect(typeof layerValue, "gcodePreview.layerValue").toBe("string");
+    for (const placeholder of LAYER_VALUE_PLACEHOLDERS) {
+      expect(
+        layerValue as string,
+        `gcodePreview.layerValue must keep ${placeholder}`,
+      ).toContain(placeholder);
     }
     // The StlPreview entry point that opens the viewer.
     for (const key of STL_TOOLPATH_KEYS) {
