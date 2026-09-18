@@ -104,6 +104,9 @@ jobs:
         env:
           # Visual beta badge in the app; false on stable builds.
           VITE_BETA_CHANNEL: "true"
+          # Dogfood: the beta channel opts the 3D toolpath preview (D-CL5/D-CL6)
+          # in. Default is OFF in prod builds; see featureFlags.ts.
+          VITE_TOOLPATH_PREVIEW: "true"
 
       - name: SPA routing fallback
         # GitHub Pages serves index.html for directory requests; without it,
