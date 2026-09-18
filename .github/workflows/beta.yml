@@ -1,0 +1,142 @@
+---
+name: Beta channel
+
+# Tag-first beta automation. Computes the next beta version, commits it in
+# package.json, cuts an immutable annotated tag and pushes both to the beta
+# branch. The tag then triggers beta-deploy.yml, which builds and publishes the
+# web-only beta. Electron is never built for the beta channel.
+#
+# IMPORTANT: the tag push MUST use the BETA_RELEASE_TOKEN PAT, not the default
+# GITHUB_TOKEN. GitHub deliberately suppresses new workflow runs for events
+# caused by GITHUB_TOKEN (anti-recursion), so a GITHUB_TOKEN push would create
+# the tag but never trigger beta-deploy.yml. See the "Canal Beta" section of
+# README.md for how to create the token.
+#
+# Beta changelog lives ONLY in the GitHub Release body (beta-deploy.yml); this
+# workflow never touches CHANGELOG.md — the sync-changelog.mjs parser collides
+# on keys like "1.13.0" vs "1.13.0-beta.1".
+
+"on":
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >-
+          Base version for the beta, without the prerelease suffix
+          (e.g. "1.13.0" or "v1.13.0"). Leave empty for auto: the next minor
+          of the version in package.json.
+        required: false
+        type: string
+        default: ""
+
+concurrency:
+  group: beta-channel
+  cancel-in-progress: false
+
+jobs:
+  cut:
+    name: Cut beta tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Verify beta release token is configured
+        env:
+          BETA_TOKEN: ${{ secrets.BETA_RELEASE_TOKEN }}
+        run: |
+          if [ -z "$BETA_TOKEN" ]; then
+            echo "❌ Repository secret BETA_RELEASE_TOKEN is not configured." >&2
+            echo "   A personal access token with 'contents: write' is required:" >&2
+            echo "   pushing the tag with the default GITHUB_TOKEN would NOT" >&2
+            echo "   trigger beta-deploy.yml (GitHub suppresses recursive runs)." >&2
+            echo "   See README.md > Canal Beta." >&2
+            exit 1
+          fi
+
+      - name: Checkout beta branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/beta-channel
+          fetch-depth: 0
+          persist-credentials: true
+          # PAT, not GITHUB_TOKEN — the push must trigger beta-deploy.yml.
+          token: ${{ secrets.BETA_RELEASE_TOKEN }}
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+
+      - name: Compute next beta version
+        id: beta
+        shell: bash
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          # Base version: explicit input wins (tolerate a leading "v" and any
+          # prerelease suffix); otherwise derive from package.json — bump the
+          # minor when sitting on a stable, keep the base when already on a
+          # beta series (e.g. 1.13.0-beta.2 -> base 1.13.0).
+          if [ -n "$VERSION_INPUT" ]; then
+            BASE="${VERSION_INPUT#v}"
+            BASE="${BASE%%-*}"
+          else
+            BASE=$(node -e '
+              const pkg = require("./package.json");
+              const [maj, min, pat] = pkg.version.split("-")[0].split(".").map(Number);
+              const onBeta = /-beta\.\d+$/.test(pkg.version);
+              process.stdout.write(onBeta ? `${maj}.${min}.${pat}` : `${maj}.${min + 1}.0`);
+            ')
+          fi
+          # Next prerelease number: highest existing vX.Y.Z-beta.N + 1, or 1
+          # when the series is new. Numeric sort so beta.10 > beta.9.
+          LAST_N=$(git tag --list "v${BASE}-beta.*" \
+            | sed -n 's/^v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*-beta\.\([0-9][0-9]*\)$/\1/p' \
+            | sort -n \
+            | tail -1 \
+            || true)
+          N=$(( ${LAST_N:-0} + 1 ))
+          TAG="v${BASE}-beta.${N}"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Computed beta tag: $TAG (base $BASE, prerelease $N)"
+
+      - name: Bump version in package.json
+        shell: bash
+        env:
+          TAG: ${{ steps.beta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # node, not jq/sed: rewrite only the version value so the rest of the
+          # file keeps its exact formatting.
+          node -e '
+            const fs = require("fs");
+            const file = "package.json";
+            const version = process.env.TAG.replace(/^v/, "");
+            const raw = fs.readFileSync(file, "utf8");
+            const next = raw.replace(
+              /^(\s*"version":\s*")([^"]*)(",?)$/m,
+              `$1${version}$3`,
+            );
+            if (next === raw) {
+              console.error("Could not locate the version field in package.json");
+              process.exit(1);
+            }
+            fs.writeFileSync(file, next);
+          '
+          node -p "'package.json version is now ' + require('./package.json').version"
+
+      - name: Commit, tag and push
+        shell: bash
+        env:
+          TAG: ${{ steps.beta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Only package.json — never CHANGELOG.md and never the whole tree.
+          git add package.json
+          git commit --no-verify -m "chore(beta): $TAG"
+          git tag -a "$TAG" -m "Beta $TAG"
+          git push origin feat/beta-channel --follow-tags
+          echo "Cut and pushed $TAG"

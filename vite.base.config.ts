@@ -5,6 +5,13 @@ import path from "node:path";
 
 export default defineConfig({
   base: "./",
+  define: {
+    // Selo visual de beta no app; false em builds estáveis. O workflow
+    // beta-deploy.yml publica com VITE_BETA_CHANNEL=true.
+    "import.meta.env.VITE_BETA_CHANNEL": JSON.stringify(
+      process.env.VITE_BETA_CHANNEL === "true",
+    ),
+  },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

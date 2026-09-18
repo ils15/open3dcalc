@@ -4,6 +4,12 @@ name: CI/CD
 "on":
   push:
     branches: [main]
+    # Stable tags also run CI/CD so the tag-gated build-web job below can
+    # publish the stable Pages bundle from the immutable tag. Beta tags
+    # (vX.Y.Z-beta.N) are excluded: beta-deploy.yml publishes those to /beta/.
+    tags:
+      - "v*.*.*"
+      - "!v*-*"
   pull_request:
     branches: [main]
 
@@ -109,16 +115,21 @@ jobs:
 
   build-web:
     needs: [checks, test]
-    if: github.ref == 'refs/heads/main'
+    # Tag-gated: the stable Pages bundle is published from the immutable stable
+    # tag, not from main pushes. Beta tags (vX.Y.Z-beta.N) are excluded here —
+    # beta-deploy.yml publishes those under /beta/ instead.
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
-      contents: read
+      contents: write
       pages: write
-      id-token: write
+    # Shared with beta-deploy.yml and seed-gh-pages.yml: serializes every write
+    # to gh-pages so the stable root and the /beta/ subpath never clobber each
+    # other mid-deploy.
+    concurrency:
+      group: gh-pages-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
@@ -142,11 +153,17 @@ jobs:
         run: |
           cp -n dist-web/index.web.html dist-web/404.html 2>/dev/null || true
           cp -n dist-web/index.web.html dist-web/index.html 2>/dev/null || true
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      # Pages é branch-based (gh-pages) para suportar o subpath /beta/ sem
+      # clobberar o estável: a fonte do Pages deve apontar para a branch
+      # gh-pages (mudança manual única; ver README.md > Canal Beta). O
+      # destination_dir "." publica na raiz; keep_files preserva /beta/.
+      - name: Publish to gh-pages root
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
-          path: dist-web
-      - id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          destination_dir: .
+          keep_files: true
 
   build-desktop:
     needs: [checks, test]

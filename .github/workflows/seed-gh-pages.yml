@@ -1,0 +1,62 @@
+---
+name: Seed gh-pages (one-off)
+
+# ONE-OFF: populate the ROOT of the gh-pages branch with a stable build so that
+# switching the GitHub Pages source to the gh-pages branch does not 404 the
+# stable site while the /beta/ subpath already exists.
+#
+# Use once during the cutover (Actions → Seed gh-pages (one-off) → Run workflow,
+# with the stable ref to publish), then DELETE this file. Afterwards the root is
+# maintained by ci-cd.yml (build-web) on every stable tag.
+
+"on":
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref estável para popular a raiz de gh-pages (ex: main, vX.Y.Z)"
+        required: true
+        type: string
+        default: "main"
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    name: Seed gh-pages root with a stable build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - name: Checkout stable ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web (stable)
+        run: npm run build:web
+
+      - name: SPA routing fix
+        run: |
+          cp dist-web/index.web.html dist-web/404.html
+          cp dist-web/index.web.html dist-web/index.html
+
+      - name: Publish to gh-pages root
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          destination_dir: .
+          keep_files: true
