@@ -86,9 +86,14 @@ describe("StlPreview estimation modes", () => {
 
   async function loadMesh(onFileParsed: Mock<(data: FileParseResult) => void>) {
     render(<StlPreview onFileParsed={onFileParsed} />);
-    fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
-      dataTransfer: { files: [stlFile()] },
-    });
+    fireEvent.drop(
+      screen.getByRole("button", {
+        name: /^stl\.(dropzone|tapToSelect|dropActive|processing)$/,
+      }),
+      {
+        dataTransfer: { files: [stlFile()] },
+      },
+    );
     await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
     return onFileParsed.mock.calls[0][0];
   }

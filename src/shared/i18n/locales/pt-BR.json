@@ -573,7 +573,14 @@
       "badge": "estimativa pode não ser confiável"
     },
     "previewToolpath": "Pré-visualizar caminho de ferramenta",
-    "previewToolpathHint": "Ver o G-code em 3D (caminho de impressão)"
+    "previewToolpathHint": "Ver o G-code em 3D (caminho de impressão)",
+    "samples": {
+      "title": "Sem um arquivo? Teste com o exemplo",
+      "stl": "Benchy (STL)",
+      "gcode": "Benchy (G-code)",
+      "loading": "Baixando exemplo…",
+      "error": "Não foi possível baixar o exemplo. Verifique sua conexão e tente enviar seu próprio arquivo."
+    }
   },
   "common": {
     "save": "Salvar",

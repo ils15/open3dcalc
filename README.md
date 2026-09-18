@@ -313,6 +313,8 @@ O canal beta publica builds **web-only** (Electron nunca é buildado) num subpat
 
 > 🐕 **Dogfood:** a beta liga o **preview 3D do G-code** (D-CL5/D-CL6) via `VITE_TOOLPATH_PREVIEW=true` — a raiz estável mantém a feature **desligada** até ela amadurecer (padrão dev ON / prod OFF; veja a tabela de env vars acima).
 
+> 🧪 **Exemplos embutidos:** a beta traz o **3DBenchy** ([CreativeTools](https://www.3dbenchy.com/), domínio público / CC0 — livre pra redistribuir) na drop zone do visualizador. Dois botões baixam o exemplo sob demanda, sem precisar do seu próprio arquivo: **Benchy (STL)** dispara o pipeline de malha (volume + peso) e **Benchy (G-code)** dispara o preview de toolpath com o slider de camadas. Os binários vivem em `public/samples/` e a URL é resolvida relativa ao deploy (funciona na raiz e no subpath `/beta/`).
+
 |           | Estável                               | Beta                                       |
 | --------- | ------------------------------------- | ------------------------------------------ |
 | URL       | `https://ils15.github.io/open3dcalc/` | `https://ils15.github.io/open3dcalc/beta/` |

@@ -73,9 +73,14 @@ async function measure(
 ): Promise<FileParseResult> {
   const onFileParsed = vi.fn<(data: FileParseResult) => void>();
   const utils = render(<StlPreview onFileParsed={onFileParsed} {...props} />);
-  fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
-    dataTransfer: { files: [stlFile()] },
-  });
+  fireEvent.drop(
+    screen.getByRole("button", {
+      name: /^stl\.(dropzone|tapToSelect|dropActive|processing)$/,
+    }),
+    {
+      dataTransfer: { files: [stlFile()] },
+    },
+  );
   await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
   const result = onFileParsed.mock.calls[0][0];
   utils.unmount();

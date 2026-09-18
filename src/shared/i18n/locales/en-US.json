@@ -573,7 +573,14 @@
       "badge": "estimate may not be reliable"
     },
     "previewToolpath": "Preview toolpath",
-    "previewToolpathHint": "See the G-code in 3D (print path)"
+    "previewToolpathHint": "See the G-code in 3D (print path)",
+    "samples": {
+      "title": "No file? Try the sample",
+      "stl": "Benchy (STL)",
+      "gcode": "Benchy (G-code)",
+      "loading": "Downloading sample…",
+      "error": "Could not download the sample. Check your connection or upload your own file."
+    }
   },
   "common": {
     "save": "Save",
