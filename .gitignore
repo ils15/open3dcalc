@@ -52,6 +52,8 @@ yarn-debug.log*
 # Editor
 .vscode/
 .idea
+.zcode/
+test-models/
 .DS_Store
 *.sw?
 *.local
