@@ -353,14 +353,11 @@ O changelog do beta existe **somente no corpo da GitHub Release** — `CHANGELOG
 >
 > Tanto `beta.yml` quanto `beta-deploy.yml` fazem **fail-fast** logo no início se o secret estiver vazio, explicando o problema no log.
 
-**Mudança da fonte do Pages (cutover, uma vez)**
+**Mudança da fonte do Pages (cutover, já concluído)**
 
-Como o beta vive em `gh-pages/beta/` e a raiz de `gh-pages` é a estável, a fonte do GitHub Pages precisa mudar de _GitHub Actions_ para a **branch `gh-pages`**:
+Como o beta vive em `gh-pages/beta/` e a raiz de `gh-pages` é a estável, a fonte do GitHub Pages foi mudada de _GitHub Actions_ para a **branch `gh-pages`**: _Settings → Pages → Build and deployment → Source: **Deploy from a branch** → branch **`gh-pages`** / pasta **`/ (root)`_**.
 
-1. Rode uma vez _Actions → **Seed gh-pages (one-off)** → Run workflow_ com o input `ref` apontando para `main` (ou a tag estável mais recente) — isso popula a raiz sem apagar `/beta/`
-2. _Settings → Pages → Build and deployment → Source: **Deploy from a branch**_
-3. Branch: **`gh-pages`** / pasta **`/ (root)`** → Save
-4. **Delete o arquivo `.github/workflows/seed-gh-pages.yml`** — ele existe apenas para o cutover
+> ✅ **One-off concluído:** o workflow `.github/workflows/seed-gh-pages.yml` populou a raiz de `gh-pages` com um build estável durante o cutover (sem apagar `/beta/`, run `35358169749`) e foi **removido** na sequência — existia apenas para esse cutover pontual. Hoje a raiz é mantida pelo `ci-cd.yml` (build-web) a cada tag estável.
 
 ### Desktop — GitHub Releases
 

@@ -132,9 +132,8 @@ jobs:
       # pages: write scope of the retired deploy-pages job is unused here (the
       # Pages source is the gh-pages branch, not an Actions artifact).
       contents: write
-    # Shared with beta-deploy.yml and seed-gh-pages.yml: serializes every write
-    # to gh-pages so the stable root and the /beta/ subpath never clobber each
-    # other mid-deploy.
+    # Shared with beta-deploy.yml: serializes every write to gh-pages so the
+    # stable root and the /beta/ subpath never clobber each other mid-deploy.
     concurrency:
       group: gh-pages-deploy
       cancel-in-progress: false
