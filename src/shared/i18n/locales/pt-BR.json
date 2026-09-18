@@ -3,6 +3,10 @@
     "title": "Open3DCalc",
     "subtitle": "Calculadora 3D Livre & Open-Source"
   },
+  "betaBadge": {
+    "text": "Beta",
+    "ariaLabel": "Versão beta do aplicativo"
+  },
   "nav": {
     "calculator": "Calculadora",
     "catalog": "Cadastros",
