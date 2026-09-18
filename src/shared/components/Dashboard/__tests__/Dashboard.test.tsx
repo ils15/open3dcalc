@@ -464,4 +464,23 @@ describe("Dashboard KPIs and monthly projection (Fase 3)", () => {
       screen.queryByTestId("dashboard-projection"),
     ).not.toBeInTheDocument();
   });
+
+  it("flags loss-making history with the danger colour", () => {
+    // profit -40 on sellPrice 100 (totalCost 140)
+    mockEntries = [{ ...sampleEntries[0], profit: -40, totalCost: 140 }];
+    render(<Dashboard />);
+
+    const kpis = within(screen.getByTestId("dashboard-kpis"));
+    const totalProfit = kpis.getByText("R$ -40.00");
+    expect(totalProfit).toBeInTheDocument();
+    expect(totalProfit).toHaveClass("text-red-400");
+    // avgMargin = -40 / 100 = -40.0%
+    expect(kpis.getByText("-40.0%")).toBeInTheDocument();
+
+    // avgProfitPerPrint = -40; -40 * 30 = -1200.00
+    const card = within(screen.getByTestId("dashboard-projection"));
+    const projected = card.getByText("R$ -1200.00");
+    expect(projected).toBeInTheDocument();
+    expect(projected).toHaveClass("text-red-400");
+  });
 });
