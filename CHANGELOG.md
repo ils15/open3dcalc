@@ -1,5 +1,48 @@
 # Changelog
 
+## v1.13.0
+
+[compare changes](https://github.com/ils15/open3dcalc/compare/v1.12.0...v1.13.0)
+
+### 🚀 Enhancements
+
+- **fase2:** Model analysis — tech suggestion, comparison and layer preview ([#120](https://github.com/ils15/open3dcalc/pull/120))
+- **estimation:** Estimation accuracy deepwork — D-EA1..D-EA7 ([#133](https://github.com/ils15/open3dcalc/pull/133))
+- **deps:** Pin @chestnutlabs stack + three override (D-CL1) ([e916e39](https://github.com/ils15/open3dcalc/commit/e916e39))
+- **gcode:** Chestnutlabs adapter, pure and zero-React (D-CL2) ([d19edd7](https://github.com/ils15/open3dcalc/commit/d19edd7))
+- **beta:** Allow manual re-deploy of an existing beta tag ([#141](https://github.com/ils15/open3dcalc/pull/141))
+- **beta:** Enable toolpath preview in the beta channel ([#143](https://github.com/ils15/open3dcalc/pull/143))
+- **samples:** Embedded 3DBenchy sample loader for STL and G-code ([#144](https://github.com/ils15/open3dcalc/pull/144))
+- **release:** Enable toolpath preview in stable + remove seed-gh-pages one-off ([#145](https://github.com/ils15/open3dcalc/pull/145))
+
+### 🔥 Performance
+
+- **stl:** Reject over-complex meshes before full parse ([ae1364b](https://github.com/ils15/open3dcalc/commit/ae1364b))
+- **preview:** Demand frameloop and capped dpr on static model ([e5d1936](https://github.com/ils15/open3dcalc/commit/e5d1936))
+- **gcode:** Pre-map header comments instead of O(n²) find ([97b16ee](https://github.com/ils15/open3dcalc/commit/97b16ee))
+- **3mf:** Preallocate Float32Array for mesh positions ([97a1633](https://github.com/ils15/open3dcalc/commit/97a1633))
+
+### 🩹 Fixes
+
+- **3mf:** Prevent unhandled rejections in zip decompression error paths ([#132](https://github.com/ils15/open3dcalc/pull/132))
+- **calculator:** Display piece weight with one decimal (formatWeight) ([75c2c31](https://github.com/ils15/open3dcalc/commit/75c2c31))
+- **beta:** Release target must be commitish not tag name ([#140](https://github.com/ils15/open3dcalc/pull/140))
+- **release:** Consistent Open3DCalc release titles ([#142](https://github.com/ils15/open3dcalc/pull/142))
+
+### 🏡 Chore
+
+- **beta:** V1.13.0-beta.1 ([bb3bfc5](https://github.com/ils15/open3dcalc/commit/bb3bfc5))
+- **beta:** V1.13.0-beta.2 ([a0fb9db](https://github.com/ils15/open3dcalc/commit/a0fb9db))
+- **beta:** V1.13.0-beta.3 ([256e1a0](https://github.com/ils15/open3dcalc/commit/256e1a0))
+
+### ✅ Tests
+
+- **gcode:** Golden parity suite legacy vs chestnutlabs (D-CL3) ([c09f5f7](https://github.com/ils15/open3dcalc/commit/c09f5f7))
+
+### ❤️ Contributors
+
+- Ils15 ([@ils15](https://github.com/ils15))
+
 ## v1.12.0
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.11.0...v1.12.0)
