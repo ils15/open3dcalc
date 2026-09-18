@@ -1,0 +1,45 @@
+; Header-less Marlin output: no slicer metadata at all, so both engines fall
+; back to estimates — legacy to its filament-rate heuristic, chestnut to its
+; kinematic model. No ground truth exists, so time is a documented divergence.
+
+G90 ; absolute positioning
+M82 ; absolute extrusion
+G28 ; home
+G1 Z5 F6000 ; lift
+G1 X0 Y0 Z0.2 F6000
+
+;LAYER:0
+G1 X20 Y0 E5 F1200
+G1 X20 Y20 E10
+G1 X0 Y20 E15
+G1 X0 Y0 E20
+
+;LAYER:1
+G1 Z0.4 F6000
+G1 X20 Y0 E25 F1200
+G1 X20 Y20 E30
+G1 X0 Y20 E35
+G1 X0 Y0 E40
+
+;LAYER:2
+G1 Z0.6 F6000
+G1 X20 Y0 E45 F1200
+G1 X20 Y20 E50
+G1 X0 Y20 E55
+G1 X0 Y0 E60
+
+;LAYER:3
+G1 Z0.8 F6000
+G1 X20 Y0 E65 F1200
+G1 X20 Y20 E70
+G1 X0 Y20 E75
+G1 X0 Y0 E80
+
+;LAYER:4
+G1 Z1.0 F6000
+G1 X20 Y0 E85 F1200
+G1 X20 Y20 E90
+G1 X0 Y20 E95
+G1 X0 Y0 E100
+
+M84 ; disable motors
