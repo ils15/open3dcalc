@@ -66,3 +66,56 @@ describe("i18n locales (stl.meshWarning.*) — D-EA7", () => {
     }
   });
 });
+
+/**
+ * D-CL5: keys the 3D toolpath viewer emits via `t(...)`. A missing key renders
+ * the raw key in the loading overlay / toolbar / alerts — a regression users
+ * see directly. The staged-progress labels are nested under `stage.*`, one per
+ * `ToolpathStage`.
+ */
+const GCODE_PREVIEW_KEYS = [
+  "containerLabel",
+  "emptyTitle",
+  "emptyDescription",
+  "close",
+  "fit",
+  "parseError",
+  "readFailed",
+  "tooLarge",
+  "tooManyLines",
+] as const;
+
+const GCODE_STAGE_KEYS = [
+  "reading",
+  "parsing",
+  "classifying",
+  "building-geometry",
+  "preparing-gpu",
+  "ready",
+] as const;
+
+const STL_TOOLPATH_KEYS = ["previewToolpath", "previewToolpathHint"] as const;
+
+describe("i18n locales (gcodePreview.*) — D-CL5", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every gcodePreview.* key in %s", (_locale, dict) => {
+    for (const key of GCODE_PREVIEW_KEYS) {
+      const value = resolve(dict, ["gcodePreview", key]);
+      expect(typeof value, `gcodePreview.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+    for (const key of GCODE_STAGE_KEYS) {
+      const value = resolve(dict, ["gcodePreview", "stage", key]);
+      expect(typeof value, `gcodePreview.stage.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+    // The StlPreview entry point that opens the viewer.
+    for (const key of STL_TOOLPATH_KEYS) {
+      const value = resolve(dict, ["stl", key]);
+      expect(typeof value, `stl.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+});

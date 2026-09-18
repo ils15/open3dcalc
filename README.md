@@ -287,10 +287,11 @@ npm run db:migrate
 
 Optional environment variables:
 
-| Variable             | Values           | Purpose                                | Default |
-| -------------------- | ---------------- | -------------------------------------- | ------- |
-| `OPEN3DCALC_DB_PATH` | path string      | Custom path to SQLite file (tests/CLI) | —       |
-| `VITE_BETA_CHANNEL`  | `true` / `false` | Selo visual de beta no app web         | `false` |
+| Variable                | Values           | Purpose                                                  | Default                    |
+| ----------------------- | ---------------- | -------------------------------------------------------- | -------------------------- |
+| `OPEN3DCALC_DB_PATH`    | path string      | Custom path to SQLite file (tests/CLI)                   | —                          |
+| `VITE_TOOLPATH_PREVIEW` | `true` / `false` | Enable the 3D G-code toolpath preview (dev ON, prod OFF) | dev: `true`, prod: `false` |
+| `VITE_BETA_CHANNEL`     | `true` / `false` | Selo visual de beta no app web                           | `false`                    |
 
 ---
 
@@ -310,13 +311,13 @@ O deploy da web é **automático** via GitHub Actions (`ci-cd.yml`) a cada **tag
 
 O canal beta publica builds **web-only** (Electron nunca é buildado) num subpath isolado do GitHub Pages, permitindo validar mudanças antes de promover a estável.
 
-|                | Estável                                   | Beta                                       |
-| -------------- | ----------------------------------------- | ------------------------------------------ |
-| URL            | `https://ils15.github.io/open3dcalc/`     | `https://ils15.github.io/open3dcalc/beta/` |
-| Versão         | `vX.Y.Z`                                  | `vX.Y.Z-beta.N`                            |
-| Origem         | tag estáável (`ci-cd.yml`)                | tag beta (`beta-deploy.yml`)               |
-| Build          | web + desktop                             | **web-only**                               |
-| Changelog      | `CHANGELOG.md` + GitHub Release           | somente no corpo da GitHub Release         |
+|           | Estável                               | Beta                                       |
+| --------- | ------------------------------------- | ------------------------------------------ |
+| URL       | `https://ils15.github.io/open3dcalc/` | `https://ils15.github.io/open3dcalc/beta/` |
+| Versão    | `vX.Y.Z`                              | `vX.Y.Z-beta.N`                            |
+| Origem    | tag estáável (`ci-cd.yml`)            | tag beta (`beta-deploy.yml`)               |
+| Build     | web + desktop                         | **web-only**                               |
+| Changelog | `CHANGELOG.md` + GitHub Release       | somente no corpo da GitHub Release         |
 
 **Cortando uma beta**
 
@@ -341,6 +342,7 @@ O changelog do beta existe **somente no corpo da GitHub Release** — `CHANGELOG
 > O GitHub **suprime** novas execuções de workflow causadas pelo `GITHUB_TOKEN` (anti-recursão). A tag beta **precisa** ser empurrada por um **Personal Access Token (classic)** com escopo `contents: write`; caso contrário a tag é criada, mas o `beta-deploy.yml` nunca dispara.
 >
 > Como configurar:
+>
 > 1. _Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token_
 > 2. Escopo: **`repo`** (ou no mínimo `contents: write`); o selo `workflow` **não** é necessário
 > 3. _Settings → Secrets and variables → Actions → New repository secret_ → nome `BETA_RELEASE_TOKEN`, valor = token

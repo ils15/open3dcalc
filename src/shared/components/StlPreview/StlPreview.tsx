@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Canvas } from "@react-three/fiber";
@@ -12,6 +19,7 @@ import {
   Trash2,
   Crosshair,
   Layers,
+  FileCode2,
 } from "lucide-react";
 import * as THREE from "three";
 import type { BufferGeometry } from "three";
@@ -56,6 +64,11 @@ import {
 import { AssumptionsPanel } from "./AssumptionsPanel";
 import { MeshWarning } from "./MeshWarning";
 import { isMeshSuspicious } from "@/shared/lib/meshValidation";
+// D-CL5: lazy toolpath viewer. The whole chestnut stack stays out of the main
+// route bundle — the chunk loads only when the user opens the preview, and only
+// when the feature flag is on (see src/shared/config/featureFlags.ts).
+import { LazyGcodePreviewPanel } from "@/shared/components/GcodePreview";
+import { isToolpathPreviewEnabled } from "@/shared/config/featureFlags";
 
 interface StlPreviewProps {
   onFileParsed?: (data: FileParseResult) => void;
@@ -332,6 +345,11 @@ export function StlPreview({
   const [calibrationK, setCalibrationK] = useState(1);
   const [gcodeAnchor, setGcodeAnchor] = useState<GcodeAnchor | null>(null);
   const [baseTimeMinutes, setBaseTimeMinutes] = useState<number | null>(null);
+  // D-CL5: the toolpath viewer. `gcodeFile` holds the last parsed G-code (the
+  // button is gated on it + the feature flag); `showToolpath` opens the overlay.
+  const [gcodeFile, setGcodeFile] = useState<File | null>(null);
+  const [showToolpath, setShowToolpath] = useState(false);
+  const toolpathEnabled = useMemo(() => isToolpathPreviewEnabled(), []);
   const lastEmittedRef = useRef<{ weight: number; hours: number } | null>(null);
   const isTouchDevice = useMemo(
     () =>
@@ -345,13 +363,16 @@ export function StlPreview({
 
   // Close the fullscreen overlay with the Escape key
   useEffect(() => {
-    if (!isFullscreen) return;
+    if (!isFullscreen && !showToolpath) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsFullscreen(false);
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+        setShowToolpath(false);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isFullscreen]);
+  }, [isFullscreen, showToolpath]);
 
   const handleClear = useCallback(() => {
     setGeometry(null);
@@ -363,6 +384,8 @@ export function StlPreview({
     setCalibrationK(1);
     setGcodeAnchor(null);
     setBaseTimeMinutes(null);
+    setGcodeFile(null);
+    setShowToolpath(false);
     lastEmittedRef.current = null;
     onClear?.();
   }, [onClear]);
@@ -397,6 +420,10 @@ export function StlPreview({
 
       setParsing(true);
       setError(null);
+      // D-CL5: remember the G-code so the toolpath-preview button can open the
+      // lazy viewer on it. Mesh files clear it (button is gcode-only).
+      setGcodeFile(ext === "gcode" ? file : null);
+      setShowToolpath(false);
 
       try {
         if (ext === "gcode") {
@@ -800,6 +827,36 @@ export function StlPreview({
           document.body,
         )}
 
+      {/* D-CL5: toolpath viewer overlay (portal). Separate from the mesh
+          fullscreen portal above — a G-code has no R3F geometry, so this one
+          hosts the lazy chestnut viewer instead. Suspense keeps the chunk
+          download out of the main bundle; the fallback shows while it loads. */}
+      {showToolpath &&
+        gcodeFile &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] bg-black/90 p-3 sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("gcodePreview.containerLabel")}
+          >
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="w-6 h-6 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+                </div>
+              }
+            >
+              <LazyGcodePreviewPanel
+                file={gcodeFile}
+                onClose={() => setShowToolpath(false)}
+              />
+            </Suspense>
+          </div>,
+          document.body,
+        )}
+
       {/* Model Info Panel */}
       {modelInfo && (
         <div className="space-y-2">
@@ -932,6 +989,22 @@ export function StlPreview({
             t={t}
             onSwitchToCustom={() => setEstimationMode("advanced")}
           />
+          {/* D-CL5: G-code has no mesh, so the R3F canvas never mounts for it —
+              this button is the ONLY 3D preview for a G-code. It opens the lazy
+              chestnut viewer in the fullscreen overlay below. Gated on the flag:
+              an OFF build renders nothing and never downloads the chunk. */}
+          {gcodeFile && toolpathEnabled && (
+            <button
+              type="button"
+              onClick={() => setShowToolpath(true)}
+              className="min-h-[44px] w-full px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)]/15 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25 transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+              aria-label={t("stl.previewToolpath")}
+              title={t("stl.previewToolpathHint")}
+            >
+              <FileCode2 className="w-4 h-4" />
+              {t("stl.previewToolpath")}
+            </button>
+          )}
         </div>
       )}
 
