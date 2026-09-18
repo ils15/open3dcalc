@@ -104,22 +104,23 @@ jobs:
         env:
           # Visual beta badge in the app; false on stable builds.
           VITE_BETA_CHANNEL: "true"
-          # Dogfood: the beta channel opts the 3D toolpath preview (D-CL5/D-CL6)
-          # in. Default is OFF in prod builds; see featureFlags.ts.
+          # 3D toolpath preview (D-CL5/D-CL6) — ON by default for everyone now
+          # (see featureFlags.ts); kept explicit here to record the beta channel
+          # as its dogfood vehicle (v1.13.0-beta.1..3).
           VITE_TOOLPATH_PREVIEW: "true"
 
       - name: SPA routing fallback
         # GitHub Pages serves index.html for directory requests; without it,
         # /open3dcalc/beta/ would fall through to the root 404.html (the stable
         # shell, whose /assets/ do not exist under /beta/). Mirror the pattern
-        # used by ci-cd.yml and seed-gh-pages.yml.
+        # used by ci-cd.yml.
         run: |
           cp dist-web/index.web.html dist-web/404.html
           cp dist-web/index.web.html dist-web/index.html
 
       # keep_files: true so the stable root of gh-pages is never clobbered.
       # The shared gh-pages-deploy concurrency group serializes this with the
-      # stable publish in ci-cd.yml and with seed-gh-pages.yml.
+      # stable publish in ci-cd.yml.
       - name: Publish to gh-pages /beta/
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:

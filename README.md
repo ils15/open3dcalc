@@ -287,11 +287,11 @@ npm run db:migrate
 
 Optional environment variables:
 
-| Variable                | Values           | Purpose                                                  | Default                    |
-| ----------------------- | ---------------- | -------------------------------------------------------- | -------------------------- |
-| `OPEN3DCALC_DB_PATH`    | path string      | Custom path to SQLite file (tests/CLI)                   | —                          |
-| `VITE_TOOLPATH_PREVIEW` | `true` / `false` | Enable the 3D G-code toolpath preview (dev ON, prod OFF) | dev: `true`, prod: `false` |
-| `VITE_BETA_CHANNEL`     | `true` / `false` | Selo visual de beta no app web                           | `false`                    |
+| Variable                | Values           | Purpose                                | Default                                                        |
+| ----------------------- | ---------------- | -------------------------------------- | -------------------------------------------------------------- |
+| `OPEN3DCALC_DB_PATH`    | path string      | Custom path to SQLite file (tests/CLI) | —                                                              |
+| `VITE_TOOLPATH_PREVIEW` | `true` / `false` | Enable the 3D G-code toolpath preview  | `true` (validated in the beta channel; set `false` to disable) |
+| `VITE_BETA_CHANNEL`     | `true` / `false` | Selo visual de beta no app web         | `false`                                                        |
 
 ---
 
@@ -311,7 +311,7 @@ O deploy da web é **automático** via GitHub Actions (`ci-cd.yml`) a cada **tag
 
 O canal beta publica builds **web-only** (Electron nunca é buildado) num subpath isolado do GitHub Pages, permitindo validar mudanças antes de promover a estável.
 
-> 🐕 **Dogfood:** a beta liga o **preview 3D do G-code** (D-CL5/D-CL6) via `VITE_TOOLPATH_PREVIEW=true` — a raiz estável mantém a feature **desligada** até ela amadurecer (padrão dev ON / prod OFF; veja a tabela de env vars acima).
+> 🐕 **Dogfood:** o **preview 3D do G-code** (D-CL5/D-CL6) foi dogfoodado no canal beta (`v1.13.0-beta.1..3`, 3 betas / 1933 testes / paridade do oráculo legado validada) e aprovado para a release estável — agora está **ligado por padrão em todos os builds** (`VITE_TOOLPATH_PREVIEW=false` ainda desliga; veja a tabela de env vars acima). O canal beta segue como o canal de dogfood das próximas novidades.
 
 > 🧪 **Exemplos embutidos:** a beta traz o **3DBenchy** ([CreativeTools](https://www.3dbenchy.com/), domínio público / CC0 — livre pra redistribuir) na drop zone do visualizador. Dois botões baixam o exemplo sob demanda, sem precisar do seu próprio arquivo: **Benchy (STL)** dispara o pipeline de malha (volume + peso) e **Benchy (G-code)** dispara o preview de toolpath com o slider de camadas. Os binários vivem em `public/samples/` e a URL é resolvida relativa ao deploy (funciona na raiz e no subpath `/beta/`).
 
@@ -353,14 +353,11 @@ O changelog do beta existe **somente no corpo da GitHub Release** — `CHANGELOG
 >
 > Tanto `beta.yml` quanto `beta-deploy.yml` fazem **fail-fast** logo no início se o secret estiver vazio, explicando o problema no log.
 
-**Mudança da fonte do Pages (cutover, uma vez)**
+**Mudança da fonte do Pages (cutover, já concluído)**
 
-Como o beta vive em `gh-pages/beta/` e a raiz de `gh-pages` é a estável, a fonte do GitHub Pages precisa mudar de _GitHub Actions_ para a **branch `gh-pages`**:
+Como o beta vive em `gh-pages/beta/` e a raiz de `gh-pages` é a estável, a fonte do GitHub Pages foi mudada de _GitHub Actions_ para a **branch `gh-pages`**: _Settings → Pages → Build and deployment → Source: **Deploy from a branch** → branch **`gh-pages`** / pasta **`/ (root)`_**.
 
-1. Rode uma vez _Actions → **Seed gh-pages (one-off)** → Run workflow_ com o input `ref` apontando para `main` (ou a tag estável mais recente) — isso popula a raiz sem apagar `/beta/`
-2. _Settings → Pages → Build and deployment → Source: **Deploy from a branch**_
-3. Branch: **`gh-pages`** / pasta **`/ (root)`** → Save
-4. **Delete o arquivo `.github/workflows/seed-gh-pages.yml`** — ele existe apenas para o cutover
+> ✅ **One-off concluído:** o workflow `.github/workflows/seed-gh-pages.yml` populou a raiz de `gh-pages` com um build estável durante o cutover (sem apagar `/beta/`, run `35358169749`) e foi **removido** na sequência — existia apenas para esse cutover pontual. Hoje a raiz é mantida pelo `ci-cd.yml` (build-web) a cada tag estável.
 
 ### Desktop — GitHub Releases
 
