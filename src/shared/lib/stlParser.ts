@@ -8,7 +8,7 @@ import {
   resolveWeightAnchor,
   type EstimateOptions,
 } from "@/shared/types/estimation";
-
+import { analyzeMeshTopology, type MeshValidation } from "./meshValidation";
 export interface MeshAnalysis {
   triangleCount: number;
   vertexCount: number;
@@ -20,6 +20,12 @@ export interface MeshAnalysis {
     max: { x: number; y: number; z: number };
   };
   integrity: { valid: boolean; issues: string[] };
+  /**
+   * Topology guards (D-EA7): winding/open/non-manifold/degenerate metrics.
+   * Optional so persisted results from before D-EA7 stay valid (widening).
+   * Detection only — the estimate is never blocked or "repaired".
+   */
+  meshValidation?: MeshValidation;
   /** Estimated support material volume in cm³. Only present when `estimateSupport` is enabled. */
   supportVolumeCm3?: number;
 }
@@ -237,6 +243,9 @@ function analyzeGeometry(
       },
     },
     integrity: validateMesh(geometry),
+    // D-EA7: guards de topologia — detecção NÃO-bloqueadora. Malha íntegra
+    // produz zeros/false (byte-identical ao pré-D-EA7); malha doente só avisa.
+    meshValidation: analyzeMeshTopology(geometry),
   };
 
   if (options.estimateSupport) {

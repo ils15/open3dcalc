@@ -557,6 +557,16 @@
       "slider": "Layer preview height",
       "full": "full part",
       "at": "up to {{z}} mm"
+    },
+    "meshWarning": {
+      "title": "Mesh integrity warning",
+      "open": "Mesh is not closed (holes detected)",
+      "winding": "Inconsistent face winding",
+      "nonManifold": "Non-manifold edges detected",
+      "degenerate": "Degenerate triangles detected",
+      "partial": "Mesh too large for full validation (partial)",
+      "tooltip": "The estimated volume may be underestimated for this mesh — the volume algorithm is only exact for closed, consistently-oriented meshes.",
+      "badge": "estimate may not be reliable"
     }
   },
   "common": {

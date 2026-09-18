@@ -557,6 +557,16 @@
       "slider": "Altura da camada em visualização",
       "full": "peça inteira",
       "at": "até {{z}} mm"
+    },
+    "meshWarning": {
+      "title": "Aviso de integridade da malha",
+      "open": "Malha não fechada (buracos detectados)",
+      "winding": "Orientação de faces inconsistente",
+      "nonManifold": "Arestas não-manifold detectadas",
+      "degenerate": "Triângulos degenerados detectados",
+      "partial": "Malha grande demais para validação completa (parcial)",
+      "tooltip": "O volume estimado pode estar subestimado para esta malha — o algoritmo de volume só é exato para malhas fechadas e com orientação consistente.",
+      "badge": "estimativa pode não ser confiável"
     }
   },
   "common": {

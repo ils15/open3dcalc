@@ -54,6 +54,8 @@ import {
   type DisplayEstimate,
 } from "./estimationDisplay";
 import { AssumptionsPanel } from "./AssumptionsPanel";
+import { MeshWarning } from "./MeshWarning";
+import { isMeshSuspicious } from "@/shared/lib/meshValidation";
 
 interface StlPreviewProps {
   onFileParsed?: (data: FileParseResult) => void;
@@ -798,6 +800,16 @@ export function StlPreview({
             fdmSlicerProfile={store.fdmSlicerProfile}
             onSlicerProfileFill={store.setFdmSlicerProfile}
           />
+          {/* D-EA7: guarda de malha — aviso âmbar NÃO-bloqueador. Malha íntegra
+              renders null (sem ruído); malha doente só sinaliza, sem alterar a
+              estimativa. */}
+          {modelInfo.analysis.meshValidation &&
+            isMeshSuspicious(modelInfo.analysis.meshValidation) && (
+              <MeshWarning
+                validation={modelInfo.analysis.meshValidation}
+                t={t}
+              />
+            )}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             {modelInfo.volumeCm3 > 0 && (
               <div className="surface rounded-lg p-2.5 text-center">

@@ -667,4 +667,127 @@ describe("StlPreview", () => {
       ).toBeChecked();
     });
   });
+
+  describe("D-EA7 — mesh integrity warning", () => {
+    const stlFile = () =>
+      new File([new Uint8Array(84)], "mesh.stl", {
+        type: "model/stl",
+      });
+
+    const baseAnalysis = {
+      triangleCount: 12,
+      vertexCount: 36,
+      dimensions: { x: 10, y: 10, z: 10 },
+      volume: 1000,
+      surfaceArea: 600,
+      boundingBox: {
+        min: { x: 0, y: 0, z: 0 },
+        max: { x: 10, y: 10, z: 10 },
+      },
+      integrity: { valid: true, issues: [] },
+    };
+
+    it("renders NO warning for a healthy mesh (byte-identical baseline)", async () => {
+      const onFileParsed = vi.fn();
+      mockAnalyzeMeshFile.mockResolvedValue({
+        geometry: createMockGeometry(),
+        analysis: {
+          ...baseAnalysis,
+          meshValidation: {
+            windingInconsistent: false,
+            nonManifoldEdges: 0,
+            openEdges: 0,
+            degenerateTriangles: 0,
+            partial: false,
+          },
+        },
+      });
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByText("stl.volume")).toBeInTheDocument();
+    });
+
+    it("renders the amber warning for an open mesh (openEdges > 0)", async () => {
+      const onFileParsed = vi.fn();
+      mockAnalyzeMeshFile.mockResolvedValue({
+        geometry: createMockGeometry(),
+        analysis: {
+          ...baseAnalysis,
+          meshValidation: {
+            windingInconsistent: false,
+            nonManifoldEdges: 0,
+            openEdges: 4,
+            degenerateTriangles: 0,
+            partial: false,
+          },
+        },
+      });
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      const alert = screen.getByRole("alert");
+      expect(alert).toBeInTheDocument();
+      expect(alert).toHaveAttribute("title", "stl.meshWarning.tooltip");
+      expect(screen.getByText("stl.meshWarning.open")).toBeInTheDocument();
+      // Non-blocking: the estimate is still rendered.
+      expect(screen.getByText("stl.volume")).toBeInTheDocument();
+      expect(onFileParsed).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders the warning for inconsistent winding", async () => {
+      const onFileParsed = vi.fn();
+      mockAnalyzeMeshFile.mockResolvedValue({
+        geometry: createMockGeometry(),
+        analysis: {
+          ...baseAnalysis,
+          meshValidation: {
+            windingInconsistent: true,
+            nonManifoldEdges: 0,
+            openEdges: 0,
+            degenerateTriangles: 0,
+            partial: false,
+          },
+        },
+      });
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      expect(screen.getByText("stl.meshWarning.winding")).toBeInTheDocument();
+    });
+
+    it("renders the partial-validation note for huge meshes", async () => {
+      const onFileParsed = vi.fn();
+      mockAnalyzeMeshFile.mockResolvedValue({
+        geometry: createMockGeometry(),
+        analysis: {
+          ...baseAnalysis,
+          meshValidation: {
+            windingInconsistent: false,
+            nonManifoldEdges: 0,
+            openEdges: 0,
+            degenerateTriangles: 0,
+            partial: true,
+          },
+        },
+      });
+      render(<StlPreview onFileParsed={onFileParsed} />);
+      fireEvent.drop(screen.getByRole("button", { name: /stl\./ }), {
+        dataTransfer: { files: [stlFile()], types: ["Files"] },
+      });
+
+      await waitFor(() => expect(onFileParsed).toHaveBeenCalledTimes(1));
+      expect(screen.getByText("stl.meshWarning.partial")).toBeInTheDocument();
+    });
+  });
 });

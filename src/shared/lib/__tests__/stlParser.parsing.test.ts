@@ -325,3 +325,42 @@ describe("analyzeMeshFile — formato suportado", () => {
     );
   });
 });
+
+describe("analyzeMeshFile — guards de topologia (D-EA7)", () => {
+  it("cubo íntegra: meshValidation limpo E valores byte-identical", async () => {
+    const { analysis } = await analyzeMeshFile(
+      file(asciiStl(CUBE_TRIANGLES), "cube.stl"),
+    );
+    expect(analysis.meshValidation).toEqual({
+      windingInconsistent: false,
+      nonManifoldEdges: 0,
+      openEdges: 0,
+      degenerateTriangles: 0,
+      partial: false,
+    });
+    // Contrato inalterado: o aviso NÃO toca na estimativa.
+    expect(analysis.integrity.valid).toBe(true);
+    expect(analysis.volume).toBeCloseTo(1000, 6);
+    expect(analysis.surfaceArea).toBeCloseTo(600, 6);
+  });
+
+  it("cubo aberto (face removida): openEdges > 0 sem alterar o volume", async () => {
+    const open = CUBE_TRIANGLES.filter((_, i) => !(i === 2 || i === 3));
+    const { analysis } = await analyzeMeshFile(
+      file(asciiStl(open), "open-cube.stl"),
+    );
+    expect(analysis.meshValidation?.openEdges).toBe(4);
+    // Não-bloqueador: o volume ainda é calculado (não é "corrigido").
+    expect(analysis.volume).toBeGreaterThan(0);
+  });
+
+  it("face invertida: windingInconsistent true", async () => {
+    const flipped = CUBE_TRIANGLES.map((tri, i) =>
+      i === 0 ? [tri[0], tri[2], tri[1]] : tri,
+    );
+    const { analysis } = await analyzeMeshFile(
+      file(asciiStl(flipped), "flipped.stl"),
+    );
+    expect(analysis.meshValidation?.windingInconsistent).toBe(true);
+  });
+});

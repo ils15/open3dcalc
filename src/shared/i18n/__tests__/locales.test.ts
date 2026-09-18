@@ -16,6 +16,21 @@ const STENCIL_COMPARE_KEYS = [
   "remove",
 ] as const;
 
+/**
+ * D-EA7: chaves que o aviso de integridade da malha emite via `t(...)`. Uma
+ * chave ausente faz a UI renderizar a chave crua — regressão visível.
+ */
+const MESH_WARNING_KEYS = [
+  "title",
+  "open",
+  "winding",
+  "nonManifold",
+  "degenerate",
+  "partial",
+  "tooltip",
+  "badge",
+] as const;
+
 function resolve(dict: unknown, path: string[]): unknown {
   let node: unknown = dict;
   for (const part of path) {
@@ -34,6 +49,19 @@ describe("i18n locales (stl.compare.*)", () => {
     for (const key of STENCIL_COMPARE_KEYS) {
       const value = resolve(dict, ["stl", "compare", key]);
       expect(typeof value, `stl.compare.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("i18n locales (stl.meshWarning.*) — D-EA7", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every stl.meshWarning.* key in %s", (_locale, dict) => {
+    for (const key of MESH_WARNING_KEYS) {
+      const value = resolve(dict, ["stl", "meshWarning", key]);
+      expect(typeof value, `stl.meshWarning.${key}`).toBe("string");
       expect((value as string).length).toBeGreaterThan(0);
     }
   });
