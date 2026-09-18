@@ -15,6 +15,7 @@ interface InputGroupProps {
   className?: string;
   error?: string | null;
   onBlur?: () => void;
+  onFocus?: () => void;
 }
 
 export function InputGroup({
@@ -30,6 +31,7 @@ export function InputGroup({
   className = "",
   error,
   onBlur,
+  onFocus,
 }: InputGroupProps) {
   const id = useId();
 
@@ -60,6 +62,7 @@ export function InputGroup({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
+          onFocus={onFocus}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
           placeholder={placeholder}

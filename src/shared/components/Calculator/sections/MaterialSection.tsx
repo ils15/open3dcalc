@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   FlaskConical,
   Layers,
@@ -18,6 +18,7 @@ import type { FileParseResult } from "@/shared/components/StlPreview/StlPreview"
 import { StlPreview } from "@/shared/components/StlPreview/StlPreview";
 import { SlicerProfileFields } from "./SlicerProfileFields";
 import { FilamentAssumptionsFields } from "./FilamentAssumptionsFields";
+import { formatWeight } from "@/shared/lib/format";
 
 export interface MaterialSectionProps {
   renderSectionHeader: (
@@ -54,6 +55,12 @@ export function MaterialSection({
   inventorySpools,
   catalogMaterials,
 }: MaterialSectionProps) {
+  // Weight field: store keeps full float precision (STL parse, math), display
+  // shows 1 decimal. While focused we keep the user's in-progress string so a
+  // raw "45." isn't clobbered by formatting; onBlur we drop back to formatted.
+  const [weightDraft, setWeightDraft] = useState<string | null>(null);
+  const weightValue = weightDraft ?? formatWeight(store.fdmMaterial.weightUsed);
+
   const handleStlParsed = useCallback(
     (data: FileParseResult) => {
       // Update print time
@@ -379,15 +386,20 @@ export function MaterialSection({
               </div>
               <InputGroup
                 label={t("calc.weight")}
-                value={store.fdmMaterial.weightUsed}
-                onChange={(v) =>
+                value={weightValue}
+                onChange={(v) => {
+                  setWeightDraft(v);
                   handleInput(v, (val) =>
                     store.setFdmMaterial({
                       ...store.fdmMaterial,
                       weightUsed: val,
                     }),
-                  )
+                  );
+                }}
+                onFocus={() =>
+                  setWeightDraft(formatWeight(store.fdmMaterial.weightUsed))
                 }
+                onBlur={() => setWeightDraft(null)}
                 type="number"
                 unit="g"
                 tooltip={t("tooltip.weightUsed")}
