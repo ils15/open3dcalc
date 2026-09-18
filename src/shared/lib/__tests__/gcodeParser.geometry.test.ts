@@ -106,6 +106,39 @@ describe("parseGcode (D-EA6 geometry + D-EA6b profile)", () => {
 
       expect(info.printSize).toEqual({ x: 30, y: 20, z: 0 });
     });
+
+    it("computes extents when ;MINX: appears after the other extent headers", () => {
+      // Header order is not guaranteed across slicers. The old per-hit
+      // `lines.find` scan looked at the WHOLE file, so MINX must not be read
+      // positionally — a same-pass-only mapping would miss the ahead-of-it
+      // MAXX and wrongly fall back to the bbox.
+      const gcode = [
+        ";MAXX:100",
+        ";MAXY:50",
+        ";MAXZ:10",
+        ";MINY:0",
+        ";MINZ:0",
+        ";MINX:0",
+        "G1 X10 Y10 Z0.2",
+      ].join("\n");
+
+      const info = parseGcode(gcode);
+
+      expect(info.printSize).toEqual({ x: 100, y: 50, z: 10 });
+    });
+
+    it("uses the last repeated ;MINX: value, keeping the original semantics", () => {
+      // The old code re-evaluated the extents at every ;MINX: hit, so the
+      // last occurrence wins for MINX while find() kept the FIRST MAXX.
+      const gcode = [";MINX:0", ";MAXX:100", ";MINX:40", "G1 X0 Y0 Z0.2"].join(
+        "\n",
+      );
+
+      const info = parseGcode(gcode);
+
+      // 100 - 40 (last MINX), not 100 - 0 (first MINX).
+      expect(info.printSize).toEqual({ x: 60, y: 0, z: 0 });
+    });
   });
 
   describe("D-EA6b slicer profile comments", () => {
