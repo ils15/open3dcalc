@@ -97,9 +97,19 @@ jobs:
             echo "reused=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # changelogen auto-escolhe a tag semver mais alta como início do diff
+          # — assim que betas existirem, essa seria uma beta tag (vX.Y.Z-beta.N)
+          # e o changelog estável ficaria truncado no pós-beta. --from fixa a
+          # última tag ESTÁVEL, consolidando todos os commits desde ela.
+          LAST_STABLE=$(git tag --list 'v*.*.*' --sort=-v:refname | grep -v '-' | head -1 || true)
+          if [ -n "$LAST_STABLE" ]; then
+            FROM_ARGS=(--from "$LAST_STABLE")
+          else
+            FROM_ARGS=()
+          fi
           case "$BUMP" in
-            auto) npm exec -- changelogen --bump ;;
-            patch|minor|major) npm exec -- changelogen --bump --"$BUMP" ;;
+            auto) npm exec -- changelogen --bump "${FROM_ARGS[@]}" ;;
+            patch|minor|major) npm exec -- changelogen --bump --"$BUMP" "${FROM_ARGS[@]}" ;;
             *) echo "Unsupported bump: $BUMP" >&2; exit 1 ;;
           esac
 

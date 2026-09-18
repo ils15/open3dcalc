@@ -64,6 +64,10 @@ vi.mock("../ThemeToggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle" />,
 }));
 
+vi.mock("@/shared/config/betaChannel", () => ({
+  isBetaChannel: true,
+}));
+
 describe("Header", () => {
   const user = userEvent.setup();
 
@@ -133,7 +137,7 @@ describe("Header", () => {
 
   it("renders beta badge", () => {
     render(<Header />);
-    expect(screen.getByText("Beta")).toBeInTheDocument();
+    expect(screen.getByText("betaBadge.text")).toBeInTheDocument();
   });
 
   it("renders tutorial button", () => {

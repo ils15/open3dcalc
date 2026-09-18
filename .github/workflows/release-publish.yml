@@ -5,6 +5,10 @@ name: Release publication
   push:
     tags:
       - "v*.*.*"
+      # Exclude prerelease/beta tags (vX.Y.Z-beta.N): those are served by
+      # beta-deploy.yml, which publishes a web-only build to /beta/. The
+      # "Resolve tag" job below additionally enforces a strict stable pattern.
+      - "!v*-*"
   workflow_dispatch:
     inputs:
       tag:
