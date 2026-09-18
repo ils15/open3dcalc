@@ -63,7 +63,21 @@
     "generatingPdf": "Gerando PDF…",
     "executiveReport": "Relatório Executivo",
     "kpiSummary": "Resumo de KPIs",
-    "periodLabel": "Período"
+    "periodLabel": "Período",
+    "kpis": {
+      "title": "KPIs do histórico (período filtrado)",
+      "totalProfit": "Lucro total (período)",
+      "avgCostPerPrint": "Custo médio por impressão",
+      "avgMargin": "Margem média",
+      "prints": "Impressões"
+    },
+    "projection": {
+      "title": "Projeção mensal (baseada no histórico)",
+      "description": "Projetada a partir do lucro médio por impressão do período filtrado.",
+      "inputLabel": "Peças por mês",
+      "partsMonth": "peças/mês",
+      "projectedProfit": "Lucro mensal projetado"
+    }
   },
   "sections": {
     "title": "Seções"
