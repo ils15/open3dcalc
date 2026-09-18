@@ -14,7 +14,7 @@ export function BetaBadge() {
     return null;
   }
 
-  // bg-amber-700 (#b45309) + text-white measures 11.65:1 — passes WCAG AA
+  // bg-amber-700 (#b45309) + text-white measures 5.02:1 — passes WCAG AA
   // even at this small (text-xs) size, where the 4.5:1 floor applies.
   return (
     <span
