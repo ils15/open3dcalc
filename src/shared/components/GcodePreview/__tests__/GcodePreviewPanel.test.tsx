@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
 import { readFileSync } from "node:fs";
@@ -37,15 +37,18 @@ const {
   mockControls,
   detachedBuffers,
   capturedSources,
+  capturedLayerRanges,
   simulateParseTransfer,
 } = vi.hoisted(() => ({
-  mockControls: { frame: vi.fn() },
+  mockControls: { frame: vi.fn(), setLayerRange: vi.fn() },
   // Tracks buffers the simulated parser already transferred.
   detachedBuffers: new WeakSet<ArrayBufferLike>(),
   // Every `source` handed to the viewer, so a test can prove it was always a
   // cloneable File and never a borrowed/detached view.
   capturedSources: [] as unknown[],
-
+  // Every `layerRange` prop handed to the viewer, so a test can prove slider
+  // motion reaches the engine's layer-clip API.
+  capturedLayerRanges: [] as ([number, number] | null | undefined)[],
   // Stand-in for `session.js: postMessage(msg, [input.buffer])`. A Uint8Array
   // detaches its buffer on the first parse and throws on any reuse; a File is a
   // cloneable handle, never in the transfer list, so it re-parses fresh forever.
@@ -66,6 +69,9 @@ const {
 
 interface MockGcodePreviewProps {
   source?: unknown;
+  // D-CL6: the engine's declarative layer clip; the component's own effect
+  // forwards this to `controls.setLayerRange`, which the mock mirrors.
+  layerRange?: [number, number] | null;
   onStage?: (e: { stage: string; progress?: number | null }) => void;
   onParseProgress?: (p: { bytesProcessed: number; totalBytes: number }) => void;
   onParseError?: (e: { code: string; message: string }) => void;
@@ -79,6 +85,7 @@ vi.mock("@chestnutlabs/gcode-preview-react", async () => {
     GcodePreview: forwardRef<GcodePreviewHandle | null, MockGcodePreviewProps>(
       function GcodePreview(props, ref) {
         capturedSources.push(props.source);
+        capturedLayerRanges.push(props.layerRange);
         useImperativeHandle(
           ref,
           () =>
@@ -86,6 +93,18 @@ vi.mock("@chestnutlabs/gcode-preview-react", async () => {
               controls: mockControls,
             }) as unknown as GcodePreviewHandle,
         );
+
+        useEffect(() => {
+          // Faithful mirror of the engine's own prop→control wiring
+          // (gcode-preview-component.js: layerRange effect → setLayerRange):
+          // null/undefined shows every layer, a tuple is inclusive [start, end].
+          const range = props.layerRange;
+          if (range === null || range === undefined) {
+            mockControls.setLayerRange(0, Number.POSITIVE_INFINITY);
+          } else {
+            mockControls.setLayerRange(range[0], range[1]);
+          }
+        }, [props.layerRange]);
 
         useEffect(() => {
           // The zero-copy contract. A no-op for File sources (the only kind the
@@ -105,9 +124,12 @@ vi.mock("@chestnutlabs/gcode-preview-react", async () => {
           // Drive the staged-progress contract so the loading overlay clears and
           // the toolbar becomes the topmost element (as in production).
           props.onStage?.({ stage: "ready", progress: 1 });
+          // The engine's onReady summary carries its Z-change layer count. The
+          // fixture really has 5 layers (verified against the adapter), so the
+          // mock reports the same number the real engine would.
           props.onReady?.({
-            segments: 1,
-            layers: 1,
+            segments: 24,
+            layers: 5,
             complete: true,
           });
         });
@@ -134,6 +156,7 @@ describe("GcodePreviewPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     capturedSources.length = 0;
+    capturedLayerRanges.length = 0;
   });
 
   it("renders the viewer canvas for a real G-code fixture", async () => {
@@ -308,5 +331,146 @@ describe("GcodePreviewPanel", () => {
     // Code-split: an OFF build or a user that never opens the viewer pays
     // nothing for the chestnut stack.
     expect(LazyGcodePreviewPanel.$$typeof).toBe(Symbol.for("react.lazy"));
+  });
+
+  // --- D-CL6: real layer slider + object dimensions -------------------------
+  //
+  // jsdom does not implement the browser's native arrow-key stepping on
+  // <input type="range"> (the value never moves on keydown), so the helper
+  // below synthesizes the translation a real browser performs: keydown →
+  // step → change. It proves the panel's wiring reaches the engine's clip API
+  // from a keyboard event; the stepping itself is the platform's guarantee
+  // (native range controls are keyboard-operable by the WAI-ARIA authoring
+  // practice), not something this app reimplements.
+  const stepSlider = async (
+    slider: HTMLElement,
+    key: "ArrowDown" | "ArrowUp" | "ArrowLeft" | "ArrowRight",
+  ): Promise<void> => {
+    const input = slider as HTMLInputElement;
+    const delta = key === "ArrowDown" || key === "ArrowLeft" ? -1 : 1;
+    fireEvent.keyDown(input, { key });
+    fireEvent.change(input, {
+      target: { value: String(Number(input.value) + delta) },
+    });
+  };
+
+  describe("layer slider", () => {
+    it("scales to the engine-reported layer count", async () => {
+      render(<GcodePreviewPanel file={fixtureFile()} />);
+
+      const slider = await screen.findByRole("slider", {
+        name: "gcodePreview.layerSliderLabel",
+      });
+      // The fixture's real Z-change layer count is 5 (verified via the
+      // adapter), so the engine's onReady reports layers=5 and the slider's
+      // scale is 0..4 — never 0..0 or an unbounded input.
+      expect(slider).toHaveAttribute("min", "0");
+      expect(slider).toHaveAttribute("max", "4");
+      expect(slider).toHaveAttribute("step", "1");
+    });
+
+    it("clips the toolpath through the engine's layer-range API", async () => {
+      render(<GcodePreviewPanel file={fixtureFile()} />);
+
+      const slider = await screen.findByRole("slider", {
+        name: "gcodePreview.layerSliderLabel",
+      });
+
+      // Initial settle: the panel defaults to the full build, so the engine is
+      // told the inclusive full range once the viewer mounts.
+      await waitFor(() =>
+        expect(mockControls.setLayerRange).toHaveBeenCalledWith(0, 4),
+      );
+
+      await stepSlider(slider, "ArrowLeft");
+
+      // Scrubbing one layer down must reach the engine's clip API as
+      // [0, 3] — a draw-range update, not a re-parse (no new source is read).
+      await waitFor(() =>
+        expect(mockControls.setLayerRange).toHaveBeenCalledWith(0, 3),
+      );
+      expect(capturedLayerRanges.at(-1)).toEqual([0, 3]);
+    });
+
+    it("announces the layer position for screen readers", async () => {
+      render(<GcodePreviewPanel file={fixtureFile()} />);
+
+      const slider = await screen.findByRole("slider", {
+        name: "gcodePreview.layerSliderLabel",
+      });
+      // aria-valuetext carries the human-readable "Layer N of M" (the raw key
+      // here — the suite runs without an i18n provider, like the other tests),
+      // so a screen reader announces position, not a bare index.
+      expect(slider).toHaveAttribute(
+        "aria-valuetext",
+        "gcodePreview.layerValue",
+      );
+      // The live region next to the label mirrors the same announcement.
+      expect(screen.getByText("gcodePreview.layerValue")).toBeInTheDocument();
+    });
+
+    it("is reachable by Tab and drivable by arrow keys", async () => {
+      const user = userEvent.setup();
+      render(<GcodePreviewPanel file={fixtureFile()} />);
+
+      const slider = await screen.findByRole("slider", {
+        name: "gcodePreview.layerSliderLabel",
+      });
+
+      // Keyboard reachability: Tab moves focus onto the control.
+      await user.tab();
+      expect(slider).toHaveFocus();
+
+      // Each arrow press moves exactly one layer and reaches the engine's
+      // clip API (the keydown→change sequence a browser performs natively;
+      // jsdom does not step range values on keydown itself).
+      mockControls.setLayerRange.mockClear();
+      await stepSlider(slider, "ArrowDown");
+      await waitFor(() =>
+        expect(mockControls.setLayerRange).toHaveBeenLastCalledWith(0, 3),
+      );
+      await stepSlider(slider, "ArrowDown");
+      await waitFor(() =>
+        expect(mockControls.setLayerRange).toHaveBeenLastCalledWith(0, 2),
+      );
+    });
+  });
+
+  describe("object dimensions", () => {
+    it("shows the fixture's real dimensions from the adapter pass", async () => {
+      render(<GcodePreviewPanel file={fixtureFile()} />);
+
+      // The parallel adapter pass resolves over the real spike-cube: modelBounds
+      // 20 × 20 × 0.6 mm (verified against parseGcodeChestnut). One decimal,
+      // matching the calculator's dimension formatting.
+      expect(
+        await screen.findByText("gcodePreview.objectDimensions"),
+      ).toBeInTheDocument();
+      const chip = screen.getByText("20.0 × 20.0 × 0.6 mm");
+      expect(chip).toBeInTheDocument();
+    });
+
+    it("renders an em-dash, never zeros, when bounds are unmeasurable", async () => {
+      // A G-code with no extrusion and no object labels: the adapter's
+      // normalizeBounds rejects the engine's ±Infinity sentinel as undefined,
+      // which the chip must show as `—` — not 0.0 × 0.0 × 0.0, not NaN.
+      const empty = new File(
+        ["G28 ; home\n", "M84 ; disable motors\n"],
+        "empty.gcode",
+        {
+          type: "text/plain",
+        },
+      );
+
+      render(<GcodePreviewPanel file={empty} />);
+
+      const chip = await screen.findByText("gcodePreview.objectDimensions: —");
+      expect(chip).toBeInTheDocument();
+      // The unmeasurable case carries an explanatory tooltip.
+      expect(chip.closest("[title]")).toHaveAttribute(
+        "title",
+        "gcodePreview.dimensionsUnavailable",
+      );
+    });
   });
 });

@@ -1,6 +1,13 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Crosshair, X, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Crosshair,
+  X,
+  AlertCircle,
+  Loader2,
+  Layers,
+  Ruler,
+} from "lucide-react";
 import { GcodePreview } from "@chestnutlabs/gcode-preview-react";
 import type { GcodePreviewHandle } from "@chestnutlabs/gcode-preview-react";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
@@ -10,6 +17,8 @@ import {
   MAX_TOOLPATH_BYTES,
   MAX_TOOLPATH_LINES,
 } from "./useOwnedBytes";
+import { useObjectDimensions } from "./useObjectDimensions";
+import type { ChestnutBounds, DimensionsStatus } from "./useObjectDimensions";
 
 /**
  * 3D G-code toolpath preview, backed by `@chestnutlabs/gcode-preview`.
@@ -70,7 +79,26 @@ export function GcodePreviewPanel({
   const [parseError, setParseError] = useState<string | null>(null);
   const [percent, setPercent] = useState<number | null>(null);
 
-  const { status } = useOwnedBytes(file);
+  // D-CL6: real layer count. `onReady` is the engine's own post-parse summary
+  // and carries `layers` (Z-change-detected), so the slider's scale costs no
+  // second parse — the IR already exists at that point.
+  const [layerCount, setLayerCount] = useState<number>(0);
+
+  // D-CL6: visible-layer clip. `null` = show every layer; a tuple is the
+  // engine's inclusive [start, end] range. Driven through the declarative
+  // `layerRange` prop, which the engine applies as a cheap draw-range update
+  // (its internal effect maps the prop to `controls.setLayerRange`, which
+  // never rebuilds geometry — only the rendered layer span).
+  const [layerRange, setLayerRange] = useState<[number, number] | null>(null);
+
+  const { status, bytes } = useOwnedBytes(file);
+
+  // D-CL6: object dimensions — a parallel adapter pass over the SAME owned
+  // bytes (never the calculation engine), extracted into `useObjectDimensions`
+  // so this panel keeps a single source of truth. The hook owns the framing
+  // precedence (modelBounds → objectBounds → bounds), the D-EA6 null-guard, and
+  // the stale-result discipline ("measuring" until the fresh pass settles).
+  const dimsStatus = useObjectDimensions(bytes);
 
   // ---- error / guard states (rendered INSTEAD of the viewer, never a crash)
   if (status.kind === "error") {
@@ -190,10 +218,23 @@ export function GcodePreviewPanel({
           }
           onParseError={() => setParseError(t("gcodePreview.parseError"))}
           onError={() => setParseError(t("gcodePreview.parseError"))}
-          onReady={() => {
+          onReady={(summary) => {
             setStage("ready");
             setPercent(null);
+            // The engine reports its own Z-change layer count here, so the
+            // slider scale needs no separate parse. Guarded: a malformed
+            // summary must never set a negative/NaN slider max.
+            const layers = Math.max(0, Math.floor(summary.layers ?? 0));
+            setLayerCount(layers);
+            if (layers > 0 && layerRange === null) {
+              // Default to the full build: clipping starts at the top, so a
+              // fresh preview shows the complete toolpath until the user scrubs.
+              setLayerRange([0, layers - 1]);
+            }
           }}
+          // Declarative layer clip — the engine's own effect maps this to a
+          // draw-range update (no geometry rebuild). `null` renders all layers.
+          layerRange={layerRange}
         />
       )}
 
@@ -211,6 +252,24 @@ export function GcodePreviewPanel({
           {percent != null && (
             <p className="text-xs text-[var(--color-text-muted)]">{percent}%</p>
           )}
+        </div>
+      )}
+
+      {/* Layer slider + object dimensions — bottom overlay.
+          The slider is only offered once the engine has reported a real layer
+          count, so a still-parsing file shows nothing interactive (and never a
+          max of 0). The dimensions chip lives here, next to the geometry it
+          describes, rather than in the StlPreview info panel: it is derived
+          from the *toolpath* (the chestnut IR), not from the mesh, so keeping
+          it inside the viewer keeps the two data sources from being conflated. */}
+      {layerCount > 0 && (
+        <div className="absolute bottom-2 left-2 right-2 z-20 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-start">
+          <LayerSlider
+            layerCount={layerCount}
+            layerRange={layerRange}
+            onChange={(range) => setLayerRange(range)}
+          />
+          <DimensionsChip dims={dimsStatus} />
         </div>
       )}
 
@@ -238,6 +297,144 @@ export function GcodePreviewPanel({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Formats a bounds box as `W × D × H mm`, or `—` when unmeasurable.
+ *
+ * The em-dash (never `0.0×0.0×0.0`) is the D-EA6 null-guard: an absent or
+ * ±Infinity box is "not measurable", not a zero-size object. Rounding to one
+ * decimal matches the calculator's existing dimension formatting.
+ */
+function formatDimensions(bounds: ChestnutBounds): string {
+  const { dimensions } = bounds;
+  const fmt = (n: number): string => (Number.isFinite(n) ? n.toFixed(1) : "—");
+  return `${fmt(dimensions.x)} × ${fmt(dimensions.y)} × ${fmt(dimensions.z)} mm`;
+}
+
+/**
+ * Layer-range slider for the toolpath preview (D-CL6).
+ *
+ * Clips the rendered toolpath to layers `[0, end]` through the engine's
+ * declarative `layerRange` prop, which maps internally to a draw-range update
+ * — no geometry is rebuilt while scrubbing.
+ *
+ * A11y: a native `<input type="range">` (implicit `role="slider"`) with an
+ * explicit label, `aria-valuetext` announcing "Layer N of M", step 1, and a
+ * 44px-tall hit area. Arrow-key scrubbing comes from the native control.
+ */
+function LayerSlider({
+  layerCount,
+  layerRange,
+  onChange,
+}: {
+  layerCount: number;
+  layerRange: [number, number] | null;
+  onChange: (range: [number, number]) => void;
+}) {
+  const { t } = useTranslation();
+  const end = layerRange ? layerRange[1] : layerCount - 1;
+  const valueText = layerRange
+    ? t("gcodePreview.layerValue", { current: end + 1, total: layerCount })
+    : t("gcodePreview.layerFull", { total: layerCount });
+
+  return (
+    <div className="flex w-full max-w-md flex-col gap-1 rounded-lg bg-[var(--color-bg-elevated)]/85 px-3 py-2 backdrop-blur-sm border border-[var(--color-border)]/60">
+      <label
+        htmlFor="gcode-layer-slider"
+        className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)]"
+      >
+        <Layers className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+        <span>{t("gcodePreview.layerSliderLabel")}</span>
+        <span
+          className="tabular-nums text-[var(--color-text-muted)]"
+          aria-live="polite"
+        >
+          {valueText}
+        </span>
+      </label>
+      <input
+        id="gcode-layer-slider"
+        type="range"
+        min={0}
+        max={layerCount - 1}
+        step={1}
+        value={end}
+        onChange={(e) => {
+          const next = Number(e.target.value);
+          // Clamp guards against a stray non-integer/NaN; the range the engine
+          // accepts is inclusive [0, end].
+          if (Number.isFinite(next)) {
+            onChange([
+              0,
+              Math.min(layerCount - 1, Math.max(0, Math.floor(next))),
+            ]);
+          }
+        }}
+        aria-label={t("gcodePreview.layerSliderLabel")}
+        aria-valuetext={valueText}
+        className="h-11 w-full cursor-pointer accent-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+      />
+    </div>
+  );
+}
+
+/**
+ * Small read-only chip showing the printed object's dimensions.
+ *
+ * `honest` marks data derived from `modelBounds` (excludes skirt/brim/support/
+ * wipe towers — the most precise box) vs a plain extrusion fallback, disclosed
+ * via a tooltip rather than an invented precision tier.
+ */
+function DimensionsChip({ dims }: { dims: DimensionsStatus }) {
+  const { t } = useTranslation();
+
+  if (dims.kind === "measuring") {
+    // No layout shift: reserves the chip's final footprint while the parallel
+    // parse settles, and keeps `—` for unmeasurable files distinct from
+    // "still working".
+    return (
+      <div
+        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)]/60 bg-[var(--color-bg-elevated)]/85 px-3 py-2 text-xs text-[var(--color-text-muted)] backdrop-blur-sm"
+        role="status"
+        aria-live="polite"
+      >
+        <Ruler
+          className="w-3.5 h-3.5 shrink-0 animate-pulse"
+          aria-hidden="true"
+        />
+        <span className="tabular-nums">—</span>
+      </div>
+    );
+  }
+
+  if (dims.kind === "unavailable") {
+    // D-EA6: unmeasurable → em-dash, never zeros.
+    return (
+      <div
+        className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)]/60 bg-[var(--color-bg-elevated)]/85 px-3 py-2 text-xs text-[var(--color-text-muted)] backdrop-blur-sm"
+        title={t("gcodePreview.dimensionsUnavailable")}
+      >
+        <Ruler className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+        <span>{t("gcodePreview.objectDimensions")}: —</span>
+      </div>
+    );
+  }
+
+  const tooltip = dims.honest
+    ? t("gcodePreview.dimensionsObject")
+    : t("gcodePreview.dimensionsExtrusion");
+
+  return (
+    <div
+      className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)]/60 bg-[var(--color-bg-elevated)]/85 px-3 py-2 text-xs text-[var(--color-text-secondary)] backdrop-blur-sm"
+      title={tooltip}
+    >
+      <Ruler className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+      <span className="font-medium">{t("gcodePreview.objectDimensions")}</span>
+      <span className="tabular-nums">{formatDimensions(dims.bounds)}</span>
     </div>
   );
 }

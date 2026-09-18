@@ -1665,6 +1665,13 @@
     "readFailed": "Could not read the file.",
     "tooLarge": "G-code too large for the viewer. Limit: {{mb}} MB.",
     "tooManyLines": "G-code has too many lines. Limit: {{lines}} lines.",
+    "layerSliderLabel": "Preview layer",
+    "layerValue": "Layer {{current}} of {{total}}",
+    "layerFull": "All {{total}} layers",
+    "objectDimensions": "Object dimensions",
+    "dimensionsObject": "Excludes skirt, brim, support and wipe towers",
+    "dimensionsExtrusion": "Bounds of all extrusion",
+    "dimensionsUnavailable": "Dimensions not measurable",
     "stage": {
       "reading": "Reading file…",
       "parsing": "Parsing G-code…",
