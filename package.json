@@ -1,7 +1,7 @@
 {
   "name": "open3dcalc",
   "private": true,
-  "version": "1.13.0-beta.2",
+  "version": "1.13.0-beta.3",
   "main": "electron/dist/electron/main.js",
   "type": "module",
   "scripts": {
