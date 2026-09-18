@@ -14,13 +14,11 @@
  * calculation-engine migration D-CL3/4). It renders straight from the
  * chestnut IR, so the toolpath UX is not blocked by that riskier work.
  *
- * Default policy — **dogfood in development, OFF in production**:
- * the feature is new and still stabilising, so end users must not hit a raw
- * WebGL viewer until it is proven. Developers get it on by default for
- * dogfooding. An explicit `VITE_TOOLPATH_PREVIEW` env var always wins over the
- * dev default, so a prod-minded build can opt in (`VITE_TOOLPATH_PREVIEW=true`)
- * and a dev build can opt out (`VITE_TOOLPATH_PREVIEW=false`) without touching
- * code.
+ * Default policy — **ON for everyone**: the feature was dogfooded through the
+ * beta channel (v1.13.0-beta.1..3) and validated for the stable v1.13.0
+ * release, so end users now get the viewer by default. An explicit
+ * `VITE_TOOLPATH_PREVIEW` env var always wins, so any build can still opt out
+ * (`VITE_TOOLPATH_PREVIEW=false`) without touching code.
  *
  * When OFF, the "Preview toolpath" entry point is not rendered at all — the
  * chunk is never even downloaded (the panel is `React.lazy`), so an OFF build
