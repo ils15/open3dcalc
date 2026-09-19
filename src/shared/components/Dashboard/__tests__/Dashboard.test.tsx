@@ -425,6 +425,18 @@ describe("Dashboard KPIs and monthly projection (Fase 3)", () => {
     expect(card.getByText("R$ 491.67")).toBeInTheDocument();
   });
 
+  it("clamps a negative parts/month input to zero instead of inverting the sign", () => {
+    render(<Dashboard />);
+
+    const input = screen.getByLabelText("dashboard.projection.inputLabel");
+    fireEvent.change(input, { target: { value: "-5" } });
+
+    // -5 is clamped to 0: the projection must not flip to a positive value
+    expect(input).toHaveValue(0);
+    const card = within(screen.getByTestId("dashboard-projection"));
+    expect(card.getByText("R$ 0.00")).toBeInTheDocument();
+  });
+
   it("reflects the date-range filter in the history KPIs", () => {
     render(<Dashboard />);
     const dateInputs =
@@ -473,7 +485,7 @@ describe("Dashboard KPIs and monthly projection (Fase 3)", () => {
     const kpis = within(screen.getByTestId("dashboard-kpis"));
     const totalProfit = kpis.getByText("R$ -40.00");
     expect(totalProfit).toBeInTheDocument();
-    expect(totalProfit).toHaveClass("text-red-400");
+    expect(totalProfit).toHaveClass("text-[var(--color-danger)]");
     // avgMargin = -40 / 100 = -40.0%
     expect(kpis.getByText("-40.0%")).toBeInTheDocument();
 
@@ -481,6 +493,6 @@ describe("Dashboard KPIs and monthly projection (Fase 3)", () => {
     const card = within(screen.getByTestId("dashboard-projection"));
     const projected = card.getByText("R$ -1200.00");
     expect(projected).toBeInTheDocument();
-    expect(projected).toHaveClass("text-red-400");
+    expect(projected).toHaveClass("text-[var(--color-danger)]");
   });
 });

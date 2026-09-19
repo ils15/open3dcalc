@@ -688,7 +688,7 @@ export function Dashboard() {
                 {t("dashboard.kpis.totalProfit")}
               </p>
               <p
-                className={`text-lg font-bold ${kpis.totalProfit >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                className={`text-lg font-bold ${kpis.totalProfit >= 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}
               >
                 {formatMoney(kpis.totalProfit)}
               </p>
@@ -740,7 +740,9 @@ export function Dashboard() {
               type="number"
               min={0}
               value={printsPerMonth}
-              onChange={(e) => setPrintsPerMonth(Number(e.target.value) || 0)}
+              onChange={(e) =>
+                setPrintsPerMonth(Math.max(0, Number(e.target.value) || 0))
+              }
               aria-label={t("dashboard.projection.inputLabel")}
               className="w-24 px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
@@ -753,7 +755,7 @@ export function Dashboard() {
               {t("dashboard.projection.projectedProfit")}
             </p>
             <p
-              className={`text-xl font-bold ${monthlyProfitProjection >= 0 ? "text-emerald-400" : "text-red-400"}`}
+              className={`text-xl font-bold ${monthlyProfitProjection >= 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}
             >
               {formatMoney(monthlyProfitProjection)}
             </p>
