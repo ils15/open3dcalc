@@ -27,6 +27,18 @@ describe("BetaBadge", () => {
     expect(badge).toHaveAttribute("aria-label", "betaBadge.ariaLabel");
   });
 
+  // D1: the badge used to carry `hidden … sm:inline-flex`, so it disappeared
+  // below the 640px breakpoint. The root must never be display:none — on small
+  // screens it collapses to icon-only instead of vanishing.
+  it("stays visible below the sm breakpoint (mobile regression guard)", () => {
+    betaFlag.current = true;
+    render(<BetaBadge />);
+
+    const badge = screen.getByRole("status");
+    expect(badge).not.toHaveClass("hidden");
+    expect(badge).toHaveClass("inline-flex");
+  });
+
   it("renders nothing on stable builds (beta channel disabled)", () => {
     betaFlag.current = false;
     render(<BetaBadge />);

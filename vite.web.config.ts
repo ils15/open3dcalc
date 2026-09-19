@@ -28,6 +28,10 @@ export default defineConfig(
         manifest: {
           name: "Open3DCalc - Calculadora 3D Livre",
           short_name: "Open3DCalc",
+          // D2: keep the PWA manifest's lang in sync with the document's
+          // static `lang="pt-BR"` and i18n's detection default. vite-plugin-pwa
+          // otherwise defaults `lang` to "en".
+          lang: "pt-BR",
           description:
             "Calculadora de custos de impressão 3D gratuita, open-source e segura.",
           theme_color: "#8b5cf6",
