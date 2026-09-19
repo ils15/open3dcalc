@@ -150,9 +150,14 @@ export const useDemoModeStore = create<DemoModeState>((set, get) => ({
       return;
     }
     const { snapshot } = get();
-    // restaura com supressão ativa: o restore em si também não persiste
-    if (snapshot) restoreSnapshot(snapshot);
-    setDemoPersistenceSuppressed(false);
+    // restaura com supressão ativa: o restore em si também não persiste;
+    // finally libera o flag mesmo se algum dos setState do restore throwar,
+    // senão writes reais posteriores ficariam silenciados para sempre
+    try {
+      if (snapshot) restoreSnapshot(snapshot);
+    } finally {
+      setDemoPersistenceSuppressed(false);
+    }
     set({ isActive: false, snapshot: null });
   },
 }));

@@ -41,6 +41,12 @@ describe("demoModeStore (demo-data mode)", () => {
     vi.clearAllTimers();
   });
 
+  // spies criados abaixo são restaurados após cada teste (data-safety tests
+  // injetam falhas em ações de store — sem limpeza elas vazam para outros testes)
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   // ── enter(): population through REAL actions only ──────────────
   it("enter() populates calculator, inventory, history, customers, quotes and products", () => {
     expect(useDemoModeStore.getState().isActive).toBe(false);
@@ -128,6 +134,90 @@ describe("demoModeStore (demo-data mode)", () => {
     useDemoModeStore.getState().exit();
     expect(useDemoModeStore.getState().isActive).toBe(false);
     expect(isDemoPersistenceSuppressed()).toBe(false);
+  });
+
+  // ── data-safety: rollback when things break ─────────────────────
+  it("enter() rolls back to the pre-enter state and releases the lock if applying the dataset throws", () => {
+    // falha no meio do applyDemoDataset: a calculadora já foi populada quando o
+    // addSpool explode — o rollback precisa reverter tudo e liberar o flag
+    const filament = useFilamentInventory.getState();
+    const originalAddSpool = filament.addSpool;
+    const boom = new Error("boom: addSpool failed");
+    vi.spyOn(filament, "addSpool").mockImplementation(() => {
+      throw boom;
+    });
+
+    try {
+      const before = {
+        calculator: useCalculatorStore.getState(),
+        history: useHistoryStore.getState(),
+        filament: useFilamentInventory.getState(),
+        customers: useCustomerStore.getState(),
+        quotes: useQuoteStore.getState(),
+        products: useProductInventory.getState(),
+      };
+
+      expect(() => useDemoModeStore.getState().enter()).toThrow(boom);
+
+      // não entrou em modo demo e o flag de supressão foi liberado
+      expect(useDemoModeStore.getState().isActive).toBe(false);
+      expect(isDemoPersistenceSuppressed()).toBe(false);
+
+      // estado restaurado byte-a-byte ao snapshot pré-enter
+      expect(useCalculatorStore.getState()).toEqual(before.calculator);
+      expect(useHistoryStore.getState()).toEqual(before.history);
+      expect(useFilamentInventory.getState()).toEqual(before.filament);
+      expect(useCustomerStore.getState()).toEqual(before.customers);
+      expect(useQuoteStore.getState()).toEqual(before.quotes);
+      expect(useProductInventory.getState()).toEqual(before.products);
+    } finally {
+      // setState cria novos objetos de estado: devolve a ação original ao vivo
+      useFilamentInventory.setState({ addSpool: originalAddSpool });
+    }
+  });
+
+  it("exit() with an active flag but no snapshot still releases the lock (defensive guard)", () => {
+    // estado possível após uma falha de exit() anterior: ativo sem snapshot.
+    // o guard tem que sobreviver sem quebrar e mesmo assim liberar o flag.
+    useDemoModeStore.setState({ isActive: true, snapshot: null });
+
+    expect(() => useDemoModeStore.getState().exit()).not.toThrow();
+    expect(isDemoPersistenceSuppressed()).toBe(false);
+    expect(useDemoModeStore.getState().isActive).toBe(false);
+    expect(useDemoModeStore.getState().snapshot).toBeNull();
+  });
+
+  it("exit() releases the persistence lock even if the restore throws (data-safety)", () => {
+    useDemoModeStore.getState().enter();
+    expect(isDemoPersistenceSuppressed()).toBe(true);
+
+    // restoreSnapshot chama useCalculatorStore.setState primeiro — faz explodir
+    const boom = new Error("boom: restore failed");
+    vi.spyOn(useCalculatorStore, "setState").mockImplementation(() => {
+      throw boom;
+    });
+
+    expect(() => useDemoModeStore.getState().exit()).toThrow(boom);
+
+    // o finally libera o flag mesmo com o restore quebrado — sem ele, todos os
+    // writes reais posteriores do usuário ficariam silenciados para sempre
+    expect(isDemoPersistenceSuppressed()).toBe(false);
+
+    // prova que writes reais voltam a persistir
+    useFilamentInventory.getState().addSpool({
+      brand: "ExitFailBrand",
+      material: "PLA",
+      color: "Blue",
+      colorHex: "#0000ff",
+      weightGrams: 500,
+      originalWeightGrams: 1000,
+      costPerKg: 100,
+      diameterMm: 1.75,
+      notes: "",
+      status: "in_stock",
+      purchaseStore: "Local",
+    });
+    expect(localStorage.getItem("open3dcalc_filaments")).toContain("ExitFailBrand");
   });
 
   it("exit() releases the persistence suppression so normal writes resume", () => {

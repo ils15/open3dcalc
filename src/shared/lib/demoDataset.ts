@@ -1,7 +1,7 @@
 /**
  * Dataset ficcional do modo demo — "Estúdio Maria Print" (onboarding Fase 0).
  *
- * PURamente DADO tipado: nenhum import de store, nenhuma ação chamada, nenhuma
+ * Puremente DADO tipado: nenhum import de store, nenhuma ação chamada, nenhuma
  * escrita em localStorage/SQLite. O {@link ./demoModeStore.ts} é quem aplica
  * este dataset chamando SOMENTE ações existentes das stores.
  *
@@ -151,7 +151,7 @@ export type DemoSpoolSeed = Omit<FilamentSpool, "id" | "dateAdded">;
 
 /**
  * 6 bobinas: PLA preto, PETG branco, ABS cinza, TPU, PLA Silk + 1 resina
- * lavável em água. Tare por marca vinda da brand tare bank (Bambu Lab 210,
+ * lavável em água. Tara por marca vinda da brand tare bank (Bambu Lab 210,
  * Prusament 194, Polymaker 140, Anycubic 127); pesos parciais e status
  * misto — duas carretéis low-stock alimentam o alerta de estoque.
  */
