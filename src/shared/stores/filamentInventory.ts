@@ -52,7 +52,7 @@ const migrateSpool = (s: Record<string, unknown>): FilamentSpool => ({
   purchaseStore: (s.purchaseStore as string) || "",
   // Phase 6 P1 (Wave B): default-on-missing para payloads legacy — undefined
   // (não 0) para que a lib caia no lookup de marca.
-  tareGrams: s.tareGrams ?? undefined,
+  tareGrams: typeof s.tareGrams === "number" ? s.tareGrams : undefined,
 });
 
 const loadSpools = (): FilamentSpool[] => {

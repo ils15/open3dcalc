@@ -513,12 +513,14 @@ describe("CalculatorStore Resin", () => {
       localStorage.clear();
       const legacy = {
         ...initialState,
-        activeTab: "resin",
+        activeTab: "resin" as const,
         resinPostProcess: {
           washingEnabled: true,
           alcoholCostPerLiter: 25,
           alcoholVolumeLiters: 0.1,
           curingEnabled: false,
+          curingTimeMinutes: 10,
+          curingPowerWatts: 36,
         },
       };
       useCalculatorStore.setState(legacy, true);
