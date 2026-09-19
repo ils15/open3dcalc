@@ -62,7 +62,7 @@ describe("catalogStore — printer tags", () => {
 
   it("ignores tags for an unknown printer", () => {
     useCatalogStore.getState().addPrinterTag("does-not-exist", "voron");
-    expect(useCatalogStore.getState().printers.every((p) => !p.tags.includes("voron"))).toBe(true);
+    expect(useCatalogStore.getState().printers.every((p) => !(p.tags ?? []).includes("voron"))).toBe(true);
   });
 
   // ── removePrinterTag ───────────────────────────────────────────
@@ -104,6 +104,17 @@ describe("catalogStore — printer tags", () => {
     expect(parsed.printers.find((p: { id: string }) => p.id === "p1").tags).toEqual([]);
   });
 
+  it("adds a tag to a printer that has no tags field yet", () => {
+    useCatalogStore.setState({
+      printers: [{ id: "legacy", name: "Legacy", brand: "X", power: 90, value: 800, usefulLife: 2000, maintenancePerHour: 0.2, custom: true }],
+      materials: [],
+      marketplaces: [],
+      selectedPrinterTag: null,
+    });
+    useCatalogStore.getState().addPrinterTag("legacy", "fast");
+    expect(useCatalogStore.getState().printers.find((p) => p.id === "legacy")?.tags).toEqual(["fast"]);
+  });
+
   // ── Backward compatibility (pre-Phase-4A bundles) ──────────────
   it("coerces legacy bundles without a tags field to tags: []", () => {
     localStorage.setItem(
@@ -130,5 +141,13 @@ describe("catalogStore — printer tags", () => {
     );
     useCatalogStore.getState().load();
     expect(useCatalogStore.getState().printers.find((p) => p.id === "p1")?.tags).toEqual(["resin", "fast"]);
+  });
+
+  it("falls back to catalog defaults when storage holds an empty bundle", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({}));
+    useCatalogStore.getState().load();
+    const printers = useCatalogStore.getState().printers;
+    expect(printers.length).toBeGreaterThan(0);
+    expect(printers.every((p) => Array.isArray(p.tags))).toBe(true);
   });
 });

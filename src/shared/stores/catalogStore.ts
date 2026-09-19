@@ -8,6 +8,7 @@ import { guardedStorage } from "@/shared/lib/manifestStorage";
 const STORAGE_KEY = "open3dcalc_catalog_v1";
 
 type CatalogPrinter = PrinterProfile & { custom?: boolean };
+export type { CatalogPrinter };
 type CatalogMaterial = Material & { custom?: boolean };
 type CatalogMarketplace = Marketplace & { custom?: boolean };
 
@@ -140,7 +141,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => {
           ...state,
           printers: state.printers.map((p) =>
             p.id === printerId
-              ? { ...p, tags: p.tags.filter((t) => t !== normalized) }
+              ? { ...p, tags: (p.tags ?? []).filter((t) => t !== normalized) }
               : p,
           ),
           selectedPrinterTag:

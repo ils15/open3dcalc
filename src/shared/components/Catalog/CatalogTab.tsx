@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCatalogStore } from '@/shared/stores/catalogStore'
+import { PrinterTagEditor } from '@/shared/components/Catalog/PrinterTagEditor'
 import { InputGroup } from '@/shared/components/ui/InputGroup'
 import { Select } from '@/shared/components/ui/Select'
 import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog'
@@ -219,6 +220,20 @@ function PrinterManager() {
     setName(''); setBrand(''); setPower(''); setValue(''); setUsefulLife('3000'); setMaintPerHour('0.25')
   }
 
+  const allTags = useMemo(() => {
+    const set = new Set<string>()
+    store.printers.forEach(p => (p.tags ?? []).forEach(tag => set.add(tag)))
+    return [...set].sort((a, b) => a.localeCompare(b))
+  }, [store.printers])
+
+  const filteredPrinters = useMemo(() => {
+    if (!store.selectedPrinterTag) return store.printers
+    return store.printers.filter(p => (p.tags ?? []).includes(store.selectedPrinterTag as string))
+  }, [store.printers, store.selectedPrinterTag])
+
+  const chipClass = (active: boolean) =>
+    `px-3 py-1 rounded-full text-xs border transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${active ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]' : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]'}`
+
   return (
     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
       <div className="surface rounded-xl p-5 space-y-3">
@@ -245,8 +260,33 @@ function PrinterManager() {
         </div>
         <button onClick={add} className="w-full py-3 rounded-xl bg-[var(--color-accent)] text-white font-semibold hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none">{t('catalog.save')}</button>
       </div>
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('catalog.filterByTag')}>
+          <span className="text-xs text-[var(--color-text-muted)]">{t('catalog.filterByTag')}</span>
+          <button
+            type="button"
+            aria-pressed={store.selectedPrinterTag === null}
+            onClick={() => store.setPrinterTagFilter(null)}
+            className={chipClass(store.selectedPrinterTag === null)}
+          >
+            {t('catalog.allTags')}
+          </button>
+          {allTags.map(tag => (
+            <button
+              key={tag}
+              type="button"
+              aria-pressed={store.selectedPrinterTag === tag}
+              onClick={() => store.setPrinterTagFilter(store.selectedPrinterTag === tag ? null : tag)}
+              className={chipClass(store.selectedPrinterTag === tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-        {store.printers.map(p => (
+        {filteredPrinters.map(p => (
           <div key={p.id} className="surface rounded-xl p-4 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
@@ -272,6 +312,7 @@ function PrinterManager() {
             <div className="text-xs text-[var(--color-text-secondary)]">{t('catalog.value')}: R$ {p.value}</div>
             <div className="text-xs text-[var(--color-text-secondary)]">{t('catalog.usefulLife')}: {p.usefulLife}h</div>
             <div className="text-xs text-[var(--color-text-secondary)]">{t('catalog.maintenancePerHour')}: R$ {p.maintenancePerHour}/h</div>
+            {p.custom && <PrinterTagEditor printer={p} />}
             {p.custom && <button onClick={() => store.removePrinter(p.id)} className="text-xs text-[var(--color-danger)] hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded">{t('catalog.remove')}</button>}
           </div>
         ))}
