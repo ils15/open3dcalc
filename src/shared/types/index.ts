@@ -201,6 +201,14 @@ export interface PostProcessingResin {
   washingEnabled: boolean;
   alcoholCostPerLiter: number;
   alcoholVolumeLiters: number;
+  /**
+   * Meio de lavagem da peça curada.
+   * "water" — resina lavável em água: a peça é lavada com água corrente,
+   *           então NÃO consome álcool (custo de lavagem = 0).
+   * "alcohol" — lavagem em IPA/álcool (default histórico).
+   * Ausente = "alcohol" — compatibilidade byte-identical com dados antigos.
+   */
+  washType?: "alcohol" | "water";
   curingEnabled: boolean;
   curingTimeMinutes: number;
   curingPowerWatts: number;

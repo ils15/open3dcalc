@@ -1,163 +1,308 @@
-import { useState, useMemo } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useFilamentInventory, type FilamentSpool, type SpoolStatus } from '@/shared/stores/filamentInventory'
-import { useCurrency } from '@/shared/hooks/useCurrency'
-import { InputGroup } from '@/shared/components/ui/InputGroup'
-import { Select } from '@/shared/components/ui/Select'
-import { AlertTriangle, Plus, Pencil, Trash2, Search, X, Palette } from 'lucide-react'
+import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  useFilamentInventory,
+  type FilamentSpool,
+  type SpoolStatus,
+} from "@/shared/stores/filamentInventory";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCurrency } from "@/shared/hooks/useCurrency";
+import { InputGroup } from "@/shared/components/ui/InputGroup";
+import { Select } from "@/shared/components/ui/Select";
+import { SpoolRemainingBlock } from "./SpoolRemainingBlock";
+import {
+  AlertTriangle,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  X,
+  Palette,
+} from "lucide-react";
 
-const FILTER_MATERIALS = ['Todos', 'PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'SILK', 'Outro']
+const FILTER_MATERIALS = [
+  "Todos",
+  "PLA",
+  "PETG",
+  "ABS",
+  "TPU",
+  "ASA",
+  "SILK",
+  "Outro",
+];
 const FILTER_STATUSES = [
-  { value: 'all',        label: 'Todos status' },
-  { value: 'in_stock',   label: 'Em estoque' },
-  { value: 'on_the_way', label: 'A caminho' },
-  { value: 'empty',      label: 'Vazio' },
-]
-const MATERIALS = ['PLA', 'PETG', 'ABS', 'ASA', 'TPU', 'SILK', 'Nylon', 'PLA-CF', 'PETG-CF', 'PVA', 'HIPS', 'Outro']
+  { value: "all", label: "Todos status" },
+  { value: "in_stock", label: "Em estoque" },
+  { value: "on_the_way", label: "A caminho" },
+  { value: "empty", label: "Vazio" },
+];
+const MATERIALS = [
+  "PLA",
+  "PETG",
+  "ABS",
+  "ASA",
+  "TPU",
+  "SILK",
+  "Nylon",
+  "PLA-CF",
+  "PETG-CF",
+  "PVA",
+  "HIPS",
+  "Outro",
+];
 const STORES = [
-  'Aliexpress', 'Mercado Livre', 'Amazon', 'Voolt 3D', '3DPrime',
-  'Bambu Store', 'Creality Store', 'Shopee', 'Outro',
-]
+  "Aliexpress",
+  "Mercado Livre",
+  "Amazon",
+  "Voolt 3D",
+  "3DPrime",
+  "Bambu Store",
+  "Creality Store",
+  "Shopee",
+  "Outro",
+];
 const STATUS_OPTIONS = [
-  { value: 'in_stock',   label: 'Em estoque' },
-  { value: 'on_the_way', label: 'A caminho' },
-  { value: 'empty',      label: 'Vazio' },
-]
+  { value: "in_stock", label: "Em estoque" },
+  { value: "on_the_way", label: "A caminho" },
+  { value: "empty", label: "Vazio" },
+];
 
 const COLOR_HEX: Record<string, string> = {
-  'preto': '#374151', 'branco': '#e2e8f0', 'branco dental': '#f8f5e4',
-  'cinza': '#9ca3af', 'prata': '#94a3b8',
-  'vermelho': '#ef4444', 'rosa': '#ec4899', 'rosa bebe': '#fda4af',
-  'laranja': '#f97316', 'amarelo': '#eab308', 'dourado': '#d97706', 'bronze': '#b45309',
-  'verde': '#22c55e', 'azul': '#3b82f6', 'azul velvet': '#1e40af',
-  'roxo': '#a855f7', 'marrom': '#92400e',
-  'transparente': '#94a3b8', 'natural': '#d4b896',
-}
+  preto: "#374151",
+  branco: "#e2e8f0",
+  "branco dental": "#f8f5e4",
+  cinza: "#9ca3af",
+  prata: "#94a3b8",
+  vermelho: "#ef4444",
+  rosa: "#ec4899",
+  "rosa bebe": "#fda4af",
+  laranja: "#f97316",
+  amarelo: "#eab308",
+  dourado: "#d97706",
+  bronze: "#b45309",
+  verde: "#22c55e",
+  azul: "#3b82f6",
+  "azul velvet": "#1e40af",
+  roxo: "#a855f7",
+  marrom: "#92400e",
+  transparente: "#94a3b8",
+  natural: "#d4b896",
+};
 
 function resolveHex(color: string, stored?: string): string {
-  if (stored) return stored
-  const lower = color.toLowerCase()
+  if (stored) return stored;
+  const lower = color.toLowerCase();
   for (const [key, hex] of Object.entries(COLOR_HEX)) {
-    if (lower === key || lower.includes(key)) return hex
+    if (lower === key || lower.includes(key)) return hex;
   }
-  return '#6366f1'
+  return "#6366f1";
 }
 
 function SpoolIcon({ color, size = 44 }: { color: string; size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 44 44" fill="none" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 44 44"
+      fill="none"
+      aria-hidden="true"
+    >
       <ellipse cx="10" cy="22" rx="8" ry="13" fill={color} opacity="0.9" />
       <ellipse cx="34" cy="22" rx="8" ry="13" fill={color} opacity="0.9" />
       <rect x="10" y="15" width="24" height="14" fill={color} opacity="0.25" />
-      <rect x="10" y="17" width="24" height="3.5" rx="1" fill={color} opacity="0.55" />
-      <rect x="10" y="23.5" width="24" height="3.5" rx="1" fill={color} opacity="0.55" />
+      <rect
+        x="10"
+        y="17"
+        width="24"
+        height="3.5"
+        rx="1"
+        fill={color}
+        opacity="0.55"
+      />
+      <rect
+        x="10"
+        y="23.5"
+        width="24"
+        height="3.5"
+        rx="1"
+        fill={color}
+        opacity="0.55"
+      />
       <circle cx="22" cy="22" r="3.5" fill="rgba(0,0,0,0.35)" />
     </svg>
-  )
+  );
 }
 
 function StatusBadge({ status }: { status: SpoolStatus }) {
   const cfg: Record<SpoolStatus, { label: string; cls: string }> = {
-    in_stock:   { label: 'Em estoque', cls: 'bg-emerald-600/20 text-emerald-400 border-emerald-600/30' },
-    on_the_way: { label: 'A caminho',  cls: 'bg-amber-600/20  text-amber-400  border-amber-600/30'  },
-    empty:      { label: 'Vazio',      cls: 'bg-gray-600/20   text-[var(--color-text-secondary)]   border-gray-600/30'   },
-  }
-  const { label, cls } = cfg[status]
+    in_stock: {
+      label: "Em estoque",
+      cls: "bg-emerald-600/20 text-emerald-400 border-emerald-600/30",
+    },
+    on_the_way: {
+      label: "A caminho",
+      cls: "bg-amber-600/20  text-amber-400  border-amber-600/30",
+    },
+    empty: {
+      label: "Vazio",
+      cls: "bg-gray-600/20   text-[var(--color-text-secondary)]   border-gray-600/30",
+    },
+  };
+  const { label, cls } = cfg[status];
   return (
-    <span className={`text-[11px] px-2.5 py-0.5 rounded-[6px] border font-semibold ${cls}`}>
+    <span
+      className={`text-[11px] px-2.5 py-0.5 rounded-[6px] border font-semibold ${cls}`}
+    >
       {label}
     </span>
-  )
+  );
 }
 
 interface FormState {
-  brand: string; material: string; color: string; colorHex: string
-  weight: string; costPerKg: string; diameter: string; notes: string
-  status: SpoolStatus; purchaseStore: string
+  brand: string;
+  material: string;
+  color: string;
+  colorHex: string;
+  weight: string;
+  costPerKg: string;
+  diameter: string;
+  notes: string;
+  status: SpoolStatus;
+  purchaseStore: string;
 }
 
 const emptyForm = (): FormState => ({
-  brand: '', material: 'PLA', color: '', colorHex: '',
-  weight: '', costPerKg: '', diameter: '1.75', notes: '',
-  status: 'in_stock', purchaseStore: '',
-})
+  brand: "",
+  material: "PLA",
+  color: "",
+  colorHex: "",
+  weight: "",
+  costPerKg: "",
+  diameter: "1.75",
+  notes: "",
+  status: "in_stock",
+  purchaseStore: "",
+});
 
 function spoolToForm(s: FilamentSpool): FormState {
   return {
-    brand: s.brand, material: s.material, color: s.color, colorHex: s.colorHex || '',
+    brand: s.brand,
+    material: s.material,
+    color: s.color,
+    colorHex: s.colorHex || "",
     weight: s.weightGrams.toString(),
-    costPerKg: s.costPerKg > 0 ? s.costPerKg.toString() : '',
-    diameter: s.diameterMm.toString(), notes: s.notes || '',
-    status: s.status || 'in_stock', purchaseStore: s.purchaseStore || '',
-  }
+    costPerKg: s.costPerKg > 0 ? s.costPerKg.toString() : "",
+    diameter: s.diameterMm.toString(),
+    notes: s.notes || "",
+    status: s.status || "in_stock",
+    purchaseStore: s.purchaseStore || "",
+  };
 }
 
 export function FilamentInventory() {
-  const { t } = useTranslation()
-  const store = useFilamentInventory()
-  const { format: fmtCurrency, symbol } = useCurrency()
+  const { t } = useTranslation();
+  const store = useFilamentInventory();
+  const { format: fmtCurrency, symbol } = useCurrency();
 
-  const [search, setSearch] = useState('')
-  const [filterMaterial, setFilterMaterial] = useState('Todos')
-  const [filterStatus, setFilterStatus] = useState('all')
-  const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [showPalette, setShowPalette] = useState(false)
-  const [form, setForm] = useState<FormState>(emptyForm())
+  // Peça ativa do calculatorStore: define a necessidade de plástico para o
+  // badge de cobertura de cada carretel (0 = sem peça ativa → sem badge).
+  const unitWeight = useCalculatorStore((s) => s.results?.unitWeight ?? 0);
+  const quantity = useCalculatorStore((s) => s.quantity);
+  const activeTab = useCalculatorStore((s) => s.activeTab);
+  const requiredGrams =
+    activeTab === "fdm" && unitWeight > 0 ? unitWeight * quantity : 0;
 
-  const upd = (k: keyof FormState, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const [search, setSearch] = useState("");
+  const [filterMaterial, setFilterMaterial] = useState("Todos");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showPalette, setShowPalette] = useState(false);
+  const [form, setForm] = useState<FormState>(emptyForm());
 
-  const openAdd = () => { setForm(emptyForm()); setEditingId(null); setShowForm(true) }
-  const openEdit = (s: FilamentSpool) => { setForm(spoolToForm(s)); setEditingId(s.id); setShowForm(true) }
-  const closeForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm()) }
+  const upd = (k: keyof FormState, v: string) =>
+    setForm((f) => ({ ...f, [k]: v }));
+
+  const openAdd = () => {
+    setForm(emptyForm());
+    setEditingId(null);
+    setShowForm(true);
+  };
+  const openEdit = (s: FilamentSpool) => {
+    setForm(spoolToForm(s));
+    setEditingId(s.id);
+    setShowForm(true);
+  };
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm());
+  };
 
   const saveForm = () => {
-    if (!form.brand.trim() || !form.color.trim() || !form.weight) return
-    const hex = form.colorHex || resolveHex(form.color)
+    if (!form.brand.trim() || !form.color.trim() || !form.weight) return;
+    const hex = form.colorHex || resolveHex(form.color);
     const origWeight = editingId
-      ? (store.spools.find(s => s.id === editingId)?.originalWeightGrams ?? (parseFloat(form.weight) || 1000))
-      : parseFloat(form.weight) || 1000
-    const data: Omit<FilamentSpool, 'id' | 'dateAdded'> = {
-      brand: form.brand, material: form.material, color: form.color, colorHex: hex,
+      ? (store.spools.find((s) => s.id === editingId)?.originalWeightGrams ??
+        (parseFloat(form.weight) || 1000))
+      : parseFloat(form.weight) || 1000;
+    const data: Omit<FilamentSpool, "id" | "dateAdded"> = {
+      brand: form.brand,
+      material: form.material,
+      color: form.color,
+      colorHex: hex,
       weightGrams: parseFloat(form.weight) || 1000,
       originalWeightGrams: origWeight,
       costPerKg: parseFloat(form.costPerKg) || 0,
       diameterMm: parseFloat(form.diameter) || 1.75,
-      notes: form.notes, status: form.status, purchaseStore: form.purchaseStore,
-    }
-    if (editingId) store.updateSpool(editingId, data)
-    else store.addSpool(data)
-    closeForm()
-  }
+      notes: form.notes,
+      status: form.status,
+      purchaseStore: form.purchaseStore,
+    };
+    if (editingId) store.updateSpool(editingId, data);
+    else store.addSpool(data);
+    closeForm();
+  };
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase()
-    const main = ['PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'SILK']
-    return store.spools.filter(s => {
-      if (q && !s.color.toLowerCase().includes(q) && !s.brand.toLowerCase().includes(q) &&
-          !s.material.toLowerCase().includes(q) && !(s.purchaseStore || '').toLowerCase().includes(q)) return false
-      if (filterMaterial !== 'Todos') {
-        const isOther = filterMaterial === 'Outro'
-        if (isOther ? main.includes(s.material) : s.material !== filterMaterial) return false
+    const q = search.toLowerCase();
+    const main = ["PLA", "PETG", "ABS", "TPU", "ASA", "SILK"];
+    return store.spools.filter((s) => {
+      if (
+        q &&
+        !s.color.toLowerCase().includes(q) &&
+        !s.brand.toLowerCase().includes(q) &&
+        !s.material.toLowerCase().includes(q) &&
+        !(s.purchaseStore || "").toLowerCase().includes(q)
+      )
+        return false;
+      if (filterMaterial !== "Todos") {
+        const isOther = filterMaterial === "Outro";
+        if (isOther ? main.includes(s.material) : s.material !== filterMaterial)
+          return false;
       }
-      if (filterStatus !== 'all' && (s.status || 'in_stock') !== filterStatus) return false
-      return true
-    })
-  }, [store.spools, search, filterMaterial, filterStatus])
+      if (filterStatus !== "all" && (s.status || "in_stock") !== filterStatus)
+        return false;
+      return true;
+    });
+  }, [store.spools, search, filterMaterial, filterStatus]);
 
-  const lowCount = store.getLowStockSpools(100).length
+  const lowCount = store.getLowStockSpools(100).length;
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-[var(--color-text-primary)] tracking-tight">{t('inventory.title')}</h2>
+          <h2 className="text-2xl font-black text-[var(--color-text-primary)] tracking-tight">
+            {t("inventory.title")}
+          </h2>
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
             {store.spools.length} rolos cadastrados
             {lowCount > 0 && (
               <span className="ml-2 text-amber-400 inline-flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />{lowCount} com estoque baixo
+                <AlertTriangle className="w-3 h-3" />
+                {lowCount} com estoque baixo
               </span>
             )}
           </p>
@@ -175,7 +320,7 @@ export function FilamentInventory() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-hover)] transition-colors"
           >
             <Plus className="w-4 h-4" />
-            {t('inventory.newSpool')}
+            {t("inventory.newSpool")}
           </button>
         </div>
       </div>
@@ -186,13 +331,13 @@ export function FilamentInventory() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
           <input
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar cor, marca, material..."
             className="w-full h-11 pl-10 pr-9 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-xl text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
           />
           {search && (
             <button
-              onClick={() => setSearch('')}
+              onClick={() => setSearch("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
             >
               <X className="w-4 h-4" />
@@ -201,40 +346,48 @@ export function FilamentInventory() {
         </div>
 
         <div className="flex flex-wrap gap-1.5 items-center">
-          {FILTER_MATERIALS.map(m => (
+          {FILTER_MATERIALS.map((m) => (
             <button
               key={m}
               onClick={() => setFilterMaterial(m)}
               className={`px-3 py-1 rounded-[6px] text-xs font-semibold transition-colors border ${
                 filterMaterial === m
-                  ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
-                  : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-primary)]'
+                  ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
+                  : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-primary)]"
               }`}
-            >{m}</button>
+            >
+              {m}
+            </button>
           ))}
           <div className="w-px h-4 bg-[var(--color-border)] mx-0.5" />
-          {FILTER_STATUSES.map(s => (
+          {FILTER_STATUSES.map((s) => (
             <button
               key={s.value}
               onClick={() => setFilterStatus(s.value)}
               className={`px-3 py-1 rounded-[6px] text-xs font-semibold transition-colors border ${
                 filterStatus === s.value
-                  ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
-                  : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-primary)]'
+                  ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
+                  : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-primary)]"
               }`}
-            >{s.label}</button>
+            >
+              {s.label}
+            </button>
           ))}
         </div>
       </div>
 
       {/* Card Grid */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {filtered.map(s => {
-          const pct = Math.min(100, Math.round((s.weightGrams / s.originalWeightGrams) * 100))
-          const isLow = (s.status || 'in_stock') === 'in_stock' && s.weightGrams < 100
-          const hex = resolveHex(s.color, s.colorHex)
-          const status: SpoolStatus = s.status || 'in_stock'
-          const barColor = pct < 20 ? '#f97316' : hex
+        {filtered.map((s) => {
+          const pct = Math.min(
+            100,
+            Math.round((s.weightGrams / s.originalWeightGrams) * 100),
+          );
+          const isLow =
+            (s.status || "in_stock") === "in_stock" && s.weightGrams < 100;
+          const hex = resolveHex(s.color, s.colorHex);
+          const status: SpoolStatus = s.status || "in_stock";
+          const barColor = pct < 20 ? "#f97316" : hex;
 
           return (
             <div
@@ -251,17 +404,28 @@ export function FilamentInventory() {
               <div className="flex items-center gap-3">
                 <SpoolIcon color={hex} size={44} />
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-[var(--color-text-primary)] text-[15px] leading-tight break-words pr-4">{s.color}</p>
-                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{s.material} · {s.brand}</p>
+                  <p className="font-bold text-[var(--color-text-primary)] text-[15px] leading-tight break-words pr-4">
+                    {s.color}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                    {s.material} · {s.brand}
+                  </p>
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-[var(--color-text-secondary)] font-medium">Restante</span>
+                  <span className="text-[var(--color-text-secondary)] font-medium">
+                    {t("inventory.remaining")}
+                  </span>
                   <span>
-                    <span className="font-bold text-[var(--color-text-primary)]">{s.weightGrams}g</span>
-                    <span className="text-[var(--color-text-muted)]"> / {s.originalWeightGrams}g</span>
+                    <span className="font-bold text-[var(--color-text-primary)]">
+                      {s.weightGrams}g
+                    </span>
+                    <span className="text-[var(--color-text-muted)]">
+                      {" "}
+                      / {s.originalWeightGrams}g
+                    </span>
                   </span>
                 </div>
                 <div className="h-1.5 bg-[var(--color-bg-elevated)] rounded-full overflow-hidden">
@@ -270,20 +434,31 @@ export function FilamentInventory() {
                     style={{ width: `${pct}%`, backgroundColor: barColor }}
                   />
                 </div>
-                <div className="text-right text-[10px] text-[var(--color-text-muted)] mt-1">{pct}%</div>
+                <div className="text-right text-[10px] text-[var(--color-text-muted)] mt-1">
+                  {pct}%
+                </div>
               </div>
+
+              <SpoolRemainingBlock spool={s} requiredGrams={requiredGrams} />
 
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm min-w-0">
                   {s.costPerKg > 0 ? (
                     <>
-                      <span className="font-bold text-[var(--color-text-primary)]">{fmtCurrency(s.costPerKg)}</span>
+                      <span className="font-bold text-[var(--color-text-primary)]">
+                        {fmtCurrency(s.costPerKg)}
+                      </span>
                       {s.purchaseStore && (
-                        <span className="text-[var(--color-text-muted)] text-xs"> · {s.purchaseStore}</span>
+                        <span className="text-[var(--color-text-muted)] text-xs">
+                          {" "}
+                          · {s.purchaseStore}
+                        </span>
                       )}
                     </>
                   ) : (
-                    <span className="text-[var(--color-text-muted)] text-xs">{s.purchaseStore || '\u2014'}</span>
+                    <span className="text-[var(--color-text-muted)] text-xs">
+                      {s.purchaseStore || "\u2014"}
+                    </span>
                   )}
                 </span>
                 <StatusBadge status={status} />
@@ -306,13 +481,13 @@ export function FilamentInventory() {
                 </button>
               </div>
             </div>
-          )
+          );
         })}
 
         {filtered.length === 0 && (
           <div className="col-span-full surface rounded-xl p-12 text-center text-[var(--color-text-muted)] text-sm">
-            {search || filterMaterial !== 'Todos' || filterStatus !== 'all'
-              ? 'Nenhum rolo encontrado com esses filtros.'
+            {search || filterMaterial !== "Todos" || filterStatus !== "all"
+              ? "Nenhum rolo encontrado com esses filtros."
               : 'Nenhum rolo cadastrado. Clique em "+ Novo Rolo" para começar.'}
           </div>
         )}
@@ -325,11 +500,11 @@ export function FilamentInventory() {
         >
           <div
             className="surface rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-bold text-[var(--color-text-primary)]">
-                {editingId ? t('inventory.editSpool') : t('inventory.newSpool')}
+                {editingId ? t("inventory.editSpool") : t("inventory.newSpool")}
               </h3>
               <button
                 onClick={closeForm}
@@ -342,37 +517,97 @@ export function FilamentInventory() {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 flex gap-2 items-end">
                 <div className="flex-1">
-                  <InputGroup label="Cor" value={form.color} onChange={v => upd('color', v)} type="text" placeholder="Ex: Azul Velvet" />
+                  <InputGroup
+                    label="Cor"
+                    value={form.color}
+                    onChange={(v) => upd("color", v)}
+                    type="text"
+                    placeholder="Ex: Azul Velvet"
+                  />
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
-                  <label className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">Hex</label>
+                  <label className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">
+                    Hex
+                  </label>
                   <input
                     type="color"
                     value={form.colorHex || resolveHex(form.color)}
-                    onChange={e => upd('colorHex', e.target.value)}
+                    onChange={(e) => upd("colorHex", e.target.value)}
                     className="w-11 h-[42px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] cursor-pointer p-0.5"
                     title="Cor da bobina"
                   />
                 </div>
               </div>
-              <Select label="Material" value={form.material} onChange={v => upd('material', v)} options={MATERIALS.map(m => ({ label: m, value: m }))} search={false} />
-              <InputGroup label="Marca" value={form.brand} onChange={v => upd('brand', v)} type="text" placeholder="Ex: Overture, eSun..." />
-              <InputGroup label="Peso (g)" value={form.weight} onChange={v => upd('weight', v)} type="number" unit="g" />
-              <InputGroup label="Custo/kg" value={form.costPerKg} onChange={v => upd('costPerKg', v)} type="number" prefix={symbol} />
-              <Select label="Loja" value={form.purchaseStore} onChange={v => upd('purchaseStore', v)} options={STORES.map(s => ({ label: s, value: s }))} search />
-              <Select label="Status" value={form.status} onChange={v => upd('status', v as SpoolStatus)} options={STATUS_OPTIONS} search={false} />
-              <InputGroup label="Diametro" value={form.diameter} onChange={v => upd('diameter', v)} type="number" unit="mm" />
+              <Select
+                label="Material"
+                value={form.material}
+                onChange={(v) => upd("material", v)}
+                options={MATERIALS.map((m) => ({ label: m, value: m }))}
+                search={false}
+              />
+              <InputGroup
+                label="Marca"
+                value={form.brand}
+                onChange={(v) => upd("brand", v)}
+                type="text"
+                placeholder="Ex: Overture, eSun..."
+              />
+              <InputGroup
+                label="Peso (g)"
+                value={form.weight}
+                onChange={(v) => upd("weight", v)}
+                type="number"
+                unit="g"
+              />
+              <InputGroup
+                label="Custo/kg"
+                value={form.costPerKg}
+                onChange={(v) => upd("costPerKg", v)}
+                type="number"
+                prefix={symbol}
+              />
+              <Select
+                label="Loja"
+                value={form.purchaseStore}
+                onChange={(v) => upd("purchaseStore", v)}
+                options={STORES.map((s) => ({ label: s, value: s }))}
+                search
+              />
+              <Select
+                label="Status"
+                value={form.status}
+                onChange={(v) => upd("status", v as SpoolStatus)}
+                options={STATUS_OPTIONS}
+                search={false}
+              />
+              <InputGroup
+                label="Diametro"
+                value={form.diameter}
+                onChange={(v) => upd("diameter", v)}
+                type="number"
+                unit="mm"
+              />
               <div className="col-span-2">
-                <InputGroup label="Notas" value={form.notes} onChange={v => upd('notes', v)} type="text" placeholder="Opcional" />
+                <InputGroup
+                  label="Notas"
+                  value={form.notes}
+                  onChange={(v) => upd("notes", v)}
+                  type="text"
+                  placeholder="Opcional"
+                />
               </div>
             </div>
 
             <button
               onClick={saveForm}
-              disabled={!form.brand.trim() || !form.color.trim() || !form.weight}
+              disabled={
+                !form.brand.trim() || !form.color.trim() || !form.weight
+              }
               className="mt-5 w-full py-3 rounded-xl bg-[var(--color-accent)] text-white font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
             >
-              {editingId ? t('inventory.saveChanges') : t('inventory.saveSpool')}
+              {editingId
+                ? t("inventory.saveChanges")
+                : t("inventory.saveSpool")}
             </button>
           </div>
         </div>
@@ -385,7 +620,7 @@ export function FilamentInventory() {
         >
           <div
             className="surface rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
@@ -400,18 +635,30 @@ export function FilamentInventory() {
               </button>
             </div>
             {store.spools.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-muted)] text-center py-6">Nenhum rolo cadastrado.</p>
+              <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
+                Nenhum rolo cadastrado.
+              </p>
             ) : (
               <div className="grid grid-cols-4 gap-3">
-                {store.spools.map(s => {
-                  const hex = resolveHex(s.color, s.colorHex)
+                {store.spools.map((s) => {
+                  const hex = resolveHex(s.color, s.colorHex);
                   return (
-                    <div key={s.id} className="flex flex-col items-center gap-1.5">
-                      <div className="w-12 h-12 rounded-xl border border-[var(--color-border)]" style={{ backgroundColor: hex }} />
-                      <p className="text-[10px] text-[var(--color-text-secondary)] text-center leading-tight break-words w-full font-medium">{s.color}</p>
-                      <p className="text-[9px] text-[var(--color-text-muted)] text-center">{s.material}</p>
+                    <div
+                      key={s.id}
+                      className="flex flex-col items-center gap-1.5"
+                    >
+                      <div
+                        className="w-12 h-12 rounded-xl border border-[var(--color-border)]"
+                        style={{ backgroundColor: hex }}
+                      />
+                      <p className="text-[10px] text-[var(--color-text-secondary)] text-center leading-tight break-words w-full font-medium">
+                        {s.color}
+                      </p>
+                      <p className="text-[9px] text-[var(--color-text-muted)] text-center">
+                        {s.material}
+                      </p>
                     </div>
-                  )
+                  );
                 })}
               </div>
             )}
@@ -419,5 +666,5 @@ export function FilamentInventory() {
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -115,4 +115,19 @@ describe("Calculator — Complete-mode layout breakpoints", () => {
       },
     );
   });
+
+  // ── Wave B (B4): printer selection is a single store action ─────────────
+  // O double-set (setFdmPrintParams + setFdmMachine) foi removido do
+  // componente: setSelectedPrinter deriva power e custos da máquina ativa.
+  describe("printer selection wiring (Wave B)", () => {
+    it("handlePrinterSelect delegates only to setSelectedPrinter (no double-set)", () => {
+      // Extrai o corpo do handler para inspecionar suas chamadas de store.
+      const handlerStart = calculatorSource.indexOf("handlePrinterSelect");
+      const handlerEnd = calculatorSource.indexOf("handleInput", handlerStart);
+      const handler = calculatorSource.slice(handlerStart, handlerEnd);
+      expect(handler).toContain("setSelectedPrinter");
+      expect(handler).not.toMatch(/setFdmPrintParams/);
+      expect(handler).not.toMatch(/setFdmMachine/);
+    });
+  });
 });

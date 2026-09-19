@@ -259,7 +259,10 @@ export function calculateResin(
   const carbonFootprintGrams = totalEnergyKwh * ops.carbonIntensity;
 
   let postProcessingTotal = 0;
-  if (resinPP.washingEnabled) {
+  if (resinPP.washingEnabled && resinPP.washType !== "water") {
+    // Resina lavável em água (washType "water") é lavada com água corrente:
+    // não consome IPA, então o custo de lavagem é 0. Ausente = "alcohol"
+    // (compatibilidade byte-identical com dados gravados antes do washType).
     postProcessingTotal +=
       resinPP.alcoholVolumeLiters * resinPP.alcoholCostPerLiter;
   }

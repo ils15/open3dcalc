@@ -64,6 +64,19 @@ O motor de estimativa agora vai além do volume da malha — ele considera a con
 
 ---
 
+## ✨ Recursos de cálculo
+
+Para além da estimativa de volume, o Open3DCalc calcula o custo real do seu dia a dia de impressão:
+
+| Recurso                             | O que faz                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🧵 **Restante do carretel**         | Cada carretel do inventário mostra o peso **líquido** restante (bruto menos a tara) e a **metragem** estimada, além de um indicador que diz se o carretel cobre a peça ativa. A tara é auto-preenchida por um banco de marcas embutido; você pode digitar a sua e, limpando o campo, a tara da marca volta a valer.                                               |
+| 💧 **Resina lavável em água**       | Resinas `water_washable` são lavadas com água corrente — sem álcool isopropílico. Ao escolher uma, o meio de lavagem muda automaticamente para água e o custo de IPA da lavagem vai a **zero** no cálculo. O meio continua ajustável à mão no bloco "Lavagem e Cura".                                                                                             |
+| 📊 **Comparador de materiais**      | No painel de resultados, uma tabela colapsável mostra quanto a peça atual custaria em **cada material FDM do catálogo**, ordenável por custo — antes de comprar, você vê qual filamento sai mais barato. Resina não é comparável com FDM (processos diferentes) e a própria tabela explica o porquê.                                                              |
+| 🖨️ **Custo de máquina do catálogo** | Ao selecionar uma impressora do catálogo, os custos de máquina da aba ativa são auto-preenchidos (valor, vida útil e manutenção). Como o catálogo guarda a manutenção em **R$/hora**, o app faz a conversão obrigatória para **R$/mês** a partir das suas horas de uso mensais. A derivação ocorre só na seleção — ajustar as horas mensais depois não recalcula. |
+
+---
+
 ## 🏗️ Project Structure
 
 ```

@@ -279,6 +279,44 @@ Every phase and change must complete this checklist:
 - [ ] Mesh export never writes outside a user-chosen path without explicit consent
 - [ ] LGPD checklist applies: generative tools create user files, so export/delete must cover them
 
+### ✅ Phase 6 P1: Core Calculation — Filament, Resin & Machine Costs
+
+**Problem:** The calculator knew the price of a full spool and a full bottle of resin, but not what you actually have left in your hand — nor which material or printer is the cheapest for the part in front of you.
+
+> Branch `feat/fase6-p1-core`. Delivered in waves: **A** pure calculation libs (TDD, ≥90% coverage), **B** store / schema / migration wiring, **C** UI. All items below are implemented.
+
+#### P1.1 — Filament remaining & spool tare
+
+- [x] Pure libs `filamentRemaining` (net remaining grams, estimated meters, print coverage) and `brandTare` (built-in brand tare bank)
+- [x] `tareGrams` on the spool schema + backward-compatible migration 0003 (legacy payloads stay byte-identical; absent tare falls back to the brand lookup)
+- [x] Inventory card shows net remaining (g + m), a tare input with the brand value as placeholder (commit on blur, manual override preserved), and a token-backed coverage badge
+- **Files:** `src/shared/lib/filamentRemaining.ts`, `src/shared/lib/brandTare.ts`, `src/shared/components/Catalog/SpoolRemainingBlock.tsx`, `FilamentInventory.tsx`
+- **Tests:** `FilamentInventory.test.tsx` (7), `filamentRemaining` + `brandTare` lib suites
+
+#### P1.2 — Water-washable resin (zero-cost washing)
+
+- [x] `washType: "alcohol" | "water"` on `PostProcessingResin` (absent ≡ alcohol — byte-identical legacy compatibility)
+- [x] Store auto-switches to `water` when a `water_washable` resin is selected; the manual override remains available afterwards
+- [x] Washing cost (IPA) is zeroed in the calculation when `washType` is `water`
+- [x] Segmented alcohol/water toggle in the post-processing block, with an explanatory note when water is active
+- **Files:** `src/shared/types/index.ts`, `src/shared/stores/calculatorStore.ts`, `src/shared/lib/calculator.ts`, `HardwareSection.tsx`
+- **Tests:** `calculatorStore.resin.test.ts`, `HardwareSection.test.tsx`, `calculator.extras.test.ts`
+
+#### P1.3 — Material comparator & machine cost auto-fill
+
+- [x] Pure lib `compareMaterialsForPart` + collapsible comparison table in the results panel (sort by cost, rank, current-material highlight, empty state, resin-not-comparable note)
+- [x] Selecting a printer from the catalog derives the active tab's machine costs (single source of truth): `machineCost`, `depreciationMonths` (clamped ≥ 1), `maintenanceEnabled` + `maintenanceCost` with mandatory R$/h → R$/month conversion
+- [x] Derive-once on selection — editing `hoursPerMonth` afterwards is intentionally not re-derived
+- **Files:** `src/shared/lib/compareMaterials.ts`, `MaterialComparison.tsx`, `ResultsPanel.tsx`, `calculatorStore.ts`, `PrintSection.tsx`
+- **Tests:** `compareMaterials` lib suite, `MaterialComparison.test.tsx` (9), `calculatorStore.logic.test.ts`
+
+**Acceptance criteria:**
+
+- [x] Every new i18n key exists in **both** pt-BR and en-US
+- [x] New components ≥ 80% coverage; calculation libs ≥ 90%
+- [x] WCAG AA: status colors only via design tokens or token-backed classes
+- [x] Legacy saved payloads keep working without a forced migration (absent `washType`/`tareGrams`)
+
 ---
 
 ## 📊 Quality Metrics

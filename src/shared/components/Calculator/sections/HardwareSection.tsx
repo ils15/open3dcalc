@@ -1,323 +1,394 @@
-import { Wrench } from "lucide-react";
+import { Wrench, Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
 import { ToggleSwitch } from "@/shared/components/ui/ToggleCard";
+import { Tooltip } from "@/shared/components/ui/Tooltip";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { SectionHeader } from "./SectionHeader";
 
 export function HardwareSection() {
-	const { t } = useTranslation();
-	const store = useCalculatorStore();
-	const { symbol: currencySymbol } = useCurrency();
-	const isFDM = store.activeTab === "fdm";
+  const { t } = useTranslation();
+  const store = useCalculatorStore();
+  const { symbol: currencySymbol } = useCurrency();
+  const isFDM = store.activeTab === "fdm";
 
-	const handleInput = (value: string, setter: (v: number) => void) => {
-		setter(value === "" ? 0 : parseFloat(value) || 0);
-	};
+  // washType ausente ≡ "alcohol" — compatibilidade byte-identical com
+  // payloads legacy (ver PostProcessingResin.washType em types/index.ts).
+  const isWaterWash = store.resinPostProcess.washType === "water";
+  const segActive =
+    "bg-[var(--color-accent)] text-[var(--color-text-primary)] border-[var(--color-accent)]";
+  const segIdle =
+    "bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:text-[var(--color-text-secondary)]";
 
-	return (
-		<div className="surface rounded-xl p-4 sm:p-5 space-y-6">
-			<SectionHeader
-				Icon={Wrench}
-				title={t("calc.fdmHardware")}
-				subtitle={t(
-					isFDM
-						? "calc.sectionDesc.fdmHardware"
-						: "calc.sectionDesc.resinHardware",
-				)}
-				sectionId="hardware"
-			/>
-			{isFDM && (
-				<>
-					<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-						<div className="space-y-4">
-							<div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
-								<span className="text-xs font-semibold text-[var(--color-info)]">
-									{t("calc.nozzle")}
-								</span>
-								<ToggleSwitch
-									enabled={store.fdmHardware.nozzleEnabled}
-									onToggle={(v) =>
-										store.setFdmHardware({
-											...store.fdmHardware,
-											nozzleEnabled: v,
-										})
-									}
-								/>
-							</div>
-							{store.fdmHardware.nozzleEnabled && (
-								<>
-									<InputGroup
-										label={t("calc.nozzleCost")}
-										value={store.fdmHardware.nozzleCost}
-										onChange={(v) =>
-											handleInput(v, (val) =>
-												store.setFdmHardware({
-													...store.fdmHardware,
-													nozzleCost: val,
-												}),
-											)
-										}
-										type="number"
-										prefix={currencySymbol}
-										tooltip={t('tooltip.nozzleCost')}
-									/>
-									<InputGroup
-										label={t("calc.nozzleLife")}
-										value={store.fdmHardware.nozzleLifespanKg}
-										onChange={(v) =>
-											handleInput(v, (val) =>
-												store.setFdmHardware({
-													...store.fdmHardware,
-													nozzleLifespanKg: val,
-												}),
-											)
-										}
-										type="number"
-										unit="kg"
-										tooltip={t('tooltip.nozzleLife')}
-									/>
-								</>
-							)}
-						</div>
-						<div className="space-y-4">
-							<div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
-								<span className="text-xs font-semibold text-[var(--color-info)]">
-									{t("calc.bed")}
-								</span>
-								<ToggleSwitch
-									enabled={store.fdmHardware.bedEnabled}
-									onToggle={(v) =>
-										store.setFdmHardware({
-											...store.fdmHardware,
-											bedEnabled: v,
-										})
-									}
-								/>
-							</div>
-							{store.fdmHardware.bedEnabled && (
-								<InputGroup
-									label={t("calc.bedCost")}
-									value={store.fdmHardware.bedAdhesionCost}
-									onChange={(v) =>
-										handleInput(v, (val) =>
-											store.setFdmHardware({
-												...store.fdmHardware,
-												bedAdhesionCost: val,
-											}),
-										)
-									}
-									type="number"
-									prefix={currencySymbol}
-									tooltip={t('tooltip.bedCost')}
-								/>
-							)}
-						</div>
-					</div>
-					<div className="border-t border-[var(--color-border)] pt-6">
-						<div className="flex items-center gap-2 mb-4">
-							<span>🎨</span>
-							<span className="text-sm font-semibold text-[var(--color-text-primary)]">
-								{t("calc.fdmFinishing")}
-							</span>
-						</div>
-						<InputGroup
-							label={t("calc.finishingSupplies")}
-							value={store.fdmFinishing.suppliesCost}
-							onChange={(v) =>
-								handleInput(v, (val) =>
-									store.setFdmFinishing({
-										...store.fdmFinishing,
-										suppliesCost: val,
-									}),
-								)
-							}
-							type="number"
-							prefix={currencySymbol}
-							tooltip={t('tooltip.finishing')}
-						/>
-					</div>
-				</>
-			)}
-			{!isFDM && (
-				<>
-					<div className="space-y-4">
-						<div className="flex items-center gap-2 mb-2">
-							<span>🧪</span>
-							<span className="text-sm font-semibold text-[var(--color-text-primary)]">
-								{t("calc.resinPostProcess")}
-							</span>
-						</div>
-						<div className="flex items-center justify-between">
-							<span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-								{t("calc.washing")}
-							</span>
-							<ToggleSwitch
-								enabled={store.resinPostProcess.washingEnabled}
-								onToggle={(v) =>
-									store.setResinPostProcess({
-										...store.resinPostProcess,
-										washingEnabled: v,
-									})
-								}
-							/>
-						</div>
-						{store.resinPostProcess.washingEnabled && (
-							<div className="grid grid-cols-2 gap-3 pl-3 border-l-2 border-[var(--color-border)]">
-								<InputGroup
-									label={t("calc.alcoholCost")}
-									value={store.resinPostProcess.alcoholCostPerLiter}
-									onChange={(v) =>
-										handleInput(v, (val) =>
-											store.setResinPostProcess({
-												...store.resinPostProcess,
-												alcoholCostPerLiter: val,
-											}),
-										)
-									}
-									type="number"
-									prefix="R$/L"
-									tooltip={t('tooltip.alcoholCostPerLiter')}
-								/>
-								<InputGroup
-									label={t("calc.alcoholVol")}
-									value={store.resinPostProcess.alcoholVolumeLiters}
-									onChange={(v) =>
-										handleInput(v, (val) =>
-											store.setResinPostProcess({
-												...store.resinPostProcess,
-												alcoholVolumeLiters: val,
-											}),
-										)
-									}
-									type="number"
-									unit="L"
-									tooltip={t('tooltip.alcoholVolume')}
-								/>
-							</div>
-						)}
-						<div className="flex items-center justify-between">
-							<span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-								{t("calc.curing")}
-							</span>
-							<ToggleSwitch
-								enabled={store.resinPostProcess.curingEnabled}
-								onToggle={(v) =>
-									store.setResinPostProcess({
-										...store.resinPostProcess,
-										curingEnabled: v,
-									})
-								}
-							/>
-						</div>
-						{store.resinPostProcess.curingEnabled && (
-							<div className="grid grid-cols-2 gap-3 pl-3 border-l-2 border-[var(--color-border)]">
-								<InputGroup
-									label={t("calc.cureTime")}
-									value={store.resinPostProcess.curingTimeMinutes}
-									onChange={(v) =>
-										handleInput(v, (val) =>
-											store.setResinPostProcess({
-												...store.resinPostProcess,
-												curingTimeMinutes: val,
-											}),
-										)
-									}
-									type="number"
-									unit="min"
-									tooltip={t('tooltip.cureTime')}
-								/>
-								<InputGroup
-									label={t("calc.curePower")}
-									value={store.resinPostProcess.curingPowerWatts}
-									onChange={(v) =>
-										handleInput(v, (val) =>
-											store.setResinPostProcess({
-												...store.resinPostProcess,
-												curingPowerWatts: val,
-											}),
-										)
-									}
-									type="number"
-									unit="W"
-									tooltip={t('tooltip.curePower')}
-								/>
-							</div>
-						)}
-					</div>
-					<div className="border-t border-[var(--color-border)] pt-6">
-						<div className="flex items-center gap-2 mb-4">
-							<span>🖥️</span>
-							<span className="text-sm font-semibold text-[var(--color-text-primary)]">
-								{t("calc.resinHardware")}
-							</span>
-						</div>
-						<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-							<InputGroup
-								label={t("calc.lcdCost")}
-								value={store.resinHardware.lcdCost}
-								onChange={(v) =>
-									handleInput(v, (val) =>
-										store.setResinHardware({
-											...store.resinHardware,
-											lcdCost: val,
-										}),
-									)
-								}
-								type="number"
-								prefix={currencySymbol}
-								tooltip={t('tooltip.lcdCost')}
-							/>
-							<InputGroup
-								label={t("calc.lcdLife")}
-								value={store.resinHardware.lcdLifespanHours}
-								onChange={(v) =>
-									handleInput(v, (val) =>
-										store.setResinHardware({
-											...store.resinHardware,
-											lcdLifespanHours: val,
-										}),
-									)
-								}
-								type="number"
-								unit="h"
-								tooltip={t('tooltip.lcdLife')}
-							/>
-							<InputGroup
-								label={t("calc.fepCost")}
-								value={store.resinHardware.fepCost}
-								onChange={(v) =>
-									handleInput(v, (val) =>
-										store.setResinHardware({
-											...store.resinHardware,
-											fepCost: val,
-										}),
-									)
-								}
-								type="number"
-								prefix={currencySymbol}
-								tooltip={t('tooltip.fepCost')}
-							/>
-							<InputGroup
-								label={t("calc.fepLife")}
-								value={store.resinHardware.fepLifespanPrints}
-								onChange={(v) =>
-									handleInput(v, (val) =>
-										store.setResinHardware({
-											...store.resinHardware,
-											fepLifespanPrints: val,
-										}),
-									)
-								}
-								type="number"
-								unit="prints"
-								tooltip={t('tooltip.fepLife')}
-							/>
-						</div>
-					</div>
-				</>
-			)}
-		</div>
-	);
+  const handleInput = (value: string, setter: (v: number) => void) => {
+    setter(value === "" ? 0 : parseFloat(value) || 0);
+  };
+
+  return (
+    <div className="surface rounded-xl p-4 sm:p-5 space-y-6">
+      <SectionHeader
+        Icon={Wrench}
+        title={t("calc.fdmHardware")}
+        subtitle={t(
+          isFDM
+            ? "calc.sectionDesc.fdmHardware"
+            : "calc.sectionDesc.resinHardware",
+        )}
+        sectionId="hardware"
+      />
+      {isFDM && (
+        <>
+          <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
+                <span className="text-xs font-semibold text-[var(--color-info)]">
+                  {t("calc.nozzle")}
+                </span>
+                <ToggleSwitch
+                  enabled={store.fdmHardware.nozzleEnabled}
+                  onToggle={(v) =>
+                    store.setFdmHardware({
+                      ...store.fdmHardware,
+                      nozzleEnabled: v,
+                    })
+                  }
+                />
+              </div>
+              {store.fdmHardware.nozzleEnabled && (
+                <>
+                  <InputGroup
+                    label={t("calc.nozzleCost")}
+                    value={store.fdmHardware.nozzleCost}
+                    onChange={(v) =>
+                      handleInput(v, (val) =>
+                        store.setFdmHardware({
+                          ...store.fdmHardware,
+                          nozzleCost: val,
+                        }),
+                      )
+                    }
+                    type="number"
+                    prefix={currencySymbol}
+                    tooltip={t("tooltip.nozzleCost")}
+                  />
+                  <InputGroup
+                    label={t("calc.nozzleLife")}
+                    value={store.fdmHardware.nozzleLifespanKg}
+                    onChange={(v) =>
+                      handleInput(v, (val) =>
+                        store.setFdmHardware({
+                          ...store.fdmHardware,
+                          nozzleLifespanKg: val,
+                        }),
+                      )
+                    }
+                    type="number"
+                    unit="kg"
+                    tooltip={t("tooltip.nozzleLife")}
+                  />
+                </>
+              )}
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
+                <span className="text-xs font-semibold text-[var(--color-info)]">
+                  {t("calc.bed")}
+                </span>
+                <ToggleSwitch
+                  enabled={store.fdmHardware.bedEnabled}
+                  onToggle={(v) =>
+                    store.setFdmHardware({
+                      ...store.fdmHardware,
+                      bedEnabled: v,
+                    })
+                  }
+                />
+              </div>
+              {store.fdmHardware.bedEnabled && (
+                <InputGroup
+                  label={t("calc.bedCost")}
+                  value={store.fdmHardware.bedAdhesionCost}
+                  onChange={(v) =>
+                    handleInput(v, (val) =>
+                      store.setFdmHardware({
+                        ...store.fdmHardware,
+                        bedAdhesionCost: val,
+                      }),
+                    )
+                  }
+                  type="number"
+                  prefix={currencySymbol}
+                  tooltip={t("tooltip.bedCost")}
+                />
+              )}
+            </div>
+          </div>
+          <div className="border-t border-[var(--color-border)] pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span>🎨</span>
+              <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                {t("calc.fdmFinishing")}
+              </span>
+            </div>
+            <InputGroup
+              label={t("calc.finishingSupplies")}
+              value={store.fdmFinishing.suppliesCost}
+              onChange={(v) =>
+                handleInput(v, (val) =>
+                  store.setFdmFinishing({
+                    ...store.fdmFinishing,
+                    suppliesCost: val,
+                  }),
+                )
+              }
+              type="number"
+              prefix={currencySymbol}
+              tooltip={t("tooltip.finishing")}
+            />
+          </div>
+        </>
+      )}
+      {!isFDM && (
+        <>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span>🧪</span>
+              <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                {t("calc.resinPostProcess")}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                {t("calc.washing")}
+              </span>
+              <ToggleSwitch
+                enabled={store.resinPostProcess.washingEnabled}
+                onToggle={(v) =>
+                  store.setResinPostProcess({
+                    ...store.resinPostProcess,
+                    washingEnabled: v,
+                  })
+                }
+              />
+            </div>
+            {store.resinPostProcess.washingEnabled && (
+              <div className="space-y-3 pl-3 border-l-2 border-[var(--color-border)]">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                      {t("calc.washTypeLabel")}
+                    </span>
+                    <Tooltip content={t("tooltip.washType")}>
+                      <Info
+                        className="w-3.5 h-3.5 text-[var(--color-text-muted)] cursor-help shrink-0"
+                        aria-hidden="true"
+                      />
+                    </Tooltip>
+                  </div>
+                  <div
+                    role="group"
+                    aria-label={t("calc.washTypeLabel")}
+                    className="flex gap-2"
+                  >
+                    <button
+                      type="button"
+                      data-testid="wash-type-alcohol"
+                      aria-pressed={!isWaterWash}
+                      onClick={() =>
+                        store.setResinPostProcess({
+                          ...store.resinPostProcess,
+                          washType: "alcohol",
+                        })
+                      }
+                      className={`flex-1 h-9 rounded-lg text-xs font-semibold border transition-all duration-200 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
+                        isWaterWash ? segIdle : segActive
+                      }`}
+                    >
+                      {t("calc.washTypeAlcohol")}
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="wash-type-water"
+                      aria-pressed={isWaterWash}
+                      onClick={() =>
+                        store.setResinPostProcess({
+                          ...store.resinPostProcess,
+                          washType: "water",
+                        })
+                      }
+                      className={`flex-1 h-9 rounded-lg text-xs font-semibold border transition-all duration-200 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
+                        isWaterWash ? segActive : segIdle
+                      }`}
+                    >
+                      {t("calc.washTypeWater")}
+                    </button>
+                  </div>
+                </div>
+                {isWaterWash ? (
+                  <p
+                    data-testid="wash-type-water-note"
+                    className="text-[11px] leading-relaxed text-[var(--color-text-muted)]"
+                  >
+                    {t("calc.washTypeWaterNote")}
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputGroup
+                      label={t("calc.alcoholCost")}
+                      value={store.resinPostProcess.alcoholCostPerLiter}
+                      onChange={(v) =>
+                        handleInput(v, (val) =>
+                          store.setResinPostProcess({
+                            ...store.resinPostProcess,
+                            alcoholCostPerLiter: val,
+                          }),
+                        )
+                      }
+                      type="number"
+                      prefix="R$/L"
+                      tooltip={t("tooltip.alcoholCostPerLiter")}
+                    />
+                    <InputGroup
+                      label={t("calc.alcoholVol")}
+                      value={store.resinPostProcess.alcoholVolumeLiters}
+                      onChange={(v) =>
+                        handleInput(v, (val) =>
+                          store.setResinPostProcess({
+                            ...store.resinPostProcess,
+                            alcoholVolumeLiters: val,
+                          }),
+                        )
+                      }
+                      type="number"
+                      unit="L"
+                      tooltip={t("tooltip.alcoholVolume")}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
+                {t("calc.curing")}
+              </span>
+              <ToggleSwitch
+                enabled={store.resinPostProcess.curingEnabled}
+                onToggle={(v) =>
+                  store.setResinPostProcess({
+                    ...store.resinPostProcess,
+                    curingEnabled: v,
+                  })
+                }
+              />
+            </div>
+            {store.resinPostProcess.curingEnabled && (
+              <div className="grid grid-cols-2 gap-3 pl-3 border-l-2 border-[var(--color-border)]">
+                <InputGroup
+                  label={t("calc.cureTime")}
+                  value={store.resinPostProcess.curingTimeMinutes}
+                  onChange={(v) =>
+                    handleInput(v, (val) =>
+                      store.setResinPostProcess({
+                        ...store.resinPostProcess,
+                        curingTimeMinutes: val,
+                      }),
+                    )
+                  }
+                  type="number"
+                  unit="min"
+                  tooltip={t("tooltip.cureTime")}
+                />
+                <InputGroup
+                  label={t("calc.curePower")}
+                  value={store.resinPostProcess.curingPowerWatts}
+                  onChange={(v) =>
+                    handleInput(v, (val) =>
+                      store.setResinPostProcess({
+                        ...store.resinPostProcess,
+                        curingPowerWatts: val,
+                      }),
+                    )
+                  }
+                  type="number"
+                  unit="W"
+                  tooltip={t("tooltip.curePower")}
+                />
+              </div>
+            )}
+          </div>
+          <div className="border-t border-[var(--color-border)] pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span>🖥️</span>
+              <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                {t("calc.resinHardware")}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+              <InputGroup
+                label={t("calc.lcdCost")}
+                value={store.resinHardware.lcdCost}
+                onChange={(v) =>
+                  handleInput(v, (val) =>
+                    store.setResinHardware({
+                      ...store.resinHardware,
+                      lcdCost: val,
+                    }),
+                  )
+                }
+                type="number"
+                prefix={currencySymbol}
+                tooltip={t("tooltip.lcdCost")}
+              />
+              <InputGroup
+                label={t("calc.lcdLife")}
+                value={store.resinHardware.lcdLifespanHours}
+                onChange={(v) =>
+                  handleInput(v, (val) =>
+                    store.setResinHardware({
+                      ...store.resinHardware,
+                      lcdLifespanHours: val,
+                    }),
+                  )
+                }
+                type="number"
+                unit="h"
+                tooltip={t("tooltip.lcdLife")}
+              />
+              <InputGroup
+                label={t("calc.fepCost")}
+                value={store.resinHardware.fepCost}
+                onChange={(v) =>
+                  handleInput(v, (val) =>
+                    store.setResinHardware({
+                      ...store.resinHardware,
+                      fepCost: val,
+                    }),
+                  )
+                }
+                type="number"
+                prefix={currencySymbol}
+                tooltip={t("tooltip.fepCost")}
+              />
+              <InputGroup
+                label={t("calc.fepLife")}
+                value={store.resinHardware.fepLifespanPrints}
+                onChange={(v) =>
+                  handleInput(v, (val) =>
+                    store.setResinHardware({
+                      ...store.resinHardware,
+                      fepLifespanPrints: val,
+                    }),
+                  )
+                }
+                type="number"
+                unit="prints"
+                tooltip={t("tooltip.fepLife")}
+              />
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

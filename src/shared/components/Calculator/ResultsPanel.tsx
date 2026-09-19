@@ -38,6 +38,7 @@ import {
 } from "@/shared/lib/calculatorToProduct";
 import { roundCurrency } from "@/shared/lib/currency";
 import { useProductInventory } from "@/shared/stores/productInventory";
+import { MaterialComparison } from "@/shared/components/Calculator/MaterialComparison";
 
 interface ResultsPanelProps {
   variant: "sidebar" | "mobile";
@@ -664,6 +665,8 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
           </div>
         </Suspense>
       )}
+
+      <MaterialComparison />
 
       <button
         onClick={() => addToHistory()}
