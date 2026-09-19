@@ -63,7 +63,21 @@
     "generatingPdf": "Generating PDF…",
     "executiveReport": "Executive Report",
     "kpiSummary": "KPI Summary",
-    "periodLabel": "Period"
+    "periodLabel": "Period",
+    "kpis": {
+      "title": "History KPIs (filtered period)",
+      "totalProfit": "Total profit (period)",
+      "avgCostPerPrint": "Avg cost per print",
+      "avgMargin": "Avg margin",
+      "prints": "Prints"
+    },
+    "projection": {
+      "title": "Monthly projection (history-based)",
+      "description": "Projected from the filtered period's average profit per print.",
+      "inputLabel": "Parts per month",
+      "partsMonth": "parts/month",
+      "projectedProfit": "Projected monthly profit"
+    }
   },
   "sections": {
     "title": "Sections"
@@ -927,9 +941,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -983,9 +995,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1047,10 +1057,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -1075,9 +1082,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1113,9 +1118,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1157,9 +1160,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1243,9 +1244,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1261,15 +1260,11 @@
           },
           {
             "title": "🧹 Other",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1301,10 +1296,7 @@
           },
           {
             "title": "✅ Tests",
-            "items": [
-              "417 tests, 36/36 files passing",
-              "Coverage >80%"
-            ]
+            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
           }
         ]
       },

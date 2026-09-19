@@ -169,6 +169,31 @@ export function Dashboard() {
     return margins.reduce((a, b) => a + b, 0) / margins.length;
   }, [filteredEntries]);
 
+  // Fase 3 KPIs (history-based): aggregated profit, cost, margin and print
+  // count over the filtered period. null when there is no history.
+  const kpis = useMemo(() => {
+    if (filteredEntries.length === 0) return null;
+    const totalProfit = filteredEntries.reduce((sum, e) => sum + e.profit, 0);
+    const totalCost = filteredEntries.reduce((sum, e) => sum + e.totalCost, 0);
+    return {
+      count: filteredEntries.length,
+      totalProfit,
+      avgCostPerPrint: totalCost / filteredEntries.length,
+      avgMargin,
+    };
+  }, [filteredEntries, avgMargin]);
+
+  // Fase 3 projection (history-based): monthly profit from the filtered
+  // period's average profit per print x printsPerMonth. Shares the same
+  // printsPerMonth state as the results-based monthlyProjection above.
+  const monthlyProfitProjection = useMemo(() => {
+    if (filteredEntries.length === 0) return null;
+    const avgProfitPerPrint =
+      filteredEntries.reduce((sum, e) => sum + e.profit, 0) /
+      filteredEntries.length;
+    return avgProfitPerPrint * printsPerMonth;
+  }, [filteredEntries, printsPerMonth]);
+
   // Profit trend data (filtered)
   const trendData = useMemo(() => {
     const sorted = [...filteredEntries].sort(
@@ -647,6 +672,96 @@ export function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Fase 3: history-based KPI summary row (filtered period) */}
+      {kpis && (
+        <section aria-label={t("dashboard.kpis.title")}>
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
+            {t("dashboard.kpis.title")}
+          </h3>
+          <div
+            data-testid="dashboard-kpis"
+            className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+          >
+            <div className="surface rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[var(--color-text-muted)]">
+                {t("dashboard.kpis.totalProfit")}
+              </p>
+              <p
+                className={`text-lg font-bold ${kpis.totalProfit >= 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}
+              >
+                {formatMoney(kpis.totalProfit)}
+              </p>
+            </div>
+            <div className="surface rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[var(--color-text-muted)]">
+                {t("dashboard.kpis.avgCostPerPrint")}
+              </p>
+              <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                {formatMoney(kpis.avgCostPerPrint)}
+              </p>
+            </div>
+            <div className="surface rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[var(--color-text-muted)]">
+                {t("dashboard.kpis.avgMargin")}
+              </p>
+              <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                {kpis.avgMargin != null ? `${kpis.avgMargin.toFixed(1)}%` : "—"}
+              </p>
+            </div>
+            <div className="surface rounded-xl p-3 text-center">
+              <p className="text-[11px] text-[var(--color-text-muted)]">
+                {t("dashboard.kpis.prints")}
+              </p>
+              <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                {kpis.count}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Fase 3: history-based monthly profit projection */}
+      {monthlyProfitProjection != null && (
+        <div
+          data-testid="dashboard-projection"
+          className="surface rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-[var(--color-accent)]/20"
+        >
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              {t("dashboard.projection.title")}
+            </h3>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+              {t("dashboard.projection.description")}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              value={printsPerMonth}
+              onChange={(e) =>
+                setPrintsPerMonth(Math.max(0, Number(e.target.value) || 0))
+              }
+              aria-label={t("dashboard.projection.inputLabel")}
+              className="w-24 px-3 py-2 rounded-lg bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-border)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+            />
+            <span className="text-xs text-[var(--color-text-muted)]">
+              {t("dashboard.projection.partsMonth")}
+            </span>
+          </div>
+          <div className="text-right">
+            <p className="text-[11px] text-[var(--color-text-muted)]">
+              {t("dashboard.projection.projectedProfit")}
+            </p>
+            <p
+              className={`text-xl font-bold ${monthlyProfitProjection >= 0 ? "text-[var(--color-success)]" : "text-[var(--color-danger)]"}`}
+            >
+              {formatMoney(monthlyProfitProjection)}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Cost Breakdown Chart */}
       <Suspense
