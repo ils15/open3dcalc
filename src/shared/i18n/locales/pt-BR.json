@@ -381,7 +381,17 @@
     "newSpool": "Novo Rolo",
     "editSpool": "Editar Rolo",
     "saveSpool": "Salvar Rolo",
-    "saveChanges": "Salvar Alterações"
+    "saveChanges": "Salvar Alterações",
+    "remaining": "Restante",
+    "netRemaining": "Líquido restante",
+    "netRemainingHint": "Peso atual do carretel na balança menos a tara (peso da bobina vazia). Quando a tara não é informada, a tabela da marca é usada automaticamente.",
+    "tare": "Tara do carretel",
+    "tareAuto": "Auto: {{tare}} g",
+    "tareSourceNote": "Tara por marca de catálogo/fabricante (set/2026): Bambu Lab 210 g, Prusament 194 g, Polymaker (papelão) 140 g, Anycubic 127 g. Variações de lote existem; uma tara manual por carretel sempre vence esta tabela.",
+    "coverageOk": "Cobre a peça",
+    "coverageFail": "Não cobre a peça",
+    "coverageNeeded": "Necessário: {{grams}} g",
+    "coverageMargin": "Margem: {{margin}} g"
   },
   "product": {
     "title": "Dados da Peça",

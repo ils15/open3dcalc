@@ -381,7 +381,17 @@
     "newSpool": "New Spool",
     "editSpool": "Edit Spool",
     "saveSpool": "Save Spool",
-    "saveChanges": "Save Changes"
+    "saveChanges": "Save Changes",
+    "remaining": "Remaining",
+    "netRemaining": "Net remaining",
+    "netRemainingHint": "Current spool weight on the scale minus the tare (empty spool weight). When the tare is not informed, the brand table is used automatically.",
+    "tare": "Spool tare",
+    "tareAuto": "Auto: {{tare}} g",
+    "tareSourceNote": "Brand tare from catalog/manufacturer (Sep 2026): Bambu Lab 210 g, Prusament 194 g, Polymaker (cardboard) 140 g, Anycubic 127 g. Batch variations exist; a manual per-spool tare always overrides this table.",
+    "coverageOk": "Covers the part",
+    "coverageFail": "Does not cover the part",
+    "coverageNeeded": "Required: {{grams}} g",
+    "coverageMargin": "Margin: {{margin}} g"
   },
   "product": {
     "title": "Part Data",
