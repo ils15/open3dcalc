@@ -178,6 +178,29 @@ describe('Tutorial', () => {
     expect(state.sessionDismissed).toBe(true)
   })
 
+  // ── Degraded fallback (missing anchor) ────────────────────────
+  it('degrades to a centered card without overlay when the anchor never mounts', async () => {
+    useTutorialStore.getState().startTutorial()
+    useTutorialStore.getState().goToStep(2) // "material" step — its anchor is NOT rendered
+    render(<Tutorial />)
+
+    // The card renders right away...
+    expect(screen.getByText('Materiais')).toBeInTheDocument()
+
+    // ...and once the retry loop gives up the overlay is suppressed instead of
+    // blocking the tour on a surface that isn't rendered.
+    await vi.waitFor(
+      () => {
+        expect(document.querySelector('[data-testid="tutorial-overlay"]')).toBeNull()
+      },
+      { timeout: 2500 },
+    )
+
+    // The tour stays usable: card still on screen (centered), tour still active.
+    expect(screen.getByText('Materiais')).toBeInTheDocument()
+    expect(useTutorialStore.getState().isActive).toBe(true)
+  })
+
   // ── Keyboard: Escape ───────────────────────────────────────────
   it('Escape key closes tutorial', () => {
     useTutorialStore.getState().startTutorial()

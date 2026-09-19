@@ -1,29 +1,23 @@
-import { useEffect, useCallback, useMemo } from 'react'
+import { useEffect, useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useTutorialStore, TUTORIAL_TOTAL_STEPS } from '@/shared/stores/tutorialStore'
+import { useTutorialStore } from '@/shared/stores/tutorialStore'
+import { useTourStepCount } from '@/shared/stores/tutorialStore'
+import {
+  getTourSteps,
+  dispatchTutorialNavigate,
+  type StepConfig,
+} from './tutorialTours'
+import { useCalculatorStore } from '@/shared/stores/calculatorStore'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 
-// ── Step config ──────────────────────────────────────────────────────────────
+// ── Step resolution ───────────────────────────────────────────────────────────
+// Cross-tab steps resolve asynchronously: the engine navigates to the owning
+// tab first, then retries the selector until the anchor mounts (or gives up and
+// falls back to a plain card without overlay).
 
-type StepKey = 'welcome' | 'material' | 'print' | 'sales' | 'results' | 'export' | 'complete'
-
-interface StepConfig {
-  key: StepKey
-  /** CSS selector or data-tutorial attribute value */
-  target: string | null
-}
-
-const STEPS: StepConfig[] = [
-  { key: 'welcome',  target: null },
-  { key: 'material', target: '[data-tutorial="material"]' },
-  { key: 'print',    target: '[data-tutorial="print"]' },
-  { key: 'sales',    target: '[data-tutorial="sales"]' },
-  { key: 'results',  target: '[data-tutorial="results-sidebar"], [data-tutorial="results"]' },
-  { key: 'export',   target: '[data-tutorial="export"]' },
-  { key: 'complete', target: null },
-]
+const NAVIGATE_RETRY_MS = [16, 32, 64, 128, 256, 512]
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -110,7 +104,7 @@ function TooltipCard({
   onSkip,
   onFinish,
 }: {
-  stepKey: StepKey
+  stepKey: string
   currentStep: number
   totalSteps: number
   targetRect: DOMRect | null
@@ -249,6 +243,7 @@ export function Tutorial() {
   const prefersReduced = useReducedMotion()
   const {
     isActive,
+    activeTour,
     currentStep,
     nextStep,
     previousStep,
@@ -258,20 +253,99 @@ export function Tutorial() {
     dismissTutorial,
     sessionDismissed,
   } = useTutorialStore()
+  const totalSteps = useTourStepCount()
 
-  // Move hooks BEFORE early return to avoid "fewer hooks" errors
-  // Compute target rect synchronously instead of setState in effect
-  const targetRect = useMemo(() => {
-    if (!isActive || sessionDismissed) return null
-    const step = STEPS[currentStep - 1]
-    if (!step?.target) return null
+  // ── Anchor resolution ──────────────────────────────────────────────────
+  // Sync attempt first (same-tab steps resolve immediately, no flicker);
+  // cross-tab/level steps keep retrying after the navigation event fires.
+  const steps = getTourSteps(activeTour)
+  const step: StepConfig | undefined = steps[currentStep - 1]
+
+  const syncRect = useMemo(() => {
+    if (!isActive || sessionDismissed || !step?.target) return null
     return getElementRect(step.target)
-  }, [isActive, sessionDismissed, currentStep])
+  }, [isActive, sessionDismissed, step])
 
-  // Scroll target into view when step changes
+  const [asyncRect, setAsyncRect] = useState<DOMRect | null>(null)
+  const [anchorMissing, setAnchorMissing] = useState(false)
+  const prevLevelRef = useRef<ReturnType<typeof useCalculatorStore.getState>['calcLevel'] | null>(null)
+
+  useEffect(() => {
+    if (!isActive || sessionDismissed || !step) return
+    if (!step.target) return // centered card with full overlay (welcome/complete)
+
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    setAsyncRect(null)
+    setAnchorMissing(false)
+
+    // Navigate BEFORE spotlight so the owning tab mounts the anchor.
+    if (step.tab) dispatchTutorialNavigate(step.tab)
+    // A level switch unlocks gated sections; remember the user's level to
+    // restore it once the tour ends.
+    if (step.level) {
+      if (prevLevelRef.current === null) {
+        prevLevelRef.current = useCalculatorStore.getState().calcLevel
+      }
+      useCalculatorStore.getState().setCalcLevel(step.level)
+    }
+
+    // Already in the DOM (same-tab)? Nothing to wait for.
+    if (document.querySelector(step.target)) return
+
+    const retry = (attempt: number) => {
+      if (cancelled) return
+      const el = document.querySelector(step.target as string)
+      if (el) {
+        el.scrollIntoView({ behavior: 'auto', block: 'center' })
+        setAsyncRect(el.getBoundingClientRect())
+        return
+      }
+      if (attempt < NAVIGATE_RETRY_MS.length) {
+        timer = setTimeout(() => retry(attempt + 1), NAVIGATE_RETRY_MS[attempt])
+      } else {
+        // Honest fallback: show the card without the overlay instead of
+        // blocking the tour on a surface that isn't rendered.
+        setAnchorMissing(true)
+      }
+    }
+    timer = setTimeout(() => retry(0), NAVIGATE_RETRY_MS[0])
+
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    }
+  }, [isActive, sessionDismissed, step])
+
+  const targetRect = asyncRect ?? syncRect
+  const showOverlay = !anchorMissing
+
+  const restoreLevel = useCallback(() => {
+    if (prevLevelRef.current !== null) {
+      useCalculatorStore.getState().setCalcLevel(prevLevelRef.current)
+      prevLevelRef.current = null
+    }
+  }, [])
+
+  // Restore a borrowed calculator level on ANY exit path (finish, skip,
+  // dismiss, or the modal-pause skip) — the tour must not change the user's
+  // durable calculator settings.
+  useEffect(() => {
+    if (!isActive) restoreLevel()
+  }, [isActive, restoreLevel])
+
+  const handleSkip = useCallback(() => {
+    skipTutorial()
+  }, [skipTutorial])
+
+  const handleDismiss = useCallback(() => {
+    dismissTutorial()
+  }, [dismissTutorial])
+
+  // Scroll target into view when step changes (same-tab steps; cross-tab
+  // steps are scrolled inside the retry loop above).
   useEffect(() => {
     if (!isActive || sessionDismissed) return
-    const step = STEPS[currentStep - 1]
     if (!step?.target) return
 
     const targetEl = document.querySelector(step.target)
@@ -281,7 +355,7 @@ export function Tutorial() {
       // by dispatching a resize event
       window.dispatchEvent(new Event('resize'))
     }
-  }, [isActive, sessionDismissed, currentStep, prefersReduced])
+  }, [isActive, sessionDismissed, step])
 
   // Keyboard navigation
   useEffect(() => {
@@ -293,7 +367,7 @@ export function Tutorial() {
         finishTutorial()
       } else if (e.key === 'ArrowRight') {
         e.preventDefault()
-        if (currentStep < TUTORIAL_TOTAL_STEPS) {
+        if (currentStep < totalSteps) {
           completeStep(currentStep)
           nextStep()
         }
@@ -307,7 +381,7 @@ export function Tutorial() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isActive, sessionDismissed, currentStep, nextStep, previousStep, finishTutorial, completeStep])
+  }, [isActive, sessionDismissed, currentStep, totalSteps, nextStep, previousStep, finishTutorial, completeStep])
 
   // Pause tutorial when a MODAL dialog is open (not the tutorial card itself)
   useEffect(() => {
@@ -336,35 +410,37 @@ export function Tutorial() {
   const handleFinish = useCallback(() => {
     if (!isActive || sessionDismissed) return
     completeStep(currentStep)
+    restoreLevel()
     finishTutorial()
-  }, [currentStep, finishTutorial, completeStep, isActive, sessionDismissed])
+  }, [currentStep, finishTutorial, completeStep, isActive, sessionDismissed, restoreLevel])
 
   // If the user dismissed the tutorial this session, don't show it
-  if (!isActive || sessionDismissed) return null
+  if (!isActive || sessionDismissed || !step) return null
 
-  const step = STEPS[currentStep - 1]
   const duration = prefersReduced ? 0 : 0.2
 
   return (
     <>
       {/* Spotlight overlay */}
-      <AnimatePresence>
-        <motion.div
-          key="tutorial-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration }}
-          className="fixed inset-0 z-[55]"
-        >
-          <SpotlightOverlay targetRect={targetRect} onClick={dismissTutorial} />
-        </motion.div>
-      </AnimatePresence>
+      {showOverlay && (
+        <AnimatePresence>
+          <motion.div
+            key="tutorial-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration }}
+            className="fixed inset-0 z-[55]"
+          >
+            <SpotlightOverlay targetRect={targetRect} onClick={handleDismiss} />
+          </motion.div>
+        </AnimatePresence>
+      )}
 
       {/* Tooltip */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={`tutorial-step-${currentStep}`}
+          key={`tutorial-step-${activeTour}-${currentStep}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
@@ -373,11 +449,11 @@ export function Tutorial() {
           <TooltipCard
             stepKey={step.key}
             currentStep={currentStep}
-            totalSteps={TUTORIAL_TOTAL_STEPS}
+            totalSteps={totalSteps}
             targetRect={targetRect}
             onPrevious={previousStep}
             onNext={handleNext}
-            onSkip={skipTutorial}
+            onSkip={handleSkip}
             onFinish={handleFinish}
           />
         </motion.div>
