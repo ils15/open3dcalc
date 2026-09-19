@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog'
 import { Users, Plus, Pencil, Trash2, Search, FileJson, Upload, X } from 'lucide-react'
 import type { Customer, CustomerFormData } from '@/shared/types'
 import { downloadBlob } from '@/shared/lib/download'
+import { DemoExportBadge } from '@/shared/components/DemoMode/DemoExportBadge'
 
 const EMPTY_FORM: CustomerFormData = {
   name: '',
@@ -351,6 +352,7 @@ export function CustomerTab() {
       )}
 
       {/* Export / Import buttons */}
+      <DemoExportBadge />
       <div className="flex gap-2 mt-4">
         <button
           onClick={handleExport}

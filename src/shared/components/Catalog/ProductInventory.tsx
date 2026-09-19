@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog'
 import { Package, Plus, Pencil, Trash2, Search, Download } from 'lucide-react'
 import type { Product } from '@/shared/types'
 import { downloadBlob } from '@/shared/lib/download'
+import { DemoExportBadge } from '@/shared/components/DemoMode/DemoExportBadge'
 
 interface ProductFormState {
   name: string
@@ -251,6 +252,8 @@ export function ProductInventory() {
           </button>
         </div>
       </div>
+
+      <DemoExportBadge />
 
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <div className="relative flex-1">

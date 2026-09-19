@@ -14,6 +14,7 @@ import {
 import { EmptyState } from '@/shared/components/ui/EmptyState'
 import { guardExport } from '@/shared/lib/demoExportGuard'
 import { downloadBlob } from '@/shared/lib/download'
+import { DemoExportBadge } from '@/shared/components/DemoMode/DemoExportBadge'
 
 // ── Status helpers ──────────────────────────────────────────────
 const STATUS_CONFIG: Record<Quote['status'], { label: string; color: string; bg: string }> = {
@@ -541,6 +542,7 @@ function QuoteViewModal({
       wide
     >
       <div className="space-y-5">
+        <DemoExportBadge />
         {/* Status + actions bar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
