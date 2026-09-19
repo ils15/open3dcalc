@@ -242,8 +242,14 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       // outra resina → álcool. washType ausente ≡ "alcohol" (compatibilidade
       // byte-identical com payloads legacy). O toggle manual da UI (Wave C)
       // ainda pode sobrescrever depois via setResinPostProcess.
-      const washType: PostProcessingResin["washType"] =
-        v.type === "water_washable" ? "water" : "alcohol";
+      // A UI mapeia m.name no <Select> de resina, então a store recebe o NOME
+      // DE EXIBIÇÃO ("Resina Water Washable"), não o id ("water_washable") — a
+      // detecção é por substring normalizada do nome, nunca por id.
+      const isWaterWashable =
+        v.type?.trim().toLowerCase().includes("water washable") ?? false;
+      const washType: PostProcessingResin["washType"] = isWaterWashable
+        ? "water"
+        : "alcohol";
       const state = get();
       setWithCompute({
         resinMaterial: v,

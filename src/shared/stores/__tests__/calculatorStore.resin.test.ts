@@ -458,7 +458,7 @@ describe("CalculatorStore Resin", () => {
   // ══════════════════════════════════════════════════════════════
 
   describe("setResinMaterial washType auto-switch", () => {
-    it('water_washable resin → washType "water" and zero IPA cost', () => {
+    it('water-washable resin (UI display name) → washType "water" and zero IPA cost', () => {
       const store = useCalculatorStore.getState();
       store.setActiveTab("resin");
 
@@ -469,9 +469,13 @@ describe("CalculatorStore Resin", () => {
         alcoholCostPerLiter: 25,
         curingEnabled: false, // isola o custo de lavagem do custo de cura
       });
+
+      // Payload real da UI: o <Select> de resina mapeia m.name para value, então
+      // a store recebe o NOME DE EXIBIÇÃO ("Resina Water Washable"), nunca o id
+      // ("water_washable").
       store.setResinMaterial({
         ...store.resinMaterial,
-        type: "water_washable",
+        type: "Resina Water Washable",
       });
 
       const after = useCalculatorStore.getState();
@@ -481,7 +485,7 @@ describe("CalculatorStore Resin", () => {
       expect(after.results!.postProcessingCost).toBe(0);
     });
 
-    it('regular resin → washType "alcohol"', () => {
+    it('regular resin (UI display name) → washType "alcohol"', () => {
       const store = useCalculatorStore.getState();
       store.setActiveTab("resin");
       store.setResinPostProcess({
@@ -494,14 +498,18 @@ describe("CalculatorStore Resin", () => {
       // garante o estado anterior em water para provar a troca
       store.setResinMaterial({
         ...store.resinMaterial,
-        type: "water_washable",
+        type: "Resina Water Washable",
       });
       expect(useCalculatorStore.getState().resinPostProcess.washType).toBe(
         "water",
       );
       expect(useCalculatorStore.getState().results!.postProcessingCost).toBe(0);
 
-      store.setResinMaterial({ ...store.resinMaterial, type: "tough" });
+      // resina normal (nome de exibição) → álcool volta a entrar
+      store.setResinMaterial({
+        ...store.resinMaterial,
+        type: "Resina Standard",
+      });
 
       const after = useCalculatorStore.getState();
       expect(after.resinPostProcess.washType).toBe("alcohol");
