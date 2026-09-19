@@ -1802,6 +1802,12 @@
     "button": {
       "label": "Ver demo",
       "ariaLabel": "Experimentar o modo demo com dados de exemplo"
+    },
+    "indicator": {
+      "title": "Modo demo ativo",
+      "description": "Você está explorando dados de exemplo — nada é salvo.",
+      "exit": "Sair do demo",
+      "exitAriaLabel": "Sair do modo demo e descartar os dados de exemplo"
     }
   }
 }
