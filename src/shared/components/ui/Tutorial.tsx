@@ -239,6 +239,13 @@ function TooltipCard({
 
 // ── Main Tutorial Component ──────────────────────────────────────────────────
 
+/** Async anchor lookup result, scoped to the step that produced it. */
+type AnchorResolution = {
+  stepKey: string
+  rect: DOMRect | null
+  missing: boolean
+}
+
 export function Tutorial() {
   const prefersReduced = useReducedMotion()
   const {
@@ -266,8 +273,13 @@ export function Tutorial() {
     return getElementRect(step.target)
   }, [isActive, sessionDismissed, step])
 
-  const [asyncRect, setAsyncRect] = useState<DOMRect | null>(null)
-  const [anchorMissing, setAnchorMissing] = useState(false)
+  // Anchor resolution is keyed to the step it belongs to, so changing steps
+  // discards the stale rect without a setState-in-effect reset.
+  const [anchor, setAnchor] = useState<AnchorResolution>({
+    stepKey: '',
+    rect: null,
+    missing: false,
+  })
   const prevLevelRef = useRef<ReturnType<typeof useCalculatorStore.getState>['calcLevel'] | null>(null)
 
   useEffect(() => {
@@ -276,8 +288,6 @@ export function Tutorial() {
 
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | undefined
-    setAsyncRect(null)
-    setAnchorMissing(false)
 
     // Navigate BEFORE spotlight so the owning tab mounts the anchor.
     if (step.tab) dispatchTutorialNavigate(step.tab)
@@ -298,7 +308,7 @@ export function Tutorial() {
       const el = document.querySelector(step.target as string)
       if (el) {
         el.scrollIntoView({ behavior: 'auto', block: 'center' })
-        setAsyncRect(el.getBoundingClientRect())
+        setAnchor({ stepKey: step.key, rect: el.getBoundingClientRect(), missing: false })
         return
       }
       if (attempt < NAVIGATE_RETRY_MS.length) {
@@ -306,7 +316,7 @@ export function Tutorial() {
       } else {
         // Honest fallback: show the card without the overlay instead of
         // blocking the tour on a surface that isn't rendered.
-        setAnchorMissing(true)
+        setAnchor({ stepKey: step.key, rect: null, missing: true })
       }
     }
     timer = setTimeout(() => retry(0), NAVIGATE_RETRY_MS[0])
@@ -317,8 +327,11 @@ export function Tutorial() {
     }
   }, [isActive, sessionDismissed, step])
 
-  const targetRect = asyncRect ?? syncRect
-  const showOverlay = !anchorMissing
+  const stepKey = step?.key ?? ''
+  const currentAnchor =
+    anchor.stepKey === stepKey ? anchor : { stepKey, rect: null, missing: false }
+  const targetRect = currentAnchor.rect ?? syncRect
+  const showOverlay = !currentAnchor.missing
 
   const restoreLevel = useCallback(() => {
     if (prevLevelRef.current !== null) {
