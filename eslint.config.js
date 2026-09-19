@@ -30,6 +30,16 @@ export default defineConfig([
     },
   },
   {
+    // Root App entries re-export TABS/MORE_TABS/MOBILE_VISIBLE_TABS so the
+    // tabs-parity gate (src/shared/components/ui/__tests__/tabsParity.test.tsx)
+    // can compare both platforms' navigation surfaces. Fast refresh is
+    // unaffected: App is the root boundary and reloads in full regardless.
+    files: ["src/platform/**/App.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
+  {
     files: ["scripts/**/*.mjs"],
     extends: [js.configs.recommended],
     languageOptions: {

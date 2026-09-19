@@ -72,7 +72,7 @@ type LegacyHistoryItem = {
   snapshot?: CalculationSnapshot | null;
 };
 
-const TABS: {
+export const TABS: {
   id: Tab;
   icon: React.ReactNode;
   labelKey: string;
