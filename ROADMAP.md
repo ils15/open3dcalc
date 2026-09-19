@@ -167,15 +167,15 @@ Every phase and change must complete this checklist:
 **What needs to be done:**
 
 - [ ] Main KPIs: total profit, average cost per print, average margin
-- [ ] Profit evolution chart (timeline)
-- [ ] Cost distribution by category (pie/bar)
+- [x] Profit evolution chart (timeline)
+- [x] Cost distribution by category (pie/bar)
 - [ ] Projections: "if you print X parts per month..."
-- [ ] Period comparison (current month vs previous)
-- [ ] Top most profitable printers
-- [ ] Top most used materials
-- [ ] Executive report export (PDF)
-- [ ] Custom goals (e.g., "I want to profit R$500/month")
-- [ ] Low margin alerts for recurring parts
+- [x] Period comparison (current month vs previous)
+- [x] Top most profitable printers
+- [x] Top most used materials
+- [x] Executive report export (PDF)
+- [x] Custom goals (e.g., "I want to profit R$500/month")
+- [x] Low margin alerts for recurring parts
 
 **Acceptance criteria:**
 
