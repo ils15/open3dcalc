@@ -106,7 +106,30 @@ export const TOURS: Record<TourId, StepConfig[]> = {
     },
     { key: "upload-complete", target: null },
   ],
-  "inventario-bobinas": [],
+  "inventario-bobinas": [
+    { key: "inv-intro", target: null },
+    {
+      key: "inv-add",
+      target: '[data-tutorial="inventory-add"]',
+      tab: "inventory",
+    },
+    {
+      key: "inv-search",
+      target: '[data-tutorial="inventory-search"]',
+      tab: "inventory",
+    },
+    {
+      key: "inv-filters",
+      target: '[data-tutorial="inventory-filters"]',
+      tab: "inventory",
+    },
+    {
+      key: "inv-grid",
+      target: '[data-tutorial="inventory-grid"]',
+      tab: "inventory",
+    },
+    { key: "inv-complete", target: null },
+  ],
   "dashboard-kpis": [],
   "orcamentos-clientes": [],
   "nivel-avancado": [],

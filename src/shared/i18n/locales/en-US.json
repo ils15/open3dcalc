@@ -725,6 +725,10 @@
       "upload-3d-preview": {
         "title": "3D upload & preview",
         "description": "Import an STL/OBJ/G-code and explore the built-in 3D viewer before calculating."
+      },
+      "inventario-bobinas": {
+        "title": "Spool inventory",
+        "description": "Register spools, search, and filter by material — your filament stock control."
       }
     },
     "steps": {
@@ -775,6 +779,30 @@
       "upload-complete": {
         "title": "Ready to calculate 🎯",
         "description": "With a model loaded, the volume and weight estimates feed the calculator automatically. See the calculator tour for the details."
+      },
+      "inv-intro": {
+        "title": "Manage your filament 🧵",
+        "description": "This tour shows how to register a spool, use search and material filters, and read the stock card grid."
+      },
+      "inv-add": {
+        "title": "Add a spool",
+        "description": "This button opens the form to register weight, material, color, and price for a new spool."
+      },
+      "inv-search": {
+        "title": "Find it fast",
+        "description": "Type to search by name, material, or color — the grid filters as you type."
+      },
+      "inv-filters": {
+        "title": "Filter by material",
+        "description": "These buttons narrow the stock to a specific material in one click."
+      },
+      "inv-grid": {
+        "title": "Your stock cards",
+        "description": "Each card shows remaining weight, the consumption bar, and the low-stock alert."
+      },
+      "inv-complete": {
+        "title": "Stock under control ✅",
+        "description": "The inventory feeds weight and price into the calculator. Check the dashboard tour to track your KPIs."
       }
     }
   },

@@ -317,6 +317,7 @@ export function FilamentInventory() {
           </button>
           <button
             onClick={openAdd}
+            data-tutorial="inventory-add"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-hover)] transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -327,7 +328,7 @@ export function FilamentInventory() {
 
       {/* Search + Filters */}
       <div className="space-y-2">
-        <div className="relative">
+        <div data-tutorial="inventory-search" className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
           <input
             value={search}
@@ -345,7 +346,10 @@ export function FilamentInventory() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-1.5 items-center">
+        <div
+          data-tutorial="inventory-filters"
+          className="flex flex-wrap gap-1.5 items-center"
+        >
           {FILTER_MATERIALS.map((m) => (
             <button
               key={m}
@@ -377,7 +381,10 @@ export function FilamentInventory() {
       </div>
 
       {/* Card Grid */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <div
+        data-tutorial="inventory-grid"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+      >
         {filtered.map((s) => {
           const pct = Math.min(
             100,

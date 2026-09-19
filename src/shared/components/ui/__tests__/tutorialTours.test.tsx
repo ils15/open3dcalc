@@ -97,6 +97,103 @@ function resetTutorialStore() {
   });
 }
 
+// ── U4: inventario-bobinas (inventory tab — cross-tab anchors) ──────────────
+
+describe("tour: inventario-bobinas", () => {
+  const ANCHORS = [
+    "inventory-add",
+    "inventory-search",
+    "inventory-filters",
+    "inventory-grid",
+  ];
+
+  beforeEach(() => {
+    localStorage.clear();
+    resetTutorialStore();
+  });
+
+  it("registry wires six steps that all hop to the inventory tab", () => {
+    const steps = TOURS["inventario-bobinas"];
+    expect(steps).toHaveLength(6);
+    expect(steps.map((s) => s.key)).toEqual([
+      "inv-intro",
+      "inv-add",
+      "inv-search",
+      "inv-filters",
+      "inv-grid",
+      "inv-complete",
+    ]);
+    // Anchored steps must carry the inventory tab so the engine navigates
+    // before spotting; centered cards (intro/complete) need no hop.
+    for (const step of steps) {
+      if (!step.target) continue;
+      expect(step.target.startsWith('[data-tutorial="')).toBe(true);
+      const anchor = step.target.slice('[data-tutorial="'.length, -2);
+      expect(ANCHORS, `anchor ${anchor} must exist in FilamentInventory`).toContain(
+        anchor,
+      );
+      expect(step.tab).toBe("inventory");
+    }
+  });
+
+  it("navigates to the inventory tab and resolves every anchor spotlight", async () => {
+    render(<TabHarness tab="inventory" anchors={ANCHORS} />);
+    useTutorialStore.getState().startTour("inventario-bobinas");
+
+    // 1. Centered intro card lands while the harness is still on calculator.
+    expect(
+      await screen.findByText("tutorial.steps.inv-intro.title"),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("Passo 1 de 6")).toBeInTheDocument();
+
+    // 2. First anchored step: the engine dispatches the navigate event, the
+    // harness switches to inventory, the anchor mounts and the spotlight
+    // resolves (no degraded card).
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.inv-add.title"),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("active-tab").textContent).toBe("inventory"),
+    );
+    expect(screen.getByTestId("anchor-inventory-add")).toBeInTheDocument();
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector('[data-testid="tutorial-overlay"]'),
+        ).not.toBeNull(),
+      { timeout: 2500 },
+    );
+
+    // 3→5. Remaining anchored steps stay on the inventory surface.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.inv-search.title"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("active-tab").textContent).toBe("inventory");
+
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.inv-filters.title"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.inv-grid.title"),
+    ).toBeInTheDocument();
+
+    // 6. Centered closing card: "Concluir" replaces "Próximo" on the last step.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.inv-complete.title"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("tutorial.finish"));
+    const state = useTutorialStore.getState();
+    expect(state.isActive).toBe(false);
+    expect(state.completedTours).toContain("inventario-bobinas");
+  });
+});
+
 // ── U3: upload-3d-preview (calculator tab — same-tab anchors) ───────────────
 
 describe("tour: upload-3d-preview", () => {

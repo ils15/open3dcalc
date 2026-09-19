@@ -725,6 +725,10 @@
       "upload-3d-preview": {
         "title": "Upload e pré-visualização 3D",
         "description": "Importe um STL/OBJ/G-code e explore o visualizador 3D antes de calcular."
+      },
+      "inventario-bobinas": {
+        "title": "Inventário de bobinas",
+        "description": "Cadastre bobinas, pesquise e filtre por material — o controle de estoque do filamento."
       }
     },
     "steps": {
@@ -775,6 +779,30 @@
       "upload-complete": {
         "title": "Pronto para calcular 🎯",
         "description": "Com o modelo carregado, a estimativa de volume e peso alimenta a calculadora automaticamente. Volte ao tour da calculadora para detalhes."
+      },
+      "inv-intro": {
+        "title": "Gerencie seu filamento 🧵",
+        "description": "Neste tour você cadastra uma bobina, usa a busca e os filtros de material e lê a grade de cartões de estoque."
+      },
+      "inv-add": {
+        "title": "Adicione uma bobina",
+        "description": "Este botão abre o formulário para cadastrar peso, material, cor e preço de uma nova bobina."
+      },
+      "inv-search": {
+        "title": "Encontre rápido",
+        "description": "Digite para buscar por nome, material ou cor — a grade filtra enquanto você digita."
+      },
+      "inv-filters": {
+        "title": "Filtre por material",
+        "description": "Estes botões estreitam o estoque a um material específico em um clique."
+      },
+      "inv-grid": {
+        "title": "Seus cartões de estoque",
+        "description": "Cada cartão mostra o peso restante, a barra de consumo e o alerta de estoque baixo."
+      },
+      "inv-complete": {
+        "title": "Estoque sob controle ✅",
+        "description": "O inventário alimenta a calculadora com peso e preço. Veja o tour do dashboard para acompanhar seus KPIs."
       }
     }
   },
