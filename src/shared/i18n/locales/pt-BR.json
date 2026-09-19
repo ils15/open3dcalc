@@ -1797,5 +1797,11 @@
       "preparing-gpu": "Preparando a GPU…",
       "ready": "Pronto"
     }
+  },
+  "demo": {
+    "button": {
+      "label": "Ver demo",
+      "ariaLabel": "Experimentar o modo demo com dados de exemplo"
+    }
   }
 }

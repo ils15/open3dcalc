@@ -20,6 +20,7 @@ import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
+import { DemoModeButton } from "@/shared/components/DemoMode/DemoModeButton";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -211,6 +212,10 @@ export function Header() {
               </span>
             </button>
           </div>
+
+          {/* Demo mode entry — visible on all sizes (indicator replaces it
+              while active) */}
+          <DemoModeButton />
 
           {/* Theme toggle — visible on all sizes */}
           <ThemeToggle />
