@@ -42,6 +42,9 @@ desktop/db/**/*.js.map
 docs/*
 !docs/estimators-model.md
 !docs/conventions.md
+# Wiki in-app: markdown fonte compilado em build time pelo vite/plugins/markdownWikiPlugin.ts
+# (precisa ser versionado — é a fonte do conteúdo, não artefato gerado).
+!docs/wiki/
 
 # Logs
 logs/
