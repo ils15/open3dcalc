@@ -14,6 +14,7 @@ import { useShallow } from "zustand/react/shallow";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
+import { TutorialLauncher } from "@/shared/components/ui/TutorialLauncher";
 import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
@@ -98,18 +99,8 @@ export function Header() {
         <div className="flex shrink-0 items-center gap-2">
           {/* Desktop-only actions */}
           <div className="hidden sm:flex items-center gap-2">
-            {/* Tutorial trigger */}
-            <button
-              onClick={() => useTutorialStore.getState().startTutorial()}
-              className="flex items-center gap-2 p-2.5 lg:px-3.5 lg:py-2.5 min-h-[44px] min-w-[44px] text-[var(--color-accent-light)] hover:text-[var(--color-accent-light)] hover:bg-[var(--color-accent-muted)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded-xl border border-transparent hover:border-[var(--color-accent-muted)]"
-              title={t("nav.tutorial")}
-              aria-label={t("nav.tutorial")}
-            >
-              <BookOpen className="w-5 h-5" />
-              <span className="hidden lg:inline text-[13px] font-semibold">
-                {t("nav.tutorial")}
-              </span>
-            </button>
+            {/* Tours launcher */}
+            <TutorialLauncher />
 
             {/* Currency selector */}
             <div className="flex items-center">

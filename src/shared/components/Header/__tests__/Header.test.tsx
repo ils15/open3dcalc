@@ -5,6 +5,7 @@ import { Header } from "../Header";
 
 const mockChangeLanguage = vi.fn();
 const mockStartTutorial = vi.fn();
+const mockStartTour = vi.fn();
 const mockSetCurrency = vi.fn();
 
 vi.mock("react-i18next", () => ({
@@ -33,10 +34,22 @@ vi.mock("@/shared/stores/tutorialStore", () => ({
   useTutorialStore: Object.assign(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (selector?: any) => {
-      const state = { startTutorial: mockStartTutorial };
+      // The launcher selects completedTours + startTour via useShallow; both
+      // must exist or completedTours.includes throws inside the component.
+      const state = {
+        startTutorial: mockStartTutorial,
+        startTour: mockStartTour,
+        completedTours: [],
+      };
       return selector ? selector(state) : state;
     },
-    { getState: () => ({ startTutorial: mockStartTutorial }) },
+    {
+      getState: () => ({
+        startTutorial: mockStartTutorial,
+        startTour: mockStartTour,
+        completedTours: [],
+      }),
+    },
   ),
 }));
 
@@ -164,9 +177,11 @@ describe("Header", () => {
     expect(screen.getByText("betaBadge.text")).toBeInTheDocument();
   });
 
-  it("renders tutorial button", () => {
+  it("renders tours launcher", () => {
     render(<Header />);
-    expect(screen.getByLabelText("nav.tutorial")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "tutorial.launcher.title" }),
+    ).toBeInTheDocument();
   });
 
   it("renders demo entry button", () => {
@@ -176,10 +191,23 @@ describe("Header", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls startTutorial when tutorial button clicked", async () => {
+  it("starts the selected tour from the launcher", async () => {
     render(<Header />);
-    await user.click(screen.getByLabelText("nav.tutorial"));
-    expect(mockStartTutorial).toHaveBeenCalled();
+
+    await user.click(
+      screen.getByRole("button", { name: "tutorial.launcher.title" }),
+    );
+    await user.click(
+      screen.getByRole("menuitem", {
+        name: "tutorial.tours.calc-basico.title",
+      }),
+    );
+
+    // The launcher dispatches startTour directly; the legacy startTutorial
+    // entry point is only for the first-visit auto-start.
+    expect(mockStartTutorial).not.toHaveBeenCalled();
+    expect(mockStartTour).toHaveBeenCalledWith("calc-basico");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("renders currency selector", () => {

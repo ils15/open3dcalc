@@ -713,6 +713,16 @@
     "previous": "Previous",
     "finish": "Finish",
     "stepOf": "Step {{current}} of {{total}}",
+    "launcher": {
+      "title": "Tutorials",
+      "completed": "completed"
+    },
+    "tours": {
+      "calc-basico": {
+        "title": "Basic calculator",
+        "description": "Material, printing, and pricing — the getting-started tour."
+      }
+    },
     "steps": {
       "welcome": {
         "title": "Welcome to Open3DCalc! 🎉",

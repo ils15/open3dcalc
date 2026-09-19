@@ -713,6 +713,16 @@
     "previous": "Anterior",
     "finish": "Concluir",
     "stepOf": "Passo {{current}} de {{total}}",
+    "launcher": {
+      "title": "Tutoriais",
+      "completed": "concluído"
+    },
+    "tours": {
+      "calc-basico": {
+        "title": "Calculadora básica",
+        "description": "Material, impressão e precificação — o tour de início rápido."
+      }
+    },
     "steps": {
       "welcome": {
         "title": "Bem-vindo ao Open3DCalc! 🎉",
