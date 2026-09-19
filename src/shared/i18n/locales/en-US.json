@@ -49,6 +49,7 @@
     "products": "Products",
     "telegram": "Telegram Channel",
     "tutorial": "Tutorial",
+    "wiki": "Wiki",
     "language": "Change language",
     "navigation": "Navigation",
     "mainNavigation": "Main navigation",
@@ -1932,6 +1933,113 @@
     "export": {
       "blockedTitle": "Export is blocked in demo mode — this is sample data.",
       "badge": "Export blocked in demo"
+    }
+  },
+  "guide": {
+    "calculator": {
+      "title": "Calculator",
+      "description": "Price 3D parts by adding material, energy, failure rate, fixed costs and labor in basic, intermediate and advanced modes.",
+      "cta": "See available tours"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Track revenue, profit, hourly cost and other metrics by period, customer or material.",
+      "cta": "Open guide"
+    },
+    "infill": {
+      "title": "Infill Calculator",
+      "description": "Estimate the weight and cost of internal infill before printing, comparing patterns and densities.",
+      "cta": "Open guide"
+    },
+    "inventory": {
+      "title": "Filaments",
+      "description": "Register filaments and resins with cost per kilogram or liter, density and diameter to feed the calculator.",
+      "cta": "Open guide"
+    },
+    "catalog": {
+      "title": "Catalog",
+      "description": "Hub for the customers, products, machines and materials used across quotes and the calculator.",
+      "cta": "Open guide"
+    },
+    "history": {
+      "title": "History",
+      "description": "Review and duplicate past calculations and quotes, filtered by date and customer.",
+      "cta": "Open guide"
+    },
+    "changelog": {
+      "title": "Changelog",
+      "description": "See what changed in every app version, including improvements and fixes.",
+      "cta": "Open guide"
+    },
+    "quotes": {
+      "title": "Quotes",
+      "description": "Build quotes with markup, discounts, lead times and taxes, and track the status of each proposal.",
+      "cta": "Open guide"
+    },
+    "customers": {
+      "title": "Customers",
+      "description": "Keep contacts, quote history and buyer details organized in one place.",
+      "cta": "Open guide"
+    },
+    "products": {
+      "title": "Products",
+      "description": "Catalog products with a suggested price, inputs and estimated print time.",
+      "cta": "Open guide"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "description": "Learn how your data is processed locally, exported and deleted.",
+      "cta": "Open guide"
+    },
+    "material": {
+      "title": "Materials",
+      "description": "Set the cost per kilogram or liter, density, waste and purge for filament or resin.",
+      "cta": "Open guide"
+    },
+    "print": {
+      "title": "Print Parameters",
+      "description": "Configure print time, printer power draw and energy cost.",
+      "cta": "Open guide"
+    },
+    "failure": {
+      "title": "Risk & Failures",
+      "description": "Factor reprinting and print failures into the final price with an adjustable rate.",
+      "cta": "Open guide"
+    },
+    "hardware": {
+      "title": "Hardware Wear (FDM)",
+      "description": "Add hardware, hot-end and post-processing costs to the part.",
+      "cta": "Open guide"
+    },
+    "machine": {
+      "title": "Machine Costs",
+      "description": "Amortize the printer price across expected usage hours and the machine's lifespan.",
+      "cta": "Open guide"
+    },
+    "fixedCost": {
+      "title": "Fixed Costs",
+      "description": "Spread monthly fixed costs — rent, power, software — across the parts you produce.",
+      "cta": "Open guide"
+    },
+    "labor": {
+      "title": "Labor",
+      "description": "Include human work hours: modeling, setup and post-processing.",
+      "cta": "Open guide"
+    },
+    "ops": {
+      "title": "Operational & Software",
+      "description": "Add the software, supplies and consumables used to run the business.",
+      "cta": "Open guide"
+    },
+    "sales": {
+      "title": "Additional Costs & Sales",
+      "description": "Apply markup, packaging, shipping, marketplace fees and taxes to the final price.",
+      "cta": "Open guide"
+    },
+    "results": {
+      "title": "Results",
+      "description": "See the suggested selling price, the cost breakdown and the profit margin.",
+      "cta": "Open guide"
     }
   }
 }
