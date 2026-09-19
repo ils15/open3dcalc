@@ -721,6 +721,10 @@
       "calc-basico": {
         "title": "Basic calculator",
         "description": "Material, printing, and pricing — the getting-started tour."
+      },
+      "upload-3d-preview": {
+        "title": "3D upload & preview",
+        "description": "Import an STL/OBJ/G-code and explore the built-in 3D viewer before calculating."
       }
     },
     "steps": {
@@ -751,6 +755,26 @@
       "complete": {
         "title": "All set! 🚀",
         "description": "Now you know how to calculate the cost of any print. Use the tooltips (ℹ️ icon) on each field if you have questions. Happy printing!"
+      },
+      "upload-intro": {
+        "title": "Bring in your 3D file 📦",
+        "description": "This tour shows how to import an STL, OBJ, 3MF, or G-code and explore the built-in 3D viewer."
+      },
+      "upload-dropzone": {
+        "title": "Drop your file here",
+        "description": "Drag a file onto this zone or click to browse your computer. Files are capped at 100 MB."
+      },
+      "upload-samples": {
+        "title": "Sample models",
+        "description": "No file of your own? Load the 3DBenchy STL to inspect the mesh, or its G-code to preview the toolpath."
+      },
+      "upload-viewport": {
+        "title": "3D viewer",
+        "description": "Drag to orbit, scroll to zoom, and use the toolbar buttons to refit the frame or go fullscreen."
+      },
+      "upload-complete": {
+        "title": "Ready to calculate 🎯",
+        "description": "With a model loaded, the volume and weight estimates feed the calculator automatically. See the calculator tour for the details."
       }
     }
   },

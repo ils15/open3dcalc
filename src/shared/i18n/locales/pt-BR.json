@@ -721,6 +721,10 @@
       "calc-basico": {
         "title": "Calculadora básica",
         "description": "Material, impressão e precificação — o tour de início rápido."
+      },
+      "upload-3d-preview": {
+        "title": "Upload e pré-visualização 3D",
+        "description": "Importe um STL/OBJ/G-code e explore o visualizador 3D antes de calcular."
       }
     },
     "steps": {
@@ -751,6 +755,26 @@
       "complete": {
         "title": "Tudo pronto! 🚀",
         "description": "Agora você já sabe calcular o custo de qualquer impressão. Use os tooltips (ícone ℹ️) em cada campo se tiver dúvidas. Bons prints!"
+      },
+      "upload-intro": {
+        "title": "Leve seu arquivo 3D 📦",
+        "description": "Neste tour você importa um STL, OBJ, 3MF ou G-code e explora o visualizador 3D integrado."
+      },
+      "upload-dropzone": {
+        "title": "Solte seu arquivo aqui",
+        "description": "Arraste um arquivo para esta zona ou clique para escolher do computador. Limitamos o tamanho em 100 MB."
+      },
+      "upload-samples": {
+        "title": "Modelos de exemplo",
+        "description": "Sem arquivo próprio? Carregue o 3DBenchy (STL) para ver a malha ou o G-code correspondente para ver o toolpath."
+      },
+      "upload-viewport": {
+        "title": "Visualizador 3D",
+        "description": "Gire com o mouse, aproxime com a roda e use os botões para ajustar o enquadramento ou expandir para tela cheia."
+      },
+      "upload-complete": {
+        "title": "Pronto para calcular 🎯",
+        "description": "Com o modelo carregado, a estimativa de volume e peso alimenta a calculadora automaticamente. Volte ao tour da calculadora para detalhes."
       }
     }
   },

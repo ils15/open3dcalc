@@ -90,7 +90,22 @@ export const TOURS: Record<TourId, StepConfig[]> = {
     { key: "export", target: '[data-tutorial="export"]' },
     { key: "complete", target: null },
   ],
-  "upload-3d-preview": [],
+  "upload-3d-preview": [
+    { key: "upload-intro", target: null },
+    {
+      key: "upload-dropzone",
+      target: '[data-tutorial="stl-dropzone"]',
+    },
+    {
+      key: "upload-samples",
+      target: '[data-tutorial="stl-samples"]',
+    },
+    {
+      key: "upload-viewport",
+      target: '[data-tutorial="stl-viewport"]',
+    },
+    { key: "upload-complete", target: null },
+  ],
   "inventario-bobinas": [],
   "dashboard-kpis": [],
   "orcamentos-clientes": [],

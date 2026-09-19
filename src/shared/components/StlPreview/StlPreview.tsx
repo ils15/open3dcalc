@@ -787,6 +787,7 @@ export function StlPreview({
         <>
           <button
             type="button"
+            data-tutorial="stl-dropzone"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -840,7 +841,7 @@ export function StlPreview({
           {/* Embedded 3DBenchy samples (CC0 / public domain — CreativeTools):
           try the viewer without having your own file. STL runs the mesh
           pipeline (volume/weight); G-code runs the toolpath preview. */}
-          <div className="space-y-1.5">
+          <div data-tutorial="stl-samples" className="space-y-1.5">
             <p className="text-xs text-[var(--color-text-muted)] text-center">
               {t("stl.samples.title")}
             </p>
@@ -899,7 +900,10 @@ export function StlPreview({
 
       {/* 3D Preview */}
       {geometry && !isFullscreen && (
-        <div className="surface rounded-xl overflow-hidden aspect-[4/3] min-h-[300px] sm:min-h-[400px] h-full">
+        <div
+          data-tutorial="stl-viewport"
+          className="surface rounded-xl overflow-hidden aspect-[4/3] min-h-[300px] sm:min-h-[400px] h-full"
+        >
           <PreviewCanvas
             geometry={geometry}
             onToggleFullscreen={() => setIsFullscreen(true)}
