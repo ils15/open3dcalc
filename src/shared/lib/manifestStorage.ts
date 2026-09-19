@@ -24,6 +24,29 @@ import {
 } from "zustand/middleware";
 import { checkKey } from "./manifestGate";
 
+/**
+ * Ephemeral demo-data mode (onboarding Fase 0).
+ *
+ * While a demo session is active, the stores are still driven through their
+ * REAL actions (addSpool, addEntry, setters…) but every write is intercepted
+ * here so nothing ever lands in localStorage/SQLite/manifest — the mode is
+ * in-memory only, so there is nothing to inventory, export or erase (LGPD:
+ * dado efêmero não é dado pessoal tratado). The choke point stays single:
+ * suppression is checked before the backing store is ever touched, and reads
+ * keep returning the user's real persisted data.
+ */
+let demoPersistenceSuppressed = false;
+
+/** Engage/release write suppression. Called only by demoModeStore. */
+export function setDemoPersistenceSuppressed(value: boolean): void {
+  demoPersistenceSuppressed = value;
+}
+
+/** True while a demo session owns the stores (writes are no-ops). */
+export function isDemoPersistenceSuppressed(): boolean {
+  return demoPersistenceSuppressed;
+}
+
 function rawStorage(): StateStorage {
   if (typeof window === "undefined" || !window.localStorage) {
     return {
@@ -45,10 +68,13 @@ function gatedStateStorage(): StateStorage {
       return backing.getItem(name);
     },
     setItem: (name, value) => {
+      // Demo mode: ephemeral by design — never persist.
+      if (demoPersistenceSuppressed) return;
       if (!checkKey(name).allowed) return;
       backing.setItem(name, value);
     },
     removeItem: (name) => {
+      if (demoPersistenceSuppressed) return;
       if (!checkKey(name).allowed) return;
       backing.removeItem(name);
     },
@@ -79,11 +105,14 @@ export const guardedStorage = {
     return backing.getItem(key) as string | null;
   },
   setItem(key: string, value: string): void {
+    // Demo mode: ephemeral by design — never persist.
+    if (demoPersistenceSuppressed) return;
     const backing = rawStorage();
     if (!checkKey(key).allowed) return;
     backing.setItem(key, value);
   },
   removeItem(key: string): void {
+    if (demoPersistenceSuppressed) return;
     const backing = rawStorage();
     if (!checkKey(key).allowed) return;
     backing.removeItem(key);
