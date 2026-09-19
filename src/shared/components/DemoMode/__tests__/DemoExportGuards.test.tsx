@@ -12,7 +12,6 @@ import { exportExecutivePdf } from "@/shared/lib/pdfExport";
 import { guardExport } from "@/shared/lib/demoExportGuard";
 import { useProductInventory } from "@/shared/stores/productInventory";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
-import { useCustomerStore } from "@/shared/stores/customerStore";
 import type { QuoteFormData } from "@/shared/types";
 import type { ExecutiveReportData } from "@/shared/lib/ExecutiveReportDoc";
 
