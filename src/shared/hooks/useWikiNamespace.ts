@@ -15,6 +15,19 @@ export interface WikiNamespaceStatus {
    * content forever after, without a flash of raw keys.
    */
   ready: boolean;
+
+  /**
+   * The locale whose bundle is currently in i18n (`undefined` until `ready`).
+   *
+   * Exists because `ready` alone cannot re-render a consumer on a language
+   * switch: `setReady(true)` when it is already `true` is a no-op for React,
+   * so the newly added bundle would sit unread. `locale` changes on every
+   * bundle that lands, which is exactly the signal a consumer needs to
+   * re-read `getResourceBundle` — and it lags the language change on purpose,
+   * so the previous locale's articles stay on screen while the new chunk
+   * loads (no flash, no skeleton, just the stale-but-resolvable locale).
+   */
+  locale: string | undefined;
 }
 
 /**
@@ -37,11 +50,15 @@ export interface WikiNamespaceStatus {
  * - removes its listener on unmount, and a load that resolves after unmount is
  *   dropped instead of mutating i18n of an unmounted tree.
  *
- * @returns `{ ready }` — consumers render a skeleton while `!ready`.
+ * @returns `{ ready, locale }` — consumers render a skeleton while `!ready`
+ * and read the bundle of `locale` (which is in i18n by construction).
  */
 export function useWikiNamespace(): WikiNamespaceStatus {
   const { i18n } = useTranslation();
-  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState<WikiNamespaceStatus>({
+    ready: false,
+    locale: undefined,
+  });
   const loadedLocales = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -57,7 +74,7 @@ export function useWikiNamespace(): WikiNamespaceStatus {
       if (loadedLocales.current.has(locale)) {
         // Already in i18n.resources: report ready and skip the refetch
         // (idempotency — repeated languageChanged events must not loop).
-        setReady(true);
+        setStatus({ ready: true, locale });
         return;
       }
 
@@ -72,7 +89,7 @@ export function useWikiNamespace(): WikiNamespaceStatus {
         /* overwrite */ true,
       );
       loadedLocales.current.add(locale);
-      setReady(true);
+      setStatus({ ready: true, locale });
     };
 
     void load(resolveLocale());
@@ -88,5 +105,5 @@ export function useWikiNamespace(): WikiNamespaceStatus {
     };
   }, [i18n]);
 
-  return { ready };
+  return status;
 }
