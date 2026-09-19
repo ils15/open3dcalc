@@ -15,7 +15,14 @@ i18n
     fallbackLng: "pt-BR",
     interpolation: { escapeValue: false },
     detection: {
-      order: ["localStorage", "navigator"],
+      // D2: `htmlTag` sits ahead of `navigator` so the language i18next picks
+      // matches the static `lang="pt-BR"` declared in index.html / index.web.html.
+      // With only `[localStorage, navigator]` a first-time visitor whose browser
+      // reports en-US got en-US while the document still declared pt-BR — a
+      // mixed-language state until `languageChanged` caught up. Honoring the
+      // document element removes the mismatch at the source; returning users
+      // keep their persisted choice via localStorage.
+      order: ["localStorage", "htmlTag", "navigator"],
       caches: ["localStorage"],
     },
     react: {
