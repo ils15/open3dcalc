@@ -615,6 +615,25 @@
     "edit": "Edit",
     "actions": "Actions"
   },
+  "comparison": {
+    "title": "Compare materials",
+    "subtitle": "Estimated part cost across the FDM material catalog",
+    "toggle": "Show or hide the material comparator",
+    "rank": "Rank",
+    "material": "Material",
+    "density": "Density",
+    "weight": "Part weight",
+    "cost": "Estimated part cost",
+    "sortHint": "Sort by part cost",
+    "sortAscending": "Lowest price first",
+    "sortDescending": "Highest price first",
+    "currentMaterial": "Current material",
+    "currentBadge": "Current",
+    "resinNotComparable": "Resin printing is not directly comparable to FDM filament: this table uses the FDM catalog (price per kg) and each material density to estimate the same part cost.",
+    "failureRateNote": "The global failure rate ({{rate}}%) is applied equally to every material — it shifts the cost but not the ranking order.",
+    "invalidMaterial": "Material with no price or density registered",
+    "empty": "Enter the part volume or weight in the material section to compare cost across materials."
+  },
   "results": {
     "exportQuote": "Export Quote",
     "exportQuoteSuccess": "Quote exported successfully",

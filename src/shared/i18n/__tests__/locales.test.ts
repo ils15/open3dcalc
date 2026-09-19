@@ -173,3 +173,41 @@ describe("i18n locales (stl.samples.*) — sample loader", () => {
     }
   });
 });
+
+/**
+ * Wave C (B3): keys the material comparison table emits via `t(...)`. A missing
+ * key renders the raw key in the results panel — a regression users see.
+ */
+const COMPARISON_KEYS = [
+  "title",
+  "subtitle",
+  "toggle",
+  "rank",
+  "material",
+  "density",
+  "weight",
+  "cost",
+  "sortHint",
+  "currentMaterial",
+  "currentBadge",
+  "resinNotComparable",
+  "failureRateNote",
+  "invalidMaterial",
+  "empty",
+] as const;
+
+describe("i18n locales (comparison.*) — Wave C B3", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every comparison.* key in %s", (_locale, dict) => {
+    for (const key of COMPARISON_KEYS) {
+      const value = resolve(dict, ["comparison", key]);
+      expect(typeof value, `comparison.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+    // failureRateNote is interpolated; the placeholder must survive.
+    const note = resolve(dict, ["comparison", "failureRateNote"]);
+    expect(note as string, "comparison.failureRateNote").toContain("{{rate}}");
+  });
+});
