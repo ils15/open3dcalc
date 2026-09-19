@@ -29,6 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Tutorial } from "@/shared/components/ui/Tutorial";
 import { PrivacyBanner } from "@/shared/components/ui/PrivacyBanner";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
+import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
 import type { CalculationResult, CalculationSnapshot } from "@/shared/types";
 import {
   Calculator as CalculatorIcon,
@@ -169,6 +170,10 @@ function App() {
     return () =>
       window.removeEventListener("open3dcalc:go-products", goToProducts);
   }, []);
+
+  // Tour steps that live on another surface navigate before being spotted;
+  // the owning tab has to mount for the anchor to resolve.
+  useTutorialTabNavigation(setActiveTab);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const { symbol } = useCurrency();
   const currencySetting = useCalculatorStore((s) => s.currency);
