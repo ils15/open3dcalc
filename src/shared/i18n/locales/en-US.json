@@ -7,6 +7,36 @@
     "text": "Beta",
     "ariaLabel": "Beta version of the application"
   },
+  "quickStart": {
+    "title": "Want to see how it works?",
+    "description": "Fill in the calculator with realistic values for a 3D part example",
+    "dismiss": "Dismiss",
+    "clear": "Clear",
+    "clearFields": "Clear fields",
+    "example": "Example",
+    "fillExample": "Fill with example"
+  },
+  "infillCalculator": {
+    "title": "Infill Calculator",
+    "subtitle": "See how the infill % affects weight, cost and time",
+    "dimensions": "Dimensions (mm)",
+    "width": "Width",
+    "depth": "Depth",
+    "height": "Height",
+    "wallThickness": "Wall Thickness",
+    "topBottomLayers": "Top/Bottom Layers",
+    "layerHeight": "Layer Height",
+    "material": "Material",
+    "infillPercent": "Infill %",
+    "estimatedWeight": "Estimated Weight",
+    "materialCost": "Material Cost",
+    "solidVolume": "Solid Volume",
+    "comparison": "Infill Comparison",
+    "colInfill": "Infill",
+    "colWeight": "Weight",
+    "colCost": "Cost",
+    "colDifference": "Difference"
+  },
   "nav": {
     "calculator": "Calculator",
     "catalog": "Catalog",
