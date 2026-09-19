@@ -75,23 +75,39 @@ function restrictFilePermissions(dbPath: string): void {
 }
 
 /**
+ * Resolves the directory holding the raw SQL migration files.
+ *
+ * Primary candidate covers the built Electron layout: `db/database.ts`
+ * compiles to `electron/dist/db/database.js`, so `../../../db/migrations`
+ * reaches the shipped `db/migrations` folder at the app root.
+ *
+ * The fallback covers the source layout used by tests and `tsx`, where the
+ * file sits at `db/database.ts` and the migrations are its sibling folder.
+ * Without it the runner silently no-ops (no tables are created) — which went
+ * unnoticed because every test either mocked better-sqlite3 or ran the
+ * migration SQL by hand.
+ */
+function resolveMigrationsDir(): string | null {
+  const candidates = [
+    path.join(__dirname, "..", "..", "..", "db", "migrations"),
+    path.join(__dirname, "migrations"),
+  ];
+  return candidates.find((c) => fs.existsSync(c)) ?? null;
+}
+
+/**
  * Reads and executes SQL migration files in order.
  * Each migration file must be idempotent or guarded with IF NOT EXISTS.
  *
  * Tolerates migrations that were already applied ("table/index already
- * exists") so the database can be re-initialized after a db:import swap
- * without failing on a fully-migrated backup file.
+ * exists", "duplicate column") so the database can be re-initialized after a
+ * db:import swap without failing on a fully-migrated backup file. Migration
+ * 0003 was the first ALTER TABLE in the project — a re-run on an
+ * already-migrated file answers "duplicate column name: tare_grams".
  */
 function runMigrations(sqlite: Database.Database): void {
-  const migrationsDir = path.join(
-    __dirname,
-    "..",
-    "..",
-    "..",
-    "db",
-    "migrations",
-  );
-  if (!fs.existsSync(migrationsDir)) {
+  const migrationsDir = resolveMigrationsDir();
+  if (migrationsDir === null) {
     console.warn("[db] Migrations directory not found at:", migrationsDir);
     console.warn("[db] Tables will NOT be created. The database may be empty.");
     return;
@@ -108,7 +124,9 @@ function runMigrations(sqlite: Database.Database): void {
       sqlite.exec(sql);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (/already exists/i.test(message)) {
+      // CREATE TABLE/INDEX re-runs answer "already exists"; the project's
+      // first ALTER TABLE (0003) answers "duplicate column name".
+      if (/already exists|duplicate column/i.test(message)) {
         console.warn(
           `[db] Migration ${file} already applied, skipping (${message})`,
         );
@@ -126,16 +144,9 @@ const TABLE_CREATE_RE =
  * Returns the table names declared by the current SQL migration files.
  */
 function requiredTables(): string[] {
-  const migrationsDir = path.join(
-    __dirname,
-    "..",
-    "..",
-    "..",
-    "db",
-    "migrations",
-  );
+  const migrationsDir = resolveMigrationsDir();
   const tables = new Set<string>();
-  if (!fs.existsSync(migrationsDir)) return [];
+  if (migrationsDir === null) return [];
   const files = fs
     .readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))

@@ -17,6 +17,12 @@ export interface FilamentSpool {
   notes: string;
   status: SpoolStatus;
   purchaseStore: string;
+  /**
+   * Tara do carretel (peso do carretel vazio) em gramas — Phase 6 P1 (Wave B).
+   * Undefined = não informado; a lib de filamento restante faz lookup da
+   * marca como fallback. Sobrescreve a tabela de marca quando presente.
+   */
+  tareGrams?: number;
 }
 
 interface FilamentInventoryState {
@@ -44,6 +50,9 @@ const migrateSpool = (s: Record<string, unknown>): FilamentSpool => ({
   notes: (s.notes as string) || "",
   status: (s.status as SpoolStatus) || "in_stock",
   purchaseStore: (s.purchaseStore as string) || "",
+  // Phase 6 P1 (Wave B): default-on-missing para payloads legacy — undefined
+  // (não 0) para que a lib caia no lookup de marca.
+  tareGrams: s.tareGrams ?? undefined,
 });
 
 const loadSpools = (): FilamentSpool[] => {
