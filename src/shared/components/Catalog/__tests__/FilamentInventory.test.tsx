@@ -19,6 +19,10 @@ const TRANSLATIONS: Record<string, string> = {
   "inventory.coverageFail": "Não cobre a peça",
   "inventory.coverageNeeded": "Necessário: {{grams}} g",
   "inventory.coverageMargin": "Margem: {{margin}} g",
+  "inventory.newSpool": "Novo Rolo",
+  "inventory.editSpool": "Editar Rolo",
+  "inventory.saveSpool": "Salvar Rolo",
+  "inventory.saveChanges": "Salvar Alterações",
 };
 
 vi.mock("react-i18next", () => ({
@@ -181,5 +185,277 @@ describe("FilamentInventory remaining UI (Wave C / C1)", () => {
     ).not.toBeInTheDocument();
     // O líquido continua sendo exibido — só o badge de cobertura some.
     expect(screen.getByTestId(`net-remaining-${id}`)).toHaveTextContent("790g");
+  });
+});
+
+describe("FilamentInventory CRUD, filters and palette", () => {
+  const SEARCH_PLACEHOLDER = "Buscar cor, marca, material...";
+  const overlay = (): HTMLElement =>
+    document.querySelector(".fixed.inset-0.z-50") as HTMLElement;
+
+  it("opens the add form with save disabled until the required fields are filled", async () => {
+    const user = userEvent.setup();
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Novo Rolo"));
+
+    const save = screen.getByRole("button", { name: "Salvar Rolo" });
+    expect(save).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Cor"), "Verde");
+    await user.type(screen.getByLabelText("Marca"), "eSun");
+    await user.type(screen.getByLabelText("Peso (g)"), "750");
+
+    expect(save).toBeEnabled();
+  });
+
+  it("saves a new spool with every form field and closes the form", async () => {
+    const user = userEvent.setup();
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Novo Rolo"));
+    await user.type(screen.getByLabelText("Cor"), "Verde");
+    await user.type(screen.getByLabelText("Marca"), "eSun");
+    await user.type(screen.getByLabelText("Peso (g)"), "750");
+    await user.type(screen.getByLabelText("Custo/kg"), "120");
+    await user.clear(screen.getByLabelText("Diametro"));
+    await user.type(screen.getByLabelText("Diametro"), "2.85");
+    await user.type(screen.getByLabelText("Notas"), "Lote de teste");
+    await user.click(screen.getByRole("button", { name: "Salvar Rolo" }));
+
+    const spools = useFilamentInventory.getState().spools;
+    expect(spools).toHaveLength(1);
+    expect(spools[0]).toMatchObject({
+      brand: "eSun",
+      color: "Verde",
+      weightGrams: 750,
+      originalWeightGrams: 750,
+      costPerKg: 120,
+      diameterMm: 2.85,
+      notes: "Lote de teste",
+      // Sem hex informado → resolveHex mapeia "Verde" → #22c55e.
+      colorHex: "#22c55e",
+    });
+    expect(
+      screen.queryByRole("button", { name: "Salvar Rolo" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resolves an unknown color name to the default indigo hex", async () => {
+    const user = userEvent.setup();
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Novo Rolo"));
+    await user.type(screen.getByLabelText("Cor"), "Berry");
+    await user.type(screen.getByLabelText("Marca"), "eSun");
+    await user.type(screen.getByLabelText("Peso (g)"), "500");
+    await user.click(screen.getByRole("button", { name: "Salvar Rolo" }));
+
+    expect(useFilamentInventory.getState().spools[0].colorHex).toBe("#6366f1");
+  });
+
+  it("commits a custom hex picked in the color input", async () => {
+    const user = userEvent.setup();
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Novo Rolo"));
+    const picker = document.querySelector('input[type="color"]') as HTMLElement;
+    fireEvent.change(picker, { target: { value: "#aabbcc" } });
+
+    await user.type(screen.getByLabelText("Cor"), "Berry");
+    await user.type(screen.getByLabelText("Marca"), "eSun");
+    await user.type(screen.getByLabelText("Peso (g)"), "500");
+    await user.click(screen.getByRole("button", { name: "Salvar Rolo" }));
+
+    expect(useFilamentInventory.getState().spools[0].colorHex).toBe("#aabbcc");
+  });
+
+  it("updates form selects (material, store and status) via combobox", async () => {
+    const user = userEvent.setup();
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Novo Rolo"));
+
+    await user.click(screen.getByRole("combobox", { name: "Material" }));
+    await user.click(screen.getByRole("option", { name: "PETG" }));
+
+    await user.click(screen.getByRole("combobox", { name: "Loja" }));
+    await user.click(screen.getByRole("option", { name: "Amazon" }));
+
+    await user.click(screen.getByRole("combobox", { name: "Status" }));
+    await user.click(screen.getByRole("option", { name: "A caminho" }));
+
+    await user.type(screen.getByLabelText("Cor"), "Verde");
+    await user.type(screen.getByLabelText("Marca"), "eSun");
+    await user.type(screen.getByLabelText("Peso (g)"), "500");
+    await user.click(screen.getByRole("button", { name: "Salvar Rolo" }));
+
+    expect(useFilamentInventory.getState().spools[0]).toMatchObject({
+      material: "PETG",
+      purchaseStore: "Amazon",
+      status: "on_the_way",
+    });
+  });
+
+  it("opens the edit form prefilled and saves via updateSpool", async () => {
+    const user = userEvent.setup();
+    const id = addSpool({
+      brand: "Bambu Lab",
+      color: "Azul Velvet",
+      weightGrams: 900,
+    });
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Editar"));
+
+    expect(
+      screen.getByRole("button", { name: "Salvar Alterações" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Marca")).toHaveValue("Bambu Lab");
+    expect(screen.getByLabelText("Cor")).toHaveValue("Azul Velvet");
+
+    await user.clear(screen.getByLabelText("Peso (g)"));
+    await user.type(screen.getByLabelText("Peso (g)"), "500");
+    await user.click(screen.getByRole("button", { name: "Salvar Alterações" }));
+
+    const stored = useFilamentInventory.getState().spools[0];
+    expect(stored.id).toBe(id);
+    expect(stored.weightGrams).toBe(500);
+    // O peso original vem do spool existente, não do campo.
+    expect(stored.originalWeightGrams).toBe(1000);
+  });
+
+  it("removes a spool via the trash button", async () => {
+    const user = userEvent.setup();
+    addSpool({ brand: "Bambu Lab" });
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByLabelText("Remover rolo"));
+
+    expect(useFilamentInventory.getState().spools).toHaveLength(0);
+    expect(
+      screen.getByText(/Nenhum rolo cadastrado\. Clique em/),
+    ).toBeInTheDocument();
+  });
+
+  it("closes the add form via backdrop and header X, keeping content clicks open", async () => {
+    const user = userEvent.setup();
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Novo Rolo"));
+    const formOverlay = overlay();
+    expect(formOverlay).toBeInTheDocument();
+
+    // Clique no corpo do modal não fecha (stopPropagation).
+    fireEvent.click(formOverlay.querySelector(".surface") as HTMLElement);
+    expect(
+      screen.getByRole("button", { name: "Salvar Rolo" }),
+    ).toBeInTheDocument();
+
+    // Botão X fecha.
+    await user.click(
+      formOverlay.querySelector('button[class*="w-8 h-8"]') as HTMLElement,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Salvar Rolo" }),
+    ).not.toBeInTheDocument();
+
+    // Backdrop fecha.
+    await user.click(screen.getByText("Novo Rolo"));
+    fireEvent.click(overlay());
+    expect(
+      screen.queryByRole("button", { name: "Salvar Rolo" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("filters spools by search text and clears the filter", async () => {
+    const user = userEvent.setup();
+    addSpool({ brand: "Bambu Lab", color: "Azul Velvet" });
+    addSpool({ brand: "eSun", color: "Verde" });
+    render(<FilamentInventory />);
+
+    const search = screen.getByPlaceholderText(SEARCH_PLACEHOLDER);
+    await user.type(search, "esun");
+
+    expect(screen.getByText(/eSun/)).toBeInTheDocument();
+    expect(screen.queryByText(/Bambu Lab/)).not.toBeInTheDocument();
+
+    // Botão de limpar (X) reseta a busca.
+    await user.click(search.parentElement!.querySelector("button")!);
+    expect(screen.getByText(/Bambu Lab/)).toBeInTheDocument();
+  });
+
+  it("shows the empty state when no spool matches the filters", async () => {
+    const user = userEvent.setup();
+    addSpool({ brand: "Bambu Lab" });
+    render(<FilamentInventory />);
+
+    await user.type(
+      screen.getByPlaceholderText(SEARCH_PLACEHOLDER),
+      "inexistente",
+    );
+
+    expect(
+      screen.getByText("Nenhum rolo encontrado com esses filtros."),
+    ).toBeInTheDocument();
+  });
+
+  it("filters by material chip, including the Outro (non-main) bucket", async () => {
+    const user = userEvent.setup();
+    addSpool({ brand: "MarcaA", material: "PLA" });
+    addSpool({ brand: "MarcaB", material: "Nylon" });
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByRole("button", { name: "PLA" }));
+    expect(screen.getByText(/MarcaA/)).toBeInTheDocument();
+    expect(screen.queryByText(/MarcaB/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Outro" }));
+    expect(screen.getByText(/MarcaB/)).toBeInTheDocument();
+    expect(screen.queryByText(/MarcaA/)).not.toBeInTheDocument();
+  });
+
+  it("filters by status", async () => {
+    const user = userEvent.setup();
+    addSpool({ brand: "MarcaA", status: "in_stock" });
+    addSpool({ brand: "MarcaB", status: "empty", weightGrams: 0 });
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByRole("button", { name: "Vazio" }));
+
+    expect(screen.getByText(/MarcaB/)).toBeInTheDocument();
+    expect(screen.queryByText(/MarcaA/)).not.toBeInTheDocument();
+  });
+
+  it("opens the palette empty and with swatches, closing via backdrop and X", async () => {
+    const user = userEvent.setup();
+
+    // Paleta vazia.
+    render(<FilamentInventory />);
+    await user.click(screen.getByText("Paleta de Cores"));
+    expect(screen.getByText("Nenhum rolo cadastrado.")).toBeInTheDocument();
+    fireEvent.click(overlay());
+    expect(
+      screen.queryByText("Nenhum rolo cadastrado."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders palette swatches and closes via the X button", async () => {
+    const user = userEvent.setup();
+    addSpool({ color: "Verde", colorHex: "" });
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Paleta de Cores"));
+    const paletteOverlay = overlay();
+    expect(paletteOverlay).toBeInTheDocument();
+
+    // Clique no corpo não fecha (stopPropagation).
+    fireEvent.click(paletteOverlay.querySelector(".surface") as HTMLElement);
+    expect(paletteOverlay).toBeInTheDocument();
+
+    await user.click(
+      paletteOverlay.querySelector('button[class*="w-8 h-8"]') as HTMLElement,
+    );
+    expect(overlay()).not.toBeInTheDocument();
   });
 });
