@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ToastContainer } from "@/shared/components/ui/Toast";
 import { useCurrency } from "@/shared/hooks/useCurrency";
@@ -54,6 +54,16 @@ export function Calculator() {
   const dismissToast = (id: number) => {
     setToastItems((prev) => prev.filter((t) => t.id !== id));
   };
+
+  // Explanatory feedback for export/share actions blocked in demo mode.
+  const toastId = useRef(0);
+  const notifyBlockedExport = useCallback((message: string) => {
+    toastId.current += 1;
+    setToastItems((prev) => [
+      ...prev,
+      { id: toastId.current, message, type: "info" },
+    ]);
+  }, []);
 
   const isFDM = store.activeTab === "fdm";
   const { symbol: currencySymbol } = useCurrency();
@@ -115,13 +125,17 @@ export function Calculator() {
             catalogMaterials={catalogMaterials}
             catalogPrinters={catalogPrinters}
             handlePrinterSelect={handlePrinterSelect}
+            onExportBlocked={notifyBlockedExport}
           />
         </div>
         <div
           data-tutorial="results-sidebar"
           className="hidden 2xl:flex flex-col gap-5 w-[360px] shrink-0 sticky top-[92px] self-start max-h-[calc(100vh-120px)] overflow-y-auto"
         >
-          <ResultsPanel variant="sidebar" />
+          <ResultsPanel
+            variant="sidebar"
+            onExportBlocked={notifyBlockedExport}
+          />
         </div>
       </div>
     </>

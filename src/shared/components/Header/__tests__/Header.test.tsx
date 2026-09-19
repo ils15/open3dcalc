@@ -52,6 +52,30 @@ vi.mock("@/shared/hooks/useCurrency", () => ({
   },
 }));
 
+// The demo store is a transitive import of DemoModeButton; keep the Header
+// suite isolated from demo internals (the button's behaviour has its own suite).
+interface MockDemoModeState {
+  isActive: boolean;
+  enter: () => void;
+  exit: () => void;
+}
+
+function mockDemoModeStore(): MockDemoModeState;
+function mockDemoModeStore<T>(selector: (state: MockDemoModeState) => T): T;
+function mockDemoModeStore(
+  selector?: (state: MockDemoModeState) => unknown,
+): unknown {
+  return selector
+    ? selector({ isActive: false, enter: vi.fn(), exit: vi.fn() })
+    : { isActive: false, enter: vi.fn(), exit: vi.fn() };
+}
+
+vi.mock("@/shared/stores/demoModeStore", () => ({
+  useDemoModeStore: Object.assign(mockDemoModeStore, {
+    getState: () => ({ isActive: false, enter: vi.fn(), exit: vi.fn() }),
+  }),
+}));
+
 vi.mock("@/shared/lib/currency", () => ({
   CURRENCIES: {
     USD: { symbol: "$", name: "US Dollar" },
@@ -143,6 +167,13 @@ describe("Header", () => {
   it("renders tutorial button", () => {
     render(<Header />);
     expect(screen.getByLabelText("nav.tutorial")).toBeInTheDocument();
+  });
+
+  it("renders demo entry button", () => {
+    render(<Header />);
+    expect(
+      screen.getByRole("button", { name: "demo.button.ariaLabel" }),
+    ).toBeInTheDocument();
   });
 
   it("calls startTutorial when tutorial button clicked", async () => {

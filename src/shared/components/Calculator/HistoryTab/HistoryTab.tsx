@@ -13,6 +13,8 @@ import {
   Upload, CheckSquare, RotateCcw, Clock,
 } from 'lucide-react'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { downloadBlob } from '@/shared/lib/download'
+import { DemoExportBadge } from '@/shared/components/DemoMode/DemoExportBadge'
 
 interface DetailModalProps {
   entry: HistoryEntry | null
@@ -162,13 +164,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
 
   const handleExport = useCallback(() => {
     const data = store.exportJson()
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'open3dcalc_export.json'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(new Blob([data], { type: 'application/json' }), 'open3dcalc_export.json')
   }, [store])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,6 +354,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
         </div>
       )}
 
+      <DemoExportBadge />
       <div className="flex gap-2 mt-4">
         <button onClick={handleExport}
           className="flex-1 min-h-[44px] py-2.5 rounded-xl text-sm surface text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2"

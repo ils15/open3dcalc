@@ -18,6 +18,7 @@ import {
   type DataSyncExportResult,
   type DataSyncImportResult,
 } from "@/shared/lib/dataSync";
+import { DemoExportBadge } from "@/shared/components/DemoMode/DemoExportBadge";
 import { PrivacyPolicy } from "./PrivacyPolicy";
 
 type TabId = "export" | "import";
@@ -373,6 +374,8 @@ function ExportTab({
 
   return (
     <div className="space-y-5">
+      <DemoExportBadge />
+
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
         {t("sync.export.description")}
       </p>

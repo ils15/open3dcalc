@@ -4,6 +4,8 @@ import { useProductInventory, isBelowCost, exportProductsCSV } from '@/shared/st
 import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog'
 import { Package, Plus, Pencil, Trash2, Search, Download } from 'lucide-react'
 import type { Product } from '@/shared/types'
+import { downloadBlob } from '@/shared/lib/download'
+import { DemoExportBadge } from '@/shared/components/DemoMode/DemoExportBadge'
 
 interface ProductFormState {
   name: string
@@ -220,13 +222,7 @@ export function ProductInventory() {
   }
 
   const handleExportCsv = () => {
-    const blob = new Blob([exportProductsCSV()], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'products.csv'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(new Blob([exportProductsCSV()], { type: 'text/csv;charset=utf-8' }), 'products.csv')
   }
 
   return (
@@ -256,6 +252,8 @@ export function ProductInventory() {
           </button>
         </div>
       </div>
+
+      <DemoExportBadge />
 
       <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <div className="relative flex-1">

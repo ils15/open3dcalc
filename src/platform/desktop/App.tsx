@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/platform/desktop/components/Header/Header";
+import { DemoModeIndicator } from "@/shared/components/DemoMode/DemoModeIndicator";
+import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportBlockedToast";
 import { Calculator } from "@/shared/components/Calculator/Calculator";
 import { CatalogTab } from "@/shared/components/Catalog/CatalogTab";
 import { HistoryTab } from "@/shared/components/Calculator/HistoryTab/HistoryTab";
@@ -390,6 +392,8 @@ function App() {
   return (
     <div className="min-h-dvh flex flex-col overflow-x-clip">
       <Header />
+      <DemoModeIndicator />
+      <DemoExportBlockedToast />
       <UpdateNotification className="max-w-[1440px] mx-auto w-full px-6 sm:px-8 lg:px-12 pt-4" />
       <PrivacyBanner />
 

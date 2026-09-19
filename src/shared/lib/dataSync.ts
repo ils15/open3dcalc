@@ -21,6 +21,7 @@ import {
   readExportEnvelope,
   EnvelopeError,
 } from "./exportEnvelope";
+import { downloadBlob } from "./download";
 
 export const SYNC_FORMAT = "open3dcalc-export" as const;
 export const SYNC_VERSION = "1.0" as const;
@@ -886,16 +887,14 @@ function dataSyncError(
   return err;
 }
 
+/**
+ * O único caminho de Blob → arquivo é o choke point `downloadBlob`: ele recusa
+ * (e explica) enquanto o modo demo está ativo. Manter um funil privado aqui
+ * burlaria o guard de exportação por construção.
+ */
 function triggerDownload(blob: Blob, fileName: string): void {
   if (typeof document === "undefined") return;
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, fileName);
 }
 
 function syncFileName(date = new Date()): string {

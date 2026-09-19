@@ -1827,5 +1827,21 @@
       "preparing-gpu": "Preparing GPU…",
       "ready": "Ready"
     }
+  },
+  "demo": {
+    "button": {
+      "label": "Try demo",
+      "ariaLabel": "Try demo mode with sample data"
+    },
+    "indicator": {
+      "title": "Demo mode active",
+      "description": "You are exploring sample data — nothing is saved.",
+      "exit": "Exit demo",
+      "exitAriaLabel": "Exit demo mode and discard the sample data"
+    },
+    "export": {
+      "blockedTitle": "Export is blocked in demo mode — this is sample data.",
+      "badge": "Export blocked in demo"
+    }
   }
 }

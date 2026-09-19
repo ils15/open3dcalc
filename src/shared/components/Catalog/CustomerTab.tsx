@@ -4,6 +4,8 @@ import { useCustomerStore } from '@/shared/stores/customerStore'
 import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog'
 import { Users, Plus, Pencil, Trash2, Search, FileJson, Upload, X } from 'lucide-react'
 import type { Customer, CustomerFormData } from '@/shared/types'
+import { downloadBlob } from '@/shared/lib/download'
+import { DemoExportBadge } from '@/shared/components/DemoMode/DemoExportBadge'
 
 const EMPTY_FORM: CustomerFormData = {
   name: '',
@@ -222,13 +224,7 @@ export function CustomerTab() {
 
   const handleExport = useCallback(() => {
     const data = store.exportCustomers()
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'open3dcalc_customers.json'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(new Blob([data], { type: 'application/json' }), 'open3dcalc_customers.json')
   }, [store])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -356,6 +352,7 @@ export function CustomerTab() {
       )}
 
       {/* Export / Import buttons */}
+      <DemoExportBadge />
       <div className="flex gap-2 mt-4">
         <button
           onClick={handleExport}
