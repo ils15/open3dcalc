@@ -211,3 +211,44 @@ describe("i18n locales (comparison.*) — Wave C B3", () => {
     expect(note as string, "comparison.failureRateNote").toContain("{{rate}}");
   });
 });
+
+/**
+ * Onboarding Fase 1 — chaves do modo demo ("Estúdio Maria Print") emitidas via
+ * `t(...)`. O botão de entrada, o indicador persistente e o guard de exportação
+ * dependem de todas; uma chave ausente renderiza a chave crua ou deixa um
+ * controle sem label acessível — regressão visível e que a parity test deve
+ * pegar antes do conteúdo chegar aos JSONs.
+ */
+const DEMO_BUTTON_KEYS = ["label", "ariaLabel"] as const;
+
+const DEMO_INDICATOR_KEYS = [
+  "title",
+  "description",
+  "exit",
+  "exitAriaLabel",
+] as const;
+
+const DEMO_EXPORT_KEYS = ["blockedTitle", "badge"] as const;
+
+describe("i18n locales (demo.*) — onboarding Fase 1", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every demo.* key in %s", (_locale, dict) => {
+    for (const key of DEMO_BUTTON_KEYS) {
+      const value = resolve(dict, ["demo", "button", key]);
+      expect(typeof value, `demo.button.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+    for (const key of DEMO_INDICATOR_KEYS) {
+      const value = resolve(dict, ["demo", "indicator", key]);
+      expect(typeof value, `demo.indicator.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+    for (const key of DEMO_EXPORT_KEYS) {
+      const value = resolve(dict, ["demo", "export", key]);
+      expect(typeof value, `demo.export.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+});
