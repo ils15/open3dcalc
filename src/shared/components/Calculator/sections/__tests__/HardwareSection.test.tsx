@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HardwareSection } from "../HardwareSection";
 
@@ -210,6 +210,74 @@ describe("HardwareSection", () => {
         bedEnabled: false,
       });
     });
+
+    describe("numeric inputs commit via handleInput", () => {
+      it("commits nozzle cost when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.nozzleCost"), {
+          target: { value: "42" },
+        });
+        expect(mockSetFdmHardware).toHaveBeenCalledWith({
+          ...mockStore.fdmHardware,
+          nozzleCost: 42,
+        });
+      });
+
+      it("commits nozzle lifespan when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.nozzleLife"), {
+          target: { value: "8" },
+        });
+        expect(mockSetFdmHardware).toHaveBeenCalledWith({
+          ...mockStore.fdmHardware,
+          nozzleLifespanKg: 8,
+        });
+      });
+
+      it("commits bed adhesion cost when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.bedCost"), {
+          target: { value: "0.5" },
+        });
+        expect(mockSetFdmHardware).toHaveBeenCalledWith({
+          ...mockStore.fdmHardware,
+          bedAdhesionCost: 0.5,
+        });
+      });
+
+      it("commits finishing supplies cost when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.finishingSupplies"), {
+          target: { value: "12" },
+        });
+        expect(mockSetFdmFinishing).toHaveBeenCalledWith({
+          ...mockStore.fdmFinishing,
+          suppliesCost: 12,
+        });
+      });
+
+      it("treats an emptied input as zero", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.nozzleCost"), {
+          target: { value: "" },
+        });
+        expect(mockSetFdmHardware).toHaveBeenCalledWith({
+          ...mockStore.fdmHardware,
+          nozzleCost: 0,
+        });
+      });
+
+      it("treats a non-numeric input as zero", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.nozzleLife"), {
+          target: { value: "abc" },
+        });
+        expect(mockSetFdmHardware).toHaveBeenCalledWith({
+          ...mockStore.fdmHardware,
+          nozzleLifespanKg: 0,
+        });
+      });
+    });
   });
 
   describe("Resin mode", () => {
@@ -269,6 +337,96 @@ describe("HardwareSection", () => {
       expect(screen.getByText("calc.lcdLife")).toBeInTheDocument();
       expect(screen.getByText("calc.fepCost")).toBeInTheDocument();
       expect(screen.getByText("calc.fepLife")).toBeInTheDocument();
+    });
+
+    describe("numeric inputs commit via handleInput", () => {
+      it("commits alcohol cost per liter when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.alcoholCost"), {
+          target: { value: "30" },
+        });
+        expect(mockSetResinPostProcess).toHaveBeenCalledWith({
+          ...mockStore.resinPostProcess,
+          alcoholCostPerLiter: 30,
+        });
+      });
+
+      it("commits alcohol volume when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.alcoholVol"), {
+          target: { value: "2" },
+        });
+        expect(mockSetResinPostProcess).toHaveBeenCalledWith({
+          ...mockStore.resinPostProcess,
+          alcoholVolumeLiters: 2,
+        });
+      });
+
+      it("commits curing time when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.cureTime"), {
+          target: { value: "15" },
+        });
+        expect(mockSetResinPostProcess).toHaveBeenCalledWith({
+          ...mockStore.resinPostProcess,
+          curingTimeMinutes: 15,
+        });
+      });
+
+      it("commits curing power when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.curePower"), {
+          target: { value: "48" },
+        });
+        expect(mockSetResinPostProcess).toHaveBeenCalledWith({
+          ...mockStore.resinPostProcess,
+          curingPowerWatts: 48,
+        });
+      });
+
+      it("commits LCD cost when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.lcdCost"), {
+          target: { value: "350" },
+        });
+        expect(mockSetResinHardware).toHaveBeenCalledWith({
+          ...mockStore.resinHardware,
+          lcdCost: 350,
+        });
+      });
+
+      it("commits LCD lifespan when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.lcdLife"), {
+          target: { value: "1500" },
+        });
+        expect(mockSetResinHardware).toHaveBeenCalledWith({
+          ...mockStore.resinHardware,
+          lcdLifespanHours: 1500,
+        });
+      });
+
+      it("commits FEP cost when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.fepCost"), {
+          target: { value: "60" },
+        });
+        expect(mockSetResinHardware).toHaveBeenCalledWith({
+          ...mockStore.resinHardware,
+          fepCost: 60,
+        });
+      });
+
+      it("commits FEP lifespan when changed", () => {
+        render(<HardwareSection />);
+        fireEvent.change(screen.getByLabelText("calc.fepLife"), {
+          target: { value: "40" },
+        });
+        expect(mockSetResinHardware).toHaveBeenCalledWith({
+          ...mockStore.resinHardware,
+          fepLifespanPrints: 40,
+        });
+      });
     });
 
     it("calls setResinPostProcess when washing toggle clicked", async () => {
