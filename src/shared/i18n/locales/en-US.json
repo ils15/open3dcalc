@@ -337,7 +337,14 @@
     "saveChanges": "Save Changes",
     "cancel": "Cancel",
     "defaultPrinter": "Default",
-    "editSuccess": "Printer updated successfully!"
+    "editSuccess": "Printer updated successfully!",
+    "tagsLabel": "Printer tags",
+    "filterByTag": "Filter by tag",
+    "allTags": "All",
+    "addTag": "Add tag",
+    "tagPlaceholder": "New tag…",
+    "noTags": "No tags yet",
+    "removeTag": "Remove tag {{tag}}"
   },
   "customers": {
     "title": "Customers",

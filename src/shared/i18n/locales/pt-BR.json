@@ -337,7 +337,14 @@
     "saveChanges": "Salvar Alterações",
     "cancel": "Cancelar",
     "defaultPrinter": "Padrão",
-    "editSuccess": "Impressora atualizada com sucesso!"
+    "editSuccess": "Impressora atualizada com sucesso!",
+    "tagsLabel": "Tags da impressora",
+    "filterByTag": "Filtrar por tag",
+    "allTags": "Todas",
+    "addTag": "Adicionar tag",
+    "tagPlaceholder": "Nova tag…",
+    "noTags": "Nenhuma tag ainda",
+    "removeTag": "Remover tag {{tag}}"
   },
   "customers": {
     "title": "Clientes",

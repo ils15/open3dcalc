@@ -8,8 +8,16 @@ import { guardedStorage } from "@/shared/lib/manifestStorage";
 const STORAGE_KEY = "open3dcalc_catalog_v1";
 
 type CatalogPrinter = PrinterProfile & { custom?: boolean };
+export type { CatalogPrinter };
 type CatalogMaterial = Material & { custom?: boolean };
 type CatalogMarketplace = Marketplace & { custom?: boolean };
+
+/** Free tags are case-insensitive and whitespace-collapsed so duplicates collapse to one entry. */
+const normalizeTag = (raw: string): string => raw.trim().toLowerCase().replace(/\s+/g, " ");
+
+/** Backward-compat: bundles persisted before Phase 4A have no `tags` field. Coerce to `[]`. */
+const withTags = (printers: CatalogPrinter[]): CatalogPrinter[] =>
+  printers.map((p) => (Array.isArray(p.tags) ? p : { ...p, tags: [] }));
 
 interface CatalogState {
   printers: CatalogPrinter[];
@@ -20,6 +28,10 @@ interface CatalogState {
   addPrinter: (printer: CatalogPrinter) => void;
   updatePrinter: (id: string, patch: Partial<CatalogPrinter>) => void;
   removePrinter: (id: string) => void;
+  addPrinterTag: (printerId: string, tag: string) => void;
+  removePrinterTag: (printerId: string, tag: string) => void;
+  selectedPrinterTag: string | null;
+  setPrinterTagFilter: (tag: string | null) => void;
   addMaterial: (material: CatalogMaterial) => void;
   updateMaterial: (id: string, patch: Partial<CatalogMaterial>) => void;
   removeMaterial: (id: string) => void;
@@ -29,7 +41,7 @@ interface CatalogState {
 }
 
 const cloneDefaults = () => ({
-  printers: printers.map((p) => ({ ...p })),
+  printers: withTags(printers.map((p) => ({ ...p }))),
   materials: [...fdmMaterials, ...resinMaterials].map((m) => ({ ...m })),
   marketplaces: marketplaces.map((m) => ({ ...m })),
 });
@@ -52,7 +64,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => {
   const saved = loadFromStorage();
 
   const initial = {
-    printers: (saved.printers ?? defaults.printers) as CatalogPrinter[],
+    printers: withTags((saved.printers ?? defaults.printers) as CatalogPrinter[]),
     materials: (saved.materials ?? defaults.materials) as CatalogMaterial[],
     marketplaces: (saved.marketplaces ??
       defaults.marketplaces) as CatalogMarketplace[],
@@ -60,11 +72,12 @@ export const useCatalogStore = create<CatalogState>((set, get) => {
 
   return {
     ...initial,
+    selectedPrinterTag: null,
 
     load: () => {
       const next = loadFromStorage();
       set({
-        printers: (next.printers ?? defaults.printers) as CatalogPrinter[],
+        printers: withTags((next.printers ?? defaults.printers) as CatalogPrinter[]),
         materials: (next.materials ?? defaults.materials) as CatalogMaterial[],
         marketplaces: (next.marketplaces ??
           defaults.marketplaces) as CatalogMarketplace[],
@@ -99,6 +112,48 @@ export const useCatalogStore = create<CatalogState>((set, get) => {
         persist(next);
         return next;
       }),
+    addPrinterTag: (printerId, tag) => {
+      const normalized = normalizeTag(tag);
+      if (!normalized) return;
+      set((state) => {
+        const exists = state.printers.some(
+          (p) => p.id === printerId && p.tags?.includes(normalized),
+        );
+        if (exists) return state;
+        const next = {
+          ...state,
+          printers: state.printers.map((p) =>
+            p.id === printerId
+              ? { ...p, tags: [...(p.tags ?? []), normalized] }
+              : p,
+          ),
+        };
+        persist(next);
+        return next;
+      });
+    },
+    removePrinterTag: (printerId, tag) => {
+      const normalized = normalizeTag(tag);
+      set((state) => {
+        const target = state.printers.find((p) => p.id === printerId);
+        if (!target || !target.tags?.includes(normalized)) return state;
+        const next = {
+          ...state,
+          printers: state.printers.map((p) =>
+            p.id === printerId
+              ? { ...p, tags: (p.tags ?? []).filter((t) => t !== normalized) }
+              : p,
+          ),
+          selectedPrinterTag:
+            state.selectedPrinterTag === normalized
+              ? null
+              : state.selectedPrinterTag,
+        };
+        persist(next);
+        return next;
+      });
+    },
+    setPrinterTagFilter: (tag) => set({ selectedPrinterTag: tag }),
 
     addMaterial: (material) =>
       set((state) => {

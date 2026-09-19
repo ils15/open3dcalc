@@ -43,6 +43,8 @@ export interface PrinterProfile {
   maintenancePerHour: number;
   image?: string;
   maxFilaments?: number;
+  /** Free-form labels used to organize custom printers. Normalized (trimmed, lowercased) on write. */
+  tags?: string[];
 }
 
 export interface AMSSlot {
