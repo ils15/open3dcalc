@@ -150,14 +150,16 @@ export const useDemoModeStore = create<DemoModeState>((set, get) => ({
       return;
     }
     const { snapshot } = get();
-    // restaura com supressão ativa: o restore em si também não persiste;
-    // finally libera o flag mesmo se algum dos setState do restore throwar,
-    // senão writes reais posteriores ficariam silenciados para sempre
+    // restaura com supressão ativa: o restore em si também não persiste.
+    // O finally libera o flag E limpa o estado demo — mesmo que algum
+    // setState do restore throwar. Deixar isActive=true com snapshot stale
+    // faria um exit() retry (supressão já desligada) persistir o estado
+    // pré-demo por cima do trabalho real do usuário.
     try {
       if (snapshot) restoreSnapshot(snapshot);
     } finally {
       setDemoPersistenceSuppressed(false);
+      set({ isActive: false, snapshot: null });
     }
-    set({ isActive: false, snapshot: null });
   },
 }));

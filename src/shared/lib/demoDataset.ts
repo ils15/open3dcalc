@@ -1,11 +1,11 @@
 /**
  * Dataset ficcional do modo demo — "Estúdio Maria Print" (onboarding Fase 0).
  *
- * Puremente DADO tipado: nenhum import de store, nenhuma ação chamada, nenhuma
+ * Puramente dado tipado: nenhum import de store, nenhuma ação chamada, nenhuma
  * escrita em localStorage/SQLite. O {@link ./demoModeStore.ts} é quem aplica
  * este dataset chamando SOMENTE ações existentes das stores.
  *
- * Os resultados (`CalculationResult`) são derivados pela função PURA
+ * Os resultados (`CalculationResult`) são derivados pela função pura
  * `computeStoreResults` (mesma usada pela calculatorStore), então histórico e
  * calculadora são sempre consistentes — não há números mágicos digitados à mão.
  *

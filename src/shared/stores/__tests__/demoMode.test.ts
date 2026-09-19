@@ -203,6 +203,12 @@ describe("demoModeStore (demo-data mode)", () => {
     // writes reais posteriores do usuário ficariam silenciados para sempre
     expect(isDemoPersistenceSuppressed()).toBe(false);
 
+    // o estado demo também é limpo no finally: não sobra isActive=true com
+    // snapshot stale que um exit() retry pudesse aplicar (com supressão já
+    // desligada) por cima do trabalho real do usuário
+    expect(useDemoModeStore.getState().isActive).toBe(false);
+    expect(useDemoModeStore.getState().snapshot).toBeNull();
+
     // prova que writes reais voltam a persistir
     useFilamentInventory.getState().addSpool({
       brand: "ExitFailBrand",
