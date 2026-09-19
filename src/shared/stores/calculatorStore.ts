@@ -8,6 +8,7 @@ import type {
   CalculatorState,
   ComputeStoreInput,
 } from "./calculatorStore.types";
+import type { PostProcessingResin, MachineCosts } from "@/shared/types";
 import type { CalcLevel } from "./calculatorStore.types";
 import type { CurrencySetting } from "@/shared/lib/currency";
 import type { CalculationSnapshot } from "@/shared/types";
@@ -236,7 +237,19 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     setFdmOps: (v) => setWithCompute({ fdmOps: v }),
     setFdmSoft: (v) => setWithCompute({ fdmSoft: v }),
 
-    setResinMaterial: (v) => setWithCompute({ resinMaterial: v }),
+    setResinMaterial: (v) => {
+      // Wave B: resina lavável em água → lavagem com água (sem IPA); qualquer
+      // outra resina → álcool. washType ausente ≡ "alcohol" (compatibilidade
+      // byte-identical com payloads legacy). O toggle manual da UI (Wave C)
+      // ainda pode sobrescrever depois via setResinPostProcess.
+      const washType: PostProcessingResin["washType"] =
+        v.type === "water_washable" ? "water" : "alcohol";
+      const state = get();
+      setWithCompute({
+        resinMaterial: v,
+        resinPostProcess: { ...state.resinPostProcess, washType },
+      });
+    },
     setResinPrintParams: (v) => setWithCompute({ resinPrintParams: v }),
     setResinPostProcess: (v) => setWithCompute({ resinPostProcess: v }),
     setResinMachine: (v) => setWithCompute({ resinMachine: v }),
@@ -251,6 +264,27 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       const hasAms = (selectedPrinter.maxFilaments ?? 1) > 1;
       const wasAmsEnabled = get().fdmAmsEnabled;
       const state = get();
+
+      // Wave B (B4): preenche os custos da MAQUINA ATIVA a partir do catálogo
+      // — single source of truth (substitui o double-set do Calculator.tsx).
+      // Conversao obrigatoria: maintenancePerHour e R$/h, mas MachineCosts
+      // guarda R$/mes (calculator.ts divide por hoursPerMonth de volta).
+      // DERIVE-ONCE: so na selecao; edicoes posteriores de hoursPerMonth pelo
+      // usuario nao re-derivationam (YAGNI).
+      const isResin = state.activeTab === "resin";
+      const activeMachine = isResin ? state.resinMachine : state.fdmMachine;
+      const hpm = activeMachine.hoursPerMonth || 1;
+      const derivedMachine: MachineCosts = {
+        ...activeMachine,
+        machineCost: selectedPrinter.value,
+        depreciationMonths: Math.max(
+          1,
+          Math.round(selectedPrinter.usefulLife / hpm),
+        ),
+        maintenanceEnabled: true,
+        maintenanceCost: Math.round(selectedPrinter.maintenancePerHour * hpm),
+      };
+
       setWithCompute({
         selectedPrinter,
         fdmAmsEnabled: hasAms && wasAmsEnabled,
@@ -258,6 +292,17 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           ...state.fdmPrintParams,
           printerPowerWatts: selectedPrinter.power,
         },
+        ...(isResin
+          ? {
+              resinMachine: derivedMachine,
+              resinPrintParams: {
+                ...state.resinPrintParams,
+                printerPowerWatts: selectedPrinter.power,
+              },
+            }
+          : {
+              fdmMachine: derivedMachine,
+            }),
       });
     },
     setSelectedMarketplace: (selectedMarketplace) =>
