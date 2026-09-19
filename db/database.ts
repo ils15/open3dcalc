@@ -105,7 +105,7 @@ function resolveMigrationsDir(): string | null {
  * 0003 was the first ALTER TABLE in the project — a re-run on an
  * already-migrated file answers "duplicate column name: tare_grams".
  */
-function runMigrations(sqlite: Database.Database): void {
+export function runMigrations(sqlite: Database.Database): void {
   const migrationsDir = resolveMigrationsDir();
   if (migrationsDir === null) {
     console.warn("[db] Migrations directory not found at:", migrationsDir);
