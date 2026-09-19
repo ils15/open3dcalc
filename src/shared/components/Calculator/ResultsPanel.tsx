@@ -7,6 +7,7 @@ import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import type { FilamentSpool } from "@/shared/stores/filamentInventory";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import { useDemoExportGuard } from "@/shared/hooks/useDemoExportGuard";
 import {
   PieChart,
   Pie,
@@ -28,6 +29,7 @@ import {
   Check,
   X,
   PackagePlus,
+  Sparkles,
 } from "lucide-react";
 import { exportQuoteJson, downloadQuoteJson } from "@/shared/lib/quoteApi";
 import { generateShareUrl } from "@/shared/lib/calculationLink";
@@ -42,10 +44,16 @@ import { MaterialComparison } from "@/shared/components/Calculator/MaterialCompa
 
 interface ResultsPanelProps {
   variant: "sidebar" | "mobile";
+  /** Receives the explanation when an export/share action is blocked in demo. */
+  onExportBlocked?: (message: string) => void;
 }
 
-export function ResultsPanel({ variant }: ResultsPanelProps) {
+export function ResultsPanel({
+  variant,
+  onExportBlocked,
+}: ResultsPanelProps) {
   const { t, i18n } = useTranslation();
+  const { isDemoMode, guard } = useDemoExportGuard(onExportBlocked);
   const {
     results,
     productName,
@@ -343,6 +351,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   };
 
   const handleShareLink = async () => {
+    if (guard()) return;
     const state = useCalculatorStore.getState();
     const shareState = {
       activeTab: state.activeTab,
@@ -396,6 +405,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
   };
 
   const handleExportQuote = () => {
+    if (guard()) return;
     if (!results) return;
     const state = useCalculatorStore.getState();
     const name = state.productName || "Cotação Open3DCalc";
@@ -757,6 +767,15 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
       )}
 
       <div data-tutorial="export" className="grid grid-cols-2 gap-2">
+        {isDemoMode && (
+          <div
+            role="status"
+            className="col-span-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--color-violet-muted)] border border-[var(--color-violet)]/30 text-[11px] font-semibold text-[var(--color-violet)]"
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            <span>{t("demo.export.badge")}</span>
+          </div>
+        )}
         <button
           onClick={() => {
             saveSettings();
@@ -781,6 +800,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
         <button
           data-shortcut="export"
           onClick={async () => {
+            if (guard()) return;
             const { exportPdf } = await import("@/shared/lib/pdfExport");
             const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
             exportPdf(results, locale, currency);
@@ -792,6 +812,7 @@ export function ResultsPanel({ variant }: ResultsPanelProps) {
         </button>
         <button
           onClick={async () => {
+            if (guard()) return;
             const { exportResultToCsv, downloadCsv } =
               await import("@/shared/lib/csvExport");
             const csv = exportResultToCsv(results, productName || "open3dcalc");

@@ -27,6 +27,8 @@ interface SectionRendererProps {
 	catalogMaterials: Array<{ name: string; type: string }>;
 	catalogPrinters: Array<{ id: string; name: string; power: number; value: number; brand: string; image?: string }>;
 	handlePrinterSelect: (id: string) => void;
+	/** Forwards demo-mode export feedback down to the mobile ResultsPanel. */
+	onExportBlocked?: (message: string) => void;
 }
 
 export function SectionRenderer(props: SectionRendererProps) {
@@ -41,6 +43,7 @@ export function SectionRenderer(props: SectionRendererProps) {
 		catalogMaterials,
 		catalogPrinters,
 		handlePrinterSelect,
+		onExportBlocked,
 	} = props;
 
 	const { calcLevel, hiddenFields } = useCalculatorStore(
@@ -185,7 +188,7 @@ export function SectionRenderer(props: SectionRendererProps) {
 					case "results":
 						return (
 							<div key="results" id="section-results" data-tutorial="results" className="scroll-mt-24 2xl:hidden">
-								<ResultsPanel variant="mobile" />
+								<ResultsPanel variant="mobile" onExportBlocked={onExportBlocked} />
 							</div>
 						);
 					default:
