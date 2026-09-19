@@ -5,10 +5,7 @@ import { BarChart2, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
-import {
-  compareMaterialsForPart,
-  INVALID_MATERIAL_NAME,
-} from "@/shared/lib/compareMaterials";
+import { compareMaterialsForPart } from "@/shared/lib/compareMaterials";
 
 type SortDir = "asc" | "desc";
 
@@ -95,7 +92,20 @@ export function MaterialComparison() {
     ];
   }, [rows, sortDir]);
 
-  const currentType = fdmMaterial.type?.trim().toLowerCase();
+  // Só destaca o material atual no modo FDM: na aba resina a tabela exibe o
+  // catálogo FDM (processos diferentes), e fdmMaterial.type não tem relação
+  // com a resina selecionada — destacaria uma linha a esmo.
+  const currentType =
+    activeTab === "fdm" ? fdmMaterial.type?.trim().toLowerCase() : undefined;
+
+  // Rótulos vivos (i18n) para o indicador de direção do sort e para linhas
+  // inválidas — antes hardcoded ("—" / sem texto).
+  const sortDirectionLabel = t(
+    sortDir === "asc"
+      ? "comparison.sortAscending"
+      : "comparison.sortDescending",
+  );
+  const invalidMaterialLabel = t("comparison.invalidMaterial");
 
   return (
     <section
@@ -192,7 +202,7 @@ export function MaterialComparison() {
                           onClick={() =>
                             setSortDir((d) => (d === "asc" ? "desc" : "asc"))
                           }
-                          aria-label={t("comparison.sortHint")}
+                          aria-label={`${t("comparison.sortHint")} — ${sortDirectionLabel}`}
                           title={t("comparison.sortHint")}
                           className="inline-flex items-center gap-1 font-medium text-[var(--color-text-primary)] hover:text-[var(--color-primary)] transition-colors"
                         >
@@ -229,22 +239,37 @@ export function MaterialComparison() {
                             {row.rank}
                           </td>
                           <td className="py-1.5 pr-2 text-[var(--color-text-primary)]">
-                            {row.isValid ? row.name : INVALID_MATERIAL_NAME}
+                            {row.isValid ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                {row.name}
+                                {isCurrent && (
+                                  <span
+                                    data-testid="material-comparison-current-badge"
+                                    className="inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium uppercase tracking-wide bg-[var(--color-primary)] text-[var(--color-accent-text)]"
+                                    aria-label={t("comparison.currentMaterial")}
+                                  >
+                                    {t("comparison.currentBadge")}
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              invalidMaterialLabel
+                            )}
                           </td>
                           <td className="py-1.5 pr-2 tabular-nums hidden xs:table-cell">
                             {row.isValid
                               ? row.density.toFixed(2)
-                              : INVALID_MATERIAL_NAME}
+                              : invalidMaterialLabel}
                           </td>
                           <td className="py-1.5 pr-2 tabular-nums hidden sm:table-cell">
                             {row.isValid
                               ? `${row.weightGrams.toFixed(1)} g`
-                              : INVALID_MATERIAL_NAME}
+                              : invalidMaterialLabel}
                           </td>
                           <td className="py-1.5 tabular-nums text-[var(--color-text-primary)]">
                             {row.isValid
                               ? format(row.materialCost)
-                              : INVALID_MATERIAL_NAME}
+                              : invalidMaterialLabel}
                           </td>
                         </tr>
                       );

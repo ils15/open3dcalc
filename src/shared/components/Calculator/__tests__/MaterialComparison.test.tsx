@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { MaterialComparison } from "../MaterialComparison";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
-import { INVALID_MATERIAL_NAME } from "@/shared/lib/compareMaterials";
 import type { Material } from "@/shared/types";
 
 vi.mock("react-i18next", () => ({
@@ -94,9 +93,15 @@ function openTable() {
 }
 
 function rowNames(): string[] {
-  return screen
-    .getAllByTestId("material-comparison-row")
-    .map((row) => within(row).getAllByRole("cell")[1].textContent ?? "");
+  return screen.getAllByTestId("material-comparison-row").map((row) => {
+    const cell = within(row).getAllByRole("cell")[1];
+    // O badge "atual" divide a mesma célula do nome — ignora-o para ler só o
+    // nome do material.
+    cell
+      .querySelector("[data-testid='material-comparison-current-badge']")
+      ?.remove();
+    return cell.textContent ?? "";
+  });
 }
 
 function rowCosts(): string[] {
@@ -122,8 +127,14 @@ describe("MaterialComparison", () => {
   it("renders only FDM materials, sorted by part cost ascending", async () => {
     render(<MaterialComparison />);
     await openTable();
-    // 3 FDM válidos + 1 FDM inválido; a resina fica de fora.
-    expect(rowNames()).toEqual(["ABS", "PLA", "PETG", INVALID_MATERIAL_NAME]);
+    // 3 FDM válidos + 1 FDM inválido; a resina fica de fora. O marcador de
+    // linha inválida vem do i18n (chave no mock).
+    expect(rowNames()).toEqual([
+      "ABS",
+      "PLA",
+      "PETG",
+      "comparison.invalidMaterial",
+    ]);
     expect(rowCosts()[0]).toBe("R$ 5.20");
   });
 
@@ -131,11 +142,36 @@ describe("MaterialComparison", () => {
     render(<MaterialComparison />);
     await openTable();
     const user = userEvent.setup();
-    expect(rowNames()).toEqual(["ABS", "PLA", "PETG", INVALID_MATERIAL_NAME]);
-    await user.click(screen.getByTestId("material-comparison-sort"));
-    expect(rowNames()).toEqual(["PETG", "PLA", "ABS", INVALID_MATERIAL_NAME]);
-    await user.click(screen.getByTestId("material-comparison-sort"));
-    expect(rowNames()).toEqual(["ABS", "PLA", "PETG", INVALID_MATERIAL_NAME]);
+    const sortBtn = screen.getByTestId("material-comparison-sort");
+    // asc → o aria-label concatena a ação com a direção atual (i18n).
+    expect(sortBtn).toHaveAttribute(
+      "aria-label",
+      "comparison.sortHint — comparison.sortAscending",
+    );
+    expect(rowNames()).toEqual([
+      "ABS",
+      "PLA",
+      "PETG",
+      "comparison.invalidMaterial",
+    ]);
+    await user.click(sortBtn);
+    expect(sortBtn).toHaveAttribute(
+      "aria-label",
+      "comparison.sortHint — comparison.sortDescending",
+    );
+    expect(rowNames()).toEqual([
+      "PETG",
+      "PLA",
+      "ABS",
+      "comparison.invalidMaterial",
+    ]);
+    await user.click(sortBtn);
+    expect(rowNames()).toEqual([
+      "ABS",
+      "PLA",
+      "PETG",
+      "comparison.invalidMaterial",
+    ]);
   });
 
   it("marks the current material row and only it", async () => {
@@ -145,8 +181,33 @@ describe("MaterialComparison", () => {
     const current = rows.filter((r) => r.dataset.current === "true");
     const others = rows.filter((r) => r.dataset.current === "false");
     expect(current).toHaveLength(1);
-    expect(within(current[0]).getAllByRole("cell")[1].textContent).toBe("PLA");
+    const nameCell = within(current[0]).getAllByRole("cell")[1];
+    expect(nameCell).toHaveTextContent("PLA");
+    // Badge "atual" visível só na linha do material selecionado, com seu
+    // aria-label descritivo (i18n).
+    const badge = within(current[0]).getByTestId(
+      "material-comparison-current-badge",
+    );
+    expect(badge).toHaveTextContent("comparison.currentBadge");
+    expect(badge).toHaveAttribute("aria-label", "comparison.currentMaterial");
+    expect(
+      within(others[0]).queryByTestId("material-comparison-current-badge"),
+    ).not.toBeInTheDocument();
     expect(others).toHaveLength(3);
+  });
+
+  it("does not highlight the current material row in resin mode", async () => {
+    // Na aba resina a tabela mostra o catálogo FDM (processos diferentes):
+    // fdmMaterial.type não tem relação com a resina selecionada e não pode
+    // destacar uma linha FDM a esmo.
+    seed({ activeTab: "resin" });
+    render(<MaterialComparison />);
+    await openTable();
+    const rows = screen.getAllByTestId("material-comparison-row");
+    expect(rows.filter((r) => r.dataset.current === "true")).toHaveLength(0);
+    expect(
+      screen.queryByTestId("material-comparison-current-badge"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders the invalid marker on broken rows", async () => {
@@ -155,10 +216,10 @@ describe("MaterialComparison", () => {
     const rows = screen.getAllByTestId("material-comparison-row");
     const broken = rows[3];
     expect(within(broken).getAllByRole("cell")[1].textContent).toBe(
-      INVALID_MATERIAL_NAME,
+      "comparison.invalidMaterial",
     );
     expect(within(broken).getAllByRole("cell")[4].textContent).toBe(
-      INVALID_MATERIAL_NAME,
+      "comparison.invalidMaterial",
     );
   });
 
