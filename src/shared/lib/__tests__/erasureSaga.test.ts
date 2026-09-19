@@ -2,7 +2,7 @@
  * @vitest-environment node
  *
  * Engine contract tests for the erasure saga (D1.1 S7) — TEST-MATRIX §6
- * rows 6.1, 6.4, 6.6, 6.7, 6.8 (in-memory adapters; the REAL crash tests
+ * rows 6.1, 6.4, 6.6, 6.7, 6.8, 6.9 (in-memory adapters; the REAL crash tests
  * with SIGKILL + real SQLite live in erasure-crash.test.ts).
  */
 
@@ -21,6 +21,17 @@ import type { StoreAdapterLike } from "@/shared/lib/erasureSaga/types";
 import { MAX_STORE_ATTEMPTS } from "@/shared/lib/erasureSaga/types";
 
 const PAYLOAD = '{"rows":[{"key":"open3dcalc_customers_v1","value":"x"}]}';
+
+/**
+ * Frozen clock shared by the harness and the mock snapshot store. The mock
+ * stamps `created_at` with this instant (makeSnapshots) and the engine is
+ * given the same clock through `options.now`, so the ttl_days: 7 window
+ * never elapses while a saga runs. Without injection the engine falls back
+ * to the real clock and every mock snapshot is "born old" — a deterministic
+ * time bomb once the real clock passes 2026-09-19T12:00:00Z. The intentional
+ * expiry assertion lives in the 6.9 test below.
+ */
+const FROZEN = new Date("2026-09-12T12:00:00Z");
 
 function makeJournal() {
   const store = new Map<string, string>();
@@ -185,6 +196,10 @@ function makeHarness(
     restoreSnapshotPayload: async (payload: string) => {
       h.restored.push(payload);
     },
+    // Engine clock frozen at the snapshot's created_at: the ttl_days window
+    // never elapses mid-saga, so the rollback path stays reachable. The
+    // advanced-clock (expiry) case is exercised by the 6.9 test.
+    now: () => FROZEN,
   };
   return { h, options };
 }
@@ -247,6 +262,24 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     });
     await expect(startSaga(options)).rejects.toThrow(SagaError);
     expect(h.restored).toEqual([PAYLOAD]);
+  });
+
+  it("6.9: snapshot past its TTL ⇒ rollback unavailable, saga completes committed", async () => {
+    const { options, h } = makeHarness({
+      failStore: { store: "sqlite_storage", times: MAX_STORE_ATTEMPTS },
+    });
+    // Advance the injected clock 8 days past created_at (ttl_days: 7). The
+    // TTL sweep in drive() destroys the expired snapshot before the failure
+    // path runs, so canRollback reports it missing and the saga completes
+    // "committed" with a rollback_unavailable annotation — data is NOT
+    // restored. This is the intent the frozen-clock fix makes deterministic.
+    const { journal } = await startSaga({
+      ...options,
+      now: () => new Date("2026-09-20T12:00:00Z"),
+    });
+    expect(journal.state).toBe("committed");
+    expect(journal.rollback_unavailable?.reason).toBe("snapshot_missing");
+    expect(h.restored).toEqual([]);
   });
 
   it("refuses a second start while a saga is in progress (no re-prompt)", async () => {
