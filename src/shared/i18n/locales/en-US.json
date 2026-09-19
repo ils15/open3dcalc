@@ -729,6 +729,10 @@
       "inventario-bobinas": {
         "title": "Spool inventory",
         "description": "Register spools, search, and filter by material — your filament stock control."
+      },
+      "dashboard-kpis": {
+        "title": "KPI dashboard",
+        "description": "Financial summary, date-range filter, history KPIs, and monthly profit projection."
       }
     },
     "steps": {
@@ -803,6 +807,30 @@
       "inv-complete": {
         "title": "Stock under control ✅",
         "description": "The inventory feeds weight and price into the calculator. Check the dashboard tour to track your KPIs."
+      },
+      "dash-intro": {
+        "title": "Your numbers in one place 📊",
+        "description": "This tour shows the financial summary, the date-range filter, the history KPIs, and the monthly profit projection."
+      },
+      "dash-summary": {
+        "title": "Quick summary",
+        "description": "Total cost, sale price, profit, and ROI for the filtered period — updated on every calculation."
+      },
+      "dash-date-range": {
+        "title": "Filter the period",
+        "description": "Set a start and end date to narrow the analysis. Clear the filters anytime to see everything again."
+      },
+      "dash-kpis": {
+        "title": "History KPIs",
+        "description": "Total profit, average cost per print, average margin, and print count for the selected period."
+      },
+      "dash-projection": {
+        "title": "Monthly projection",
+        "description": "Enter how many parts you print per month to estimate projected profit and plan your prices."
+      },
+      "dash-complete": {
+        "title": "Data-driven decisions 🎯",
+        "description": "Tweak the period and monthly volume to simulate scenarios. History keeps every calculation for later comparison."
       }
     }
   },

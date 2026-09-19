@@ -274,3 +274,98 @@ describe("tour: upload-3d-preview", () => {
     expect(state.completedTours).toContain("upload-3d-preview");
   });
 });
+
+// ── U5: dashboard-kpis (dashboard tab — cross-tab anchors) ──────────────────
+
+describe("tour: dashboard-kpis", () => {
+  const ANCHORS = [
+    "dashboard-summary",
+    "dashboard-date-range",
+    "dashboard-kpis",
+    "dashboard-projection",
+  ];
+
+  beforeEach(() => {
+    localStorage.clear();
+    resetTutorialStore();
+  });
+
+  it("registry wires six steps that all hop to the dashboard tab", () => {
+    const steps = TOURS["dashboard-kpis"];
+    expect(steps).toHaveLength(6);
+    expect(steps.map((s) => s.key)).toEqual([
+      "dash-intro",
+      "dash-summary",
+      "dash-date-range",
+      "dash-kpis",
+      "dash-projection",
+      "dash-complete",
+    ]);
+    for (const step of steps) {
+      if (!step.target) continue;
+      expect(step.target.startsWith('[data-tutorial="')).toBe(true);
+      const anchor = step.target.slice('[data-tutorial="'.length, -2);
+      expect(ANCHORS, `anchor ${anchor} must exist in Dashboard`).toContain(
+        anchor,
+      );
+      expect(step.tab).toBe("dashboard");
+    }
+  });
+
+  it("navigates to the dashboard tab and resolves every anchor spotlight", async () => {
+    render(<TabHarness tab="dashboard" anchors={ANCHORS} />);
+    useTutorialStore.getState().startTour("dashboard-kpis");
+
+    // 1. Centered intro card lands while the harness is still on calculator.
+    expect(
+      await screen.findByText("tutorial.steps.dash-intro.title"),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("Passo 1 de 6")).toBeInTheDocument();
+
+    // 2. First anchored step: the engine dispatches the navigate event, the
+    // harness switches to dashboard, the anchor mounts and the spotlight
+    // resolves (no degraded card).
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.dash-summary.title"),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("active-tab").textContent).toBe("dashboard"),
+    );
+    expect(screen.getByTestId("anchor-dashboard-summary")).toBeInTheDocument();
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector('[data-testid="tutorial-overlay"]'),
+        ).not.toBeNull(),
+      { timeout: 2500 },
+    );
+
+    // 3→5. Remaining anchored steps stay on the dashboard surface.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.dash-date-range.title"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("active-tab").textContent).toBe("dashboard");
+
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.dash-kpis.title"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.dash-projection.title"),
+    ).toBeInTheDocument();
+
+    // 6. Centered closing card: "Concluir" replaces "Próximo" on the last step.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.dash-complete.title"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("tutorial.finish"));
+    const state = useTutorialStore.getState();
+    expect(state.isActive).toBe(false);
+    expect(state.completedTours).toContain("dashboard-kpis");
+  });
+});

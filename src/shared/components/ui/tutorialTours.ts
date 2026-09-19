@@ -130,7 +130,30 @@ export const TOURS: Record<TourId, StepConfig[]> = {
     },
     { key: "inv-complete", target: null },
   ],
-  "dashboard-kpis": [],
+  "dashboard-kpis": [
+    { key: "dash-intro", target: null },
+    {
+      key: "dash-summary",
+      target: '[data-tutorial="dashboard-summary"]',
+      tab: "dashboard",
+    },
+    {
+      key: "dash-date-range",
+      target: '[data-tutorial="dashboard-date-range"]',
+      tab: "dashboard",
+    },
+    {
+      key: "dash-kpis",
+      target: '[data-tutorial="dashboard-kpis"]',
+      tab: "dashboard",
+    },
+    {
+      key: "dash-projection",
+      target: '[data-tutorial="dashboard-projection"]',
+      tab: "dashboard",
+    },
+    { key: "dash-complete", target: null },
+  ],
   "orcamentos-clientes": [],
   "nivel-avancado": [],
 };

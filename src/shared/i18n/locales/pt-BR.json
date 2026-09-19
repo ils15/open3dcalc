@@ -729,6 +729,10 @@
       "inventario-bobinas": {
         "title": "Inventário de bobinas",
         "description": "Cadastre bobinas, pesquise e filtre por material — o controle de estoque do filamento."
+      },
+      "dashboard-kpis": {
+        "title": "Dashboard de KPIs",
+        "description": "Resumo financeiro, filtro por período, KPIs do histórico e projeção de lucro mensal."
       }
     },
     "steps": {
@@ -803,6 +807,30 @@
       "inv-complete": {
         "title": "Estoque sob controle ✅",
         "description": "O inventário alimenta a calculadora com peso e preço. Veja o tour do dashboard para acompanhar seus KPIs."
+      },
+      "dash-intro": {
+        "title": "Seus números em um lugar 📊",
+        "description": "Neste tour você lê o resumo financeiro, filtra por período, analisa os KPIs do histórico e simula a projeção de lucro."
+      },
+      "dash-summary": {
+        "title": "Resumo rápido",
+        "description": "Custo total, preço de venda, lucro e ROI do período filtrado — atualizados a cada cálculo."
+      },
+      "dash-date-range": {
+        "title": "Filtre o período",
+        "description": "Defina data inicial e final para restringir as análises. Limpe os filtros quando quiser ver tudo novamente."
+      },
+      "dash-kpis": {
+        "title": "KPIs do histórico",
+        "description": "Lucro total, custo médio por impressão, margem média e quantidade de prints do período selecionado."
+      },
+      "dash-projection": {
+        "title": "Projeção mensal",
+        "description": "Informe quantas peças você imprime por mês para estimar o lucro projetado e planejar seus preços."
+      },
+      "dash-complete": {
+        "title": "Decisões com dados 🎯",
+        "description": "Ajuste período e volume mensal para simular cenários. O histórico guarda cada cálculo para comparar depois."
       }
     }
   },
