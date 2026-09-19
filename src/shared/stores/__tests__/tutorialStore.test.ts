@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useTutorialStore, TUTORIAL_TOTAL_STEPS } from '../tutorialStore'
 
 const STORAGE_KEY = 'open3dcalc_tutorial_v1'
@@ -13,6 +13,13 @@ describe('useTutorialStore', () => {
       completedSteps: [],
       sessionDismissed: false,
     })
+  })
+
+  // The persistence tests below flush the debounced write with fake timers;
+  // always restore the real implementations afterwards so they can never
+  // leak into the synchronous tests.
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   // ── startTutorial ──────────────────────────────────────────────
@@ -152,39 +159,63 @@ describe('useTutorialStore', () => {
   })
 
   // ── State persistence ──────────────────────────────────────────
-  it('loads persisted state from localStorage on creation', () => {
-    // First clear and set manual data
+  // The store reads localStorage exactly once, at module init, so the only
+  // honest way to exercise the loader is a fresh module evaluation with the
+  // payload already seeded. resetModules() + dynamic import() re-runs the
+  // top-level loadPersistedData() against the seeded storage.
+  it('loads a real v1 payload from localStorage at module init', async () => {
+    // Pre-Fase-2 payloads have no `completedTours` field at all — the loader
+    // must tolerate that (default to []) instead of dropping the payload.
     localStorage.clear()
-    const persisted = {
-      isCompleted: true,
-      completedSteps: [1, 2, 3, 4, 5, 6, 7],
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ isCompleted: true, completedSteps: [1, 2, 3, 4, 5, 6, 7] }),
+    )
+
+    vi.resetModules()
+    const { useTutorialStore: freshStore } = await import('../tutorialStore')
+
+    const state = freshStore.getState()
+    expect(state.isCompleted).toBe(true)
+    expect(state.completedSteps).toEqual([1, 2, 3, 4, 5, 6, 7])
+    // Tolerant default for the field a v1 payload cannot know about.
+    expect(state.completedTours).toEqual([])
+  })
+
+  it('falls back to safe defaults on a corrupt persisted payload', async () => {
+    localStorage.clear()
+    localStorage.setItem(STORAGE_KEY, '{ not valid json')
+
+    vi.resetModules()
+    const { useTutorialStore: freshStore } = await import('../tutorialStore')
+
+    // Degrades to defaults instead of throwing at import time.
+    const state = freshStore.getState()
+    expect(state.isCompleted).toBe(false)
+    expect(state.completedSteps).toEqual([])
+    expect(state.completedTours).toEqual([])
+  })
+
+  it('persists finished tours to localStorage via the debounced write', async () => {
+    vi.useFakeTimers()
+    localStorage.clear()
+
+    vi.resetModules()
+    const { useTutorialStore: freshStore } = await import('../tutorialStore')
+
+    freshStore.getState().startTutorial()
+    freshStore.getState().finishTutorial()
+
+    // The persist is debounced 800ms — flush it before asserting.
+    vi.advanceTimersByTime(800)
+
+    const raw = localStorage.getItem(STORAGE_KEY)
+    expect(raw).not.toBeNull()
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      expect(parsed.isCompleted).toBe(true)
+      expect(parsed.completedTours).toEqual(['calc-basico'])
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted))
-
-    // Reset store to force re-initialize
-    useTutorialStore.setState({
-      isActive: false,
-      isCompleted: false,
-      currentStep: 1,
-      completedSteps: [],
-      sessionDismissed: false,
-    })
-
-    // The store loads from localStorage only once at module init time.
-    // Since we can't easily re-import, we verify the persist mechanism
-    // works by calling finishTutorial and checking localStorage
-    useTutorialStore.getState().startTutorial()
-    useTutorialStore.getState().finishTutorial()
-
-    // Wait for debounced persist
-    setTimeout(() => {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      expect(raw).not.toBeNull()
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        expect(parsed.isCompleted).toBe(true)
-      }
-    }, 1000)
   })
 
   // ── Edge cases ─────────────────────────────────────────────────
