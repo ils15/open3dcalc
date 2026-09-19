@@ -13,6 +13,7 @@ import {
   Upload, CheckSquare, RotateCcw, Clock,
 } from 'lucide-react'
 import { EmptyState } from '@/shared/components/ui/EmptyState'
+import { downloadBlob } from '@/shared/lib/download'
 
 interface DetailModalProps {
   entry: HistoryEntry | null
@@ -162,13 +163,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
 
   const handleExport = useCallback(() => {
     const data = store.exportJson()
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'open3dcalc_export.json'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(new Blob([data], { type: 'application/json' }), 'open3dcalc_export.json')
   }, [store])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

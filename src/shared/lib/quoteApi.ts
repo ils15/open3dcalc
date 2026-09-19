@@ -1,4 +1,5 @@
 import type { CalculationResult } from '@/shared/types'
+import { downloadBlob } from './download'
 
 export interface QuotePayload {
   version: string
@@ -110,11 +111,5 @@ export function exportQuoteJson(
 }
 
 export function downloadQuoteJson(content: string, filename: string): void {
-  const blob = new Blob([content], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
+  downloadBlob(new Blob([content], { type: 'application/json' }), filename)
 }

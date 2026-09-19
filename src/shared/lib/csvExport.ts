@@ -1,5 +1,6 @@
 import { formatCurrency, type CurrencyCode } from './currency'
 import type { CalculationResult } from '@/shared/types'
+import { downloadBlob } from './download'
 
 interface CsvRow {
   [key: string]: string | number
@@ -77,11 +78,5 @@ export function exportResultToCsv(
 }
 
 export function downloadCsv(content: string, filename: string): void {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
+  downloadBlob(new Blob([content], { type: 'text/csv;charset=utf-8;' }), filename)
 }
