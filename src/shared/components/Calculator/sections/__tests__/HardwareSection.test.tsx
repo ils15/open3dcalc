@@ -1,59 +1,64 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { HardwareSection } from '../HardwareSection'
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { HardwareSection } from "../HardwareSection";
 
 // Mocks
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'pt-BR' } }),
-}))
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (k: string) => k, i18n: { language: "pt-BR" } }),
+}));
 
-vi.mock('@/shared/hooks/useCurrency', () => ({
-  useCurrency: () => ({ symbol: 'R$', format: (v: number) => `R$ ${v.toFixed(2)}`, CURRENCIES: {} }),
-}))
+vi.mock("@/shared/hooks/useCurrency", () => ({
+  useCurrency: () => ({
+    symbol: "R$",
+    format: (v: number) => `R$ ${v.toFixed(2)}`,
+    CURRENCIES: {},
+  }),
+}));
 
-const mockSetFdmHardware = vi.fn()
-const mockSetFdmFinishing = vi.fn()
-const mockSetResinPostProcess = vi.fn()
-const mockSetResinHardware = vi.fn()
+const mockSetFdmHardware = vi.fn();
+const mockSetFdmFinishing = vi.fn();
+const mockSetResinPostProcess = vi.fn();
+const mockSetResinHardware = vi.fn();
 
 interface MockStore {
-  activeTab: string
+  activeTab: string;
   fdmHardware: {
-    enabled: boolean
-    nozzleEnabled: boolean
-    nozzleCost: number
-    nozzleLifespanKg: number
-    bedEnabled: boolean
-    bedAdhesionCost: number
-  }
-  fdmFinishing: { enabled: boolean; suppliesCost: number }
+    enabled: boolean;
+    nozzleEnabled: boolean;
+    nozzleCost: number;
+    nozzleLifespanKg: number;
+    bedEnabled: boolean;
+    bedAdhesionCost: number;
+  };
+  fdmFinishing: { enabled: boolean; suppliesCost: number };
   resinPostProcess: {
-    washingEnabled: boolean
-    alcoholCostPerLiter: number
-    alcoholVolumeLiters: number
-    curingEnabled: boolean
-    curingTimeMinutes: number
-    curingPowerWatts: number
-  }
+    washingEnabled: boolean;
+    alcoholCostPerLiter: number;
+    alcoholVolumeLiters: number;
+    washType?: "alcohol" | "water";
+    curingEnabled: boolean;
+    curingTimeMinutes: number;
+    curingPowerWatts: number;
+  };
   resinHardware: {
-    enabled: boolean
-    lcdCost: number
-    lcdLifespanHours: number
-    fepCost: number
-    fepLifespanPrints: number
-  }
-  setFdmHardware: ReturnType<typeof vi.fn>
-  setFdmFinishing: ReturnType<typeof vi.fn>
-  setResinPostProcess: ReturnType<typeof vi.fn>
-  setResinHardware: ReturnType<typeof vi.fn>
-  [key: string]: unknown
+    enabled: boolean;
+    lcdCost: number;
+    lcdLifespanHours: number;
+    fepCost: number;
+    fepLifespanPrints: number;
+  };
+  setFdmHardware: ReturnType<typeof vi.fn>;
+  setFdmFinishing: ReturnType<typeof vi.fn>;
+  setResinPostProcess: ReturnType<typeof vi.fn>;
+  setResinHardware: ReturnType<typeof vi.fn>;
+  [key: string]: unknown;
 }
 
-let mockStore: MockStore
+let mockStore: MockStore;
 
 const createMockStore = (overrides: Partial<MockStore> = {}): MockStore => ({
-  activeTab: 'fdm',
+  activeTab: "fdm",
   fdmHardware: {
     enabled: true,
     nozzleEnabled: true,
@@ -83,193 +88,331 @@ const createMockStore = (overrides: Partial<MockStore> = {}): MockStore => ({
   setResinPostProcess: mockSetResinPostProcess,
   setResinHardware: mockSetResinHardware,
   ...overrides,
-})
+});
 
-vi.mock('@/shared/stores/calculatorStore', () => ({
+vi.mock("@/shared/stores/calculatorStore", () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useCalculatorStore: (selector?: any) => {
-    return selector ? selector(mockStore) : mockStore
+    return selector ? selector(mockStore) : mockStore;
   },
-}))
+}));
 
-vi.mock('../SectionHeader', () => ({
-  SectionHeader: ({ title, subtitle }: { title: string; subtitle?: string }) => (
+vi.mock("../SectionHeader", () => ({
+  SectionHeader: ({
+    title,
+    subtitle,
+  }: {
+    title: string;
+    subtitle?: string;
+  }) => (
     <div data-testid="section-header">
       <div>{title}</div>
       {subtitle && <div data-testid="section-subtitle">{subtitle}</div>}
     </div>
   ),
-}))
+}));
 
-describe('HardwareSection', () => {
+describe("HardwareSection", () => {
   beforeEach(() => {
-    mockStore = createMockStore()
-    vi.clearAllMocks()
-  })
+    mockStore = createMockStore();
+    vi.clearAllMocks();
+  });
 
-  describe('renders basics', () => {
-    it('renders without crashing', () => {
-      render(<HardwareSection />)
-      expect(screen.getByTestId('section-header')).toBeInTheDocument()
-    })
+  describe("renders basics", () => {
+    it("renders without crashing", () => {
+      render(<HardwareSection />);
+      expect(screen.getByTestId("section-header")).toBeInTheDocument();
+    });
 
-    it('renders section header with FDM title when activeTab is fdm', () => {
-      render(<HardwareSection />)
-      expect(screen.getByTestId('section-header')).toHaveTextContent('calc.fdmHardware')
-      expect(screen.getByTestId('section-subtitle')).toHaveTextContent('calc.sectionDesc.fdmHardware')
-    })
+    it("renders section header with FDM title when activeTab is fdm", () => {
+      render(<HardwareSection />);
+      expect(screen.getByTestId("section-header")).toHaveTextContent(
+        "calc.fdmHardware",
+      );
+      expect(screen.getByTestId("section-subtitle")).toHaveTextContent(
+        "calc.sectionDesc.fdmHardware",
+      );
+    });
 
-    it('renders section header with resin subtitle when activeTab is resin', () => {
-      mockStore = createMockStore({ activeTab: 'resin' })
-      render(<HardwareSection />)
-      expect(screen.getByTestId('section-subtitle')).toHaveTextContent('calc.sectionDesc.resinHardware')
-    })
-  })
+    it("renders section header with resin subtitle when activeTab is resin", () => {
+      mockStore = createMockStore({ activeTab: "resin" });
+      render(<HardwareSection />);
+      expect(screen.getByTestId("section-subtitle")).toHaveTextContent(
+        "calc.sectionDesc.resinHardware",
+      );
+    });
+  });
 
-  describe('FDM mode', () => {
-    it('shows nozzle and bed sections in FDM mode', () => {
-      render(<HardwareSection />)
-      expect(screen.getByText('calc.nozzle')).toBeInTheDocument()
-      expect(screen.getByText('calc.bed')).toBeInTheDocument()
-      expect(screen.getByText('calc.fdmFinishing')).toBeInTheDocument()
-    })
+  describe("FDM mode", () => {
+    it("shows nozzle and bed sections in FDM mode", () => {
+      render(<HardwareSection />);
+      expect(screen.getByText("calc.nozzle")).toBeInTheDocument();
+      expect(screen.getByText("calc.bed")).toBeInTheDocument();
+      expect(screen.getByText("calc.fdmFinishing")).toBeInTheDocument();
+    });
 
-    it('shows nozzle cost and lifespan inputs when nozzle enabled', () => {
-      render(<HardwareSection />)
-      expect(screen.getByText('calc.nozzleCost')).toBeInTheDocument()
-      expect(screen.getByText('calc.nozzleLife')).toBeInTheDocument()
-      const spinbuttons = screen.getAllByRole('spinbutton')
+    it("shows nozzle cost and lifespan inputs when nozzle enabled", () => {
+      render(<HardwareSection />);
+      expect(screen.getByText("calc.nozzleCost")).toBeInTheDocument();
+      expect(screen.getByText("calc.nozzleLife")).toBeInTheDocument();
+      const spinbuttons = screen.getAllByRole("spinbutton");
       // nozzleCost, nozzleLife, bedCost, suppliesCost = 4 inputs
-      expect(spinbuttons.length).toBeGreaterThanOrEqual(3)
-    })
+      expect(spinbuttons.length).toBeGreaterThanOrEqual(3);
+    });
 
-    it('hides nozzle inputs when nozzleEnabled is false', () => {
+    it("hides nozzle inputs when nozzleEnabled is false", () => {
       mockStore = createMockStore({
         fdmHardware: { ...mockStore.fdmHardware, nozzleEnabled: false },
-      })
-      render(<HardwareSection />)
-      expect(screen.queryByText('calc.nozzleCost')).not.toBeInTheDocument()
-      expect(screen.queryByText('calc.nozzleLife')).not.toBeInTheDocument()
-    })
+      });
+      render(<HardwareSection />);
+      expect(screen.queryByText("calc.nozzleCost")).not.toBeInTheDocument();
+      expect(screen.queryByText("calc.nozzleLife")).not.toBeInTheDocument();
+    });
 
-    it('shows bed cost input when bed enabled', () => {
-      render(<HardwareSection />)
-      expect(screen.getByText('calc.bedCost')).toBeInTheDocument()
-    })
+    it("shows bed cost input when bed enabled", () => {
+      render(<HardwareSection />);
+      expect(screen.getByText("calc.bedCost")).toBeInTheDocument();
+    });
 
-    it('hides bed cost input when bedEnabled is false', () => {
+    it("hides bed cost input when bedEnabled is false", () => {
       mockStore = createMockStore({
         fdmHardware: { ...mockStore.fdmHardware, bedEnabled: false },
-      })
-      render(<HardwareSection />)
-      expect(screen.queryByText('calc.bedCost')).not.toBeInTheDocument()
-    })
+      });
+      render(<HardwareSection />);
+      expect(screen.queryByText("calc.bedCost")).not.toBeInTheDocument();
+    });
 
-    it('shows finishing supplies input in FDM mode', () => {
-      render(<HardwareSection />)
-      expect(screen.getByText('calc.finishingSupplies')).toBeInTheDocument()
-    })
+    it("shows finishing supplies input in FDM mode", () => {
+      render(<HardwareSection />);
+      expect(screen.getByText("calc.finishingSupplies")).toBeInTheDocument();
+    });
 
-    it('calls setFdmHardware when nozzle toggle is clicked', async () => {
-      const user = userEvent.setup()
-      render(<HardwareSection />)
+    it("calls setFdmHardware when nozzle toggle is clicked", async () => {
+      const user = userEvent.setup();
+      render(<HardwareSection />);
       // Nozzle toggle is the first button in FDM mode
-      const toggles = screen.getAllByRole('button')
-      await user.click(toggles[0])
+      const toggles = screen.getAllByRole("button");
+      await user.click(toggles[0]);
       expect(mockSetFdmHardware).toHaveBeenCalledWith({
         ...mockStore.fdmHardware,
         nozzleEnabled: false,
-      })
-    })
+      });
+    });
 
-    it('calls setFdmHardware when bed toggle is clicked', async () => {
-      const user = userEvent.setup()
-      render(<HardwareSection />)
+    it("calls setFdmHardware when bed toggle is clicked", async () => {
+      const user = userEvent.setup();
+      render(<HardwareSection />);
       // Bed toggle is the second button in FDM mode
-      const toggles = screen.getAllByRole('button')
-      await user.click(toggles[1])
+      const toggles = screen.getAllByRole("button");
+      await user.click(toggles[1]);
       expect(mockSetFdmHardware).toHaveBeenCalledWith({
         ...mockStore.fdmHardware,
         bedEnabled: false,
-      })
-    })
-  })
+      });
+    });
+  });
 
-  describe('Resin mode', () => {
+  describe("Resin mode", () => {
     beforeEach(() => {
-      mockStore = createMockStore({ activeTab: 'resin' })
-    })
+      mockStore = createMockStore({ activeTab: "resin" });
+    });
 
-    it('shows washing and curing sections in resin mode', () => {
-      render(<HardwareSection />)
-      expect(screen.getByText('calc.resinPostProcess')).toBeInTheDocument()
-      expect(screen.getByText('calc.washing')).toBeInTheDocument()
-      expect(screen.getByText('calc.curing')).toBeInTheDocument()
-    })
+    it("shows washing and curing sections in resin mode", () => {
+      render(<HardwareSection />);
+      expect(screen.getByText("calc.resinPostProcess")).toBeInTheDocument();
+      expect(screen.getByText("calc.washing")).toBeInTheDocument();
+      expect(screen.getByText("calc.curing")).toBeInTheDocument();
+    });
 
-    it('shows alcohol cost and volume inputs when washing enabled', () => {
-      render(<HardwareSection />)
-      expect(screen.getByText('calc.alcoholCost')).toBeInTheDocument()
-      expect(screen.getByText('calc.alcoholVol')).toBeInTheDocument()
-    })
+    it("shows alcohol cost and volume inputs when washing enabled", () => {
+      render(<HardwareSection />);
+      expect(screen.getByText("calc.alcoholCost")).toBeInTheDocument();
+      expect(screen.getByText("calc.alcoholVol")).toBeInTheDocument();
+    });
 
-    it('hides washing inputs when washingEnabled is false', () => {
+    it("hides washing inputs when washingEnabled is false", () => {
       mockStore = createMockStore({
-        activeTab: 'resin',
-        resinPostProcess: { ...mockStore.resinPostProcess, washingEnabled: false },
-      })
-      render(<HardwareSection />)
-      expect(screen.queryByText('calc.alcoholCost')).not.toBeInTheDocument()
-      expect(screen.queryByText('calc.alcoholVol')).not.toBeInTheDocument()
-    })
+        activeTab: "resin",
+        resinPostProcess: {
+          ...mockStore.resinPostProcess,
+          washingEnabled: false,
+        },
+      });
+      render(<HardwareSection />);
+      expect(screen.queryByText("calc.alcoholCost")).not.toBeInTheDocument();
+      expect(screen.queryByText("calc.alcoholVol")).not.toBeInTheDocument();
+    });
 
-    it('shows curing time and power inputs when curing enabled', () => {
-      render(<HardwareSection />)
-      expect(screen.getByText('calc.cureTime')).toBeInTheDocument()
-      expect(screen.getByText('calc.curePower')).toBeInTheDocument()
-    })
+    it("shows curing time and power inputs when curing enabled", () => {
+      render(<HardwareSection />);
+      expect(screen.getByText("calc.cureTime")).toBeInTheDocument();
+      expect(screen.getByText("calc.curePower")).toBeInTheDocument();
+    });
 
-    it('hides curing inputs when curingEnabled is false', () => {
+    it("hides curing inputs when curingEnabled is false", () => {
       mockStore = createMockStore({
-        activeTab: 'resin',
-        resinPostProcess: { ...mockStore.resinPostProcess, curingEnabled: false },
-      })
-      render(<HardwareSection />)
-      expect(screen.queryByText('calc.cureTime')).not.toBeInTheDocument()
-      expect(screen.queryByText('calc.curePower')).not.toBeInTheDocument()
-    })
+        activeTab: "resin",
+        resinPostProcess: {
+          ...mockStore.resinPostProcess,
+          curingEnabled: false,
+        },
+      });
+      render(<HardwareSection />);
+      expect(screen.queryByText("calc.cureTime")).not.toBeInTheDocument();
+      expect(screen.queryByText("calc.curePower")).not.toBeInTheDocument();
+    });
 
-    it('shows resin hardware inputs (LCD and FEP)', () => {
-      render(<HardwareSection />)
-      expect(screen.getByText('calc.resinHardware')).toBeInTheDocument()
-      expect(screen.getByText('calc.lcdCost')).toBeInTheDocument()
-      expect(screen.getByText('calc.lcdLife')).toBeInTheDocument()
-      expect(screen.getByText('calc.fepCost')).toBeInTheDocument()
-      expect(screen.getByText('calc.fepLife')).toBeInTheDocument()
-    })
+    it("shows resin hardware inputs (LCD and FEP)", () => {
+      render(<HardwareSection />);
+      expect(screen.getByText("calc.resinHardware")).toBeInTheDocument();
+      expect(screen.getByText("calc.lcdCost")).toBeInTheDocument();
+      expect(screen.getByText("calc.lcdLife")).toBeInTheDocument();
+      expect(screen.getByText("calc.fepCost")).toBeInTheDocument();
+      expect(screen.getByText("calc.fepLife")).toBeInTheDocument();
+    });
 
-    it('calls setResinPostProcess when washing toggle clicked', async () => {
-      const user = userEvent.setup()
-      render(<HardwareSection />)
+    it("calls setResinPostProcess when washing toggle clicked", async () => {
+      const user = userEvent.setup();
+      render(<HardwareSection />);
       // Washing toggle is the first button in resin mode
-      const toggles = screen.getAllByRole('button')
-      await user.click(toggles[0])
+      const toggles = screen.getAllByRole("button");
+      await user.click(toggles[0]);
       expect(mockSetResinPostProcess).toHaveBeenCalledWith({
         ...mockStore.resinPostProcess,
         washingEnabled: false,
-      })
-    })
+      });
+    });
 
-    it('calls setResinPostProcess when curing toggle clicked', async () => {
-      const user = userEvent.setup()
-      render(<HardwareSection />)
-      // Curing toggle is the second button in resin mode
-      const toggles = screen.getAllByRole('button')
-      await user.click(toggles[1])
+    it("calls setResinPostProcess when curing toggle clicked", async () => {
+      const user = userEvent.setup();
+      render(<HardwareSection />);
+      // Curing toggle follows the washing toggle; the wash-type segmented
+      // buttons (data-testid ^="wash-type") sit between them and are excluded.
+      const toggles = screen
+        .getAllByRole("button")
+        .filter((b) => !b.getAttribute("data-testid")?.startsWith("wash-type"));
+      await user.click(toggles[1]);
       expect(mockSetResinPostProcess).toHaveBeenCalledWith({
         ...mockStore.resinPostProcess,
         curingEnabled: false,
-      })
-    })
-  })
-})
+      });
+    });
+
+    describe("wash type toggle", () => {
+      it("renders alcohol and water options when washing is enabled", () => {
+        render(<HardwareSection />);
+        expect(screen.getByTestId("wash-type-alcohol")).toHaveTextContent(
+          "calc.washTypeAlcohol",
+        );
+        expect(screen.getByTestId("wash-type-water")).toHaveTextContent(
+          "calc.washTypeWater",
+        );
+      });
+
+      it("hides the wash type toggle when washing is disabled", () => {
+        mockStore = createMockStore({
+          activeTab: "resin",
+          resinPostProcess: {
+            ...mockStore.resinPostProcess,
+            washingEnabled: false,
+          },
+        });
+        render(<HardwareSection />);
+        expect(
+          screen.queryByTestId("wash-type-alcohol"),
+        ).not.toBeInTheDocument();
+        expect(screen.queryByTestId("wash-type-water")).not.toBeInTheDocument();
+      });
+
+      it("defaults to alcohol pressed when washType is absent (legacy payload)", () => {
+        render(<HardwareSection />);
+        expect(screen.getByTestId("wash-type-alcohol")).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        );
+        expect(screen.getByTestId("wash-type-water")).toHaveAttribute(
+          "aria-pressed",
+          "false",
+        );
+      });
+
+      it("marks water pressed and shows the zero-cost note when washType is water", () => {
+        mockStore = createMockStore({
+          activeTab: "resin",
+          resinPostProcess: {
+            ...mockStore.resinPostProcess,
+            washType: "water",
+          },
+        });
+        render(<HardwareSection />);
+        expect(screen.getByTestId("wash-type-water")).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        );
+        expect(screen.getByTestId("wash-type-alcohol")).toHaveAttribute(
+          "aria-pressed",
+          "false",
+        );
+        expect(screen.getByTestId("wash-type-water-note")).toHaveTextContent(
+          "calc.washTypeWaterNote",
+        );
+      });
+
+      it("hides alcohol inputs when washType is water", () => {
+        mockStore = createMockStore({
+          activeTab: "resin",
+          resinPostProcess: {
+            ...mockStore.resinPostProcess,
+            washType: "water",
+          },
+        });
+        render(<HardwareSection />);
+        expect(screen.queryByText("calc.alcoholCost")).not.toBeInTheDocument();
+        expect(screen.queryByText("calc.alcoholVol")).not.toBeInTheDocument();
+      });
+
+      it("calls setResinPostProcess with washType water when water is clicked", async () => {
+        const user = userEvent.setup();
+        render(<HardwareSection />);
+        await user.click(screen.getByTestId("wash-type-water"));
+        expect(mockSetResinPostProcess).toHaveBeenCalledWith({
+          ...mockStore.resinPostProcess,
+          washType: "water",
+        });
+      });
+
+      it("calls setResinPostProcess with washType alcohol when alcohol is clicked", async () => {
+        const user = userEvent.setup();
+        mockStore = createMockStore({
+          activeTab: "resin",
+          resinPostProcess: {
+            ...mockStore.resinPostProcess,
+            washType: "water",
+          },
+        });
+        render(<HardwareSection />);
+        await user.click(screen.getByTestId("wash-type-alcohol"));
+        expect(mockSetResinPostProcess).toHaveBeenCalledWith({
+          ...mockStore.resinPostProcess,
+          washType: "alcohol",
+        });
+      });
+
+      it("keeps alcohol inputs visible when washType is alcohol", () => {
+        mockStore = createMockStore({
+          activeTab: "resin",
+          resinPostProcess: {
+            ...mockStore.resinPostProcess,
+            washType: "alcohol",
+          },
+        });
+        render(<HardwareSection />);
+        expect(screen.getByText("calc.alcoholCost")).toBeInTheDocument();
+        expect(screen.getByText("calc.alcoholVol")).toBeInTheDocument();
+        expect(
+          screen.queryByTestId("wash-type-water-note"),
+        ).not.toBeInTheDocument();
+      });
+    });
+  });
+});
