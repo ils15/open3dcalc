@@ -51,7 +51,7 @@ export function PrinterTagEditor({ printer }: PrinterTagEditorProps) {
           ))}
         </div>
       ) : (
-        <div className="text-xs text-[var(--color-text-muted)]">{t('catalog.noTags')}</div>
+        <div className="text-xs text-[var(--color-text-secondary)]">{t('catalog.noTags')}</div>
       )}
 
       <div className="flex gap-2">

@@ -338,15 +338,13 @@
     "cancel": "Cancelar",
     "defaultPrinter": "Padrão",
     "editSuccess": "Impressora atualizada com sucesso!",
-    "tags": "Tags",
     "tagsLabel": "Tags da impressora",
     "filterByTag": "Filtrar por tag",
     "allTags": "Todas",
     "addTag": "Adicionar tag",
     "tagPlaceholder": "Nova tag…",
     "noTags": "Nenhuma tag ainda",
-    "removeTag": "Remover tag {{tag}}",
-    "filteredByTag": "Mostrando impressoras com a tag \"{{tag}}\""
+    "removeTag": "Remover tag {{tag}}"
   },
   "customers": {
     "title": "Clientes",
