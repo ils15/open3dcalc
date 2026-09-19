@@ -7,6 +7,36 @@
     "text": "Beta",
     "ariaLabel": "Versão beta do aplicativo"
   },
+  "quickStart": {
+    "title": "Quer ver como funciona?",
+    "description": "Preencha a calculadora com valores realistas para um exemplo de peça 3D",
+    "dismiss": "Dispensar",
+    "clear": "Limpar",
+    "clearFields": "Limpar campos",
+    "example": "Exemplo",
+    "fillExample": "Preencher com exemplo"
+  },
+  "infillCalculator": {
+    "title": "Calculadora de Infill",
+    "subtitle": "Veja como o % de infill afeta peso, custo e tempo",
+    "dimensions": "Dimensões (mm)",
+    "width": "Largura",
+    "depth": "Profundidade",
+    "height": "Altura",
+    "wallThickness": "Espessura da Parede",
+    "topBottomLayers": "Camadas Topo/Base",
+    "layerHeight": "Altura da Camada",
+    "material": "Material",
+    "infillPercent": "Infill %",
+    "estimatedWeight": "Peso Estimado",
+    "materialCost": "Custo do Material",
+    "solidVolume": "Volume Sólido",
+    "comparison": "Comparação de Infill",
+    "colInfill": "Infill",
+    "colWeight": "Peso",
+    "colCost": "Custo",
+    "colDifference": "Diferença"
+  },
   "nav": {
     "calculator": "Calculadora",
     "catalog": "Cadastros",
