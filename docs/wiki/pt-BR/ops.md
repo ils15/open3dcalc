@@ -97,9 +97,11 @@ a R$ 90/kg).
 
 ## Como esta seção se relaciona com as demais
 
-- As **horas por mês** que rateiam a mensalidade são as mesmas da
-  [máquina](#user-content-custos-da-máquina) — use números iguais, senão o rateio sai
-  errado.
+- As **horas por mês** que rateiam a mensalidade são as horas produtivas da
+  oficina. Elas não precisam ser iguais às horas de uso da
+  [máquina](#user-content-custos-da-máquina). A máquina usa as horas da própria
+  impressora; o rateio usa as horas da oficina inteira. São campos independentes,
+  então valores diferentes estão corretos.
 - O **tempo de impressão** que multiplica a taxa vem de
   [parâmetros](#user-content-parâmetros-de-impressão).
 - Os **insumos do acabamento** (lixa, tinta) moram em

@@ -94,6 +94,13 @@ pura (0,50 × 5,5), R$ 1,65 são de manutenção e R$ 16,50 são de rateio de cu
 fixos. Note quem domina: o rateio fixo. É por isso que a seção
 [custos fixos](#user-content-custos-fixos) é a que mais separa hobby de negócio.
 
+Uma observação sobre os números. Este exemplo usa **100 horas por mês**, que é o
+uso real **desta impressora**. É a base da depreciação e da manutenção. A seção de
+[custos fixos](#user-content-custos-fixos) trabalha com **150 horas por mês**, que
+são as horas produtivas da oficina inteira. Esses campos são independentes no
+aplicativo, e os valores diferentes estão corretos: um mede o desgaste de uma
+máquina, o outro rateia o custo do espaço.
+
 ## Sensibilidade: o que muda a taxa
 
 A taxa horária é uma fração com dois denominadores. Pequenas mudanças nos

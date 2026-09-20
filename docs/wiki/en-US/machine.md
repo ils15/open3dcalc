@@ -95,6 +95,13 @@ Notice who dominates: the fixed share. That is why the
 [fixed costs](#user-content-fixed-costs) section is what most separates a hobby
 from a business.
 
+A note on the numbers. This example uses **100 hours a month**, the actual usage
+of **this printer**. That is the basis for depreciation and maintenance. The
+[fixed costs](#user-content-fixed-costs) section works with **150 hours a month**,
+the productive hours of the whole workshop. These are independent fields in the
+app, and the different values are correct: one measures the wear on a single
+machine, the other prorates the cost of the space.
+
 ## Sensitivity: what moves the rate
 
 The hourly rate is a fraction with two denominators. Small changes in these

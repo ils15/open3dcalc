@@ -101,8 +101,11 @@ accept that weekend one-off parts have a higher fair price.
 
 - The share is applied inside the [machine](#user-content-machine-costs) hourly rate,
   alongside depreciation and maintenance.
-- The hours you use here must be **the same** as the machine's monthly usage.
-  Using 150 h here and 300 h there is self-deception: the share comes out halved.
+- The workshop's productive hours need not match the
+  [machine's](#user-content-machine-costs) usage hours. The share divides the fixed
+  cost by the productive hours of the whole workshop. The machine, in turn, uses
+  the hours of that printer itself, for depreciation and maintenance. These are
+  independent fields, so different values are correct.
 - The **printing energy** (unlike baseline power) is counted in the
   [print parameters](#user-content-print-parameters) section; do not duplicate it here.
 - **Equipment maintenance** belongs to [machine](#user-content-machine-costs); here

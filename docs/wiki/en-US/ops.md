@@ -98,9 +98,11 @@ at R$ 90/kg).
 
 ## How this section relates to the others
 
-- The **hours per month** prorating the subscription are the same as
-  [machine](#user-content-machine-costs) — use matching numbers, or the share comes
-  out wrong.
+- The **hours per month** prorating the subscription are the workshop's productive
+  hours. They need not match the [machine's](#user-content-machine-costs) usage
+  hours. The machine uses the hours of the printer itself; the share uses the hours
+  of the whole workshop. These are independent fields, so different values are
+  correct.
 - The **print time** multiplying the rate comes from
   [print parameters](#user-content-print-parameters).
 - The **finishing supplies** (sandpaper, paint) live in

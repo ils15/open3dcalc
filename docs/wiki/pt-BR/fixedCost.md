@@ -101,9 +101,11 @@ avulsas de fim de semana têm um preço justo mais alto.
 
 - O rateio é aplicado na taxa horária da [máquina](#user-content-custos-da-máquina),
   junto com a depreciação e a manutenção.
-- As horas que você usa aqui devem ser **as mesmas** do uso mensal da
-  [máquina](#user-content-custos-da-máquina). Usar 150 h aqui e 300 h lá é
-  autoengano: o rateio sai pela metade.
+- As horas produtivas da oficina não precisam ser iguais às horas de uso da
+  [máquina](#user-content-custos-da-máquina). O rateio divide o custo fixo pelas
+  horas produtivas da oficina inteira. A máquina, por sua vez, usa as horas da
+  própria impressora, para depreciação e manutenção. São campos independentes,
+  então valores diferentes estão corretos.
 - A **energia da impressão** (diferente da energia base) é contada na seção de
   [parâmetros](#user-content-parâmetros-de-impressão); não a duplique aqui.
 - A **manutenção do equipamento** fica na [máquina](#user-content-custos-da-máquina);
