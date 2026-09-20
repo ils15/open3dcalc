@@ -2,6 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Tutorial } from '../Tutorial'
 import { useTutorialStore } from '@/shared/stores/tutorialStore'
+import { useCalculatorStore } from '@/shared/stores/calculatorStore'
+import type { TourId, StepConfig, TutorialTab } from '../tutorialTours'
 
 // ── Mocks ────────────────────────────────────────────────────────────
 
@@ -77,6 +79,92 @@ vi.mock('lucide-react', () => ({
   ChevronLeft: () => <span data-testid="icon-chevron-left">{'<'}</span>,
   ChevronRight: () => <span data-testid="icon-chevron-right">{'>'}</span>,
 }))
+
+// No real tour uses `level:` yet (nivel-avancado is empty until Fase 3), so the
+// level-restore path would have zero coverage. The factory fills that tour with
+// a synthetic level-gated step; the rest mirrors the real registry.
+//
+// The factory MUST stay synchronous: an async one (importOriginal) resolves
+// only after the statically-imported store/component have already evaluated,
+// so they would still see the real (empty) registry.
+vi.mock('../tutorialTours', () => {
+  const TOURS: Record<TourId, StepConfig[]> = {
+    'calc-basico': [
+      { key: 'welcome', target: null },
+      { key: 'material', target: '[data-tutorial="material"]' },
+      { key: 'print', target: '[data-tutorial="print"]' },
+      { key: 'sales', target: '[data-tutorial="sales"]' },
+      {
+        key: 'results',
+        target: '[data-tutorial="results-sidebar"], [data-tutorial="results"]',
+      },
+      { key: 'export', target: '[data-tutorial="export"]' },
+      { key: 'complete', target: null },
+    ],
+    'upload-3d-preview': [],
+    'inventario-bobinas': [],
+    'dashboard-kpis': [],
+    'orcamentos-clientes': [],
+    'nivel-avancado': [
+      {
+        key: 'adv-level',
+        target: '[data-tutorial="adv-anchor"]',
+        level: 'advanced',
+      },
+      { key: 'adv-complete', target: null },
+    ],
+  }
+
+  const TOUR_IDS: TourId[] = [
+    'calc-basico',
+    'upload-3d-preview',
+    'inventario-bobinas',
+    'dashboard-kpis',
+    'orcamentos-clientes',
+    'nivel-avancado',
+  ]
+
+  const TUTORIAL_TABS: TutorialTab[] = [
+    'calculator',
+    'dashboard',
+    'infill',
+    'inventory',
+    'catalog',
+    'history',
+    'changelog',
+    'quotes',
+    'customers',
+    'products',
+    'privacy',
+  ]
+
+  const getTourSteps = (tourId: TourId): StepConfig[] => TOURS[tourId] ?? []
+  const getTourStepCount = (tourId: TourId): number =>
+    (TOURS[tourId] ?? []).length
+  const isTourAvailable = (tourId: TourId): boolean =>
+    getTourStepCount(tourId) > 0
+
+  const dispatchTutorialNavigate = (tab: TutorialTab): void => {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(
+      new CustomEvent<TutorialTab>('open3dcalc:tutorial-navigate', {
+        detail: tab,
+      }),
+    )
+  }
+
+  return {
+    TOUR_IDS,
+    TUTORIAL_TABS,
+    TOURS,
+    DEFAULT_TOUR: 'calc-basico',
+    getTourSteps,
+    getTourStepCount,
+    isTourAvailable,
+    TUTORIAL_NAVIGATE_EVENT: 'open3dcalc:tutorial-navigate',
+    dispatchTutorialNavigate,
+  }
+})
 
 describe('Tutorial', () => {
   beforeEach(() => {
@@ -178,6 +266,29 @@ describe('Tutorial', () => {
     expect(state.sessionDismissed).toBe(true)
   })
 
+  // ── Degraded fallback (missing anchor) ────────────────────────
+  it('degrades to a centered card without overlay when the anchor never mounts', async () => {
+    useTutorialStore.getState().startTutorial()
+    useTutorialStore.getState().goToStep(2) // "material" step — its anchor is NOT rendered
+    render(<Tutorial />)
+
+    // The card renders right away...
+    expect(screen.getByText('Materiais')).toBeInTheDocument()
+
+    // ...and once the retry loop gives up the overlay is suppressed instead of
+    // blocking the tour on a surface that isn't rendered.
+    await vi.waitFor(
+      () => {
+        expect(document.querySelector('[data-testid="tutorial-overlay"]')).toBeNull()
+      },
+      { timeout: 2500 },
+    )
+
+    // The tour stays usable: card still on screen (centered), tour still active.
+    expect(screen.getByText('Materiais')).toBeInTheDocument()
+    expect(useTutorialStore.getState().isActive).toBe(true)
+  })
+
   // ── Keyboard: Escape ───────────────────────────────────────────
   it('Escape key closes tutorial', () => {
     useTutorialStore.getState().startTutorial()
@@ -214,6 +325,42 @@ describe('Tutorial', () => {
     useTutorialStore.setState({ isActive: true, sessionDismissed: true })
     const { container } = render(<Tutorial />)
     expect(container.innerHTML).toBe('')
+  })
+
+  // ── Level restore ─────────────────────────────────────────────
+  // `nivel-avancado` borrows the calculator level to unlock gated sections
+  // and must give it back on every exit path — the tour must not change the
+  // user's durable calculator settings.
+  it('switches calcLevel for a level-gated step and restores it on finish', () => {
+    useCalculatorStore.setState({ calcLevel: 'basic' })
+    useTutorialStore.getState().startTour('nivel-avancado')
+    render(<Tutorial />)
+
+    // Step 1 borrows the level...
+    expect(useCalculatorStore.getState().calcLevel).toBe('advanced')
+
+    // Step 2 (centered card, no target) must not touch the level again.
+    fireEvent.click(screen.getByText('Próximo'))
+    expect(useCalculatorStore.getState().calcLevel).toBe('advanced')
+
+    // ...and finishing gives it back.
+    fireEvent.click(screen.getByText('Concluir'))
+    expect(useTutorialStore.getState().isActive).toBe(false)
+    expect(useCalculatorStore.getState().calcLevel).toBe('basic')
+  })
+
+  it('restores calcLevel when the user skips the level-gated tour', () => {
+    // A different starting level than the test above proves restore uses the
+    // captured previous value, not a hardcoded default.
+    useCalculatorStore.setState({ calcLevel: 'intermediate' })
+    useTutorialStore.getState().startTour('nivel-avancado')
+    render(<Tutorial />)
+
+    expect(useCalculatorStore.getState().calcLevel).toBe('advanced')
+
+    fireEvent.click(screen.getByText('Pular'))
+    expect(useTutorialStore.getState().isActive).toBe(false)
+    expect(useCalculatorStore.getState().calcLevel).toBe('intermediate')
   })
 
   // ── Complete — hide ────────────────────────────────────────────

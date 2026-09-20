@@ -26,6 +26,7 @@ import { marketplaces } from "@/shared/lib/marketplace";
 import { Tutorial } from "@/shared/components/ui/Tutorial";
 import { PrivacyBanner } from "@/shared/components/ui/PrivacyBanner";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
+import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
 import { UpdateNotification } from "@/platform/desktop/components/UpdateNotification/UpdateNotification";
 import { useUpdaterAutoCheck } from "@/platform/desktop/hooks/useUpdaterAutoCheck";
 import type { CalculationResult, CalculationSnapshot } from "@/shared/types";
@@ -157,6 +158,10 @@ function App() {
     return () =>
       window.removeEventListener("open3dcalc:go-products", goToProducts);
   }, []);
+
+  // Tour steps that live on another surface navigate before being spotted;
+  // the owning tab has to mount for the anchor to resolve.
+  useTutorialTabNavigation(setActiveTab);
 
   // Auto-check for updates on desktop
   useUpdaterAutoCheck();

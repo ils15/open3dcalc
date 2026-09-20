@@ -713,6 +713,28 @@
     "previous": "Previous",
     "finish": "Finish",
     "stepOf": "Step {{current}} of {{total}}",
+    "launcher": {
+      "title": "Tutorials",
+      "completed": "completed"
+    },
+    "tours": {
+      "calc-basico": {
+        "title": "Basic calculator",
+        "description": "Material, printing, and pricing — the getting-started tour."
+      },
+      "upload-3d-preview": {
+        "title": "3D upload & preview",
+        "description": "Import an STL/OBJ/G-code and explore the built-in 3D viewer before calculating."
+      },
+      "inventario-bobinas": {
+        "title": "Spool inventory",
+        "description": "Register spools, search, and filter by material — your filament stock control."
+      },
+      "dashboard-kpis": {
+        "title": "KPI dashboard",
+        "description": "Financial summary, date-range filter, history KPIs, and monthly profit projection."
+      }
+    },
     "steps": {
       "welcome": {
         "title": "Welcome to Open3DCalc! 🎉",
@@ -741,6 +763,74 @@
       "complete": {
         "title": "All set! 🚀",
         "description": "Now you know how to calculate the cost of any print. Use the tooltips (ℹ️ icon) on each field if you have questions. Happy printing!"
+      },
+      "upload-intro": {
+        "title": "Bring in your 3D file 📦",
+        "description": "This tour shows how to import an STL, OBJ, 3MF, or G-code and explore the built-in 3D viewer."
+      },
+      "upload-dropzone": {
+        "title": "Drop your file here",
+        "description": "Drag a file onto this zone or click to browse your computer. Files are capped at 100 MB."
+      },
+      "upload-samples": {
+        "title": "Sample models",
+        "description": "No file of your own? Load the 3DBenchy STL to inspect the mesh, or its G-code to preview the toolpath."
+      },
+      "upload-viewport": {
+        "title": "3D viewer",
+        "description": "Drag to orbit, scroll to zoom, and use the toolbar buttons to refit the frame or go fullscreen."
+      },
+      "upload-complete": {
+        "title": "Ready to calculate 🎯",
+        "description": "With a model loaded, the volume and weight estimates feed the calculator automatically. See the calculator tour for the details."
+      },
+      "inv-intro": {
+        "title": "Manage your filament 🧵",
+        "description": "This tour shows how to register a spool, use search and material filters, and read the stock card grid."
+      },
+      "inv-add": {
+        "title": "Add a spool",
+        "description": "This button opens the form to register weight, material, color, and price for a new spool."
+      },
+      "inv-search": {
+        "title": "Find it fast",
+        "description": "Type to search by name, material, or color — the grid filters as you type."
+      },
+      "inv-filters": {
+        "title": "Filter by material",
+        "description": "These buttons narrow the stock to a specific material in one click."
+      },
+      "inv-grid": {
+        "title": "Your stock cards",
+        "description": "Each card shows remaining weight, the consumption bar, and the low-stock alert."
+      },
+      "inv-complete": {
+        "title": "Stock under control ✅",
+        "description": "The inventory feeds weight and price into the calculator. Check the dashboard tour to track your KPIs."
+      },
+      "dash-intro": {
+        "title": "Your numbers in one place 📊",
+        "description": "This tour shows the financial summary, the date-range filter, the history KPIs, and the monthly profit projection."
+      },
+      "dash-summary": {
+        "title": "Quick summary",
+        "description": "Total cost, sale price, profit, and ROI for the filtered period — updated on every calculation."
+      },
+      "dash-date-range": {
+        "title": "Filter the period",
+        "description": "Set a start and end date to narrow the analysis. Clear the filters anytime to see everything again."
+      },
+      "dash-kpis": {
+        "title": "History KPIs",
+        "description": "Total profit, average cost per print, average margin, and print count for the selected period."
+      },
+      "dash-projection": {
+        "title": "Monthly projection",
+        "description": "Enter how many parts you print per month to estimate projected profit and plan your prices."
+      },
+      "dash-complete": {
+        "title": "Data-driven decisions 🎯",
+        "description": "Tweak the period and monthly volume to simulate scenarios. History keeps every calculation for later comparison."
       }
     }
   },

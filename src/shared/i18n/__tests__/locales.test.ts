@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import enUS from "@/shared/i18n/locales/en-US.json";
+import {
+  TOUR_IDS,
+  isTourAvailable,
+} from "@/shared/components/ui/tutorialTours";
 
 /**
  * Keys the comparison panel emits via `t(...)`. When a key is missing from a
@@ -249,6 +253,36 @@ describe("i18n locales (demo.*) — onboarding Fase 1", () => {
       const value = resolve(dict, ["demo", "export", key]);
       expect(typeof value, `demo.export.${key}`).toBe("string");
       expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+/**
+ * Onboarding Fase 2 — the tours launcher (header dropdown). It derives its item
+ * list from the registry, so the parity test does too: every tour the launcher
+ * can render must have a title/description in both locales, or the menu shows a
+ * raw key. The set grows as tours are filled in, which is exactly the drift
+ * this catches.
+ */
+const TUTORIAL_LAUNCHER_KEYS = ["title", "completed"] as const;
+
+describe("i18n locales (tutorial.launcher.* + tutorial.tours.*) — Fase 2", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every launcher key and available tour entry in %s", (_locale, dict) => {
+    for (const key of TUTORIAL_LAUNCHER_KEYS) {
+      const value = resolve(dict, ["tutorial", "launcher", key]);
+      expect(typeof value, `tutorial.launcher.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+
+    for (const tourId of TOUR_IDS.filter(isTourAvailable)) {
+      for (const field of ["title", "description"] as const) {
+        const value = resolve(dict, ["tutorial", "tours", tourId, field]);
+        expect(typeof value, `tutorial.tours.${tourId}.${field}`).toBe("string");
+        expect((value as string).length).toBeGreaterThan(0);
+      }
     }
   });
 });

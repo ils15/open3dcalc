@@ -713,6 +713,28 @@
     "previous": "Anterior",
     "finish": "Concluir",
     "stepOf": "Passo {{current}} de {{total}}",
+    "launcher": {
+      "title": "Tutoriais",
+      "completed": "concluído"
+    },
+    "tours": {
+      "calc-basico": {
+        "title": "Calculadora básica",
+        "description": "Material, impressão e precificação — o tour de início rápido."
+      },
+      "upload-3d-preview": {
+        "title": "Upload e pré-visualização 3D",
+        "description": "Importe um STL/OBJ/G-code e explore o visualizador 3D antes de calcular."
+      },
+      "inventario-bobinas": {
+        "title": "Inventário de bobinas",
+        "description": "Cadastre bobinas, pesquise e filtre por material — o controle de estoque do filamento."
+      },
+      "dashboard-kpis": {
+        "title": "Dashboard de KPIs",
+        "description": "Resumo financeiro, filtro por período, KPIs do histórico e projeção de lucro mensal."
+      }
+    },
     "steps": {
       "welcome": {
         "title": "Bem-vindo ao Open3DCalc! 🎉",
@@ -741,6 +763,74 @@
       "complete": {
         "title": "Tudo pronto! 🚀",
         "description": "Agora você já sabe calcular o custo de qualquer impressão. Use os tooltips (ícone ℹ️) em cada campo se tiver dúvidas. Bons prints!"
+      },
+      "upload-intro": {
+        "title": "Leve seu arquivo 3D 📦",
+        "description": "Neste tour você importa um STL, OBJ, 3MF ou G-code e explora o visualizador 3D integrado."
+      },
+      "upload-dropzone": {
+        "title": "Solte seu arquivo aqui",
+        "description": "Arraste um arquivo para esta zona ou clique para escolher do computador. Limitamos o tamanho em 100 MB."
+      },
+      "upload-samples": {
+        "title": "Modelos de exemplo",
+        "description": "Sem arquivo próprio? Carregue o 3DBenchy (STL) para ver a malha ou o G-code correspondente para ver o toolpath."
+      },
+      "upload-viewport": {
+        "title": "Visualizador 3D",
+        "description": "Gire com o mouse, aproxime com a roda e use os botões para ajustar o enquadramento ou expandir para tela cheia."
+      },
+      "upload-complete": {
+        "title": "Pronto para calcular 🎯",
+        "description": "Com o modelo carregado, a estimativa de volume e peso alimenta a calculadora automaticamente. Volte ao tour da calculadora para detalhes."
+      },
+      "inv-intro": {
+        "title": "Gerencie seu filamento 🧵",
+        "description": "Neste tour você cadastra uma bobina, usa a busca e os filtros de material e lê a grade de cartões de estoque."
+      },
+      "inv-add": {
+        "title": "Adicione uma bobina",
+        "description": "Este botão abre o formulário para cadastrar peso, material, cor e preço de uma nova bobina."
+      },
+      "inv-search": {
+        "title": "Encontre rápido",
+        "description": "Digite para buscar por nome, material ou cor — a grade filtra enquanto você digita."
+      },
+      "inv-filters": {
+        "title": "Filtre por material",
+        "description": "Estes botões estreitam o estoque a um material específico em um clique."
+      },
+      "inv-grid": {
+        "title": "Seus cartões de estoque",
+        "description": "Cada cartão mostra o peso restante, a barra de consumo e o alerta de estoque baixo."
+      },
+      "inv-complete": {
+        "title": "Estoque sob controle ✅",
+        "description": "O inventário alimenta a calculadora com peso e preço. Veja o tour do dashboard para acompanhar seus KPIs."
+      },
+      "dash-intro": {
+        "title": "Seus números em um lugar 📊",
+        "description": "Neste tour você lê o resumo financeiro, filtra por período, analisa os KPIs do histórico e simula a projeção de lucro."
+      },
+      "dash-summary": {
+        "title": "Resumo rápido",
+        "description": "Custo total, preço de venda, lucro e ROI do período filtrado — atualizados a cada cálculo."
+      },
+      "dash-date-range": {
+        "title": "Filtre o período",
+        "description": "Defina data inicial e final para restringir as análises. Limpe os filtros quando quiser ver tudo novamente."
+      },
+      "dash-kpis": {
+        "title": "KPIs do histórico",
+        "description": "Lucro total, custo médio por impressão, margem média e quantidade de prints do período selecionado."
+      },
+      "dash-projection": {
+        "title": "Projeção mensal",
+        "description": "Informe quantas peças você imprime por mês para estimar o lucro projetado e planejar seus preços."
+      },
+      "dash-complete": {
+        "title": "Decisões com dados 🎯",
+        "description": "Ajuste período e volume mensal para simular cenários. O histórico guarda cada cálculo para comparar depois."
       }
     }
   },

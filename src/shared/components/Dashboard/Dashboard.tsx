@@ -584,7 +584,10 @@ export function Dashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div
+        data-tutorial="dashboard-summary"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+      >
         <div className="surface rounded-xl p-4 text-center hover:-translate-y-0.5 transition-transform">
           <p className="text-xs text-[var(--color-text-secondary)] mb-1">
             {t("dashboard.totalCost")}
@@ -624,7 +627,10 @@ export function Dashboard() {
       </div>
 
       {/* Date Range Filter */}
-      <div className="surface rounded-xl p-4">
+      <div
+        data-tutorial="dashboard-date-range"
+        className="surface rounded-xl p-4"
+      >
         <p className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
           {t("dashboard.dateFrom")} / {t("dashboard.dateTo")}
         </p>
@@ -675,7 +681,10 @@ export function Dashboard() {
 
       {/* Fase 3: history-based KPI summary row (filtered period) */}
       {kpis && (
-        <section aria-label={t("dashboard.kpis.title")}>
+        <section
+          data-tutorial="dashboard-kpis"
+          aria-label={t("dashboard.kpis.title")}
+        >
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
             {t("dashboard.kpis.title")}
           </h3>
@@ -724,6 +733,7 @@ export function Dashboard() {
       {/* Fase 3: history-based monthly profit projection */}
       {monthlyProfitProjection != null && (
         <div
+          data-tutorial="dashboard-projection"
           data-testid="dashboard-projection"
           className="surface rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-[var(--color-accent)]/20"
         >
