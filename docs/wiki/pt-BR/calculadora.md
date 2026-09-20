@@ -77,9 +77,9 @@ função de cada uma:
 - [**results**](#user-content-resultados) — consolida tudo e mostra custo, lucro e
   preço final lado a lado.
 
-As quatro primeiras deste mapa têm artigos próprios na Wiki, com a fórmula
-completa e exemplos numéricos. As demais chegam nas próximas ondas — por
-enquanto, a seção `results` já mostra a soma de todas elas.
+Todas as dez seções deste mapa têm artigo próprio na Wiki, com a fórmula
+completa e exemplos numéricos — é só seguir os links acima. E a seção
+[results](#user-content-resultados) mostra a soma de todas elas lado a lado.
 
 ## A fórmula-mestre
 

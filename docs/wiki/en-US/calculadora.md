@@ -77,9 +77,10 @@ is what each one does:
 - [**results**](#user-content-results) — consolidates everything and shows cost,
   profit and final price side by side.
 
-The first four in this map have their own Wiki articles, with the full formula
-and worked examples. The rest arrive in later waves — for now, the `results`
-section already displays the sum of all of them.
+All ten sections in this map have their own Wiki articles, with the full formula
+and worked examples — just follow the links above. And the
+[results](#user-content-results) section displays the sum of all of them side
+by side.
 
 ## The master formula
 
