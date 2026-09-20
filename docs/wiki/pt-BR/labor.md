@@ -19,7 +19,7 @@ Este é o ponto mais importante da seção, e a fonte do erro mais comum: **o
 tempo que a impressora passa imprimindo não é mão de obra**. Durante essas
 horas a máquina trabalha sozinha e você pode estar fazendo outra coisa — ou
 outro trabalho remunerado. O tempo de impressão é cobrado pela
-[máquina](#user-content-machine) (depreciação, energia, rateio), não por aqui.
+[máquina](#user-content-custos-da-máquina) (depreciação, energia, rateio), não por aqui.
 
 Se você somar as 5,5 horas de impressão na mão de obra, o cliente paga o dobro:
 uma vez como máquina, uma vez como gente. A mão de obra conta só os minutos em
@@ -84,7 +84,7 @@ de lixamento acontecem de novo em cada peça — por isso o lote merece atençã
 Não existe resposta única, mas existe um piso: o seu valor hora precisa cobrir
 o que a hora custa para você, não só o que ela "vale no mercado". Some o que
 você gasta por mês (incluindo o que está nas seções
-[custos fixos](#user-content-fixedCost) e [máquina](#user-content-machine)) e
+[custos fixos](#user-content-custos-fixos) e [máquina](#user-content-custos-da-máquina)) e
 divida pelas horas que você de fato trabalha no negócio. Qualquer valor abaixo
 disso é trabalho de graça.
 
@@ -98,14 +98,14 @@ trabalho escravo subsidiado por outra fonte de renda.
 ## Como esta seção se relaciona com as demais
 
 - O **tempo de impressão** (que NÃO está aqui) vem de
-  [parâmetros](#user-content-print) e alimenta [máquina](#user-content-machine).
+  [parâmetros](#user-content-parâmetros-de-impressão) e alimenta [máquina](#user-content-custos-da-máquina).
 - Os **insumos** do pós-processamento — lixa, tinta, acetona — moram em
-  [desgaste de hardware](#user-content-hardware), bloco de acabamento. Aqui
+  [desgaste de hardware](#user-content-desgaste-de-hardware), bloco de acabamento. Aqui
   fica só o tempo; lá fica o material.
-- O **rateio e a depreciação** estão em [máquina](#user-content-machine) e
-  [custos fixos](#user-content-fixedCost), e são multiplicados pelas horas de
+- O **rateio e a depreciação** estão em [máquina](#user-content-custos-da-máquina) e
+  [custos fixos](#user-content-custos-fixos), e são multiplicados pelas horas de
   impressão, não pelas suas horas.
-- O lucro por hora exibido em [resultados](#user-content-results) usa
+- O lucro por hora exibido em [resultados](#user-content-resultados) usa
   exatamente esta combinação: horas de impressão + pós + setup diluído.
 
 ## Armadilhas práticas
@@ -122,4 +122,4 @@ trabalho escravo subsidiado por outra fonte de renda.
    por unidade quando a quantidade é maior que 1, o que é justo para o setup.
    Mas se cada peça é lixada individualmente, o pós é um custo por unidade, não
    do lote — confira se o preço por unidade do
-   [resultado](#user-content-results) ainda cobre o acabamento individual.
+   [resultado](#user-content-resultados) ainda cobre o acabamento individual.

@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { WikiTocItem } from "@/shared/lib/wiki/markdownToHtml";
@@ -21,6 +22,19 @@ interface WikiArticleProps {
    * `src/shared/lib/wiki/markdownToHtml.ts`), so it is injected as-is.
    */
   article: WikiBundleArticle;
+  /**
+   * Delegated click handler over the article body.
+   *
+   * The body is raw HTML (`dangerouslySetInnerHTML`), so its anchors are not
+   * React elements and no `onClick` prop can be attached to them individually.
+   * React still bubbles synthetic clicks through the container, which is what
+   * lets `WikiPage` intercept same-document fragments — the case that matters:
+   * a cross-link points at the heading id of ANOTHER article, and the browser
+   * cannot find it on the current page. `WikiPage` owns the bundle, so only it
+   * can map the id to the owning slug and switch articles. Same-article
+   * anchors and unknown ids are left to the browser / left inert.
+   */
+  onAnchorClick: (event: MouseEvent<HTMLElement>) => void;
 }
 
 /**
@@ -38,7 +52,7 @@ interface WikiArticleProps {
  * Kept presentational on purpose: article selection and the i18n namespace
  * live in `WikiPage`.
  */
-export function WikiArticle({ article }: WikiArticleProps) {
+export function WikiArticle({ article, onAnchorClick }: WikiArticleProps) {
   const { t } = useTranslation();
 
   return (
@@ -64,6 +78,7 @@ export function WikiArticle({ article }: WikiArticleProps) {
       ) : null}
       <article
         className="wiki-prose surface min-w-0 rounded-xl p-5 sm:p-6 lg:p-8"
+        onClick={onAnchorClick}
         dangerouslySetInnerHTML={{ __html: article.html }}
       />
     </div>

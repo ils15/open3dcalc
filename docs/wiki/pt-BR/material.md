@@ -79,6 +79,17 @@ Sem esses campos o cálculo diria R$ 6,25. A diferença, R$ 1,15 por peça, é
 exatamente o tipo de perda que aparece quando se faz cem unidades — R$ 115 de
 lucro evaporado por esquecer a purga.
 
+A peça que percorre os outros artigos — o suporte de celular — é o caso mais
+simples: **180 g de PLA a R$ 90/kg**, sem torre de purga:
+
+```
+custo material = (180 / 1000) * 90 = 0,18 * 90 = R$ 16,20
+```
+
+É esse **R$ 16,20** que os artigos de [custos fixos](#user-content-custos-fixos)
+e [operacional & software](#user-content-operacional--software) citam ao
+comparar com o próprio custo.
+
 ## Resina: volume, não peso
 
 Na impressão por resina a lógica é outra, porque você compra líquido. Os campos
@@ -117,7 +128,7 @@ A ligação também funciona no sentido contrário: quando uma peça usa um carr
 selecionado, o sistema mostra quanto daquele rolo ainda resta — e desconta o
 peso consumido a cada impressão. Assim o preço da próxima peça é calculado com o
 custo real do plástico que você tem na prateleira, e não com uma estimativa
-fixa. Veja detalhes no artigo sobre o [inventário](#user-content-inventario).
+fixa. Veja detalhes no artigo sobre o [inventário](#user-content-inventário).
 
 ## Armadilhas comuns
 

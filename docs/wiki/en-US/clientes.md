@@ -43,7 +43,7 @@ without opening a single spreadsheet.
 The flow is simple:
 
 1. register the customer here, with a name and at least one contact channel
-2. in [Quotes](#user-content-orcamentos), open the quote and pick the
+2. in [Quotes](#user-content-quotes), open the quote and pick the
    customer from the dropdown
 3. save — the quote stores the link plus a **copy** of the contact details
 4. the customer's quote counter goes up on its own

@@ -12,7 +12,7 @@ and what you check later to recall what was agreed with each customer.
 
 Every quote is built from estimates that already exist in the app — it does
 not recalculate anything, it only organizes what the
-[Calculator](#user-content-calculadora) already produced.
+[Calculator](#user-content-calculator) already produced.
 
 ## From calculation to document
 
@@ -43,7 +43,7 @@ reflects what was agreed, not the estimate.
 Besides the items, the form stores:
 
 - **Title**, which identifies the quote in the list and in search
-- **Customer**, optional — see [Clientes](#user-content-clientes)
+- **Customer**, optional — see [Clientes](#user-content-customers)
 - **Valid until**, the date the proposal expires
 - **Payment terms**, such as "50% upfront, 50% on delivery"
 - **Delivery estimate**, in days or as an agreed date

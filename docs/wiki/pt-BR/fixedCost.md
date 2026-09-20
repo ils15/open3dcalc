@@ -35,7 +35,7 @@ A seção é enxuta de propósito — dois campos e um interruptor.
   produção. Aluguel, internet, energia base, manutenção predial, software com
   assinatura obrigatória. Veja a armadilha abaixo sobre o que não colocar aqui.
 - **Horas por Mês** — as **horas produtivas** estimadas da impressora por mês,
-  a mesma ideia do campo [uso mensal](#user-content-machine). Se este campo
+  a mesma ideia do campo [uso mensal](#user-content-custos-da-máquina). Se este campo
   ficar em zero, a divisão é protegida e o rateio vira zero — o que significa
   que nenhuma peça está pagando o aluguel.
 
@@ -51,7 +51,7 @@ fixedCost = rateioPorHora * tempoImpressaoHoras
 ```
 
 O resultado não é somado como uma linha separada: ele é injetado na **taxa
-horária da máquina**, na seção [máquina](#user-content-machine). Assim, o
+horária da máquina**, na seção [máquina](#user-content-custos-da-máquina). Assim, o
 rateio acompanha as horas de impressão de cada peça — peça longa, mais aluguel.
 
 ## Exemplo numérico passo a passo
@@ -59,27 +59,27 @@ rateio acompanha as horas de impressão de cada peça — peça longa, mais alug
 Uma oficina pequena em um quarto transformado em estúdio:
 
 ```
-aluguel + condomínio     = R$ 450
+aluguel + condomínio     = R$ 350
 internet                 = R$ 60
 energia base (standby)   = R$ 40
 -------------------------
-custoFixoMensal          = R$ 550
+custoFixoMensal          = R$ 450
 
 horasProdutivasMes       = 150 h
 
-rateioPorHora = 550 / 150 = R$ 3,67/h
+rateioPorHora = 450 / 150 = R$ 3,00/h
 ```
 
 Nossa peça-exemplo, o suporte de celular com **5,5 horas** de impressão:
 
 ```
-fixedCost = 3,67 * 5,5 = R$ 20,18
+fixedCost = 3,00 * 5,5 = R$ 16,50
 ```
 
-A peça carrega **R$ 20,18** de aluguel, internet e energia base. Compare com os
-R$ 16,20 de [material](#user-content-material): a peça paga mais aluguel do que
-filamento. É esse o momento em que muita gente descobre que o preço de venda
-estava cobrando só o plástico.
+A peça carrega **R$ 16,50** de aluguel, internet e energia base. Compare com os
+R$ 16,20 de [material](#user-content-material) (0,18 kg de PLA a R$ 90/kg): a peça
+paga mais aluguel do que filamento. É esse o momento em que muita gente descobre
+que o preço de venda estava cobrando só o plástico.
 
 ## A sensibilidade que assusta
 
@@ -87,9 +87,9 @@ O rateio é uma divisão — e divisões explodem quando o denominador é pequen
 Veja a mesma oficina com diferentes horas produtivas:
 
 ```
-150 h/mês → 550 / 150 = R$ 3,67/h
-100 h/mês → 550 / 100 = R$ 5,50/h
- 50 h/mês → 550 /  50 = R$ 11,00/h
+150 h/mês → 450 / 150 = R$ 3,00/h
+100 h/mês → 450 / 100 = R$ 4,50/h
+ 50 h/mês → 450 /  50 = R$ 9,00/h
 ```
 
 Se a impressora passa a semana parada, cada peça precisa carregar o dobro ou o
@@ -99,14 +99,16 @@ avulsas de fim de semana têm um preço justo mais alto.
 
 ## Como esta seção se relaciona com as demais
 
-- O rateio é aplicado na taxa horária da [máquina](#user-content-machine),
+- O rateio é aplicado na taxa horária da [máquina](#user-content-custos-da-máquina),
   junto com a depreciação e a manutenção.
-- As horas que você usa aqui devem ser **as mesmas** do uso mensal da
-  [máquina](#user-content-machine). Usar 150 h aqui e 300 h lá é
-  autoengano: o rateio sai pela metade.
+- As horas produtivas da oficina não precisam ser iguais às horas de uso da
+  [máquina](#user-content-custos-da-máquina). O rateio divide o custo fixo pelas
+  horas produtivas da oficina inteira. A máquina, por sua vez, usa as horas da
+  própria impressora, para depreciação e manutenção. São campos independentes,
+  então valores diferentes estão corretos.
 - A **energia da impressão** (diferente da energia base) é contada na seção de
-  [parâmetros](#user-content-print); não a duplique aqui.
-- A **manutenção do equipamento** fica na [máquina](#user-content-machine);
+  [parâmetros](#user-content-parâmetros-de-impressão); não a duplique aqui.
+- A **manutenção do equipamento** fica na [máquina](#user-content-custos-da-máquina);
   aqui fica a manutenção do **espaço**.
 
 ## Armadilhas práticas

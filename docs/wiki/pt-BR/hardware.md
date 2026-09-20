@@ -116,13 +116,13 @@ R$ 32 só de bico, o suficiente para um bico novo e mais um café.
 - O **peso** que entra na fórmula do bico vem da seção de
   [material](#user-content-material) — preencha-a primeiro.
 - O **tempo de exposição** do LCD vem do tempo de impressão, na seção de
-  [parâmetros](#user-content-print).
+  [parâmetros](#user-content-parâmetros-de-impressão).
 - A depreciação da impressora **inteira** (o bem, não as partes) mora na seção
-  [máquina](#user-content-machine). Hardware é a parte que se gasta; máquina é
+  [máquina](#user-content-custos-da-máquina). Hardware é a parte que se gasta; máquina é
   o todo que se deprecia.
 - O **tempo** que você gasta lixando e pintando é cobrado à parte, em
-  [mão de obra](#user-content-labor) — aqui ficam só os insumos.
-- O resultado de tudo isto é somado em [resultados](#user-content-results).
+  [mão de obra](#user-content-mão-de-obra) — aqui ficam só os insumos.
+- O resultado de tudo isto é somado em [resultados](#user-content-resultados).
 
 ## Armadilhas práticas
 
@@ -134,7 +134,7 @@ R$ 32 só de bico, o suficiente para um bico novo e mais um café.
    são de graça.
 3. **Confundir desgaste com depreciação.** Se você colocar o preço da impressora
    aqui, o custo sai duplicado: a impressora inteira já está sendo depreciada na
-   seção [máquina](#user-content-machine). Aqui entram só as partes
+   seção [máquina](#user-content-custos-da-máquina). Aqui entram só as partes
    consumíveis.
 4. **Medir a vida útil do bico em peças, não em quilos.** O bico se desgasta
    pela quantidade de material extrudado, não pela quantidade de arquivos. Uma

@@ -23,7 +23,7 @@ Estas três seções se confundem facilmente. A distinção é esta:
 - **Máquina** mede a **depreciação da impressora inteira** — o bem se pagando
   ao longo da vida útil.
 - **Desgaste de hardware** mede as **partes consumíveis** — bico, mesa, LCD,
-  FEP. Veja [hardware](#user-content-hardware).
+  FEP. Veja [hardware](#user-content-desgaste-de-hardware).
 
 Se você colocar o preço da impressora em dois desses três lugares, o cliente
 paga a máquina duas vezes.
@@ -63,7 +63,7 @@ taxaHoraria = depreciacaoPorHora + manutencaoPorHora + rateioFixo
 machine = taxaHoraria * tempoImpressaoHoras
 ```
 
-O `rateioFixo` vem da seção [custos fixos](#user-content-fixedCost) e é
+O `rateioFixo` vem da seção [custos fixos](#user-content-custos-fixos) e é
 adicionado aqui, na taxa horária da máquina, porque é na máquina que as horas
 produtivas acontecem. Se os custos fixos estão desligados, essa parcela é
 zero.
@@ -92,7 +92,14 @@ machine = 3,80 * 5,5 = R$ 20,90
 A peça carrega **R$ 20,90** de máquina. Desse total, R$ 2,75 são de depreciação
 pura (0,50 × 5,5), R$ 1,65 são de manutenção e R$ 16,50 são de rateio de custos
 fixos. Note quem domina: o rateio fixo. É por isso que a seção
-[custos fixos](#user-content-fixedCost) é a que mais separa hobby de negócio.
+[custos fixos](#user-content-custos-fixos) é a que mais separa hobby de negócio.
+
+Uma observação sobre os números. Este exemplo usa **100 horas por mês**, que é o
+uso real **desta impressora**. É a base da depreciação e da manutenção. A seção de
+[custos fixos](#user-content-custos-fixos) trabalha com **150 horas por mês**, que
+são as horas produtivas da oficina inteira. Esses campos são independentes no
+aplicativo, e os valores diferentes estão corretos: um mede o desgaste de uma
+máquina, o outro rateia o custo do espaço.
 
 ## Sensibilidade: o que muda a taxa
 
@@ -114,13 +121,13 @@ que peças avulsas em uma máquina parada são caras de verdade.
 ## Como esta seção se relaciona com as demais
 
 - O **tempo** que multiplica a taxa horária é o tempo de impressão da seção de
-  [parâmetros](#user-content-print), não o tempo de mão de obra.
+  [parâmetros](#user-content-parâmetros-de-impressão), não o tempo de mão de obra.
 - O **rateio** que entra na taxa vem de
-  [custos fixos](#user-content-fixedCost).
-- As **partes** gastas (bico, mesa) estão em [hardware](#user-content-hardware)
+  [custos fixos](#user-content-custos-fixos).
+- As **partes** gastas (bico, mesa) estão em [hardware](#user-content-desgaste-de-hardware)
   e são somadas à parte.
 - A depreciação entra no bloco "Equipamento & Desgaste" do
-  [resultado](#user-content-results).
+  [resultado](#user-content-resultados).
 
 ## Armadilhas práticas
 

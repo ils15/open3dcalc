@@ -1,4 +1,11 @@
-import { useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { BookOpen } from "lucide-react";
 
@@ -93,6 +100,147 @@ export function WikiPage() {
   // the selection vanished with a language switch.
   const active = entries.find((entry) => entry.slug === selectedSlug) ?? entries[0];
 
+  // `undefined` while the bundle has not landed (skeleton render); the click
+  // handler and effects key off this and short-circuit while there is no
+  // rendered article to resolve a fragment against.
+  const activeSlug = active?.slug;
+
+  /**
+   * `#user-content-<id>` → the slug of the article that owns that heading.
+   *
+   * Built once per bundle from every article's build-time `toc`: a cross-link
+   * points at the H1/H2 id of ANOTHER article, and the bundle is the only
+   * place where "which article has this heading" is answerable in runtime.
+   * The toc slugs are raw UTF-8 (`rehype-slug` writes them unencoded), so they
+   * are the comparison keys — the href is decoded before the lookup (below).
+   */
+  const idToSlug = useMemo(() => {
+    const map = new Map<string, string>();
+    if (bundle) {
+      for (const [slug, article] of Object.entries(bundle)) {
+        for (const item of article.toc) map.set(item.slug, slug);
+      }
+    }
+    return map;
+  }, [bundle]);
+
+  /**
+   * A pending cross-article scroll.
+   *
+   * Set together with `setSelectedSlug`: the target article's html is not in
+   * the DOM until the next render, so `scrollIntoView`/`focus` must run in an
+   * effect on `selectedSlug`, never in the click handler.
+   *
+   * Deliberately a REF and not state. The effect clears it once consumed, and
+   * a state-based flag would need `setPendingAnchor(null)` — a re-render of
+   * `WikiArticle`. React rewrites `dangerouslySetInnerHTML` on every re-render
+   * (the `__html` string is compared, but the children it produced are not
+   * reconciled), which replaces the very heading the effect just focused,
+   * discarding its imperatively-set `tabindex` and focus. A ref carries no such
+   * re-render: the DOM work survives because nothing repaints the article.
+   */
+  const pendingAnchor = useRef<string | null>(null);
+
+  /**
+   * Resolve a same-document fragment to the article that owns it.
+   *
+   * `decodeURIComponent` is mandatory: `rehype-stringify` percent-encodes the
+   * href (`#user-content-custos-da-m%C3%A1quina`) while the heading ids stay in
+   * raw UTF-8, so an undecoded fragment never matches a toc slug. A malformed
+   * encoding (`%E0%A4`) throws on decode and is treated as unknown.
+   *
+   * @returns the owning slug for a fragment owned by another article, `null`
+   * when the fragment is unknown or belongs to the current article (the
+   * browser's own in-page scroll handles the latter and must not be blocked).
+   */
+  const resolveCrossArticle = useCallback(
+    (hash: string, currentSlug: string | undefined): string | null => {
+      if (!hash.startsWith("#")) return null;
+      if (currentSlug === undefined) return null;
+
+      let id: string;
+      try {
+        id = decodeURIComponent(hash.slice(1));
+      } catch {
+        return null;
+      }
+
+      const owner = idToSlug.get(id);
+      if (owner === undefined || owner === currentSlug) return null;
+      return owner;
+    },
+    [idToSlug],
+  );
+
+  /**
+   * Delegated click handler over the rendered article.
+   *
+   * The article body comes from `dangerouslySetInnerHTML`, so its anchors are
+   * not React elements — but the click still bubbles through React's synthetic
+   * delegation, and the container intercepts it here. Only same-document
+   * fragments (`#...`) are ever hijacked; external links keep default.
+   */
+  const handleArticleClick = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      const link = (event.target as Element).closest("a");
+      if (!(link instanceof HTMLAnchorElement)) return;
+
+      const hash = link.getAttribute("href") ?? "";
+      // Same-document links only: `[artigo](#user-content-...)`. Anything with
+      // a host/protocol is an external link and none of our business.
+      if (!hash.startsWith("#")) return;
+
+      const target = resolveCrossArticle(hash, activeSlug);
+      if (target === null) {
+        // Same-article anchor or unknown id: leave the browser alone. For the
+        // unknown case there is nothing to scroll to anyway, so the click is
+        // a no-op rather than a jump to the page top.
+        if (!idToSlug.has(hash.slice(1))) event.preventDefault();
+        return;
+      }
+
+      // Cross-article: jump to the owner, and stage the anchor so the effect
+      // below scrolls to the heading once its html has rendered.
+      event.preventDefault();
+      pendingAnchor.current = hash.slice(1);
+      setSelectedSlug(target);
+    },
+    [activeSlug, idToSlug, resolveCrossArticle],
+  );
+
+  // Scrolls to (and focuses) a cross-article target once the article that owns
+  // it has rendered.
+  //
+  // The dep is `activeSlug` alone: `WikiArticle` is keyed by slug, so React
+  // unmounts the old `<article>` and mounts a fresh one rather than patching
+  // it — any DOM node grabbed before that remount commits is discarded, taking
+  // its imperatively-set `tabindex` with it. Running on the slug change (and
+  // reading the anchor from a ref, not state) places the DOM work AFTER the
+  // remount commits and keeps it the last thing that touches the article: no
+  // follow-up state update means no re-render, and `dangerouslySetInnerHTML`
+  // does not get a chance to swap the focused node out from under the test.
+  // The guard makes it a no-op for plain nav button clicks, where the ref was
+  // never staged.
+  useEffect(() => {
+    const anchor = pendingAnchor.current;
+    if (!anchor || !activeSlug) return;
+    pendingAnchor.current = null;
+
+    const target = document.getElementById(anchor);
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // Headings are not focusable by default. Without this, keyboard and screen
+    // reader users land on the article top instead of the section the link
+    // promised — `tabindex={-1}` makes the element programmatically focusable
+    // without adding it to the tab order.
+    if (target.getAttribute("tabindex") === null) {
+      target.setAttribute("tabindex", "-1");
+    }
+    target.focus({ preventScroll: true });
+  }, [activeSlug]);
+
   if (!ready || !active) return <WikiSkeleton ariaLabel={t("wiki.loading")} />;
 
   return (
@@ -129,7 +277,11 @@ export function WikiPage() {
         })}
       </nav>
 
-      <WikiArticle key={active.slug} article={active.article} />
+      <WikiArticle
+        key={active.slug}
+        article={active.article}
+        onAnchorClick={handleArticleClick}
+      />
     </div>
   );
 }

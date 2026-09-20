@@ -19,7 +19,7 @@ free.
 This is the most important point of the section, and the source of the most
 common mistake: **the time the printer spends printing is not labor.** During
 those hours the machine works alone and you can be doing something else — or
-another paid job. Print time is charged by the [machine](#user-content-machine)
+another paid job. Print time is charged by the [machine](#user-content-machine-costs)
 (depreciation, energy, share), not here.
 
 If you add the 5.5 hours of printing to labor, the customer pays twice: once as
@@ -85,7 +85,7 @@ attention.
 There is no single answer, but there is a floor: your hourly rate needs to cover
 what an hour costs you, not just what it is "worth in the market". Add what you
 spend per month (including what is in the
-[fixed costs](#user-content-fixedCost) and [machine](#user-content-machine)
+[fixed costs](#user-content-fixed-costs) and [machine](#user-content-machine-costs)
 sections) and divide by the hours you actually work in the business. Anything
 below that is unpaid work.
 
@@ -99,13 +99,13 @@ underpaid labor subsidized by another source of income.
 ## How this section relates to the others
 
 - The **print time** (which is NOT here) comes from
-  [print parameters](#user-content-print) and feeds
-  [machine](#user-content-machine).
+  [print parameters](#user-content-print-parameters) and feeds
+  [machine](#user-content-machine-costs).
 - The **supplies** for post-processing — sandpaper, paint, acetone — live in
-  [hardware wear](#user-content-hardware), in the finishing block. Only the
+  [hardware wear](#user-content-hardware-wear), in the finishing block. Only the
   time belongs here; the material belongs there.
-- The **share and depreciation** are in [machine](#user-content-machine) and
-  [fixed costs](#user-content-fixedCost), and are multiplied by print hours,
+- The **share and depreciation** are in [machine](#user-content-machine-costs) and
+  [fixed costs](#user-content-fixed-costs), and are multiplied by print hours,
   not by your hours.
 - The profit-per-hour shown in [results](#user-content-results) uses exactly
   this combination: print hours + post + diluted setup.

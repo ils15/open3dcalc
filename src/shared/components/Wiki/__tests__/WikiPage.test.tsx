@@ -12,6 +12,16 @@ const { loadWikiBundleMock } = vi.hoisted(() => ({
   loadWikiBundleMock: vi.fn(),
 }));
 
+// jsdom has no layout engine, so scrollIntoView is absent — the cross-article
+// handler calls it the moment the target heading resolves. Install the same
+// no-op the tutorial tests use (src/shared/components/ui/__tests__/
+// tutorialTours.test.tsx) before any wiki renders.
+Object.defineProperty(Element.prototype, "scrollIntoView", {
+  configurable: true,
+  writable: true,
+  value: vi.fn(),
+});
+
 vi.mock("@/shared/lib/wiki/loadWikiBundle", () => ({
   WIKI_NAMESPACE: "wiki",
   loadWikiBundle: loadWikiBundleMock,
@@ -37,7 +47,10 @@ const PT_BR_BUNDLE: WikiBundle = {
     title: "Inventário",
     order: 1,
     toc: [{ depth: 1, text: "Inventário", slug: "user-content-inventario" }],
-    html: '<h1 id="user-content-inventario">Inventário</h1><p>Filamentos cadastrados.</p>',
+    // The three cross-article shapes the handler must distinguish: a link to
+    // a heading of ANOTHER article (niveis belongs to calculadora), a link to
+    // a heading of THIS article, and an id no article owns (external/broken).
+    html: '<h1 id="user-content-inventario">Inventário</h1><p>Filamentos cadastrados.</p><p>Veja <a href="#user-content-niveis">os níveis</a> da calculadora, o <a href="#user-content-inventario">topo</a> e um <a href="#user-content-inexistente">link quebrado</a>.</p>',
   },
   notas: {
     title: "Notas",
@@ -190,5 +203,72 @@ describe("WikiPage", () => {
     expect(
       screen.queryByRole("button", { name: "Inventário" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("selects the article that owns a cross-article anchor when it is clicked", async () => {
+    render(<WikiPage />);
+    await waitFor(() =>
+      expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument(),
+    );
+
+    // "os níveis" points at #user-content-niveis, a heading of CALCULADORA —
+    // not of the article currently on screen (inventario).
+    fireEvent.click(screen.getByRole("link", { name: "os níveis" }));
+
+    // The owner article is selected: its nav button is aria-current and its
+    // content replaces the previous article.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Calculadora" }),
+      ).toHaveAttribute("aria-current", "true"),
+    );
+    expect(screen.getByText("Dois níveis.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Filamentos cadastrados."),
+    ).not.toBeInTheDocument();
+
+    // The target heading is scrolled into view and receives focus (headings
+    // are not focusable by default, so the handler makes them a tab stop).
+    await waitFor(() => {
+      const target = document.getElementById("user-content-niveis");
+      expect(target).not.toBeNull();
+      expect(target).toHaveFocus();
+    });
+  });
+
+  it("keeps the current article when an anchor of the same article is clicked", async () => {
+    render(<WikiPage />);
+    await waitFor(() =>
+      expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument(),
+    );
+
+    // "topo" points at #user-content-inventario — a heading of the CURRENT
+    // article, so this is the browser's own in-page scroll, not a switch.
+    fireEvent.click(screen.getByRole("link", { name: "topo" }));
+
+    expect(
+      screen.getByRole("button", { name: "Inventário" }),
+    ).toHaveAttribute("aria-current", "true");
+    expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument();
+    expect(screen.queryByText("Dois níveis.")).not.toBeInTheDocument();
+  });
+
+  it("does not navigate when the clicked anchor is unknown", async () => {
+    render(<WikiPage />);
+    await waitFor(() =>
+      expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument(),
+    );
+
+    // #user-content-inexistente is owned by no article: the handler must
+    // swallow it rather than break the page or hop articles.
+    fireEvent.click(screen.getByRole("link", { name: "link quebrado" }));
+
+    expect(
+      screen.getByRole("button", { name: "Inventário" }),
+    ).toHaveAttribute("aria-current", "true");
+    expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Calculadora" }),
+    ).not.toHaveAttribute("aria-current");
   });
 });

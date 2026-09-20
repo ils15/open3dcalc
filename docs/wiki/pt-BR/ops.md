@@ -35,7 +35,7 @@ carrega R$ 0,05. O custo existe; o que muda é a diluição.
   carrega o valor inteiro.
 
 A mensalidade é rateada pelas horas de impressão do mês, usando o **mesmo
-campo de horas** da seção [máquina](#user-content-machine):
+campo de horas** da seção [máquina](#user-content-custos-da-máquina):
 
 ```
 softwarePorHora = mensalidadeSlicer / horasPorMes
@@ -46,7 +46,7 @@ software = (softwarePorHora * tempoImpressaoHoras) + custoArquivoSTL
 O custo do arquivo é somado inteiro, porque cada peça sai dele. Atenção aqui:
 quando a quantidade é maior que 1, só a **mão de obra** é diluída entre as
 unidades — o arquivo STL continua cobrado por inteiro em cada peça. Veja
-[mão de obra](#user-content-labor) e [resultados](#user-content-results).
+[mão de obra](#user-content-mão-de-obra) e [resultados](#user-content-resultados).
 
 ## Bloco: EPIs / Consumíveis
 
@@ -83,29 +83,32 @@ ops = 6,65 + 2,00 = R$ 8,65
 ```
 
 E a pegada de carbono, com a intensidade padrão de 100 g/kWh e uma impressora
-de 150 W:
+de 250 W:
 
 ```
-energiaKwh = (150 / 1000) * 5,5 = 0,825 kWh
+energiaKwh = (250 / 1000) * 5,5 = 1,375 kWh
 
-pegadaCarbonoGramas = 0,825 * 100 = 82,5 g de CO2
+pegadaCarbonoGramas = 1,375 * 100 = 137,5 g de CO2
 ```
 
 Para uma peça decorativa, **R$ 8,65** de "invisíveis" é mais da metade do
-custo do [material](#user-content-material) — que era R$ 16,20.
+custo do [material](#user-content-material) — que era R$ 16,20 (0,18 kg de PLA
+a R$ 90/kg).
 
 ## Como esta seção se relaciona com as demais
 
-- As **horas por mês** que rateiam a mensalidade são as mesmas da
-  [máquina](#user-content-machine) — use números iguais, senão o rateio sai
-  errado.
+- As **horas por mês** que rateiam a mensalidade são as horas produtivas da
+  oficina. Elas não precisam ser iguais às horas de uso da
+  [máquina](#user-content-custos-da-máquina). A máquina usa as horas da própria
+  impressora; o rateio usa as horas da oficina inteira. São campos independentes,
+  então valores diferentes estão corretos.
 - O **tempo de impressão** que multiplica a taxa vem de
-  [parâmetros](#user-content-print).
+  [parâmetros](#user-content-parâmetros-de-impressão).
 - Os **insumos do acabamento** (lixa, tinta) moram em
-  [desgaste de hardware](#user-content-hardware); aqui ficam os insumos de
+  [desgaste de hardware](#user-content-desgaste-de-hardware); aqui ficam os insumos de
   segurança e limpeza.
 - O resultado é somado no bloco "Operacional & Trabalho" de
-  [resultados](#user-content-results).
+  [resultados](#user-content-resultados).
 
 ## Armadilhas práticas
 

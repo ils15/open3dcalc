@@ -116,9 +116,9 @@ it is R$ 32 of nozzle alone, enough for a new nozzle and a coffee.
 - The **weight** feeding the nozzle formula comes from the
   [material](#user-content-material) section — fill it first.
 - The LCD **exposure time** comes from the print time, in the
-  [print parameters](#user-content-print) section.
+  [print parameters](#user-content-print-parameters) section.
 - Depreciation of the **whole** printer (the asset, not its parts) lives in the
-  [machine](#user-content-machine) section. Hardware is the part that wears;
+  [machine](#user-content-machine-costs) section. Hardware is the part that wears;
   machine is the whole that depreciates.
 - The **time** you spend sanding and painting is charged separately, under
   [labor](#user-content-labor) — here only the supplies belong.
@@ -134,7 +134,7 @@ it is R$ 32 of nozzle alone, enough for a new nozzle and a coffee.
    paint are not free.
 3. **Mixing up wear with depreciation.** If you put the printer's price here,
    the cost gets duplicated: the whole printer is already being depreciated in
-   the [machine](#user-content-machine) section. Only consumable parts belong
+   the [machine](#user-content-machine-costs) section. Only consumable parts belong
    here.
 4. **Measuring nozzle lifespan in parts, not kilograms.** The nozzle wears by
    the amount of material extruded, not by the number of files. An 800 g hollow
