@@ -295,24 +295,6 @@ export { type Quote, type QuoteItem, type QuoteFormData } from "./quote";
 export { type Product, type ProductFormData } from "./product";
 export { type EstimationMode, type EstimateOptions } from "./estimation";
 
-export interface HistoryItem {
-  id: string;
-  timestamp: number;
-  type: "fdm" | "resin";
-  summary: string;
-  totalCost: number;
-  sellPrice: number;
-  profit: number;
-}
-
-export interface SavedProduct {
-  id: number;
-  name: string;
-  date: string;
-  result: CalculationResult;
-  snapshot?: CalculationSnapshot;
-}
-
 export interface HistoryEntry {
   id: string;
   timestamp: number;
@@ -324,29 +306,6 @@ export interface HistoryEntry {
   profit: number;
   result: CalculationResult;
   snapshot: CalculationSnapshot | null;
-}
-
-export interface CalculationInputs {
-  productName: string;
-  material: Material;
-  weight: number;
-  volume: number;
-  useVolume: boolean;
-  timeMinutes: number;
-  printer: PrinterProfile;
-  energyRate: number;
-  laborRate: number;
-  packagingCost: number;
-  finishingCost: number;
-  failureRate: number;
-  markup: number;
-  marketplace: Marketplace;
-  quantity: number;
-  infillPercent: number;
-  purgePercent: number;
-  shippingCost: number;
-  taxRate: number;
-  cardFeePercent: number;
 }
 
 export interface CalculationSnapshot {

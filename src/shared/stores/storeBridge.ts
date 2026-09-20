@@ -3,7 +3,6 @@ import { resolveFdmSlicerProfile } from "@/shared/stores/calculatorStore.helpers
 import { resolveFdmFilament } from "@/shared/stores/calculatorStore.helpers";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import type { FilamentSpool } from "@/shared/stores/filamentInventory";
-import type { Product } from "@/shared/types";
 import type { PrinterProfile, Marketplace } from "@/shared/types";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 
@@ -14,10 +13,6 @@ export function selectSpool(spool: FilamentSpool) {
     type: spool.material,
     costPerKg: spool.costPerKg,
   });
-}
-
-export function selectProduct(product: Pick<Product, "name">) {
-  useCalculatorStore.getState().setProductName(product.name);
 }
 
 export function restoreAutoSnapshot(): boolean {

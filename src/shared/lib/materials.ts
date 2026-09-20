@@ -39,8 +39,3 @@ export const resinMaterials: Material[] = [
 
 export const materials: Material[] = [...fdmMaterials, ...resinMaterials]
 
-export function getMaterial(id: string): Material {
-  return materials.find(m => m.id === id) ?? materials[0]
-}
-
-

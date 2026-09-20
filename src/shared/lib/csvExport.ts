@@ -28,25 +28,6 @@ function getCurrencySymbol(currency?: string): string {
   return formatCurrency(0, (currency ?? 'BRL') as CurrencyCode).replace(/[\d,.\s]/g, '').trim()
 }
 
-export function exportHistoryToCsv(
-  history: Array<{ id: string; timestamp: number; type: string; summary: string; totalCost: number; sellPrice: number; profit: number }>,
-  options?: { locale?: string; currency?: string }
-): string {
-  const locale = options?.locale ?? 'pt-BR'
-  const sym = getCurrencySymbol(options?.currency)
-  const rows = history.map(item => ({
-    Data: new Date(item.timestamp).toLocaleDateString(locale),
-    Hora: new Date(item.timestamp).toLocaleTimeString(locale),
-    Tipo: item.type.toUpperCase(),
-    Produto: item.summary,
-    [`Custo Total (${sym})`]: item.totalCost.toFixed(2),
-    [`Preco Venda (${sym})`]: item.sellPrice.toFixed(2),
-    [`Lucro (${sym})`]: item.profit.toFixed(2),
-    'Margem (%)': item.totalCost > 0 ? ((item.profit / item.totalCost) * 100).toFixed(1) : '0',
-  }))
-  return rowsToCsv(rows)
-}
-
 export function exportResultToCsv(
   result: CalculationResult,
   productName?: string,

@@ -26,14 +26,6 @@ export const ERASURE_STORES = [
 ] as const;
 export type ErasureStore = (typeof ERASURE_STORES)[number];
 
-/** Stores that run inside the renderer (web build runs ONLY these + staging). */
-export const RENDERER_STORES: readonly ErasureStore[] = [
-  "localstorage",
-  "indexeddb",
-  "opfs",
-  "cache_api_sw",
-];
-
 /** Per-platform store plans (SPEC-02 §3 platform column). */
 export const PLATFORM_STORES: Record<
   "electron" | "web",
