@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { TutorialLauncher } from "@/shared/components/ui/TutorialLauncher";
+import { GuideDrawer } from "@/shared/components/GuideDrawer/GuideDrawer";
 import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
@@ -99,6 +100,9 @@ export function Header() {
         <div className="flex shrink-0 items-center gap-2">
           {/* Desktop-only actions */}
           <div className="hidden sm:flex items-center gap-2">
+            {/* Guide / help drawer (22 areas) */}
+            <GuideDrawer />
+
             {/* Tours launcher */}
             <TutorialLauncher />
 
@@ -276,6 +280,9 @@ export function Header() {
                     {t("nav.tutorial")}
                   </span>
                 </button>
+
+                {/* Guide drawer — same surface as the desktop Header button */}
+                <GuideDrawer align="inline" />
 
                 {/* Currency — desktop selector handles changes; close the sheet here */}
                 <button

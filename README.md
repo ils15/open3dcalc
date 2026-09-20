@@ -77,6 +77,20 @@ Para além da estimativa de volume, o Open3DCalc calcula o custo real do seu dia
 
 ---
 
+## 🎓 Onboarding, tours e Wiki
+
+O app se explica sozinho — ninguém precisa ler um manual externo para começar:
+
+| Superfície            | O que é                                                                                                                                                                                                                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚀 **Onboarding**     | Primeiros passos dentro do app: flags persistentes (LocalStorage) garantem que o tutorial só se oferece uma vez por sessão/usuário, e flags de tutorial **nunca** substituem o consentimento de privacidade.                                                                                    |
+| 🧪 **Modo demo**      | Dados de demonstração para explorar a calculadora sem cadastrar nada; exports são bloqueados no modo demo (o selo e o toast avisam).                                                                                                                                                             |
+| 🎯 **Tours**          | 6 tours interativos com spotlight: Calculadora básica, Preview 3D do upload, Inventário de bobinas, KPIs do dashboard, Orçamentos & Clientes e Nível avançado — todos bilíngues, disparados pelo botão de tutorial ou pelo guia. O tour de nível avançado empresta o nível avançado da calculadora e o **devolve** ao sair. |
+| 📖 **Wiki**           | Documentação dentro do app (aba Wiki): artigos em markdown compilados em **build time** — zero parser no client, zero dependência de runtime, sanitizados via `rehype-sanitize`. Veja [`docs/wiki/README.md`](docs/wiki/README.md) para o contrato de autoria (subset, frontmatter, paridade pt-BR/en-US). |
+| 🗂️ **Guia**          | Drawer com um card por superfície do app (tabs e seções da calculadora), cada um com descrição e atalho para o tour correspondente, quando existe.                                                                                                                                             |
+
+---
+
 ## 🏗️ Project Structure
 
 ```
@@ -125,7 +139,10 @@ open3dcalc/
 │               ├── persistence-bridge.ts
 │               ├── storage-adapter.ts
 │               └── theme-persistence.ts
-├── db/                          # Database (SQLite via Drizzle ORM)
+├── docs/                          # Documentação
+│   └── wiki/                      # Artigos da aba Wiki (markdown, pt-BR + en-US)
+│       └── README.md              # Contrato de autoria da Wiki (subset, schema)
+├── db/                            # Database (SQLite via Drizzle ORM)
 │   ├── schema/                  # Schema definitions (Drizzle ORM)
 │   │   ├── index.ts             # 10 tabelas (customers, quotes, history, etc.)
 │   │   └── relations.ts         # Relacionamentos entre tabelas

@@ -50,6 +50,7 @@
     "products": "Produtos",
     "telegram": "Canal Telegram",
     "tutorial": "Tutorial",
+    "wiki": "Wiki",
     "language": "Mudar idioma",
     "navigation": "Navegação",
     "mainNavigation": "Navegação principal",
@@ -733,6 +734,14 @@
       "dashboard-kpis": {
         "title": "Dashboard de KPIs",
         "description": "Resumo financeiro, filtro por período, KPIs do histórico e projeção de lucro mensal."
+      },
+      "orcamentos-clientes": {
+        "title": "Orçamentos e clientes",
+        "description": "Transforme cálculos salvos em orçamentos profissionais e gerencie sua carteira de clientes."
+      },
+      "nivel-avancado": {
+        "title": "Nível avançado",
+        "description": "Modo completo: falhas, hardware, máquina, custos fixos, mão de obra e software — todos os fatores do custo real de uma impressão."
       }
     },
     "steps": {
@@ -831,6 +840,78 @@
       "dash-complete": {
         "title": "Decisões com dados 🎯",
         "description": "Ajuste período e volume mensal para simular cenários. O histórico guarda cada cálculo para comparar depois."
+      },
+      "qc-intro": {
+        "title": "Orçamentos e clientes 📄",
+        "description": "Neste tour você transforma cálculos salvos em orçamentos profissionais e organiza seus clientes em um só lugar."
+      },
+      "qc-list": {
+        "title": "Lista de orçamentos",
+        "description": "Aqui ficam todos os seus orçamentos, com status (rascunho, enviado, aprovado ou recusado) e busca por título ou cliente."
+      },
+      "qc-new": {
+        "title": "Novo orçamento",
+        "description": "Use este botão para criar um orçamento novo a partir dos cálculos salvos no histórico."
+      },
+      "qc-customer": {
+        "title": "Vincule um cliente",
+        "description": "No formulário, escolha o cliente no seletor para vinculá-lo ao orçamento — o contato vai impresso no PDF."
+      },
+      "cs-intro": {
+        "title": "Clientes 👥",
+        "description": "Agora a aba Clientes: cadastre nome, empresa e contatos para reutilizar em vários orçamentos."
+      },
+      "cs-list": {
+        "title": "Lista de clientes",
+        "description": "Sua carteira de clientes aparece aqui, com busca e ações para editar e remover."
+      },
+      "cs-new": {
+        "title": "Novo cliente",
+        "description": "Cadastre um novo cliente com nome, empresa, e-mail, telefone e observações."
+      },
+      "qc-complete": {
+        "title": "Pronto para orçar! 🎉",
+        "description": "Cliente cadastrado e orçamento vinculado: agora é só exportar em PDF e enviar. Tudo fica salvo no seu dispositivo."
+      },
+      "adv-intro": {
+        "title": "Modo completo 🧮",
+        "description": "Neste tour você ativa o nível avançado da calculadora e percorre as seções que somam todos os fatores de custo de uma impressão."
+      },
+      "adv-level": {
+        "title": "Troque de nível",
+        "description": "O seletor de nível controla quantas seções a calculadora mostra. O nível avançado libera as dez seções — vamos ativá-lo agora."
+      },
+      "adv-failure": {
+        "title": "Taxa de falha",
+        "description": "Defina o modo de falha mais comum e o valor da peça perdida. O risco vira um multiplicador que onera cada impressão."
+      },
+      "adv-hardware": {
+        "title": "Hardware e pós-processamento",
+        "description": "Some o custo das peças de reposição e do acabamento (lixamento, colagem, montagem) que consomem material e tempo."
+      },
+      "adv-machine": {
+        "title": "Custo da máquina",
+        "description": "Configure o preço da impressora, a vida útil estimada e as horas de trabalho para ratear o investimento por impressão."
+      },
+      "adv-fixedCost": {
+        "title": "Custos fixos",
+        "description": "Luz, aluguel, internet e assinaturas: informe os custos fixos mensais e a calculadora rateia pela sua produção."
+      },
+      "adv-labor": {
+        "title": "Mão de obra",
+        "description": "Defina quanto você cobra por hora de trabalho e o tempo de preparação e finalização de cada peça."
+      },
+      "adv-ops": {
+        "title": "Software e insumos",
+        "description": "Fatia, software de modelagem, consumíveis e manutenção corrente — os custos operacionais do dia a dia."
+      },
+      "adv-results": {
+        "title": "Resultado completo",
+        "description": "Com todos os fatores preenchidos, o resultado traz o custo total detalhado e o preço de venda sugerido no nível avançado."
+      },
+      "adv-complete": {
+        "title": "Custo dominado 🏆",
+        "description": "Você somou material, máquina, mão de obra, custos fixos e falhas. Ajuste qualquer seção e o resultado se recalcula na hora."
       }
     }
   },
@@ -1933,5 +2014,121 @@
       "blockedTitle": "Exportação bloqueada no modo demo — os dados são de exemplo.",
       "badge": "Exportação bloqueada no demo"
     }
+  },
+  "guide": {
+    "calculator": {
+      "title": "Calculadora",
+      "description": "Precifique peças 3D somando material, energia, falhas, custos fixos e mão de obra nos modos básico, intermediário e avançado.",
+      "cta": "Ver tours disponíveis"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Acompanhe faturamento, lucro, custo por hora e outras métricas por período, cliente ou material.",
+      "cta": "Abrir guia"
+    },
+    "infill": {
+      "title": "Calculadora de Infill",
+      "description": "Estime peso e custo do preenchimento interno antes de imprimir, comparando padrões e densidades.",
+      "cta": "Abrir guia"
+    },
+    "inventory": {
+      "title": "Filamentos",
+      "description": "Cadastre filamentos e resinas com custo por quilo ou por litro, densidade e diâmetro para alimentar a calculadora.",
+      "cta": "Abrir guia"
+    },
+    "catalog": {
+      "title": "Cadastros",
+      "description": "Central de clientes, produtos, máquinas e materiais usados em orçamentos e na calculadora.",
+      "cta": "Abrir guia"
+    },
+    "history": {
+      "title": "Histórico",
+      "description": "Revise e duplique cálculos e orçamentos anteriores com filtros por data e cliente.",
+      "cta": "Abrir guia"
+    },
+    "changelog": {
+      "title": "Novidades",
+      "description": "Veja o que mudou em cada versão do aplicativo, com melhorias e correções.",
+      "cta": "Abrir guia"
+    },
+    "quotes": {
+      "title": "Orçamentos",
+      "description": "Monte orçamentos com markup, descontos, prazos e impostos e acompanhe o status de cada proposta.",
+      "cta": "Abrir guia"
+    },
+    "customers": {
+      "title": "Clientes",
+      "description": "Mantenha contatos, histórico de orçamentos e dados de cada comprador em um só lugar.",
+      "cta": "Abrir guia"
+    },
+    "products": {
+      "title": "Produtos",
+      "description": "Catalogue produtos com preço sugerido, insumos e tempo de impressão estimado.",
+      "cta": "Abrir guia"
+    },
+    "privacy": {
+      "title": "Privacidade",
+      "description": "Entenda como seus dados são processados localmente, exportados e removidos.",
+      "cta": "Abrir guia"
+    },
+    "material": {
+      "title": "Materiais",
+      "description": "Defina custo por quilo ou por litro, densidade, desperdício e purga para filamento ou resina.",
+      "cta": "Abrir guia"
+    },
+    "print": {
+      "title": "Parâmetros de Impressão",
+      "description": "Configure tempo de impressão, potência da impressora e custo de energia.",
+      "cta": "Abrir guia"
+    },
+    "failure": {
+      "title": "Risco e Falhas",
+      "description": "Considere retrabalho e falhas de impressão no preço final com uma taxa ajustável.",
+      "cta": "Abrir guia"
+    },
+    "hardware": {
+      "title": "Desgaste de Hardware (FDM)",
+      "description": "Some hardware, hot-end e custos de pós-processamento à peça.",
+      "cta": "Abrir guia"
+    },
+    "machine": {
+      "title": "Custos da Máquina",
+      "description": "Amortize o preço da impressora pelas horas previstas de uso e a vida útil do equipamento.",
+      "cta": "Abrir guia"
+    },
+    "fixedCost": {
+      "title": "Custos Fixos",
+      "description": "Distribua custos fixos mensais — aluguel, energia, software — entre as peças produzidas.",
+      "cta": "Abrir guia"
+    },
+    "labor": {
+      "title": "Mão de Obra",
+      "description": "Inclua horas de trabalho humano: modelagem, preparo e pós-processamento.",
+      "cta": "Abrir guia"
+    },
+    "ops": {
+      "title": "Operacional & Software",
+      "description": "Some software, insumos e consumíveis usados na operação do negócio.",
+      "cta": "Abrir guia"
+    },
+    "sales": {
+      "title": "Custos Adicionais & Vendas",
+      "description": "Aplique markup, embalagem, frete, taxas de marketplace e impostos ao preço final.",
+      "cta": "Abrir guia"
+    },
+    "results": {
+      "title": "Resultados",
+      "description": "Veja o preço de venda sugerido, a composição do custo e a margem de lucro.",
+      "cta": "Abrir guia"
+    },
+    "wiki": {
+      "title": "Wiki",
+      "description": "Artigos em markdown sobre precificação, insumos e a operação do app, disponíveis offline na aba Wiki.",
+      "cta": "Abrir guia"
+    }
+  },
+  "wiki": {
+    "toc": "Sumário",
+    "loading": "Carregando"
   }
 }

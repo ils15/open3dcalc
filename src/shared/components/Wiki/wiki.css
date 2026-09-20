@@ -1,0 +1,144 @@
+/* ===================================================================
+   WIKI PROSE — styling for the build-time compiled article HTML.
+   Scope: every rule is nested under `.wiki-prose`, so this only touches
+   the markdown output of the wiki articles and never the rest of the app.
+   No syntax highlight (MVP decision): `<pre><code>` is plain, but styled.
+   =================================================================== */
+.wiki-prose {
+  color: var(--color-text-primary);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  overflow-wrap: break-word;
+}
+
+.wiki-prose > :first-child {
+  margin-top: 0;
+}
+
+.wiki-prose > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── Headings ── */
+.wiki-prose h1,
+.wiki-prose h2,
+.wiki-prose h3 {
+  scroll-margin-top: 1.5rem;
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.wiki-prose h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 1rem;
+}
+
+.wiki-prose h2 {
+  font-size: 1.25rem;
+  margin: 2rem 0 0.75rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.wiki-prose h3 {
+  font-size: 1.0625rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+/* ── Paragraphs & inline ── */
+.wiki-prose p {
+  margin: 0 0 1rem;
+}
+
+.wiki-prose strong {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.wiki-prose a {
+  color: var(--color-accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease;
+}
+
+.wiki-prose a:hover {
+  color: var(--color-accent-hover);
+}
+
+.wiki-prose a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Lists ── */
+.wiki-prose ul,
+.wiki-prose ol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0 0 1rem;
+  padding-left: 1.5rem;
+}
+
+.wiki-prose ul {
+  list-style: disc;
+}
+
+.wiki-prose ol {
+  list-style: decimal;
+}
+
+.wiki-prose li {
+  color: var(--color-text-primary);
+}
+
+.wiki-prose li::marker {
+  color: var(--color-text-muted);
+}
+
+/* Ordered list items use the wiki's own counters when the renderer emits
+   `ol` with a start attribute — keep the marker readable. */
+.wiki-prose ol li::marker {
+  font-weight: 600;
+}
+
+/* ── Code: inline + fenced (no highlight, just shape) ── */
+.wiki-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.125rem 0.375rem;
+  color: var(--color-text-primary);
+}
+
+.wiki-prose pre {
+  margin: 0 0 1rem;
+  padding: 0.875rem 1rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+.wiki-prose pre code {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  white-space: pre;
+}
+
+/* ── Reduced motion: anchor jumps must not glide ── */
+@media (prefers-reduced-motion: reduce) {
+  .wiki-prose a {
+    transition: none;
+  }
+}

@@ -46,7 +46,8 @@ export type TutorialTab =
   | "quotes"
   | "customers"
   | "products"
-  | "privacy";
+  | "privacy"
+  | "wiki";
 
 export const TUTORIAL_TABS: readonly TutorialTab[] = [
   "calculator",
@@ -60,6 +61,7 @@ export const TUTORIAL_TABS: readonly TutorialTab[] = [
   "customers",
   "products",
   "privacy",
+  "wiki",
 ];
 
 export interface StepConfig {
@@ -69,7 +71,16 @@ export interface StepConfig {
   target: string | null;
   /** Navigate to this tab BEFORE spotting (cross-tab navigation). */
   tab?: TutorialTab;
-  /** Switch calculator level before spotting (unlocks gated sections). */
+  /**
+   * Switch calculator level before spotting (unlocks gated sections).
+   *
+   * R3 (engine constraint — permanent): `Tutorial.tsx` bails on `!step.target`
+   * BEFORE it dispatches the tab hop and BEFORE the level switch, so any step
+   * that sets `level` MUST also set a non-null `target`. A `level` on a centered
+   * card is silently dropped — no error, no log, the only symptom is the gated
+   * sections never unlocking. Enforced statically in `tutorialTours.test.tsx`
+   * ("R3: every step that sets level has a non-null target").
+   */
   level?: CalcLevel;
 }
 
@@ -154,8 +165,98 @@ export const TOURS: Record<TourId, StepConfig[]> = {
     },
     { key: "dash-complete", target: null },
   ],
-  "orcamentos-clientes": [],
-  "nivel-avancado": [],
+  // R3 (engine constraint): `Tutorial.tsx` bails on `!step.target` BEFORE it runs
+  // the calculator-level switch, so any step that sets `level` MUST also set a
+  // non-null `target` — otherwise the level change is silently skipped. This tour
+  // is pure cross-tab navigation (no `level` anywhere); the same rule is what the
+  // `nivel-avancado` tour must respect when it unlocks the advanced sections.
+  "orcamentos-clientes": [
+    { key: "qc-intro", target: null },
+    {
+      key: "qc-list",
+      target: '[data-tutorial="quotes-list"]',
+      tab: "quotes",
+    },
+    {
+      key: "qc-new",
+      target: '[data-tutorial="quote-new"]',
+      tab: "quotes",
+    },
+    {
+      key: "qc-customer",
+      target: '[data-tutorial="quote-form-customer"]',
+      tab: "quotes",
+    },
+    { key: "cs-intro", target: null },
+    {
+      key: "cs-list",
+      target: '[data-tutorial="customers-list"]',
+      tab: "customers",
+    },
+    {
+      key: "cs-new",
+      target: '[data-tutorial="customer-new"]',
+      tab: "customers",
+    },
+    { key: "qc-complete", target: null },
+  ],
+  // nivel-avancado — the only tour that switches `calcLevel`. Every anchored
+  // step carries `level: "advanced"` + a non-null target (R3 above); the
+  // centered intro carries `tab` for documentation only (the engine returns on
+  // `!step.target` before dispatching), so the real hop to the calculator tab
+  // happens on `adv-level`, which also spotlights the LevelToggle it flips.
+  "nivel-avancado": [
+    { key: "adv-intro", target: null, tab: "calculator" },
+    {
+      key: "adv-level",
+      target: '[data-tutorial="level-toggle"]',
+      tab: "calculator",
+      level: "advanced",
+    },
+    {
+      key: "adv-failure",
+      target: '[data-tutorial="failure"]',
+      tab: "calculator",
+      level: "advanced",
+    },
+    {
+      key: "adv-hardware",
+      target: '[data-tutorial="hardware"]',
+      tab: "calculator",
+      level: "advanced",
+    },
+    {
+      key: "adv-machine",
+      target: '[data-tutorial="machine"]',
+      tab: "calculator",
+      level: "advanced",
+    },
+    {
+      key: "adv-fixedCost",
+      target: '[data-tutorial="fixedCost"]',
+      tab: "calculator",
+      level: "advanced",
+    },
+    {
+      key: "adv-labor",
+      target: '[data-tutorial="labor"]',
+      tab: "calculator",
+      level: "advanced",
+    },
+    {
+      key: "adv-ops",
+      target: '[data-tutorial="ops"]',
+      tab: "calculator",
+      level: "advanced",
+    },
+    {
+      key: "adv-results",
+      target: '[data-tutorial="results-sidebar"], [data-tutorial="results"]',
+      tab: "calculator",
+      level: "advanced",
+    },
+    { key: "adv-complete", target: null },
+  ],
 };
 
 export const DEFAULT_TOUR: TourId = "calc-basico";

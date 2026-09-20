@@ -8,6 +8,7 @@ import { CatalogTab } from "@/shared/components/Catalog/CatalogTab";
 import { HistoryTab } from "@/shared/components/Calculator/HistoryTab/HistoryTab";
 import { Dashboard } from "@/shared/components/Dashboard/Dashboard";
 import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
+import { WikiPage } from "@/shared/components/Wiki/WikiPage";
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
 import { FilamentInventory } from "@/shared/components/Catalog/FilamentInventory";
 import { CustomerTab } from "@/shared/components/Catalog/CustomerTab";
@@ -49,6 +50,7 @@ import {
   Globe,
   Info,
   ExternalLink,
+  BookMarked,
 } from "lucide-react";
 
 type Tab =
@@ -62,7 +64,8 @@ type Tab =
   | "quotes"
   | "customers"
   | "products"
-  | "privacy";
+  | "privacy"
+  | "wiki";
 type LegacyProduct = {
   name?: string;
   result?: CalculationResult;
@@ -78,7 +81,16 @@ type LegacyHistoryItem = {
   snapshot?: CalculationSnapshot | null;
 };
 
-// On mobile, show first 4 tabs + Menu button
+// On mobile, the bottom nav shows the first 4 tabs + a Menu button that opens
+// the bottom sheet with the rest (MORE_TABS). The two sets must stay disjoint
+// and every MORE_TABS id must exist in TABS — tabsParity.test enforces both.
+const MOBILE_VISIBLE_TABS: Tab[] = [
+  "calculator",
+  "dashboard",
+  "infill",
+  "history",
+];
+
 const MORE_TABS: Tab[] = [
   "catalog",
   "inventory",
@@ -87,9 +99,10 @@ const MORE_TABS: Tab[] = [
   "products",
   "privacy",
   "changelog",
+  "wiki",
 ];
 
-const TABS: {
+export const TABS: {
   id: Tab;
   icon: React.ReactNode;
   labelKey: string;
@@ -132,6 +145,12 @@ const TABS: {
     label: "Histórico",
   },
   {
+    id: "changelog",
+    icon: <Sparkles className="w-[18px] h-[18px]" />,
+    labelKey: "nav.changelog",
+    label: "Novidades",
+  },
+  {
     id: "quotes",
     icon: <FileText className="w-[18px] h-[18px]" />,
     labelKey: "nav.quotes",
@@ -154,6 +173,12 @@ const TABS: {
     icon: <ShieldCheck className="w-[18px] h-[18px]" />,
     labelKey: "nav.privacy",
     label: "Privacidade",
+  },
+  {
+    id: "wiki",
+    icon: <BookMarked className="w-[18px] h-[18px]" />,
+    labelKey: "nav.wiki",
+    label: "Wiki",
   },
 ];
 
@@ -454,13 +479,6 @@ function App() {
           ))}
 
           <div className="mt-auto pt-4 border-t border-[var(--color-border)]">
-            <button
-              onClick={() => setActiveTab("changelog")}
-              className={`nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${activeTab === "changelog" ? "active" : ""}`}
-            >
-              <Sparkles className="w-[18px] h-[18px]" />
-              <span>{t("nav.changelog")}</span>
-            </button>
             <a
               href="https://github.com/ils15/open3dcalc"
               target="_blank"
@@ -524,6 +542,7 @@ function App() {
               />
             )}
             {activeTab === "changelog" && <ChangelogPage />}
+            {activeTab === "wiki" && <WikiPage />}
             {activeTab === "quotes" && <QuoteSection />}
             {activeTab === "customers" && <CustomerTab />}
             {activeTab === "products" && <ProductInventory />}
@@ -542,7 +561,7 @@ function App() {
         aria-label={t("nav.mainNavigation")}
       >
         <div className="flex items-center h-[56px] px-1">
-          {["calculator", "dashboard", "infill", "history"].map((tabId) => {
+          {MOBILE_VISIBLE_TABS.map((tabId) => {
             const tab = TABS.find((t) => t.id === tabId)!;
             const isActive = activeTab === tab.id;
             return (
@@ -624,17 +643,7 @@ function App() {
               </div>
               <div className="px-3 pb-4 overflow-y-auto space-y-0.5">
                 {MORE_TABS.map((tabId) => {
-                  const tab =
-                    TABS.find((t) => t.id === tabId) ||
-                    (tabId === "changelog"
-                      ? {
-                          id: "changelog" as Tab,
-                          icon: <Sparkles className="w-[18px] h-[18px]" />,
-                          labelKey: "nav.changelog",
-                          label: "Novidades",
-                        }
-                      : undefined)!;
-                  if (!tab) return null;
+                  const tab = TABS.find((t) => t.id === tabId)!;
                   return (
                     <button
                       key={tab.id}
@@ -784,4 +793,5 @@ function App() {
   );
 }
 
+export { MORE_TABS, MOBILE_VISIBLE_TABS };
 export default App;

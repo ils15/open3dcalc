@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
+import { markdownWikiPlugin } from "./vite/plugins/markdownWikiPlugin";
 
 // D-CL5 — toolpath preview flag default. Dogfooded through the beta channel
 // (v1.13.0-beta.1..3) and validated for stable release; ON for everyone now.
@@ -18,7 +19,7 @@ export default defineConfig({
       process.env.VITE_BETA_CHANNEL === "true",
     ),
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), markdownWikiPlugin()],
   resolve: {
     alias: {
       "@/platform": path.resolve(__dirname, "src/platform"),

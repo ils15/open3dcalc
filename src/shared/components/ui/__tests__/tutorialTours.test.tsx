@@ -3,10 +3,22 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { Tutorial } from "../Tutorial";
-import { TOURS } from "../tutorialTours";
+import {
+  TOURS,
+  TOUR_IDS,
+  TUTORIAL_TABS,
+  TUTORIAL_NAVIGATE_EVENT,
+  dispatchTutorialNavigate,
+  getTourStepCount,
+  getTourSteps,
+  isTourAvailable,
+} from "../tutorialTours";
+import ptBR from "@/shared/i18n/locales/pt-BR.json";
+import enUS from "@/shared/i18n/locales/en-US.json";
 import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
-import type { TutorialTab } from "../tutorialTours";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import type { TutorialTab, TourId } from "../tutorialTours";
 
 // ── Mocks (the engine is real; only its presentational deps are stubbed) ────
 
@@ -129,9 +141,10 @@ describe("tour: inventario-bobinas", () => {
       if (!step.target) continue;
       expect(step.target.startsWith('[data-tutorial="')).toBe(true);
       const anchor = step.target.slice('[data-tutorial="'.length, -2);
-      expect(ANCHORS, `anchor ${anchor} must exist in FilamentInventory`).toContain(
-        anchor,
-      );
+      expect(
+        ANCHORS,
+        `anchor ${anchor} must exist in FilamentInventory`,
+      ).toContain(anchor);
       expect(step.tab).toBe("inventory");
     }
   });
@@ -367,5 +380,538 @@ describe("tour: dashboard-kpis", () => {
     const state = useTutorialStore.getState();
     expect(state.isActive).toBe(false);
     expect(state.completedTours).toContain("dashboard-kpis");
+  });
+});
+
+// ── U8: orcamentos-clientes (quotes → customers — the two-tab tour) ──────────
+
+const U8_QUOTES_ANCHORS = ["quotes-list", "quote-new", "quote-form-customer"];
+const U8_CUSTOMERS_ANCHORS = ["customers-list", "customer-new"];
+
+// The engine's `TabHarness` renders a single tab; this tour hops between two, so
+// it needs a harness that mounts each surface's anchors when the navigate event
+// lands on it.
+function QuotesCustomersHarness() {
+  const [activeTab, setActiveTab] = useState<TutorialTab>("calculator");
+  useTutorialTabNavigation(setActiveTab);
+
+  const anchors: Partial<Record<TutorialTab, string[]>> = {
+    quotes: U8_QUOTES_ANCHORS,
+    customers: U8_CUSTOMERS_ANCHORS,
+  };
+  const visible = anchors[activeTab] ?? [];
+
+  return (
+    <div>
+      <span data-testid="active-tab">{activeTab}</span>
+      {visible.map((anchor) => (
+        <div
+          key={anchor}
+          data-tutorial={anchor}
+          data-testid={`anchor-${anchor}`}
+        />
+      ))}
+      <Tutorial />
+    </div>
+  );
+}
+
+// Locale lookup kept untyped so the JSON imports stay indexable without an index
+// signature — same trick as src/shared/i18n/__tests__/locales.test.ts.
+function lookup(dict: unknown, ...path: string[]): unknown {
+  let node: unknown = dict;
+  for (const part of path) {
+    if (typeof node !== "object" || node === null) return undefined;
+    node = (node as Record<string, unknown>)[part];
+  }
+  return node;
+}
+
+describe("tour: orcamentos-clientes", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetTutorialStore();
+  });
+
+  it("registry wires eight steps that hop between the quotes and customers tabs", () => {
+    const steps = TOURS["orcamentos-clientes"];
+    expect(steps).toHaveLength(8);
+    expect(steps.map((s) => s.key)).toEqual([
+      "qc-intro",
+      "qc-list",
+      "qc-new",
+      "qc-customer",
+      "cs-intro",
+      "cs-list",
+      "cs-new",
+      "qc-complete",
+    ]);
+
+    for (const step of steps) {
+      // R3 guard: Tutorial.tsx returns on `!step.target` BEFORE the level switch,
+      // so a `level` on a centered card would be silently dropped. This tour is
+      // pure cross-tab navigation and must never set `level` — the guard below is
+      // the tripwire if that ever changes (nivel-avancado, U9, owns the level
+      // variant of this rule).
+      expect(
+        step.level,
+        `${step.key}: a level switch needs a non-null target (R3)`,
+      ).toBeUndefined();
+
+      if (!step.target) continue;
+      expect(step.target.startsWith('[data-tutorial="')).toBe(true);
+      const anchor = step.target.slice('[data-tutorial="'.length, -2);
+      expect(
+        [...U8_QUOTES_ANCHORS, ...U8_CUSTOMERS_ANCHORS],
+        `anchor ${anchor} must exist in QuoteSection/CustomerTab`,
+      ).toContain(anchor);
+      // qc-* lives on the quotes tab, cs-* on customers — the engine navigates
+      // to this tab before it retries the selector.
+      expect(step.tab).toBe(
+        step.key.startsWith("cs-") ? "customers" : "quotes",
+      );
+    }
+  });
+
+  it("resolves a title and description for every step in both locales", () => {
+    const steps = TOURS["orcamentos-clientes"];
+    for (const { key } of steps) {
+      for (const [locale, dict] of [
+        ["pt-BR", ptBR],
+        ["en-US", enUS],
+      ] as const) {
+        const title = lookup(dict, "tutorial", "steps", key, "title");
+        const description = lookup(
+          dict,
+          "tutorial",
+          "steps",
+          key,
+          "description",
+        );
+        expect(typeof title, `${locale} tutorial.steps.${key}.title`).toBe(
+          "string",
+        );
+        expect(
+          (title as string).length,
+          `${locale} tutorial.steps.${key}.title`,
+        ).toBeGreaterThan(0);
+        expect(
+          typeof description,
+          `${locale} tutorial.steps.${key}.description`,
+        ).toBe("string");
+        expect(
+          (description as string).length,
+          `${locale} tutorial.steps.${key}.description`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("walks quotes then customers, resolving every anchor spotlight", async () => {
+    render(<QuotesCustomersHarness />);
+    useTutorialStore.getState().startTour("orcamentos-clientes");
+
+    // 1. Centered intro card while the harness is still on calculator.
+    expect(
+      await screen.findByText("tutorial.steps.qc-intro.title"),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("Passo 1 de 8")).toBeInTheDocument();
+
+    // 2. First anchored step: the engine dispatches the navigate event, the
+    // harness switches to quotes, the list anchor mounts and the spotlight
+    // resolves (no degraded card).
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.qc-list.title"),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("active-tab").textContent).toBe("quotes"),
+    );
+    expect(screen.getByTestId("anchor-quotes-list")).toBeInTheDocument();
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector('[data-testid="tutorial-overlay"]'),
+        ).not.toBeNull(),
+      { timeout: 2500 },
+    );
+
+    // 3→4. New-quote button and the form's customer selector stay on quotes.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.qc-new.title"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("active-tab").textContent).toBe("quotes");
+
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.qc-customer.title"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("active-tab").textContent).toBe("quotes");
+
+    // 5. Centered customers intro. A centered card cannot navigate (the engine
+    // returns on `!step.target` before dispatching), so the hop to customers
+    // happens on the next anchored step.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.cs-intro.title"),
+    ).toBeInTheDocument();
+
+    // 6. First customers-anchored step hops the tour to the customers tab.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.cs-list.title"),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("active-tab").textContent).toBe("customers"),
+    );
+    expect(screen.getByTestId("anchor-customers-list")).toBeInTheDocument();
+
+    // 7. New-customer button stays on customers.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.cs-new.title"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("active-tab").textContent).toBe("customers");
+
+    // 8. Centered closing card: "Concluir" replaces "Próximo" on the last step.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.qc-complete.title"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("tutorial.finish"));
+    const state = useTutorialStore.getState();
+    expect(state.isActive).toBe(false);
+    expect(state.completedTours).toContain("orcamentos-clientes");
+  });
+});
+
+// ── U9: nivel-avancado (calculator tab — level-gated sections) ──────────────
+
+// The LevelToggle is mounted at every level; the six sections this tour
+// spotlights only mount once the engine flips calcLevel to "advanced"
+// (LEVEL_SECTIONS in Calculator.constants), and results is visible at every
+// level (desktop sidebar / mobile panel).
+const ADV_TOGGLE_ANCHORS = ["level-toggle"];
+const ADV_SECTION_ANCHORS = [
+  "failure",
+  "hardware",
+  "machine",
+  "fixedCost",
+  "labor",
+  "ops",
+];
+const ADV_RESULTS_ANCHORS = ["results-sidebar", "results"];
+
+// Mirrors SectionRenderer: the advanced sections mount only after the level
+// switch, so the harness subscribes to calcLevel — otherwise the engine's
+// retry loop would have nothing to resolve.
+function AdvancedLevelHarness() {
+  const [activeTab, setActiveTab] = useState<TutorialTab>("calculator");
+  useTutorialTabNavigation(setActiveTab);
+  const calcLevel = useCalculatorStore((s) => s.calcLevel);
+
+  const anchors =
+    calcLevel === "advanced"
+      ? [...ADV_TOGGLE_ANCHORS, ...ADV_SECTION_ANCHORS, ...ADV_RESULTS_ANCHORS]
+      : [...ADV_TOGGLE_ANCHORS, ...ADV_RESULTS_ANCHORS];
+
+  return (
+    <div>
+      <span data-testid="active-tab">{activeTab}</span>
+      <span data-testid="calc-level">{calcLevel}</span>
+      {anchors.map((anchor) => (
+        <div
+          key={anchor}
+          data-tutorial={anchor}
+          data-testid={`anchor-${anchor}`}
+        />
+      ))}
+      <Tutorial />
+    </div>
+  );
+}
+
+describe("tour: nivel-avancado", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetTutorialStore();
+    // The engine restores calcLevel on exit; reset it so each test starts on
+    // the basic surface — the level-gated anchors must stay unmounted until
+    // the tour flips the level.
+    useCalculatorStore.setState({ calcLevel: "basic" });
+  });
+
+  it("registry wires ten steps that unlock the advanced level on the calculator tab", () => {
+    const steps = TOURS["nivel-avancado"];
+    expect(steps).toHaveLength(10);
+    expect(steps.map((s) => s.key)).toEqual([
+      "adv-intro",
+      "adv-level",
+      "adv-failure",
+      "adv-hardware",
+      "adv-machine",
+      "adv-fixedCost",
+      "adv-labor",
+      "adv-ops",
+      "adv-results",
+      "adv-complete",
+    ]);
+
+    for (const step of steps) {
+      // R3 — the variant this tour owns: Tutorial.tsx returns on `!step.target`
+      // BEFORE the level switch, so only anchored steps may carry a level.
+      // adv-intro/adv-complete are centered cards by design — a `level` there
+      // would be silently dropped (the reason adv-intro has none).
+      if (step.level === undefined) {
+        expect(step.target).toBeNull();
+      } else {
+        expect(step.level).toBe("advanced");
+        expect(
+          step.target,
+          `${step.key}: a level switch needs a non-null target (R3)`,
+        ).not.toBeNull();
+      }
+
+      if (!step.target) continue;
+      // adv-results targets the desktop sidebar OR the mobile panel.
+      const anchors = step.target
+        .split(",")
+        .map((sel) => sel.trim().slice('[data-tutorial="'.length, -2));
+      for (const anchor of anchors) {
+        expect(
+          [
+            ...ADV_TOGGLE_ANCHORS,
+            ...ADV_SECTION_ANCHORS,
+            ...ADV_RESULTS_ANCHORS,
+          ],
+          `anchor ${anchor} must exist on the calculator surface`,
+        ).toContain(anchor);
+      }
+      // Every anchored step lives on the calculator tab — the engine hops there
+      // before spotting, which matters when the tour is launched from another
+      // surface via the launcher/GuideDrawer.
+      expect(step.tab).toBe("calculator");
+    }
+  });
+
+  it("resolves a title and description for every step in both locales", () => {
+    const steps = TOURS["nivel-avancado"];
+    for (const { key } of steps) {
+      for (const [locale, dict] of [
+        ["pt-BR", ptBR],
+        ["en-US", enUS],
+      ] as const) {
+        const title = lookup(dict, "tutorial", "steps", key, "title");
+        const description = lookup(
+          dict,
+          "tutorial",
+          "steps",
+          key,
+          "description",
+        );
+        expect(typeof title, `${locale} tutorial.steps.${key}.title`).toBe(
+          "string",
+        );
+        expect(
+          (title as string).length,
+          `${locale} tutorial.steps.${key}.title`,
+        ).toBeGreaterThan(0);
+        expect(
+          typeof description,
+          `${locale} tutorial.steps.${key}.description`,
+        ).toBe("string");
+        expect(
+          (description as string).length,
+          `${locale} tutorial.steps.${key}.description`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("switches to the advanced level and resolves every gated anchor spotlight", async () => {
+    render(<AdvancedLevelHarness />);
+    useTutorialStore.getState().startTour("nivel-avancado");
+
+    // 1. Centered intro on the calculator surface, still at the basic level.
+    expect(
+      await screen.findByText("tutorial.steps.adv-intro.title"),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("Passo 1 de 10")).toBeInTheDocument();
+    expect(screen.getByTestId("calc-level").textContent).toBe("basic");
+
+    // 2. adv-level spotlights the LevelToggle it flips: the engine runs the
+    // level switch, the harness mounts the gated sections, and the spotlight
+    // settles over the toggle itself.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.adv-level.title"),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("calc-level").textContent).toBe("advanced"),
+    );
+    expect(screen.getByTestId("anchor-level-toggle")).toBeInTheDocument();
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector('[data-testid="tutorial-overlay"]'),
+        ).not.toBeNull(),
+      { timeout: 2500 },
+    );
+
+    // 3→8. The six gated sections are mounted now; each anchor resolves
+    // immediately (same-tab, post-level-switch).
+    for (const [key, anchor] of [
+      ["adv-failure", "failure"],
+      ["adv-hardware", "hardware"],
+      ["adv-machine", "machine"],
+      ["adv-fixedCost", "fixedCost"],
+      ["adv-labor", "labor"],
+      ["adv-ops", "ops"],
+    ] as const) {
+      fireEvent.click(screen.getByText("tutorial.next"));
+      expect(
+        await screen.findByText(`tutorial.steps.${key}.title`),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId(`anchor-${anchor}`)).toBeInTheDocument();
+    }
+
+    // 9. results (visible at every level) closes the anchored run.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.adv-results.title"),
+    ).toBeInTheDocument();
+
+    // 10. Centered closing card; finishing restores the pre-tour level.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.adv-complete.title"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("tutorial.finish"));
+    const state = useTutorialStore.getState();
+    expect(state.isActive).toBe(false);
+    expect(state.completedTours).toContain("nivel-avancado");
+    expect(useCalculatorStore.getState().calcLevel).toBe("basic");
+  });
+});
+
+// ── Permanent registry guards ────────────────────────────────────────────────
+// These run against every tour in the registry — not just the ones walked in
+// detail above — so a tour added later cannot quietly violate the engine's
+// invariants. R3 is the silent one: a `level` on a centered card is dropped by
+// Tutorial.tsx with no error and no log, and the only symptom is the gated
+// sections never unlocking.
+
+describe("registry: permanent guards (R3 + launcher contract)", () => {
+  it("R3: every step that sets level also sets a non-null target", () => {
+    for (const [tourId, steps] of Object.entries(TOURS)) {
+      for (const step of steps) {
+        if (step.level === undefined) continue;
+        expect(
+          step.target,
+          `${tourId}/${step.key}: Tutorial.tsx returns on !step.target BEFORE the level switch — level "${step.level}" would be silently dropped`,
+        ).not.toBeNull();
+      }
+    }
+  });
+
+  it("every step tab belongs to TUTORIAL_TABS", () => {
+    for (const [tourId, steps] of Object.entries(TOURS)) {
+      for (const step of steps) {
+        if (step.tab === undefined) continue;
+        expect(
+          TUTORIAL_TABS,
+          `${tourId}/${step.key}: tab "${step.tab}" is outside TUTORIAL_TABS — the App validates against it before switching`,
+        ).toContain(step.tab);
+      }
+    }
+  });
+
+  it("every step key resolves a title and description in both locales", () => {
+    for (const [tourId, steps] of Object.entries(TOURS)) {
+      for (const { key } of steps) {
+        for (const [locale, dict] of [
+          ["pt-BR", ptBR],
+          ["en-US", enUS],
+        ] as const) {
+          const title = lookup(dict, "tutorial", "steps", key, "title");
+          const description = lookup(
+            dict,
+            "tutorial",
+            "steps",
+            key,
+            "description",
+          );
+          expect(
+            typeof title,
+            `${locale} tutorial.steps.${key}.title (${tourId})`,
+          ).toBe("string");
+          expect(
+            (title as string).length,
+            `${locale} tutorial.steps.${key}.title (${tourId})`,
+          ).toBeGreaterThan(0);
+          expect(
+            typeof description,
+            `${locale} tutorial.steps.${key}.description (${tourId})`,
+          ).toBe("string");
+          expect(
+            (description as string).length,
+            `${locale} tutorial.steps.${key}.description (${tourId})`,
+          ).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it("TOUR_IDS has no duplicates", () => {
+    expect(TOUR_IDS.length).toBe(new Set(TOUR_IDS).size);
+  });
+
+  it("no tour is left empty — empty tours are hidden by the launcher", () => {
+    // An empty array means "not available yet": isTourAvailable() returns false
+    // and both the launcher and the GuideDrawer omit the entry. Every tour is
+    // filled as of U9, so this asserts none regresses into a hidden
+    // placeholder.
+    for (const tourId of TOUR_IDS) {
+      expect(
+        getTourStepCount(tourId),
+        `${tourId}: an empty tour is hidden by the launcher — fill it or drop the id`,
+      ).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("helpers: registry fallback + navigate event", () => {
+  // A tour id an older build persisted that no longer exists in the registry —
+  // the helpers must degrade to "no tour" instead of throwing on lookup.
+  const LEGACY_TOUR_ID = "calc-basico-v1" as unknown as TourId;
+
+  it("getTourSteps degrades an unknown tour id to an empty tour", () => {
+    expect(getTourSteps(LEGACY_TOUR_ID)).toEqual([]);
+    expect(getTourSteps("calc-basico").length).toBeGreaterThan(0);
+  });
+
+  it("getTourStepCount is 0 for an unknown tour, the step count otherwise", () => {
+    expect(getTourStepCount(LEGACY_TOUR_ID)).toBe(0);
+    expect(getTourStepCount("calc-basico")).toBe(TOURS["calc-basico"].length);
+  });
+
+  it("isTourAvailable is false for an unknown tour, true for a filled one", () => {
+    expect(isTourAvailable(LEGACY_TOUR_ID)).toBe(false);
+    expect(isTourAvailable("calc-basico")).toBe(true);
+  });
+
+  it("dispatchTutorialNavigate emits a CustomEvent carrying the tab", () => {
+    const listener = vi.fn();
+    window.addEventListener(TUTORIAL_NAVIGATE_EVENT, listener);
+
+    dispatchTutorialNavigate("dashboard");
+
+    expect(listener).toHaveBeenCalledOnce();
+    const [event] = listener.mock.calls[0];
+    expect(event).toBeInstanceOf(CustomEvent);
+    expect((event as CustomEvent<TutorialTab>).detail).toBe("dashboard");
+
+    window.removeEventListener(TUTORIAL_NAVIGATE_EVENT, listener);
   });
 });

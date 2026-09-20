@@ -49,6 +49,7 @@
     "products": "Products",
     "telegram": "Telegram Channel",
     "tutorial": "Tutorial",
+    "wiki": "Wiki",
     "language": "Change language",
     "navigation": "Navigation",
     "mainNavigation": "Main navigation",
@@ -733,6 +734,14 @@
       "dashboard-kpis": {
         "title": "KPI dashboard",
         "description": "Financial summary, date-range filter, history KPIs, and monthly profit projection."
+      },
+      "orcamentos-clientes": {
+        "title": "Quotes and customers",
+        "description": "Turn saved calculations into professional quotes and manage your client roster."
+      },
+      "nivel-avancado": {
+        "title": "Advanced level",
+        "description": "Complete mode: failure rate, hardware, machine, fixed costs, labor and software — every factor in the real cost of a print."
       }
     },
     "steps": {
@@ -831,6 +840,78 @@
       "dash-complete": {
         "title": "Data-driven decisions 🎯",
         "description": "Tweak the period and monthly volume to simulate scenarios. History keeps every calculation for later comparison."
+      },
+      "qc-intro": {
+        "title": "Quotes and customers 📄",
+        "description": "In this tour you turn saved calculations into professional quotes and keep your clients organized in one place."
+      },
+      "qc-list": {
+        "title": "Quotes list",
+        "description": "Every quote lives here, with status (draft, sent, approved or rejected) plus search by title or client."
+      },
+      "qc-new": {
+        "title": "New quote",
+        "description": "Use this button to create a new quote from the calculations saved in your history."
+      },
+      "qc-customer": {
+        "title": "Link a customer",
+        "description": "In the form, pick the customer in the selector to link them to the quote — the contact is printed on the PDF."
+      },
+      "cs-intro": {
+        "title": "Customers 👥",
+        "description": "Now the Customers tab: register name, company and contacts to reuse across quotes."
+      },
+      "cs-list": {
+        "title": "Customers list",
+        "description": "Your client roster shows up here, with search plus actions to edit and remove entries."
+      },
+      "cs-new": {
+        "title": "New customer",
+        "description": "Register a new customer with name, company, email, phone and notes."
+      },
+      "qc-complete": {
+        "title": "Ready to quote! 🎉",
+        "description": "Customer registered and quote linked: export it as a PDF and send it. Everything stays saved on your device."
+      },
+      "adv-intro": {
+        "title": "Complete mode 🧮",
+        "description": "This tour switches the calculator to the advanced level and walks the sections that add up every cost factor of a print."
+      },
+      "adv-level": {
+        "title": "Switch the level",
+        "description": "The level selector controls how many sections the calculator shows. Advanced unlocks all ten — let's turn it on now."
+      },
+      "adv-failure": {
+        "title": "Failure rate",
+        "description": "Set the most common failure mode and the value of the lost part. The risk becomes a multiplier that weighs on every print."
+      },
+      "adv-hardware": {
+        "title": "Hardware & post-processing",
+        "description": "Add the cost of replacement parts and finishing (sanding, gluing, assembly) that consume material and time."
+      },
+      "adv-machine": {
+        "title": "Machine cost",
+        "description": "Set the printer price, its expected lifespan and working hours to amortize the investment per print."
+      },
+      "adv-fixedCost": {
+        "title": "Fixed costs",
+        "description": "Power, rent, internet and subscriptions: enter your monthly fixed costs and the calculator splits them across your output."
+      },
+      "adv-labor": {
+        "title": "Labor",
+        "description": "Set your hourly rate and the prep and finishing time each part takes."
+      },
+      "adv-ops": {
+        "title": "Software & consumables",
+        "description": "Slicer, modeling software, consumables and ongoing maintenance — the day-to-day operating costs."
+      },
+      "adv-results": {
+        "title": "Complete result",
+        "description": "With every factor filled in, the result shows the full cost breakdown and the suggested sale price at the advanced level."
+      },
+      "adv-complete": {
+        "title": "Cost mastered 🏆",
+        "description": "You've added material, machine, labor, fixed costs and failures. Tweak any section and the result recalculates instantly."
       }
     }
   },
@@ -1933,5 +2014,121 @@
       "blockedTitle": "Export is blocked in demo mode — this is sample data.",
       "badge": "Export blocked in demo"
     }
+  },
+  "guide": {
+    "calculator": {
+      "title": "Calculator",
+      "description": "Price 3D parts by adding material, energy, failure rate, fixed costs and labor in basic, intermediate and advanced modes.",
+      "cta": "See available tours"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Track revenue, profit, hourly cost and other metrics by period, customer or material.",
+      "cta": "Open guide"
+    },
+    "infill": {
+      "title": "Infill Calculator",
+      "description": "Estimate the weight and cost of internal infill before printing, comparing patterns and densities.",
+      "cta": "Open guide"
+    },
+    "inventory": {
+      "title": "Filaments",
+      "description": "Register filaments and resins with cost per kilogram or liter, density and diameter to feed the calculator.",
+      "cta": "Open guide"
+    },
+    "catalog": {
+      "title": "Catalog",
+      "description": "Hub for the customers, products, machines and materials used across quotes and the calculator.",
+      "cta": "Open guide"
+    },
+    "history": {
+      "title": "History",
+      "description": "Review and duplicate past calculations and quotes, filtered by date and customer.",
+      "cta": "Open guide"
+    },
+    "changelog": {
+      "title": "Changelog",
+      "description": "See what changed in every app version, including improvements and fixes.",
+      "cta": "Open guide"
+    },
+    "quotes": {
+      "title": "Quotes",
+      "description": "Build quotes with markup, discounts, lead times and taxes, and track the status of each proposal.",
+      "cta": "Open guide"
+    },
+    "customers": {
+      "title": "Customers",
+      "description": "Keep contacts, quote history and buyer details organized in one place.",
+      "cta": "Open guide"
+    },
+    "products": {
+      "title": "Products",
+      "description": "Catalog products with a suggested price, inputs and estimated print time.",
+      "cta": "Open guide"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "description": "Learn how your data is processed locally, exported and deleted.",
+      "cta": "Open guide"
+    },
+    "material": {
+      "title": "Materials",
+      "description": "Set the cost per kilogram or liter, density, waste and purge for filament or resin.",
+      "cta": "Open guide"
+    },
+    "print": {
+      "title": "Print Parameters",
+      "description": "Configure print time, printer power draw and energy cost.",
+      "cta": "Open guide"
+    },
+    "failure": {
+      "title": "Risk & Failures",
+      "description": "Factor reprinting and print failures into the final price with an adjustable rate.",
+      "cta": "Open guide"
+    },
+    "hardware": {
+      "title": "Hardware Wear (FDM)",
+      "description": "Add hardware, hot-end and post-processing costs to the part.",
+      "cta": "Open guide"
+    },
+    "machine": {
+      "title": "Machine Costs",
+      "description": "Amortize the printer price across expected usage hours and the machine's lifespan.",
+      "cta": "Open guide"
+    },
+    "fixedCost": {
+      "title": "Fixed Costs",
+      "description": "Spread monthly fixed costs — rent, power, software — across the parts you produce.",
+      "cta": "Open guide"
+    },
+    "labor": {
+      "title": "Labor",
+      "description": "Include human work hours: modeling, setup and post-processing.",
+      "cta": "Open guide"
+    },
+    "ops": {
+      "title": "Operational & Software",
+      "description": "Add the software, supplies and consumables used to run the business.",
+      "cta": "Open guide"
+    },
+    "sales": {
+      "title": "Additional Costs & Sales",
+      "description": "Apply markup, packaging, shipping, marketplace fees and taxes to the final price.",
+      "cta": "Open guide"
+    },
+    "results": {
+      "title": "Results",
+      "description": "See the suggested selling price, the cost breakdown and the profit margin.",
+      "cta": "Open guide"
+    },
+    "wiki": {
+      "title": "Wiki",
+      "description": "Markdown articles on pricing, supplies and running the app, available offline on the Wiki tab.",
+      "cta": "Open guide"
+    }
+  },
+  "wiki": {
+    "toc": "Table of contents",
+    "loading": "Loading"
   }
 }
