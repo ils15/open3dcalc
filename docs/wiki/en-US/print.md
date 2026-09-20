@@ -12,7 +12,7 @@ conflate two different sums.
 
 The rule of thumb: **print measures consumption, machine measures investment**.
 The `print` section answers "how long and how much power did this part take?";
-the [machine](#user-content-machine) section answers "how much of the printer's
+the [machine](#user-content-machine-costs) section answers "how much of the printer's
 price is this hour worth?". Neither replaces the other: power is an electric
 bill, depreciation is an equipment bill. Both belong in the cost, kept separate.
 

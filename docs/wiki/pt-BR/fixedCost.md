@@ -35,7 +35,7 @@ A seção é enxuta de propósito — dois campos e um interruptor.
   produção. Aluguel, internet, energia base, manutenção predial, software com
   assinatura obrigatória. Veja a armadilha abaixo sobre o que não colocar aqui.
 - **Horas por Mês** — as **horas produtivas** estimadas da impressora por mês,
-  a mesma ideia do campo [uso mensal](#user-content-machine). Se este campo
+  a mesma ideia do campo [uso mensal](#user-content-custos-da-máquina). Se este campo
   ficar em zero, a divisão é protegida e o rateio vira zero — o que significa
   que nenhuma peça está pagando o aluguel.
 
@@ -51,7 +51,7 @@ fixedCost = rateioPorHora * tempoImpressaoHoras
 ```
 
 O resultado não é somado como uma linha separada: ele é injetado na **taxa
-horária da máquina**, na seção [máquina](#user-content-machine). Assim, o
+horária da máquina**, na seção [máquina](#user-content-custos-da-máquina). Assim, o
 rateio acompanha as horas de impressão de cada peça — peça longa, mais aluguel.
 
 ## Exemplo numérico passo a passo
@@ -99,14 +99,14 @@ avulsas de fim de semana têm um preço justo mais alto.
 
 ## Como esta seção se relaciona com as demais
 
-- O rateio é aplicado na taxa horária da [máquina](#user-content-machine),
+- O rateio é aplicado na taxa horária da [máquina](#user-content-custos-da-máquina),
   junto com a depreciação e a manutenção.
 - As horas que você usa aqui devem ser **as mesmas** do uso mensal da
-  [máquina](#user-content-machine). Usar 150 h aqui e 300 h lá é
+  [máquina](#user-content-custos-da-máquina). Usar 150 h aqui e 300 h lá é
   autoengano: o rateio sai pela metade.
 - A **energia da impressão** (diferente da energia base) é contada na seção de
-  [parâmetros](#user-content-print); não a duplique aqui.
-- A **manutenção do equipamento** fica na [máquina](#user-content-machine);
+  [parâmetros](#user-content-parâmetros-de-impressão); não a duplique aqui.
+- A **manutenção do equipamento** fica na [máquina](#user-content-custos-da-máquina);
   aqui fica a manutenção do **espaço**.
 
 ## Armadilhas práticas

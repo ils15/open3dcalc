@@ -56,8 +56,8 @@ The calculator splits cost into independent sections, and the inventory feeds
 four of them:
 
 - price per kg, remaining weight and spool diameter → [Material](#user-content-material) section
-- printer value and useful life → [Hardware](#user-content-hardware) section
-- power and maintenance per hour → [Machine](#user-content-machine) section
+- printer value and useful life → [Hardware](#user-content-hardware-wear) section
+- power and maintenance per hour → [Machine](#user-content-machine-costs) section
 - marketplace fees and shipping → `sales` section
 
 ```

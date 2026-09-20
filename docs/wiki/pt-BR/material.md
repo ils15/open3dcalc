@@ -117,7 +117,7 @@ A ligação também funciona no sentido contrário: quando uma peça usa um carr
 selecionado, o sistema mostra quanto daquele rolo ainda resta — e desconta o
 peso consumido a cada impressão. Assim o preço da próxima peça é calculado com o
 custo real do plástico que você tem na prateleira, e não com uma estimativa
-fixa. Veja detalhes no artigo sobre o [inventário](#user-content-inventario).
+fixa. Veja detalhes no artigo sobre o [inventário](#user-content-inventário).
 
 ## Armadilhas comuns
 

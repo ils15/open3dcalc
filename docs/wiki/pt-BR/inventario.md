@@ -56,8 +56,8 @@ A calculadora divide o custo em seções independentes, e o inventário alimenta
 quatro delas:
 
 - preço por kg, peso restante e diâmetro do rolo → seção [Material](#user-content-material)
-- valor da impressora e vida útil → seção [Hardware](#user-content-hardware)
-- potência e manutenção por hora → seção [Machine](#user-content-machine)
+- valor da impressora e vida útil → seção [Hardware](#user-content-desgaste-de-hardware)
+- potência e manutenção por hora → seção [Machine](#user-content-custos-da-máquina)
 - taxas e frete do marketplace → seção `sales`
 
 ```

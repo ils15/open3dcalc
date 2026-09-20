@@ -151,13 +151,13 @@ up here.
 Each line of the result comes from a specific place:
 
 - [material](#user-content-material) — the filament consumed.
-- [print parameters](#user-content-print) — time, energy and the printer used.
-- [machine](#user-content-machine) — depreciation, maintenance and the
-  [fixed costs](#user-content-fixedCost) share.
-- [hardware](#user-content-hardware) — nozzle, bed, LCD wear and finishing.
+- [print parameters](#user-content-print-parameters) — time, energy and the printer used.
+- [machine](#user-content-machine-costs) — depreciation, maintenance and the
+  [fixed costs](#user-content-fixed-costs) share.
+- [hardware](#user-content-hardware-wear) — nozzle, bed, LCD wear and finishing.
 - [labor](#user-content-labor) — setup and post-processing.
-- [ops](#user-content-ops) — software, STL and PPE.
-- [failure and sales](#user-content-sales) — risk, packaging, shipping, taxes
+- [ops](#user-content-operational--software) — software, STL and PPE.
+- [failure and sales](#user-content-additional-costs-and-sales) — risk, packaging, shipping, taxes
   and margin.
 
 ## Practical pitfalls

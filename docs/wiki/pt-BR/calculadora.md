@@ -58,23 +58,23 @@ função de cada uma:
 
 - [**material**](#user-content-material) — quanto de filamento ou resina a peça
   consome, e quanto isso custa.
-- [**print**](#user-content-print) — o tempo de impressão e a energia gasta na
+- [**print**](#user-content-parâmetros-de-impressão) — o tempo de impressão e a energia gasta na
   máquina.
-- [**failure**](#user-content-failure) — falhas e retrabalho transformados em
+- [**failure**](#user-content-risco-e-falhas) — falhas e retrabalho transformados em
   custo, por percentual ou valor fixo.
-- [**hardware**](#user-content-hardware) — desgaste do bico, da mesa de
+- [**hardware**](#user-content-desgaste-de-hardware) — desgaste do bico, da mesa de
   impressão e do LCD (em resina).
-- [**machine**](#user-content-machine) — depreciação da impressora e manutenção,
+- [**machine**](#user-content-custos-da-máquina) — depreciação da impressora e manutenção,
   rateadas por hora de uso.
-- [**fixedCost**](#user-content-fixedcost) — aluguel, internet e energia base da
+- [**fixedCost**](#user-content-custos-fixos) — aluguel, internet e energia base da
   oficina, distribuídos por hora produtiva.
-- [**labor**](#user-content-labor) — tempo de setup e pós-processamento
+- [**labor**](#user-content-mão-de-obra) — tempo de setup e pós-processamento
   multiplicado pela sua taxa horária.
-- [**ops**](#user-content-ops) — EPI, licença do slicer, arquivo de modelo e
+- [**ops**](#user-content-operacional--software) — EPI, licença do slicer, arquivo de modelo e
   outros insumos operacionais.
-- [**sales**](#user-content-sales) — embalagem, frete, impostos, marketplace e a
+- [**sales**](#user-content-custos-adicionais-e-vendas) — embalagem, frete, impostos, marketplace e a
   sua margem: é a seção que monta o preço de venda.
-- [**results**](#user-content-results) — consolida tudo e mostra custo, lucro e
+- [**results**](#user-content-resultados) — consolida tudo e mostra custo, lucro e
   preço final lado a lado.
 
 As quatro primeiras deste mapa têm artigos próprios na Wiki, com a fórmula
@@ -119,7 +119,7 @@ impostos + marketplace (25%)                  = R$  9,61
                               preço de venda  = R$ 38,45
 ```
 
-A matemática dos impostos é explicada no artigo [sales](#user-content-sales); o
+A matemática dos impostos é explicada no artigo [sales](#user-content-custos-adicionais-e-vendas); o
 importante aqui é ver que cada linha tem origem em uma seção. Se o cliente
 acha caro, você sabe exatamente onde está o R$ 14,42 de custo e pode agir sobre
 ele — e não sobre o preço às cegas.

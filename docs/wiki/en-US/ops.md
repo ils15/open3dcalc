@@ -35,7 +35,7 @@ R$ 0.05. The cost exists; what changes is the dilution.
   carries the whole value.
 
 The subscription is prorated by the month's print hours, using the **same hours
-field** as the [machine](#user-content-machine) section:
+field** as the [machine](#user-content-machine-costs) section:
 
 ```
 softwarePerHour = slicerSubscription / hoursPerMonth
@@ -98,12 +98,12 @@ For a decorative part, **R$ 8.65** of "invisibles" is more than half the
 ## How this section relates to the others
 
 - The **hours per month** prorating the subscription are the same as
-  [machine](#user-content-machine) — use matching numbers, or the share comes
+  [machine](#user-content-machine-costs) — use matching numbers, or the share comes
   out wrong.
 - The **print time** multiplying the rate comes from
-  [print parameters](#user-content-print).
+  [print parameters](#user-content-print-parameters).
 - The **finishing supplies** (sandpaper, paint) live in
-  [hardware wear](#user-content-hardware); here belong the safety and cleaning
+  [hardware wear](#user-content-hardware-wear); here belong the safety and cleaning
   supplies.
 - The result is summed into the "Operational & Work" block of
   [results](#user-content-results).

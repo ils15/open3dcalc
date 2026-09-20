@@ -85,15 +85,29 @@ A pipeline é `remark-parse` → `remark-frontmatter` → `remark-rehype` →
 | Listas ordenadas       | ✅      |                                                       |
 | Listas não-ordenadas   | ✅      |                                                       |
 | Blocos de código (```) | ✅      | Sem highlight de sintaxe (sem runtime, sem tema)     |
-| Links `[a](b)`         | ✅      | Sanitizados; âncoras internas apontam para os ids do `rehype-slug` (`#user-content-<slug>`) |
+| Links `[a](b)`         | ✅      | Sanitizados; âncoras internas no formato `#user-content-<id>` (veja abaixo) |
 | **Negrito**            | ✅      |                                                       |
 | `código inline`        | ✅      |                                                       |
 | HTML cru               | ❌      | Descartado pelo remark-rehype / rehype-sanitize       |
 
-IDs estáveis para as âncoras vêm do `rehype-slug` (formato
-`user-content-<slug>`), e o TOC do artigo é montado a partir dos h1–h3 em ordem
-de aparição, com a indentação por profundidade. Por isso **use os títulos na
-ordem**: um `##` antes do `#` produz um sumário "órfão" sem âncula raiz.
+IDs estáveis para as âncoras vêm do `rehype-slug`, mas **não do nome do
+arquivo**: o id é derivado do **texto do título** pelo `github-slugger`
+(minúsculas, espaços viram `-`, `&` vira separador — logo "Operacional &
+Software" gera `operacional--software` — e acentos **são preservados**:
+"Custos da Máquina" vira `custos-da-máquina`). O TOC do artigo é montado a
+partir dos h1–h3 em ordem de aparição, com a indentação por profundidade.
+Por isso **use os títulos na ordem**: um `##` antes do `#` produz um sumário
+"órfão" sem âncora raiz.
+
+> **Não confunda slug do arquivo com id de âncora.** Um link para outro artigo
+> deve apontar para o id do **H1 dele**, não para o nome do arquivo. Em
+> `machine.md` o H1 é "Custos da Máquina", então o link correto é
+> `[máquina](#user-content-custos-da-máquina)` — `#user-content-machine`
+> **não existe**. Como os H1 são traduzidos, os ids diferem por locale ("Machine
+> Costs" → `machine-costs`), então cada locale precisa dos seus próprios
+> anchors. (No HTML final o `href` é percent-encoded — `custos-da-m%C3%A1quina` —
+> o que é normal: o navegador decodifica o fragmento antes de comparar com o
+> id.)
 
 ## Paridade pt-BR / en-US é obrigatória
 

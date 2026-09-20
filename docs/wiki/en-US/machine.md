@@ -23,7 +23,7 @@ These three sections are easy to confuse. Here is the split:
 - **Machine** measures the **depreciation of the whole printer** — the asset
   paying for itself over its lifetime.
 - **Hardware wear** measures the **consumable parts** — nozzle, bed, LCD, FEP.
-  See [hardware](#user-content-hardware).
+  See [hardware](#user-content-hardware-wear).
 
 If you put the printer's price in two of those three places, the customer pays
 for the machine twice.
@@ -64,7 +64,7 @@ hourlyRate = depreciationPerHour + maintenancePerHour + fixedShare
 machine = hourlyRate * printTimeHours
 ```
 
-The `fixedShare` comes from the [fixed costs](#user-content-fixedCost) section
+The `fixedShare` comes from the [fixed costs](#user-content-fixed-costs) section
 and is added here, inside the machine's hourly rate, because productive hours
 happen on the machine. If fixed costs are disabled, that share is zero.
 
@@ -92,7 +92,7 @@ machine = 3.80 * 5.5 = R$ 20.90
 The part carries **R$ 20.90** of machine. Of that, R$ 2.75 is pure depreciation
 (0.50 × 5.5), R$ 1.65 is maintenance and R$ 16.50 is the fixed-cost share.
 Notice who dominates: the fixed share. That is why the
-[fixed costs](#user-content-fixedCost) section is what most separates a hobby
+[fixed costs](#user-content-fixed-costs) section is what most separates a hobby
 from a business.
 
 ## Sensitivity: what moves the rate
@@ -115,10 +115,10 @@ accept that one-off parts on an idle machine are genuinely expensive.
 ## How this section relates to the others
 
 - The **time** multiplying the hourly rate is the print time from the
-  [print parameters](#user-content-print) section, not the labor time.
+  [print parameters](#user-content-print-parameters) section, not the labor time.
 - The **share** entering the rate comes from
-  [fixed costs](#user-content-fixedCost).
-- The worn **parts** (nozzle, bed) live in [hardware](#user-content-hardware)
+  [fixed costs](#user-content-fixed-costs).
+- The worn **parts** (nozzle, bed) live in [hardware](#user-content-hardware-wear)
   and are summed separately.
 - Depreciation lands in the "Equipment & Wear" block of the
   [result](#user-content-results).

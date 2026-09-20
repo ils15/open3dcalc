@@ -35,7 +35,7 @@ carrega R$ 0,05. O custo existe; o que muda é a diluição.
   carrega o valor inteiro.
 
 A mensalidade é rateada pelas horas de impressão do mês, usando o **mesmo
-campo de horas** da seção [máquina](#user-content-machine):
+campo de horas** da seção [máquina](#user-content-custos-da-máquina):
 
 ```
 softwarePorHora = mensalidadeSlicer / horasPorMes
@@ -46,7 +46,7 @@ software = (softwarePorHora * tempoImpressaoHoras) + custoArquivoSTL
 O custo do arquivo é somado inteiro, porque cada peça sai dele. Atenção aqui:
 quando a quantidade é maior que 1, só a **mão de obra** é diluída entre as
 unidades — o arquivo STL continua cobrado por inteiro em cada peça. Veja
-[mão de obra](#user-content-labor) e [resultados](#user-content-results).
+[mão de obra](#user-content-mão-de-obra) e [resultados](#user-content-resultados).
 
 ## Bloco: EPIs / Consumíveis
 
@@ -97,15 +97,15 @@ custo do [material](#user-content-material) — que era R$ 16,20.
 ## Como esta seção se relaciona com as demais
 
 - As **horas por mês** que rateiam a mensalidade são as mesmas da
-  [máquina](#user-content-machine) — use números iguais, senão o rateio sai
+  [máquina](#user-content-custos-da-máquina) — use números iguais, senão o rateio sai
   errado.
 - O **tempo de impressão** que multiplica a taxa vem de
-  [parâmetros](#user-content-print).
+  [parâmetros](#user-content-parâmetros-de-impressão).
 - Os **insumos do acabamento** (lixa, tinta) moram em
-  [desgaste de hardware](#user-content-hardware); aqui ficam os insumos de
+  [desgaste de hardware](#user-content-desgaste-de-hardware); aqui ficam os insumos de
   segurança e limpeza.
 - O resultado é somado no bloco "Operacional & Trabalho" de
-  [resultados](#user-content-results).
+  [resultados](#user-content-resultados).
 
 ## Armadilhas práticas
 

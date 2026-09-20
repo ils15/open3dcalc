@@ -43,7 +43,7 @@ planilha nenhuma.
 O fluxo é simples:
 
 1. cadastre o cliente aqui, com nome e pelo menos um contato
-2. em [Orçamentos](#user-content-orcamentos), abra o orçamento e escolha o
+2. em [Orçamentos](#user-content-orçamentos), abra o orçamento e escolha o
    cliente no seletor
 3. salve — o orçamento grava o vínculo e uma **cópia** dos dados de contato
 4. o contador de orçamentos do cliente sobe sozinho

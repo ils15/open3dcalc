@@ -141,7 +141,7 @@ lucro   =  39,98 * 30 = R$ 1.199,40   (anual: R$ 14.392,80)
 ```
 
 Para mais de uma unidade, o **setup** é diluído entre as peças — veja
-[mão de obra](#user-content-labor). O preço por unidade cai e a diferença
+[mão de obra](#user-content-mão-de-obra). O preço por unidade cai e a diferença
 aparece aqui.
 
 ## Como esta seção se relaciona com as demais
@@ -149,14 +149,14 @@ aparece aqui.
 Cada parcela do resultado vem de um lugar específico:
 
 - [material](#user-content-material) — o filamento consumido.
-- [parâmetros](#user-content-print) — tempo, energia e a impressora usada.
-- [máquina](#user-content-machine) — depreciação, manutenção e rateio de
-  [custos fixos](#user-content-fixedCost).
-- [hardware](#user-content-hardware) — desgaste de bico, mesa, LCD e
+- [parâmetros](#user-content-parâmetros-de-impressão) — tempo, energia e a impressora usada.
+- [máquina](#user-content-custos-da-máquina) — depreciação, manutenção e rateio de
+  [custos fixos](#user-content-custos-fixos).
+- [hardware](#user-content-desgaste-de-hardware) — desgaste de bico, mesa, LCD e
   acabamento.
-- [mão de obra](#user-content-labor) — setup e pós-processamento.
-- [ops](#user-content-ops) — software, STL e EPI.
-- [falhas e vendas](#user-content-sales) — risco, embalagem, frete, impostos e
+- [mão de obra](#user-content-mão-de-obra) — setup e pós-processamento.
+- [ops](#user-content-operacional--software) — software, STL e EPI.
+- [falhas e vendas](#user-content-custos-adicionais-e-vendas) — risco, embalagem, frete, impostos e
   margem.
 
 ## Armadilhas práticas

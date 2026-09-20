@@ -115,7 +115,7 @@ type, cost per kg and density.
 The link also runs the other way: when a part uses a selected spool, the system
 shows how much of that roll is left — and subtracts the consumed weight on
 every print. That way the next part is priced with the real cost of the plastic
-on your shelf, not a fixed estimate. See the [inventory](#user-content-inventario)
+on your shelf, not a fixed estimate. See the [inventory](#user-content-inventory)
 article for details.
 
 ## Common pitfalls

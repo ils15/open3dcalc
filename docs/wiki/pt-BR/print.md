@@ -12,7 +12,7 @@ contas diferentes.
 
 A regra de ouro: **print mede o consumo, machine mede o investimento**. A
 seção `print` responde "quanto tempo e quanta energia esta peça exigiu?"; a
-seção [machine](#user-content-machine) responde "quanto do preço da impressora
+seção [machine](#user-content-custos-da-máquina) responde "quanto do preço da impressora
 este tempo vale?". Uma não substitui a outra: a energia é uma conta de luz, e a
 depreciação é uma conta de equipamento. As duas entram no custo, separadas.
 

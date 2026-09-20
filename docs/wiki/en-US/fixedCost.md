@@ -35,7 +35,7 @@ The section is intentionally lean — two fields and one toggle.
   production. Rent, internet, baseline power, building maintenance, software
   with a mandatory subscription. See the pitfall below on what not to put here.
 - **Hours per Month** — the estimated **productive hours** of the printer per
-  month, the same idea as the [monthly usage](#user-content-machine) field. If
+  month, the same idea as the [monthly usage](#user-content-machine-costs) field. If
   this field is left at zero, the division is guarded and the share becomes
   zero — which means no part is paying the rent.
 
@@ -51,7 +51,7 @@ fixedCost = sharePerHour * printTimeHours
 ```
 
 The result is not added as a separate line: it is injected into the
-**machine's hourly rate**, in the [machine](#user-content-machine) section. That
+**machine's hourly rate**, in the [machine](#user-content-machine-costs) section. That
 way the share follows each part's print hours — a longer part pays more rent.
 
 ## Numeric example, step by step
@@ -99,13 +99,13 @@ accept that weekend one-off parts have a higher fair price.
 
 ## How this section relates to the others
 
-- The share is applied inside the [machine](#user-content-machine) hourly rate,
+- The share is applied inside the [machine](#user-content-machine-costs) hourly rate,
   alongside depreciation and maintenance.
 - The hours you use here must be **the same** as the machine's monthly usage.
   Using 150 h here and 300 h there is self-deception: the share comes out halved.
 - The **printing energy** (unlike baseline power) is counted in the
-  [print parameters](#user-content-print) section; do not duplicate it here.
-- **Equipment maintenance** belongs to [machine](#user-content-machine); here
+  [print parameters](#user-content-print-parameters) section; do not duplicate it here.
+- **Equipment maintenance** belongs to [machine](#user-content-machine-costs); here
   belongs the maintenance of the **space**.
 
 ## Practical pitfalls

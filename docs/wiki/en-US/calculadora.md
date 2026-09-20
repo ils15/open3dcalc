@@ -58,21 +58,21 @@ is what each one does:
 
 - [**material**](#user-content-material) — how much filament or resin the part
   consumes, and what that costs.
-- [**print**](#user-content-print) — the print time and the power the machine
+- [**print**](#user-content-print-parameters) — the print time and the power the machine
   draws.
-- [**failure**](#user-content-failure) — failures and rework turned into cost,
+- [**failure**](#user-content-risk-and-failures) — failures and rework turned into cost,
   by percentage or fixed amount.
-- [**hardware**](#user-content-hardware) — wear on the nozzle, the build plate
+- [**hardware**](#user-content-hardware-wear) — wear on the nozzle, the build plate
   and the LCD (for resin).
-- [**machine**](#user-content-machine) — printer depreciation and maintenance,
+- [**machine**](#user-content-machine-costs) — printer depreciation and maintenance,
   split across hours of use.
-- [**fixedCost**](#user-content-fixedcost) — rent, internet and baseline power,
+- [**fixedCost**](#user-content-fixed-costs) — rent, internet and baseline power,
   distributed over productive hours.
 - [**labor**](#user-content-labor) — setup and post-processing time multiplied
   by your hourly rate.
-- [**ops**](#user-content-ops) — PPE, the slicer license, the model file and
+- [**ops**](#user-content-operational--software) — PPE, the slicer license, the model file and
   other operational supplies.
-- [**sales**](#user-content-sales) — packaging, shipping, taxes, marketplace
+- [**sales**](#user-content-additional-costs-and-sales) — packaging, shipping, taxes, marketplace
   fees and your margin: the section that builds the sale price.
 - [**results**](#user-content-results) — consolidates everything and shows cost,
   profit and final price side by side.
@@ -119,7 +119,7 @@ taxes + marketplace (25%)                      = R$  9.61
                               sale price       = R$ 38.45
 ```
 
-The math behind the taxes is explained in the [sales](#user-content-sales)
+The math behind the taxes is explained in the [sales](#user-content-additional-costs-and-sales)
 article; what matters here is that every line traces back to a section. If the
 customer finds it expensive, you know exactly where the R$ 14.42 of cost lives
 and can act on it — instead of adjusting the price blindly.

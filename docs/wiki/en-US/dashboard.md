@@ -12,7 +12,7 @@ work is paying off. Cost, profit, margin and trend on a single screen.
 One rule matters more than any chart: **the dashboard invents no number**.
 Everything on it comes from the estimates you saved to **History**, plus the
 estimate currently open in the
-[Calculator](#user-content-calculadora). It reads no quotes, reads no revenue
+[Calculator](#user-content-calculator). It reads no quotes, reads no revenue
 and queries no external system.
 
 That is why a first visit usually shows empty charts and the message **"No
@@ -152,7 +152,7 @@ anyone needing to install anything to read it.
 
 If the dashboard is empty, the path is short:
 
-1. calculate a part in the [Calculator](#user-content-calculadora) tab
+1. calculate a part in the [Calculator](#user-content-calculator) tab
 2. save the estimate to **History**
 3. repeat with two more parts, preferably in different materials
 4. return to the dashboard — KPIs and charts now have something to show
