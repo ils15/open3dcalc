@@ -23,6 +23,16 @@
 - ✅ Auto-update em nova versão
 - ✅ Responsivo (mobile-first)
 
+### 🧭 Navegação
+
+Todas as superfícies dão acesso às **12 abas** — Calculadora, Dashboard, Calc. Infill, Filamentos, Cadastros, Histórico, Novidades, Orçamentos, Clientes, Produtos, Privacidade e Wiki — sem que nenhuma fique escondida atrás de um menu:
+
+| Tela | Navegação |
+| ---- | --------- |
+| 📱 Mobile (< 768px) | Barra inferior **scrollável** com todas as abas, mais uma engrenagem de **Configurações** fixa no final que abre um sheet dedicado somente a configurações (Tutorial, Moeda, Idioma e GitHub). |
+| 📲 Tablet (768–1024px) | Sidebar compacta, somente ícones. |
+| 🖥️ Desktop (≥ 1024px) | Sidebar completa com rótulos. |
+
 ## 📦 Desktop App
 
 Baixe a versão desktop para Windows ou Linux na [página de releases](https://github.com/ils15/open3dcalc/releases).
