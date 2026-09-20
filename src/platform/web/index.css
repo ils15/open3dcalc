@@ -51,6 +51,11 @@
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.10);
 
+  /* === Layering (z-index scale) ===
+     Bottom nav e sheets mobile usam z-50; dropdowns portados precisam
+     ficar acima deles. Tooltip mantem 100 inline. */
+  --z-dropdown: 60;
+
   /* === Backward-compatible aliases (old → new) === */
   --color-bg-base: var(--color-bg-primary);
   --color-bg-subtle: var(--color-bg-secondary);
