@@ -8,6 +8,7 @@ import { CatalogTab } from "@/shared/components/Catalog/CatalogTab";
 import { HistoryTab } from "@/shared/components/Calculator/HistoryTab/HistoryTab";
 import { Dashboard } from "@/shared/components/Dashboard/Dashboard";
 import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
+import { WikiPage } from "@/shared/components/Wiki/WikiPage";
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
 import { FilamentInventory } from "@/shared/components/Catalog/FilamentInventory";
 import { CustomerTab } from "@/shared/components/Catalog/CustomerTab";
@@ -49,6 +50,7 @@ import {
   Globe,
   Info,
   ExternalLink,
+  BookMarked,
 } from "lucide-react";
 
 type Tab =
@@ -62,7 +64,8 @@ type Tab =
   | "quotes"
   | "customers"
   | "products"
-  | "privacy";
+  | "privacy"
+  | "wiki";
 type LegacyProduct = {
   name?: string;
   result?: CalculationResult;
@@ -96,6 +99,7 @@ const MORE_TABS: Tab[] = [
   "products",
   "privacy",
   "changelog",
+  "wiki",
 ];
 
 export const TABS: {
@@ -169,6 +173,12 @@ export const TABS: {
     icon: <ShieldCheck className="w-[18px] h-[18px]" />,
     labelKey: "nav.privacy",
     label: "Privacidade",
+  },
+  {
+    id: "wiki",
+    icon: <BookMarked className="w-[18px] h-[18px]" />,
+    labelKey: "nav.wiki",
+    label: "Wiki",
   },
 ];
 
@@ -532,6 +542,7 @@ function App() {
               />
             )}
             {activeTab === "changelog" && <ChangelogPage />}
+            {activeTab === "wiki" && <WikiPage />}
             {activeTab === "quotes" && <QuoteSection />}
             {activeTab === "customers" && <CustomerTab />}
             {activeTab === "products" && <ProductInventory />}

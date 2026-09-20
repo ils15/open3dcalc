@@ -46,7 +46,8 @@ export type TutorialTab =
   | "quotes"
   | "customers"
   | "products"
-  | "privacy";
+  | "privacy"
+  | "wiki";
 
 export const TUTORIAL_TABS: readonly TutorialTab[] = [
   "calculator",
@@ -60,6 +61,7 @@ export const TUTORIAL_TABS: readonly TutorialTab[] = [
   "customers",
   "products",
   "privacy",
+  "wiki",
 ];
 
 export interface StepConfig {

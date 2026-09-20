@@ -18,6 +18,9 @@ vi.mock("@/shared/components/Dashboard/Dashboard", () => ({
 vi.mock("@/shared/components/Changelog/ChangelogPage", () => ({
   ChangelogPage: () => <div>ChangelogPage</div>,
 }));
+vi.mock("@/shared/components/Wiki/WikiPage", () => ({
+  WikiPage: () => <div>WikiPage</div>,
+}));
 vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
   InfillCalculator: () => <div>InfillCalculator</div>,
 }));
@@ -156,9 +159,9 @@ describe("Phase 2 — Tablet Optimization", () => {
 
       expect(tabletSidebar).toBeDefined();
       const buttons = tabletSidebar!.querySelectorAll("button");
-      // TABS has 11 items — web and desktop render the identical set (incl.
-      // changelog); tabsParity.test locks the two platforms together.
-      expect(buttons.length).toBe(11);
+      // TABS has 12 items — web and desktop render the identical set (incl.
+      // changelog and wiki); tabsParity.test locks the two platforms together.
+      expect(buttons.length).toBe(12);
     });
 
     it("tablet sidebar buttons have title attribute for accessibility", () => {

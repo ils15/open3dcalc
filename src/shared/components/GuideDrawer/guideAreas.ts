@@ -12,7 +12,19 @@ import {
  * a guide area the moment it ships — and the i18n parity gate (`guide.*` keys)
  * fails until it is translated.
  */
-export const GUIDE_TAB_AREAS: readonly string[] = TUTORIAL_TABS;
+/**
+ * Tabs the guide indexes one card per area. Each card reads
+ * `guide.<area>.{title,description,cta}`, so a tab only joins the index when
+ * its guide copy exists in both locales — without it the card renders the raw
+ * keys. The wiki tab enters `TUTORIAL_TABS` in U5b (the tab parity gate
+ * requires `TABS ≡ TUTORIAL_TABS`) before its `guide.wiki.*` keys are written,
+ * so it is held back from the drawer until that copy lands; every other tab is
+ * still picked up straight from the tutorial registry, keeping the parity gate
+ * fail-closed for new surfaces.
+ */
+export const GUIDE_TAB_AREAS: readonly string[] = TUTORIAL_TABS.filter(
+  (area) => area !== "wiki",
+);
 
 export const GUIDE_SECTION_AREAS: string[] = SECTIONS.map((section) => section.id);
 
