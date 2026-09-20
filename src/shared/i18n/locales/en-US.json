@@ -738,6 +738,10 @@
       "orcamentos-clientes": {
         "title": "Quotes and customers",
         "description": "Turn saved calculations into professional quotes and manage your client roster."
+      },
+      "nivel-avancado": {
+        "title": "Advanced level",
+        "description": "Complete mode: failure rate, hardware, machine, fixed costs, labor and software — every factor in the real cost of a print."
       }
     },
     "steps": {
@@ -868,6 +872,46 @@
       "qc-complete": {
         "title": "Ready to quote! 🎉",
         "description": "Customer registered and quote linked: export it as a PDF and send it. Everything stays saved on your device."
+      },
+      "adv-intro": {
+        "title": "Complete mode 🧮",
+        "description": "This tour switches the calculator to the advanced level and walks the sections that add up every cost factor of a print."
+      },
+      "adv-level": {
+        "title": "Switch the level",
+        "description": "The level selector controls how many sections the calculator shows. Advanced unlocks all ten — let's turn it on now."
+      },
+      "adv-failure": {
+        "title": "Failure rate",
+        "description": "Set the most common failure mode and the value of the lost part. The risk becomes a multiplier that weighs on every print."
+      },
+      "adv-hardware": {
+        "title": "Hardware & post-processing",
+        "description": "Add the cost of replacement parts and finishing (sanding, gluing, assembly) that consume material and time."
+      },
+      "adv-machine": {
+        "title": "Machine cost",
+        "description": "Set the printer price, its expected lifespan and working hours to amortize the investment per print."
+      },
+      "adv-fixedCost": {
+        "title": "Fixed costs",
+        "description": "Power, rent, internet and subscriptions: enter your monthly fixed costs and the calculator splits them across your output."
+      },
+      "adv-labor": {
+        "title": "Labor",
+        "description": "Set your hourly rate and the prep and finishing time each part takes."
+      },
+      "adv-ops": {
+        "title": "Software & consumables",
+        "description": "Slicer, modeling software, consumables and ongoing maintenance — the day-to-day operating costs."
+      },
+      "adv-results": {
+        "title": "Complete result",
+        "description": "With every factor filled in, the result shows the full cost breakdown and the suggested sale price at the advanced level."
+      },
+      "adv-complete": {
+        "title": "Cost mastered 🏆",
+        "description": "You've added material, machine, labor, fixed costs and failures. Tweak any section and the result recalculates instantly."
       }
     }
   },

@@ -21,6 +21,10 @@ const TRANSLATIONS: Record<string, string> = {
   "tutorial.tours.inventario-bobinas.description": "Tour do inventário.",
   "tutorial.tours.dashboard-kpis.title": "Dashboard de KPIs",
   "tutorial.tours.dashboard-kpis.description": "Tour do dashboard.",
+  "tutorial.tours.orcamentos-clientes.title": "Orçamentos e clientes",
+  "tutorial.tours.orcamentos-clientes.description": "Tour de orçamentos.",
+  "tutorial.tours.nivel-avancado.title": "Nível avançado",
+  "tutorial.tours.nivel-avancado.description": "Tour do nível avançado.",
 };
 
 vi.mock("react-i18next", () => ({
@@ -73,14 +77,17 @@ describe("TutorialLauncher", () => {
     ).toBeInTheDocument();
   });
 
-  it("hides tours the registry has not filled yet", () => {
+  it("lists every tour once the registry is fully filled (U9)", () => {
     render(<TutorialLauncher />);
     fireEvent.click(screen.getByRole("button", { name: "Tutoriais" }));
 
-    // Unfilled tours never expose a launcher entry — a dead end in the menu.
+    // U9 filled nivel-avancado, the last placeholder: the registry has no empty
+    // tour left, so the launcher exposes one entry per TOUR_IDS. The permanent
+    // "no tour is left empty" guard in tutorialTours.test.tsx keeps it that way.
+    expect(screen.getAllByRole("menuitem")).toHaveLength(TOUR_IDS.length);
     expect(
-      screen.queryByRole("menuitem", { name: /nivel-avancado/i }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("menuitem", { name: /Nível avançado/ }),
+    ).toBeInTheDocument();
   });
 
   it("starts the chosen tour and closes the menu", () => {

@@ -738,6 +738,10 @@
       "orcamentos-clientes": {
         "title": "Orçamentos e clientes",
         "description": "Transforme cálculos salvos em orçamentos profissionais e gerencie sua carteira de clientes."
+      },
+      "nivel-avancado": {
+        "title": "Nível avançado",
+        "description": "Modo completo: falhas, hardware, máquina, custos fixos, mão de obra e software — todos os fatores do custo real de uma impressão."
       }
     },
     "steps": {
@@ -868,6 +872,46 @@
       "qc-complete": {
         "title": "Pronto para orçar! 🎉",
         "description": "Cliente cadastrado e orçamento vinculado: agora é só exportar em PDF e enviar. Tudo fica salvo no seu dispositivo."
+      },
+      "adv-intro": {
+        "title": "Modo completo 🧮",
+        "description": "Neste tour você ativa o nível avançado da calculadora e percorre as seções que somam todos os fatores de custo de uma impressão."
+      },
+      "adv-level": {
+        "title": "Troque de nível",
+        "description": "O seletor de nível controla quantas seções a calculadora mostra. O nível avançado libera as dez seções — vamos ativá-lo agora."
+      },
+      "adv-failure": {
+        "title": "Taxa de falha",
+        "description": "Defina o modo de falha mais comum e o valor da peça perdida. O risco vira um multiplicador que onera cada impressão."
+      },
+      "adv-hardware": {
+        "title": "Hardware e pós-processamento",
+        "description": "Some o custo das peças de reposição e do acabamento (lixamento, colagem, montagem) que consomem material e tempo."
+      },
+      "adv-machine": {
+        "title": "Custo da máquina",
+        "description": "Configure o preço da impressora, a vida útil estimada e as horas de trabalho para ratear o investimento por impressão."
+      },
+      "adv-fixedCost": {
+        "title": "Custos fixos",
+        "description": "Luz, aluguel, internet e assinaturas: informe os custos fixos mensais e a calculadora rateia pela sua produção."
+      },
+      "adv-labor": {
+        "title": "Mão de obra",
+        "description": "Defina quanto você cobra por hora de trabalho e o tempo de preparação e finalização de cada peça."
+      },
+      "adv-ops": {
+        "title": "Software e insumos",
+        "description": "Fatia, software de modelagem, consumíveis e manutenção corrente — os custos operacionais do dia a dia."
+      },
+      "adv-results": {
+        "title": "Resultado completo",
+        "description": "Com todos os fatores preenchidos, o resultado traz o custo total detalhado e o preço de venda sugerido no nível avançado."
+      },
+      "adv-complete": {
+        "title": "Custo dominado 🏆",
+        "description": "Você somou material, máquina, mão de obra, custos fixos e falhas. Ajuste qualquer seção e o resultado se recalcula na hora."
       }
     }
   },

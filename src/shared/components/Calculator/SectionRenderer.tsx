@@ -118,7 +118,7 @@ export function SectionRenderer(props: SectionRendererProps) {
 						);
 					case "failure":
 						return (
-							<div key="failure" id="section-failure" className="scroll-mt-24">
+							<div key="failure" id="section-failure" data-tutorial="failure" className="scroll-mt-24">
 								<FailureSection
 									renderSectionHeader={renderSectionHeader}
 									t={t}
@@ -131,13 +131,13 @@ export function SectionRenderer(props: SectionRendererProps) {
 						);
 					case "hardware":
 						return (
-							<div key="hardware" id="section-hardware" className="scroll-mt-24">
+							<div key="hardware" id="section-hardware" data-tutorial="hardware" className="scroll-mt-24">
 								<HardwareSection />
 							</div>
 						);
 					case "machine":
 						return (
-							<div key="machine" id="section-machine" className="scroll-mt-24">
+							<div key="machine" id="section-machine" data-tutorial="machine" className="scroll-mt-24">
 								<MachineSection
 									renderSectionHeader={renderSectionHeader}
 									t={t}
@@ -150,7 +150,7 @@ export function SectionRenderer(props: SectionRendererProps) {
 						);
 					case "fixedCost":
 						return (
-							<div key="fixedCost" id="section-fixedCost" className="scroll-mt-24">
+							<div key="fixedCost" id="section-fixedCost" data-tutorial="fixedCost" className="scroll-mt-24">
 								<FixedCostsSection
 									renderSectionHeader={renderSectionHeader}
 									t={t}
@@ -162,7 +162,7 @@ export function SectionRenderer(props: SectionRendererProps) {
 						);
 					case "labor":
 						return (
-							<div key="labor" id="section-labor" className="scroll-mt-24">
+							<div key="labor" id="section-labor" data-tutorial="labor" className="scroll-mt-24">
 								<LaborSection
 									renderSectionHeader={renderSectionHeader}
 									t={t}
@@ -175,7 +175,7 @@ export function SectionRenderer(props: SectionRendererProps) {
 						);
 					case "ops":
 						return (
-							<div key="ops" id="section-ops" className="scroll-mt-24">
+							<div key="ops" id="section-ops" data-tutorial="ops" className="scroll-mt-24">
 								<OpsSection />
 							</div>
 						);

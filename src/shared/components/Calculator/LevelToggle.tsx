@@ -10,7 +10,10 @@ export function LevelToggle() {
 	);
 
 	return (
-		<div className="inline-flex items-center rounded-xl p-1 bg-[var(--color-bg-secondary)] border border-[var(--color-border-subtle)]">
+		<div
+			data-tutorial="level-toggle"
+			className="inline-flex items-center rounded-xl p-1 bg-[var(--color-bg-secondary)] border border-[var(--color-border-subtle)]"
+		>
 			{(['basic', 'intermediate', 'advanced'] as const).map((level) => (
 				<button
 					key={level}
