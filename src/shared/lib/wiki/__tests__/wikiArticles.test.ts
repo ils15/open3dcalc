@@ -15,7 +15,10 @@ describe("wikiArticles glob (real, unmocked)", () => {
   it("discovers every seeded article of every locale", () => {
     const keys = Object.keys(wikiArticles);
 
-    expect(keys).toHaveLength(LOCALES.length * SEED_SLUGS.length);
+    // Containment, not exact count: the wiki grows past the seeds, and the
+    // value of this test is catching a glob/plugin regression (empty or
+    // malformed keys), not pinning the article total. Cross-locale
+    // completeness is owned by the parity test below (R6).
     for (const locale of LOCALES) {
       for (const slug of SEED_SLUGS) {
         expect(keys).toContain(`/docs/wiki/${locale}/${slug}.md`);
@@ -29,9 +32,13 @@ describe("wikiArticles glob (real, unmocked)", () => {
     );
 
     for (const article of modules) {
-      // Identity comes from the path, not the markdown body.
+      // Identity comes from the path, not the markdown body. Containment on
+      // SEED_SLUGS lives in the discovery test above; this module-shape check
+      // only asserts every compiled article has a path-derived slug, so new
+      // articles are allowed to grow past the seeds (see b80cbf9).
       expect(LOCALES).toContain(article.locale);
-      expect(SEED_SLUGS).toContain(article.slug);
+      expect(typeof article.slug).toBe("string");
+      expect(article.slug.length).toBeGreaterThan(0);
       expect(article.locale).toMatch(/^(pt-BR|en-US)$/);
 
       // Frontmatter is the flat fail-closed schema from markdownToHtml.

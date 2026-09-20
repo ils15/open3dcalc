@@ -98,7 +98,11 @@ describe("markdownWikiPlugin", () => {
       articlePath("pt-BR", "calculadora", "?wiki-meta"),
     )) as Partial<WikiArticleModule>;
 
-    expect(mod.frontmatter).toEqual({ title: "Calculadora", order: 1 });
+    expect(mod.frontmatter).toEqual({
+      title: "Calculadora",
+      order: 1,
+      tourId: "calc-basico",
+    });
     expect(mod.html).toBeUndefined();
     expect(mod.toc).toBeUndefined();
     expect(mod.slug).toBeUndefined();
