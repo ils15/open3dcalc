@@ -413,6 +413,29 @@
       "version": "1.0"
     },
     {
+      "key": "open3dcalc_color_palette_v1",
+      "surface": "localStorage",
+      "platforms": [
+        "electron",
+        "web",
+        "pwa"
+      ],
+      "class": "user_content",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "opt_in",
+      "export": "user_export",
+      "erasure": "erase_on_delete_all",
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
+      "purpose": "Custom filament color swatches (name + hex) added by the user; no personal data.",
+      "legal_basis": "not_personal_data",
+      "owner": "aphrodite",
+      "version": "1.0"
+    },
+    {
       "key": "open3dcalc_products",
       "surface": "localStorage",
       "platforms": [
