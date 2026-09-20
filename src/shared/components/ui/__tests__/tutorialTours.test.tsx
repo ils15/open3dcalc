@@ -4,6 +4,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { Tutorial } from "../Tutorial";
 import { TOURS } from "../tutorialTours";
+import ptBR from "@/shared/i18n/locales/pt-BR.json";
+import enUS from "@/shared/i18n/locales/en-US.json";
 import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import type { TutorialTab } from "../tutorialTours";
@@ -129,9 +131,10 @@ describe("tour: inventario-bobinas", () => {
       if (!step.target) continue;
       expect(step.target.startsWith('[data-tutorial="')).toBe(true);
       const anchor = step.target.slice('[data-tutorial="'.length, -2);
-      expect(ANCHORS, `anchor ${anchor} must exist in FilamentInventory`).toContain(
-        anchor,
-      );
+      expect(
+        ANCHORS,
+        `anchor ${anchor} must exist in FilamentInventory`,
+      ).toContain(anchor);
       expect(step.tab).toBe("inventory");
     }
   });
@@ -367,5 +370,208 @@ describe("tour: dashboard-kpis", () => {
     const state = useTutorialStore.getState();
     expect(state.isActive).toBe(false);
     expect(state.completedTours).toContain("dashboard-kpis");
+  });
+});
+
+// ── U8: orcamentos-clientes (quotes → customers — the two-tab tour) ──────────
+
+const U8_QUOTES_ANCHORS = ["quotes-list", "quote-new", "quote-form-customer"];
+const U8_CUSTOMERS_ANCHORS = ["customers-list", "customer-new"];
+
+// The engine's `TabHarness` renders a single tab; this tour hops between two, so
+// it needs a harness that mounts each surface's anchors when the navigate event
+// lands on it.
+function QuotesCustomersHarness() {
+  const [activeTab, setActiveTab] = useState<TutorialTab>("calculator");
+  useTutorialTabNavigation(setActiveTab);
+
+  const anchors: Partial<Record<TutorialTab, string[]>> = {
+    quotes: U8_QUOTES_ANCHORS,
+    customers: U8_CUSTOMERS_ANCHORS,
+  };
+  const visible = anchors[activeTab] ?? [];
+
+  return (
+    <div>
+      <span data-testid="active-tab">{activeTab}</span>
+      {visible.map((anchor) => (
+        <div
+          key={anchor}
+          data-tutorial={anchor}
+          data-testid={`anchor-${anchor}`}
+        />
+      ))}
+      <Tutorial />
+    </div>
+  );
+}
+
+// Locale lookup kept untyped so the JSON imports stay indexable without an index
+// signature — same trick as src/shared/i18n/__tests__/locales.test.ts.
+function lookup(dict: unknown, ...path: string[]): unknown {
+  let node: unknown = dict;
+  for (const part of path) {
+    if (typeof node !== "object" || node === null) return undefined;
+    node = (node as Record<string, unknown>)[part];
+  }
+  return node;
+}
+
+describe("tour: orcamentos-clientes", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetTutorialStore();
+  });
+
+  it("registry wires eight steps that hop between the quotes and customers tabs", () => {
+    const steps = TOURS["orcamentos-clientes"];
+    expect(steps).toHaveLength(8);
+    expect(steps.map((s) => s.key)).toEqual([
+      "qc-intro",
+      "qc-list",
+      "qc-new",
+      "qc-customer",
+      "cs-intro",
+      "cs-list",
+      "cs-new",
+      "qc-complete",
+    ]);
+
+    for (const step of steps) {
+      // R3 guard: Tutorial.tsx returns on `!step.target` BEFORE the level switch,
+      // so a `level` on a centered card would be silently dropped. This tour is
+      // pure cross-tab navigation and must never set `level` — the guard below is
+      // the tripwire if that ever changes (nivel-avancado, U9, owns the level
+      // variant of this rule).
+      expect(
+        step.level,
+        `${step.key}: a level switch needs a non-null target (R3)`,
+      ).toBeUndefined();
+
+      if (!step.target) continue;
+      expect(step.target.startsWith('[data-tutorial="')).toBe(true);
+      const anchor = step.target.slice('[data-tutorial="'.length, -2);
+      expect(
+        [...U8_QUOTES_ANCHORS, ...U8_CUSTOMERS_ANCHORS],
+        `anchor ${anchor} must exist in QuoteSection/CustomerTab`,
+      ).toContain(anchor);
+      // qc-* lives on the quotes tab, cs-* on customers — the engine navigates
+      // to this tab before it retries the selector.
+      expect(step.tab).toBe(
+        step.key.startsWith("cs-") ? "customers" : "quotes",
+      );
+    }
+  });
+
+  it("resolves a title and description for every step in both locales", () => {
+    const steps = TOURS["orcamentos-clientes"];
+    for (const { key } of steps) {
+      for (const [locale, dict] of [
+        ["pt-BR", ptBR],
+        ["en-US", enUS],
+      ] as const) {
+        const title = lookup(dict, "tutorial", "steps", key, "title");
+        const description = lookup(
+          dict,
+          "tutorial",
+          "steps",
+          key,
+          "description",
+        );
+        expect(typeof title, `${locale} tutorial.steps.${key}.title`).toBe(
+          "string",
+        );
+        expect(
+          (title as string).length,
+          `${locale} tutorial.steps.${key}.title`,
+        ).toBeGreaterThan(0);
+        expect(
+          typeof description,
+          `${locale} tutorial.steps.${key}.description`,
+        ).toBe("string");
+        expect(
+          (description as string).length,
+          `${locale} tutorial.steps.${key}.description`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("walks quotes then customers, resolving every anchor spotlight", async () => {
+    render(<QuotesCustomersHarness />);
+    useTutorialStore.getState().startTour("orcamentos-clientes");
+
+    // 1. Centered intro card while the harness is still on calculator.
+    expect(
+      await screen.findByText("tutorial.steps.qc-intro.title"),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("Passo 1 de 8")).toBeInTheDocument();
+
+    // 2. First anchored step: the engine dispatches the navigate event, the
+    // harness switches to quotes, the list anchor mounts and the spotlight
+    // resolves (no degraded card).
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.qc-list.title"),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("active-tab").textContent).toBe("quotes"),
+    );
+    expect(screen.getByTestId("anchor-quotes-list")).toBeInTheDocument();
+    await vi.waitFor(
+      () =>
+        expect(
+          document.querySelector('[data-testid="tutorial-overlay"]'),
+        ).not.toBeNull(),
+      { timeout: 2500 },
+    );
+
+    // 3→4. New-quote button and the form's customer selector stay on quotes.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.qc-new.title"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("active-tab").textContent).toBe("quotes");
+
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.qc-customer.title"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("active-tab").textContent).toBe("quotes");
+
+    // 5. Centered customers intro. A centered card cannot navigate (the engine
+    // returns on `!step.target` before dispatching), so the hop to customers
+    // happens on the next anchored step.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.cs-intro.title"),
+    ).toBeInTheDocument();
+
+    // 6. First customers-anchored step hops the tour to the customers tab.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.cs-list.title"),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("active-tab").textContent).toBe("customers"),
+    );
+    expect(screen.getByTestId("anchor-customers-list")).toBeInTheDocument();
+
+    // 7. New-customer button stays on customers.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.cs-new.title"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("active-tab").textContent).toBe("customers");
+
+    // 8. Centered closing card: "Concluir" replaces "Próximo" on the last step.
+    fireEvent.click(screen.getByText("tutorial.next"));
+    expect(
+      await screen.findByText("tutorial.steps.qc-complete.title"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("tutorial.finish"));
+    const state = useTutorialStore.getState();
+    expect(state.isActive).toBe(false);
+    expect(state.completedTours).toContain("orcamentos-clientes");
   });
 });

@@ -734,6 +734,10 @@
       "dashboard-kpis": {
         "title": "Dashboard de KPIs",
         "description": "Resumo financeiro, filtro por período, KPIs do histórico e projeção de lucro mensal."
+      },
+      "orcamentos-clientes": {
+        "title": "Orçamentos e clientes",
+        "description": "Transforme cálculos salvos em orçamentos profissionais e gerencie sua carteira de clientes."
       }
     },
     "steps": {
@@ -832,6 +836,38 @@
       "dash-complete": {
         "title": "Decisões com dados 🎯",
         "description": "Ajuste período e volume mensal para simular cenários. O histórico guarda cada cálculo para comparar depois."
+      },
+      "qc-intro": {
+        "title": "Orçamentos e clientes 📄",
+        "description": "Neste tour você transforma cálculos salvos em orçamentos profissionais e organiza seus clientes em um só lugar."
+      },
+      "qc-list": {
+        "title": "Lista de orçamentos",
+        "description": "Aqui ficam todos os seus orçamentos, com status (rascunho, enviado, aprovado ou recusado) e busca por título ou cliente."
+      },
+      "qc-new": {
+        "title": "Novo orçamento",
+        "description": "Use este botão para criar um orçamento novo a partir dos cálculos salvos no histórico."
+      },
+      "qc-customer": {
+        "title": "Vincule um cliente",
+        "description": "No formulário, escolha o cliente no seletor para vinculá-lo ao orçamento — o contato vai impresso no PDF."
+      },
+      "cs-intro": {
+        "title": "Clientes 👥",
+        "description": "Agora a aba Clientes: cadastre nome, empresa e contatos para reutilizar em vários orçamentos."
+      },
+      "cs-list": {
+        "title": "Lista de clientes",
+        "description": "Sua carteira de clientes aparece aqui, com busca e ações para editar e remover."
+      },
+      "cs-new": {
+        "title": "Novo cliente",
+        "description": "Cadastre um novo cliente com nome, empresa, e-mail, telefone e observações."
+      },
+      "qc-complete": {
+        "title": "Pronto para orçar! 🎉",
+        "description": "Cliente cadastrado e orçamento vinculado: agora é só exportar em PDF e enviar. Tudo fica salvo no seu dispositivo."
       }
     }
   },

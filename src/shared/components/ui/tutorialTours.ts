@@ -156,7 +156,41 @@ export const TOURS: Record<TourId, StepConfig[]> = {
     },
     { key: "dash-complete", target: null },
   ],
-  "orcamentos-clientes": [],
+  // R3 (engine constraint): `Tutorial.tsx` bails on `!step.target` BEFORE it runs
+  // the calculator-level switch, so any step that sets `level` MUST also set a
+  // non-null `target` — otherwise the level change is silently skipped. This tour
+  // is pure cross-tab navigation (no `level` anywhere); the same rule is what the
+  // `nivel-avancado` tour must respect when it unlocks the advanced sections.
+  "orcamentos-clientes": [
+    { key: "qc-intro", target: null },
+    {
+      key: "qc-list",
+      target: '[data-tutorial="quotes-list"]',
+      tab: "quotes",
+    },
+    {
+      key: "qc-new",
+      target: '[data-tutorial="quote-new"]',
+      tab: "quotes",
+    },
+    {
+      key: "qc-customer",
+      target: '[data-tutorial="quote-form-customer"]',
+      tab: "quotes",
+    },
+    { key: "cs-intro", target: null },
+    {
+      key: "cs-list",
+      target: '[data-tutorial="customers-list"]',
+      tab: "customers",
+    },
+    {
+      key: "cs-new",
+      target: '[data-tutorial="customer-new"]',
+      tab: "customers",
+    },
+    { key: "qc-complete", target: null },
+  ],
   "nivel-avancado": [],
 };
 

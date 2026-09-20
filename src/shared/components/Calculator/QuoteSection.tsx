@@ -1,28 +1,46 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useQuoteStore } from '@/shared/stores/quoteStore'
-import { useCustomerStore } from '@/shared/stores/customerStore'
-import { useHistoryStore } from '@/shared/stores/historyStore'
-import { useCurrency } from '@/shared/hooks/useCurrency'
-import { ConfirmDialog } from '@/shared/components/ui/ConfirmDialog'
-import { QuoteDoc } from '@/shared/lib/QuoteDoc'
-import type { Quote, QuoteItem, QuoteFormData, Customer } from '@/shared/types'
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { useQuoteStore } from "@/shared/stores/quoteStore";
+import { useCustomerStore } from "@/shared/stores/customerStore";
+import { useHistoryStore } from "@/shared/stores/historyStore";
+import { useCurrency } from "@/shared/hooks/useCurrency";
+import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
+import { QuoteDoc } from "@/shared/lib/QuoteDoc";
+import type { Quote, QuoteItem, QuoteFormData, Customer } from "@/shared/types";
 import {
-  X, Search, Plus, FileText, Eye, Edit, Trash2, Download,
+  X,
+  Search,
+  Plus,
+  FileText,
+  Eye,
+  Edit,
+  Trash2,
+  Download,
   AlertCircle,
-} from 'lucide-react'
-import { EmptyState } from '@/shared/components/ui/EmptyState'
-import { guardExport } from '@/shared/lib/demoExportGuard'
-import { downloadBlob } from '@/shared/lib/download'
-import { DemoExportBadge } from '@/shared/components/DemoMode/DemoExportBadge'
+} from "lucide-react";
+import { EmptyState } from "@/shared/components/ui/EmptyState";
+import { guardExport } from "@/shared/lib/demoExportGuard";
+import { downloadBlob } from "@/shared/lib/download";
+import { DemoExportBadge } from "@/shared/components/DemoMode/DemoExportBadge";
 
 // ── Status helpers ──────────────────────────────────────────────
-const STATUS_CONFIG: Record<Quote['status'], { label: string; color: string; bg: string }> = {
-  draft:    { label: 'Rascunho',  color: 'text-[var(--color-text-secondary)]',  bg: 'bg-gray-500/20' },
-  sent:     { label: 'Enviado',   color: 'text-blue-400',  bg: 'bg-blue-500/20' },
-  approved: { label: 'Aprovado',  color: 'text-emerald-400', bg: 'bg-emerald-500/20' },
-  rejected: { label: 'Recusado',  color: 'text-red-400',   bg: 'bg-red-500/20' },
-}
+const STATUS_CONFIG: Record<
+  Quote["status"],
+  { label: string; color: string; bg: string }
+> = {
+  draft: {
+    label: "Rascunho",
+    color: "text-[var(--color-text-secondary)]",
+    bg: "bg-gray-500/20",
+  },
+  sent: { label: "Enviado", color: "text-blue-400", bg: "bg-blue-500/20" },
+  approved: {
+    label: "Aprovado",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/20",
+  },
+  rejected: { label: "Recusado", color: "text-red-400", bg: "bg-red-500/20" },
+};
 
 // ── Focus trap hook ─────────────────────────────────────────────
 function useFocusTrap(
@@ -31,44 +49,61 @@ function useFocusTrap(
   isOpen: boolean,
 ) {
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onClose(); return }
-      if (e.key !== 'Tab') return
-      const dialog = dialogRef.current
-      if (!dialog) return
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
       const focusable = dialog.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      )
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
       if (e.shiftKey) {
-        if (document.activeElement === first) { e.preventDefault(); last.focus() }
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
       } else {
-        if (document.activeElement === last) { e.preventDefault(); first.focus() }
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onClose, dialogRef])
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose, dialogRef]);
 }
 
 // ── Modal wrapper ────────────────────────────────────────────────
 function Modal({
-  open, title, onClose, children, wide = false,
+  open,
+  title,
+  onClose,
+  children,
+  wide = false,
 }: {
-  open: boolean; title: string; onClose: () => void; children: React.ReactNode; wide?: boolean
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  wide?: boolean;
 }) {
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const closeRef = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
-  useFocusTrap(dialogRef, onClose, open)
+  useFocusTrap(dialogRef, onClose, open);
 
   useEffect(() => {
-    if (open) setTimeout(() => closeRef.current?.focus(), 50)
-  }, [open])
+    if (open) setTimeout(() => closeRef.current?.focus(), 50);
+  }, [open]);
 
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div
@@ -81,7 +116,7 @@ function Modal({
       <div
         ref={dialogRef}
         className={`surface rounded-xl max-h-[90vh] overflow-y-auto animate-fade-in ${
-          wide ? 'w-[95%] max-w-3xl' : 'w-[90%] max-w-lg'
+          wide ? "w-[95%] max-w-3xl" : "w-[90%] max-w-lg"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -99,7 +134,7 @@ function Modal({
         <div className="p-5 pt-4">{children}</div>
       </div>
     </div>
-  )
+  );
 }
 
 // ── QuoteFormModal ────────────────────────────────────────────────
@@ -109,29 +144,35 @@ function QuoteFormModal({
   onSave,
   locale: localeProp,
 }: {
-  editQuote?: Quote
-  onClose: () => void
-  onSave: () => void
-  locale?: string
+  editQuote?: Quote;
+  onClose: () => void;
+  onSave: () => void;
+  locale?: string;
 }) {
-  const { symbol } = useCurrency()
-  const customers = useCustomerStore((s) => s.customers)
-  const historyEntries = useHistoryStore((s) => s.entries)
-  const quoteStore = useQuoteStore.getState()
+  const { symbol } = useCurrency();
+  const customers = useCustomerStore((s) => s.customers);
+  const historyEntries = useHistoryStore((s) => s.entries);
+  const quoteStore = useQuoteStore.getState();
 
-  const isEditing = !!editQuote
-  const [title, setTitle] = useState(editQuote?.title ?? '')
-  const [customerId, setCustomerId] = useState(editQuote?.customerId ?? '')
-  const [items, setItems] = useState<QuoteItem[]>(editQuote?.items ?? [])
-  const [globalDiscount, setGlobalDiscount] = useState(editQuote?.globalDiscountPercent ?? 0)
-  const [validUntil, setValidUntil] = useState(editQuote?.validUntil ?? '')
-  const [paymentTerms, setPaymentTerms] = useState(editQuote?.paymentTerms ?? '')
-  const [deliveryEstimate, setDeliveryEstimate] = useState(editQuote?.deliveryEstimate ?? '')
-  const [footerNote, setFooterNote] = useState(editQuote?.footerNote ?? '')
-  const [showHistoryPicker, setShowHistoryPicker] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const isEditing = !!editQuote;
+  const [title, setTitle] = useState(editQuote?.title ?? "");
+  const [customerId, setCustomerId] = useState(editQuote?.customerId ?? "");
+  const [items, setItems] = useState<QuoteItem[]>(editQuote?.items ?? []);
+  const [globalDiscount, setGlobalDiscount] = useState(
+    editQuote?.globalDiscountPercent ?? 0,
+  );
+  const [validUntil, setValidUntil] = useState(editQuote?.validUntil ?? "");
+  const [paymentTerms, setPaymentTerms] = useState(
+    editQuote?.paymentTerms ?? "",
+  );
+  const [deliveryEstimate, setDeliveryEstimate] = useState(
+    editQuote?.deliveryEstimate ?? "",
+  );
+  const [footerNote, setFooterNote] = useState(editQuote?.footerNote ?? "");
+  const [showHistoryPicker, setShowHistoryPicker] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const selectedCustomer = customers.find((c) => c.id === customerId)
+  const selectedCustomer = customers.find((c) => c.id === customerId);
 
   // Compute totals
   const { subtotal, discountAmount, total } = quoteStore.calculateTotals(
@@ -141,9 +182,9 @@ function QuoteFormModal({
       discountPercent: i.discountPercent,
     })),
     globalDiscount,
-  )
+  );
 
-  const locale = localeProp ?? 'pt-BR'
+  const locale = localeProp ?? "pt-BR";
   const formatPrice = useCallback(
     (val: number) =>
       val.toLocaleString(locale, {
@@ -151,11 +192,11 @@ function QuoteFormModal({
         maximumFractionDigits: 2,
       }),
     [locale],
-  )
+  );
 
   const addItemFromHistory = (entryId: string) => {
-    const entry = historyEntries.find((e) => e.id === entryId)
-    if (!entry) return
+    const entry = historyEntries.find((e) => e.id === entryId);
+    if (!entry) return;
 
     setItems((prev) => [
       ...prev,
@@ -167,36 +208,44 @@ function QuoteFormModal({
         totalPrice: entry.sellPrice,
         discountPercent: 0,
       },
-    ])
-    setShowHistoryPicker(false)
-  }
+    ]);
+    setShowHistoryPicker(false);
+  };
 
-  const updateItem = (idx: number, field: keyof QuoteItem, value: number | string) => {
+  const updateItem = (
+    idx: number,
+    field: keyof QuoteItem,
+    value: number | string,
+  ) => {
     setItems((prev) => {
       const updated = prev.map((item, i) => {
-        if (i !== idx) return item
-        const newItem = { ...item, [field]: field === 'name' ? (value as string) : Number(value) }
+        if (i !== idx) return item;
+        const newItem = {
+          ...item,
+          [field]: field === "name" ? (value as string) : Number(value),
+        };
         // Recalculate totalPrice for this item
-        const lineTotal = newItem.quantity * newItem.unitPrice
-        newItem.totalPrice = newItem.discountPercent > 0
-          ? lineTotal * (1 - newItem.discountPercent / 100)
-          : lineTotal
-        return newItem
-      })
-      return updated
-    })
-  }
+        const lineTotal = newItem.quantity * newItem.unitPrice;
+        newItem.totalPrice =
+          newItem.discountPercent > 0
+            ? lineTotal * (1 - newItem.discountPercent / 100)
+            : lineTotal;
+        return newItem;
+      });
+      return updated;
+    });
+  };
 
   const removeItem = (idx: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== idx))
-  }
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const handleSave = () => {
     if (!title.trim()) {
-      setError('O título do orçamento é obrigatório.')
-      return
+      setError("O título do orçamento é obrigatório.");
+      return;
     }
-    setError(null)
+    setError(null);
 
     const formData: QuoteFormData = {
       title: title.trim(),
@@ -211,7 +260,7 @@ function QuoteFormModal({
       paymentTerms,
       deliveryEstimate,
       footerNote: footerNote || undefined,
-    }
+    };
 
     if (isEditing && editQuote) {
       // Update with recalculated items
@@ -228,17 +277,17 @@ function QuoteFormModal({
         paymentTerms,
         deliveryEstimate,
         footerNote: footerNote || undefined,
-      })
+      });
     } else {
-      quoteStore.addQuote(formData)
+      quoteStore.addQuote(formData);
     }
-    onSave()
-  }
+    onSave();
+  };
 
   return (
     <Modal
       open
-      title={isEditing ? 'Editar Orçamento' : 'Novo Orçamento'}
+      title={isEditing ? "Editar Orçamento" : "Novo Orçamento"}
       onClose={onClose}
       wide
     >
@@ -258,7 +307,7 @@ function QuoteFormModal({
         </div>
 
         {/* Customer selector */}
-        <div>
+        <div data-tutorial="quote-form-customer">
           <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
             Cliente
           </label>
@@ -270,14 +319,17 @@ function QuoteFormModal({
             <option value="">Selecionar cliente</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}{c.company ? ` — ${c.company}` : ''}
+                {c.name}
+                {c.company ? ` — ${c.company}` : ""}
               </option>
             ))}
           </select>
           {selectedCustomer && (
             <div className="mt-2 text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
               {selectedCustomer.email && <span>{selectedCustomer.email}</span>}
-              {selectedCustomer.phone && <span>· {selectedCustomer.phone}</span>}
+              {selectedCustomer.phone && (
+                <span>· {selectedCustomer.phone}</span>
+              )}
             </div>
           )}
         </div>
@@ -315,34 +367,46 @@ function QuoteFormModal({
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <div className="flex flex-col items-center">
-                      <span className="text-[9px] text-[var(--color-text-muted)] uppercase">Qtd</span>
+                      <span className="text-[9px] text-[var(--color-text-muted)] uppercase">
+                        Qtd
+                      </span>
                       <input
                         type="number"
                         min={1}
                         value={item.quantity}
-                        onChange={(e) => updateItem(idx, 'quantity', e.target.value)}
+                        onChange={(e) =>
+                          updateItem(idx, "quantity", e.target.value)
+                        }
                         className="w-14 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] h-8 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
                       />
                     </div>
                     <div className="flex flex-col items-center">
-                      <span className="text-[9px] text-[var(--color-text-muted)] uppercase">V.Unit</span>
+                      <span className="text-[9px] text-[var(--color-text-muted)] uppercase">
+                        V.Unit
+                      </span>
                       <input
                         type="number"
                         min={0}
                         step={0.01}
                         value={item.unitPrice}
-                        onChange={(e) => updateItem(idx, 'unitPrice', e.target.value)}
+                        onChange={(e) =>
+                          updateItem(idx, "unitPrice", e.target.value)
+                        }
                         className="w-20 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] h-8 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
                       />
                     </div>
                     <div className="flex flex-col items-center">
-                      <span className="text-[9px] text-[var(--color-text-muted)] uppercase">Desc%</span>
+                      <span className="text-[9px] text-[var(--color-text-muted)] uppercase">
+                        Desc%
+                      </span>
                       <input
                         type="number"
                         min={0}
                         max={100}
                         value={item.discountPercent}
-                        onChange={(e) => updateItem(idx, 'discountPercent', e.target.value)}
+                        onChange={(e) =>
+                          updateItem(idx, "discountPercent", e.target.value)
+                        }
                         className="w-14 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] h-8 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
                       />
                     </div>
@@ -430,17 +494,25 @@ function QuoteFormModal({
         <div className="rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)] p-4">
           <div className="flex justify-between items-center text-sm">
             <span className="text-[var(--color-text-secondary)]">Subtotal</span>
-            <span className="text-[var(--color-text-primary)] font-mono">{symbol} {formatPrice(subtotal)}</span>
+            <span className="text-[var(--color-text-primary)] font-mono">
+              {symbol} {formatPrice(subtotal)}
+            </span>
           </div>
           {globalDiscount > 0 && (
             <div className="flex justify-between items-center text-sm mt-1">
-              <span className="text-[var(--color-danger)]">Desconto ({globalDiscount}%)</span>
-              <span className="text-[var(--color-danger)] font-mono">-{symbol} {formatPrice(discountAmount)}</span>
+              <span className="text-[var(--color-danger)]">
+                Desconto ({globalDiscount}%)
+              </span>
+              <span className="text-[var(--color-danger)] font-mono">
+                -{symbol} {formatPrice(discountAmount)}
+              </span>
             </div>
           )}
           <div className="flex justify-between items-center text-base font-bold mt-3 pt-3 border-t border-[var(--color-border)]">
             <span className="text-[var(--color-text-primary)]">TOTAL</span>
-            <span className="text-[var(--color-success)] font-mono text-lg">{symbol} {formatPrice(total)}</span>
+            <span className="text-[var(--color-success)] font-mono text-lg">
+              {symbol} {formatPrice(total)}
+            </span>
           </div>
         </div>
 
@@ -465,7 +537,7 @@ function QuoteFormModal({
             className="flex-1 py-3 rounded-xl text-sm font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2"
           >
             <FileText className="w-4 h-4" />
-            {isEditing ? 'Atualizar' : 'Salvar Orçamento'}
+            {isEditing ? "Atualizar" : "Salvar Orçamento"}
           </button>
         </div>
       </div>
@@ -488,9 +560,12 @@ function QuoteFormModal({
                 onClick={() => addItemFromHistory(entry.id)}
                 className="w-full text-left p-3 rounded-xl bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
               >
-                <div className="text-sm text-[var(--color-text-primary)] font-medium">{entry.name}</div>
+                <div className="text-sm text-[var(--color-text-primary)] font-medium">
+                  {entry.name}
+                </div>
                 <div className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                  {symbol} {formatPrice(entry.sellPrice)} · {entry.type.toUpperCase()}
+                  {symbol} {formatPrice(entry.sellPrice)} ·{" "}
+                  {entry.type.toUpperCase()}
                 </div>
               </button>
             ))
@@ -498,7 +573,7 @@ function QuoteFormModal({
         </div>
       </Modal>
     </Modal>
-  )
+  );
 }
 
 // ── QuoteViewModal ────────────────────────────────────────────────
@@ -506,38 +581,37 @@ function QuoteViewModal({
   quote,
   customer,
   onClose,
-  locale = 'pt-BR',
+  locale = "pt-BR",
 }: {
-  quote: Quote
-  customer?: Customer
-  onClose: () => void
-  locale?: string
+  quote: Quote;
+  customer?: Customer;
+  onClose: () => void;
+  locale?: string;
 }) {
-  const { symbol, format: formatMoney } = useCurrency()
-  const quoteStore = useQuoteStore.getState()
-  const statusConfig = STATUS_CONFIG[quote.status]
+  const { symbol, format: formatMoney } = useCurrency();
+  const quoteStore = useQuoteStore.getState();
+  const statusConfig = STATUS_CONFIG[quote.status];
 
-  const updateStatus = (newStatus: Quote['status']) => {
-    quoteStore.setQuoteStatus(quote.id, newStatus)
-  }
+  const updateStatus = (newStatus: Quote["status"]) => {
+    quoteStore.setQuoteStatus(quote.id, newStatus);
+  };
 
   const handleExportPdf = async () => {
-    if (guardExport()) return
-    const { pdf: pdfFn } = await import('@react-pdf/renderer')
+    if (guardExport()) return;
+    const { pdf: pdfFn } = await import("@react-pdf/renderer");
     const blob = await pdfFn(
-      <QuoteDoc
-        quote={quote}
-        customer={customer}
-        currencySymbol={symbol}
-      />,
-    ).toBlob()
-    downloadBlob(blob, `orcamento_${String(quote.number).padStart(3, '0')}.pdf`)
-  }
+      <QuoteDoc quote={quote} customer={customer} currencySymbol={symbol} />,
+    ).toBlob();
+    downloadBlob(
+      blob,
+      `orcamento_${String(quote.number).padStart(3, "0")}.pdf`,
+    );
+  };
 
   return (
     <Modal
       open
-      title={`Orçamento #${String(quote.number).padStart(3, '0')}`}
+      title={`Orçamento #${String(quote.number).padStart(3, "0")}`}
       onClose={onClose}
       wide
     >
@@ -546,7 +620,9 @@ function QuoteViewModal({
         {/* Status + actions bar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusConfig.bg} ${statusConfig.color}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-semibold ${statusConfig.bg} ${statusConfig.color}`}
+            >
               {statusConfig.label}
             </span>
             <span className="text-xs text-[var(--color-text-muted)]">
@@ -556,7 +632,7 @@ function QuoteViewModal({
           <div className="flex items-center gap-2">
             <select
               value={quote.status}
-              onChange={(e) => updateStatus(e.target.value as Quote['status'])}
+              onChange={(e) => updateStatus(e.target.value as Quote["status"])}
               className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-xs text-[var(--color-text-primary)] h-8 px-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all appearance-none cursor-pointer"
             >
               <option value="draft">Rascunho</option>
@@ -577,13 +653,23 @@ function QuoteViewModal({
         {/* Quote info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Título</p>
-            <p className="text-sm text-[var(--color-text-primary)] font-medium">{quote.title}</p>
+            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
+              Título
+            </p>
+            <p className="text-sm text-[var(--color-text-primary)] font-medium">
+              {quote.title}
+            </p>
           </div>
           {quote.validUntil && (
             <div>
-              <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Validade</p>
-              <p className="text-sm text-[var(--color-text-primary)]">{new Date(quote.validUntil + 'T00:00:00').toLocaleDateString(locale)}</p>
+              <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
+                Validade
+              </p>
+              <p className="text-sm text-[var(--color-text-primary)]">
+                {new Date(quote.validUntil + "T00:00:00").toLocaleDateString(
+                  locale,
+                )}
+              </p>
             </div>
           )}
         </div>
@@ -591,18 +677,36 @@ function QuoteViewModal({
         {/* Customer info */}
         {customer && (
           <div className="rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)] p-3">
-            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Cliente</p>
-            <p className="text-sm text-[var(--color-text-primary)]">{customer.name}</p>
-            {customer.company && <p className="text-xs text-[var(--color-text-secondary)]">{customer.company}</p>}
-            {customer.email && <p className="text-xs text-[var(--color-text-secondary)]">{customer.email}</p>}
-            {customer.phone && <p className="text-xs text-[var(--color-text-secondary)]">{customer.phone}</p>}
+            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+              Cliente
+            </p>
+            <p className="text-sm text-[var(--color-text-primary)]">
+              {customer.name}
+            </p>
+            {customer.company && (
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {customer.company}
+              </p>
+            )}
+            {customer.email && (
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {customer.email}
+              </p>
+            )}
+            {customer.phone && (
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {customer.phone}
+              </p>
+            )}
           </div>
         )}
 
         {/* Items table */}
         {quote.items.length > 0 && (
           <div>
-            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-2">Itens</p>
+            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+              Itens
+            </p>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -615,17 +719,25 @@ function QuoteViewModal({
                 </thead>
                 <tbody>
                   {quote.items.map((item, idx) => {
-                    const lineTotal = item.quantity * item.unitPrice
-                    const discountedTotal = item.discountPercent > 0
-                      ? lineTotal * (1 - item.discountPercent / 100)
-                      : lineTotal
+                    const lineTotal = item.quantity * item.unitPrice;
+                    const discountedTotal =
+                      item.discountPercent > 0
+                        ? lineTotal * (1 - item.discountPercent / 100)
+                        : lineTotal;
                     return (
-                      <tr key={idx} className="border-b border-[var(--color-border)]">
-                        <td className="py-2.5 pr-2 text-[var(--color-text-primary)]">{item.quantity}</td>
+                      <tr
+                        key={idx}
+                        className="border-b border-[var(--color-border)]"
+                      >
+                        <td className="py-2.5 pr-2 text-[var(--color-text-primary)]">
+                          {item.quantity}
+                        </td>
                         <td className="py-2.5 px-2 text-[var(--color-text-primary)]">
                           {item.name}
                           {item.discountPercent > 0 && (
-                            <span className="text-[var(--color-danger)] text-xs ml-1">(-{item.discountPercent}%)</span>
+                            <span className="text-[var(--color-danger)] text-xs ml-1">
+                              (-{item.discountPercent}%)
+                            </span>
                           )}
                         </td>
                         <td className="py-2.5 px-2 text-right text-[var(--color-text-secondary)] font-mono">
@@ -635,7 +747,7 @@ function QuoteViewModal({
                           {formatMoney(discountedTotal)}
                         </td>
                       </tr>
-                    )
+                    );
                   })}
                 </tbody>
               </table>
@@ -647,17 +759,25 @@ function QuoteViewModal({
         <div className="rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)] p-4 max-w-xs ml-auto">
           <div className="flex justify-between text-sm">
             <span className="text-[var(--color-text-secondary)]">Subtotal</span>
-            <span className="text-[var(--color-text-primary)] font-mono">{formatMoney(quote.subtotal)}</span>
+            <span className="text-[var(--color-text-primary)] font-mono">
+              {formatMoney(quote.subtotal)}
+            </span>
           </div>
           {quote.globalDiscountPercent > 0 && (
             <div className="flex justify-between text-sm mt-1">
-              <span className="text-[var(--color-danger)]">Desconto ({quote.globalDiscountPercent}%)</span>
-              <span className="text-[var(--color-danger)] font-mono">-{formatMoney(quote.discountAmount)}</span>
+              <span className="text-[var(--color-danger)]">
+                Desconto ({quote.globalDiscountPercent}%)
+              </span>
+              <span className="text-[var(--color-danger)] font-mono">
+                -{formatMoney(quote.discountAmount)}
+              </span>
             </div>
           )}
           <div className="flex justify-between text-base font-bold mt-3 pt-3 border-t border-[var(--color-border)]">
             <span className="text-[var(--color-text-primary)]">TOTAL</span>
-            <span className="text-[var(--color-success)] font-mono text-lg">{formatMoney(quote.total)}</span>
+            <span className="text-[var(--color-success)] font-mono text-lg">
+              {formatMoney(quote.total)}
+            </span>
           </div>
         </div>
 
@@ -666,80 +786,96 @@ function QuoteViewModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             {quote.paymentTerms && (
               <div>
-                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Pagamento</p>
-                <p className="text-[var(--color-text-primary)]">{quote.paymentTerms}</p>
+                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
+                  Pagamento
+                </p>
+                <p className="text-[var(--color-text-primary)]">
+                  {quote.paymentTerms}
+                </p>
               </div>
             )}
             {quote.deliveryEstimate && (
               <div>
-                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Prazo</p>
-                <p className="text-[var(--color-text-primary)]">{quote.deliveryEstimate}</p>
+                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
+                  Prazo
+                </p>
+                <p className="text-[var(--color-text-primary)]">
+                  {quote.deliveryEstimate}
+                </p>
               </div>
             )}
             {quote.footerNote && (
               <div className="sm:col-span-2">
-                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Observações</p>
-                <p className="text-[var(--color-text-primary)] italic">{quote.footerNote}</p>
+                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mb-1">
+                  Observações
+                </p>
+                <p className="text-[var(--color-text-primary)] italic">
+                  {quote.footerNote}
+                </p>
               </div>
             )}
           </div>
         )}
       </div>
     </Modal>
-  )
+  );
 }
 
 // ── Main QuoteSection ─────────────────────────────────────────────
 export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
-  const { t, i18n } = useTranslation()
-  const { format: formatMoney } = useCurrency()
-  const locale = localeProp ?? i18n.language ?? 'pt-BR'
-  const quoteStore = useQuoteStore()
-  const customers = useCustomerStore((s) => s.customers)
-  const [search, setSearch] = useState('')
-  const [showForm, setShowForm] = useState(false)
-  const [editQuote, setEditQuote] = useState<Quote | undefined>(undefined)
-  const [viewQuote, setViewQuote] = useState<Quote | undefined>(undefined)
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const { t, i18n } = useTranslation();
+  const { format: formatMoney } = useCurrency();
+  const locale = localeProp ?? i18n.language ?? "pt-BR";
+  const quoteStore = useQuoteStore();
+  const customers = useCustomerStore((s) => s.customers);
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editQuote, setEditQuote] = useState<Quote | undefined>(undefined);
+  const [viewQuote, setViewQuote] = useState<Quote | undefined>(undefined);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Sync search with store
   useEffect(() => {
-    quoteStore.setSearchQuery(search)
-  }, [search, quoteStore.setSearchQuery]) // eslint-disable-line react-hooks/exhaustive-deps
+    quoteStore.setSearchQuery(search);
+  }, [search, quoteStore.setSearchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filtered = quoteStore.getFilteredQuotes()
+  const filtered = quoteStore.getFilteredQuotes();
 
-  const statusFilters: Array<{ key: typeof quoteStore.statusFilter; label: string }> = [
-    { key: 'all', label: 'Todos' },
-    { key: 'draft', label: 'Rascunho' },
-    { key: 'sent', label: 'Enviado' },
-    { key: 'approved', label: 'Aprovado' },
-    { key: 'rejected', label: 'Recusado' },
-  ]
+  const statusFilters: Array<{
+    key: typeof quoteStore.statusFilter;
+    label: string;
+  }> = [
+    { key: "all", label: "Todos" },
+    { key: "draft", label: "Rascunho" },
+    { key: "sent", label: "Enviado" },
+    { key: "approved", label: "Aprovado" },
+    { key: "rejected", label: "Recusado" },
+  ];
 
   const handleNewQuote = () => {
-    setEditQuote(undefined)
-    setShowForm(true)
-  }
+    setEditQuote(undefined);
+    setShowForm(true);
+  };
 
   const handleEditQuote = (quote: Quote) => {
-    setEditQuote(quote)
-    setShowForm(true)
-  }
+    setEditQuote(quote);
+    setShowForm(true);
+  };
 
   const handleFormSave = () => {
-    setShowForm(false)
-    setEditQuote(undefined)
-  }
+    setShowForm(false);
+    setEditQuote(undefined);
+  };
 
   const handleViewQuote = (quote: Quote) => {
-    setViewQuote(quote)
-  }
+    setViewQuote(quote);
+  };
 
   const getCustomerForQuote = (quote: Quote): Customer | undefined => {
-    if (quote.customerId) return customers.find((c) => c.id === quote.customerId)
-    return undefined
-  }
+    if (quote.customerId)
+      return customers.find((c) => c.id === quote.customerId);
+    return undefined;
+  };
 
   return (
     <div className="surface rounded-xl p-5 animate-fade-in">
@@ -747,28 +883,32 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
       <div className="flex items-center justify-between mb-4 border-b border-[var(--color-border)] pb-2">
         <h2 className="text-lg font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
           <FileText className="w-4 h-4 text-[var(--color-accent)]" />
-          {t('quotes.title', 'Orçamentos')}
+          {t("quotes.title", "Orçamentos")}
         </h2>
         <button
+          data-tutorial="quote-new"
           onClick={handleNewQuote}
           className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
         >
           <Plus className="w-3.5 h-3.5" />
-          {t('quotes.newQuote', 'Novo Orçamento')}
+          {t("quotes.newQuote", "Novo Orçamento")}
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap mb-4">
-        <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0" style={{ scrollbarWidth: 'none' }}>
+        <div
+          className="flex gap-2 overflow-x-auto pb-1 sm:pb-0"
+          style={{ scrollbarWidth: "none" }}
+        >
           {statusFilters.map((f) => (
             <button
               key={f.key}
               onClick={() => quoteStore.setStatusFilter(f.key)}
               className={`px-3 py-1.5 text-xs rounded-lg transition-colors whitespace-nowrap ${
                 quoteStore.statusFilter === f.key
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  ? "bg-[var(--color-accent)] text-white"
+                  : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               }`}
             >
               {f.label}
@@ -784,24 +924,35 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('quotes.searchPlaceholder', 'Buscar por título ou cliente...')}
+          placeholder={t(
+            "quotes.searchPlaceholder",
+            "Buscar por título ou cliente...",
+          )}
           className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-xl text-sm text-[var(--color-text-primary)] h-12 pl-10 pr-4 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all"
         />
       </div>
 
       {/* List */}
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title="Nenhum orçamento criado ainda"
-          description="Crie orçamentos profissionais a partir dos seus cálculos salvos no histórico."
-          action={{ label: 'Criar primeiro orçamento', onClick: handleNewQuote }}
-        />
+        <div data-tutorial="quotes-list">
+          <EmptyState
+            icon={FileText}
+            title="Nenhum orçamento criado ainda"
+            description="Crie orçamentos profissionais a partir dos seus cálculos salvos no histórico."
+            action={{
+              label: "Criar primeiro orçamento",
+              onClick: handleNewQuote,
+            }}
+          />
+        </div>
       ) : (
-        <div className="space-y-2 max-h-[60vh] sm:max-h-80 overflow-y-auto">
+        <div
+          data-tutorial="quotes-list"
+          className="space-y-2 max-h-[60vh] sm:max-h-80 overflow-y-auto"
+        >
           {filtered.map((quote) => {
-            const customer = getCustomerForQuote(quote)
-            const statusCfg = STATUS_CONFIG[quote.status]
+            const customer = getCustomerForQuote(quote);
+            const statusCfg = STATUS_CONFIG[quote.status];
             return (
               <div
                 key={quote.id}
@@ -811,9 +962,11 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-[var(--color-accent)] font-mono font-bold">
-                      #{String(quote.number).padStart(3, '0')}
+                      #{String(quote.number).padStart(3, "0")}
                     </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${statusCfg.bg} ${statusCfg.color}`}>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-semibold ${statusCfg.bg} ${statusCfg.color}`}
+                    >
                       {statusCfg.label}
                     </span>
                   </div>
@@ -821,7 +974,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
                     {quote.title}
                   </p>
                   <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                    {customer ? customer.name : 'Sem cliente'}
+                    {customer ? customer.name : "Sem cliente"}
                     <span className="mx-1">·</span>
                     {new Date(quote.createdAt).toLocaleDateString(locale)}
                   </p>
@@ -862,7 +1015,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
                   </button>
                 </div>
               </div>
-            )
+            );
           })}
         </div>
       )}
@@ -871,7 +1024,10 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
       {showForm && (
         <QuoteFormModal
           editQuote={editQuote}
-          onClose={() => { setShowForm(false); setEditQuote(undefined) }}
+          onClose={() => {
+            setShowForm(false);
+            setEditQuote(undefined);
+          }}
           onSave={handleFormSave}
           locale={locale}
         />
@@ -892,21 +1048,22 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
         message={
           confirmDeleteId
             ? `Tem certeza que deseja excluir o orçamento #${String(
-                useQuoteStore.getState().getQuote(confirmDeleteId)?.number ?? '',
-              ).padStart(3, '0')}?`
-            : ''
+                useQuoteStore.getState().getQuote(confirmDeleteId)?.number ??
+                  "",
+              ).padStart(3, "0")}?`
+            : ""
         }
         variant="danger"
         confirmLabel="Excluir"
         cancelLabel="Cancelar"
         onConfirm={() => {
           if (confirmDeleteId !== null) {
-            useQuoteStore.getState().removeQuote(confirmDeleteId)
+            useQuoteStore.getState().removeQuote(confirmDeleteId);
           }
-          setConfirmDeleteId(null)
+          setConfirmDeleteId(null);
         }}
         onCancel={() => setConfirmDeleteId(null)}
       />
     </div>
-  )
+  );
 }

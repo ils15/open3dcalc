@@ -734,6 +734,10 @@
       "dashboard-kpis": {
         "title": "KPI dashboard",
         "description": "Financial summary, date-range filter, history KPIs, and monthly profit projection."
+      },
+      "orcamentos-clientes": {
+        "title": "Quotes and customers",
+        "description": "Turn saved calculations into professional quotes and manage your client roster."
       }
     },
     "steps": {
@@ -832,6 +836,38 @@
       "dash-complete": {
         "title": "Data-driven decisions 🎯",
         "description": "Tweak the period and monthly volume to simulate scenarios. History keeps every calculation for later comparison."
+      },
+      "qc-intro": {
+        "title": "Quotes and customers 📄",
+        "description": "In this tour you turn saved calculations into professional quotes and keep your clients organized in one place."
+      },
+      "qc-list": {
+        "title": "Quotes list",
+        "description": "Every quote lives here, with status (draft, sent, approved or rejected) plus search by title or client."
+      },
+      "qc-new": {
+        "title": "New quote",
+        "description": "Use this button to create a new quote from the calculations saved in your history."
+      },
+      "qc-customer": {
+        "title": "Link a customer",
+        "description": "In the form, pick the customer in the selector to link them to the quote — the contact is printed on the PDF."
+      },
+      "cs-intro": {
+        "title": "Customers 👥",
+        "description": "Now the Customers tab: register name, company and contacts to reuse across quotes."
+      },
+      "cs-list": {
+        "title": "Customers list",
+        "description": "Your client roster shows up here, with search plus actions to edit and remove entries."
+      },
+      "cs-new": {
+        "title": "New customer",
+        "description": "Register a new customer with name, company, email, phone and notes."
+      },
+      "qc-complete": {
+        "title": "Ready to quote! 🎉",
+        "description": "Customer registered and quote linked: export it as a PDF and send it. Everything stays saved on your device."
       }
     }
   },
