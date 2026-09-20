@@ -15,7 +15,10 @@ describe("wikiArticles glob (real, unmocked)", () => {
   it("discovers every seeded article of every locale", () => {
     const keys = Object.keys(wikiArticles);
 
-    expect(keys).toHaveLength(LOCALES.length * SEED_SLUGS.length);
+    // Containment, not exact count: the wiki grows past the seeds, and the
+    // value of this test is catching a glob/plugin regression (empty or
+    // malformed keys), not pinning the article total. Cross-locale
+    // completeness is owned by the parity test below (R6).
     for (const locale of LOCALES) {
       for (const slug of SEED_SLUGS) {
         expect(keys).toContain(`/docs/wiki/${locale}/${slug}.md`);
