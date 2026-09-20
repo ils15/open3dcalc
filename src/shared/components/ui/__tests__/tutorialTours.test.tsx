@@ -7,14 +7,18 @@ import {
   TOURS,
   TOUR_IDS,
   TUTORIAL_TABS,
+  TUTORIAL_NAVIGATE_EVENT,
+  dispatchTutorialNavigate,
   getTourStepCount,
+  getTourSteps,
+  isTourAvailable,
 } from "../tutorialTours";
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import enUS from "@/shared/i18n/locales/en-US.json";
 import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
-import type { TutorialTab } from "../tutorialTours";
+import type { TutorialTab, TourId } from "../tutorialTours";
 
 // ── Mocks (the engine is real; only its presentational deps are stubbed) ────
 
@@ -874,5 +878,40 @@ describe("registry: permanent guards (R3 + launcher contract)", () => {
         `${tourId}: an empty tour is hidden by the launcher — fill it or drop the id`,
       ).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("helpers: registry fallback + navigate event", () => {
+  // A tour id an older build persisted that no longer exists in the registry —
+  // the helpers must degrade to "no tour" instead of throwing on lookup.
+  const LEGACY_TOUR_ID = "calc-basico-v1" as unknown as TourId;
+
+  it("getTourSteps degrades an unknown tour id to an empty tour", () => {
+    expect(getTourSteps(LEGACY_TOUR_ID)).toEqual([]);
+    expect(getTourSteps("calc-basico").length).toBeGreaterThan(0);
+  });
+
+  it("getTourStepCount is 0 for an unknown tour, the step count otherwise", () => {
+    expect(getTourStepCount(LEGACY_TOUR_ID)).toBe(0);
+    expect(getTourStepCount("calc-basico")).toBe(TOURS["calc-basico"].length);
+  });
+
+  it("isTourAvailable is false for an unknown tour, true for a filled one", () => {
+    expect(isTourAvailable(LEGACY_TOUR_ID)).toBe(false);
+    expect(isTourAvailable("calc-basico")).toBe(true);
+  });
+
+  it("dispatchTutorialNavigate emits a CustomEvent carrying the tab", () => {
+    const listener = vi.fn();
+    window.addEventListener(TUTORIAL_NAVIGATE_EVENT, listener);
+
+    dispatchTutorialNavigate("dashboard");
+
+    expect(listener).toHaveBeenCalledOnce();
+    const [event] = listener.mock.calls[0];
+    expect(event).toBeInstanceOf(CustomEvent);
+    expect((event as CustomEvent<TutorialTab>).detail).toBe("dashboard");
+
+    window.removeEventListener(TUTORIAL_NAVIGATE_EVENT, listener);
   });
 });

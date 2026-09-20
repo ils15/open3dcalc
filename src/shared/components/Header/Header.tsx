@@ -100,7 +100,7 @@ export function Header() {
         <div className="flex shrink-0 items-center gap-2">
           {/* Desktop-only actions */}
           <div className="hidden sm:flex items-center gap-2">
-            {/* Guide / help drawer (21 areas) */}
+            {/* Guide / help drawer (22 areas) */}
             <GuideDrawer />
 
             {/* Tours launcher */}

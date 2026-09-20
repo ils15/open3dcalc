@@ -15,8 +15,7 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/shared/stores/tutorialStore", () => ({
   useTutorialStore: Object.assign(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (selector?: any) => {
+    (selector?: (state: { startTour: typeof mockStartTour }) => unknown) => {
       const state = { startTour: mockStartTour };
       return selector ? selector(state) : state;
     },

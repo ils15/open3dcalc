@@ -24,7 +24,7 @@ interface GuideDrawerProps {
 }
 
 /**
- * Help center for the app's 21 areas (11 tabs + 10 calculator sections): one
+ * Help center for the app's 22 areas (12 tabs + 10 calculator sections): one
  * card per area with its title/description, and a "take the tour" CTA only
  * where a tour with registered steps exists — areas without one (history,
  * changelog, privacy, …) render no dead button.
