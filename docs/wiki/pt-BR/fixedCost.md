@@ -59,27 +59,27 @@ rateio acompanha as horas de impressão de cada peça — peça longa, mais alug
 Uma oficina pequena em um quarto transformado em estúdio:
 
 ```
-aluguel + condomínio     = R$ 450
+aluguel + condomínio     = R$ 350
 internet                 = R$ 60
 energia base (standby)   = R$ 40
 -------------------------
-custoFixoMensal          = R$ 550
+custoFixoMensal          = R$ 450
 
 horasProdutivasMes       = 150 h
 
-rateioPorHora = 550 / 150 = R$ 3,67/h
+rateioPorHora = 450 / 150 = R$ 3,00/h
 ```
 
 Nossa peça-exemplo, o suporte de celular com **5,5 horas** de impressão:
 
 ```
-fixedCost = 3,67 * 5,5 = R$ 20,18
+fixedCost = 3,00 * 5,5 = R$ 16,50
 ```
 
-A peça carrega **R$ 20,18** de aluguel, internet e energia base. Compare com os
-R$ 16,20 de [material](#user-content-material): a peça paga mais aluguel do que
-filamento. É esse o momento em que muita gente descobre que o preço de venda
-estava cobrando só o plástico.
+A peça carrega **R$ 16,50** de aluguel, internet e energia base. Compare com os
+R$ 16,20 de [material](#user-content-material) (0,18 kg de PLA a R$ 90/kg): a peça
+paga mais aluguel do que filamento. É esse o momento em que muita gente descobre
+que o preço de venda estava cobrando só o plástico.
 
 ## A sensibilidade que assusta
 
@@ -87,9 +87,9 @@ O rateio é uma divisão — e divisões explodem quando o denominador é pequen
 Veja a mesma oficina com diferentes horas produtivas:
 
 ```
-150 h/mês → 550 / 150 = R$ 3,67/h
-100 h/mês → 550 / 100 = R$ 5,50/h
- 50 h/mês → 550 /  50 = R$ 11,00/h
+150 h/mês → 450 / 150 = R$ 3,00/h
+100 h/mês → 450 / 100 = R$ 4,50/h
+ 50 h/mês → 450 /  50 = R$ 9,00/h
 ```
 
 Se a impressora passa a semana parada, cada peça precisa carregar o dobro ou o

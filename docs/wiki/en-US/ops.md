@@ -83,17 +83,18 @@ ppe = R$ 2.00
 ops = 6.65 + 2.00 = R$ 8.65
 ```
 
-And the carbon footprint, with the default intensity of 100 g/kWh and a 150 W
+And the carbon footprint, with the default intensity of 100 g/kWh and a 250 W
 printer:
 
 ```
-energyKwh = (150 / 1000) * 5.5 = 0.825 kWh
+energyKwh = (250 / 1000) * 5.5 = 1.375 kWh
 
-carbonFootprintGrams = 0.825 * 100 = 82.5 g of CO2
+carbonFootprintGrams = 1.375 * 100 = 137.5 g of CO2
 ```
 
 For a decorative part, **R$ 8.65** of "invisibles" is more than half the
-[material](#user-content-material) cost — which was R$ 16.20.
+[material](#user-content-material) cost — which was R$ 16.20 (0.18 kg of PLA
+at R$ 90/kg).
 
 ## How this section relates to the others
 

@@ -79,6 +79,17 @@ Without those fields the math would say R$ 6.25. The R$ 1.15 difference per part
 is exactly the kind of loss that shows up at a hundred units — R$ 115 of profit
 evaporated by forgetting the purge.
 
+The part that runs through the other articles — the phone stand — is the
+simplest case: **180 g of PLA at R$ 90/kg**, with no purge tower:
+
+```
+material cost = (180 / 1000) * 90 = 0.18 * 90 = R$ 16.20
+```
+
+That **R$ 16.20** is the number the [fixed costs](#user-content-fixed-costs) and
+[operational & software](#user-content-operational--software) articles cite when
+comparing against their own cost.
+
 ## Resin: volume, not weight
 
 Resin printing works differently, because you buy liquid. The fields change:

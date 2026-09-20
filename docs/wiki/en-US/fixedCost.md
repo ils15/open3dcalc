@@ -59,27 +59,27 @@ way the share follows each part's print hours — a longer part pays more rent.
 A small workshop in a bedroom turned into a studio:
 
 ```
-rent + building fees   = R$ 450
+rent + building fees   = R$ 350
 internet                = R$ 60
 baseline power (standby)= R$ 40
 -------------------------
-monthlyFixedCost        = R$ 550
+monthlyFixedCost        = R$ 450
 
 monthlyProductiveHours  = 150 h
 
-sharePerHour = 550 / 150 = R$ 3.67/h
+sharePerHour = 450 / 150 = R$ 3.00/h
 ```
 
 Our example part, the phone stand with **5.5 hours** of printing:
 
 ```
-fixedCost = 3.67 * 5.5 = R$ 20.18
+fixedCost = 3.00 * 5.5 = R$ 16.50
 ```
 
-The part carries **R$ 20.18** of rent, internet and baseline power. Compare it
-to the R$ 16.20 of [material](#user-content-material): the part pays more rent
-than filament. That is the moment many people discover their selling price was
-only covering plastic.
+The part carries **R$ 16.50** of rent, internet and baseline power. Compare it
+to the R$ 16.20 of [material](#user-content-material) (0.18 kg of PLA at R$ 90/kg):
+the part pays more rent than filament. That is the moment many people discover
+their selling price was only covering plastic.
 
 ## The sensitivity that stings
 
@@ -87,9 +87,9 @@ The share is a division — and divisions blow up when the denominator is small.
 Here is the same workshop at different productive hours:
 
 ```
-150 h/month → 550 / 150 = R$ 3.67/h
-100 h/month → 550 / 100 = R$ 5.50/h
- 50 h/month → 550 /  50 = R$ 11.00/h
+150 h/month → 450 / 150 = R$ 3.00/h
+100 h/month → 450 / 100 = R$ 4.50/h
+ 50 h/month → 450 /  50 = R$ 9.00/h
 ```
 
 If the printer sits idle all week, every part has to carry double or quadruple

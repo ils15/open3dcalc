@@ -83,16 +83,17 @@ ops = 6,65 + 2,00 = R$ 8,65
 ```
 
 E a pegada de carbono, com a intensidade padrão de 100 g/kWh e uma impressora
-de 150 W:
+de 250 W:
 
 ```
-energiaKwh = (150 / 1000) * 5,5 = 0,825 kWh
+energiaKwh = (250 / 1000) * 5,5 = 1,375 kWh
 
-pegadaCarbonoGramas = 0,825 * 100 = 82,5 g de CO2
+pegadaCarbonoGramas = 1,375 * 100 = 137,5 g de CO2
 ```
 
 Para uma peça decorativa, **R$ 8,65** de "invisíveis" é mais da metade do
-custo do [material](#user-content-material) — que era R$ 16,20.
+custo do [material](#user-content-material) — que era R$ 16,20 (0,18 kg de PLA
+a R$ 90/kg).
 
 ## Como esta seção se relaciona com as demais
 
