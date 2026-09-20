@@ -56,14 +56,14 @@ The calculator splits cost into independent sections, and the inventory feeds
 four of them:
 
 - price per kg, remaining weight and spool diameter → [Material](#user-content-material) section
-- printer value and useful life → [Hardware](#user-content-hardware-wear) section
-- power and maintenance per hour → [Machine](#user-content-machine-costs) section
-- marketplace fees and shipping → `sales` section
+- printer value, useful life and monthly maintenance → [Machine](#user-content-machine-costs) section
+- printer power and energy rate → [Print](#user-content-print-parameters) section
+- marketplace fees and shipping → [Sales](#user-content-additional-costs-and-sales) section
 
 ```
 material = (part weight + failure weight) * price per kg / 1000
-hardware = (hours used / useful life) * printer value
-machine  = hours * power * energy rate + hours * maintenance per hour
+machine  = ((printer value / useful life) + (monthly maintenance / hours per month) + fixed share) * hours
+print    = (power / 1000) * hours * energy rate
 ```
 
 Diameter comes first: it converts the model volume into weight. That is why
@@ -90,7 +90,8 @@ catalog does not change what you paid; it just shows the truth.
 
 The same applies to the machine. An R$ 1,800 printer with a 2,000-hour useful
 life costs **R$ 0.90 per hour** of use, so a 6-hour print carries R$ 5.40 of
-depreciation. Add 350 W of power over 6 hours at R$ 0.75 per kWh and that is
+depreciation — that amount lands in the Machine section. The registered power
+feeds a different section, Print: 350 W over 6 hours at R$ 0.75 per kWh adds
 another R$ 1.58 of energy. Without those fields filled in, the calculator has
 no way to guess either number.
 

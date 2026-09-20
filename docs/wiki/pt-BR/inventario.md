@@ -56,14 +56,14 @@ A calculadora divide o custo em seções independentes, e o inventário alimenta
 quatro delas:
 
 - preço por kg, peso restante e diâmetro do rolo → seção [Material](#user-content-material)
-- valor da impressora e vida útil → seção [Hardware](#user-content-desgaste-de-hardware)
-- potência e manutenção por hora → seção [Machine](#user-content-custos-da-máquina)
-- taxas e frete do marketplace → seção `sales`
+- valor da impressora, vida útil e manutenção mensal → seção [Machine](#user-content-custos-da-máquina)
+- potência da impressora e tarifa de energia → seção [Print](#user-content-parâmetros-de-impressão)
+- taxas e frete do marketplace → seção [Sales](#user-content-custos-adicionais-e-vendas)
 
 ```
 material = (peso da peca + peso das falhas) * preco por kg / 1000
-hardware = (horas de uso / vida util) * valor da impressora
-machine  = horas * potencia * tarifa de energia + horas * manutencao por hora
+machine  = ((valor da impressora / vida util) + (manutencao mensal / horas por mes) + rateio fixo) * horas
+print    = (potencia / 1000) * horas * tarifa de energia
 ```
 
 O diâmetro entra antes de tudo: ele converte o volume do modelo em peso. Por
@@ -90,8 +90,9 @@ perceber. O catálogo não muda o preço que você paga; ele só mostra a verdad
 
 O mesmo vale para a máquina. Uma impressora de R$ 1.800 com vida útil de
 2.000 horas custa **R$ 0,90 por hora** de uso, então uma impressão de 6 horas
-embute R$ 5,40 de amortização. Somam-se 350 W de potência durante 6 horas, a
-R$ 0,75 o kWh: mais R$ 1,58 de energia. Sem esses campos cadastrados, a
+embute R$ 5,40 de amortização — esse valor entra na seção Machine. A potência
+cadastrada alimenta outra seção, a Print: 350 W durante 6 horas, a R$ 0,75 o
+kWh, somam R$ 1,58 de energia. Sem esses campos cadastrados, a
 calculadora não tem como adivinhar nenhum dos dois.
 
 ## Rolo parcial, tara e cobertura
