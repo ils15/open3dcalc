@@ -43,7 +43,7 @@ import {
   FileText,
   Users,
   Package,
-  MoreHorizontal,
+  Settings,
   ShieldCheck,
   BookOpen,
   DollarSign,
@@ -81,26 +81,11 @@ type LegacyHistoryItem = {
   snapshot?: CalculationSnapshot | null;
 };
 
-// On mobile, the bottom nav shows the first 4 tabs + a Menu button that opens
-// the bottom sheet with the rest (MORE_TABS). The two sets must stay disjoint
-// and every MORE_TABS id must exist in TABS — tabsParity.test enforces both.
-const MOBILE_VISIBLE_TABS: Tab[] = [
-  "calculator",
-  "dashboard",
-  "infill",
-  "history",
-];
-
-const MORE_TABS: Tab[] = [
-  "catalog",
-  "inventory",
-  "quotes",
-  "customers",
-  "products",
-  "privacy",
-  "changelog",
-  "wiki",
-];
+// On mobile the bottom nav scrolls horizontally over every TAB entry (parity
+// with the desktop Electron nav) and ends with a fixed gear that opens a
+// settings-only sheet. No tab is hidden behind a menu, and settings never mix
+// with tabs — tabsParity.test asserts the nav renders all TABS and the sheet
+// holds settings alone.
 
 export const TABS: {
   id: Tab;
@@ -185,7 +170,7 @@ export const TABS: {
 function App() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("calculator");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Deep-link from the calculator → product bridge (ResultsPanel dispatches
   // "open3dcalc:go-products" after registering a product). Issue #85.
@@ -552,7 +537,7 @@ function App() {
       </div>
       {/* ── Mobile Bottom Navigation ── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
         style={{
           background: "var(--color-bg-primary)",
           borderTop: "1px solid var(--color-border)",
@@ -560,64 +545,70 @@ function App() {
         }}
         aria-label={t("nav.mainNavigation")}
       >
-        <div className="flex items-center h-[56px] px-1">
-          {MOBILE_VISIBLE_TABS.map((tabId) => {
-            const tab = TABS.find((t) => t.id === tabId)!;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 px-0.5 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[44px] ${
-                  isActive
-                    ? "text-[var(--color-accent)]"
-                    : "text-[var(--color-text-muted)]"
-                }`}
-                aria-selected={isActive}
-              >
-                {isActive && (
-                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-[var(--color-accent)]" />
-                )}
-                <span
-                  className={`transition-transform ${isActive ? "scale-110" : ""}`}
+        <div className="flex items-stretch h-[56px]">
+          {/* Scrollable tab strip — parity with the desktop Electron nav */}
+          <div className="flex overflow-x-auto flex-1 min-w-0 px-1">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[56px] py-1 px-1 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[44px] ${
+                    isActive
+                      ? "text-[var(--color-accent)]"
+                      : "text-[var(--color-text-muted)]"
+                  }`}
+                  aria-selected={isActive}
                 >
-                  {tab.icon}
-                </span>
-                <span className="text-[9px] font-semibold leading-tight tracking-wide truncate max-w-full">
-                  {t(tab.labelKey)}
-                </span>
-              </button>
-            );
-          })}
-          {/* More button */}
+                  {isActive && (
+                    <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-[var(--color-accent)]" />
+                  )}
+                  <span
+                    className={`transition-transform ${isActive ? "scale-110" : ""}`}
+                  >
+                    {tab.icon}
+                  </span>
+                  <span className="text-[9px] font-semibold leading-tight tracking-wide truncate max-w-full">
+                    {t(tab.labelKey)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Settings gear — pinned outside the scroll area, always reachable */}
           <button
-            onClick={() => setMobileMenuOpen(true)}
-            className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 px-0.5 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[44px] ${
-              mobileMenuOpen
+            onClick={() => setSettingsOpen(true)}
+            className={`relative flex flex-col items-center justify-center gap-0.5 shrink-0 w-[60px] py-1 px-1 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[44px] border-l border-[var(--color-border)] ${
+              settingsOpen
                 ? "text-[var(--color-accent)]"
                 : "text-[var(--color-text-muted)]"
             }`}
-            aria-label={t("nav.more")}
+            aria-label={t("nav.settings")}
+            aria-expanded={settingsOpen}
+            aria-haspopup="dialog"
           >
-            <MoreHorizontal className="w-[18px] h-[18px]" />
+            <Settings className="w-[18px] h-[18px]" />
             <span className="text-[9px] font-semibold leading-tight tracking-wide max-w-full truncate">
-              {t("nav.more")}
+              {t("nav.settings")}
             </span>
           </button>
         </div>
       </nav>
 
-      {/* ── Mobile More Menu Bottom Sheet ── */}
+
+      {/* ── Mobile Settings Bottom Sheet (settings only — never tabs) ── */}
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {settingsOpen && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/40 lg:hidden"
-              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 z-50 bg-black/40 md:hidden"
+              onClick={() => setSettingsOpen(false)}
               aria-hidden="true"
             />
             <motion.div
@@ -625,7 +616,9 @@ function App() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 lg:hidden rounded-t-2xl"
+              className="fixed bottom-0 left-0 right-0 z-50 md:hidden rounded-t-2xl"
+              role="dialog"
+              aria-label={t("nav.settings")}
               style={{
                 background: "var(--color-bg-primary)",
                 borderTop: "1px solid var(--color-border)",
@@ -642,28 +635,7 @@ function App() {
                 />
               </div>
               <div className="px-3 pb-4 overflow-y-auto space-y-0.5">
-                {MORE_TABS.map((tabId) => {
-                  const tab = TABS.find((t) => t.id === tabId)!;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px] ${
-                        activeTab === tab.id
-                          ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)] font-semibold"
-                          : "text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
-                      }`}
-                    >
-                      <span className="shrink-0">{tab.icon}</span>
-                      <span className="text-sm">{t(tab.labelKey)}</span>
-                    </button>
-                  );
-                })}
-
-                {/* ── Settings separator ── */}
+                {/* ── Settings heading ── */}
                 <div className="flex items-center gap-3 pt-3 pb-1 px-4">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                     {t("nav.settings")}
@@ -678,7 +650,7 @@ function App() {
                 <button
                   onClick={() => {
                     useTutorialStore.getState().startTutorial();
-                    setMobileMenuOpen(false);
+                    setSettingsOpen(false);
                   }}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
                 >
@@ -743,7 +715,7 @@ function App() {
                   onClick={() => {
                     const next = i18n.language === "pt-BR" ? "en-US" : "pt-BR";
                     i18n.changeLanguage(next);
-                    setMobileMenuOpen(false);
+                    setSettingsOpen(false);
                   }}
                   aria-label={t("nav.language")}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
@@ -762,7 +734,7 @@ function App() {
                   href="https://github.com/ils15/open3dcalc"
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => setSettingsOpen(false)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
                 >
                   <ExternalLink className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
@@ -793,5 +765,4 @@ function App() {
   );
 }
 
-export { MORE_TABS, MOBILE_VISIBLE_TABS };
 export default App;
