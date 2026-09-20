@@ -37,7 +37,14 @@ interface GuideDrawerProps {
  */
 export function GuideDrawer({ align = "button" }: GuideDrawerProps) {
   const { t } = useTranslation();
-  const { startTour } = useTutorialStore((s) => ({ startTour: s.startTour }));
+  // Direct field selector: `startTour` is a stable store action, so this
+  // returns the same reference every call. An object-returning selector here
+  // `(s) => ({ startTour: s.startTour })` yields a fresh object per `getSnapshot`
+  // and, under zustand v5's `useSyncExternalStore`, React re-renders forever —
+  // React #185 at boot (the GuideDrawer button mounts unconditionally in the
+  // Header). Multi-field selectors must go through `useShallow`; a single field
+  // needs neither that nor an object literal.
+  const startTour = useTutorialStore((s) => s.startTour);
   const {
     open,
     setOpen,
