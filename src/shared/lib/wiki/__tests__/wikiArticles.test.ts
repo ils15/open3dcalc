@@ -32,9 +32,13 @@ describe("wikiArticles glob (real, unmocked)", () => {
     );
 
     for (const article of modules) {
-      // Identity comes from the path, not the markdown body.
+      // Identity comes from the path, not the markdown body. Containment on
+      // SEED_SLUGS lives in the discovery test above; this module-shape check
+      // only asserts every compiled article has a path-derived slug, so new
+      // articles are allowed to grow past the seeds (see b80cbf9).
       expect(LOCALES).toContain(article.locale);
-      expect(SEED_SLUGS).toContain(article.slug);
+      expect(typeof article.slug).toBe("string");
+      expect(article.slug.length).toBeGreaterThan(0);
       expect(article.locale).toMatch(/^(pt-BR|en-US)$/);
 
       // Frontmatter is the flat fail-closed schema from markdownToHtml.
