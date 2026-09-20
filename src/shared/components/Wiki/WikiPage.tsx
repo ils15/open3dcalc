@@ -22,13 +22,13 @@ interface WikiEntry {
  * `ready` never vibrates (R2, covered by `useWikiNamespace`): this is shown
  * only until the FIRST bundle resolves, so it never replaces real content.
  */
-function WikiSkeleton() {
+function WikiSkeleton({ ariaLabel }: { ariaLabel: string }) {
   return (
     <div
       className="space-y-5"
       data-testid="wiki-skeleton"
       role="status"
-      aria-label="Carregando"
+      aria-label={ariaLabel}
     >
       <div className="surface rounded-xl p-5 sm:p-6">
         <div className="h-7 w-40 rounded-lg animate-shimmer" />
@@ -93,7 +93,7 @@ export function WikiPage() {
   // the selection vanished with a language switch.
   const active = entries.find((entry) => entry.slug === selectedSlug) ?? entries[0];
 
-  if (!ready || !active) return <WikiSkeleton />;
+  if (!ready || !active) return <WikiSkeleton ariaLabel={t("wiki.loading")} />;
 
   return (
     <div className="space-y-5">

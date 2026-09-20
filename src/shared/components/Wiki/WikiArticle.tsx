@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import type { WikiTocItem } from "@/shared/lib/wiki/markdownToHtml";
 import type { WikiBundleArticle } from "@/shared/lib/wiki/loadWikiBundle";
 
@@ -37,11 +39,13 @@ interface WikiArticleProps {
  * live in `WikiPage`.
  */
 export function WikiArticle({ article }: WikiArticleProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[17rem_minmax(0,1fr)]">
       {article.toc.length > 0 ? (
         <nav
-          aria-label="Sumário"
+          aria-label={t("wiki.toc")}
           className="sticky top-6 hidden self-start lg:block"
         >
           <ul className="space-y-0.5 border-l border-[var(--color-border)] pl-3">

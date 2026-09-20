@@ -2120,6 +2120,15 @@
       "title": "Results",
       "description": "See the suggested selling price, the cost breakdown and the profit margin.",
       "cta": "Open guide"
+    },
+    "wiki": {
+      "title": "Wiki",
+      "description": "Markdown articles on pricing, supplies and running the app, available offline on the Wiki tab.",
+      "cta": "Open guide"
     }
+  },
+  "wiki": {
+    "toc": "Table of contents",
+    "loading": "Loading"
   }
 }

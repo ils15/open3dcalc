@@ -2120,6 +2120,15 @@
       "title": "Resultados",
       "description": "Veja o preço de venda sugerido, a composição do custo e a margem de lucro.",
       "cta": "Abrir guia"
+    },
+    "wiki": {
+      "title": "Wiki",
+      "description": "Artigos em markdown sobre precificação, insumos e a operação do app, disponíveis offline na aba Wiki.",
+      "cta": "Abrir guia"
     }
+  },
+  "wiki": {
+    "toc": "Sumário",
+    "loading": "Carregando"
   }
 }

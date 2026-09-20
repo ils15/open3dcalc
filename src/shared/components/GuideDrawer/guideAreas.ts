@@ -6,25 +6,21 @@ import {
 } from "@/shared/components/ui/tutorialTours";
 
 /**
- * The guide indexes one card per app surface: the 11 top-level tabs plus the 10
- * calculator sections. Both lists are the live registries (the tutorial engine's
- * tab list and the calculator's section config), so a surface added anywhere is
- * a guide area the moment it ships — and the i18n parity gate (`guide.*` keys)
- * fails until it is translated.
+ * The guide indexes one card per app surface: the top-level tabs plus the
+ * calculator sections. Both lists are the live registries (the tutorial
+ * engine's tab list and the calculator's section config), so a surface added
+ * anywhere is a guide area the moment it ships — and the i18n parity gate
+ * (`guide.*` keys) fails until it is translated.
  */
 /**
  * Tabs the guide indexes one card per area. Each card reads
  * `guide.<area>.{title,description,cta}`, so a tab only joins the index when
  * its guide copy exists in both locales — without it the card renders the raw
- * keys. The wiki tab enters `TUTORIAL_TABS` in U5b (the tab parity gate
- * requires `TABS ≡ TUTORIAL_TABS`) before its `guide.wiki.*` keys are written,
- * so it is held back from the drawer until that copy lands; every other tab is
- * still picked up straight from the tutorial registry, keeping the parity gate
- * fail-closed for new surfaces.
+ * keys. The list IS the tutorial registry's tab list (no exclusion): a tab
+ * added there becomes a guide area immediately, and the `guide.*` parity gate
+ * is what keeps the drawer fail-closed for new surfaces.
  */
-export const GUIDE_TAB_AREAS: readonly string[] = TUTORIAL_TABS.filter(
-  (area) => area !== "wiki",
-);
+export const GUIDE_TAB_AREAS: readonly string[] = TUTORIAL_TABS;
 
 export const GUIDE_SECTION_AREAS: string[] = SECTIONS.map((section) => section.id);
 

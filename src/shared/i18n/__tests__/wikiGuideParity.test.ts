@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import enUS from "@/shared/i18n/locales/en-US.json";
 import { SECTIONS } from "@/shared/components/Calculator/Calculator.constants";
+import { TUTORIAL_TABS } from "@/shared/components/ui/tutorialTours";
 
 /**
  * The wiki/guide surface (Fase 3, U6) indexes one card per app area. Each card
@@ -12,23 +13,17 @@ import { SECTIONS } from "@/shared/components/Calculator/Calculator.constants";
  * half-translated guide.
  */
 
-/** The 11 top-level tabs the guide indexes. */
-const GUIDE_TAB_AREAS = [
-  "calculator",
-  "dashboard",
-  "infill",
-  "inventory",
-  "catalog",
-  "history",
-  "changelog",
-  "quotes",
-  "customers",
-  "products",
-  "privacy",
-] as const;
+/**
+ * The top-level tabs the guide indexes — derived from the tutorial registry
+ * itself, not duplicated here. A tab added to `TUTORIAL_TABS` (the same list
+ * the tab parity gate keeps in sync with the app `TABS`) without its
+ * `guide.<tab>.*` keys now fails this gate instead of silently dropping out of
+ * (or silently entering) the drawer's index.
+ */
+const GUIDE_TAB_AREAS = TUTORIAL_TABS;
 
 /**
- * The 10 calculator sections the guide indexes — mirrored from the live
+ * The calculator sections the guide indexes — mirrored from the live
  * `SECTIONS` registry so a section added there without i18n keys fails here.
  */
 const GUIDE_SECTION_AREAS = SECTIONS.map((section) => section.id);
@@ -52,7 +47,9 @@ describe("i18n locales (guide.*) — wiki guide surface", () => {
     ["pt-BR", ptBR],
     ["en-US", enUS],
   ])("resolves every guide area in %s", (_locale, dict) => {
-    expect(GUIDE_AREAS.length, "expected 21 guide areas").toBe(21);
+    expect(GUIDE_AREAS.length, "expected every tab and section to be a guide area").toBe(
+      GUIDE_TAB_AREAS.length + GUIDE_SECTION_AREAS.length,
+    );
     for (const area of GUIDE_AREAS) {
       for (const field of GUIDE_FIELDS) {
         const value = resolve(dict, ["guide", area, field]);

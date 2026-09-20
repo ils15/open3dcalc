@@ -18,10 +18,17 @@
  * Keys are root-absolute POSIX paths (`/docs/wiki/<locale>/<slug>.md`) and
  * every module is the plugin's compiled `{ slug, locale, frontmatter, toc,
  * html }` shape.
+ *
+ * The pattern requires the locale segment (a minimum of two path levels under
+ * `docs/wiki/`), so a file at the locale-root level is NOT an article:
+ * `docs/wiki/README.md` is the contributor guide to this subsystem, and the
+ * plugin's identity regex ignores it for the same reason. A pattern that also
+ * matched the root would glob it, and Vite would then try to load raw markdown
+ * as a module.
  */
 import type { WikiArticleModule } from "../../../../vite/plugins/markdownWikiPlugin";
 
 export const wikiArticles = import.meta.glob<WikiArticleModule>(
-  "/docs/wiki/**/*.md",
+  "/docs/wiki/*/**/*.md",
   { eager: false },
 );
