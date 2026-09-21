@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FilamentInventory } from "../FilamentInventory";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
+import { useColorPalette } from "@/shared/stores/colorPalette";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 
 // Interpolation mock — mesmo padrão de OnboardingModal/ChangelogPage: tabela
@@ -82,6 +83,7 @@ const setFdmPart = (weightUsed: number, quantity = 2): void => {
 beforeEach(() => {
   localStorage.clear();
   useFilamentInventory.setState({ spools: [] });
+  useColorPalette.setState({ colors: [] });
   vi.restoreAllMocks();
 });
 
@@ -202,7 +204,8 @@ describe("FilamentInventory CRUD, filters and palette", () => {
     const save = screen.getByRole("button", { name: "Salvar Rolo" });
     expect(save).toBeDisabled();
 
-    await user.type(screen.getByLabelText("Cor"), "Verde");
+    await user.click(screen.getByRole("combobox", { name: "Cor" }));
+    await user.click(screen.getByRole("option", { name: "Verde" }));
     await user.type(screen.getByLabelText("Marca"), "eSun");
     await user.type(screen.getByLabelText("Peso (g)"), "750");
 
@@ -214,7 +217,8 @@ describe("FilamentInventory CRUD, filters and palette", () => {
     render(<FilamentInventory />);
 
     await user.click(screen.getByText("Novo Rolo"));
-    await user.type(screen.getByLabelText("Cor"), "Verde");
+    await user.click(screen.getByRole("combobox", { name: "Cor" }));
+    await user.click(screen.getByRole("option", { name: "Verde" }));
     await user.type(screen.getByLabelText("Marca"), "eSun");
     await user.type(screen.getByLabelText("Peso (g)"), "750");
     await user.type(screen.getByLabelText("Custo/kg"), "120");
@@ -241,28 +245,19 @@ describe("FilamentInventory CRUD, filters and palette", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("resolves an unknown color name to the default indigo hex", async () => {
-    const user = userEvent.setup();
-    render(<FilamentInventory />);
-
-    await user.click(screen.getByText("Novo Rolo"));
-    await user.type(screen.getByLabelText("Cor"), "Berry");
-    await user.type(screen.getByLabelText("Marca"), "eSun");
-    await user.type(screen.getByLabelText("Peso (g)"), "500");
-    await user.click(screen.getByRole("button", { name: "Salvar Rolo" }));
-
-    expect(useFilamentInventory.getState().spools[0].colorHex).toBe("#6366f1");
-  });
-
   it("commits a custom hex picked in the color input", async () => {
     const user = userEvent.setup();
     render(<FilamentInventory />);
 
     await user.click(screen.getByText("Novo Rolo"));
+    await user.click(screen.getByRole("combobox", { name: "Cor" }));
+    await user.click(screen.getByRole("option", { name: "Verde" }));
+
+    // O picker nativo permanece como escape de hex exato: sobrescreve o
+    // hex resolvido do swatch selecionado.
     const picker = document.querySelector('input[type="color"]') as HTMLElement;
     fireEvent.change(picker, { target: { value: "#aabbcc" } });
 
-    await user.type(screen.getByLabelText("Cor"), "Berry");
     await user.type(screen.getByLabelText("Marca"), "eSun");
     await user.type(screen.getByLabelText("Peso (g)"), "500");
     await user.click(screen.getByRole("button", { name: "Salvar Rolo" }));
@@ -285,7 +280,8 @@ describe("FilamentInventory CRUD, filters and palette", () => {
     await user.click(screen.getByRole("combobox", { name: "Status" }));
     await user.click(screen.getByRole("option", { name: "A caminho" }));
 
-    await user.type(screen.getByLabelText("Cor"), "Verde");
+    await user.click(screen.getByRole("combobox", { name: "Cor" }));
+    await user.click(screen.getByRole("option", { name: "Verde" }));
     await user.type(screen.getByLabelText("Marca"), "eSun");
     await user.type(screen.getByLabelText("Peso (g)"), "500");
     await user.click(screen.getByRole("button", { name: "Salvar Rolo" }));
@@ -312,7 +308,11 @@ describe("FilamentInventory CRUD, filters and palette", () => {
       screen.getByRole("button", { name: "Salvar Alterações" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Marca")).toHaveValue("Bambu Lab");
-    expect(screen.getByLabelText("Cor")).toHaveValue("Azul Velvet");
+    // O value da option é title-cased ("Azul Velvet") — o trigger mostra o
+    // label selecionado, não há mais input de texto livre.
+    expect(screen.getByRole("combobox", { name: "Cor" })).toHaveTextContent(
+      "Azul Velvet",
+    );
 
     await user.clear(screen.getByLabelText("Peso (g)"));
     await user.type(screen.getByLabelText("Peso (g)"), "500");
@@ -323,6 +323,33 @@ describe("FilamentInventory CRUD, filters and palette", () => {
     expect(stored.weightGrams).toBe(500);
     // O peso original vem do spool existente, não do campo.
     expect(stored.originalWeightGrams).toBe(1000);
+  });
+
+  it("adds a custom color to the palette and selects it in the form", async () => {
+    const user = userEvent.setup();
+    render(<FilamentInventory />);
+
+    await user.click(screen.getByText("Novo Rolo"));
+    await user.click(
+      screen.getByRole("button", { name: "Adicionar cor personalizada" }),
+    );
+
+    await user.type(screen.getByLabelText("Nome da cor"), "Verde Neon");
+    const newPicker = document.querySelector(
+      'input[type="color"][title="Hex da cor personalizada"]',
+    ) as HTMLElement;
+    fireEvent.change(newPicker, { target: { value: "#a3e635" } });
+    await user.click(screen.getByRole("button", { name: "Adicionar" }));
+
+    // A linha inline fecha e a cor nova fica selecionada no formulário.
+    expect(
+      screen.getByRole("combobox", { name: "Cor" }),
+    ).toHaveTextContent("Verde Neon");
+
+    // Persistida na paleta custom do usuário.
+    const custom = useColorPalette.getState().colors;
+    expect(custom).toHaveLength(1);
+    expect(custom[0]).toMatchObject({ name: "Verde Neon", hex: "#a3e635" });
   });
 
   it("removes a spool via the trash button", async () => {

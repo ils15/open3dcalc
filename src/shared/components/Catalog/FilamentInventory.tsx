@@ -5,6 +5,7 @@ import {
   type FilamentSpool,
   type SpoolStatus,
 } from "@/shared/stores/filamentInventory";
+import { useColorPalette } from "@/shared/stores/colorPalette";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
@@ -126,6 +127,14 @@ const COLOR_HEX: Record<string, string> = Object.fromEntries(
   STD_COLORS.map((c) => [c.name, c.hex]),
 );
 
+/** Primeira letra de cada palavra em maiúscula, pro display do swatch. */
+function titleCaseColor(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
+
 function resolveHex(color: string, stored?: string): string {
   if (stored) return stored;
   const lower = color.toLowerCase();
@@ -246,6 +255,8 @@ export function FilamentInventory() {
   const { t } = useTranslation();
   const store = useFilamentInventory();
   const { format: fmtCurrency, symbol } = useCurrency();
+  const customColors = useColorPalette((s) => s.colors);
+  const addPaletteColor = useColorPalette((s) => s.addColor);
 
   // Peça ativa do calculatorStore: define a necessidade de plástico para o
   // badge de cobertura de cada carretel (0 = sem peça ativa → sem badge).
@@ -262,9 +273,60 @@ export function FilamentInventory() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showPalette, setShowPalette] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
+  // Linha "adicionar cor" dentro do formulário (paleta custom).
+  const [showAddColor, setShowAddColor] = useState(false);
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#6366f1");
+
+  /**
+   * Seletor de cores mesclado: paleta padrão + paleta custom do usuário,
+   * separadas por grupo. O value é o nome "title-cased" (display), que o
+   * resolveHex aceita em qualquer casing.
+   */
+  const colorOptions = useMemo(() => {
+    const std = STD_COLORS.map((c) => ({
+      value: titleCaseColor(c.name),
+      label: titleCaseColor(c.name),
+      color: c.hex,
+      group: "Padrão",
+    }));
+    const custom = customColors.map((c) => ({
+      value: c.name,
+      label: c.name,
+      color: c.hex,
+      group: "Minhas cores",
+    }));
+    return [...std, ...custom];
+  }, [customColors]);
 
   const upd = (k: keyof FormState, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  /** Picking no seletor: grava nome + hex da paleta (hex exato do swatch). */
+  const handleColorSelect = (name: string) => {
+    const found = colorOptions.find((o) => o.value === name);
+    upd("color", name);
+    if (found) upd("colorHex", found.color);
+  };
+
+  /** "Adicionar cor": salva na paleta custom e já seleciona a cor nova. */
+  const handleAddColor = () => {
+    const name = newColorName.trim();
+    if (!name) return;
+    const existing = colorOptions.find(
+      (o) => o.value.toLowerCase() === name.toLowerCase(),
+    );
+    if (existing) {
+      // Nome já existe (padrão ou custom) — não duplica, só seleciona.
+      handleColorSelect(existing.value);
+    } else {
+      addPaletteColor(name, newColorHex);
+      handleColorSelect(name);
+    }
+    setNewColorName("");
+    setNewColorHex("#6366f1");
+    setShowAddColor(false);
+  };
 
   const openAdd = () => {
     setForm(emptyForm());
@@ -566,15 +628,27 @@ export function FilamentInventory() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 flex gap-2 items-end">
-                <div className="flex-1">
-                  <InputGroup
+                <div className="flex-1 min-w-0">
+                  <Select
                     label="Cor"
                     value={form.color}
-                    onChange={(v) => upd("color", v)}
-                    type="text"
-                    placeholder="Ex: Azul Velvet"
+                    onChange={handleColorSelect}
+                    options={colorOptions}
+                    groups
+                    search
+                    placeholder="Selecione a cor"
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddColor((v) => !v)}
+                  title="Adicionar cor personalizada"
+                  aria-label="Adicionar cor personalizada"
+                  aria-expanded={showAddColor}
+                  className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
                 <div className="flex flex-col gap-1 shrink-0">
                   <label className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">
                     Hex
@@ -588,6 +662,40 @@ export function FilamentInventory() {
                   />
                 </div>
               </div>
+
+              {showAddColor && (
+                <div className="col-span-2 flex gap-2 items-end rounded-xl border border-dashed border-[var(--color-border)] p-3 bg-[var(--color-bg-elevated)]">
+                  <div className="flex-1 min-w-0">
+                    <InputGroup
+                      label="Nome da cor"
+                      value={newColorName}
+                      onChange={setNewColorName}
+                      type="text"
+                      placeholder="Ex: Verde Neon"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <label className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">
+                      Hex
+                    </label>
+                    <input
+                      type="color"
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value)}
+                      className="w-11 h-[42px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] cursor-pointer p-0.5"
+                      title="Hex da cor personalizada"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddColor}
+                    disabled={!newColorName.trim()}
+                    className="shrink-0 h-11 px-4 rounded-xl bg-[var(--color-accent)] text-white text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              )}
               <Select
                 label="Material"
                 value={form.material}
