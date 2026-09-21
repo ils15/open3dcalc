@@ -50,7 +50,25 @@ const PT_BR_BUNDLE: WikiBundle = {
     // The three cross-article shapes the handler must distinguish: a link to
     // a heading of ANOTHER article (niveis belongs to calculadora), a link to
     // a heading of THIS article, and an id no article owns (external/broken).
-    html: '<h1 id="user-content-inventario">Inventário</h1><p>Filamentos cadastrados.</p><p>Veja <a href="#user-content-niveis">os níveis</a> da calculadora, o <a href="#user-content-inventario">topo</a> e um <a href="#user-content-inexistente">link quebrado</a>.</p>',
+    html: '<h1 id="user-content-inventario">Inventário</h1><p>Filamentos cadastrados.</p><p>Veja <a href="#user-content-niveis">os níveis</a> da calculadora, o <a href="#user-content-inventario">topo</a> e um <a href="#user-content-inexistente">link quebrado</a>.</p><p>Veja os <a href="#user-content-custos-da-m%C3%A1quina">custos da máquina</a>, o <a href="#user-content-m%C3%A1quina">topo da máquina</a>, a <a href="#user-content-máquina">versão crua</a> e um <a href="#user-content-%E0%A4%A">link quebrado acentuado</a>.</p>',
+  },
+  // The accented shapes: `rehype-stringify` percent-encodes the hrefs (%C3%A1)
+  // while `rehype-slug`/`github-slugger` keep the generated ids in raw UTF-8,
+  // so the toc slugs below are the comparison keys the handler must decode
+  // against. This is the exact mismatch that broke cross-article anchors in
+  // beta.4, and it is not covered by the ASCII cases above.
+  maquina: {
+    title: "Máquina",
+    order: 4,
+    toc: [
+      { depth: 1, text: "Máquina", slug: "user-content-máquina" },
+      {
+        depth: 2,
+        text: "Custos da máquina",
+        slug: "user-content-custos-da-máquina",
+      },
+    ],
+    html: '<h1 id="user-content-máquina">Máquina</h1><p>A máquina em si.</p><h2 id="user-content-custos-da-máquina">Custos da máquina</h2><p>Detalhes dos custos.</p>',
   },
   notas: {
     title: "Notas",
@@ -270,5 +288,94 @@ describe("WikiPage", () => {
     expect(
       screen.queryByRole("button", { name: "Calculadora" }),
     ).not.toHaveAttribute("aria-current");
+  });
+
+  it("decodes a percent-encoded accented anchor to its owner article", async () => {
+    render(<WikiPage />);
+    await waitFor(() =>
+      expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument(),
+    );
+
+    // The href is percent-encoded (%C3%A1) but the toc slug it must match is
+    // raw UTF-8 ("user-content-custos-da-máquina"): without the decode in
+    // resolveCrossArticle the lookup misses and the link goes nowhere.
+    fireEvent.click(screen.getByRole("link", { name: "custos da máquina" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Máquina" }),
+      ).toHaveAttribute("aria-current", "true"),
+    );
+    expect(screen.getByText("Detalhes dos custos.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Filamentos cadastrados."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resolves a single-word accented anchor and focuses its heading", async () => {
+    render(<WikiPage />);
+    await waitFor(() =>
+      expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument(),
+    );
+
+    // %C3%A1 -> "á": idToSlug must land on "user-content-máquina" (raw) and
+    // switch to its owner article.
+    fireEvent.click(screen.getByRole("link", { name: "topo da máquina" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Máquina" }),
+      ).toHaveAttribute("aria-current", "true"),
+    );
+    expect(screen.getByText("A máquina em si.")).toBeInTheDocument();
+
+    // The pending anchor must resolve against the RAW heading id once the
+    // owner article has rendered — the same tabindex/focus contract the ASCII
+    // cross-article case asserts for #user-content-niveis.
+    await waitFor(() => {
+      const target = document.getElementById("user-content-máquina");
+      expect(target).not.toBeNull();
+      expect(target).toHaveAttribute("tabindex", "-1");
+      expect(target).toHaveFocus();
+    });
+  });
+
+  it("resolves an accented anchor whose href is already decoded", async () => {
+    render(<WikiPage />);
+    await waitFor(() =>
+      expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument(),
+    );
+
+    // Defense: a hand-written/raw href ("#user-content-máquina", no encoding)
+    // must still resolve — decodeURIComponent is idempotent on an already-
+    // decoded fragment, so the same path handles both shapes.
+    fireEvent.click(screen.getByRole("link", { name: "versão crua" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Máquina" }),
+      ).toHaveAttribute("aria-current", "true"),
+    );
+    expect(screen.getByText("A máquina em si.")).toBeInTheDocument();
+  });
+
+  it("stays put when an accented href is malformed UTF-8", async () => {
+    render(<WikiPage />);
+    await waitFor(() =>
+      expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument(),
+    );
+
+    // "%E0%A4%A" is a truncated UTF-8 sequence: decodeURIComponent throws, the
+    // try/catch in resolveCrossArticle swallows it, and the link is inert —
+    // no crash, no article hop.
+    fireEvent.click(screen.getByRole("link", { name: "link quebrado acentuado" }));
+
+    expect(
+      screen.getByRole("button", { name: "Inventário" }),
+    ).toHaveAttribute("aria-current", "true");
+    expect(screen.getByText("Filamentos cadastrados.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("A máquina em si."),
+    ).not.toBeInTheDocument();
   });
 });
