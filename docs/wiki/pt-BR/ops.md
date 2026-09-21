@@ -27,6 +27,8 @@ carrega R$ 0,05. O custo existe; o que muda é a diluição.
 
 ## Bloco: Software e Arquivos
 
+O bloco são dois campos: a mensalidade do slicer e o arquivo STL, cada um com uma matemática própria.
+
 - **Mensalidade Slicer** — o custo mensal do software de fatiamento, se você
   usa um pago. Deixe em zero se usa um slicer gratuito; mas lembre que a versão
   "gratuita" de muitos slicers não é a comercial.
@@ -49,6 +51,8 @@ unidades — o arquivo STL continua cobrado por inteiro em cada peça. Veja
 [mão de obra](#user-content-mão-de-obra) e [resultados](#user-content-resultados).
 
 ## Bloco: EPIs / Consumíveis
+
+Dois campos, um de dinheiro e outro de informação: o EPI entra no preço, o carbono não.
 
 - **Custo EPI por Print** — quanto você gasta em luvas, máscaras, papel
   toalha, filtros e isopropílico por impressão. É um valor **fixo por peça**,
@@ -97,6 +101,8 @@ a R$ 90/kg).
 
 ## Como esta seção se relaciona com as demais
 
+As fronteiras da seção, para a mensalidade e os insumos não pararem no lugar errado.
+
 - As **horas por mês** que rateiam a mensalidade são as horas produtivas da
   oficina. Elas não precisam ser iguais às horas de uso da
   [máquina](#user-content-custos-da-máquina). A máquina usa as horas da própria
@@ -111,6 +117,8 @@ a R$ 90/kg).
   [resultados](#user-content-resultados).
 
 ## Armadilhas práticas
+
+Quatro erros nestes dois blocos, e todos eles deixam um custo real fora do preço.
 
 1. **Slicer gratuito na vida, pago no orçamento.** Se você usa a versão
    gratuita de um slicer para vender peças, tecnicamente está usando uma

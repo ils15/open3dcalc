@@ -99,6 +99,8 @@ accept that weekend one-off parts have a higher fair price.
 
 ## How this section relates to the others
 
+These are the section's boundaries, so you never add twice what already lives somewhere else.
+
 - The share is applied inside the [machine](#user-content-machine-costs) hourly rate,
   alongside depreciation and maintenance.
 - The workshop's productive hours need not match the
@@ -112,6 +114,8 @@ accept that weekend one-off parts have a higher fair price.
   belongs the maintenance of the **space**.
 
 ## Practical pitfalls
+
+Four mistakes show up often in this section, and all of them quietly cheapen the price.
 
 1. **Putting variable costs here.** Filament, nozzles, isopropyl alcohol and
    shipping are proportional to production — they already have their own

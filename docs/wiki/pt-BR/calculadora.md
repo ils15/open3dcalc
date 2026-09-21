@@ -144,6 +144,23 @@ O caminho recomendado, do primeiro número ao preço final:
 7. **Salve ou exporte** — a estimativa vira produto no inventário ou item de
    orçamento, e o histórico guarda os números para a próxima peça.
 
+## Armadilhas comuns
+
+Quatro erros cercam quem está começando com a calculadora, e todos eles se disfarçam de pressa.
+
+- **Aplicar a margem sem saber o custo.** O preço de venda se atualiza na hora quando você
+  mexe na porcentagem, o que convida ao ajuste às cegas. Sem olhar o `results` lado a lado,
+  100% de margem parece 100% de lucro — e não é.
+- **Somar a margem e esquecer o que vem por cima.** Custo total mais margem dá R$ 28,84 no
+  exemplo; o preço de venda é R$ 38,45. Os R$ 9,61 de diferença são impostos e marketplace,
+  aplicados por cima do total, e não são lucro.
+- **Começar no nível Completo.** O Rápido cobre o caminho do filamento ao preço de venda com
+  quatro seções, e mudar de nível depois não apaga nada. Quem abre as dez seções de uma vez se
+  afoga em campos antes de fechar o primeiro preço.
+- **Tratar `sales` como mais um custo.** Embalagem e frete somam ao total; margem, impostos e
+  taxas são aplicados por cima dele. Confundir soma com aplicação faz o preço crescer na
+  proporção errada.
+
 ## Por onde começar
 
 Se você nunca usou a calculadora, faça assim: abra no nível **Rápido**, preencha

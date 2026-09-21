@@ -148,6 +148,22 @@ top de impressoras, o top de materiais e a comparação entre os dois meses.
 É o arquivo que você manda para um sócio ou guarda como registro do período,
 sem que ninguém precise instalar nada para ler.
 
+## Armadilhas comuns
+
+Quatro leituras erradas desta tela, e todas elas levam a uma decisão com o número errado.
+
+- **Esperar que o dashboard mostre o faturamento.** Ele não lê orçamentos e não consulta
+  sistema externo: só soma as estimativas do Histórico e a que está aberta. Orçamento
+  aprovado não aparece aqui enquanto não virar estimativa salva.
+- **Ler a margem média como lucro sobre a receita.** Cada estimativa calcula a sua primeiro;
+  a média de 57,8%, 39,7% e 85,0% é 60,8%, mas não é o lucro total dividido pela receita.
+  Uma peça barata de margem alta move o número tanto quanto uma cara.
+- **Achar que a tela vazia é defeito.** "Sem dados de histórico" é o estado normal de quem
+  acabou de instalar — salve três estimativas e a tela se enche. Não há configuração
+  faltando.
+- **Ignorar o alerta de margem baixa.** A peça vendida por R$ 25,00 com custo de R$ 21,00
+  tem 16% de margem e entra na lista. Não é proibição: é onde o dinheiro escapa sem alarde.
+
 ## Começando do zero
 
 Se o dashboard está vazio, o caminho é curto:

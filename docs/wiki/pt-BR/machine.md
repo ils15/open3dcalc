@@ -120,6 +120,8 @@ que peças avulsas em uma máquina parada são caras de verdade.
 
 ## Como esta seção se relaciona com as demais
 
+Cada pedaço da taxa horária vem de um lugar, e as fronteiras evitam cobrar a máquina duas vezes.
+
 - O **tempo** que multiplica a taxa horária é o tempo de impressão da seção de
   [parâmetros](#user-content-parâmetros-de-impressão), não o tempo de mão de obra.
 - O **rateio** que entra na taxa vem de
@@ -131,12 +133,14 @@ que peças avulsas em uma máquina parada são caras de verdade.
 
 ## Armadilhas práticas
 
+Quatro erros na taxa horária, e todos eles fazem a peça sair mais barata do que custa.
+
 1. **Superestimar o uso mensal.** É a armadilha número um. Se você coloca 200
    h/mês mas a impressora só roda 40 h, a depreciação fica cinco vezes mais
    baixa que a real e toda peça sai subprecificada. Coloque a média honesta dos
    últimos três meses.
 2. **Esquecer a manutenção.** Impressora 3D é um aparelho com peças móveis
-   sobrescendo. Se você não liga a manutenção, em oito meses chega a conta real
+   que se desgastam. Se você não liga a manutenção, em oito meses chega a conta real
    de correias e bicos que nenhuma peça pagou.
 3. **Depreciação longa demais.** 60 meses faz a taxa horária parecer
    irresistível, mas uma Ender 3 dificilmente sobrevive 3.600 horas úteis sem
