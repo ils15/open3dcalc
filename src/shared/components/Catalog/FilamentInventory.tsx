@@ -5,6 +5,7 @@ import {
   type FilamentSpool,
   type SpoolStatus,
 } from "@/shared/stores/filamentInventory";
+import { useColorPalette } from "@/shared/stores/colorPalette";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
@@ -67,35 +68,86 @@ const STATUS_OPTIONS = [
   { value: "empty", label: "Vazio" },
 ];
 
-const COLOR_HEX: Record<string, string> = {
-  preto: "#374151",
-  branco: "#e2e8f0",
-  "branco dental": "#f8f5e4",
-  cinza: "#9ca3af",
-  prata: "#94a3b8",
-  vermelho: "#ef4444",
-  rosa: "#ec4899",
-  "rosa bebe": "#fda4af",
-  laranja: "#f97316",
-  amarelo: "#eab308",
-  dourado: "#d97706",
-  bronze: "#b45309",
-  verde: "#22c55e",
-  azul: "#3b82f6",
-  "azul velvet": "#1e40af",
-  roxo: "#a855f7",
-  marrom: "#92400e",
-  transparente: "#94a3b8",
-  natural: "#d4b896",
-};
+type ColorGroup = "Neutras" | "Sólidas" | "Escuras";
+
+interface StdColor {
+  name: string;
+  hex: string;
+  group: ColorGroup;
+}
+
+/**
+ * Paleta padrão — fonte única da verdade.
+ *
+ * A estrutura é flat (um nível); o agrupamento é visual e fica no seletor
+ * (Select `groups`) e no modal. `COLOR_HEX` é derivado dela para o lookup
+ * do resolveHex, então não há duplicação de hexes.
+ */
+const STD_COLORS: StdColor[] = [
+  // ── Neutras ──────────────────────────────────────────────
+  { name: "preto", hex: "#374151", group: "Neutras" },
+  { name: "grafite", hex: "#1f2937", group: "Neutras" },
+  { name: "cinza", hex: "#9ca3af", group: "Neutras" },
+  { name: "prata", hex: "#94a3b8", group: "Neutras" },
+  { name: "branco", hex: "#e2e8f0", group: "Neutras" },
+  { name: "branco dental", hex: "#f8f5e4", group: "Neutras" },
+  { name: "bege", hex: "#e7d8b8", group: "Neutras" },
+  { name: "natural", hex: "#d4b896", group: "Neutras" },
+  { name: "transparente", hex: "#94a3b8", group: "Neutras" },
+  // ── Sólidas ──────────────────────────────────────────────
+  { name: "vermelho", hex: "#ef4444", group: "Sólidas" },
+  { name: "rosa", hex: "#ec4899", group: "Sólidas" },
+  { name: "rosa bebe", hex: "#fda4af", group: "Sólidas" },
+  { name: "laranja", hex: "#f97316", group: "Sólidas" },
+  { name: "amarelo", hex: "#eab308", group: "Sólidas" },
+  { name: "amarelo claro", hex: "#facc15", group: "Sólidas" },
+  { name: "dourado", hex: "#d97706", group: "Sólidas" },
+  { name: "bronze", hex: "#b45309", group: "Sólidas" },
+  { name: "marrom", hex: "#92400e", group: "Sólidas" },
+  { name: "verde", hex: "#22c55e", group: "Sólidas" },
+  { name: "verde lima", hex: "#84cc16", group: "Sólidas" },
+  { name: "ciano", hex: "#06b6d4", group: "Sólidas" },
+  { name: "turquesa", hex: "#2dd4bf", group: "Sólidas" },
+  { name: "azul", hex: "#3b82f6", group: "Sólidas" },
+  { name: "roxo", hex: "#a855f7", group: "Sólidas" },
+  { name: "lilás", hex: "#c4b5fd", group: "Sólidas" },
+  { name: "violeta", hex: "#7c3aed", group: "Sólidas" },
+  { name: "magenta", hex: "#d946ef", group: "Sólidas" },
+  // ── Escuras ──────────────────────────────────────────────
+  { name: "azul velvet", hex: "#1e40af", group: "Escuras" },
+  { name: "azul marinho", hex: "#1e3a8a", group: "Escuras" },
+  { name: "verde escuro", hex: "#15803d", group: "Escuras" },
+  { name: "laranja escuro", hex: "#c2410c", group: "Escuras" },
+  { name: "vermelho escuro", hex: "#b91c1c", group: "Escuras" },
+  { name: "vinho", hex: "#9f1239", group: "Escuras" },
+];
+
+/** Lookup flat nome → hex, derivado da paleta (resolveHex usa isto). */
+const COLOR_HEX: Record<string, string> = Object.fromEntries(
+  STD_COLORS.map((c) => [c.name, c.hex]),
+);
+
+/** Primeira letra de cada palavra em maiúscula, pro display do swatch. */
+function titleCaseColor(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
+}
 
 function resolveHex(color: string, stored?: string): string {
   if (stored) return stored;
   const lower = color.toLowerCase();
-  for (const [key, hex] of Object.entries(COLOR_HEX)) {
-    if (lower === key || lower.includes(key)) return hex;
+  // 1. Match exato — nomes compostos ("azul marinho") não podem ser
+  //    sombreados pela cor base ("azul") no match por inclusão.
+  if (COLOR_HEX[lower]) return COLOR_HEX[lower];
+  // 2. Match por inclusão (rolos antigos/digitados): a key mais longa
+  //    vence — é a mais específica. Não quebra o que já resolvia antes.
+  let bestKey = "";
+  for (const key of Object.keys(COLOR_HEX)) {
+    if (lower.includes(key) && key.length > bestKey.length) bestKey = key;
   }
-  return "#6366f1";
+  return bestKey ? COLOR_HEX[bestKey] : "#6366f1";
 }
 
 function SpoolIcon({ color, size = 44 }: { color: string; size?: number }) {
@@ -203,6 +255,9 @@ export function FilamentInventory() {
   const { t } = useTranslation();
   const store = useFilamentInventory();
   const { format: fmtCurrency, symbol } = useCurrency();
+  const customColors = useColorPalette((s) => s.colors);
+  const addPaletteColor = useColorPalette((s) => s.addColor);
+  const removePaletteColor = useColorPalette((s) => s.removeColor);
 
   // Peça ativa do calculatorStore: define a necessidade de plástico para o
   // badge de cobertura de cada carretel (0 = sem peça ativa → sem badge).
@@ -219,9 +274,60 @@ export function FilamentInventory() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showPalette, setShowPalette] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
+  // Linha "adicionar cor" dentro do formulário (paleta custom).
+  const [showAddColor, setShowAddColor] = useState(false);
+  const [newColorName, setNewColorName] = useState("");
+  const [newColorHex, setNewColorHex] = useState("#6366f1");
+
+  /**
+   * Seletor de cores mesclado: paleta padrão + paleta custom do usuário,
+   * separadas por grupo. O value é o nome "title-cased" (display), que o
+   * resolveHex aceita em qualquer casing.
+   */
+  const colorOptions = useMemo(() => {
+    const std = STD_COLORS.map((c) => ({
+      value: titleCaseColor(c.name),
+      label: titleCaseColor(c.name),
+      color: c.hex,
+      group: "Padrão",
+    }));
+    const custom = customColors.map((c) => ({
+      value: c.name,
+      label: c.name,
+      color: c.hex,
+      group: "Minhas cores",
+    }));
+    return [...std, ...custom];
+  }, [customColors]);
 
   const upd = (k: keyof FormState, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  /** Picking no seletor: grava nome + hex da paleta (hex exato do swatch). */
+  const handleColorSelect = (name: string) => {
+    const found = colorOptions.find((o) => o.value === name);
+    upd("color", name);
+    if (found) upd("colorHex", found.color);
+  };
+
+  /** "Adicionar cor": salva na paleta custom e já seleciona a cor nova. */
+  const handleAddColor = () => {
+    const name = newColorName.trim();
+    if (!name) return;
+    const existing = colorOptions.find(
+      (o) => o.value.toLowerCase() === name.toLowerCase(),
+    );
+    if (existing) {
+      // Nome já existe (padrão ou custom) — não duplica, só seleciona.
+      handleColorSelect(existing.value);
+    } else {
+      addPaletteColor(name, newColorHex);
+      handleColorSelect(name);
+    }
+    setNewColorName("");
+    setNewColorHex("#6366f1");
+    setShowAddColor(false);
+  };
 
   const openAdd = () => {
     setForm(emptyForm());
@@ -523,15 +629,27 @@ export function FilamentInventory() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 flex gap-2 items-end">
-                <div className="flex-1">
-                  <InputGroup
+                <div className="flex-1 min-w-0">
+                  <Select
                     label="Cor"
                     value={form.color}
-                    onChange={(v) => upd("color", v)}
-                    type="text"
-                    placeholder="Ex: Azul Velvet"
+                    onChange={handleColorSelect}
+                    options={colorOptions}
+                    groups
+                    search
+                    placeholder="Selecione a cor"
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddColor((v) => !v)}
+                  title="Adicionar cor personalizada"
+                  aria-label="Adicionar cor personalizada"
+                  aria-expanded={showAddColor}
+                  className="shrink-0 w-11 h-11 flex items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
                 <div className="flex flex-col gap-1 shrink-0">
                   <label className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">
                     Hex
@@ -545,6 +663,40 @@ export function FilamentInventory() {
                   />
                 </div>
               </div>
+
+              {showAddColor && (
+                <div className="col-span-2 flex gap-2 items-end rounded-xl border border-dashed border-[var(--color-border)] p-3 bg-[var(--color-bg-elevated)]">
+                  <div className="flex-1 min-w-0">
+                    <InputGroup
+                      label="Nome da cor"
+                      value={newColorName}
+                      onChange={setNewColorName}
+                      type="text"
+                      placeholder="Ex: Verde Neon"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <label className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)]">
+                      Hex
+                    </label>
+                    <input
+                      type="color"
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value)}
+                      className="w-11 h-[42px] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] cursor-pointer p-0.5"
+                      title="Hex da cor personalizada"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddColor}
+                    disabled={!newColorName.trim()}
+                    className="shrink-0 h-11 px-4 rounded-xl bg-[var(--color-accent)] text-white text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              )}
               <Select
                 label="Material"
                 value={form.material}
@@ -636,39 +788,79 @@ export function FilamentInventory() {
               </h3>
               <button
                 onClick={() => setShowPalette(false)}
+                aria-label="Fechar paleta"
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)] transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {store.spools.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
-                Nenhum rolo cadastrado.
-              </p>
-            ) : (
-              <div className="grid grid-cols-4 gap-3">
-                {store.spools.map((s) => {
-                  const hex = resolveHex(s.color, s.colorHex);
-                  return (
+            <div className="flex flex-col gap-5">
+              <section>
+                <h4 className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] mb-2">
+                  Padrão
+                </h4>
+                <div className="grid grid-cols-4 gap-3">
+                  {STD_COLORS.map((c) => (
                     <div
-                      key={s.id}
+                      key={c.name}
                       className="flex flex-col items-center gap-1.5"
                     >
                       <div
                         className="w-12 h-12 rounded-xl border border-[var(--color-border)]"
-                        style={{ backgroundColor: hex }}
+                        style={{ backgroundColor: c.hex }}
                       />
                       <p className="text-[10px] text-[var(--color-text-secondary)] text-center leading-tight break-words w-full font-medium">
-                        {s.color}
+                        {titleCaseColor(c.name)}
                       </p>
-                      <p className="text-[9px] text-[var(--color-text-muted)] text-center">
-                        {s.material}
+                      <p className="text-[9px] text-[var(--color-text-muted)] text-center uppercase">
+                        {c.hex}
                       </p>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              </section>
+              <section>
+                <h4 className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] mb-2">
+                  Minhas cores
+                </h4>
+                {customColors.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
+                    Nenhuma cor personalizada.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-3">
+                    {customColors.map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex flex-col items-center gap-1.5"
+                      >
+                        <div
+                          className="w-12 h-12 rounded-xl border border-[var(--color-border)]"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        <p className="text-[10px] text-[var(--color-text-secondary)] text-center leading-tight break-words w-full font-medium">
+                          {c.name}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-[9px] text-[var(--color-text-muted)] text-center uppercase">
+                            {c.hex}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => removePaletteColor(c.id)}
+                            aria-label={`Remover cor ${c.name}`}
+                            title="Remover cor"
+                            className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
           </div>
         </div>
       )}

@@ -101,6 +101,22 @@ O app se explica sozinho — ninguém precisa ler um manual externo para começa
 
 ---
 
+## 🎨 Paleta de cores
+
+O inventário de bobinas tem uma paleta de cores própria, dividida em uma parte
+padrão (embutida no app) e uma parte personalizada (persistida por usuário):
+
+| Superfície | O que faz |
+| ---------- | -------- |
+| 🎨 **Paleta padrão** | **33 cores** agrupadas visualmente em **Neutras** (9), **Sólidas** (18) e **Escuras** (6) — a fonte única da verdade é o array `STD_COLORS` em `FilamentInventory.tsx`; o lookup nome → hex (`COLOR_HEX`) é derivado dele, então não há hex duplicado em lugar nenhum. |
+| 👤 **Paleta custom** | Store Zustand dedicado (`src/shared/stores/colorPalette.ts`) persistido via `guardedStorage` na key `open3dcalc_color_palette_v1`, registrada no [SPEC-01](docs/privacy/SPEC-01-manifest-fixture.json) e em `LOCALSTORAGE_KEYS` (`persistence-bridge.ts`) — o gate descarta silenciosamente escritas de keys não registradas em produção. |
+| 🧩 **Seletor de swatches** | O primitivo `Select` ganhou `color?: string` no `SelectOption` e mostra um swatch (bolinha de cor) tanto no trigger quanto em cada opção; o seletor de cor do formulário de filamento mescla padrão + custom, separadas por grupo ("Padrão" / "Minhas cores"). |
+| ➕ **Adicionar cor própria** | Linha no próprio formulário: nome + picker de hex nativo (mantido como escape). O nome é normalizado e **deduplica case-insensitive** contra a paleta existente; se a cor já existe, ela é apenas selecionada. |
+| 🪣 **Modal "Paleta de Cores"** | Mostra a paleta padrão (33 swatches) e, abaixo, o grid "Minhas cores" com uma lixeira por cor (`removeColor`) — a remoção atualiza o store e reflete no seletor na hora. |
+| 🔍 **`resolveHex`** | Resolve o hex de qualquer nome de cor: primeiro **match exato**, depois **match por inclusão com a key mais longa vencendo** — então "Azul Marinho" resolve como `#1e3a8a` e não mais como "azul". Dados antigos e digitados à mão continuam resolvendo. |
+
+---
+
 ## 🏗️ Project Structure
 
 ```

@@ -36,6 +36,7 @@ const LOCALSTORAGE_KEYS = [
   "open3dcalc_quotes_v1",
   "open3dcalc_catalog_v1",
   "open3dcalc_filaments",
+  "open3dcalc_color_palette_v1",
   "open3dcalc_consent_v1",
   "open3dcalc_tutorial_v1",
   "open3dcalc_onboarded",

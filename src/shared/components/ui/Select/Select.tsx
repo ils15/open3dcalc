@@ -19,6 +19,8 @@ export interface SelectOption {
   value: string
   label: string
   image?: string
+  /** Hex de um swatch de cor — renderiza um círculo colorido no item e no trigger. */
+  color?: string
   subtitle?: string
   group?: string
 }
@@ -179,7 +181,13 @@ export function Select({
       onClick={handleTriggerClick}
       className={`w-full flex items-center gap-2.5 surface border ${open ? 'border-[var(--color-accent)]/60' : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'} rounded-xl text-sm text-[var(--color-text-primary)] h-11 px-3 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/60 ${className}`}
     >
-      {(selected?.group || selected?.image) && (
+      {selected?.color ? (
+        <span
+          aria-hidden="true"
+          className="w-6 h-6 rounded-full shrink-0 border border-[var(--color-border)]"
+          style={{ backgroundColor: selected.color }}
+        />
+      ) : (selected?.group || selected?.image) && (
         <div className="w-6 h-6 rounded-md bg-[var(--color-accent)]/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-[var(--color-accent)] leading-none select-none">
           {getMonogram(selected.group || selected.label)}
         </div>
@@ -282,7 +290,13 @@ function OptionItem({ opt, idx, focusIdx, value, onSelect }: {
         isFocused ? 'bg-[var(--color-accent)]/20 text-[var(--color-text-primary)]' : 'hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]'
       } ${isSelected ? 'text-[var(--color-text-primary)] font-semibold bg-[var(--color-accent)]/10' : ''}`}
     >
-      {(opt.group || opt.image) && (
+      {opt.color ? (
+        <span
+          aria-hidden="true"
+          className="w-6 h-6 rounded-full shrink-0 border border-[var(--color-border)]"
+          style={{ backgroundColor: opt.color }}
+        />
+      ) : (opt.group || opt.image) && (
         <div className="w-6 h-6 rounded-md bg-[var(--color-accent)]/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-[var(--color-accent)] leading-none select-none">
           {getMonogram(opt.group || opt.label)}
         </div>
