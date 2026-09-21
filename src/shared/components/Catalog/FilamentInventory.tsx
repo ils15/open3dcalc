@@ -67,35 +67,78 @@ const STATUS_OPTIONS = [
   { value: "empty", label: "Vazio" },
 ];
 
-const COLOR_HEX: Record<string, string> = {
-  preto: "#374151",
-  branco: "#e2e8f0",
-  "branco dental": "#f8f5e4",
-  cinza: "#9ca3af",
-  prata: "#94a3b8",
-  vermelho: "#ef4444",
-  rosa: "#ec4899",
-  "rosa bebe": "#fda4af",
-  laranja: "#f97316",
-  amarelo: "#eab308",
-  dourado: "#d97706",
-  bronze: "#b45309",
-  verde: "#22c55e",
-  azul: "#3b82f6",
-  "azul velvet": "#1e40af",
-  roxo: "#a855f7",
-  marrom: "#92400e",
-  transparente: "#94a3b8",
-  natural: "#d4b896",
-};
+type ColorGroup = "Neutras" | "Sólidas" | "Escuras";
+
+interface StdColor {
+  name: string;
+  hex: string;
+  group: ColorGroup;
+}
+
+/**
+ * Paleta padrão — fonte única da verdade.
+ *
+ * A estrutura é flat (um nível); o agrupamento é visual e fica no seletor
+ * (Select `groups`) e no modal. `COLOR_HEX` é derivado dela para o lookup
+ * do resolveHex, então não há duplicação de hexes.
+ */
+const STD_COLORS: StdColor[] = [
+  // ── Neutras ──────────────────────────────────────────────
+  { name: "preto", hex: "#374151", group: "Neutras" },
+  { name: "grafite", hex: "#1f2937", group: "Neutras" },
+  { name: "cinza", hex: "#9ca3af", group: "Neutras" },
+  { name: "prata", hex: "#94a3b8", group: "Neutras" },
+  { name: "branco", hex: "#e2e8f0", group: "Neutras" },
+  { name: "branco dental", hex: "#f8f5e4", group: "Neutras" },
+  { name: "bege", hex: "#e7d8b8", group: "Neutras" },
+  { name: "natural", hex: "#d4b896", group: "Neutras" },
+  { name: "transparente", hex: "#94a3b8", group: "Neutras" },
+  // ── Sólidas ──────────────────────────────────────────────
+  { name: "vermelho", hex: "#ef4444", group: "Sólidas" },
+  { name: "rosa", hex: "#ec4899", group: "Sólidas" },
+  { name: "rosa bebe", hex: "#fda4af", group: "Sólidas" },
+  { name: "laranja", hex: "#f97316", group: "Sólidas" },
+  { name: "amarelo", hex: "#eab308", group: "Sólidas" },
+  { name: "amarelo claro", hex: "#facc15", group: "Sólidas" },
+  { name: "dourado", hex: "#d97706", group: "Sólidas" },
+  { name: "bronze", hex: "#b45309", group: "Sólidas" },
+  { name: "marrom", hex: "#92400e", group: "Sólidas" },
+  { name: "verde", hex: "#22c55e", group: "Sólidas" },
+  { name: "verde lima", hex: "#84cc16", group: "Sólidas" },
+  { name: "ciano", hex: "#06b6d4", group: "Sólidas" },
+  { name: "turquesa", hex: "#2dd4bf", group: "Sólidas" },
+  { name: "azul", hex: "#3b82f6", group: "Sólidas" },
+  { name: "roxo", hex: "#a855f7", group: "Sólidas" },
+  { name: "lilás", hex: "#c4b5fd", group: "Sólidas" },
+  { name: "violeta", hex: "#7c3aed", group: "Sólidas" },
+  { name: "magenta", hex: "#d946ef", group: "Sólidas" },
+  // ── Escuras ──────────────────────────────────────────────
+  { name: "azul velvet", hex: "#1e40af", group: "Escuras" },
+  { name: "azul marinho", hex: "#1e3a8a", group: "Escuras" },
+  { name: "verde escuro", hex: "#15803d", group: "Escuras" },
+  { name: "laranja escuro", hex: "#c2410c", group: "Escuras" },
+  { name: "vermelho escuro", hex: "#b91c1c", group: "Escuras" },
+  { name: "vinho", hex: "#9f1239", group: "Escuras" },
+];
+
+/** Lookup flat nome → hex, derivado da paleta (resolveHex usa isto). */
+const COLOR_HEX: Record<string, string> = Object.fromEntries(
+  STD_COLORS.map((c) => [c.name, c.hex]),
+);
 
 function resolveHex(color: string, stored?: string): string {
   if (stored) return stored;
   const lower = color.toLowerCase();
-  for (const [key, hex] of Object.entries(COLOR_HEX)) {
-    if (lower === key || lower.includes(key)) return hex;
+  // 1. Match exato — nomes compostos ("azul marinho") não podem ser
+  //    sombreados pela cor base ("azul") no match por inclusão.
+  if (COLOR_HEX[lower]) return COLOR_HEX[lower];
+  // 2. Match por inclusão (rolos antigos/digitados): a key mais longa
+  //    vence — é a mais específica. Não quebra o que já resolvia antes.
+  let bestKey = "";
+  for (const key of Object.keys(COLOR_HEX)) {
+    if (lower.includes(key) && key.length > bestKey.length) bestKey = key;
   }
-  return "#6366f1";
+  return bestKey ? COLOR_HEX[bestKey] : "#6366f1";
 }
 
 function SpoolIcon({ color, size = 44 }: { color: string; size?: number }) {

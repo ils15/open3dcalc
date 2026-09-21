@@ -459,3 +459,54 @@ describe("FilamentInventory CRUD, filters and palette", () => {
     expect(overlay()).not.toBeInTheDocument();
   });
 });
+
+describe("FilamentInventory color resolution (paleta expandida)", () => {
+  /**
+   * A barra restante do card pinta com `resolveHex(s.color, s.colorHex)` —
+   * é o ponto de leitura mais fácil pra assertir a resolução sem exportar
+   * a helper interna.
+   */
+  const firstBarColor = (): string => {
+    const bar = document.querySelector<HTMLDivElement>(
+      "div.h-full.rounded-full.transition-all",
+    );
+    return bar?.style.backgroundColor ?? "";
+  };
+
+  it("resolve nome composto exato sem ser sombreado pela cor base", () => {
+    // "Azul Marinho" (#1e3a8a) — antes o match por inclusão pegava "azul".
+    addSpool({ color: "Azul Marinho", colorHex: "" });
+    render(<FilamentInventory />);
+
+    expect(firstBarColor()).toBe("rgb(30, 58, 138)");
+  });
+
+  it("resolve nome simples de cor base", () => {
+    addSpool({ color: "Azul", colorHex: "" });
+    render(<FilamentInventory />);
+
+    expect(firstBarColor()).toBe("rgb(59, 130, 246)");
+  });
+
+  it("usa o hex armazenado mesmo quando o nome nao bate", () => {
+    addSpool({ color: "Azul", colorHex: "#abcdef" });
+    render(<FilamentInventory />);
+
+    expect(firstBarColor()).toBe("rgb(171, 205, 239)");
+  });
+
+  it("cai no fallback indigo para cor desconhecida", () => {
+    addSpool({ color: "Cor Inventada", colorHex: "" });
+    render(<FilamentInventory />);
+
+    expect(firstBarColor()).toBe("rgb(99, 102, 241)");
+  });
+
+  it("match por inclusão continua resolvendo texto livre (rolos antigos)", () => {
+    // Texto que contém "verde" sem ser exato — pega o verde da paleta.
+    addSpool({ color: "verde militar", colorHex: "" });
+    render(<FilamentInventory />);
+
+    expect(firstBarColor()).toBe("rgb(34, 197, 94)");
+  });
+});
