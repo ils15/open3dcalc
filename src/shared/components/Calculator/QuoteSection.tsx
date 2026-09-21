@@ -5,6 +5,7 @@ import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
+import { Select } from "@/shared/components/ui/Select";
 import { QuoteDoc } from "@/shared/lib/QuoteDoc";
 import type { Quote, QuoteItem, QuoteFormData, Customer } from "@/shared/types";
 import {
@@ -308,22 +309,20 @@ function QuoteFormModal({
 
         {/* Customer selector */}
         <div data-tutorial="quote-form-customer">
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
-            Cliente
-          </label>
-          <select
+          <Select
+            label="Cliente"
             value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-xl text-sm text-[var(--color-text-primary)] h-11 px-3 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all appearance-none cursor-pointer"
-          >
-            <option value="">Selecionar cliente</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.company ? ` — ${c.company}` : ""}
-              </option>
-            ))}
-          </select>
+            onChange={setCustomerId}
+            search
+            options={[
+              { value: "", label: "Selecionar cliente" },
+              ...customers.map((c) => ({
+                value: c.id,
+                label: c.name,
+                subtitle: c.company || undefined,
+              })),
+            ]}
+          />
           {selectedCustomer && (
             <div className="mt-2 text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
               {selectedCustomer.email && <span>{selectedCustomer.email}</span>}
@@ -629,17 +628,18 @@ function QuoteViewModal({
               Criado em {new Date(quote.createdAt).toLocaleDateString(locale)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <select
+          <div className="flex items-end gap-2">
+            <Select
+              label="Status"
               value={quote.status}
-              onChange={(e) => updateStatus(e.target.value as Quote["status"])}
-              className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-xs text-[var(--color-text-primary)] h-8 px-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all appearance-none cursor-pointer"
-            >
-              <option value="draft">Rascunho</option>
-              <option value="sent">Enviado</option>
-              <option value="approved">Aprovado</option>
-              <option value="rejected">Recusado</option>
-            </select>
+              onChange={(v) => updateStatus(v as Quote["status"])}
+              options={[
+                { value: "draft", label: "Rascunho" },
+                { value: "sent", label: "Enviado" },
+                { value: "approved", label: "Aprovado" },
+                { value: "rejected", label: "Recusado" },
+              ]}
+            />
             <button
               onClick={handleExportPdf}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none flex items-center gap-1.5"
