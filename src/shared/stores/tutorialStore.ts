@@ -183,14 +183,6 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
   },
 }));
 
-/**
- * Step count of the tour currently driving the UI (0 when none is loaded).
- * Components should prefer the `useTourStepCount` selector below.
- */
-export function currentTourTotalSteps(): number {
-  return getTourSteps(useTutorialStore.getState().activeTour).length;
-}
-
 /** React selector for the active tour's length. */
 export function useTourStepCount(): number {
   return useTutorialStore((s) => getTourSteps(s.activeTour).length);

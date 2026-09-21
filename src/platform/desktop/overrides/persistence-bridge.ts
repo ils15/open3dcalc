@@ -273,21 +273,3 @@ export async function initPersistenceBridge(): Promise<void> {
     "[persistence-bridge] Initialized — localStorage ↔ SQLite sync active",
   );
 }
-
-/**
- * Manual save trigger — exposed for use by explicit "Save" buttons
- * or before critical operations (e.g., import/export).
- */
-export async function saveNow(): Promise<void> {
-  if (!isElectron()) return;
-  await saveToDatabase();
-}
-
-/**
- * Manual load trigger — reload all SQLite data into localStorage.
- * Useful after a database import.
- */
-export async function loadNow(): Promise<void> {
-  if (!isElectron()) return;
-  await loadFromDatabase();
-}

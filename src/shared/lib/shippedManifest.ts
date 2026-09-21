@@ -25,6 +25,3 @@ export function loadShippedManifest(): ManifestIndex {
 export function getShippedPolicyVersion(): string {
   return getPolicyVersion(manifestFixture as ManifestDocument);
 }
-
-/** The raw shipped fixture document (renderer/bundler context only). */
-export const shippedManifestDocument = manifestFixture as ManifestDocument;
