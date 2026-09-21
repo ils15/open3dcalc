@@ -754,9 +754,35 @@ function App() {
           </>
         )}
       </AnimatePresence>
-      <footer className="hidden lg:block text-center text-xs text-[var(--color-text-muted)] py-3 border-t border-[var(--color-border)]">
-        <div className="flex items-center justify-center gap-3">
-          <span>Open3DCalc v1.9.2 — Open Source · MIT License</span>
+      <footer className="text-center text-xs text-[var(--color-text-muted)] py-2.5 lg:py-3 border-t border-[var(--color-border)]">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2">
+          <span>{t("footer.version", { version: APP_VERSION })}</span>
+          <span aria-hidden="true" className="text-[var(--color-border)]">
+            ·
+          </span>
+          <span>{t("footer.openSource")}</span>
+          <span aria-hidden="true" className="text-[var(--color-border)]">
+            ·
+          </span>
+          <a
+            href="https://github.com/ils15/open3dcalc"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[var(--color-text-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none px-1 rounded"
+          >
+            {t("footer.github")}
+          </a>
+          <span aria-hidden="true" className="text-[var(--color-border)]">
+            ·
+          </span>
+          <a
+            href="https://t.me/Impressao3DBR"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[var(--color-text-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none px-1 rounded"
+          >
+            {t("footer.telegram")}
+          </a>
         </div>
       </footer>
 
