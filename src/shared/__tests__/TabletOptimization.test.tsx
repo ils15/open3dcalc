@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import React from "react";
 
 // ─── Mock all heavy dependencies ───
@@ -90,6 +90,7 @@ vi.mock("@/shared/stores/calculatorStore", () => ({
 
 // ─── Import after mocks ───
 import App from "../App";
+import { TABS } from "@/platform/web/App";
 
 // Mock i18next
 vi.mock("react-i18next", () => ({
@@ -208,6 +209,51 @@ describe("Phase 2 — Tablet Optimization", () => {
 
       expect(tabletSidebar).toBeDefined();
       expect(tabletSidebar!.className).toContain("lg:hidden");
+    });
+  });
+
+  describe("2.3 Secondary navigation links", () => {
+    it("keeps all secondary links together at the bottom of the desktop sidebar", () => {
+      const { container } = render(<App />);
+      const desktopSidebar = Array.from(container.querySelectorAll("aside")).find(
+        (aside) => aside.className.includes("hidden lg:flex"),
+      );
+
+      expect(desktopSidebar).toBeDefined();
+      expect(desktopSidebar).toHaveTextContent("nav.wiki");
+      expect(desktopSidebar).toHaveTextContent("nav.changelog");
+      expect(desktopSidebar).toHaveTextContent("footer.github");
+      expect(desktopSidebar).toHaveTextContent("footer.telegram");
+
+      const secondaryGroup = desktopSidebar!.querySelector(
+        '[data-testid="secondary-navigation"]',
+      );
+      expect(secondaryGroup).toBeInTheDocument();
+      expect(secondaryGroup).toHaveClass("mt-auto");
+    });
+
+    it("keeps the same secondary links available from the mobile menu", () => {
+      const { container } = render(<App />);
+      fireEvent.click(container.querySelector('button[aria-haspopup="dialog"]')!);
+
+      const menu = container.querySelector('[role="dialog"]');
+      expect(menu).toHaveTextContent("nav.wiki");
+      expect(menu).toHaveTextContent("nav.changelog");
+      expect(menu).toHaveTextContent("footer.github");
+      expect(menu).toHaveTextContent("footer.telegram");
+
+      const externalLinks = menu!.querySelectorAll('a[target="_blank"]');
+      expect(externalLinks).toHaveLength(2);
+      externalLinks.forEach((link) =>
+        expect(link).toHaveAttribute("rel", "noopener noreferrer"),
+      );
+    });
+
+    it("does not put secondary surfaces back in the primary bottom tab array", () => {
+      expect(TABS).toHaveLength(10);
+      expect(TABS.map((tab) => tab.id)).not.toEqual(
+        expect.arrayContaining(["wiki", "changelog"]),
+      );
     });
   });
 
