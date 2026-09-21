@@ -200,9 +200,13 @@ export function WikiPage() {
       }
 
       // Cross-article: jump to the owner, and stage the anchor so the effect
-      // below scrolls to the heading once its html has rendered.
+      // below scrolls to the heading once its html has rendered. The fragment
+      // is decoded to match the raw UTF-8 heading id: `rehype-slug` writes ids
+      // unencoded, so the percent-encoded href (`%C3%A1`) would never match in
+      // `getElementById`. This cannot throw: `resolveCrossArticle` already
+      // decoded the same input successfully to return a non-null target.
       event.preventDefault();
-      pendingAnchor.current = hash.slice(1);
+      pendingAnchor.current = decodeURIComponent(hash.slice(1));
       setSelectedSlug(target);
     },
     [activeSlug, idToSlug, resolveCrossArticle],
