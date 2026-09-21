@@ -166,6 +166,22 @@ open3dcalc/
 
 ---
 
+## 🧩 UI Primitives: Select
+
+O componente `Select` (`src/shared/components/ui/Select/Select.tsx`) é o dropdown padrão do app, usado em **15 pontos de uso em 8 arquivos** (CatalogTab, FilamentInventory, InfillCalculator, MaterialSection, PrintSection, SalesSection, FailureSection, HistoryTab). É construído sobre [`@floating-ui/react`](https://floating-ui.com/) (a mesma biblioteca do `Tooltip`) para posicionamento robusto do menu:
+
+| Problema | Solução |
+| -------- | -------- |
+| Colisão  | `useFloating` + `offset(6)` + `flip()` + `shift({ padding: 8 })` + `autoUpdate` — o menu nunca sai da viewport e abre para cima quando não cabe embaixo |
+| Clipping | O menu é sempre renderizado num `FloatingPortal`, escapando de containers com `overflow` (ex.: o modal `overflow-y-auto` do FilamentInventory) |
+| Altura   | Middleware `size()` aplica `max-height` dinâmico (cap 420px) e iguala a largura ao trigger |
+| z-index  | Token `--z-dropdown: 60` (`src/platform/{web,desktop}/index.css`) — acima da bottom nav (`z-50`), abaixo do Tooltip (`100`) |
+| Mobile   | Abaixo de 640px o menu vira **bottom sheet**: `position: fixed; bottom: 0`, `max-h-[60dvh]` com scroll interno (hook `useMobileSheet`, reativo a resize/giro) |
+
+> **Nota:** a prop `portal` foi **descontinuada** — o menu agora é sempre portado, então a prop é aceita por compatibilidade da API pública, mas é um *no-op*. Nenhum call site passava `portal`; a API do componente é estável e os 15 pontos de uso acima se beneficiam das correções sem nenhuma mudança de código.
+
+---
+
 ## 📂 Supported File Formats
 
 O preview 3D (`StlPreview`) aceita arrastar/soltar ou selecionar via explorador de arquivos:
