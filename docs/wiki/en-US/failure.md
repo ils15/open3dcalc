@@ -18,6 +18,8 @@ month, ignoring it is a guaranteed loss.
 
 ## The fields
 
+The whole section comes down to four fields, and each one controls a part of the math.
+
 - **Enable failure cost** — the whole section is toggled by a single switch. Off,
   it adds nothing and the rest of the calculation is unaffected.
 - **Failure mode** — how the loss is measured: **Percentage** (a rate over the
@@ -94,6 +96,8 @@ made, not a guess. If you recorded your attempts, divide the failures by the
 total and you have the number for the field.
 
 ## Common pitfalls
+
+Four mistakes surround this section, and all of them leave the loss in your pocket instead of the price.
 
 - **Leaving failure off "to make it cheaper."** It does not make the price more
   competitive — it only moves the loss from the customer to you. When the failure

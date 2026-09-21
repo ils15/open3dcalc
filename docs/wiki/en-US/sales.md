@@ -107,6 +107,8 @@ impossible to pretend you do not know where the money comes from.
 
 ## Common pitfalls
 
+Four pitfalls live in this section, and each one shrinks the profit without showing in the price.
+
 - **A margin that is too low "to sell more."** If the margin does not cover the
   failures and the fixed costs you never apportioned, selling more only scales
   the loss.

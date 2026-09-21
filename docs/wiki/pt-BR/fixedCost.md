@@ -99,6 +99,8 @@ avulsas de fim de semana têm um preço justo mais alto.
 
 ## Como esta seção se relaciona com as demais
 
+Estas são as fronteiras da seção, para você não somar duas vezes o que já está em outro lugar.
+
 - O rateio é aplicado na taxa horária da [máquina](#user-content-custos-da-máquina),
   junto com a depreciação e a manutenção.
 - As horas produtivas da oficina não precisam ser iguais às horas de uso da
@@ -112,6 +114,8 @@ avulsas de fim de semana têm um preço justo mais alto.
   aqui fica a manutenção do **espaço**.
 
 ## Armadilhas práticas
+
+Quatro erros aparecem com frequência nesta seção, e todos eles barateiam o preço sem ninguém perceber.
 
 1. **Colocar custos variáveis aqui.** Filamento, agulha, isopropílico e frete
    são proporcionais à produção — já têm sua própria seção. Aqui entra só o que

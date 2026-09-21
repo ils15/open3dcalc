@@ -38,6 +38,8 @@ eles aumentam o preço final, não diminuem o seu lucro.
 
 ## Marcas importantes do resultado
 
+Quatro números resumem o resultado, e cada um conta uma coisa diferente sobre a peça.
+
 - **Custo Total** — quanto a peça custou para existir, incluindo falha,
   embalagem e frete. É o **ponto de equilíbrio**: vender abaixo é prejuízo, e o
   app avisa.
@@ -162,6 +164,8 @@ Cada parcela do resultado vem de um lugar específico:
   margem.
 
 ## Armadilhas práticas
+
+Quatro erros de leitura do resultado, todos capazes de fazer um prejuízo parecer um bom negócio.
 
 1. **Achar que 50% de margem é 50% de lucro no preço.** Como o exemplo mostra,
    é 28%. Sempre leia a **margem real**, não a margem que você digitou.

@@ -371,7 +371,7 @@ export function CustomerTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("customers.searchPlaceholder")}
-          className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-xl text-sm text-[var(--color-text-primary)] h-12 pl-10 pr-4 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all"
+          className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-xl text-sm text-[var(--color-text-primary)] h-11 pl-10 pr-4 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all"
         />
       </div>
 

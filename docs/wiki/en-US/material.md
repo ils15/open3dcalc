@@ -131,6 +131,8 @@ article for details.
 
 ## Common pitfalls
 
+Four classic mistakes in this section, and all of them make the material look cheaper than it is.
+
 - **Forgetting the purge on color prints.** The purge tower of a three-color
   model can outweigh the part itself. Without the field, the cost is
   understated from the very first print.

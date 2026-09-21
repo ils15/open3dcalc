@@ -27,6 +27,8 @@ R$ 0.05. The cost exists; what changes is the dilution.
 
 ## Block: Software and Files
 
+The block is two fields: the slicer subscription and the STL file, each with its own math.
+
 - **Slicer Subscription** — the monthly cost of the slicing software, if you use
   a paid one. Leave it at zero if you use a free slicer; but remember that many
   slicers' "free" tier is not the commercial one.
@@ -49,6 +51,8 @@ the STL file is still charged in full on each part. See
 [labor](#user-content-labor) and [results](#user-content-results).
 
 ## Block: PPE / Consumables
+
+Two fields, one of money and one of information: PPE enters the price, and carbon does not.
 
 - **PPE Cost per Print** — what you spend on gloves, masks, paper towels,
   filters and isopropyl alcohol per print. It is a **fixed per-part** value,
@@ -98,6 +102,8 @@ at R$ 90/kg).
 
 ## How this section relates to the others
 
+The section's boundaries, kept so the subscription and the supplies do not land in the wrong place.
+
 - The **hours per month** prorating the subscription are the workshop's productive
   hours. They need not match the [machine's](#user-content-machine-costs) usage
   hours. The machine uses the hours of the printer itself; the share uses the hours
@@ -112,6 +118,8 @@ at R$ 90/kg).
   [results](#user-content-results).
 
 ## Practical pitfalls
+
+Four common mistakes across these two blocks, and all of them leave a real cost out of the price.
 
 1. **Free slicer in life, paid slicer in the quote.** If you use a slicer's free
    tier to sell parts, you are technically using a non-commercial license. The

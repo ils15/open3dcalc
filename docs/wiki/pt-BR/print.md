@@ -18,6 +18,8 @@ depreciação é uma conta de equipamento. As duas entram no custo, separadas.
 
 ## Os três campos básicos
 
+Três campos bastam para a conta, e nenhum deles pede palpite: tempo, potência e preço do kWh.
+
 - **Tempo de impressão** — o total que a máquina leva, conforme o fatiador. Não
   inclui o tempo de pós-processamento (que fica na seção `labor`).
 - **Potência da impressora** — o consumo médio em watts. A maioria das FDM fica
@@ -93,6 +95,8 @@ de ser de graça — e peças longas passam a custar proporcionalmente mais que 
 dobro do tempo de máquina.
 
 ## Armadilhas comuns
+
+Três erros se repetem nesta seção, e todos eles fazem a energia parecer menor do que foi.
 
 - **Usar a potência de pico.** Uma impressora de 350 W de pico trabalha a 150 W
   na maioria do tempo. O campo pede a média; usar o pico infla a energia toda.

@@ -108,7 +108,27 @@ The tab lists every quote with its status and totals, and search filters by
 title or customer name. Deleting asks for confirmation, because that quote's
 number will never be handed out again.
 
+## Common pitfalls
+
+Four mistakes happen while assembling the document, and all of them surface only after it is sent.
+
+- **Typing the price from memory.** The unit price is editable, and adjusting R$ 42.70 to
+  R$ 45.00 is correct when that was agreed. But typing a price with no estimate behind it
+  loses the trail of the cost — the item comes from History precisely so the price is born
+  from a calculation.
+- **Forgetting that discounts stack.** A discount on the line and a global one add up, and the
+  app shows the total in money. Anyone looking only at the percentages underestimates the size
+  of the cut before sending.
+- **Recalculating the part and expecting the quote to follow.** The quote is a snapshot: prices,
+  customer details and terms freeze at save time. If filament prices rise, the new estimate
+  comes out higher and the document still says what was agreed.
+- **Deleting drafts to reorganize the numbering.** The sequence is automatic and continuous,
+  and deleting one leaves no gap — that number is never handed out again. The deletion
+  confirmation exists for that reason.
+
 ## End-to-end example
+
+A real example shows the path: from the first estimate to an approved document, with every number.
 
 1. You estimate a **N20 motor mount**: suggested sale price R$ 42.70. Save it
    to History.

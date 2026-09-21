@@ -121,6 +121,8 @@ calculadora superestimar o material em mais de 100%.
 
 ## Armadilhas que custam dinheiro
 
+Quatro erros de cadastro silenciosos, cada um suficiente para tirar a precisão de todas as estimativas.
+
 - **Densidade errada**: ABS é 1,04 g/cm³, PLA é 1,24. Uma peça de 100 cm³ são
   104 g de ABS ou 124 g de PLA — 20 g de diferença. Quem estima por volume
   com a densidade de outro material erra o peso, e o custo vai junto.

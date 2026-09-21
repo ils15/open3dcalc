@@ -28,6 +28,8 @@ needed.
 
 ## Section fields
 
+The section is three fields: two clock your work and one says what it is worth.
+
 - **Setup (Slicing)** — minutes spent preparing the file: adjusting the model,
   positioning the plate, configuring the slicer, exporting the gcode, leveling
   the bed and loading filament. A simple part takes 5 minutes; a client file
@@ -98,6 +100,8 @@ underpaid labor subsidized by another source of income.
 
 ## How this section relates to the others
 
+The boundaries matter, because the time and the material of finishing live in different sections.
+
 - The **print time** (which is NOT here) comes from
   [print parameters](#user-content-print-parameters) and feeds
   [machine](#user-content-machine-costs).
@@ -111,6 +115,8 @@ underpaid labor subsidized by another source of income.
   this combination: print hours + post + diluted setup.
 
 ## Practical pitfalls
+
+Four mistakes surround this section, and each one gives away a piece of your time.
 
 1. **Leaving the hourly rate at zero.** The most frequent mistake. The
    calculator accepts it and simply shows a lower price — nice on screen, loss
