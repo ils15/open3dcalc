@@ -1,8 +1,19 @@
-import { useState, useRef, useEffect, useCallback, useId, useMemo } from 'react'
+import { useState, useEffect, useId, useMemo, useCallback } from 'react'
+import type { CSSProperties } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { createPortal } from 'react-dom'
+import {
+  useFloating,
+  offset,
+  flip,
+  shift,
+  size,
+  autoUpdate,
+  FloatingPortal,
+  useMergeRefs,
+} from '@floating-ui/react'
 import { Search, Check, ChevronDown } from 'lucide-react'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
+import { useDismissablePopover } from '@/shared/hooks/useDismissablePopover'
 
 export interface SelectOption {
   value: string
@@ -20,9 +31,15 @@ interface SelectProps {
   placeholder?: string
   search?: boolean
   groups?: boolean
+  /** @deprecated O menu agora é sempre portado — a prop é aceita por compatibilidade da API pública. */
   portal?: boolean
   className?: string
 }
+
+/** Altura máxima do menu em desktop; em mobile vira fração da viewport. */
+const MENU_MAX_HEIGHT = 420
+/** Largura (px) em que o menu vira bottom sheet. */
+const MOBILE_BREAKPOINT = '(max-width: 640px)'
 
 function getMonogram(text: string): string {
   const words = text.trim().split(/\s+/)
@@ -30,18 +47,38 @@ function getMonogram(text: string): string {
   return text.slice(0, 2).toUpperCase()
 }
 
+/**
+ * Menu em bottom sheet abaixo de 640px. Precisa ser reativo (girar tela,
+ * redimensionar janela) — segue o mesmo padrão do useReducedMotion.
+ */
+function useMobileSheet(): boolean {
+  const [mobile, setMobile] = useState(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false
+    return window.matchMedia(MOBILE_BREAKPOINT).matches
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia(MOBILE_BREAKPOINT)
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  return mobile
+}
+
 export function Select({
   value, onChange, options, label, placeholder,
-  search = true, groups = false, portal = false, className = '',
+  search = true, groups = false, className = '',
 }: SelectProps) {
   const id = useId()
   const prefersReduced = useReducedMotion()
-  const [open, setOpen] = useState(false)
+  const isMobile = useMobileSheet()
+
+  const { open, setOpen, toggle, close, triggerRef, contentRef } = useDismissablePopover<HTMLButtonElement>()
   const [query, setQuery] = useState('')
   const [focusIdx, setFocusIdx] = useState(-1)
-  const triggerRef = useRef<HTMLButtonElement>(null)
-  const listRef = useRef<HTMLDivElement>(null)
-  const portalRef = useRef<HTMLDivElement>(null)
 
   const selected = options.find(o => o.value === value)
 
@@ -66,16 +103,49 @@ export function Select({
     return Array.from(map.entries()).map(([g, items]) => ({ group: g, items }))
   }, [filtered, groups])
 
-  const close = useCallback(() => {
-    setOpen(false)
-    setQuery('')
-    setFocusIdx(-1)
-  }, [])
+  const { x, y, strategy, refs } = useFloating({
+    placement: 'bottom-start',
+    open,
+    onOpenChange: setOpen,
+    middleware: [
+      offset(6),
+      flip(),
+      shift({ padding: 8 }),
+      size({
+        apply({ availableHeight, rects, elements }) {
+          const el = elements.floating
+          if (isMobile) {
+            // Largura/altura vêm do sheet (left/right + max-h da classe).
+            el.style.maxHeight = ''
+            el.style.width = ''
+            return
+          }
+          el.style.maxHeight = `${Math.max(0, Math.min(availableHeight, MENU_MAX_HEIGHT))}px`
+          el.style.width = `${rects.reference.width}px`
+        },
+        padding: 8,
+      }),
+    ],
+    whileElementsMounted: autoUpdate,
+  })
 
+  const setTriggerRef = useMergeRefs([triggerRef, refs.setReference])
+  const setContentRef = useMergeRefs([contentRef, refs.setFloating])
+
+  // Toda abertura passa pelo clique no trigger — reseta busca/foco ali
+  // (em vez de num effect), cobrindo Escape/click-outside/seleção.
+  const handleTriggerClick = useCallback(() => {
+    if (!open) {
+      setQuery('')
+      setFocusIdx(-1)
+    }
+    toggle()
+  }, [open, toggle])
+
+  // Seta/Enter — Escape e click-outside vêm do useDismissablePopover.
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { close(); triggerRef.current?.focus(); return }
       if (e.key === 'ArrowDown') { e.preventDefault(); setFocusIdx(i => Math.min(i + 1, filtered.length - 1)); return }
       if (e.key === 'ArrowUp') { e.preventDefault(); setFocusIdx(i => Math.max(i - 1, 0)); return }
       if (e.key === 'Enter' && focusIdx >= 0 && focusIdx < filtered.length) {
@@ -87,34 +157,26 @@ export function Select({
   }, [open, filtered, focusIdx, onChange, close])
 
   useEffect(() => {
-    if (!open) return
-    const onClick = (e: MouseEvent) => {
-      if (triggerRef.current?.contains(e.target as Node)) return
-      if (portalRef.current?.contains(e.target as Node)) return
-      if (listRef.current?.contains(e.target as Node)) return
-      close()
+    if (open && focusIdx >= 0 && contentRef.current) {
+      const el = contentRef.current.querySelector(`[data-index="${focusIdx}"]`)
+      el?.scrollIntoView?.({ block: 'nearest' })
     }
-    window.addEventListener('mousedown', onClick)
-    return () => window.removeEventListener('mousedown', onClick)
-  }, [open, close])
+  }, [focusIdx, open, contentRef])
 
-  useEffect(() => {
-    if (open && focusIdx >= 0 && listRef.current) {
-      const el = listRef.current.querySelector(`[data-index="${focusIdx}"]`)
-      el?.scrollIntoView({ block: 'nearest' })
-    }
-  }, [focusIdx, open])
+  const floatingStyle: CSSProperties = isMobile
+    ? { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 'var(--z-dropdown)' }
+    : { position: strategy, top: y ?? 0, left: x ?? 0, zIndex: 'var(--z-dropdown)' }
 
   const triggerContent = (
     <button
-      ref={triggerRef}
+      ref={setTriggerRef}
       id={`${id}-trigger`}
       role="combobox"
       aria-expanded={open}
       aria-haspopup="listbox"
       aria-controls={`${id}-listbox`}
       aria-label={label}
-      onClick={() => setOpen(o => !o)}
+      onClick={handleTriggerClick}
       className={`w-full flex items-center gap-2.5 surface border ${open ? 'border-[var(--color-accent)]/60' : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'} rounded-xl text-sm text-[var(--color-text-primary)] h-11 px-3 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/60 ${className}`}
     >
       {(selected?.group || selected?.image) && (
@@ -132,64 +194,6 @@ export function Select({
     </button>
   )
 
-  const dropdownContent = (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          ref={listRef}
-          id={`${id}-listbox`}
-          role="listbox"
-          aria-label={label}
-          initial={{ opacity: 0, scaleY: 0.95, transformOrigin: 'top' }}
-          animate={{ opacity: 1, scaleY: 1 }}
-          exit={{ opacity: 0, scaleY: 0.95 }}
-          transition={{ duration: prefersReduced ? 0 : 0.15, ease: 'easeOut' }}
-          className="z-50 w-full mt-1.5 surface border border-[var(--color-border)] rounded-xl shadow-2xl overflow-hidden"
-          style={portal ? { position: 'absolute', left: 0, top: '100%' } : {}}
-        >
-          {search && (
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--color-border)]">
-              <Search className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
-              <input
-                type="text"
-                value={query}
-                onChange={e => { setQuery(e.target.value); setFocusIdx(0) }}
-                placeholder="Buscar..."
-                className="flex-1 bg-transparent text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
-                autoFocus
-              />
-            </div>
-          )}
-          <div className="max-h-64 overflow-y-auto py-1">
-            {grouped.length === 1 ? (
-              grouped[0].items.map((opt, i) => (
-                <OptionItem key={opt.value} opt={opt} idx={i} focusIdx={focusIdx} value={value}
-                  onSelect={() => { onChange(opt.value); close() }} />
-              ))
-            ) : (
-              grouped.map(g => (
-                <div key={g.group}>
-                  {g.group && (
-                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]">
-                      {g.group}
-                    </div>
-                  )}
-                  {g.items.map((opt, i) => (
-                    <OptionItem key={opt.value} opt={opt} idx={i} focusIdx={focusIdx} value={value}
-                      onSelect={() => { onChange(opt.value); close() }} />
-                  ))}
-                </div>
-              ))
-            )}
-            {filtered.length === 0 && (
-              <div className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">Nenhum resultado</div>
-            )}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  )
-
   return (
     <div className={`relative flex flex-col gap-1.5 ${className}`}>
       <div className="min-h-[2.5rem] flex items-start">
@@ -198,7 +202,65 @@ export function Select({
         </label>
       </div>
       {triggerContent}
-      {portal ? createPortal(dropdownContent, document.body) : dropdownContent}
+      <FloatingPortal>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={setContentRef}
+              id={`${id}-listbox`}
+              role="listbox"
+              aria-label={label}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: prefersReduced ? 0 : 0.15, ease: 'easeOut' }}
+              style={floatingStyle}
+              className={`flex flex-col surface border border-[var(--color-border)] shadow-2xl overflow-hidden ${
+                isMobile ? 'rounded-t-2xl max-h-[60dvh]' : 'rounded-xl'
+              }`}
+            >
+              {search && (
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--color-border)] shrink-0">
+                  <Search className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={e => { setQuery(e.target.value); setFocusIdx(0) }}
+                    placeholder="Buscar..."
+                    className="flex-1 bg-transparent text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
+                    autoFocus
+                  />
+                </div>
+              )}
+              <div className="flex-1 min-h-0 overflow-y-auto py-1">
+                {grouped.length === 1 ? (
+                  grouped[0].items.map((opt, i) => (
+                    <OptionItem key={opt.value} opt={opt} idx={i} focusIdx={focusIdx} value={value}
+                      onSelect={() => { onChange(opt.value); close() }} />
+                  ))
+                ) : (
+                  grouped.map(g => (
+                    <div key={g.group}>
+                      {g.group && (
+                        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]">
+                          {g.group}
+                        </div>
+                      )}
+                      {g.items.map((opt, i) => (
+                        <OptionItem key={opt.value} opt={opt} idx={i} focusIdx={focusIdx} value={value}
+                          onSelect={() => { onChange(opt.value); close() }} />
+                      ))}
+                    </div>
+                  ))
+                )}
+                {filtered.length === 0 && (
+                  <div className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">Nenhum resultado</div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </FloatingPortal>
     </div>
   )
 }

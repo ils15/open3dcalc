@@ -1,8 +1,72 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { ReactNode, ReactElement } from "react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
+// ─── Mock all heavy dependencies (same surface as TabletOptimization.test) ───
+vi.mock("@/shared/components/Header/Header", () => ({
+  Header: () => <header data-testid="header">Header</header>,
+}));
+vi.mock("@/shared/components/Catalog/CatalogTab", () => ({
+  CatalogTab: () => <div>CatalogTab</div>,
+}));
+vi.mock("@/shared/components/Calculator/HistoryTab/HistoryTab", () => ({
+  HistoryTab: () => <div>HistoryTab</div>,
+}));
+vi.mock("@/shared/components/Dashboard/Dashboard", () => ({
+  Dashboard: () => <div>Dashboard</div>,
+}));
+vi.mock("@/shared/components/Changelog/ChangelogPage", () => ({
+  ChangelogPage: () => <div>ChangelogPage</div>,
+}));
+vi.mock("@/shared/components/Wiki/WikiPage", () => ({
+  WikiPage: () => <div>WikiPage</div>,
+}));
+vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
+  InfillCalculator: () => <div>InfillCalculator</div>,
+}));
+vi.mock("@/shared/components/Catalog/FilamentInventory", () => ({
+  FilamentInventory: () => <div>FilamentInventory</div>,
+}));
+vi.mock("@/shared/components/Calculator/Calculator", () => ({
+  Calculator: () => <div>Calculator</div>,
+}));
+vi.mock("@/shared/stores/storeBridge", () => ({
+  restoreAutoSnapshot: vi.fn(),
+}));
+vi.mock("@/shared/stores/historyStore", () => ({
+  useHistoryStore: Object.assign(
+    vi.fn(() => ({
+      entries: [],
+      addEntry: vi.fn(),
+    })),
+    {
+      getState: vi.fn(() => ({
+        entries: [],
+        addEntry: vi.fn(),
+      })),
+    },
+  ),
+}));
+vi.mock("@/shared/stores/calculatorStore", () => ({
+  useCalculatorStore: vi.fn(
+    (selector?: (state: Record<string, unknown>) => unknown) => {
+      const state = { currency: "auto" };
+      return selector ? selector(state) : state;
+    },
+  ),
+}));
+
+// Mock i18next — keys pass through so assertions can match on labelKey strings.
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: "pt-BR", changeLanguage: vi.fn() },
+  }),
+}));
+
+// ─── Import after mocks ───
 import { TABS as WEB_TABS } from "@/platform/web/App";
-import { MORE_TABS, MOBILE_VISIBLE_TABS } from "@/platform/web/App";
+import App from "@/platform/web/App";
 import { TABS as DESKTOP_TABS } from "@/platform/desktop/App";
 import { TUTORIAL_TABS } from "@/shared/components/ui/tutorialTours";
 
@@ -40,22 +104,47 @@ describe("tabs parity", () => {
     expect(WEB_TABS.map((tab) => tab.id)).toEqual(tutorialIds);
     expect(DESKTOP_TABS.map((tab) => tab.id)).toEqual(tutorialIds);
   });
+});
 
-  it("MORE_TABS has no overlap with visible TABS", () => {
-    const visible = new Set<string>(MOBILE_VISIBLE_TABS);
+describe("mobile bottom navigation", () => {
+  it("renders every tab by horizontal scroll — none buried behind a More menu", () => {
+    render(<App />);
 
-    for (const tabId of MORE_TABS) {
-      expect(visible.has(tabId)).toBe(false);
+    const nav = screen.getByRole("navigation", {
+      name: "nav.mainNavigation",
+    });
+    // Tab buttons carry aria-selected; the settings gear does not.
+    const tabButtons = nav.querySelectorAll("button[aria-selected]");
+
+    expect(tabButtons).toHaveLength(WEB_TABS.length);
+    for (const tab of WEB_TABS) {
+      expect(nav.textContent).toContain(tab.labelKey);
     }
   });
 
-  it("every MORE_TABS id resolves in TABS (bottom sheet finds its tab)", () => {
-    // The mobile bottom sheet looks each id up with TABS.find(...)! — an id that
-    // is missing from TABS would crash instead of degrading to a hidden entry.
-    const tabIds = new Set<string>(WEB_TABS.map((tab) => tab.id));
+  it("settings gear opens a sheet that holds settings only (no tabs)", () => {
+    render(<App />);
 
-    for (const tabId of MORE_TABS) {
-      expect(tabIds.has(tabId)).toBe(true);
+    const gear = screen.getByRole("button", { name: "nav.settings" });
+    expect(gear).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(gear);
+    expect(gear).toHaveAttribute("aria-expanded", "true");
+
+    const sheet = screen
+      .getAllByRole("dialog")
+      .find((dialog) => dialog.textContent?.includes("nav.tutorial"));
+    expect(sheet).toBeDefined();
+    if (!sheet) return;
+
+    // Settings items live here…
+    expect(within(sheet).getByText("nav.tutorial")).toBeInTheDocument();
+    expect(within(sheet).getByText("settings.currency")).toBeInTheDocument();
+    expect(within(sheet).getByText("nav.language")).toBeInTheDocument();
+
+    // …and no tab does.
+    for (const tab of WEB_TABS) {
+      expect(within(sheet).queryByText(tab.labelKey)).toBeNull();
     }
   });
 });
