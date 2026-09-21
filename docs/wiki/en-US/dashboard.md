@@ -148,6 +148,23 @@ printers, the top materials and the comparison between the two months.
 It is the file you send to a partner or keep as a record of the period, without
 anyone needing to install anything to read it.
 
+## Common pitfalls
+
+Four misreadings of this screen, and all of them lead to a decision made with the wrong number.
+
+- **Expecting the dashboard to show revenue.** It reads no quotes and queries no external
+  system: it only sums the estimates from History plus the open one. An approved quote does
+  not show up here until it becomes a saved estimate.
+- **Reading the average margin as profit over revenue.** Each estimate computes its own first;
+  the mean of 57.8%, 39.7% and 85.0% is 60.8%, but it is not total profit divided by revenue.
+  A cheap part with a high margin moves the number as much as an expensive one.
+- **Assuming the empty screen is a bug.** "No history data" is the normal state for someone
+  who just installed the app — save three estimates and the screen fills in. No setting is
+  missing.
+- **Ignoring the low margin alert.** A part sold for R$ 25.00 at a R$ 21.00 cost has a 16%
+  margin and lands on the list. It is not a prohibition: it is where money slips away
+  unnoticed.
+
 ## Starting from scratch
 
 If the dashboard is empty, the path is short:

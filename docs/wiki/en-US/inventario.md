@@ -122,6 +122,8 @@ calculator overstate the material by more than 100%.
 
 ## Pitfalls that cost money
 
+Four silent catalog mistakes, each one enough to strip the accuracy out of every estimate.
+
 - **Wrong density**: ABS is 1.04 g/cm³, PLA is 1.24. A 100 cm³ part is 104 g
   of ABS or 124 g of PLA — a 20 g difference. Estimate by volume with the
   wrong material's density and both the weight and the cost come out wrong.

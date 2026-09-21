@@ -22,7 +22,7 @@ for, so the part costs me nothing"*. The problem is that the nozzle is never
 paid for forever. Every meter of filament pushed through a 0.4 mm nozzle
 enlarges it a tiny bit. A new brass nozzle costs about R$ 35 and lasts roughly
 20 kg of PLA. If your part uses 180 g, it consumed 0.9% of that nozzle's life —
-that is R$ 0,32 that exists in the single print and nobody paid you back for.
+that is R$ 0.32 that exists in the single print and nobody paid you back for.
 
 This section turns that silent wear into a number you can add up and charge.
 Without it, your price covers filament and donates the machine's wear.
@@ -32,6 +32,8 @@ Without it, your price covers filament and donates the machine's wear.
 On **FDM**, the section gathers three blocks, each with its own toggle.
 
 ### Nozzle
+
+The nozzle is prorated by the part's weight, and two fields are enough to close the math.
 
 - **Nozzle Cost** — what you paid for the nozzle, in currency. Brass is cheap;
   hardened steel costs several times more.
@@ -45,10 +47,14 @@ also not being charged).
 
 ### Bed and Adhesion
 
+One field only, fixed per part, because adhesive wears with every print rather than by the hour.
+
 - **Adhesive Cost per Print** — estimated value of spray, glue, tape or PEI
   sheet wear **per print**. It is a fixed per-part value, not an hourly one.
 
 ### Physical Finishing
+
+One field for what you spent on sandpaper, primer and paint on this specific part.
 
 - **Finishing Supplies** — what you spend on sandpaper, primer, paint, body
   filler or acetone for this part in particular. If the part ships with no
@@ -108,10 +114,12 @@ hardware = 0.32 + 1.50 + 2.00 = R$ 3.82
 ```
 
 The part just became **R$ 3.82** more expensive than "filament only". That is
-R$ 0,32 of nozzle nobody remembers to charge — across a hundred identical parts
+R$ 0.32 of nozzle nobody remembers to charge — across a hundred identical parts
 it is R$ 32 of nozzle alone, enough for a new nozzle and a coffee.
 
 ## How this section relates to the others
+
+The section connects to five others, and each boundary prevents a duplicated cost.
 
 - The **weight** feeding the nozzle formula comes from the
   [material](#user-content-material) section — fill it first.
@@ -125,6 +133,8 @@ it is R$ 32 of nozzle alone, enough for a new nozzle and a coffee.
 - Everything here is summed up in [results](#user-content-results).
 
 ## Practical pitfalls
+
+Four common filling errors, and all of them leave the wear out of the price.
 
 1. **Underestimating nozzle lifespan with abrasive filament.** Carbon fiber
    and glitter eat a brass nozzle in a few kilograms. If you print with those,

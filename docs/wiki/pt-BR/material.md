@@ -18,7 +18,7 @@ perdas no cálculo, em vez de fingir que não existem.
 
 ## FDM: peso, preço e eficiência
 
-Na impressação por filamento, os campos básicos são:
+Na impressão por filamento, os campos básicos são:
 
 - **Tipo de material** — PLA, PETG, ABS e outros. Define a densidade usada nas
   conversões de volume e as sugestões de preço.
@@ -131,6 +131,8 @@ custo real do plástico que você tem na prateleira, e não com uma estimativa
 fixa. Veja detalhes no artigo sobre o [inventário](#user-content-inventário).
 
 ## Armadilhas comuns
+
+Quatro erros clássicos desta seção, e todos eles fazem o material parecer mais barato do que é.
 
 - **Esquecer a purga em prints coloridos.** A torre de purga de um modelo com
   três cores pode pesar mais que a peça. Sem o campo, o custo fica subestimado

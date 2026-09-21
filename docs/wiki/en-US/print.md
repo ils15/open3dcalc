@@ -18,6 +18,8 @@ bill, depreciation is an equipment bill. Both belong in the cost, kept separate.
 
 ## The three basic fields
 
+Three fields are enough for the math, and none asks for a guess: time, power and the kWh price.
+
 - **Print time** — the total the machine takes, per the slicer. It does not
   include post-processing time (that lives in the `labor` section).
 - **Printer power** — the average draw in watts. Most FDM printers sit between
@@ -91,6 +93,8 @@ longer free — and long parts start costing proportionally more than just doubl
 the machine time.
 
 ## Common pitfalls
+
+Three mistakes repeat in this section, and all of them make the energy look smaller than it was.
 
 - **Using peak power.** A printer with a 350 W peak may run at 150 W most of the
   time. The field asks for the average; using the peak inflates all the energy.

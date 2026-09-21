@@ -145,6 +145,23 @@ The recommended path, from the first number to the final price:
 7. **Save or export** — the estimate becomes a product in the inventory or a
    quote line item, and the history keeps the numbers for the next part.
 
+## Common pitfalls
+
+Four mistakes surround anyone starting with the calculator, and all of them disguise themselves as haste.
+
+- **Applying the margin without knowing the cost.** The sale price updates instantly when you
+  move the percentage, which invites blind adjustments. Without `results` side by side, a 100%
+  margin looks like 100% profit — and it is not.
+- **Adding the margin and forgetting what goes on top.** Total cost plus margin is R$ 28.84 in
+  the example; the sale price is R$ 38.45. The R$ 9.61 difference is taxes and the marketplace
+  fee, applied on top of the total, and it is not profit.
+- **Starting at the Complete level.** Quick covers the path from filament to sale price with
+  four sections, and leveling up later erases nothing. Anyone opening all ten sections at once
+  drowns in fields before closing a single price.
+- **Treating `sales` as another cost.** Packaging and shipping add to the total; margin, taxes
+  and fees are applied on top of it. Mixing up addition with application makes the price grow
+  in the wrong proportion.
+
 ## Where to start
 
 If you have never used the calculator, do this: open it on the **Quick** level,
