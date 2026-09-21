@@ -22,11 +22,10 @@ import {
   EnvelopeError,
 } from "./exportEnvelope";
 import { downloadBlob } from "./download";
+import { APP_VERSION } from "@/shared/version";
 
 export const SYNC_FORMAT = "open3dcalc-export" as const;
 export const SYNC_VERSION = "1.0" as const;
-/** Kept in sync with package.json version. */
-export const APP_VERSION = "1.9.3";
 
 const PBKDF2_ITERATIONS = 100_000;
 const KEY_LENGTH_BITS = 256;

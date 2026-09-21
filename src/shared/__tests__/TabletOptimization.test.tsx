@@ -159,9 +159,9 @@ describe("Phase 2 — Tablet Optimization", () => {
 
       expect(tabletSidebar).toBeDefined();
       const buttons = tabletSidebar!.querySelectorAll("button");
-      // TABS has 12 items — web and desktop render the identical set (incl.
-      // changelog and wiki); tabsParity.test locks the two platforms together.
-      expect(buttons.length).toBe(12);
+      // TABS has 10 primary items — Wiki and Novidades live in the footer hub;
+      // tabsParity.test locks the web and desktop sets together.
+      expect(buttons.length).toBe(10);
     });
 
     it("tablet sidebar buttons have title attribute for accessibility", () => {

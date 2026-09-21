@@ -54,7 +54,6 @@
     "language": "Mudar idioma",
     "navigation": "Navegação",
     "mainNavigation": "Navegação principal",
-    "menu": "Menu",
     "settings": "Configurações",
     "privacy": "Privacidade"
   },
@@ -2155,5 +2154,12 @@
   "wiki": {
     "toc": "Sumário",
     "loading": "Carregando"
+  },
+  "footer": {
+    "navigation": "Links úteis",
+    "version": "Open3DCalc v{{version}}",
+    "openSource": "Open Source · MIT License",
+    "github": "GitHub",
+    "telegram": "Canal Telegram"
   }
 }

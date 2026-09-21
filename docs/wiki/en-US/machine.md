@@ -121,6 +121,8 @@ accept that one-off parts on an idle machine are genuinely expensive.
 
 ## How this section relates to the others
 
+Each piece of the hourly rate comes from somewhere, and the boundaries keep the machine from being charged twice.
+
 - The **time** multiplying the hourly rate is the print time from the
   [print parameters](#user-content-print-parameters) section, not the labor time.
 - The **share** entering the rate comes from
@@ -131,6 +133,8 @@ accept that one-off parts on an idle machine are genuinely expensive.
   [result](#user-content-results).
 
 ## Practical pitfalls
+
+Four errors in the hourly rate, and all of them make the part cheaper than it costs.
 
 1. **Overestimating monthly usage.** The number-one trap. If you enter 200
    h/month but the printer only runs 40 h, depreciation comes out five times

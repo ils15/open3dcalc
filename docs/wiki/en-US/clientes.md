@@ -65,6 +65,22 @@ The whole record set can be exported as JSON for backup and imported back on
 another machine. Export is blocked in the demo session, like in the other
 tabs — the badge tells you when that applies.
 
+## Common pitfalls
+
+Four catalog mistakes, and each one quietly weakens the history.
+
+- **Leaving the customer off the quote.** With no link, the proposal gets lost in the list and
+  nobody can answer "how much have I already proposed to this customer?". The record exists so
+  the dropdown can exist.
+- **Registering the same person twice.** Without the company, two "Johns" sit loose; the quote
+  counter splits between the copies and the history loses its bite. The company field exists
+  to tell identical names apart.
+- **Expecting a record edit to rewrite a sent quote.** The link points at the current record,
+  but the document's text is a frozen copy. Fixing the email today does not change what the
+  customer received yesterday.
+- **Deleting the customer to clean the list.** Deletion asks for confirmation because linked
+  quotes still exist, they just lose the link. Instead of deleting, use the search.
+
 ## Example: what the history reveals
 
 You register **Centro Modelos** (company) with Joana as the contact. Over the

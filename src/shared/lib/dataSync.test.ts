@@ -12,6 +12,7 @@ import {
   type SyncData,
   type EncryptedBundle,
 } from "@/shared/lib/dataSync";
+import { APP_VERSION } from "@/shared/version";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -183,7 +184,7 @@ describe("validateBundle", () => {
       version: "1.0",
       format: "open3dcalc-export",
       exportedAt: new Date().toISOString(),
-      appVersion: "1.9.3",
+      appVersion: APP_VERSION,
       platform: "web",
       encrypted: false,
       data: emptySyncData(),
@@ -198,7 +199,7 @@ describe("validateBundle", () => {
       version: "1.0",
       format: "open3dcalc-export",
       exportedAt: new Date().toISOString(),
-      appVersion: "1.9.3",
+      appVersion: APP_VERSION,
       platform: "web",
       encrypted: true,
       data: "AAAA",
@@ -211,7 +212,7 @@ describe("validateBundle", () => {
       version: "1.0",
       format: "open3dcalc-export",
       exportedAt: new Date().toISOString(),
-      appVersion: "1.9.3",
+      appVersion: APP_VERSION,
       platform: "web",
       encrypted: false,
       data: { history: [], customers: [] }, // missing settings, quotes, catalog, ...
@@ -234,7 +235,7 @@ describe("exportBundle", () => {
     expect(bundle.encrypted).toBe(false);
     expect(bundle.version).toBe("1.0");
     expect(bundle.format).toBe("open3dcalc-export");
-    expect(bundle.appVersion).toBe("1.9.3");
+    expect(bundle.appVersion).toBe(APP_VERSION);
     expect(typeof bundle.exportedAt).toBe("string");
     expect(Number.isNaN(Date.parse(bundle.exportedAt))).toBe(false);
     expect(bundle.platform).toBe("web");
