@@ -471,6 +471,24 @@ describe("FilamentInventory CRUD, filters and palette", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("removes a custom color via the palette trash button", async () => {
+    const user = userEvent.setup();
+    useColorPalette.getState().addColor("Verde Neon", "#a3e635");
+    expect(useColorPalette.getState().colors).toHaveLength(1);
+
+    render(<FilamentInventory />);
+    await user.click(screen.getByText("Paleta de Cores"));
+
+    await user.click(
+      screen.getByRole("button", { name: "Remover cor Verde Neon" }),
+    );
+
+    expect(useColorPalette.getState().colors).toHaveLength(0);
+    expect(
+      screen.getByText("Nenhuma cor personalizada."),
+    ).toBeInTheDocument();
+  });
+
   it("renders palette swatches and closes via the X button", async () => {
     const user = userEvent.setup();
     addSpool({ color: "Verde", colorHex: "" });
