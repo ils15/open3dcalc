@@ -2131,6 +2131,7 @@
     "loading": "Loading"
   },
   "footer": {
+    "navigation": "Useful links",
     "version": "Open3DCalc v{{version}}",
     "openSource": "Open Source · MIT License",
     "github": "GitHub",

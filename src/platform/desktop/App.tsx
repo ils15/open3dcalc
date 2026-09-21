@@ -38,12 +38,10 @@ import {
   BarChart3,
   Grid3x3,
   Spool,
-  Sparkles,
   FileText,
   Users,
   Package,
   ShieldCheck,
-  BookMarked,
 } from "lucide-react";
 
 type Tab =
@@ -140,18 +138,6 @@ export const TABS: {
     icon: <ShieldCheck className="w-[18px] h-[18px]" />,
     labelKey: "nav.privacy",
     label: "Privacidade",
-  },
-  {
-    id: "changelog",
-    icon: <Sparkles className="w-[18px] h-[18px]" />,
-    labelKey: "nav.changelog",
-    label: "Novidades",
-  },
-  {
-    id: "wiki",
-    icon: <BookMarked className="w-[18px] h-[18px]" />,
-    labelKey: "nav.wiki",
-    label: "Wiki",
   },
 ];
 

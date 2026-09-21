@@ -40,7 +40,6 @@ import {
   BarChart3,
   Grid3x3,
   Spool,
-  Sparkles,
   FileText,
   Users,
   Package,
@@ -51,7 +50,6 @@ import {
   Globe,
   Info,
   ExternalLink,
-  BookMarked,
 } from "lucide-react";
 
 type Tab =
@@ -82,11 +80,9 @@ type LegacyHistoryItem = {
   snapshot?: CalculationSnapshot | null;
 };
 
-// On mobile the bottom nav scrolls horizontally over every TAB entry (parity
-// with the desktop Electron nav) and ends with a fixed gear that opens a
-// settings-only sheet. No tab is hidden behind a menu, and settings never mix
-// with tabs — tabsParity.test asserts the nav renders all TABS and the sheet
-// holds settings alone.
+// The bottom nav contains only primary app sections and ends with a fixed gear
+// that opens a settings-only sheet. Secondary surfaces (Wiki and Novidades)
+// live in the footer hub instead of competing with the primary tabs.
 
 export const TABS: {
   id: Tab;
@@ -153,18 +149,6 @@ export const TABS: {
     icon: <ShieldCheck className="w-[18px] h-[18px]" />,
     labelKey: "nav.privacy",
     label: "Privacidade",
-  },
-  {
-    id: "changelog",
-    icon: <Sparkles className="w-[18px] h-[18px]" />,
-    labelKey: "nav.changelog",
-    label: "Novidades",
-  },
-  {
-    id: "wiki",
-    icon: <BookMarked className="w-[18px] h-[18px]" />,
-    labelKey: "nav.wiki",
-    label: "Wiki",
   },
 ];
 
@@ -755,34 +739,55 @@ function App() {
         )}
       </AnimatePresence>
       <footer className="text-center text-xs text-[var(--color-text-muted)] py-2.5 lg:py-3 border-t border-[var(--color-border)]">
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2">
+        <nav aria-label={t("footer.navigation")}>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("wiki")}
+              className="hover:text-[var(--color-text-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none px-1 rounded"
+            >
+              {t("nav.wiki")}
+            </button>
+            <span aria-hidden="true" className="text-[var(--color-border)]">
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={() => setActiveTab("changelog")}
+              className="hover:text-[var(--color-text-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none px-1 rounded"
+            >
+              {t("nav.changelog")}
+            </button>
+            <span aria-hidden="true" className="text-[var(--color-border)]">
+              ·
+            </span>
+            <a
+              href="https://github.com/ils15/open3dcalc"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[var(--color-text-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none px-1 rounded"
+            >
+              {t("footer.github")}
+            </a>
+            <span aria-hidden="true" className="text-[var(--color-border)]">
+              ·
+            </span>
+            <a
+              href="https://t.me/Impressao3DBR"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[var(--color-text-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none px-1 rounded"
+            >
+              {t("footer.telegram")}
+            </a>
+          </div>
+        </nav>
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-2">
           <span>{t("footer.version", { version: APP_VERSION })}</span>
           <span aria-hidden="true" className="text-[var(--color-border)]">
             ·
           </span>
           <span>{t("footer.openSource")}</span>
-          <span aria-hidden="true" className="text-[var(--color-border)]">
-            ·
-          </span>
-          <a
-            href="https://github.com/ils15/open3dcalc"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[var(--color-text-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none px-1 rounded"
-          >
-            {t("footer.github")}
-          </a>
-          <span aria-hidden="true" className="text-[var(--color-border)]">
-            ·
-          </span>
-          <a
-            href="https://t.me/Impressao3DBR"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[var(--color-text-secondary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none px-1 rounded"
-          >
-            {t("footer.telegram")}
-          </a>
         </div>
       </footer>
 

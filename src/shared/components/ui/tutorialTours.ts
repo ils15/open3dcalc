@@ -31,9 +31,9 @@ export const TOUR_IDS: TourId[] = [
 ];
 
 /**
- * Top-level surface a step lives on. Mirrors the tab ids both platforms render;
- * the App subscribes to `open3dcalc:tutorial-navigate` and validates before
- * switching, so a typo can never crash the nav.
+ * Top-level surface a step lives on. The list below is the primary tab
+ * contract; secondary surfaces remain valid tutorial destinations without
+ * appearing in the bottom tab bar.
  */
 export type TutorialTab =
   | "calculator"
@@ -60,8 +60,6 @@ export const TUTORIAL_TABS: readonly TutorialTab[] = [
   "customers",
   "products",
   "privacy",
-  "changelog",
-  "wiki",
 ];
 
 export interface StepConfig {
