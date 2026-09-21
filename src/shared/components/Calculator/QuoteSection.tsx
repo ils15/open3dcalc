@@ -5,6 +5,7 @@ import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
+import { Select } from "@/shared/components/ui/Select";
 import { QuoteDoc } from "@/shared/lib/QuoteDoc";
 import type { Quote, QuoteItem, QuoteFormData, Customer } from "@/shared/types";
 import {
@@ -294,7 +295,7 @@ function QuoteFormModal({
       <div className="space-y-5">
         {/* Title */}
         <div>
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+          <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
             Título do Orçamento
           </label>
           <input
@@ -308,22 +309,20 @@ function QuoteFormModal({
 
         {/* Customer selector */}
         <div data-tutorial="quote-form-customer">
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
-            Cliente
-          </label>
-          <select
+          <Select
+            label="Cliente"
             value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-xl text-sm text-[var(--color-text-primary)] h-11 px-3 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all appearance-none cursor-pointer"
-          >
-            <option value="">Selecionar cliente</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.company ? ` — ${c.company}` : ""}
-              </option>
-            ))}
-          </select>
+            onChange={setCustomerId}
+            search
+            options={[
+              { value: "", label: "Selecionar cliente" },
+              ...customers.map((c) => ({
+                value: c.id,
+                label: c.name,
+                subtitle: c.company || undefined,
+              })),
+            ]}
+          />
           {selectedCustomer && (
             <div className="mt-2 text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
               {selectedCustomer.email && <span>{selectedCustomer.email}</span>}
@@ -337,12 +336,12 @@ function QuoteFormModal({
         {/* Items section */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
               Itens ({items.length})
             </label>
             <button
               onClick={() => setShowHistoryPicker(true)}
-              className="text-xs px-3 py-1.5 rounded-lg bg-[var(--color-accent)]/30 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/50 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs bg-[var(--color-accent)]/30 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/50 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
             >
               <Plus className="w-3 h-3" />
               Adicionar do Histórico
@@ -377,7 +376,7 @@ function QuoteFormModal({
                         onChange={(e) =>
                           updateItem(idx, "quantity", e.target.value)
                         }
-                        className="w-14 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] h-8 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
+                        className="w-14 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-xl text-sm text-[var(--color-text-primary)] h-11 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
                       />
                     </div>
                     <div className="flex flex-col items-center">
@@ -392,7 +391,7 @@ function QuoteFormModal({
                         onChange={(e) =>
                           updateItem(idx, "unitPrice", e.target.value)
                         }
-                        className="w-20 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] h-8 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
+                        className="w-20 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-xl text-sm text-[var(--color-text-primary)] h-11 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
                       />
                     </div>
                     <div className="flex flex-col items-center">
@@ -407,7 +406,7 @@ function QuoteFormModal({
                         onChange={(e) =>
                           updateItem(idx, "discountPercent", e.target.value)
                         }
-                        className="w-14 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-sm text-[var(--color-text-primary)] h-8 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
+                        className="w-14 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-xl text-sm text-[var(--color-text-primary)] h-11 px-2 text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all"
                       />
                     </div>
                     <button
@@ -427,7 +426,7 @@ function QuoteFormModal({
         {/* Global discount */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
               Desc. Global %
             </label>
             <input
@@ -440,7 +439,7 @@ function QuoteFormModal({
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
               Validade
             </label>
             <input
@@ -451,7 +450,7 @@ function QuoteFormModal({
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
               Pagamento
             </label>
             <input
@@ -463,7 +462,7 @@ function QuoteFormModal({
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
               Prazo Entrega
             </label>
             <input
@@ -478,7 +477,7 @@ function QuoteFormModal({
 
         {/* Footer note */}
         <div>
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+          <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
             Observações
           </label>
           <textarea
@@ -528,13 +527,13 @@ function QuoteFormModal({
         <div className="flex gap-3 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-xl text-sm bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="flex-1 px-4 py-2 rounded-xl text-xs bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
             Cancelar
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 py-3 rounded-xl text-sm font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2"
           >
             <FileText className="w-4 h-4" />
             {isEditing ? "Atualizar" : "Salvar Orçamento"}
@@ -629,20 +628,21 @@ function QuoteViewModal({
               Criado em {new Date(quote.createdAt).toLocaleDateString(locale)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <select
+          <div className="flex items-end gap-2">
+            <Select
+              label="Status"
               value={quote.status}
-              onChange={(e) => updateStatus(e.target.value as Quote["status"])}
-              className="bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-lg text-xs text-[var(--color-text-primary)] h-8 px-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] transition-all appearance-none cursor-pointer"
-            >
-              <option value="draft">Rascunho</option>
-              <option value="sent">Enviado</option>
-              <option value="approved">Aprovado</option>
-              <option value="rejected">Recusado</option>
-            </select>
+              onChange={(v) => updateStatus(v as Quote["status"])}
+              options={[
+                { value: "draft", label: "Rascunho" },
+                { value: "sent", label: "Enviado" },
+                { value: "approved", label: "Aprovado" },
+                { value: "rejected", label: "Recusado" },
+              ]}
+            />
             <button
               onClick={handleExportPdf}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
               Exportar PDF
@@ -928,7 +928,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
             "quotes.searchPlaceholder",
             "Buscar por título ou cliente...",
           )}
-          className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-xl text-sm text-[var(--color-text-primary)] h-12 pl-10 pr-4 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all"
+          className="w-full bg-[var(--color-bg-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-hover)] rounded-xl text-sm text-[var(--color-text-primary)] h-11 pl-10 pr-4 placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-[var(--color-accent)]/60 transition-all"
         />
       </div>
 
