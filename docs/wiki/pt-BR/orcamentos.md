@@ -110,6 +110,23 @@ A aba lista todos os orçamentos com estado e totais, e a busca filtra por
 título ou nome do cliente. Excluir pede confirmação, porque o número daquele
 orçamento não vai ser reaproveitado.
 
+## Armadilhas comuns
+
+Quatro erros acontecem na montagem do documento, e todos eles se descobrem depois de enviado.
+
+- **Digitar o preço de cabeça.** O preço unitário é editável, e ajustar R$ 42,70 para R$ 45,00
+  é correto quando foi o acordado. Mas quem digita um preço sem estimativa por trás perde o
+  rastro do custo — o item vem do Histórico justamente para o preço nascer de um cálculo.
+- **Esquecer que os descontos se acumulam.** Um desconto na linha e outro global se somam, e
+  o app mostra o total em dinheiro. Quem olha só as porcentagens subestima o tamanho do
+  abatimento antes de enviar.
+- **Recalcular a peça e esperar o orçamento acompanhar.** O orçamento é uma fotografia:
+  preços, dados do cliente e condições congelam no salvamento. Se o filamento subir, a
+  estimativa nova sai mais cara e o documento continua dizendo o que foi combinado.
+- **Excluir rascunhos para reorganizar a numeração.** A sequência é automática e contínua, e
+  não há buraco quando você exclui um — aquele número nunca é reaproveitado. A confirmação
+  da exclusão existe por isso.
+
 ## Exemplo de ponta a ponta
 
 Um exemplo real mostra o caminho: da primeira estimativa ao documento aprovado, com todos os números.

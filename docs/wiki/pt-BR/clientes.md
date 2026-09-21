@@ -66,6 +66,22 @@ O cadastro inteiro pode ser exportado como JSON para backup, e importado de
 volta em outra máquina. A exportação é bloqueada na sessão demo, como nas
 outras abas — o selo avisa quando é o caso.
 
+## Armadilhas comuns
+
+Quatro erros de cadastro, e cada um deles enfraquece o histórico sem fazer barulho.
+
+- **Deixar o cliente de fora do orçamento.** Sem vínculo, a proposta some no meio da lista e
+  ninguém consegue responder "quanto já propus para este cliente?". O cadastro existe para o
+  seletor existir.
+- **Cadastrar a mesma pessoa duas vezes.** Sem a empresa, dois "João" ficam soltos; o contador
+  de orçamentos se divide entre as cópias e o histórico perde a força. A empresa existe para
+  separar nomes iguais.
+- **Esperar que a edição do cadastro reescreva o orçamento enviado.** O vínculo aponta para o
+  cadastro atual, mas o texto do documento é uma cópia congelada. Corrigir o e-mail hoje não
+  muda o que o cliente recebeu ontem.
+- **Apagar o cliente para limpar a lista.** A exclusão pede confirmação porque os orçamentos
+  vinculados continuam existindo, só perdem o vínculo. Em vez de apagar, use a busca.
+
 ## Exemplo: o que o histórico revela
 
 Você cadastra a **Centro Modelos** (empresa) com a Joana como contato. Nos
