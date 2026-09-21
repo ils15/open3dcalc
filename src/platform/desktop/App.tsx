@@ -118,12 +118,6 @@ export const TABS: {
     label: "Histórico",
   },
   {
-    id: "changelog",
-    icon: <Sparkles className="w-[18px] h-[18px]" />,
-    labelKey: "nav.changelog",
-    label: "Novidades",
-  },
-  {
     id: "quotes",
     icon: <FileText className="w-[18px] h-[18px]" />,
     labelKey: "nav.quotes",
@@ -146,6 +140,12 @@ export const TABS: {
     icon: <ShieldCheck className="w-[18px] h-[18px]" />,
     labelKey: "nav.privacy",
     label: "Privacidade",
+  },
+  {
+    id: "changelog",
+    icon: <Sparkles className="w-[18px] h-[18px]" />,
+    labelKey: "nav.changelog",
+    label: "Novidades",
   },
   {
     id: "wiki",

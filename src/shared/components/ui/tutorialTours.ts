@@ -56,11 +56,11 @@ export const TUTORIAL_TABS: readonly TutorialTab[] = [
   "inventory",
   "catalog",
   "history",
-  "changelog",
   "quotes",
   "customers",
   "products",
   "privacy",
+  "changelog",
   "wiki",
 ];
 
