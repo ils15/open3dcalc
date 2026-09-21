@@ -251,7 +251,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
             className="w-28"
           />
           <button onClick={() => setShowComparison(true)} disabled={selectedForCompare.length !== 2}
-            className={`px-3 py-1.5 text-xs rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5 ${
+            className={`px-4 py-2 rounded-xl text-xs transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5 ${
               selectedForCompare.length === 2 ? 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]' : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] cursor-not-allowed'
             }`}
           >
@@ -286,7 +286,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
           {(dateFrom !== null || dateTo !== null) && (
             <button
               onClick={() => { setDateFrom(null); setDateTo(null) }}
-              className="px-3 py-1.5 text-xs rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[36px]"
+              className="px-4 py-2 rounded-xl text-xs bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[36px]"
             >
               {t('history.clearFilters')}
             </button>
@@ -337,7 +337,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
                 )}
                 <button
                   onClick={() => setSelectedEntry(entry)}
-                  className="px-3 py-1.5 text-xs rounded-lg bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+                  className="px-4 py-2 rounded-xl text-xs bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
                 >
                   {t('history.details')}
                 </button>
