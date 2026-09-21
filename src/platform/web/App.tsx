@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Header } from "@/shared/components/Header/Header";
+import { APP_VERSION } from "@/shared/version";
 import { DemoModeIndicator } from "@/shared/components/DemoMode/DemoModeIndicator";
 import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportBlockedToast";
 import { Calculator } from "@/shared/components/Calculator/Calculator";
@@ -597,7 +598,6 @@ function App() {
         </div>
       </nav>
 
-
       {/* ── Mobile Settings Bottom Sheet (settings only — never tabs) ── */}
       <AnimatePresence>
         {settingsOpen && (
@@ -747,7 +747,7 @@ function App() {
                 {/* Version */}
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-[var(--color-text-muted)]">
                   <Info className="w-[18px] h-[18px] shrink-0" />
-                  <span className="text-xs">Open3DCalc v1.9.2</span>
+                  <span className="text-xs">Open3DCalc v{APP_VERSION}</span>
                 </div>
               </div>
             </motion.div>
