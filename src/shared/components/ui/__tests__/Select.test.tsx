@@ -10,6 +10,15 @@ const mockOptions = [
   { value: 'c', label: 'Option C' },
 ]
 
+// 2 grupos x 2 opções — o highlight do teclado precisa ser um índice
+// GLOBAL sobre a lista flat, não o idx local de cada grupo.
+const groupedOptions = [
+  { value: 'a', label: 'Alpha', group: 'G1' },
+  { value: 'b', label: 'Bravo', group: 'G1' },
+  { value: 'c', label: 'Charlie', group: 'G2' },
+  { value: 'd', label: 'Delta', group: 'G2' },
+]
+
 // vitest roda a partir da raiz do config (raiz do repo)
 const WEB_CSS = resolve(process.cwd(), 'src/platform/web/index.css')
 
@@ -200,5 +209,48 @@ describe('Select', () => {
     fireEvent.keyDown(window, { key: 'Enter' })
 
     expect(onChange).toHaveBeenCalledWith('b')
+  })
+
+  /* ---------------------------------------------------------------
+   * A11Y — modo `groups`: focusIdx (seto pelas arrow keys) é GLOBAL
+   * sobre a lista flat, mas a renderização agrupada reiniciava o idx
+   * em cada grupo — a seta destacava a opção errada (ou várias de
+   * uma vez) ao cruzar a fronteira de um grupo.
+   * WCAG 2.4.3 (Focus order) / 2.4.7 (Focus visible).
+   * ------------------------------------------------------------- */
+  it('groups mode: ArrowDown highlights the option at the global index across a group boundary', () => {
+    const onChange = vi.fn()
+    render(<Select value="a" onChange={onChange} options={groupedOptions} label="Test" groups />)
+    fireEvent.click(screen.getByRole('combobox'))
+
+    // focusIdx -1 → 0 (Alpha) → 1 (Bravo) → 2 (Charlie, 1ª opção do G2)
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+
+    // highlight global = índice 2 = Charlie; não o idx local do grupo.
+    // (o nome acessível inclui o monograma do grupo — "G2Charlie")
+    expect(screen.getByRole('option', { name: /Charlie/ })).toHaveClass('bg-[var(--color-accent)]/20')
+    expect(screen.getByRole('option', { name: /Alpha/ })).not.toHaveClass('bg-[var(--color-accent)]/20')
+    expect(screen.getByRole('option', { name: /Bravo/ })).not.toHaveClass('bg-[var(--color-accent)]/20')
+
+    // Enter acerta a opção sob o cursor global (2 = 'c').
+    fireEvent.keyDown(window, { key: 'Enter' })
+    expect(onChange).toHaveBeenCalledWith('c')
+  })
+
+  it('groups mode: ArrowUp traverses the group boundary backwards', () => {
+    render(<Select value="a" onChange={vi.fn()} options={groupedOptions} label="Test" groups />)
+    fireEvent.click(screen.getByRole('combobox'))
+
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    fireEvent.keyDown(window, { key: 'ArrowDown' })
+    // 2 (Charlie, G2) → 1 (Bravo, última opção do G1)
+    fireEvent.keyDown(window, { key: 'ArrowUp' })
+
+    expect(screen.getByRole('option', { name: /Bravo/ })).toHaveClass('bg-[var(--color-accent)]/20')
+    // antes do fix, idx local 1 destacava Bravo E Delta simultaneamente.
+    expect(screen.getByRole('option', { name: /Delta/ })).not.toHaveClass('bg-[var(--color-accent)]/20')
   })
 })

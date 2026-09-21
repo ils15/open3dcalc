@@ -105,6 +105,17 @@ export function Select({
     return Array.from(map.entries()).map(([g, items]) => ({ group: g, items }))
   }, [filtered, groups])
 
+  // focusIdx (arrow keys) é GLOBAL sobre a lista flat de opções; a
+  // renderização agrupada precisa do offset acumulado dos grupos
+  // anteriores, senão o idx reinicia em cada fronteira e o highlight
+  // mente (bem como o data-index lido pelo scrollIntoView).
+  const groupOffsets = useMemo(() => {
+    const offsets: number[] = []
+    let running = 0
+    grouped.forEach(g => { offsets.push(running); running += g.items.length })
+    return offsets
+  }, [grouped])
+
   const { x, y, strategy, refs } = useFloating({
     placement: 'bottom-start',
     open,
@@ -247,7 +258,7 @@ export function Select({
                       onSelect={() => { onChange(opt.value); close() }} />
                   ))
                 ) : (
-                  grouped.map(g => (
+                  grouped.map((g, gi) => (
                     <div key={g.group}>
                       {g.group && (
                         <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]">
@@ -255,7 +266,7 @@ export function Select({
                         </div>
                       )}
                       {g.items.map((opt, i) => (
-                        <OptionItem key={opt.value} opt={opt} idx={i} focusIdx={focusIdx} value={value}
+                        <OptionItem key={opt.value} opt={opt} idx={groupOffsets[gi] + i} focusIdx={focusIdx} value={value}
                           onSelect={() => { onChange(opt.value); close() }} />
                       ))}
                     </div>
