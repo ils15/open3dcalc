@@ -295,7 +295,7 @@ function QuoteFormModal({
       <div className="space-y-5">
         {/* Title */}
         <div>
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+          <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
             Título do Orçamento
           </label>
           <input
@@ -336,7 +336,7 @@ function QuoteFormModal({
         {/* Items section */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">
               Itens ({items.length})
             </label>
             <button
@@ -426,7 +426,7 @@ function QuoteFormModal({
         {/* Global discount */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
               Desc. Global %
             </label>
             <input
@@ -439,7 +439,7 @@ function QuoteFormModal({
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
               Validade
             </label>
             <input
@@ -450,7 +450,7 @@ function QuoteFormModal({
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
               Pagamento
             </label>
             <input
@@ -462,7 +462,7 @@ function QuoteFormModal({
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+            <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
               Prazo Entrega
             </label>
             <input
@@ -477,7 +477,7 @@ function QuoteFormModal({
 
         {/* Footer note */}
         <div>
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] block mb-1.5">
+          <label className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1.5">
             Observações
           </label>
           <textarea
