@@ -95,7 +95,7 @@ pisoValorHora = custoMensalTotal / horasTrabalhadasMes
 ```
 
 R$ 25/h é um começo honesto para uma operação de uma só pessoa; R$ 8/h é
-trabalho escravo subsidiado por outra fonte de renda.
+mão de obra não contabilizada, subsidiada por outra fonte de renda.
 
 ## Como esta seção se relaciona com as demais
 

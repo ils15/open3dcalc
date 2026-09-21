@@ -140,7 +140,7 @@ Quatro erros na taxa horária, e todos eles fazem a peça sair mais barata do qu
    baixa que a real e toda peça sai subprecificada. Coloque a média honesta dos
    últimos três meses.
 2. **Esquecer a manutenção.** Impressora 3D é um aparelho com peças móveis
-   sobrescendo. Se você não liga a manutenção, em oito meses chega a conta real
+   que se desgastam. Se você não liga a manutenção, em oito meses chega a conta real
    de correias e bicos que nenhuma peça pagou.
 3. **Depreciação longa demais.** 60 meses faz a taxa horária parecer
    irresistível, mas uma Ender 3 dificilmente sobrevive 3.600 horas úteis sem

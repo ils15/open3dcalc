@@ -22,7 +22,7 @@ for, so the part costs me nothing"*. The problem is that the nozzle is never
 paid for forever. Every meter of filament pushed through a 0.4 mm nozzle
 enlarges it a tiny bit. A new brass nozzle costs about R$ 35 and lasts roughly
 20 kg of PLA. If your part uses 180 g, it consumed 0.9% of that nozzle's life —
-that is R$ 0,32 that exists in the single print and nobody paid you back for.
+that is R$ 0.32 that exists in the single print and nobody paid you back for.
 
 This section turns that silent wear into a number you can add up and charge.
 Without it, your price covers filament and donates the machine's wear.
@@ -114,7 +114,7 @@ hardware = 0.32 + 1.50 + 2.00 = R$ 3.82
 ```
 
 The part just became **R$ 3.82** more expensive than "filament only". That is
-R$ 0,32 of nozzle nobody remembers to charge — across a hundred identical parts
+R$ 0.32 of nozzle nobody remembers to charge — across a hundred identical parts
 it is R$ 32 of nozzle alone, enough for a new nozzle and a coffee.
 
 ## How this section relates to the others
