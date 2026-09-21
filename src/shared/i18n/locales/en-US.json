@@ -1131,6 +1131,32 @@
     },
     "versions": [
       {
+        "version": "1.14.0",
+        "date": "",
+        "sections": [
+          {
+            "title": "🚀 Features",
+            "items": [
+              "**select:** Use a global keyboard highlight and scroll index across group boundaries (#166)",
+              "**footer:** Add a responsive footer hub with dynamic version, internal Wiki/Novidades links, and external GitHub/Telegram links; remove Wiki/Novidades from the primary bottom tab bar (#170)"
+            ]
+          },
+          {
+            "title": "🐛 Fixes",
+            "items": [
+              "**history:** Align History/Customer search controls and History action buttons; remove an orphan i18n key (#167)",
+              "**wiki:** Make accented cross-article anchors focus and scroll correctly; prevent malformed UTF-8 links from crashing (#169)"
+            ]
+          },
+          {
+            "title": "📖 Documentation",
+            "items": [
+              "**wiki:** Add guide sentences before lists, common pitfalls, and tone, typo, and decimal-separator corrections across 15 articles and 2 locales (#168)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "1.13.0",
         "date": "",
         "sections": [
