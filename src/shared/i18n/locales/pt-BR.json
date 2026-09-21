@@ -1132,6 +1132,32 @@
     },
     "versions": [
       {
+        "version": "1.14.0",
+        "date": "",
+        "sections": [
+          {
+            "title": "🚀 Novidades",
+            "items": [
+              "**select:** Usa um índice global de destaque e rolagem pelo teclado entre os limites dos grupos (#166)",
+              "**footer:** Adiciona um hub de rodapé responsivo com versão dinâmica, links internos para Wiki/Novidades e links externos para GitHub/Telegram; remove Wiki/Novidades da barra de abas inferior principal (#170)"
+            ]
+          },
+          {
+            "title": "🐛 Correções",
+            "items": [
+              "**history:** Alinha os controles de busca de Histórico/Clientes e os botões de ação do Histórico; remove uma chave i18n órfã (#167)",
+              "**wiki:** Faz âncoras acentuadas entre artigos receberem foco e rolarem corretamente; impede que links UTF-8 malformados causem travamentos (#169)"
+            ]
+          },
+          {
+            "title": "📖 Documentação",
+            "items": [
+              "**wiki:** Adiciona frases orientadoras antes das listas, registra armadilhas comuns e corrige tom, erros de digitação e separadores decimais em 15 artigos e 2 idiomas (#168)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "1.13.0",
         "date": "",
         "sections": [

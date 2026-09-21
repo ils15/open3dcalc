@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.14.0
+
+### 🚀 Enhancements
+
+- **select:** Use a global keyboard highlight and scroll index across group boundaries ([#166](https://github.com/ils15/open3dcalc/pull/166))
+- **footer:** Add a responsive footer hub with dynamic version, internal Wiki/Novidades links, and external GitHub/Telegram links; remove Wiki/Novidades from the primary bottom tab bar ([#170](https://github.com/ils15/open3dcalc/pull/170))
+
+### 🐛 Fixes
+
+- **history:** Align History/Customer search controls and History action buttons; remove an orphan i18n key ([#167](https://github.com/ils15/open3dcalc/pull/167))
+- **wiki:** Make accented cross-article anchors focus and scroll correctly; prevent malformed UTF-8 links from crashing ([#169](https://github.com/ils15/open3dcalc/pull/169))
+
+### 📖 Documentation
+
+- **wiki:** Add guide sentences before lists, common pitfalls, and tone, typo, and decimal-separator corrections across 15 articles and 2 locales ([#168](https://github.com/ils15/open3dcalc/pull/168))
+
 ## v1.13.0
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.12.0...v1.13.0)
