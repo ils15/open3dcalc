@@ -20,6 +20,7 @@ import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
 import { ThemeToggle } from "./ThemeToggle";
+import { APP_VERSION } from "@/shared/version";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 import { DemoModeButton } from "@/shared/components/DemoMode/DemoModeButton";
@@ -320,7 +321,7 @@ export function Header() {
                 {/* Version */}
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-[var(--color-text-muted)]">
                   <Info className="w-[18px] h-[18px] shrink-0" />
-                  <span className="text-xs">Open3DCalc v1.9.2</span>
+                  <span className="text-xs">Open3DCalc v{APP_VERSION}</span>
                 </div>
               </div>
             </motion.div>

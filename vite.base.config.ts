@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
+import pkg from "./package.json" with { type: "json" };
 import { markdownWikiPlugin } from "./vite/plugins/markdownWikiPlugin";
 
 // D-CL5 — toolpath preview flag default. Dogfooded through the beta channel
@@ -18,6 +19,9 @@ export default defineConfig({
     "import.meta.env.VITE_BETA_CHANNEL": JSON.stringify(
       process.env.VITE_BETA_CHANNEL === "true",
     ),
+    // Single source of truth for the app version: package.json. Consumed via
+    // src/shared/version.ts — never hardcode a version literal in the UI.
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
   plugins: [react(), tailwindcss(), markdownWikiPlugin()],
   resolve: {

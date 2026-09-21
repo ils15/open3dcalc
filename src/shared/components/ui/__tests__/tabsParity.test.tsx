@@ -94,6 +94,21 @@ function tabShape(tab: TabEntry) {
 }
 
 describe("tabs parity", () => {
+  it("keeps only the ten primary sections in the tab contract", () => {
+    expect(WEB_TABS.map((tab) => tab.id)).toEqual([
+      "calculator",
+      "dashboard",
+      "infill",
+      "inventory",
+      "catalog",
+      "history",
+      "quotes",
+      "customers",
+      "products",
+      "privacy",
+    ]);
+  });
+
   it("web TABS deep-equals desktop TABS (by id)", () => {
     expect(WEB_TABS.map(tabShape)).toEqual(DESKTOP_TABS.map(tabShape));
   });
@@ -120,6 +135,34 @@ describe("mobile bottom navigation", () => {
     for (const tab of WEB_TABS) {
       expect(nav.textContent).toContain(tab.labelKey);
     }
+  });
+
+  it("keeps Wiki and Novidades in the footer hub", () => {
+    render(<App />);
+
+    const footer = screen.getByRole("navigation", {
+      name: "footer.navigation",
+    });
+    expect(
+      within(footer).getByRole("button", { name: "nav.wiki" }),
+    ).toBeInTheDocument();
+    expect(
+      within(footer).getByRole("button", { name: "nav.changelog" }),
+    ).toBeInTheDocument();
+    expect(
+      within(footer).getByRole("link", { name: "footer.github" }),
+    ).toHaveAttribute("target", "_blank");
+    expect(
+      within(footer).getByRole("link", { name: "footer.telegram" }),
+    ).toHaveAttribute("rel", "noopener noreferrer");
+
+    fireEvent.click(within(footer).getByRole("button", { name: "nav.wiki" }));
+    expect(screen.getByText("WikiPage")).toBeInTheDocument();
+
+    fireEvent.click(
+      within(footer).getByRole("button", { name: "nav.changelog" }),
+    );
+    expect(screen.getByText("ChangelogPage")).toBeInTheDocument();
   });
 
   it("settings gear opens a sheet that holds settings only (no tabs)", () => {

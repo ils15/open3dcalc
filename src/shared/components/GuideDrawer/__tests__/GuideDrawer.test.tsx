@@ -25,7 +25,9 @@ vi.mock("@/shared/stores/tutorialStore", () => ({
 
 /** Areas whose tours have registered steps today (see guideAreas.AREA_TOURS). */
 const AREAS_WITH_TOUR = GUIDE_AREAS.filter((a) => getAreaTours(a).length > 0);
-const AREAS_WITHOUT_TOUR = GUIDE_AREAS.filter((a) => getAreaTours(a).length === 0);
+const AREAS_WITHOUT_TOUR = GUIDE_AREAS.filter(
+  (a) => getAreaTours(a).length === 0,
+);
 
 describe("GuideDrawer", () => {
   const user = userEvent.setup();
@@ -34,16 +36,14 @@ describe("GuideDrawer", () => {
     vi.clearAllMocks();
   });
 
-  it("renders one card for each of the 22 guide areas", async () => {
+  it("renders one card for each of the 20 guide areas", async () => {
     render(<GuideDrawer />);
 
-    expect(GUIDE_AREAS).toHaveLength(22);
+    expect(GUIDE_AREAS).toHaveLength(20);
     await user.click(screen.getByRole("button", { name: "nav.wiki" }));
 
     for (const area of GUIDE_AREAS) {
-      expect(
-        screen.getByText(`guide.${area}.title`),
-      ).toBeInTheDocument();
+      expect(screen.getByText(`guide.${area}.title`)).toBeInTheDocument();
     }
   });
 
@@ -120,7 +120,9 @@ describe("GuideDrawer", () => {
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole("button", { name: /tutorial\.tours\.calc-basico\.title/ }),
+      screen.getByRole("button", {
+        name: /tutorial\.tours\.calc-basico\.title/,
+      }),
     );
 
     expect(mockStartTour).toHaveBeenCalledWith("calc-basico");

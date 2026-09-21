@@ -2128,5 +2128,12 @@
   "wiki": {
     "toc": "Sumário",
     "loading": "Carregando"
+  },
+  "footer": {
+    "navigation": "Links úteis",
+    "version": "Open3DCalc v{{version}}",
+    "openSource": "Open Source · MIT License",
+    "github": "GitHub",
+    "telegram": "Canal Telegram"
   }
 }
