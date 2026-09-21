@@ -454,16 +454,20 @@ describe("FilamentInventory CRUD, filters and palette", () => {
     expect(screen.queryByText(/MarcaA/)).not.toBeInTheDocument();
   });
 
-  it("opens the palette empty and with swatches, closing via backdrop and X", async () => {
+  it("opens the palette with the standard grid and an empty custom section, closing via backdrop", async () => {
     const user = userEvent.setup();
 
-    // Paleta vazia.
+    // Sem cores custom: a seção "Minhas cores" mostra o estado vazio.
     render(<FilamentInventory />);
     await user.click(screen.getByText("Paleta de Cores"));
-    expect(screen.getByText("Nenhum rolo cadastrado.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Nenhuma cor personalizada."),
+    ).toBeInTheDocument();
+    // A paleta padrão sempre renderiza, mesmo sem rolos cadastrados.
+    expect(screen.getByText("Verde")).toBeInTheDocument();
     fireEvent.click(overlay());
     expect(
-      screen.queryByText("Nenhum rolo cadastrado."),
+      screen.queryByText("Nenhuma cor personalizada."),
     ).not.toBeInTheDocument();
   });
 

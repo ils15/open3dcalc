@@ -257,6 +257,7 @@ export function FilamentInventory() {
   const { format: fmtCurrency, symbol } = useCurrency();
   const customColors = useColorPalette((s) => s.colors);
   const addPaletteColor = useColorPalette((s) => s.addColor);
+  const removePaletteColor = useColorPalette((s) => s.removeColor);
 
   // Peça ativa do calculatorStore: define a necessidade de plástico para o
   // badge de cobertura de cada carretel (0 = sem peça ativa → sem badge).
@@ -787,39 +788,79 @@ export function FilamentInventory() {
               </h3>
               <button
                 onClick={() => setShowPalette(false)}
+                aria-label="Fechar paleta"
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)] transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            {store.spools.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
-                Nenhum rolo cadastrado.
-              </p>
-            ) : (
-              <div className="grid grid-cols-4 gap-3">
-                {store.spools.map((s) => {
-                  const hex = resolveHex(s.color, s.colorHex);
-                  return (
+            <div className="flex flex-col gap-5">
+              <section>
+                <h4 className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] mb-2">
+                  Padrão
+                </h4>
+                <div className="grid grid-cols-4 gap-3">
+                  {STD_COLORS.map((c) => (
                     <div
-                      key={s.id}
+                      key={c.name}
                       className="flex flex-col items-center gap-1.5"
                     >
                       <div
                         className="w-12 h-12 rounded-xl border border-[var(--color-border)]"
-                        style={{ backgroundColor: hex }}
+                        style={{ backgroundColor: c.hex }}
                       />
                       <p className="text-[10px] text-[var(--color-text-secondary)] text-center leading-tight break-words w-full font-medium">
-                        {s.color}
+                        {titleCaseColor(c.name)}
                       </p>
-                      <p className="text-[9px] text-[var(--color-text-muted)] text-center">
-                        {s.material}
+                      <p className="text-[9px] text-[var(--color-text-muted)] text-center uppercase">
+                        {c.hex}
                       </p>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+              </section>
+              <section>
+                <h4 className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-text-muted)] mb-2">
+                  Minhas cores
+                </h4>
+                {customColors.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-muted)] text-center py-6">
+                    Nenhuma cor personalizada.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-3">
+                    {customColors.map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex flex-col items-center gap-1.5"
+                      >
+                        <div
+                          className="w-12 h-12 rounded-xl border border-[var(--color-border)]"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        <p className="text-[10px] text-[var(--color-text-secondary)] text-center leading-tight break-words w-full font-medium">
+                          {c.name}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-[9px] text-[var(--color-text-muted)] text-center uppercase">
+                            {c.hex}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => removePaletteColor(c.id)}
+                            aria-label={`Remover cor ${c.name}`}
+                            title="Remover cor"
+                            className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
           </div>
         </div>
       )}
