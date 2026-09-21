@@ -33,6 +33,8 @@ No **FDM**, a seção reúne três blocos, cada um com um interruptor próprio.
 
 ### Bico (Nozzle)
 
+O bico é rateado pelo peso da peça, e dois campos bastam para fechar a conta.
+
 - **Custo do Bico** — quanto você pagou no bico, em reais. Bico de latão é
   barato; aço endurecido custa várias vezes mais.
 - **Vida Útil** — quantos **quilogramas** de filamento esse bico aguenta antes
@@ -45,10 +47,14 @@ coberto).
 
 ### Mesa e Adesão
 
+Um campo só, fixo por peça, porque o adesivo se gasta a cada impressão e não por hora.
+
 - **Custo Adesivo/Print** — valor estimado de spray, cola, fita ou desgaste da
   folha PEI **por impressão**. É um valor fixo por peça, não por hora.
 
 ### Acabamento Físico
+
+Um campo para o que você gastou em lixa, primer e tinta nesta peça específica.
 
 - **Insumos Acabamento** — o que você gasta em lixa, primer, tinta, massa
   plástica ou acetona nesta peça especificamente. Se a peça é entregue sem
@@ -113,6 +119,8 @@ R$ 32 só de bico, o suficiente para um bico novo e mais um café.
 
 ## Como esta seção se relaciona com as demais
 
+A seção se conecta com cinco outras, e cada fronteira evita uma duplicação de custo.
+
 - O **peso** que entra na fórmula do bico vem da seção de
   [material](#user-content-material) — preencha-a primeiro.
 - O **tempo de exposição** do LCD vem do tempo de impressão, na seção de
@@ -125,6 +133,8 @@ R$ 32 só de bico, o suficiente para um bico novo e mais um café.
 - O resultado de tudo isto é somado em [resultados](#user-content-resultados).
 
 ## Armadilhas práticas
+
+Quatro erros no preenchimento, e todos eles deixam o desgaste de fora do preço.
 
 1. **Subestimar a vida útil do bico com filamento abrasivo.** Fibra de carbono
    e glitter comem bico de latão em poucos quilos. Se você imprime com esses

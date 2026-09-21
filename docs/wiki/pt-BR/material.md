@@ -132,6 +132,8 @@ fixa. Veja detalhes no artigo sobre o [inventário](#user-content-inventário).
 
 ## Armadilhas comuns
 
+Quatro erros clássicos desta seção, e todos eles fazem o material parecer mais barato do que é.
+
 - **Esquecer a purga em prints coloridos.** A torre de purga de um modelo com
   três cores pode pesar mais que a peça. Sem o campo, o custo fica subestimado
   desde a primeira peça.

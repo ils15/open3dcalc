@@ -27,6 +27,8 @@ que **você** é necessário.
 
 ## Campos da seção
 
+A seção são três campos: dois cronometram o seu trabalho e um diz quanto ele vale.
+
 - **Setup (Fatiamento)** — minutos gastos preparando o arquivo: ajustar o
   modelo, posicionar a chapa, configurar o fatiador, exportar o gcode, nivelar
   a mesa e carregar o filamento. Em uma peça simples são 5 minutos; em um
@@ -97,6 +99,8 @@ trabalho escravo subsidiado por outra fonte de renda.
 
 ## Como esta seção se relaciona com as demais
 
+As fronteiras importam, porque o tempo e o material do acabamento moram em seções diferentes.
+
 - O **tempo de impressão** (que NÃO está aqui) vem de
   [parâmetros](#user-content-parâmetros-de-impressão) e alimenta [máquina](#user-content-custos-da-máquina).
 - Os **insumos** do pós-processamento — lixa, tinta, acetona — moram em
@@ -109,6 +113,8 @@ trabalho escravo subsidiado por outra fonte de renda.
   exatamente esta combinação: horas de impressão + pós + setup diluído.
 
 ## Armadilhas práticas
+
+Quatro erros cercam esta seção, e cada um deles regalia um pedaço do seu tempo.
 
 1. **Deixar o valor hora em zero.** É o erro mais frequente. A calculadora
    aceita e simplesmente mostra um preço mais baixo — bonito na tela, prejuízo

@@ -110,6 +110,8 @@ impossível fingir que não se sabe de onde vem o dinheiro.
 
 ## Armadilhas comuns
 
+Quatro armadilhas moram nesta seção, e cada uma diminui o lucro sem aparecer no preço.
+
 - **Margem baixa demais "para vender mais".** Se a margem não cobre as falhas e
   os custos fixos que você não rateou, vender mais só amplia o prejuízo.
 - **Esquecer a taxa de marketplace.** Dez por cento sobre o preço é muito mais

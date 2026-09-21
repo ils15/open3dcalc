@@ -18,6 +18,8 @@ peças por mês, ignorá-lo é prejuízo certo.
 
 ## Os campos
 
+A seção inteira se resume a quatro campos, e cada um controla uma parte da conta.
+
 - **Ativar custo de falha** — a seção inteira é ligada ou desligada por um
   interruptor. Desligada, ela não soma nada, e o resto do cálculo não muda.
 - **Modo de falha** — como a perda é medida: **Percentual** (uma taxa sobre o
@@ -96,6 +98,8 @@ fez, não um palpite. Se você registrou suas tentativas, divida as que falharam
 pelo total e terá o número para pôr no campo.
 
 ## Armadilhas comuns
+
+Quatro erros cercam esta seção, e todos eles fazem a perda sair do seu bolso, não do preço.
 
 - **Manter a falha desligada "para baratear".** Ela não torna o preço mais
   competitivo — apenas transfere a perda do cliente para você. Quando a falha

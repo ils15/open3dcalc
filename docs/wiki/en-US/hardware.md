@@ -33,6 +33,8 @@ On **FDM**, the section gathers three blocks, each with its own toggle.
 
 ### Nozzle
 
+The nozzle is prorated by the part's weight, and two fields are enough to close the math.
+
 - **Nozzle Cost** — what you paid for the nozzle, in currency. Brass is cheap;
   hardened steel costs several times more.
 - **Lifespan** — how many **kilograms** of filament this nozzle holds up before
@@ -45,10 +47,14 @@ also not being charged).
 
 ### Bed and Adhesion
 
+One field only, fixed per part, because adhesive wears with every print rather than by the hour.
+
 - **Adhesive Cost per Print** — estimated value of spray, glue, tape or PEI
   sheet wear **per print**. It is a fixed per-part value, not an hourly one.
 
 ### Physical Finishing
+
+One field for what you spent on sandpaper, primer and paint on this specific part.
 
 - **Finishing Supplies** — what you spend on sandpaper, primer, paint, body
   filler or acetone for this part in particular. If the part ships with no
@@ -113,6 +119,8 @@ it is R$ 32 of nozzle alone, enough for a new nozzle and a coffee.
 
 ## How this section relates to the others
 
+The section connects to five others, and each boundary prevents a duplicated cost.
+
 - The **weight** feeding the nozzle formula comes from the
   [material](#user-content-material) section — fill it first.
 - The LCD **exposure time** comes from the print time, in the
@@ -125,6 +133,8 @@ it is R$ 32 of nozzle alone, enough for a new nozzle and a coffee.
 - Everything here is summed up in [results](#user-content-results).
 
 ## Practical pitfalls
+
+Four common filling errors, and all of them leave the wear out of the price.
 
 1. **Underestimating nozzle lifespan with abrasive filament.** Carbon fiber
    and glitter eat a brass nozzle in a few kilograms. If you print with those,

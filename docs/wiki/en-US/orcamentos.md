@@ -110,6 +110,8 @@ number will never be handed out again.
 
 ## End-to-end example
 
+A real example shows the path: from the first estimate to an approved document, with every number.
+
 1. You estimate a **N20 motor mount**: suggested sale price R$ 42.70. Save it
    to History.
 2. You also estimate a **Raspberry case**: R$ 68.00. Save it.

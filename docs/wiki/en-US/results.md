@@ -39,6 +39,8 @@ price instead of lowering your profit.
 
 ## Key figures in the result
 
+Four numbers summarize the result, and each one says something different about the part.
+
 - **Total Cost** — how much the part cost to make, including failure, packaging
   and shipping. It is the **break-even point**: selling below it is a loss, and
   the app warns you.
@@ -163,6 +165,8 @@ Each line of the result comes from a specific place:
   and margin.
 
 ## Practical pitfalls
+
+Four misreadings of the result, each capable of making a loss look like good business.
 
 1. **Thinking a 50% margin is 50% profit on the price.** As the example shows,
    it is 28%. Always read the **actual margin**, not the margin you typed.

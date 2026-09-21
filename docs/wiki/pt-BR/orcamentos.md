@@ -112,6 +112,8 @@ orçamento não vai ser reaproveitado.
 
 ## Exemplo de ponta a ponta
 
+Um exemplo real mostra o caminho: da primeira estimativa ao documento aprovado, com todos os números.
+
 1. Você calcula **Suporte para motor N20**: preço de venda sugerido
    R$ 42,70. Salva no Histórico.
 2. Calcula também **Caixa para Raspberry**: R$ 68,00. Salva.
