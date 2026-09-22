@@ -65,7 +65,10 @@ export function recommendTechnology(
   // cheaply too. Size only scores against resin when it exceeds the limit.
   if (maxDim > RESIN_MAX_DIMENSION) {
     fdm += 3;
-    reasons.push({ key: "stl.tech.fdmTooLargeForResin" });
+    reasons.push({
+      key: "stl.tech.fdmTooLargeForResin",
+      params: { dim: Math.round(maxDim) },
+    });
   } else if (maxDim <= RESIN_COMFORT_DIMENSION) {
     // Informational note (no score): fits comfortably in a resin printer.
     reasons.push({
