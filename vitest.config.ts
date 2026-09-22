@@ -8,7 +8,14 @@ export default defineConfig(
       environment: "jsdom",
       setupFiles: ["./src/shared/test/setup.ts"],
       css: true,
-      exclude: ["node_modules", "web", "desktop", "dist", "dist-web"],
+      exclude: [
+        "node_modules",
+        "web",
+        "desktop",
+        "dist",
+        "dist-web",
+        "Example/**",
+      ],
       coverage: {
         provider: "v8",
         reporter: ["text", "json", "html"],

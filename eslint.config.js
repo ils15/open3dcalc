@@ -16,6 +16,7 @@ export default defineConfig([
     "desktop/",
     "db/",
     "electron/dist/",
+    "Example/",
   ]),
   {
     files: ["**/*.{ts,tsx}"],
