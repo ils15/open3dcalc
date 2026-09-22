@@ -246,7 +246,7 @@ export function HardwareSection() {
                         )
                       }
                       type="number"
-                      prefix="R$/L"
+                      prefix={`${currencySymbol}/L`}
                       tooltip={t("tooltip.alcoholCostPerLiter")}
                     />
                     <InputGroup

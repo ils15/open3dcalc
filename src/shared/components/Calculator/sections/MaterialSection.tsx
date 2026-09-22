@@ -229,7 +229,7 @@ export function MaterialSection({
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <InputGroup
-                            label="R$/kg"
+                            label={`${currencySymbol}/kg`}
                             value={slot.costPerKg}
                             onChange={(v) =>
                               store.setFdmAmsSlot(i, {
@@ -370,7 +370,7 @@ export function MaterialSection({
                             {spool.brand} - {spool.color}
                           </span>
                           <span className="text-[var(--color-accent)]">
-                            R$ {spool.costPerKg.toFixed(2)}/kg
+                            {currencySymbol} {spool.costPerKg.toFixed(2)}/kg
                           </span>
                         </button>
                       ))}
