@@ -80,11 +80,7 @@ export function Dashboard() {
   const store = useCalculatorStore();
   const results = store.results;
   const fixedCosts = store.fixedCosts;
-  const {
-    currency,
-    format: formatMoney,
-    symbol: currencySymbol,
-  } = useCurrency();
+  const { format: formatMoney, symbol: currencySymbol } = useCurrency();
   const historyEntries = useHistoryStore((s) => s.entries);
 
   // Local date range filter state (independent from history store)
@@ -451,10 +447,17 @@ export function Dashboard() {
         },
         chartImage,
         locale,
-        currency,
+        // ExecutiveReportDoc.formatMoney prefixes money with this value, so it
+        // needs the symbol ("$") — a code ("BRL") would render "BRL 1.234,56".
+        currency: currencySymbol,
       };
 
-      await exportExecutivePdf(reportData);
+      // Pass the resolved values explicitly so the export can't clobber them.
+      await exportExecutivePdf(
+        reportData,
+        reportData.locale,
+        reportData.currency,
+      );
     } finally {
       setExportingPdf(false);
     }
@@ -465,7 +468,7 @@ export function Dashboard() {
     topPrintersData,
     topMaterialsData,
     i18n,
-    currency,
+    currencySymbol,
   ]);
 
   // ---------------------------------------------------------------------------
