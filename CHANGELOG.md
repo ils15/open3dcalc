@@ -1,5 +1,64 @@
 # Changelog
 
+## v1.14.0
+
+[compare changes](https://github.com/ils15/open3dcalc/compare/v1.13.0...v1.14.0)
+
+### 🚀 Enhancements
+
+- **dashboard:** Phase 3 — history-based KPIs and monthly projection ([#147](https://github.com/ils15/open3dcalc/pull/147))
+- Phase 6 P1 — maker toolbox core (filament remaining, material comparison, water-washable resin, machine cost auto-fill) ([#149](https://github.com/ils15/open3dcalc/pull/149))
+- Phase 4A — printer organization with free-form tags ([#150](https://github.com/ils15/open3dcalc/pull/150))
+- Demo-data foundation — ephemeral dataset + demo mode store ([#153](https://github.com/ils15/open3dcalc/pull/153))
+- Demo MVP — entry point, indicator, export guards (Fase 1) ([#154](https://github.com/ils15/open3dcalc/pull/154))
+- Modern tutorial — tours registry, cross-tab navigation, launcher (Fase 2) ([#155](https://github.com/ils15/open3dcalc/pull/155))
+- Onboarding Fase 3 — wiki tab, guide drawer, tours avançados ([#156](https://github.com/ils15/open3dcalc/pull/156))
+- Paleta de cores expandida + paleta custom persistida no inventário ([#164](https://github.com/ils15/open3dcalc/pull/164))
+- **nav:** Rodapé-hub com versão dinâmica, Wiki, Novidades e links externos ([#170](https://github.com/ils15/open3dcalc/pull/170))
+
+### 🩹 Fixes
+
+- Beta badge mobile visibility + hardcoded PT strings (D1, D2) ([#151](https://github.com/ils15/open3dcalc/pull/151))
+- **beta:** React #185 infinite render loop at boot (black screen) ([#157](https://github.com/ils15/open3dcalc/pull/157), [#185](https://github.com/ils15/open3dcalc/issues/185))
+- **wiki:** Correções P0/P1 que não chegaram no #158 ([#159](https://github.com/ils15/open3dcalc/pull/159), [#158](https://github.com/ils15/open3dcalc/issues/158))
+- **web:** Bottom nav scrollável com todas as abas + settings separado ([#160](https://github.com/ils15/open3dcalc/pull/160))
+- **ui:** Select primitivo com floating-ui — colisão, clipping, z-index e mobile ([#161](https://github.com/ils15/open3dcalc/pull/161))
+- **web:** Alinhamento de seletores, inputs e botões na aba Orçamentos ([#163](https://github.com/ils15/open3dcalc/pull/163))
+- **ui:** Select — highlight de teclado global no modo groups ([#166](https://github.com/ils15/open3dcalc/pull/166))
+- **ui:** Drift remanescente de altura de inputs e botoes do HistoryTab ([#167](https://github.com/ils15/open3dcalc/pull/167))
+- **nav:** Group Wiki and external links at sidebar bottom ([#172](https://github.com/ils15/open3dcalc/pull/172))
+- **nav:** Restaurar ícones oficiais do GitHub e Telegram ([#173](https://github.com/ils15/open3dcalc/pull/173))
+- **tutorial:** Ancorar spotlight após scroll e resolver alvo visível ([#175](https://github.com/ils15/open3dcalc/pull/175))
+- **stl:** Pass dim param for fdmTooLargeForResin reason ([#174](https://github.com/ils15/open3dcalc/pull/174))
+- **i18n:** En-US usa a moeda selecionada; PDF exporta no locale/moeda do usuário ([#176](https://github.com/ils15/open3dcalc/pull/176))
+
+### 📖 Documentation
+
+- Evolve roadmap (product principles, LGPD checklist, Phases 4–6) + ignore editor/test dirs ([#148](https://github.com/ils15/open3dcalc/pull/148))
+- **wiki:** Catálogo completo — 15 artigos × 2 locales ([#158](https://github.com/ils15/open3dcalc/pull/158))
+- **wiki:** Frase-guia, armadilhas comuns e correcoes de tom ([#168](https://github.com/ils15/open3dcalc/pull/168))
+- **changelog:** Document merged beta changes 166-170 ([#171](https://github.com/ils15/open3dcalc/pull/171))
+
+### 🏡 Chore
+
+- **beta:** V1.14.0-beta.1 ([fce3247](https://github.com/ils15/open3dcalc/commit/fce3247))
+- Remove dead code — 11 símbolos sem callers (203 deleções) ([#162](https://github.com/ils15/open3dcalc/pull/162))
+- **beta:** V1.14.0-beta.7 ([4992ab0](https://github.com/ils15/open3dcalc/commit/4992ab0))
+- **beta:** V1.14.0-beta.8 ([53e8b0d](https://github.com/ils15/open3dcalc/commit/53e8b0d))
+- **beta:** V1.14.0-beta.9 ([5d16fa8](https://github.com/ils15/open3dcalc/commit/5d16fa8))
+- Gitignore da pasta Example/ (protótipo v2.0) ([#177](https://github.com/ils15/open3dcalc/pull/177))
+- **beta:** V1.14.0-beta.10 ([37f00e8](https://github.com/ils15/open3dcalc/commit/37f00e8))
+- **release:** Remove premature v1.14.0 changelog section (collides with stable cut) ([#178](https://github.com/ils15/open3dcalc/pull/178))
+
+### ✅ Tests
+
+- Freeze erasure saga harness clock to kill TTL time bomb ([#152](https://github.com/ils15/open3dcalc/pull/152))
+- **wiki:** Cobre caminho decode acentuado do resolveCrossArticle ([#169](https://github.com/ils15/open3dcalc/pull/169))
+
+### ❤️ Contributors
+
+- Ils15 ([@ils15](https://github.com/ils15))
+
 ## v1.13.0
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.12.0...v1.13.0)

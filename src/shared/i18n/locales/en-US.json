@@ -1137,28 +1137,75 @@
           {
             "title": "🚀 Features",
             "items": [
-              "**select:** Use a global keyboard highlight and scroll index across group boundaries (#166)",
-              "**footer:** Add a responsive footer hub with dynamic version, internal Wiki/Novidades links, and external GitHub/Telegram links; remove Wiki/Novidades from the primary bottom tab bar (#170)"
+              "**dashboard:** Phase 3 — history-based KPIs and monthly projection (#147)",
+              "Phase 6 P1 — maker toolbox core (filament remaining, material comparison, water-washable resin, machine cost auto-fill) (#149)",
+              "Phase 4A — printer organization with free-form tags (#150)",
+              "Demo-data foundation — ephemeral dataset + demo mode store (#153)",
+              "Demo MVP — entry point, indicator, export guards (Fase 1) (#154)",
+              "Modern tutorial — tours registry, cross-tab navigation, launcher (Fase 2) (#155)",
+              "Onboarding Fase 3 — wiki tab, guide drawer, tours avançados (#156)",
+              "Paleta de cores expandida + paleta custom persistida no inventário (#164)",
+              "**nav:** Rodapé-hub com versão dinâmica, Wiki, Novidades e links externos (#170)"
             ]
           },
           {
             "title": "🐛 Fixes",
             "items": [
-              "**history:** Align History/Customer search controls and History action buttons; remove an orphan i18n key (#167)",
-              "**wiki:** Make accented cross-article anchors focus and scroll correctly; prevent malformed UTF-8 links from crashing (#169)"
+              "Beta badge mobile visibility + hardcoded PT strings (D1, D2) (#151)",
+              "**beta:** React #185 infinite render loop at boot (black screen) (#157, #185)",
+              "**wiki:** Correções P0/P1 que não chegaram no #158 (#159, #158)",
+              "**web:** Bottom nav scrollável com todas as abas + settings separado (#160)",
+              "**ui:** Select primitivo com floating-ui — colisão, clipping, z-index e mobile (#161)",
+              "**web:** Alinhamento de seletores, inputs e botões na aba Orçamentos (#163)",
+              "**ui:** Select — highlight de teclado global no modo groups (#166)",
+              "**ui:** Drift remanescente de altura de inputs e botoes do HistoryTab (#167)",
+              "**nav:** Group Wiki and external links at sidebar bottom (#172)",
+              "**nav:** Restaurar ícones oficiais do GitHub e Telegram (#173)",
+              "**tutorial:** Ancorar spotlight após scroll e resolver alvo visível (#175)",
+              "**stl:** Pass dim param for fdmTooLargeForResin reason (#174)",
+              "**i18n:** En-US usa a moeda selecionada; PDF exporta no locale/moeda do usuário (#176)"
             ]
           },
           {
             "title": "📖 Documentation",
             "items": [
-              "**wiki:** Add guide sentences before lists, common pitfalls, and tone, typo, and decimal-separator corrections across 15 articles and 2 locales (#168)"
+              "Evolve roadmap (product principles, LGPD checklist, Phases 4–6) + ignore editor/test dirs (#148)",
+              "**wiki:** Catálogo completo — 15 artigos × 2 locales (#158)",
+              "**wiki:** Frase-guia, armadilhas comuns e correcoes de tom (#168)",
+              "**changelog:** Document merged beta changes 166-170 (#171)"
+            ]
+          },
+          {
+            "title": "🧹 Other",
+            "items": [
+              "**beta:** V1.14.0-beta.1 (fce3247)",
+              "Remove dead code — 11 símbolos sem callers (203 deleções) (#162)",
+              "**beta:** V1.14.0-beta.7 (4992ab0)",
+              "**beta:** V1.14.0-beta.8 (53e8b0d)",
+              "**beta:** V1.14.0-beta.9 (5d16fa8)",
+              "Gitignore da pasta Example/ (protótipo v2.0) (#177)",
+              "**beta:** V1.14.0-beta.10 (37f00e8)",
+              "**release:** Remove premature v1.14.0 changelog section (collides with stable cut) (#178)"
+            ]
+          },
+          {
+            "title": "✅ Tests",
+            "items": [
+              "Freeze erasure saga harness clock to kill TTL time bomb (#152)",
+              "**wiki:** Cobre caminho decode acentuado do resolveCrossArticle (#169)"
+            ]
+          },
+          {
+            "title": "❤️ Contributors",
+            "items": [
+              "Ils15 (@ils15)"
             ]
           }
         ]
       },
       {
         "version": "1.13.0",
-        "date": "",
+        "date": "2026-09-18",
         "sections": [
           {
             "title": "🚀 Features",
@@ -1207,7 +1254,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1261,7 +1310,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1323,7 +1374,10 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)", "Lupolima"]
+            "items": [
+              "Ils15 (@ils15)",
+              "Lupolima"
+            ]
           }
         ]
       },
@@ -1348,7 +1402,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1384,7 +1440,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1426,7 +1484,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1510,7 +1570,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1526,11 +1588,15 @@
           },
           {
             "title": "🧹 Other",
-            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
+            "items": [
+              "**release:** V1.8.1 [skip ci] (079945e)"
+            ]
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1562,7 +1628,10 @@
           },
           {
             "title": "✅ Tests",
-            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
+            "items": [
+              "417 tests, 36/36 files passing",
+              "Coverage >80%"
+            ]
           }
         ]
       },
