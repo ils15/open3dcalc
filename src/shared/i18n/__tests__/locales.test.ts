@@ -270,19 +270,73 @@ describe("i18n locales (tutorial.launcher.* + tutorial.tours.*) — Fase 2", () 
   it.each([
     ["pt-BR", ptBR],
     ["en-US", enUS],
-  ])("resolves every launcher key and available tour entry in %s", (_locale, dict) => {
-    for (const key of TUTORIAL_LAUNCHER_KEYS) {
-      const value = resolve(dict, ["tutorial", "launcher", key]);
-      expect(typeof value, `tutorial.launcher.${key}`).toBe("string");
-      expect((value as string).length).toBeGreaterThan(0);
-    }
-
-    for (const tourId of TOUR_IDS.filter(isTourAvailable)) {
-      for (const field of ["title", "description"] as const) {
-        const value = resolve(dict, ["tutorial", "tours", tourId, field]);
-        expect(typeof value, `tutorial.tours.${tourId}.${field}`).toBe("string");
+  ])(
+    "resolves every launcher key and available tour entry in %s",
+    (_locale, dict) => {
+      for (const key of TUTORIAL_LAUNCHER_KEYS) {
+        const value = resolve(dict, ["tutorial", "launcher", key]);
+        expect(typeof value, `tutorial.launcher.${key}`).toBe("string");
         expect((value as string).length).toBeGreaterThan(0);
       }
+
+      for (const tourId of TOUR_IDS.filter(isTourAvailable)) {
+        for (const field of ["title", "description"] as const) {
+          const value = resolve(dict, ["tutorial", "tours", tourId, field]);
+          expect(typeof value, `tutorial.tours.${tourId}.${field}`).toBe(
+            "string",
+          );
+          expect((value as string).length).toBeGreaterThan(0);
+        }
+      }
+    },
+  );
+});
+
+/**
+ * Currency-symbol leak guard. The app resolves the currency symbol at runtime
+ * via `useCurrency()` → `Intl.NumberFormat`, so an en-US label must never hold
+ * a literal "R$" — otherwise USD/EUR/GBP users see the Brazilian real no matter
+ * which currency they select.
+ *
+ * Excluded by design:
+ *  - `changelog.versions[]`: a factual release record, never re-localized.
+ *  - Brazilian-market guidance that deliberately cites real BRL prices
+ *    (e.g. filament price ranges). Intentional local references.
+ */
+const BRL_REALITY_ALLOWLIST = new Set<string>([
+  "tooltip.costPerKg", // "PLA ~R$90, PETG ~R$110 …" — BR market guidance
+]);
+
+function collectStrings(
+  node: unknown,
+  path: string[],
+  out: { key: string; value: string }[],
+): void {
+  if (typeof node === "string") {
+    out.push({ key: path.join("."), value: node });
+    return;
+  }
+  if (node && typeof node === "object") {
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      collectStrings(v, [...path, k], out);
     }
+  }
+}
+
+describe("i18n locales — no hardcoded currency symbol (R$) in en-US", () => {
+  it("en-US labels never hardcode R$; the symbol comes from useCurrency()", () => {
+    const all: { key: string; value: string }[] = [];
+    collectStrings(enUS, [], all);
+
+    const offenders = all.filter(
+      (entry) =>
+        entry.value.includes("R$") &&
+        !entry.key.startsWith("changelog.versions") &&
+        !BRL_REALITY_ALLOWLIST.has(entry.key),
+    );
+
+    expect(offenders.map((entry) => `${entry.key} = ${entry.value}`)).toEqual(
+      [],
+    );
   });
 });
