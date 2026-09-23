@@ -12,7 +12,7 @@ import { LaborSection } from "./sections/LaborSection";
 import { HardwareSection } from "./sections/HardwareSection";
 import { OpsSection } from "./sections/OpsSection";
 import { SalesSection } from "./sections/SalesSection";
-import { ResultsPanel } from "./ResultsPanel";
+import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { SectionHeader } from "./sections/SectionHeader";
 import { SECTIONS, INTERMEDIATE_FIELDS, BASIC_FIELDS, LEVEL_SECTIONS } from "./Calculator.constants";
 

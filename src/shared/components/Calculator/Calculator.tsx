@@ -8,7 +8,7 @@ import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { useShallow } from "zustand/react/shallow";
 import { useKeyboardShortcuts } from "@/shared/hooks/useKeyboardShortcuts";
 import { QuickStartBanner } from "@/shared/components/ui/QuickStartBanner";
-import { ResultsPanel } from "./ResultsPanel";
+import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { TechToggle } from "./TechToggle";
 import { LevelToggle } from "./LevelToggle";
 import { ProductName } from "./ProductName";

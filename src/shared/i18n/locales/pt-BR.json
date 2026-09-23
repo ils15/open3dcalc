@@ -259,6 +259,7 @@
     "sellPriceCancel": "Cancelar edição de preço",
     "sellPriceCustom": "Personalizado",
     "sellPriceReset": "Usar calculado",
+    "taxesAndFeesIncluded": "incl. {{value}} em taxas/marketplace",
     "sellPriceInvalid": "Informe um valor maior que zero",
     "effectiveMarkup": "Markup efetivo",
     "belowBreakEven": "Abaixo do ponto de equilíbrio ({{value}})",

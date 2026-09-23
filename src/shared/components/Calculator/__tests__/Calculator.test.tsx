@@ -7,7 +7,7 @@ const readRelative = (p: string) =>
 
 const calculatorSource = readRelative("../Calculator.tsx");
 const rendererSource = readRelative("../SectionRenderer.tsx");
-const resultsPanelSource = readRelative("../ResultsPanel.tsx");
+const resultsPanelSource = readRelative("../../Results/ResultsPanel.tsx");
 
 /**
  * Tailwind v4 default breakpoints (min-width, px):
