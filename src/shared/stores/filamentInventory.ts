@@ -1,122 +1,26 @@
-import { create } from "zustand";
-import { guardedStorage } from "@/shared/lib/manifestStorage";
-
-export type SpoolStatus = "in_stock" | "on_the_way" | "empty";
-
-export interface FilamentSpool {
-  id: string;
-  brand: string;
-  material: string;
-  color: string;
-  colorHex: string;
-  weightGrams: number;
-  originalWeightGrams: number;
-  costPerKg: number;
-  diameterMm: number;
-  dateAdded: number;
-  notes: string;
-  status: SpoolStatus;
-  purchaseStore: string;
-  /**
-   * Tara do carretel (peso do carretel vazio) em gramas — Phase 6 P1 (Wave B).
-   * Undefined = não informado; a lib de filamento restante faz lookup da
-   * marca como fallback. Sobrescreve a tabela de marca quando presente.
-   */
-  tareGrams?: number;
-}
-
-interface FilamentInventoryState {
-  spools: FilamentSpool[];
-  addSpool: (spool: Omit<FilamentSpool, "id" | "dateAdded">) => void;
-  removeSpool: (id: string) => void;
-  updateSpool: (id: string, updates: Partial<FilamentSpool>) => void;
-  deductWeight: (id: string, grams: number) => void;
-  getTotalWeight: () => number;
-  getSpoolsByMaterial: (material: string) => FilamentSpool[];
-  getLowStockSpools: (thresholdGrams: number) => FilamentSpool[];
-}
-
-const migrateSpool = (s: Record<string, unknown>): FilamentSpool => ({
-  id: s.id as string,
-  brand: (s.brand as string) || "",
-  material: (s.material as string) || "PLA",
-  color: (s.color as string) || "",
-  colorHex: (s.colorHex as string) || "",
-  weightGrams: (s.weightGrams as number) || 0,
-  originalWeightGrams: (s.originalWeightGrams as number) || 1000,
-  costPerKg: (s.costPerKg as number) || 0,
-  diameterMm: (s.diameterMm as number) || 1.75,
-  dateAdded: (s.dateAdded as number) || Date.now(),
-  notes: (s.notes as string) || "",
-  status: (s.status as SpoolStatus) || "in_stock",
-  purchaseStore: (s.purchaseStore as string) || "",
-  // Phase 6 P1 (Wave B): default-on-missing para payloads legacy — undefined
-  // (não 0) para que a lib caia no lookup de marca.
-  tareGrams: typeof s.tareGrams === "number" ? s.tareGrams : undefined,
-});
-
-const loadSpools = (): FilamentSpool[] => {
-  if (typeof window === "undefined") return [];
-  try {
-    const saved = guardedStorage.getItem("open3dcalc_filaments");
-    const raw = saved ? JSON.parse(saved) : [];
-    return (raw as Record<string, unknown>[]).map(migrateSpool);
-  } catch {
-    return [];
-  }
-};
-
-export const useFilamentInventory = create<FilamentInventoryState>(
-  (set, get) => ({
-    spools: loadSpools(),
-
-    addSpool: (spool) => {
-      const newSpool: FilamentSpool = {
-        ...spool,
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        dateAdded: Date.now(),
-      };
-      const spools = [...get().spools, newSpool];
-      guardedStorage.setItem("open3dcalc_filaments", JSON.stringify(spools));
-      set({ spools });
-    },
-
-    removeSpool: (id) => {
-      const spools = get().spools.filter((s) => s.id !== id);
-      guardedStorage.setItem("open3dcalc_filaments", JSON.stringify(spools));
-      set({ spools });
-    },
-
-    updateSpool: (id, updates) => {
-      const spools = get().spools.map((s) =>
-        s.id === id ? { ...s, ...updates } : s,
-      );
-      guardedStorage.setItem("open3dcalc_filaments", JSON.stringify(spools));
-      set({ spools });
-    },
-
-    deductWeight: (id, grams) => {
-      const spools = get().spools.map((s) =>
-        s.id === id
-          ? { ...s, weightGrams: Math.max(0, s.weightGrams - grams) }
-          : s,
-      );
-      guardedStorage.setItem("open3dcalc_filaments", JSON.stringify(spools));
-      set({ spools });
-    },
-
-    getTotalWeight: () => {
-      return get().spools.reduce((sum, s) => sum + s.weightGrams, 0);
-    },
-
-    getSpoolsByMaterial: (material) => {
-      return get().spools.filter(
-        (s) => s.material.toLowerCase() === material.toLowerCase(),
-      );
-    },
-
-    getLowStockSpools: (thresholdGrams) => {
-      return get().spools.filter((s) => s.weightGrams < thresholdGrams);
-    },
-  }),
-);
+/**
+ * Shim de compatibilidade (Phase 6).
+ *
+ * O inventário de filamento passou a ter um único dono no W6: `spoolStore.ts`.
+ * Duas visões (o FilamentInventory original e a nova Estante de Carretéis)
+ * compartilham o MESMO store e a MESMA chave (`open3dcalc_filaments`) — caso
+ * contrário dois stores zustand sobre a mesma chave localStorage divergiriam
+ * em memória e o usuário veria dados stale ao trocar de aba.
+ *
+ * Toda a API pública existente é preservada; importadores antigos não mudam.
+ */
+export {
+  useSpoolStore as useFilamentInventory,
+  SPOOLS_KEY,
+  SPOOL_MATERIALS,
+  remainingPct,
+  filterSpools,
+  sortSpools,
+} from "./spoolStore";
+export type {
+  FilamentSpool,
+  SpoolStatus,
+  SpoolFilters,
+  SpoolSortKey,
+  SpoolSortDir,
+} from "./spoolStore";
