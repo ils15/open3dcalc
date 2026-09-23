@@ -1,0 +1,33 @@
+{
+  "fallback": "Confira minha cotacao de impressao 3D no Open3DCalc",
+  "whatsapp": {
+    "emoji": "👇",
+    "linkLabel": "Veja a simulacao completa:"
+  },
+  "telegram": {
+    "emoji": "🖨️",
+    "linkLabel": "Simulacao completa:"
+  },
+  "x": {
+    "hashtags": ["#impressao3d", "#3dprint", "#cotacao3d", "#Open3DCalc"]
+  },
+  "instagram": {
+    "hashtags": [
+      "#impressao3d",
+      "#3dprinting",
+      "#projetos3d",
+      "#makerbr",
+      "#Open3DCalc"
+    ]
+  },
+  "facebook": {
+    "emoji": "📐",
+    "linkLabel": "Simulacao completa:"
+  },
+  "email": {
+    "subject": "Cotacao de impressao 3D — Open3DCalc",
+    "intro": "Ola!",
+    "linkLabel": "Veja a simulacao completa:",
+    "signoff": "Calculado com o Open3DCalc — a calculadora 3D livre e open-source."
+  }
+}

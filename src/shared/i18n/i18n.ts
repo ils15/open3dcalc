@@ -3,15 +3,22 @@ import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import ptBR from "./locales/pt-BR.json";
 import enUS from "./locales/en-US.json";
+// W7-lib: templates de copy de compartilhamento. Namespace dedicado e separado
+// do `translation` para nao conflitar com as ondas paralelas que tocam os
+// locales default. A lib socialShare.ts le estes mesmos arquivos diretamente.
+import sharePtBR from "./locales/share.pt-BR.json";
+import shareEnUS from "./locales/share.en-US.json";
 
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
-      "pt-BR": { translation: ptBR },
-      "en-US": { translation: enUS },
+      "pt-BR": { translation: ptBR, share: sharePtBR },
+      "en-US": { translation: enUS, share: shareEnUS },
     },
+    ns: ["translation", "share"],
+    defaultNS: "translation",
     fallbackLng: "pt-BR",
     interpolation: { escapeValue: false },
     detection: {
