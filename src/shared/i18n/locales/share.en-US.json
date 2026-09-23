@@ -1,0 +1,33 @@
+{
+  "fallback": "Check out my 3D printing quote on Open3DCalc",
+  "whatsapp": {
+    "emoji": "👇",
+    "linkLabel": "See the full breakdown:"
+  },
+  "telegram": {
+    "emoji": "🖨️",
+    "linkLabel": "Full breakdown:"
+  },
+  "x": {
+    "hashtags": ["#3dprinting", "#3dprint", "#quote", "#Open3DCalc"]
+  },
+  "instagram": {
+    "hashtags": [
+      "#3dprinting",
+      "#3dprint",
+      "#3dprojects",
+      "#maker",
+      "#Open3DCalc"
+    ]
+  },
+  "facebook": {
+    "emoji": "📐",
+    "linkLabel": "Full breakdown:"
+  },
+  "email": {
+    "subject": "3D printing quote — Open3DCalc",
+    "intro": "Hi there!",
+    "linkLabel": "See the full breakdown:",
+    "signoff": "Calculated with Open3DCalc — the free & open-source 3D calculator."
+  }
+}
