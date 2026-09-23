@@ -160,9 +160,9 @@ describe("Phase 2 — Tablet Optimization", () => {
 
       expect(tabletSidebar).toBeDefined();
       const buttons = tabletSidebar!.querySelectorAll("button");
-      // TABS has 10 primary items — Wiki and Novidades live in the footer hub;
+      // TABS has 11 primary items — Wiki and Novidades live in the footer hub;
       // tabsParity.test locks the web and desktop sets together.
-      expect(buttons.length).toBe(10);
+      expect(buttons.length).toBe(11);
     });
 
     it("tablet sidebar buttons have title attribute for accessibility", () => {
@@ -250,7 +250,7 @@ describe("Phase 2 — Tablet Optimization", () => {
     });
 
     it("does not put secondary surfaces back in the primary bottom tab array", () => {
-      expect(TABS).toHaveLength(10);
+      expect(TABS).toHaveLength(11);
       expect(TABS.map((tab) => tab.id)).not.toEqual(
         expect.arrayContaining(["wiki", "changelog"]),
       );

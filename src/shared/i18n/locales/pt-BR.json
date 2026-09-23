@@ -55,7 +55,8 @@
     "navigation": "Navegação",
     "mainNavigation": "Navegação principal",
     "settings": "Configurações",
-    "privacy": "Privacidade"
+    "privacy": "Privacidade",
+    "spools": "Carretéis"
   },
   "dashboard": {
     "totalCost": "Custo Total",
@@ -432,6 +433,64 @@
     "coverageFail": "Não cobre a peça",
     "coverageNeeded": "Necessário: {{grams}} g",
     "coverageMargin": "Margem: {{margin}} g"
+  },
+  "spools": {
+    "title": "Estante de Carretéis",
+    "subtitle": "Inventário visual das bobinas de filamento",
+    "count": "{{count}} carretéis",
+    "newSpool": "Novo Carretel",
+    "editSpool": "Editar Carretel",
+    "searchPlaceholder": "Buscar cor, marca, material…",
+    "filterAll": "Todos",
+    "filterAllStatuses": "Todos os status",
+    "statusInStock": "Em estoque",
+    "statusOnTheWay": "A caminho",
+    "statusEmpty": "Vazio",
+    "sortLabel": "Ordenar",
+    "sortName": "Cor (A–Z)",
+    "sortMaterial": "Material",
+    "sortRemaining": "Restante",
+    "sortWeight": "Peso atual",
+    "sortDate": "Adicionados",
+    "sortAsc": "Crescente",
+    "sortDesc": "Decrescente",
+    "remaining": "Restante",
+    "lowStock": "Estoque baixo",
+    "lowStockCount": "{{count}} com estoque baixo",
+    "notesLabel": "Nota",
+    "emptyTitle": "Nenhum carretel na estante",
+    "emptyDescription": "Cadastre seu primeiro carretel para acompanhar quanto filamento resta em cada bobina.",
+    "emptyAction": "Cadastrar carretel",
+    "filteredEmptyTitle": "Nenhum carretel encontrado",
+    "filteredEmptyDescription": "Ajuste a busca ou os filtros para encontrar suas bobinas.",
+    "clearFilters": "Limpar filtros",
+    "removeSpool": "Remover carretel",
+    "deleteTitle": "Remover carretel?",
+    "deleteMessage": "O carretel \"{{color}}\" será removido da estante. Esta ação não pode ser desfeita.",
+    "deleteConfirm": "Remover",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "form": {
+      "color": "Cor",
+      "colorPlaceholder": "Selecione a cor",
+      "customColors": "Minhas cores",
+      "standardColors": "Padrão",
+      "hex": "Hex",
+      "material": "Material",
+      "brand": "Marca",
+      "weight": "Peso restante (g)",
+      "originalWeight": "Peso original (g)",
+      "costPerKg": "Custo por kg",
+      "diameter": "Diâmetro (mm)",
+      "status": "Status",
+      "purchaseStore": "Loja",
+      "notes": "Nota",
+      "save": "Salvar",
+      "errBrand": "Informe a marca do filamento.",
+      "errColor": "Selecione a cor do filamento.",
+      "errWeight": "O peso restante deve ser maior que zero.",
+      "errOriginal": "O peso original deve ser maior que zero."
+    }
   },
   "product": {
     "title": "Dados da Peça",
@@ -2217,6 +2276,11 @@
     "wiki": {
       "title": "Wiki",
       "description": "Artigos em markdown sobre precificação, insumos e a operação do app, disponíveis offline na aba Wiki.",
+      "cta": "Abrir guia"
+    },
+    "spools": {
+      "title": "Estante de Carretéis",
+      "description": "Veja todas as bobinas de filamento numa grade visual, com peso restante, material, cor e notas, filtrando e ordenando a estante.",
       "cta": "Abrir guia"
     }
   },
