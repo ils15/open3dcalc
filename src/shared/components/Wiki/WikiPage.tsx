@@ -1,6 +1,6 @@
 import {
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -225,7 +225,7 @@ export function WikiPage() {
   // does not get a chance to swap the focused node out from under the test.
   // The guard makes it a no-op for plain nav button clicks, where the ref was
   // never staged.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const anchor = pendingAnchor.current;
     if (!anchor || !activeSlug) return;
     pendingAnchor.current = null;
