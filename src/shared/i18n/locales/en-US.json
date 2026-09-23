@@ -260,6 +260,7 @@
     "sellPriceCancel": "Cancel price editing",
     "sellPriceCustom": "Custom",
     "sellPriceReset": "Use calculated",
+    "taxesAndFeesIncluded": "incl. {{value}} in taxes/marketplace fees",
     "sellPriceInvalid": "Enter a value greater than zero",
     "effectiveMarkup": "Effective markup",
     "belowBreakEven": "Below break-even ({{value}})",

@@ -27,11 +27,11 @@
 
 Todas as superfícies dão acesso às **12 abas** — Calculadora, Dashboard, Calc. Infill, Filamentos, Cadastros, Histórico, Novidades, Orçamentos, Clientes, Produtos, Privacidade e Wiki — sem que nenhuma fique escondida atrás de um menu:
 
-| Tela | Navegação |
-| ---- | --------- |
-| 📱 Mobile (< 768px) | Barra inferior **scrollável** com todas as abas, mais uma engrenagem de **Configurações** fixa no final que abre um sheet dedicado somente a configurações (Tutorial, Moeda, Idioma e GitHub). |
-| 📲 Tablet (768–1024px) | Sidebar compacta, somente ícones. |
-| 🖥️ Desktop (≥ 1024px) | Sidebar completa com rótulos. |
+| Tela                   | Navegação                                                                                                                                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 📱 Mobile (< 768px)    | Barra inferior **scrollável** com todas as abas, mais uma engrenagem de **Configurações** fixa no final que abre um sheet dedicado somente a configurações (Tutorial, Moeda, Idioma e GitHub). |
+| 📲 Tablet (768–1024px) | Sidebar compacta, somente ícones.                                                                                                                                                              |
+| 🖥️ Desktop (≥ 1024px)  | Sidebar completa com rótulos.                                                                                                                                                                  |
 
 ## 📦 Desktop App
 
@@ -91,13 +91,13 @@ Para além da estimativa de volume, o Open3DCalc calcula o custo real do seu dia
 
 O app se explica sozinho — ninguém precisa ler um manual externo para começar:
 
-| Superfície            | O que é                                                                                                                                                                                                                                                                                        |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🚀 **Onboarding**     | Primeiros passos dentro do app: flags persistentes (LocalStorage) garantem que o tutorial só se oferece uma vez por sessão/usuário, e flags de tutorial **nunca** substituem o consentimento de privacidade.                                                                                    |
-| 🧪 **Modo demo**      | Dados de demonstração para explorar a calculadora sem cadastrar nada; exports são bloqueados no modo demo (o selo e o toast avisam).                                                                                                                                                             |
-| 🎯 **Tours**          | 6 tours interativos com spotlight: Calculadora básica, Preview 3D do upload, Inventário de bobinas, KPIs do dashboard, Orçamentos & Clientes e Nível avançado — todos bilíngues, disparados pelo botão de tutorial ou pelo guia. O tour de nível avançado empresta o nível avançado da calculadora e o **devolve** ao sair. |
-| 📖 **Wiki**           | Documentação dentro do app (aba Wiki): artigos em markdown compilados em **build time** — zero parser no client, zero dependência de runtime, sanitizados via `rehype-sanitize`. Veja [`docs/wiki/README.md`](docs/wiki/README.md) para o contrato de autoria (subset, frontmatter, paridade pt-BR/en-US). |
-| 🗂️ **Guia**          | Drawer com um card por superfície do app (tabs e seções da calculadora), cada um com descrição e atalho para o tour correspondente, quando existe.                                                                                                                                             |
+| Superfície        | O que é                                                                                                                                                                                                                                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🚀 **Onboarding** | Primeiros passos dentro do app: flags persistentes (LocalStorage) garantem que o tutorial só se oferece uma vez por sessão/usuário, e flags de tutorial **nunca** substituem o consentimento de privacidade.                                                                                                                |
+| 🧪 **Modo demo**  | Dados de demonstração para explorar a calculadora sem cadastrar nada; exports são bloqueados no modo demo (o selo e o toast avisam).                                                                                                                                                                                        |
+| 🎯 **Tours**      | 6 tours interativos com spotlight: Calculadora básica, Preview 3D do upload, Inventário de bobinas, KPIs do dashboard, Orçamentos & Clientes e Nível avançado — todos bilíngues, disparados pelo botão de tutorial ou pelo guia. O tour de nível avançado empresta o nível avançado da calculadora e o **devolve** ao sair. |
+| 📖 **Wiki**       | Documentação dentro do app (aba Wiki): artigos em markdown compilados em **build time** — zero parser no client, zero dependência de runtime, sanitizados via `rehype-sanitize`. Veja [`docs/wiki/README.md`](docs/wiki/README.md) para o contrato de autoria (subset, frontmatter, paridade pt-BR/en-US).                  |
+| 🗂️ **Guia**       | Drawer com um card por superfície do app (tabs e seções da calculadora), cada um com descrição e atalho para o tour correspondente, quando existe.                                                                                                                                                                          |
 
 ---
 
@@ -106,14 +106,14 @@ O app se explica sozinho — ninguém precisa ler um manual externo para começa
 O inventário de bobinas tem uma paleta de cores própria, dividida em uma parte
 padrão (embutida no app) e uma parte personalizada (persistida por usuário):
 
-| Superfície | O que faz |
-| ---------- | -------- |
-| 🎨 **Paleta padrão** | **33 cores** agrupadas visualmente em **Neutras** (9), **Sólidas** (18) e **Escuras** (6) — a fonte única da verdade é o array `STD_COLORS` em `FilamentInventory.tsx`; o lookup nome → hex (`COLOR_HEX`) é derivado dele, então não há hex duplicado em lugar nenhum. |
-| 👤 **Paleta custom** | Store Zustand dedicado (`src/shared/stores/colorPalette.ts`) persistido via `guardedStorage` na key `open3dcalc_color_palette_v1`, registrada no [SPEC-01](docs/privacy/SPEC-01-manifest-fixture.json) e em `LOCALSTORAGE_KEYS` (`persistence-bridge.ts`) — o gate descarta silenciosamente escritas de keys não registradas em produção. |
-| 🧩 **Seletor de swatches** | O primitivo `Select` ganhou `color?: string` no `SelectOption` e mostra um swatch (bolinha de cor) tanto no trigger quanto em cada opção; o seletor de cor do formulário de filamento mescla padrão + custom, separadas por grupo ("Padrão" / "Minhas cores"). |
-| ➕ **Adicionar cor própria** | Linha no próprio formulário: nome + picker de hex nativo (mantido como escape). O nome é normalizado e **deduplica case-insensitive** contra a paleta existente; se a cor já existe, ela é apenas selecionada. |
-| 🪣 **Modal "Paleta de Cores"** | Mostra a paleta padrão (33 swatches) e, abaixo, o grid "Minhas cores" com uma lixeira por cor (`removeColor`) — a remoção atualiza o store e reflete no seletor na hora. |
-| 🔍 **`resolveHex`** | Resolve o hex de qualquer nome de cor: primeiro **match exato**, depois **match por inclusão com a key mais longa vencendo** — então "Azul Marinho" resolve como `#1e3a8a` e não mais como "azul". Dados antigos e digitados à mão continuam resolvendo. |
+| Superfície                     | O que faz                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🎨 **Paleta padrão**           | **33 cores** agrupadas visualmente em **Neutras** (9), **Sólidas** (18) e **Escuras** (6) — a fonte única da verdade é o array `STD_COLORS` em `FilamentInventory.tsx`; o lookup nome → hex (`COLOR_HEX`) é derivado dele, então não há hex duplicado em lugar nenhum.                                                                    |
+| 👤 **Paleta custom**           | Store Zustand dedicado (`src/shared/stores/colorPalette.ts`) persistido via `guardedStorage` na key `open3dcalc_color_palette_v1`, registrada no [SPEC-01](docs/privacy/SPEC-01-manifest-fixture.json) e em `LOCALSTORAGE_KEYS` (`persistence-bridge.ts`) — o gate descarta silenciosamente escritas de keys não registradas em produção. |
+| 🧩 **Seletor de swatches**     | O primitivo `Select` ganhou `color?: string` no `SelectOption` e mostra um swatch (bolinha de cor) tanto no trigger quanto em cada opção; o seletor de cor do formulário de filamento mescla padrão + custom, separadas por grupo ("Padrão" / "Minhas cores").                                                                            |
+| ➕ **Adicionar cor própria**   | Linha no próprio formulário: nome + picker de hex nativo (mantido como escape). O nome é normalizado e **deduplica case-insensitive** contra a paleta existente; se a cor já existe, ela é apenas selecionada.                                                                                                                            |
+| 🪣 **Modal "Paleta de Cores"** | Mostra a paleta padrão (33 swatches) e, abaixo, o grid "Minhas cores" com uma lixeira por cor (`removeColor`) — a remoção atualiza o store e reflete no seletor na hora.                                                                                                                                                                  |
+| 🔍 **`resolveHex`**            | Resolve o hex de qualquer nome de cor: primeiro **match exato**, depois **match por inclusão com a key mais longa vencendo** — então "Azul Marinho" resolve como `#1e3a8a` e não mais como "azul". Dados antigos e digitados à mão continuam resolvendo.                                                                                  |
 
 ---
 
@@ -146,7 +146,7 @@ open3dcalc/
 │   │   │   ├── pdfExport.tsx    # Export PDF via @react-pdf/renderer
 │   │   │   ├── csvExport.ts     # Export CSV
 │   │   │   ├── currency.ts      # Conversão monetária
-│   │   │   ├── printers.ts      # Catálogo de 385+ impressoras
+│   │   │   ├── printers.ts      # Catálogo de 103 impressoras
 │   │   │   ├── materials.ts     # 31 materiais pré-cadastrados
 │   │   │   └── marketplace.ts   # Taxas de marketplaces
 │   │   ├── hooks/               # Custom hooks (useCurrency, useTheme, etc.)
@@ -196,15 +196,17 @@ open3dcalc/
 
 O componente `Select` (`src/shared/components/ui/Select/Select.tsx`) é o dropdown padrão do app, usado em **15 pontos de uso em 8 arquivos** (CatalogTab, FilamentInventory, InfillCalculator, MaterialSection, PrintSection, SalesSection, FailureSection, HistoryTab). É construído sobre [`@floating-ui/react`](https://floating-ui.com/) (a mesma biblioteca do `Tooltip`) para posicionamento robusto do menu:
 
-| Problema | Solução |
-| -------- | -------- |
-| Colisão  | `useFloating` + `offset(6)` + `flip()` + `shift({ padding: 8 })` + `autoUpdate` — o menu nunca sai da viewport e abre para cima quando não cabe embaixo |
-| Clipping | O menu é sempre renderizado num `FloatingPortal`, escapando de containers com `overflow` (ex.: o modal `overflow-y-auto` do FilamentInventory) |
-| Altura   | Middleware `size()` aplica `max-height` dinâmico (cap 420px) e iguala a largura ao trigger |
-| z-index  | Token `--z-dropdown: 60` (`src/platform/{web,desktop}/index.css`) — acima da bottom nav (`z-50`), abaixo do Tooltip (`100`) |
+| Problema | Solução                                                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Colisão  | `useFloating` + `offset(6)` + `flip()` + `shift({ padding: 8 })` + `autoUpdate` — o menu nunca sai da viewport e abre para cima quando não cabe embaixo       |
+| Clipping | O menu é sempre renderizado num `FloatingPortal`, escapando de containers com `overflow` (ex.: o modal `overflow-y-auto` do FilamentInventory)                |
+| Altura   | Middleware `size()` aplica `max-height` dinâmico (cap 420px) e iguala a largura ao trigger                                                                    |
+| z-index  | Token `--z-dropdown: 60` (`src/platform/{web,desktop}/index.css`) — acima da bottom nav (`z-50`), abaixo do Tooltip (`100`)                                   |
 | Mobile   | Abaixo de 640px o menu vira **bottom sheet**: `position: fixed; bottom: 0`, `max-h-[60dvh]` com scroll interno (hook `useMobileSheet`, reativo a resize/giro) |
 
-> **Nota:** a prop `portal` foi **descontinuada** — o menu agora é sempre portado, então a prop é aceita por compatibilidade da API pública, mas é um *no-op*. Nenhum call site passava `portal`; a API do componente é estável e os 15 pontos de uso acima se beneficiam das correções sem nenhuma mudança de código.
+Seletores com imagens (impressoras, marketplaces) agora renderizam **thumbnails**: um `<img loading="lazy" decoding="async">` com _fallback_ automático — se a imagem falha (404/rede), o componente `OptionThumb` exibe um monograma derivado do label, então nenhuma opção fica sem identificação visual. Imagem e monograma são `aria-hidden` (decorativos): o nome acessável da opção continua sendo apenas o label, limpo para leitores de tela. A arte de _fallback_ dos impressores (`fallback-fdm.svg`/`fallback-resin.svg`) e as logos de marketplace são **originais** deste projeto — a atribuição CC-BY-4.0 dos dados técnicos adaptados do _swordlab/open-3d-printer-database_ está em [`docs/CREDITS.md`](docs/CREDITS.md).
+
+> **Nota:** a prop `portal` foi **descontinuada** — o menu agora é sempre portado, então a prop é aceita por compatibilidade da API pública, mas é um _no-op_. Nenhum call site passava `portal`; a API do componente é estável e os 15 pontos de uso acima se beneficiam das correções sem nenhuma mudança de código.
 
 ---
 
@@ -312,7 +314,8 @@ We use **Vitest** + **Testing Library** for unit and component tests. Minimum co
 - **Migrations:** SQL puro em `db/migrations/` (gerados via `drizzle-kit`)
 - **Tables:** customers, quotes, quote_items, history_entries, filament_spools, catalog_printers, catalog_materials, catalog_marketplaces, calculator_state, app_settings, storage
 - **Storage Bridge:** A camada de persistência do desktop substitui o `localStorage` da web pelo SQLite via adaptador IPC (`src/platform/desktop/overrides/storage-adapter.ts`)
-- **Seed:** `db/seed.ts` povoa os catálogos de impressoras (385+), materiais (31) e marketplaces (6)
+- **Seed:** `db/seed.ts` povoa os catálogos de impressoras (103), materiais (31) e marketplaces (6)
+- **Campos técnicos opcionais (W10a):** impressoras podem trazer `technology` (`fdm`/`resin`), `buildVolumeMm`, `nozzleDiameterMm`, `maxSpeedMmS` e `websiteUrl` (página oficial — aberta só pelo usuário; o app faz **zero** chamadas de rede); marketplaces podem trazer `logo` (arte SVG original, não logos registrados). Os dados **econômicos** (`value` em R$, `power`, `usefulLife`, `maintenancePerHour`) continuam sendo do app e não foram importados — detalhes em [`docs/CREDITS.md`](docs/CREDITS.md)
 
 ```bash
 # Gerar nova migration após alterar schema

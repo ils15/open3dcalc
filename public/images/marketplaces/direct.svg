@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Venda direta estilizada">
+  <!--
+    Open3DCalc — original artwork. Stylized shopping bag with the app's
+    accent color. "Venda Direta" is the app's own direct-sales channel.
+    NOT a registered trademark logo.
+  -->
+  <g fill="none" stroke="#4f46e5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Handles -->
+    <path d="M9.5 8 V5.5 A2.5 2.5 0 0 1 14.5 5.5 V8" />
+    <!-- Body -->
+    <path d="M6.6 8 H17.4 L16.6 19 A1 1 0 0 1 15.6 19.8 H8.4 A1 1 0 0 1 7.4 19 Z" />
+  </g>
+  <text x="12" y="16" text-anchor="middle" font-family="system-ui, sans-serif" font-size="7.5" font-weight="700" fill="#4f46e5">VD</text>
+</svg>
