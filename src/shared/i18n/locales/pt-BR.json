@@ -55,7 +55,8 @@
     "navigation": "Navegação",
     "mainNavigation": "Navegação principal",
     "settings": "Configurações",
-    "privacy": "Privacidade"
+    "privacy": "Privacidade",
+    "spools": "Carretéis"
   },
   "dashboard": {
     "totalCost": "Custo Total",
@@ -433,6 +434,64 @@
     "coverageFail": "Não cobre a peça",
     "coverageNeeded": "Necessário: {{grams}} g",
     "coverageMargin": "Margem: {{margin}} g"
+  },
+  "spools": {
+    "title": "Estante de Carretéis",
+    "subtitle": "Inventário visual das bobinas de filamento",
+    "count": "{{count}} carretéis",
+    "newSpool": "Novo Carretel",
+    "editSpool": "Editar Carretel",
+    "searchPlaceholder": "Buscar cor, marca, material…",
+    "filterAll": "Todos",
+    "filterAllStatuses": "Todos os status",
+    "statusInStock": "Em estoque",
+    "statusOnTheWay": "A caminho",
+    "statusEmpty": "Vazio",
+    "sortLabel": "Ordenar",
+    "sortName": "Cor (A–Z)",
+    "sortMaterial": "Material",
+    "sortRemaining": "Restante",
+    "sortWeight": "Peso atual",
+    "sortDate": "Adicionados",
+    "sortAsc": "Crescente",
+    "sortDesc": "Decrescente",
+    "remaining": "Restante",
+    "lowStock": "Estoque baixo",
+    "lowStockCount": "{{count}} com estoque baixo",
+    "notesLabel": "Nota",
+    "emptyTitle": "Nenhum carretel na estante",
+    "emptyDescription": "Cadastre seu primeiro carretel para acompanhar quanto filamento resta em cada bobina.",
+    "emptyAction": "Cadastrar carretel",
+    "filteredEmptyTitle": "Nenhum carretel encontrado",
+    "filteredEmptyDescription": "Ajuste a busca ou os filtros para encontrar suas bobinas.",
+    "clearFilters": "Limpar filtros",
+    "removeSpool": "Remover carretel",
+    "deleteTitle": "Remover carretel?",
+    "deleteMessage": "O carretel \"{{color}}\" será removido da estante. Esta ação não pode ser desfeita.",
+    "deleteConfirm": "Remover",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "form": {
+      "color": "Cor",
+      "colorPlaceholder": "Selecione a cor",
+      "customColors": "Minhas cores",
+      "standardColors": "Padrão",
+      "hex": "Hex",
+      "material": "Material",
+      "brand": "Marca",
+      "weight": "Peso restante (g)",
+      "originalWeight": "Peso original (g)",
+      "costPerKg": "Custo por kg",
+      "diameter": "Diâmetro (mm)",
+      "status": "Status",
+      "purchaseStore": "Loja",
+      "notes": "Nota",
+      "save": "Salvar",
+      "errBrand": "Informe a marca do filamento.",
+      "errColor": "Selecione a cor do filamento.",
+      "errWeight": "O peso restante deve ser maior que zero.",
+      "errOriginal": "O peso original deve ser maior que zero."
+    }
   },
   "product": {
     "title": "Dados da Peça",
@@ -1138,12 +1197,12 @@
           {
             "title": "🚀 Novidades",
             "items": [
-              "**select:** Usa um índice global de destaque e rolagem pelo teclado entre os limites dos grupos (#166)",
-              "**footer:** Adiciona um hub de rodapé responsivo com versão dinâmica, links internos para Wiki/Novidades e links externos para GitHub/Telegram; remove Wiki/Novidades da barra de abas inferior principal (#170)",
-              "Phase 4A — printer organization with free-form tags (#150)",
-              "Demo-data foundation — ephemeral dataset + demo mode store (#153)",
-              "Demo MVP — entry point, indicator, export guards (Fase 1) (#154)",
-              "Modern tutorial — tours registry, cross-tab navigation, launcher (Fase 2) (#155)",
+              "**dashboard:** Fase 3 — KPIs baseados no histórico e projeção mensal (#147)",
+              "Fase 6 P1 — núcleo da caixa de ferramentas maker (filamento restante, comparação de materiais, resina lavável em água, preenchimento automático do custo da máquina) (#149)",
+              "Fase 4A — organização de impressoras com tags de formato livre (#150)",
+              "Base de dados demo — dataset efêmero + store do modo demo (#153)",
+              "MVP demo — ponto de entrada, indicador e proteções de exportação (Fase 1) (#154)",
+              "Tutorial moderno — registro de tours, navegação entre abas e launcher (Fase 2) (#155)",
               "Onboarding Fase 3 — wiki tab, guide drawer, tours avançados (#156)",
               "Paleta de cores expandida + paleta custom persistida no inventário (#164)",
               "**nav:** Rodapé-hub com versão dinâmica, Wiki, Novidades e links externos (#170)"
@@ -1152,55 +1211,53 @@
           {
             "title": "🐛 Correções",
             "items": [
-              "**history:** Alinha os controles de busca de Histórico/Clientes e os botões de ação do Histórico; remove uma chave i18n órfã (#167)",
-              "**wiki:** Faz âncoras acentuadas entre artigos receberem foco e rolarem corretamente; impede que links UTF-8 malformados causem travamentos (#169)",
+              "Visibilidade do badge beta no mobile + strings PT hardcoded (D1, D2) (#151)",
+              "**beta:** Loop infinito de renderização do React #185 na inicialização (tela preta) (#157, #185)",
               "**wiki:** Correções P0/P1 que não chegaram no #158 (#159, #158)",
-              "**web:** Bottom nav scrollável com todas as abas + settings separado (#160)",
+              "**web:** Navegação inferior scrollável com todas as abas + settings separado (#160)",
               "**ui:** Select primitivo com floating-ui — colisão, clipping, z-index e mobile (#161)",
               "**web:** Alinhamento de seletores, inputs e botões na aba Orçamentos (#163)",
-              "**ui:** Select — highlight de teclado global no modo groups (#166)",
+              "**ui:** Select — destaque de teclado global no modo grupos (#166)",
               "**ui:** Drift remanescente de altura de inputs e botoes do HistoryTab (#167)",
-              "**nav:** Group Wiki and external links at sidebar bottom (#172)",
+              "**nav:** Agrupa Wiki e links externos no final da sidebar (#172)",
               "**nav:** Restaurar ícones oficiais do GitHub e Telegram (#173)",
               "**tutorial:** Ancorar spotlight após scroll e resolver alvo visível (#175)",
-              "**stl:** Pass dim param for fdmTooLargeForResin reason (#174)",
+              "**stl:** Passa o parâmetro dim no motivo fdmTooLargeForResin (#174)",
               "**i18n:** En-US usa a moeda selecionada; PDF exporta no locale/moeda do usuário (#176)"
             ]
           },
           {
             "title": "📖 Documentação",
             "items": [
-              "**wiki:** Adiciona frases orientadoras antes das listas, registra armadilhas comuns e corrige tom, erros de digitação e separadores decimais em 15 artigos e 2 idiomas (#168)",
+              "Evolui o roadmap (princípios de produto, checklist LGPD, Fases 4–6) + ignora pastas de editor e testes (#148)",
               "**wiki:** Catálogo completo — 15 artigos × 2 locales (#158)",
               "**wiki:** Frase-guia, armadilhas comuns e correcoes de tom (#168)",
-              "**changelog:** Document merged beta changes 166-170 (#171)"
+              "**changelog:** Documenta as mudanças beta mescladas 166-170 (#171)"
             ]
           },
           {
             "title": "🧹 Outros",
             "items": [
               "**beta:** V1.14.0-beta.1 (fce3247)",
-              "Remove dead code — 11 símbolos sem callers (203 deleções) (#162)",
+              "Remove código morto — 11 símbolos sem callers (203 deleções) (#162)",
               "**beta:** V1.14.0-beta.7 (4992ab0)",
               "**beta:** V1.14.0-beta.8 (53e8b0d)",
               "**beta:** V1.14.0-beta.9 (5d16fa8)",
               "Gitignore da pasta Example/ (protótipo v2.0) (#177)",
               "**beta:** V1.14.0-beta.10 (37f00e8)",
-              "**release:** Remove premature v1.14.0 changelog section (collides with stable cut) (#178)"
+              "**release:** Remove a seção prematura do changelog v1.14.0 (colide com o corte estável) (#178)"
             ]
           },
           {
             "title": "✅ Tests",
             "items": [
-              "Freeze erasure saga harness clock to kill TTL time bomb (#152)",
+              "Congela o relógio do harness da saga de apagamento para eliminar a bomba-relógio de TTL (#152)",
               "**wiki:** Cobre caminho decode acentuado do resolveCrossArticle (#169)"
             ]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1255,9 +1312,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1311,9 +1366,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1375,10 +1428,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -1403,9 +1453,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1441,9 +1489,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1485,9 +1531,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1571,9 +1615,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1589,15 +1631,11 @@
           },
           {
             "title": "🧹 Outros",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1629,10 +1667,7 @@
           },
           {
             "title": "✅ Tests",
-            "items": [
-              "417 testes, 36/36 arquivos passando",
-              "Cobertura >80%"
-            ]
+            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
           }
         ]
       },
@@ -2218,6 +2253,11 @@
     "wiki": {
       "title": "Wiki",
       "description": "Artigos em markdown sobre precificação, insumos e a operação do app, disponíveis offline na aba Wiki.",
+      "cta": "Abrir guia"
+    },
+    "spools": {
+      "title": "Estante de Carretéis",
+      "description": "Veja todas as bobinas de filamento numa grade visual, com peso restante, material, cor e notas, filtrando e ordenando a estante.",
       "cta": "Abrir guia"
     }
   },
