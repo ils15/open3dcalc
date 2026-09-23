@@ -19,7 +19,7 @@ vi.mock('@/shared/hooks/useCurrency', () => ({
 vi.mock('@/shared/lib/printTimeEstimator', () => ({
   estimatePrintTimeFromDimensions: () => ({ estimatedHours: 1 }),
 }))
-vi.mock('@/shared/components/Calculator/ResultsPanel', () => ({
+vi.mock('@/shared/components/Results/ResultsPanel', () => ({
   ResultsPanel: () => <div data-testid="results-panel" />,
 }))
 vi.mock('@/shared/components/Calculator/sections/MaterialSection', () => ({
