@@ -5,15 +5,20 @@ vi.mock("@/shared/components/Calculator/Calculator", () => ({
   Calculator: () => <div data-testid="classic-surface">classic</div>,
 }));
 
+vi.mock("@/shared/components/Calculator/surfaces/GuidedSurface", () => ({
+  GuidedSurface: () => <div data-testid="guided-surface">guided</div>,
+}));
+
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { CalculatorSurface } from "../CalculatorSurface";
 
 /**
- * Wave 1 — the single switch point between layout surfaces.
+ * Wave 1 + W4 — the single switch point between layout surfaces.
  *
- * Only "classic" exists in W1; "guided" (W4) and "bento" (W3) fall back to
- * the classic surface until their waves land. This test locks the fallback
- * so a half-implemented mode can never render a blank surface.
+ * "classic" and "guided" (W4 wizard) exist today; "bento" (W3) intentionally
+ * falls back to the classic surface until its wave lands, so a persisted future
+ * mode never renders a blank surface. This test locks the mapping and the
+ * fallback.
  */
 
 beforeEach(() => {
@@ -36,16 +41,22 @@ describe("CalculatorSurface", () => {
     expect(screen.getByTestId("classic-surface")).toBeInTheDocument();
   });
 
-  it.each(["guided", "bento"] as const)(
-    "falls back to the classic surface for %s until its wave lands",
-    (mode) => {
-      useLayoutStore.setState({ layoutMode: mode });
+  it("renders the guided surface (W4) for the guided mode", () => {
+    useLayoutStore.setState({ layoutMode: "guided" });
 
-      render(<CalculatorSurface />);
+    render(<CalculatorSurface />);
 
-      expect(screen.getByTestId("classic-surface")).toBeInTheDocument();
-    },
-  );
+    expect(screen.getByTestId("guided-surface")).toBeInTheDocument();
+    expect(screen.queryByTestId("classic-surface")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the classic surface for bento until W3 lands", () => {
+    useLayoutStore.setState({ layoutMode: "bento" });
+
+    render(<CalculatorSurface />);
+
+    expect(screen.getByTestId("classic-surface")).toBeInTheDocument();
+  });
 
   it("subscribes to the layout store — switching mode re-renders", () => {
     const { rerender } = render(<CalculatorSurface />);
@@ -54,6 +65,6 @@ describe("CalculatorSurface", () => {
     useLayoutStore.getState().setLayoutMode("guided");
     rerender(<CalculatorSurface />);
 
-    expect(screen.getByTestId("classic-surface")).toBeInTheDocument();
+    expect(screen.getByTestId("guided-surface")).toBeInTheDocument();
   });
 });

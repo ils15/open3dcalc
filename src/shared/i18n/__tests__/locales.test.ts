@@ -293,6 +293,120 @@ describe("i18n locales (tutorial.launcher.* + tutorial.tours.*) — Fase 2", () 
 });
 
 /**
+ * W4 — the guided wizard. Every label / button / error the 4-step flow emits goes
+ * through `t("wizard.*")`; a missing key renders the raw string in the step body
+ * or leaves a control without an accessible label. Keys are nested by surface
+ * (steps.*, fields.*, nav.*, result.*, errors.*) to mirror the component tree.
+ */
+const WIZARD_STEP_KEYS = ["title", "description"] as const;
+const WIZARD_STEP_IDS = ["1", "2", "3", "4"] as const;
+
+const WIZARD_FIELD_LABEL_KEYS = [
+  "productName",
+  "materialType",
+  "weightGrams",
+  "costPerKg",
+  "quantity",
+  "printer",
+  "printTimeHours",
+  "energyCostPerKwh",
+  "setupTimeMinutes",
+  "postProcessingMinutes",
+  "hourlyRate",
+  "packagingCost",
+  "profitMarginPercent",
+] as const;
+
+const WIZARD_UNIT_KEYS = [
+  "weightGrams",
+  "costPerKg",
+  "printTimeHours",
+  "energyCostPerKwh",
+  "setupTimeMinutes",
+  "postProcessingMinutes",
+  "hourlyRate",
+  "packagingCost",
+  "profitMarginPercent",
+] as const;
+
+const WIZARD_ERROR_KINDS = ["required", "positive", "minQuantity"] as const;
+
+describe("i18n locales (wizard.*) — W4 guided wizard", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every wizard.* key in %s", (_locale, dict) => {
+    for (const key of ["title", "subtitle", "regionLabel"] as const) {
+      const value = resolve(dict, ["wizard", key]);
+      expect(typeof value, `wizard.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+
+    // Interpolated progress label — placeholders must survive.
+    const stepOf = resolve(dict, ["wizard", "stepOf"]);
+    expect(typeof stepOf, "wizard.stepOf").toBe("string");
+    expect(stepOf as string, "wizard.stepOf").toContain("{{current}}");
+    expect(stepOf as string, "wizard.stepOf").toContain("{{total}}");
+
+    for (const step of WIZARD_STEP_IDS) {
+      for (const key of WIZARD_STEP_KEYS) {
+        const value = resolve(dict, ["wizard", "steps", step, key]);
+        expect(typeof value, `wizard.steps.${step}.${key}`).toBe("string");
+        expect((value as string).length).toBeGreaterThan(0);
+      }
+    }
+
+    for (const field of WIZARD_FIELD_LABEL_KEYS) {
+      const label = resolve(dict, ["wizard", "fields", field, "label"]);
+      expect(typeof label, `wizard.fields.${field}.label`).toBe("string");
+      expect((label as string).length).toBeGreaterThan(0);
+    }
+
+    // Numeric fields carry a unit suffix; the placeholder hints at slicer output.
+    for (const field of WIZARD_UNIT_KEYS) {
+      const unit = resolve(dict, ["wizard", "fields", field, "unit"]);
+      expect(typeof unit, `wizard.fields.${field}.unit`).toBe("string");
+      expect((unit as string).length).toBeGreaterThan(0);
+    }
+    const placeholder = resolve(dict, [
+      "wizard",
+      "fields",
+      "productName",
+      "placeholder",
+    ]);
+    expect(typeof placeholder, "wizard.fields.productName.placeholder").toBe(
+      "string",
+    );
+
+    for (const key of ["previous", "next", "finish", "exit"] as const) {
+      const value = resolve(dict, ["wizard", "nav", key]);
+      expect(typeof value, `wizard.nav.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+
+    for (const key of [
+      "title",
+      "totalCost",
+      "sellPrice",
+      "profit",
+      "marginLabel",
+      "ctaClassic",
+      "ctaHint",
+    ] as const) {
+      const value = resolve(dict, ["wizard", "result", key]);
+      expect(typeof value, `wizard.result.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+
+    for (const kind of WIZARD_ERROR_KINDS) {
+      const value = resolve(dict, ["wizard", "errors", kind]);
+      expect(typeof value, `wizard.errors.${kind}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+/**
  * Currency-symbol leak guard. The app resolves the currency symbol at runtime
  * via `useCurrency()` → `Intl.NumberFormat`, so an en-US label must never hold
  * a literal "R$" — otherwise USD/EUR/GBP users see the Brazilian real no matter
