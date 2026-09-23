@@ -2224,6 +2224,69 @@
     "toc": "Sumário",
     "loading": "Carregando"
   },
+  "wizard": {
+    "title": "Calculadora guiada",
+    "subtitle": "Quatro passos do briefing ao preço final",
+    "regionLabel": "Calculadora guiada passo a passo",
+    "stepOf": "Passo {{current}} de {{total}}",
+    "steps": {
+      "1": {
+        "title": "Peça e material",
+        "description": "Peso, filamento e quantidade"
+      },
+      "2": {
+        "title": "Impressora e tempo",
+        "description": "Equipamento e horas de impressão"
+      },
+      "3": {
+        "title": "Mão de obra e extras",
+        "description": "Tempo de trabalho e embalagem"
+      },
+      "4": {
+        "title": "Resultado final",
+        "description": "Custo, preço de venda e lucro"
+      }
+    },
+    "fields": {
+      "productName": {
+        "label": "Nome do projeto",
+        "placeholder": "Ex.: Suporte para fones"
+      },
+      "materialType": { "label": "Filamento" },
+      "weightGrams": { "label": "Peso da peça", "unit": "g" },
+      "costPerKg": { "label": "Preço do carretel", "unit": "/kg" },
+      "quantity": { "label": "Quantidade" },
+      "printer": { "label": "Impressora" },
+      "printTimeHours": { "label": "Tempo de impressão", "unit": "h" },
+      "energyCostPerKwh": { "label": "Energia por kWh", "unit": "/kWh" },
+      "setupTimeMinutes": { "label": "Tempo de preparação", "unit": "min" },
+      "postProcessingMinutes": { "label": "Pós-processamento", "unit": "min" },
+      "hourlyRate": { "label": "Valor por hora", "unit": "/h" },
+      "packagingCost": { "label": "Embalagem", "unit": "/un" },
+      "profitMarginPercent": { "label": "Margem de lucro", "unit": "%" }
+    },
+    "nav": {
+      "previous": "Anterior",
+      "next": "Próximo",
+      "finish": "Usar calculadora completa",
+      "exit": "Sair"
+    },
+    "result": {
+      "title": "Seu preço final",
+      "totalCost": "Custo total",
+      "sellPrice": "Preço de venda",
+      "profit": "Lucro",
+      "marginLabel": "Margem",
+      "ctaClassic": "Continuar na calculadora completa",
+      "ctaHint": "Todos os campos avançados estão disponíveis no modo clássico."
+    },
+    "errors": {
+      "required": "Este campo é obrigatório.",
+      "positive": "Informe um valor positivo.",
+      "minQuantity": "A quantidade deve ser de pelo menos 1."
+    }
+  },
+
   "footer": {
     "navigation": "Links úteis",
     "version": "Open3DCalc v{{version}}",

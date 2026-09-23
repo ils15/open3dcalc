@@ -2224,6 +2224,69 @@
     "toc": "Table of contents",
     "loading": "Loading"
   },
+  "wizard": {
+    "title": "Guided calculator",
+    "subtitle": "Four steps from the brief to the final price",
+    "regionLabel": "Step-by-step guided calculator",
+    "stepOf": "Step {{current}} of {{total}}",
+    "steps": {
+      "1": {
+        "title": "Part & material",
+        "description": "Weight, filament and quantity"
+      },
+      "2": {
+        "title": "Printer & time",
+        "description": "Machine and printing hours"
+      },
+      "3": {
+        "title": "Labor & extras",
+        "description": "Working time and packaging"
+      },
+      "4": {
+        "title": "Final result",
+        "description": "Cost, selling price and profit"
+      }
+    },
+    "fields": {
+      "productName": {
+        "label": "Project name",
+        "placeholder": "e.g. Headphone stand"
+      },
+      "materialType": { "label": "Filament" },
+      "weightGrams": { "label": "Part weight", "unit": "g" },
+      "costPerKg": { "label": "Spool price", "unit": "/kg" },
+      "quantity": { "label": "Quantity" },
+      "printer": { "label": "Printer" },
+      "printTimeHours": { "label": "Print time", "unit": "h" },
+      "energyCostPerKwh": { "label": "Energy per kWh", "unit": "/kWh" },
+      "setupTimeMinutes": { "label": "Setup time", "unit": "min" },
+      "postProcessingMinutes": { "label": "Post-processing", "unit": "min" },
+      "hourlyRate": { "label": "Hourly rate", "unit": "/h" },
+      "packagingCost": { "label": "Packaging", "unit": "/unit" },
+      "profitMarginPercent": { "label": "Profit margin", "unit": "%" }
+    },
+    "nav": {
+      "previous": "Previous",
+      "next": "Next",
+      "finish": "Use full calculator",
+      "exit": "Exit"
+    },
+    "result": {
+      "title": "Your final price",
+      "totalCost": "Total cost",
+      "sellPrice": "Selling price",
+      "profit": "Profit",
+      "marginLabel": "Margin",
+      "ctaClassic": "Continue in the full calculator",
+      "ctaHint": "All advanced fields are available in classic mode."
+    },
+    "errors": {
+      "required": "This field is required.",
+      "positive": "Enter a positive value.",
+      "minQuantity": "Quantity must be at least 1."
+    }
+  },
+
   "footer": {
     "navigation": "Useful links",
     "version": "Open3DCalc v{{version}}",

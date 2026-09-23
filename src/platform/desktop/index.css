@@ -590,6 +590,24 @@ select {
   animation: shimmer 1.5s infinite;
 }
 
+/* W4 — guided wizard: step panel enter transition. Gated by useReducedMotion in
+   JS (the class is omitted entirely when the user prefers reduced motion); this
+   rule is the CSS-side backstop for the same preference. */
+@keyframes wizardStepEnter {
+  from {
+    opacity: 0;
+    transform: translateX(var(--wizard-enter-from, 8px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.wizard-step-enter {
+  --wizard-enter-from: 8px;
+  animation: wizardStepEnter 0.22s ease-out;
+}
+
 /* ===================================================================
    REDUCED MOTION
    =================================================================== */
@@ -606,6 +624,7 @@ select {
   .animate-fade-in,
   .animate-scale-in,
   .animate-slide-left,
+  .wizard-step-enter,
   .animate-shimmer {
     animation: none !important;
   }
