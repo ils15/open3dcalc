@@ -82,6 +82,9 @@ jobs:
           VERSION_INPUT: ${{ inputs.version }}
         run: |
           set -euo pipefail
+          # Versions never contain whitespace; remove all of it (including
+          # accidental newlines from manual input) before processing.
+          VERSION_INPUT="$(printf '%s' "$VERSION_INPUT" | tr -d '[:space:]')"
           # Base version: explicit input wins (tolerate a leading "v" and any
           # prerelease suffix); otherwise derive from package.json — bump the
           # minor when sitting on a stable, keep the base when already on a
