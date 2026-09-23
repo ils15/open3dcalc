@@ -40,6 +40,7 @@ export type TutorialTab =
   | "dashboard"
   | "infill"
   | "inventory"
+  | "spools"
   | "catalog"
   | "history"
   | "changelog"
@@ -54,6 +55,7 @@ export const TUTORIAL_TABS: readonly TutorialTab[] = [
   "dashboard",
   "infill",
   "inventory",
+  "spools",
   "catalog",
   "history",
   "quotes",
