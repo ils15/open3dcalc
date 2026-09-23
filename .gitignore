@@ -45,6 +45,10 @@ docs/*
 # Wiki in-app: markdown fonte compilado em build time pelo vite/plugins/markdownWikiPlugin.ts
 # (precisa ser versionado — é a fonte do conteúdo, não artefato gerado).
 !docs/wiki/
+# Privacy specs (SPEC-01..04, ADRs, matrix): fontes normativas versionadas,
+# base do gate de privacidade do app — tracked, nunca ignoradas (tracked-but-
+# ignored quebra o stash interno do lint-staged).
+!docs/privacy/
 
 # Logs
 logs/

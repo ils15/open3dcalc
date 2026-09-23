@@ -1,15 +1,11 @@
 {
   "manifest_version": "1.0",
-  "policy_version": "1.3",
+  "policy_version": "1.4",
   "keys": [
     {
       "key": "open3dcalc_consent_v1",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "consent_record",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -28,11 +24,7 @@
     {
       "key": "open3dcalc_tutorial_v1",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "onboarding_flag",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -51,11 +43,7 @@
     {
       "key": "open3dcalc_migration_done_v2",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "onboarding_flag",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -74,11 +62,7 @@
     {
       "key": "open3dcalc_quickstart_dismissed",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "onboarding_flag",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -97,11 +81,7 @@
     {
       "key": "open3dcalc_onboarded",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "onboarding_flag",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -120,11 +100,7 @@
     {
       "key": "i18nextLng",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -143,11 +119,7 @@
     {
       "key": "open3dcalc_customers_v1",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -166,9 +138,7 @@
     {
       "key": "customers",
       "surface": "sqlite_domain_tables",
-      "platforms": [
-        "electron"
-      ],
+      "platforms": ["electron"],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -187,11 +157,7 @@
     {
       "key": "open3dcalc_quotes_v1",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -210,9 +176,7 @@
     {
       "key": "quotes",
       "surface": "sqlite_domain_tables",
-      "platforms": [
-        "electron"
-      ],
+      "platforms": ["electron"],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -231,11 +195,7 @@
     {
       "key": "open3dcalc_history_v2",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -254,11 +214,7 @@
     {
       "key": "open3dcalc_settings_v2",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -277,11 +233,7 @@
     {
       "key": "open3dcalc_sections",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "ui_state",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -300,11 +252,7 @@
     {
       "key": "open3dcalc_theme",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -323,11 +271,7 @@
     {
       "key": "open3dcalc_dashboard_v1",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "derived_analytics",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -346,11 +290,7 @@
     {
       "key": "open3dcalc_dashboard_goal",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -369,11 +309,7 @@
     {
       "key": "open3dcalc_catalog_v1",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_preference",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -392,11 +328,7 @@
     {
       "key": "open3dcalc_filaments",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_content",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -415,11 +347,7 @@
     {
       "key": "open3dcalc_color_palette_v1",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_content",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -438,11 +366,7 @@
     {
       "key": "open3dcalc_products",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "user_content",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -461,9 +385,7 @@
     {
       "key": "storage",
       "surface": "sqlite_storage_table",
-      "platforms": [
-        "electron"
-      ],
+      "platforms": ["electron"],
       "class": "user_content",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -482,9 +404,7 @@
     {
       "key": "sw_cache_entries",
       "surface": "cache_api",
-      "platforms": [
-        "pwa"
-      ],
+      "platforms": ["pwa"],
       "class": "cache",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -503,10 +423,7 @@
     {
       "key": "idb_reports_staging",
       "surface": "indexeddb",
-      "platforms": [
-        "web",
-        "pwa"
-      ],
+      "platforms": ["web", "pwa"],
       "class": "cache",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -525,10 +442,7 @@
     {
       "key": "opfs_export_staging",
       "surface": "opfs",
-      "platforms": [
-        "web",
-        "pwa"
-      ],
+      "platforms": ["web", "pwa"],
       "class": "cache",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -547,9 +461,7 @@
     {
       "key": "appdata_logs",
       "surface": "logs",
-      "platforms": [
-        "electron"
-      ],
+      "platforms": ["electron"],
       "class": "diagnostic",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -568,9 +480,7 @@
     {
       "key": "appdata_temp_staging",
       "surface": "temp_staging",
-      "platforms": [
-        "electron"
-      ],
+      "platforms": ["electron"],
       "class": "cache",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -589,11 +499,7 @@
     {
       "key": "erasure_snapshots",
       "surface": "snapshots",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "snapshot",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -612,11 +518,7 @@
     {
       "key": "session_passphrase_key",
       "surface": "memory",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "ephemeral_key",
       "pii": false,
       "persistence": "memory_only",
@@ -635,10 +537,7 @@
     {
       "key": "open3dcalc_erasure_journal",
       "surface": "localStorage",
-      "platforms": [
-        "web",
-        "pwa"
-      ],
+      "platforms": ["web", "pwa"],
       "class": "diagnostic",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -657,10 +556,7 @@
     {
       "key": "open3dcalc_erasure_snapshot",
       "surface": "localStorage",
-      "platforms": [
-        "web",
-        "pwa"
-      ],
+      "platforms": ["web", "pwa"],
       "class": "snapshot",
       "pii": true,
       "persistence": "encrypted_at_rest",
@@ -679,11 +575,7 @@
     {
       "key": "open3dcalc_model_comparison",
       "surface": "localStorage",
-      "platforms": [
-        "electron",
-        "web",
-        "pwa"
-      ],
+      "platforms": ["electron", "web", "pwa"],
       "class": "derived_analytics",
       "pii": false,
       "persistence": "plaintext_allowed",
@@ -695,6 +587,63 @@
         "max_days": 0
       },
       "purpose": "Model comparison panel: file names, dimensions, weights and print times of models the user explicitly added to the comparison (derived metadata, no PII).",
+      "legal_basis": "not_personal_data",
+      "owner": "aphrodite",
+      "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_layout_v1",
+      "surface": "localStorage",
+      "platforms": ["electron", "web", "pwa"],
+      "class": "ui_preference",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "erase_on_delete_all",
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
+      "purpose": "Interface layout mode preference (classic/guided/bento); device-level ergonomic choice, never synchronized.",
+      "legal_basis": "not_personal_data",
+      "owner": "aphrodite",
+      "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_share_prefs_v1",
+      "surface": "localStorage",
+      "platforms": ["electron", "web", "pwa"],
+      "class": "ui_preference",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "erase_on_delete_all",
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
+      "purpose": "Last used social network id (static catalog id only; share message text is never persisted).",
+      "legal_basis": "not_personal_data",
+      "owner": "aphrodite",
+      "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_marketplace_comparison_v1",
+      "surface": "localStorage",
+      "platforms": ["electron", "web", "pwa"],
+      "class": "ui_preference",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "erase_on_delete_all",
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
+      "purpose": "Last compared marketplace ids (subset of the static catalog; no user data).",
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
       "version": "1.0"

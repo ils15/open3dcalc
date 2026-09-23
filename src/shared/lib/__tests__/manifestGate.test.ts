@@ -91,3 +91,68 @@ describe("manifestGate (S1 unknown-key deny)", () => {
     expect(decision.allowed).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// W0 (V2.0): the three `ui_preference` keys registered by SPEC-01 policy 1.4
+// are allowed by the gate with their full policy record, the new class value
+// is part of the normative vocabulary, and the fail-closed deny still holds
+// for any key that is NOT in the manifest.
+// ---------------------------------------------------------------------------
+
+describe("manifestGate (W0 SPEC-01 v1.4 ui_preference keys)", () => {
+  const OLD_ENV = process.env.NODE_ENV;
+
+  const V14_KEYS = [
+    "open3dcalc_layout_v1",
+    "open3dcalc_share_prefs_v1",
+    "open3dcalc_marketplace_comparison_v1",
+  ] as const;
+
+  beforeEach(() => {
+    resetManifestForTests(manifestFixture as ManifestDocument);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    resetManifestForTests(null);
+    vi.restoreAllMocks();
+    process.env.NODE_ENV = OLD_ENV;
+  });
+
+  it.each(V14_KEYS)("W0: allows the v1.4 ui_preference key %s", (key) => {
+    const decision = checkKey(key);
+    expect(decision.allowed).toBe(true);
+    expect(decision.entry?.key).toBe(key);
+    // Class value added to the schema vocabulary for V2.0.
+    expect(decision.entry?.class).toBe("ui_preference");
+    // Device-level ergonomic choices: non-PII, plaintext, never synced or
+    // exported, erased on delete-all.
+    expect(decision.entry?.pii).toBe(false);
+    expect(decision.entry?.persistence).toBe("plaintext_allowed");
+    expect(decision.entry?.sync).toBe("never");
+    expect(decision.entry?.export).toBe("never");
+    expect(decision.entry?.erasure).toBe("erase_on_delete_all");
+    expect(decision.entry?.legal_basis).toBe("not_personal_data");
+  });
+
+  it("W0: ships policy_version 1.4", () => {
+    expect((manifestFixture as ManifestDocument).policy_version).toBe("1.4");
+    expect(MANIFEST_POLICY_VERSION).toBe("1.4");
+  });
+
+  it("W0: still denies an unregistered key in dev (fail-closed)", () => {
+    process.env.NODE_ENV = "development";
+    // A near-miss variant of the new layout key is NOT registered — the gate
+    // must keep rejecting it instead of pattern-matching by prefix.
+    expect(() => checkKey("open3dcalc_layout_v2")).toThrow(ManifestError);
+    expect(() => checkKey("open3dcalc_layout_v2")).toThrow(
+      /unknown storage key/,
+    );
+  });
+
+  it("W0: still denies an unregistered key in production (safe deny)", () => {
+    process.env.NODE_ENV = "production";
+    expect(checkKey("open3dcalc_share_prefs_v2").allowed).toBe(false);
+    expect(console.warn).toHaveBeenCalled();
+  });
+});

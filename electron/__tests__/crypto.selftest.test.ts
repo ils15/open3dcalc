@@ -19,7 +19,7 @@
 import { describe, it, expect } from "vitest";
 import { spawnSync, execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -70,12 +70,77 @@ interface SelftestReport {
 }
 
 function ensureElectronBuild(): void {
-  if (existsSync(selftestJs)) return;
   // CI runs build:electron before tests; local runs may not have it yet.
+  // An existence check alone is not enough: the bundle embeds shared sources
+  // (notably src/shared/lib/dataManifest.ts), so a stale copy silently runs
+  // outdated code — e.g. a manifest vocabulary the compiled loader does not
+  // know, which makes the gate deny EVERY key and fails this contract test.
+  // Rebuild whenever a feeding source is newer than the compiled output.
+  if (existsSync(selftestJs) && newestSourceMtime() <= mtimeOf(selftestJs)) {
+    return;
+  }
   execFileSync("npx", ["tsc", "-p", "electron/tsconfig.json"], {
     cwd: repoRoot,
     stdio: "pipe",
   });
+}
+
+/** mtime of a path, 0 when absent (treated as "older than everything"). */
+function mtimeOf(file: string): number {
+  try {
+    return statSync(file).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Sources that feed the electron main bundle (electron/tsconfig.json
+ * `include`): the tsconfig itself, the explicit electron entries, and the
+ * shared `crypto` / `dataManifest` / `db` trees (excluding tests and the
+ * build output, so editing the harness never triggers a rebuild).
+ */
+function newestSourceMtime(): number {
+  const explicit = [
+    "main.ts",
+    "update.ts",
+    "preload.cts",
+    "cryptoCapability.ts",
+    "persistGate.ts",
+    "legacyScan.ts",
+    "quarantine.ts",
+    "manifestSource.ts",
+    "diagnosticBackup.ts",
+    "diagnosticGate.ts",
+    "selftest/crypto-selftest.ts",
+  ].map((f) => mtimeOf(path.join(electronRoot, f)));
+  const shared = [
+    path.join(repoRoot, "src/shared/lib/dataManifest.ts"),
+    ...listTypeScript(path.join(repoRoot, "src/shared/lib/crypto")),
+    ...listTypeScript(path.join(repoRoot, "db")),
+  ].map(mtimeOf);
+  return Math.max(
+    mtimeOf(path.join(electronRoot, "tsconfig.json")),
+    ...explicit,
+    ...shared,
+  );
+}
+
+/** `.ts` files under `dir` (recursive), skipping `__tests__` and `dist`. */
+function listTypeScript(dir: string): string[] {
+  if (!existsSync(dir)) return [];
+  const out: string[] = [];
+  const stack = [dir];
+  while (stack.length > 0) {
+    const current = stack.pop() as string;
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if (entry.name === "__tests__" || entry.name === "dist") continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (entry.name.endsWith(".ts")) out.push(full);
+    }
+  }
+  return out;
 }
 
 function reportFrom(stdout: string): SelftestReport | null {

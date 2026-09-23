@@ -319,15 +319,113 @@ Every phase and change must complete this checklist:
 
 ---
 
+### 🌈 Phase 7: Adaptive Layouts & Progressive Onboarding
+
+**Problem:** The calculator exposes every parameter at once. Beginners drown before they price their first print; power users click through sections they never use. One rigid layout cannot serve both.
+
+**What to investigate first:**
+
+- [ ] Which user persona maps to which layout density (maker hobbyist vs. small shop vs. pro studio)
+- [ ] How much of the current `ResultsPanel` (975 lines) can be decomposed without breaking the existing keyboard-shortcut and SectionNav contracts
+- [ ] Whether the existing `calcLevel` axis (Quick/Detailed/Complete, already in the store) can be reused as the density axis instead of inventing a new one
+
+**What needs to be done:**
+
+- [ ] Layout engine: `classic` (today's full form), `guided` (step-by-step, sections released progressively), `bento` (compact cards dashboard-style)
+- [ ] `layoutStore` — separate from the undo stack (layout switches are NOT calculation changes), persisted under `open3dcalc_layout_v1` (class `ui_preference`, sync never)
+- [ ] AppShell refactor: web and desktop `App.tsx` each under ~120 lines, single `CalculatorSurface` switch point
+- [ ] Profile Guide (Guia de Perfis): pick a persona → applies (layout, calcLevel) using the existing `calcLevel` axis
+- [ ] LayoutSwitcher in the header with live preview
+- [ ] Progressive onboarding Wizard: 4 steps, non-blocking, skippable, replaces the current one-shot tutorial
+- [ ] `FinancialInspector` — decomposed, focused view of the pricing breakdown (profit, fees, margin, break-even)
+- [ ] Informative empty states and visual feedback for actions across the new surfaces
+- [ ] Bento cards responsive across the existing breakpoints (640/768/1024/1280px)
+
+**Acceptance criteria:**
+
+- [ ] All three layouts render the SAME calculation results (zero divergence)
+- [ ] Layout switches never enter the undo stack and never dirty the calculation
+- [ ] Wizard is skippable and dismissable at any step; the calculator is fully usable without it
+- [ ] `open3dcalc_layout_v1` appears in the SPEC-01 manifest (policy_version 1.4) and is covered by delete-all and privacy regression tests
+- [ ] All existing tests still pass; new surfaces have RTL tests (no snapshot testing)
+
+---
+
+### 💰 Phase 7b: Multi-Network Quotes, Marketplace Profit Comparison & Suggested Price
+
+**Problem:** Pricing a part is only half the job — makers also have to **sell** it. Today the app exports a JSON quote and copies a calculation link, but offers no help for the three questions that decide whether a print is worth running: _How do I post this?_, _Which marketplace pays me the most?_, and _What price should I actually charge?_
+
+**What to investigate first (real capability):**
+
+- [ ] Which social networks offer **official**, key-free sharing web intents (verified: WhatsApp, Telegram, X, e-mail — official; Instagram and Facebook do NOT accept a pre-filled caption, so they get an honest copy-to-clipboard path instead of a fake deep link)
+- [ ] How the existing `marketplaces` catalog (Shopee, Mercado Livre, Amazon, Etsy, Direct — with percent + fixed fees) can be compared **without touching the frozen calculation layer**
+- [ ] Reuse of `getBulkDiscount` (pure helper) and `reverseFromSellPrice` (pure reverse-pricing) so nothing is rewritten
+
+**What needs to be done:**
+
+- [ ] **Multi-network quote sharing** — `socialShare.ts` pure lib (official web intents + per-network copy templates, pt-BR/en-US), `SocialShareModal` with live preview card, character counters (280 for X, hashtag block for Instagram), `useReducedMotion`-aware success feedback
+- [ ] **Marketplace profit comparison** — `compareMarketplaceProfits()` pure lib: same part, net profit ranked across the whole catalog (percent + fixed fees), parity test locked to the real calculator; `MarketplaceComparison` UI (ranked table, best highlighted, delta vs. best, "use this marketplace" writes the existing `marketplaceFeePercent` — calculation layer untouched)
+- [ ] **Suggested price tool** — `suggestPrices()` pure lib: target margin %, desired profit per part, desired monthly profit (projections), fee-inclusive break-even, and competitor-price mode (reusing `reverseFromSellPrice`); integrates existing `VolumeDiscount` tiers and already consumes post-`riskMultiplier` cost; `SuggestedPriceTool` UI with scenario cards and an "apply price" action
+- [ ] Copy templates and every label in pt-BR + en-US, with explicit "margin over price" vs. "markup over cost" wording
+- [ ] Assumptions panel reuse so the fee-fixed vs. fee-percent difference between the comparison and the main calculation is stated, not hidden
+
+**Acceptance criteria:**
+
+- [ ] Sharing works with zero network calls at generation time (the OS/browser opens the intent); no undocumented deep links
+- [ ] Comparison and suggested-price libs are pure, NaN-safe, and never return Infinity; infeasible price targets report `feasible: false` with a human explanation
+- [ ] Parity test proves the mirrored pricing formula matches the real calculator to the cent; any drift fails CI
+- [ ] Calculation layer (`calculator.ts`) is not modified — verified by diff in the PRs
+- [ ] Pure libs at ≥90% coverage; UI components RTL-tested, keyboard-navigable, WCAG AA
+- [ ] Only `open3dcalc_share_prefs_v1` and `open3dcalc_marketplace_comparison_v1` are added to SPEC-01 (last network id and last marketplace ids — catalog ids only, no message text, no user data); the suggested-price tool is stateless per session
+- [ ] LGPD checklist and privacy regression tests pass for every new key
+
+---
+
+### 🎨 Phase 7c: Visual Catalogs (Printers & Marketplaces)
+
+**Problem:** The catalogs are functional but visually flat — 103 printers in a text-only dropdown, 6 marketplaces with no branding, materials without color swatches. The `image` field already exists in `PrinterProfile` and even in the `Select` component's option API, but it is dangling: zero files under `public/images/` and the `<img>` render path was never finished.
+
+**What to investigate first:**
+
+- [ ] Trademark/copyright posture for manufacturer product photos and marketplace logos (verified: brand names in text are nominative fair use; logos and product photos are NOT freely usable — we ship our own SVG art and link out instead)
+- [ ] Which manufacturers publish press/media kits with permissive terms for a future "featured" photo subset
+- [ ] Whether the `public/` static path behaves identically on web/PWA and Electron
+
+**What needs to be done:**
+
+- [ ] Finish the `Select` render path: render `<img>` when `option.image` is present (keep the monogram as fallback)
+- [ ] `public/images/printers/fallback-fdm.svg` + `fallback-resin.svg` — our own illustrations by technology
+- [ ] Add `technology: "fdm" | "resin"` to the printer catalog entries (derivable from model families: Photon/Halot/Saturn/Mars/SL1S/Sonic-style names are resin, the rest FDM)
+- [ ] Fill the printer entries missing `image` with the fallback path so nothing is ever broken
+- [ ] Add `logo?` to `Marketplace` + our own stylized marketplace art (never the trademarked logos)
+- [ ] Optional `websiteUrl?` on `PrinterProfile` — an external link the user clicks; the app itself makes zero network calls
+- [ ] Rewrite `CatalogTab` cards: printer thumbnails, technology badges, marketplace art, text search
+
+**Acceptance criteria:**
+
+- [ ] Every catalog entry renders a thumbnail (real art or our fallback) with zero broken images
+- [ ] No trademarked logo or manufacturer photo ships without documented permission; brand names in text are fine
+- [ ] `public/` assets never enter the JS bundle and load lazily (`loading="lazy" decoding="async"`)
+- [ ] Catalog data stays code-seeded and non-PII (SPEC-01 catalog keys unchanged)
+- [ ] i18n pt-BR/en-US for all new labels; a11y: thumbnails are decorative or carry alt text
+
+---
+
+### ⏸️ Deferred: Optional AI (out of V2.0)
+
+The optional BYOK AI features (text analysis, photo-based estimation, AI-assisted pitch generation) and the PBR skin for `StlPreview` are **deferred to a future major version**. They stay off by default, behind privacy councils, an ADR and a separate consent policy version. Nothing in V2.0 depends on them.
+
+---
+
 ## 📊 Quality Metrics
 
-| Metric                  | Current | Target |
-| ----------------------- | ------- | ------ |
-| Test coverage (overall) | ~33%    | ≥60%   |
-| Coverage (calculation)  | ~85%    | ≥90%   |
-| Tests                   | 417     | 500+   |
-| Components with tests   | Partial | 100%   |
-| Accessibility (a11y)    | —       | WCAG A |
+| Metric                  | Current           | Target |
+| ----------------------- | ----------------- | ------ |
+| Test coverage (overall) | ~79%              | ≥60%   |
+| Coverage (calculation)  | 100%              | ≥90%   |
+| Tests                   | 2,360 (177 files) | 500+   |
+| Components with tests   | Partial           | 100%   |
+| Accessibility (a11y)    | —                 | WCAG A |
 
 ## 🔒 Not in scope (for now)
 
@@ -353,4 +451,4 @@ Every phase and change must complete this checklist:
 
 ---
 
-_Updated 18 September 2026 — Phase 6 added after benchmarking Creative3DP Tools. This roadmap is alive and changes based on user feedback._
+_Updated 23 September 2026 — V2.0 phases 7/7b/7c added (adaptive layouts & progressive onboarding, multi-network quotes with marketplace profit comparison and suggested price, visual catalogs); optional BYOK AI deferred to a future major version. Phase 6 was added 18 September 2026 after benchmarking Creative3DP Tools. Quality metrics refreshed from the current suite run. This roadmap is alive and changes based on user feedback._
