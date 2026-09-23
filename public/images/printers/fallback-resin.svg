@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Impressora de resina estilizada">
+  <!--
+    Open3DCalc — original artwork (CC-BY-4.0 project license).
+    Stylized MSLA resin printer: LCD screen, vat and build plate.
+    Uses currentColor so it adapts to light/dark themes automatically.
+    NOT a manufacturer logo.
+  -->
+  <g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Housing -->
+    <rect x="4.5" y="3" width="15" height="18" rx="1.6" />
+    <!-- Build plate on Z axis -->
+    <rect x="8.4" y="5.2" width="7.2" height="2" rx="0.6" />
+    <!-- Rising part -->
+    <path d="M10 7.2 v1.8 h4 v-1.8" />
+    <!-- Resin vat (trough) -->
+    <path d="M6.6 13.6 h10.8 l-1.1 2.4 H7.7 Z" />
+    <!-- LCD panel under the vat -->
+    <rect x="7.4" y="17" width="9.2" height="2.2" rx="0.7" />
+    <!-- Curing light rays through the LCD -->
+    <path d="M9.6 15.6 v1.2 M12 15.6 v1.2 M14.4 15.6 v1.2" />
+  </g>
+  <!-- Accent: LCD glow -->
+  <rect x="7.4" y="17" width="9.2" height="2.2" rx="0.7" fill="currentColor" opacity="0.28" />
+</svg>

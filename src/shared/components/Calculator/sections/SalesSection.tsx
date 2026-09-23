@@ -166,8 +166,10 @@ export function SalesSection() {
                 options={catalogMarketplaces.map((m) => ({
                   label: m.name,
                   value: m.id,
+                  image: m.logo,
                   subtitle: `${m.feePercent}% + ${currencySymbol} ${m.feeFixed}`,
                 }))}
+                search
               />
               <InputGroup
                 label={t("calc.taxPercent")}
