@@ -55,7 +55,8 @@
     "mainNavigation": "Main navigation",
     "quotes": "Quotes",
     "settings": "Settings",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "spools": "Spools"
   },
   "dashboard": {
     "totalCost": "Total Cost",
@@ -432,6 +433,64 @@
     "coverageFail": "Does not cover the part",
     "coverageNeeded": "Required: {{grams}} g",
     "coverageMargin": "Margin: {{margin}} g"
+  },
+  "spools": {
+    "title": "Spool Shelf",
+    "subtitle": "Visual inventory of your filament spools",
+    "count": "{{count}} spools",
+    "newSpool": "New Spool",
+    "editSpool": "Edit Spool",
+    "searchPlaceholder": "Search color, brand, material…",
+    "filterAll": "All",
+    "filterAllStatuses": "All statuses",
+    "statusInStock": "In stock",
+    "statusOnTheWay": "On the way",
+    "statusEmpty": "Empty",
+    "sortLabel": "Sort",
+    "sortName": "Color (A–Z)",
+    "sortMaterial": "Material",
+    "sortRemaining": "Remaining",
+    "sortWeight": "Current weight",
+    "sortDate": "Recently added",
+    "sortAsc": "Ascending",
+    "sortDesc": "Descending",
+    "remaining": "Remaining",
+    "lowStock": "Low stock",
+    "lowStockCount": "{{count}} low on stock",
+    "notesLabel": "Note",
+    "emptyTitle": "No spools on the shelf",
+    "emptyDescription": "Register your first spool to keep track of how much filament is left on each roll.",
+    "emptyAction": "Register spool",
+    "filteredEmptyTitle": "No spools found",
+    "filteredEmptyDescription": "Adjust your search or filters to find your spools.",
+    "clearFilters": "Clear filters",
+    "removeSpool": "Remove spool",
+    "deleteTitle": "Remove spool?",
+    "deleteMessage": "The \"{{color}}\" spool will be removed from the shelf. This action cannot be undone.",
+    "deleteConfirm": "Remove",
+    "cancel": "Cancel",
+    "close": "Close",
+    "form": {
+      "color": "Color",
+      "colorPlaceholder": "Select the color",
+      "customColors": "My colors",
+      "standardColors": "Standard",
+      "hex": "Hex",
+      "material": "Material",
+      "brand": "Brand",
+      "weight": "Remaining weight (g)",
+      "originalWeight": "Original weight (g)",
+      "costPerKg": "Cost per kg",
+      "diameter": "Diameter (mm)",
+      "status": "Status",
+      "purchaseStore": "Store",
+      "notes": "Notes",
+      "save": "Save",
+      "errBrand": "Enter the filament brand.",
+      "errColor": "Select the filament color.",
+      "errWeight": "Remaining weight must be greater than zero.",
+      "errOriginal": "Original weight must be greater than zero."
+    }
   },
   "product": {
     "title": "Part Data",
@@ -1197,9 +1256,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1254,9 +1311,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1310,9 +1365,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1374,10 +1427,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -1402,9 +1452,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1440,9 +1488,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1484,9 +1530,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1570,9 +1614,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1588,15 +1630,11 @@
           },
           {
             "title": "🧹 Other",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1628,10 +1666,7 @@
           },
           {
             "title": "✅ Tests",
-            "items": [
-              "417 tests, 36/36 files passing",
-              "Coverage >80%"
-            ]
+            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
           }
         ]
       },
@@ -2217,6 +2252,11 @@
     "wiki": {
       "title": "Wiki",
       "description": "Markdown articles on pricing, supplies and running the app, available offline on the Wiki tab.",
+      "cta": "Open guide"
+    },
+    "spools": {
+      "title": "Spool Shelf",
+      "description": "See every filament spool in a visual grid with remaining weight, material, color and notes, filtering and sorting the shelf.",
       "cta": "Open guide"
     }
   },

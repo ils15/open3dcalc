@@ -292,6 +292,27 @@ jobs:
               "Tag SHA: $TAG_SHA." >&2
             exit 1
           fi
+
+          # GitHub release state is eventually consistent: for a short window
+          # after publication the API may still report draft=true even though
+          # the release has already flipped to published. Poll for a bounded
+          # time so the assertions below see the settled state; if the budget
+          # is exhausted the existing assertions fail loudly (never skipped).
+          MAX_DRAFT_POLL_ATTEMPTS=5
+          for ((draft_attempt = 1; \
+            draft_attempt <= MAX_DRAFT_POLL_ATTEMPTS; \
+            draft_attempt++)); do
+            gh api "repos/$REPOSITORY/releases/tags/$TAG" \
+              >"$RELEASE_JSON" || true
+            RELEASE_DRAFT=$(jq -r '.draft // true' "$RELEASE_JSON")
+            echo "Attempt $draft_attempt/$MAX_DRAFT_POLL_ATTEMPTS:" \
+              "draft=$RELEASE_DRAFT"
+            if [ "$RELEASE_DRAFT" = "false" ]; then
+              break
+            fi
+            sleep 3
+          done
+
            RELEASE_TAG=$(jq -r '.tag_name // empty' "$RELEASE_JSON")
            RELEASE_ID=$(jq -r '.id // empty' "$RELEASE_JSON")
            RELEASE_DRAFT=$(jq -r '.draft // true' "$RELEASE_JSON")
