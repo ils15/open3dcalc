@@ -105,6 +105,7 @@ describe("dataManifest loader (SPEC-01)", () => {
       "ephemeral_key",
       "onboarding_flag",
       "snapshot",
+      "ui_preference",
       "ui_state",
       "user_content",
       "user_preference",
@@ -127,6 +128,23 @@ describe("dataManifest loader (SPEC-01)", () => {
     for (const entry of doc.keys) {
       expect(() => validateManifestEntry(entry)).not.toThrow();
     }
+  });
+
+  it("SPEC-01: accepts the ui_preference class added for V2.0 (policy 1.4)", () => {
+    // The three v2.0 keys (layout / share prefs / marketplace comparison) are
+    // ui_preference: device-level ergonomic choices, never synced/exported.
+    const entry = validEntry({
+      key: "open3dcalc_layout_v1",
+      class: "ui_preference",
+      sync: "never",
+      export: "never",
+    });
+    expect(() => validateManifestEntry(entry)).not.toThrow();
+    const loaded = loadManifest(docWith([entry]));
+    expect(isKnownKey(loaded, "open3dcalc_layout_v1")).toBe(true);
+    expect(getEntry(loaded, "open3dcalc_layout_v1")?.class).toBe(
+      "ui_preference",
+    );
   });
 
   // -----------------------------------------------------------------------

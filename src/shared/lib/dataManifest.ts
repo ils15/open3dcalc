@@ -74,6 +74,7 @@ export const DATA_CLASSES = [
   "user_content",
   "user_preference",
   "ui_state",
+  "ui_preference",
   "onboarding_flag",
   "consent_record",
   "cache",

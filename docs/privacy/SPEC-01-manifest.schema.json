@@ -120,6 +120,7 @@
             "user_content",
             "user_preference",
             "ui_state",
+            "ui_preference",
             "onboarding_flag",
             "consent_record",
             "cache",
@@ -146,7 +147,12 @@
         },
         "legal_basis": {
           "type": "string",
-          "enum": ["consent", "legitimate_interest", "contract_performance", "not_personal_data"],
+          "enum": [
+            "consent",
+            "legitimate_interest",
+            "contract_performance",
+            "not_personal_data"
+          ],
           "description": "LGPD art. 7 legal basis. not_personal_data only valid when pii is false (enforced by constraint)."
         },
         "owner": {
@@ -183,7 +189,9 @@
           },
           "then": {
             "properties": {
-              "persistence": { "enum": ["none", "memory_only", "encrypted_at_rest"] },
+              "persistence": {
+                "enum": ["none", "memory_only", "encrypted_at_rest"]
+              },
               "export": { "enum": ["never", "user_export", "diagnostic_only"] }
             },
             "description": "PII keys can never be plaintext_allowed. (Export modes listed for completeness; ADR-003 governs which flows may use diagnostic_only.)"
@@ -191,7 +199,9 @@
         },
         {
           "if": {
-            "properties": { "class": { "enum": ["onboarding_flag", "consent_record"] } }
+            "properties": {
+              "class": { "enum": ["onboarding_flag", "consent_record"] }
+            }
           },
           "then": {
             "properties": {
@@ -208,7 +218,14 @@
           },
           "then": {
             "properties": {
-              "persistence": { "enum": ["none", "memory_only", "encrypted_at_rest", "plaintext_allowed"] },
+              "persistence": {
+                "enum": [
+                  "none",
+                  "memory_only",
+                  "encrypted_at_rest",
+                  "plaintext_allowed"
+                ]
+              },
               "erasure": { "const": "erase_on_delete_all" }
             },
             "description": "Consent records themselves are non-PII local state; they must be erasable and must never leave the device."
@@ -220,7 +237,9 @@
           },
           "then": {
             "properties": {
-              "persistence": { "enum": ["none", "memory_only", "encrypted_at_rest"] },
+              "persistence": {
+                "enum": ["none", "memory_only", "encrypted_at_rest"]
+              },
               "sync": { "const": "never" },
               "export": { "const": "never" }
             },
