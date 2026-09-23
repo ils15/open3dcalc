@@ -45,6 +45,16 @@ export interface PrinterProfile {
   maxFilaments?: number;
   /** Free-form labels used to organize custom printers. Normalized (trimmed, lowercased) on write. */
   tags?: string[];
+  /** Print technology — drives fallback thumbnail art and UI badges. */
+  technology?: "fdm" | "resin";
+  /** Build volume in millimeters. Derived from cm³ (perfect cube) when only cm³ is known. */
+  buildVolumeMm?: { x: number; y: number; z: number };
+  /** Standard nozzle diameter in millimeters (FDM only). */
+  nozzleDiameterMm?: number;
+  /** Maximum print speed in mm/s. */
+  maxSpeedMmS?: number;
+  /** Official manufacturer page for the printer. Opened by the user; the app makes zero network calls. */
+  websiteUrl?: string;
 }
 
 export interface AMSSlot {
@@ -67,6 +77,8 @@ export interface Marketplace {
   feeFixed: number;
   hasFreeShipping: boolean;
   shippingFeePercent?: number;
+  /** Stylized original artwork (SVG) shown as a thumbnail. Never a registered trademark logo. */
+  logo?: string;
 }
 
 export interface MaterialStateFDM {

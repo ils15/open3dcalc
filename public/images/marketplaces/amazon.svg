@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Marketplace estilizado">
+  <!--
+    Open3DCalc — original artwork. Stylized shopping bag monogram in a
+    characteristic marketplace orange. Nominative use of the platform name
+    only; this is NOT the registered trademark logo.
+  -->
+  <g fill="none" stroke="#ff9900" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9.5 8 V5.5 A2.5 2.5 0 0 1 14.5 5.5 V8" />
+    <path d="M6.6 8 H17.4 L16.6 19 A1 1 0 0 1 15.6 19.8 H8.4 A1 1 0 0 1 7.4 19 Z" />
+  </g>
+  <text x="12" y="16" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700" fill="#ff9900">A</text>
+</svg>

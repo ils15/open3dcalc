@@ -27,6 +27,9 @@ vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
 vi.mock("@/shared/components/Catalog/FilamentInventory", () => ({
   FilamentInventory: () => <div>FilamentInventory</div>,
 }));
+vi.mock("@/shared/components/SpoolShelf/SpoolShelf", () => ({
+  SpoolShelf: () => <div>SpoolShelf</div>,
+}));
 vi.mock("@/shared/components/Calculator/Calculator", () => ({
   Calculator: () => <div>Calculator</div>,
 }));
@@ -94,12 +97,13 @@ function tabShape(tab: TabEntry) {
 }
 
 describe("tabs parity", () => {
-  it("keeps only the ten primary sections in the tab contract", () => {
+  it("keeps only the eleven primary sections in the tab contract", () => {
     expect(WEB_TABS.map((tab) => tab.id)).toEqual([
       "calculator",
       "dashboard",
       "infill",
       "inventory",
+      "spools",
       "catalog",
       "history",
       "quotes",
