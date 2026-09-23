@@ -7,6 +7,7 @@ exports[`marketplaces > matches snapshot 1`] = `
     "feePercent": 0,
     "hasFreeShipping": false,
     "id": "direct",
+    "logo": "/images/marketplaces/direct.svg",
     "name": "Venda Direta",
   },
   {
@@ -14,6 +15,7 @@ exports[`marketplaces > matches snapshot 1`] = `
     "feePercent": 20,
     "hasFreeShipping": true,
     "id": "shopee_ate79",
+    "logo": "/images/marketplaces/shopee_ate79.svg",
     "name": "Shopee (até R$79)",
     "shippingFeePercent": 0,
   },
@@ -22,6 +24,7 @@ exports[`marketplaces > matches snapshot 1`] = `
     "feePercent": 14,
     "hasFreeShipping": true,
     "id": "shopee_80mais",
+    "logo": "/images/marketplaces/shopee_80mais.svg",
     "name": "Shopee (R$80+)",
     "shippingFeePercent": 0,
   },
@@ -30,6 +33,7 @@ exports[`marketplaces > matches snapshot 1`] = `
     "feePercent": 16,
     "hasFreeShipping": true,
     "id": "mercadolivre",
+    "logo": "/images/marketplaces/mercadolivre.svg",
     "name": "Mercado Livre",
     "shippingFeePercent": 0,
   },
@@ -38,6 +42,7 @@ exports[`marketplaces > matches snapshot 1`] = `
     "feePercent": 15,
     "hasFreeShipping": false,
     "id": "amazon",
+    "logo": "/images/marketplaces/amazon.svg",
     "name": "Amazon",
   },
   {
@@ -45,6 +50,7 @@ exports[`marketplaces > matches snapshot 1`] = `
     "feePercent": 6.5,
     "hasFreeShipping": false,
     "id": "etsy",
+    "logo": "/images/marketplaces/etsy.svg",
     "name": "Etsy",
   },
 ]

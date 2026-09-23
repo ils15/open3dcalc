@@ -30,6 +30,15 @@ describe('marketplaces', () => {
   it('matches snapshot', () => {
     expect(marketplaces).toMatchSnapshot()
   })
+
+  it('every marketplace has a stylized logo thumbnail', () => {
+    for (const m of marketplaces) {
+      expect(m.logo, `marketplace ${m.id} must define a logo`).toBeTruthy()
+      expect(typeof m.logo).toBe('string')
+      // Logos are original artwork, never registered trademark images.
+      expect(m.logo).toMatch(/\.svg$/)
+    }
+  })
 })
 
 describe('getMarketplace', () => {

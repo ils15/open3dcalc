@@ -48,6 +48,31 @@ describe('printers', () => {
   it('matches snapshot', () => {
     expect(printers).toMatchSnapshot()
   })
+
+  it('every printer has a thumbnail', () => {
+    for (const p of printers) {
+      expect(p.image, `printer ${p.id} must define an image`).toBeTruthy()
+      expect(typeof p.image).toBe('string')
+    }
+  })
+
+  it('every printer has an official websiteUrl or none at all', () => {
+    for (const p of printers) {
+      if (p.websiteUrl !== undefined) {
+        expect(p.websiteUrl).toMatch(/^https?:\/\//)
+      }
+    }
+  })
+
+  it('buildVolumeMm, when present, is three positive axes', () => {
+    for (const p of printers) {
+      if (p.buildVolumeMm) {
+        expect(p.buildVolumeMm.x).toBeGreaterThan(0)
+        expect(p.buildVolumeMm.y).toBeGreaterThan(0)
+        expect(p.buildVolumeMm.z).toBeGreaterThan(0)
+      }
+    }
+  })
 })
 
 describe('getPrinter', () => {

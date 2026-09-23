@@ -198,10 +198,8 @@ export function Select({
           className="w-6 h-6 rounded-full shrink-0 border border-[var(--color-border)]"
           style={{ backgroundColor: selected.color }}
         />
-      ) : (selected?.group || selected?.image) && (
-        <div className="w-6 h-6 rounded-md bg-[var(--color-accent)]/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-[var(--color-accent)] leading-none select-none">
-          {getMonogram(selected.group || selected.label)}
-        </div>
+      ) : (
+        <OptionThumb image={selected?.image} fallback={selected?.group || selected?.label || ''} />
       )}
       <span className={`flex-1 text-left truncate ${selected ? '' : 'text-[var(--color-text-muted)]'}`}>
         {selected ? selected.label : (placeholder || label)}
@@ -284,6 +282,30 @@ export function Select({
   )
 }
 
+function OptionThumb({ image, fallback }: { image?: string; fallback: string }) {
+  const [broken, setBroken] = useState(false)
+
+  if (!image || broken) {
+    return (
+      <div className="w-6 h-6 rounded-md bg-[var(--color-accent)]/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-[var(--color-accent)] leading-none select-none">
+        {getMonogram(fallback)}
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={image}
+      alt=""
+      aria-hidden="true"
+      loading="lazy"
+      decoding="async"
+      onError={() => setBroken(true)}
+      className="w-6 h-6 rounded-md object-cover shrink-0 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]"
+    />
+  )
+}
+
 function OptionItem({ opt, idx, focusIdx, value, onSelect }: {
   opt: SelectOption; idx: number; focusIdx: number; value: string; onSelect: () => void
 }) {
@@ -307,10 +329,8 @@ function OptionItem({ opt, idx, focusIdx, value, onSelect }: {
           className="w-6 h-6 rounded-full shrink-0 border border-[var(--color-border)]"
           style={{ backgroundColor: opt.color }}
         />
-      ) : (opt.group || opt.image) && (
-        <div className="w-6 h-6 rounded-md bg-[var(--color-accent)]/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-[var(--color-accent)] leading-none select-none">
-          {getMonogram(opt.group || opt.label)}
-        </div>
+      ) : (
+        <OptionThumb image={opt.image} fallback={opt.group || opt.label} />
       )}
       <div className="flex-1 min-w-0">
         <div className="whitespace-normal break-words">{opt.label}</div>

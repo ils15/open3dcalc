@@ -170,6 +170,77 @@ describe('Select', () => {
    * (AnimatePresence mantém o nó montado durante a saída, então
    *  afirmamos o estado ARIA síncrono, não o unmount.)
    * ------------------------------------------------------------- */
+  /* ---------------------------------------------------------------
+   * W10a — caminho de renderização de thumbnails.
+   * SelectOption.image existia mas nunca era renderizado; agora vira
+   * <img> com fallback de monograma em erro.
+   * ------------------------------------------------------------- */
+  describe('option thumbnails', () => {
+    const imageOptions = [
+      { value: 'a', label: 'Alpha', image: '/img/alpha.png' },
+      { value: 'b', label: 'Bravo', group: 'G1' },
+      { value: 'c', label: 'Charlie' },
+    ]
+
+    it('renders an <img> when the option has an image', () => {
+      render(<Select value="c" onChange={vi.fn()} options={imageOptions} label="Test" />)
+      fireEvent.click(screen.getByRole('combobox'))
+
+      const img = screen.getByRole('option', { name: /Alpha/ }).querySelector('img')
+      expect(img).not.toBeNull()
+      expect(img).toHaveAttribute('src', '/img/alpha.png')
+    })
+
+    it('loads thumbnails lazily and asynchronously', () => {
+      render(<Select value="c" onChange={vi.fn()} options={imageOptions} label="Test" />)
+      fireEvent.click(screen.getByRole('combobox'))
+
+      const img = screen.getByRole('option', { name: /Alpha/ }).querySelector('img')
+      expect(img).toHaveAttribute('loading', 'lazy')
+      expect(img).toHaveAttribute('decoding', 'async')
+    })
+
+    it('renders the selected image in the trigger', () => {
+      render(<Select value="a" onChange={vi.fn()} options={imageOptions} label="Test" />)
+      const trigger = screen.getByRole('combobox')
+      const img = trigger.querySelector('img')
+      expect(img).not.toBeNull()
+      expect(img).toHaveAttribute('src', '/img/alpha.png')
+    })
+
+    it('falls back to the monogram when the image fails to load', () => {
+      render(<Select value="a" onChange={vi.fn()} options={imageOptions} label="Test" />)
+      const trigger = screen.getByRole('combobox')
+      const img = trigger.querySelector('img')!
+
+      // jsdom não carrega recursos — simulamos o 404/network failure.
+      fireEvent.error(img)
+
+      expect(trigger.querySelector('img')).toBeNull()
+      expect(trigger).toHaveTextContent('AL')
+    })
+
+    it('falls back to the monogram inside an option on image error', () => {
+      render(<Select value="c" onChange={vi.fn()} options={imageOptions} label="Test" />)
+      fireEvent.click(screen.getByRole('combobox'))
+
+      const option = screen.getByRole('option', { name: /Alpha/ })
+      fireEvent.error(option.querySelector('img')!)
+
+      expect(option.querySelector('img')).toBeNull()
+      expect(option).toHaveTextContent('AL')
+    })
+
+    it('renders no thumbnail when the option has neither image nor group', () => {
+      render(<Select value="a" onChange={vi.fn()} options={imageOptions} label="Test" />)
+      fireEvent.click(screen.getByRole('combobox'))
+
+      const option = screen.getByRole('option', { name: /Charlie/ })
+      expect(option.querySelector('img')).toBeNull()
+      // Charlie não tem grupo nem imagem — fica sem thumb (comportamento atual).
+    })
+  })
+
   it('closes on Escape and returns focus to the trigger', () => {
     const onChange = vi.fn()
     render(<Select value="a" onChange={onChange} options={mockOptions} label="Test" />)
