@@ -20,7 +20,10 @@ const groupedOptions = [
 ];
 
 // vitest roda a partir da raiz do config (raiz do repo)
-const WEB_CSS = resolve(process.cwd(), "src/platform/web/index.css");
+const SHARED_TOKENS_CSS = resolve(
+  process.cwd(),
+  "src/styles/tokens.css",
+);
 
 /** Restaura matchMedia/geometry stubbed em testes individuais. */
 const originalMatchMedia = window.matchMedia;
@@ -149,7 +152,7 @@ describe("Select", () => {
   });
 
   it("defines --z-dropdown above the bottom nav layer (z-50)", () => {
-    const css = fs.readFileSync(WEB_CSS, "utf8");
+    const css = fs.readFileSync(SHARED_TOKENS_CSS, "utf8");
     const token = css.match(/--z-dropdown:\s*(\d+)/);
     expect(
       token,
