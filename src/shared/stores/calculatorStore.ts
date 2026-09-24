@@ -48,6 +48,7 @@ import {
   resolveFdmFilament,
 } from "./calculatorStore.helpers";
 import { computeStoreResults } from "./calculatorStore.compute";
+import { createProjectPresetApplicationPatch } from "@/shared/lib/projectPresetDraft";
 
 type PrinterProfile = (typeof printers)[number];
 
@@ -88,6 +89,7 @@ function captureSnapshot(s: CalculatorState): string {
     resinSoft: s.resinSoft,
     selectedPrinter: s.selectedPrinter,
     selectedMarketplace: s.selectedMarketplace,
+    selectedSpoolId: s.selectedSpoolId,
     fdmAmsEnabled: s.fdmAmsEnabled,
     fdmAmsSlots: s.fdmAmsSlots,
     fixedCosts: s.fixedCosts,
@@ -338,7 +340,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       try {
         const data = JSON.parse(snapshot) as Record<string, unknown>;
         set((state) => {
-          const merged = { ...state, ...data };
+          const merged = { ...state, ...data, lastDeductedInfo: null };
           const results = computeStoreResults(merged);
           return { ...merged, results, history: state.history.slice(0, -1) };
         });
@@ -530,6 +532,17 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       });
     },
 
+    applyProjectPresetDraft: (draft) => {
+      // Validation (including live catalog provenance) completes before the
+      // single setWithCompute transaction; failures therefore cannot mutate
+      // calculator state or append an undo entry.
+      const patch = createProjectPresetApplicationPatch(
+        draft,
+        useCatalogStore.getState(),
+      );
+      setWithCompute(patch);
+    },
+
     addToHistory: () => {
       const s = get();
       const r = s.results;
@@ -574,6 +587,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         resinSoft: s.resinSoft,
         selectedPrinterId: s.selectedPrinter.id,
         selectedMarketplaceId: s.selectedMarketplace.id,
+        spoolId: s.selectedSpoolId,
         productName: s.productName,
         quantity: s.quantity,
         infillPercent: s.infillPercent,
