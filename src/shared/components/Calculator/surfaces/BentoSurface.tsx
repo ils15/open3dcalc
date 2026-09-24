@@ -9,6 +9,7 @@ import {
 } from "@/shared/hooks/useFinancialBreakdown";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import type { CalculationResult } from "@/shared/types";
+import { LevelToggle } from "../LevelToggle";
 import { BentoHeader } from "./bento/BentoHeader";
 import { BentoLaborCard } from "./bento/BentoLaborCard";
 import { BentoMachineCard } from "./bento/BentoMachineCard";
@@ -118,7 +119,14 @@ export function BentoSurface(): React.ReactElement {
     >
       <h1 className="sr-only">{t("bento.title")}</h1>
       <div className="space-y-4 sm:space-y-5">
-        <BentoHeader projectName={productName} finalPrice={format(breakdown.displaySellPrice)} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <BentoHeader projectName={productName} finalPrice={format(breakdown.displaySellPrice)} />
+          </div>
+          <div className="flex shrink-0 sm:justify-end">
+            <LevelToggle />
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <BentoMaterialCard
             materialType={materialType}
