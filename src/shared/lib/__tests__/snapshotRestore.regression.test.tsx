@@ -237,6 +237,48 @@ describe("snapshot restore result regression", () => {
     expect(restored.results?.failureCost).toBeGreaterThan(0);
   });
 
+  it("keeps corrupted history inputs finite and records issues", () => {
+    const snapshot = buildSnapshot();
+    const corrupted = buildSnapshot({
+      fdmPrintParams: {
+        ...snapshot.fdmPrintParams,
+        energyCostPerKwh: Number.NaN,
+      },
+      fdmMachine: {
+        ...snapshot.fdmMachine,
+        hoursPerMonth: Number.POSITIVE_INFINITY,
+      },
+    });
+
+    useCalculatorStore.getState().loadHistoryItem(corrupted);
+
+    const state = useCalculatorStore.getState();
+    expect(Number.isFinite(state.results?.totalCost)).toBe(true);
+    expect(Number.isFinite(state.results?.sellPrice)).toBe(true);
+    expect(Number.isFinite(state.results?.profit)).toBe(true);
+    expect(state.calculationIssues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "fdmPrintParams.energyCostPerKwh" }),
+        expect.objectContaining({ path: "fdmMachine.hoursPerMonth" }),
+      ]),
+    );
+  });
+
+  it("preserves the current slice when an auto snapshot omits it", () => {
+    const store = useCalculatorStore.getState();
+    store.setFdmMachine({ ...store.fdmMachine, hoursPerMonth: 123 });
+    store.setFdmSales({ ...store.fdmSales, taxPercent: 7 });
+    localStorage.setItem(
+      "open3dcalc_settings_v2",
+      JSON.stringify({ activeTab: "fdm" }),
+    );
+
+    expect(restoreAutoSnapshot()).toBe(true);
+
+    const restored = useCalculatorStore.getState();
+    expect(restored.fdmMachine.hoursPerMonth).toBe(123);
+    expect(restored.fdmSales.taxPercent).toBe(7);
+  });
   it.each(RESTORE_SCENARIOS)(
     "keeps Classic and Bento results in parity for %s",
     (scenario) => {

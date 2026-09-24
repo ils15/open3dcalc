@@ -90,6 +90,11 @@ const POSITIVE_PROFILE_FIELDS: ReadonlyArray<keyof FdmSlicerProfile> = [
   "layerHeightMm",
   "printSpeedMmPerS",
 ];
+const INTEGER_PROFILE_FIELDS: ReadonlyArray<keyof FdmSlicerProfile> = [
+  "wallCount",
+  "topLayers",
+  "bottomLayers",
+];
 
 /**
  * Filtra campos inválidos de um perfil parcial (D-EA1, GA-1).
@@ -109,7 +114,11 @@ export function sanitizeFdmSlicerProfile(
     const value = input[key];
     if (typeof value !== "number" || !Number.isFinite(value)) continue;
     const isPositiveField = POSITIVE_PROFILE_FIELDS.includes(key);
-    if (isPositiveField ? value > 0 : value >= 0) {
+    const isIntegerField = INTEGER_PROFILE_FIELDS.includes(key);
+    if (
+      (isPositiveField ? value > 0 : value >= 0) &&
+      (!isIntegerField || Number.isInteger(value))
+    ) {
       valid[key] = value;
     }
   }
@@ -192,6 +201,9 @@ const PRINT_FAILURE_MODES: readonly PrintParameters["failureMode"][] = [
   "fixed",
 ];
 
+const isNonNegative = (value: number): boolean => value >= 0;
+const isPositive = (value: number): boolean => value > 0;
+
 /**
  * Complete a print-parameter slice before it reaches the calculator.
  *
@@ -208,7 +220,7 @@ export function resolvePrintParameters(
   const sanitized: Partial<PrintParameters> = {};
   for (const key of PRINT_PARAMETER_NUMERIC_FIELDS) {
     const value = input[key];
-    if (typeof value === "number" && Number.isFinite(value)) {
+    if (typeof value === "number" && Number.isFinite(value) && isNonNegative(value)) {
       Object.assign(sanitized, { [key]: value });
     }
   }
@@ -238,7 +250,7 @@ export function resolveLaborCosts(
   if (typeof input.enabled === "boolean") sanitized.enabled = input.enabled;
   for (const key of LABOR_NUMERIC_FIELDS) {
     const value = input[key];
-    if (typeof value === "number" && Number.isFinite(value)) {
+    if (typeof value === "number" && Number.isFinite(value) && isNonNegative(value)) {
       Object.assign(sanitized, { [key]: value });
     }
   }
@@ -266,7 +278,12 @@ export function resolveFdmMaterial(
   }
   for (const key of FDM_MATERIAL_NUMERIC_FIELDS) {
     const value = input[key];
-    if (typeof value === "number" && Number.isFinite(value)) {
+    const isPositiveField = key === "density" || key === "spoolEfficiency";
+    if (
+      typeof value === "number" &&
+      Number.isFinite(value) &&
+      (isPositiveField ? isPositive(value) : isNonNegative(value))
+    ) {
       Object.assign(sanitized, { [key]: value });
     }
   }
@@ -293,11 +310,19 @@ export function resolveResinMaterial(
   }
   for (const key of RESIN_MATERIAL_NUMERIC_FIELDS) {
     const value = input[key];
-    if (typeof value === "number" && Number.isFinite(value)) {
+    if (
+      typeof value === "number" &&
+      Number.isFinite(value) &&
+      (key === "density" ? isPositive(value) : isNonNegative(value))
+    ) {
       Object.assign(sanitized, { [key]: value });
     }
   }
-  if (typeof input.weightUsed === "number" && Number.isFinite(input.weightUsed)) {
+  if (
+    typeof input.weightUsed === "number" &&
+    Number.isFinite(input.weightUsed) &&
+    isNonNegative(input.weightUsed)
+  ) {
     sanitized.weightUsed = input.weightUsed;
   }
   return { ...defaults, ...sanitized };

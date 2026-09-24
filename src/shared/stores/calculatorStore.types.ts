@@ -1,4 +1,5 @@
 import type { CurrencySetting } from "@/shared/lib/currency";
+import type { CalculationValidationIssue } from "./calculatorStore.validation";
 import type {
   MaterialStateFDM,
   MaterialStateResin,
@@ -121,6 +122,8 @@ export interface CalculatorState {
     info: { spoolId: string; weight: number } | null,
   ) => void;
   results: CalculationResult | null;
+  /** Non-empty when a calculation input contained a present, invalid value. */
+  calculationIssues: CalculationValidationIssue[];
   loadHistoryItem: (snapshot: CalculationSnapshot) => void;
   addToHistory: () => void;
   saveSettings: () => void;
@@ -141,6 +144,8 @@ export type ComputeStoreInput = {
   activeTab: "fdm" | "resin";
   fdmMaterial: MaterialStateFDM;
   fdmPrintParams: PrintParameters;
+  fdmSlicerProfile?: FdmSlicerProfile;
+  fdmFilament?: FdmFilamentParams;
   fdmMachine: MachineCosts;
   fdmLabor: LaborCosts;
   fdmExtras: AdditionalCosts;

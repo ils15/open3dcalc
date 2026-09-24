@@ -4,10 +4,7 @@ import { printers } from "@/shared/lib/printers";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { useHistoryStore } from "@/shared/stores/historyStore";
-import type {
-  CalculatorState,
-  ComputeStoreInput,
-} from "./calculatorStore.types";
+import type { CalculatorState } from "./calculatorStore.types";
 import type { PostProcessingResin, MachineCosts } from "@/shared/types";
 import type { CalcLevel } from "./calculatorStore.types";
 import type { CurrencySetting } from "@/shared/lib/currency";
@@ -44,14 +41,8 @@ import {
   debouncedAutoSave,
   loadStr,
   migrateQuickMode,
-  resolveFdmSlicerProfile,
-  resolveFdmFilament,
-  resolvePrintParameters,
-  resolveLaborCosts,
-  resolveFdmMaterial,
-  resolveResinMaterial,
 } from "./calculatorStore.helpers";
-import { computeStoreResults } from "./calculatorStore.compute";
+import { computeValidatedStoreResults } from "./calculatorStore.validation";
 
 type PrinterProfile = (typeof printers)[number];
 
@@ -121,48 +112,39 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         : state.history || [];
       const nextState = typeof update === "function" ? update(state) : update;
       const merged = { ...state, ...nextState };
-      const results = computeStoreResults(merged);
-      return { ...nextState, results, history };
+      const validated = computeValidatedStoreResults(merged);
+      return {
+        ...nextState,
+        ...validated.input,
+        results: validated.results,
+        calculationIssues: validated.calculationIssues,
+        history,
+      };
     });
     debouncedAutoSave(get);
   };
 
   const initialValues = {
     activeTab: "fdm" as const,
-    fdmMaterial: resolveFdmMaterial(
-      loadStr("fdmMaterial", {}),
-      DEFAULT_FDM_MATERIAL,
-    ),
-    fdmPrintParams: resolvePrintParameters(
-      loadStr("fdmPrintParams", {}),
-      DEFAULT_FDM_PARAMS,
-    ),
+    fdmMaterial: loadStr("fdmMaterial", DEFAULT_FDM_MATERIAL),
+    fdmPrintParams: loadStr("fdmPrintParams", DEFAULT_FDM_PARAMS),
     // D-EA1: perfil do slicer do usuário. Blob antigo sem o campo, parcial ou
     // corrompido → resolve nos defaults dos estimadores (migration-safe).
-    fdmSlicerProfile: resolveFdmSlicerProfile(loadStr("fdmSlicerProfile", {})),
+    fdmSlicerProfile: loadStr("fdmSlicerProfile", DEFAULT_FDM_SLICER_PROFILE),
     // D-EA2 (GA-2): params físicos do filamento (purge/diâmetro). Blob antigo
-    // sem o campo, parcial ou corrompido → resolve nos defaults (migration-safe).
-    fdmFilament: resolveFdmFilament(loadStr("fdmFilament", {})),
+    // sem o campo, parcial ou corrompido → resolvido na fronteira de cálculo.
+    fdmFilament: loadStr("fdmFilament", DEFAULT_FDM_FILAMENT),
     fdmMachine: { ...DEFAULT_FDM_MACHINE, ...loadStr("fdmMachine", {}) },
     fdmHardware: { ...DEFAULT_FDM_HARDWARE, ...loadStr("fdmHardware", {}) },
     fdmFinishing: { ...DEFAULT_FDM_FINISHING, ...loadStr("fdmFinishing", {}) },
-    fdmLabor: resolveLaborCosts(
-      loadStr("fdmLabor", {}),
-      DEFAULT_LABOR,
-    ),
+    fdmLabor: loadStr("fdmLabor", DEFAULT_LABOR),
     fdmExtras: { ...DEFAULT_EXTRAS, ...loadStr("fdmExtras", {}) },
     fdmSales: { ...DEFAULT_SALES, ...loadStr("fdmSales", {}) },
     fdmOps: { ...DEFAULT_OPS, ...loadStr("fdmOps", {}) },
     fdmSoft: { ...DEFAULT_SOFT, ...loadStr("fdmSoft", {}) },
 
-    resinMaterial: resolveResinMaterial(
-      loadStr("resinMaterial", {}),
-      DEFAULT_RESIN_MATERIAL,
-    ),
-    resinPrintParams: resolvePrintParameters(
-      loadStr("resinPrintParams", {}),
-      DEFAULT_RESIN_PARAMS,
-    ),
+    resinMaterial: loadStr("resinMaterial", DEFAULT_RESIN_MATERIAL),
+    resinPrintParams: loadStr("resinPrintParams", DEFAULT_RESIN_PARAMS),
     resinPostProcess: {
       ...DEFAULT_RESIN_PP,
       ...loadStr("resinPostProcess", {}),
@@ -172,10 +154,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       ...DEFAULT_RESIN_HARDWARE,
       ...loadStr("resinHardware", {}),
     },
-    resinLabor: resolveLaborCosts(
-      loadStr("resinLabor", {}),
-      DEFAULT_RESIN_LABOR,
-    ),
+    resinLabor: loadStr("resinLabor", DEFAULT_RESIN_LABOR),
     resinExtras: { ...DEFAULT_RESIN_EXTRAS, ...loadStr("resinExtras", {}) },
     resinSales: { ...DEFAULT_RESIN_SALES, ...loadStr("resinSales", {}) },
     resinOps: { ...DEFAULT_RESIN_OPS, ...loadStr("resinOps", {}) },
@@ -217,55 +196,38 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     history: [],
   };
 
-  const initialResults = computeStoreResults(
-    initialValues as ComputeStoreInput,
-  );
+  const initialValidation = computeValidatedStoreResults(initialValues);
 
   return {
     ...initialValues,
-    results: initialResults,
+    ...initialValidation.input,
+    results: initialValidation.results,
+    calculationIssues: initialValidation.calculationIssues,
 
     setActiveTab: (activeTab) => setWithCompute({ activeTab }),
 
     setFdmMaterial: (v) =>
       setWithCompute((state) => ({
-        fdmMaterial: resolveFdmMaterial(
-          { ...state.fdmMaterial, ...v },
-          DEFAULT_FDM_MATERIAL,
-        ),
+        fdmMaterial: { ...state.fdmMaterial, ...v },
       })),
     setFdmPrintParams: (v) =>
       setWithCompute((state) => ({
-        fdmPrintParams: resolvePrintParameters(
-          { ...state.fdmPrintParams, ...v },
-          DEFAULT_FDM_PARAMS,
-        ),
+        fdmPrintParams: { ...state.fdmPrintParams, ...v },
       })),
     setFdmSlicerProfile: (v) =>
       setWithCompute((state) => ({
-        // Merge parcial sobre o perfil atual; NaN/inválido → default do campo.
-        fdmSlicerProfile: resolveFdmSlicerProfile({
-          ...state.fdmSlicerProfile,
-          ...v,
-        }),
+        fdmSlicerProfile: { ...state.fdmSlicerProfile, ...v },
       })),
     setFdmFilament: (v) =>
       setWithCompute((state) => ({
-        // Merge parcial sobre os params atuais; NaN/inválido → default do campo.
-        fdmFilament: resolveFdmFilament({
-          ...state.fdmFilament,
-          ...v,
-        }),
+        fdmFilament: { ...state.fdmFilament, ...v },
       })),
     setFdmMachine: (v) => setWithCompute({ fdmMachine: v }),
     setFdmHardware: (v) => setWithCompute({ fdmHardware: v }),
     setFdmFinishing: (v) => setWithCompute({ fdmFinishing: v }),
     setFdmLabor: (v) =>
       setWithCompute((state) => ({
-        fdmLabor: resolveLaborCosts(
-          { ...state.fdmLabor, ...v },
-          DEFAULT_LABOR,
-        ),
+        fdmLabor: { ...state.fdmLabor, ...v },
       })),
     setFdmExtras: (v) => setWithCompute({ fdmExtras: v }),
     setFdmSales: (v) => setWithCompute({ fdmSales: v }),
@@ -281,12 +243,13 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       // DE EXIBIÇÃO ("Resina Water Washable"), não o id ("water_washable") — a
       // detecção é por substring normalizada do nome, nunca por id.
       const state = get();
-      const resinMaterial = resolveResinMaterial(
-        { ...state.resinMaterial, ...v },
-        DEFAULT_RESIN_MATERIAL,
-      );
+      const resinMaterial = { ...state.resinMaterial, ...v };
+      const materialType =
+        typeof resinMaterial.type === "string"
+          ? resinMaterial.type
+          : state.resinMaterial.type;
       const isWaterWashable =
-        resinMaterial.type.toLowerCase().includes("water washable");
+        materialType.toLowerCase().includes("water washable");
       const washType: PostProcessingResin["washType"] = isWaterWashable
         ? "water"
         : "alcohol";
@@ -297,20 +260,14 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     },
     setResinPrintParams: (v) =>
       setWithCompute((state) => ({
-        resinPrintParams: resolvePrintParameters(
-          { ...state.resinPrintParams, ...v },
-          DEFAULT_RESIN_PARAMS,
-        ),
+        resinPrintParams: { ...state.resinPrintParams, ...v },
       })),
     setResinPostProcess: (v) => setWithCompute({ resinPostProcess: v }),
     setResinMachine: (v) => setWithCompute({ resinMachine: v }),
     setResinHardware: (v) => setWithCompute({ resinHardware: v }),
     setResinLabor: (v) =>
       setWithCompute((state) => ({
-        resinLabor: resolveLaborCosts(
-          { ...state.resinLabor, ...v },
-          DEFAULT_RESIN_LABOR,
-        ),
+        resinLabor: { ...state.resinLabor, ...v },
       })),
     setResinExtras: (v) => setWithCompute({ resinExtras: v }),
     setResinSales: (v) => setWithCompute({ resinSales: v }),
@@ -390,8 +347,14 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         const data = JSON.parse(snapshot) as Record<string, unknown>;
         set((state) => {
           const merged = { ...state, ...data, lastDeductedInfo: null };
-          const results = computeStoreResults(merged);
-          return { ...merged, results, history: state.history.slice(0, -1) };
+          const validated = computeValidatedStoreResults(merged);
+          return {
+            ...merged,
+            ...validated.input,
+            results: validated.results,
+            calculationIssues: validated.calculationIssues,
+            history: state.history.slice(0, -1),
+          };
         });
       } catch {
         // Corrupted snapshot — just remove it
@@ -682,6 +645,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         const selectedSpoolId =
           snapshot.type === "fdm" &&
           snapshotSpool &&
+          typeof snapshot.fdmMaterial?.type === "string" &&
           snapshot.fdmMaterial.type
             .toLowerCase()
             .includes(snapshotSpool.material.toLowerCase())
@@ -694,44 +658,34 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           selectedMarketplace,
           selectedSpoolId,
           lastDeductedInfo: null,
-          fdmAmsEnabled: snapshot.fdmAmsEnabled ?? false,
+          fdmAmsEnabled: snapshot.fdmAmsEnabled ?? state.fdmAmsEnabled,
           fdmAmsSlots:
-            snapshot.fdmAmsSlots ?? DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
+            snapshot.fdmAmsSlots ?? state.fdmAmsSlots ?? DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
           fixedCosts: snapshot.fixedCosts ?? { ...DEFAULT_FIXED_COSTS },
-          fdmMaterial: resolveFdmMaterial(snapshot.fdmMaterial),
-          fdmPrintParams: resolvePrintParameters(
-            snapshot.fdmPrintParams,
-            DEFAULT_FDM_PARAMS,
-          ),
+          fdmMaterial: snapshot.fdmMaterial,
+          fdmPrintParams: snapshot.fdmPrintParams,
           // Snapshot antigo (pré-D-EA1) sem o campo → mantém o perfil atual.
-          ...(snapshot.fdmSlicerProfile
-            ? {
-                fdmSlicerProfile: resolveFdmSlicerProfile(
-                  snapshot.fdmSlicerProfile,
-                ),
-              }
+          ...(snapshot.fdmSlicerProfile !== undefined
+            ? { fdmSlicerProfile: snapshot.fdmSlicerProfile }
             : {}),
           // Snapshot antigo (pré-D-EA2) sem o campo → mantém os params atuais.
           ...(snapshot.fdmFilament !== undefined
-            ? { fdmFilament: resolveFdmFilament(snapshot.fdmFilament) }
+            ? { fdmFilament: snapshot.fdmFilament }
             : {}),
           fdmMachine: snapshot.fdmMachine,
           fdmHardware: snapshot.fdmHardware,
           fdmFinishing: snapshot.fdmFinishing,
-          fdmLabor: resolveLaborCosts(snapshot.fdmLabor, DEFAULT_LABOR),
+          fdmLabor: snapshot.fdmLabor,
           fdmExtras: snapshot.fdmExtras,
           fdmSales: snapshot.fdmSales,
           fdmOps: snapshot.fdmOps,
           fdmSoft: snapshot.fdmSoft,
-          resinMaterial: resolveResinMaterial(snapshot.resinMaterial),
-          resinPrintParams: resolvePrintParameters(
-            snapshot.resinPrintParams,
-            DEFAULT_RESIN_PARAMS,
-          ),
+          resinMaterial: snapshot.resinMaterial,
+          resinPrintParams: snapshot.resinPrintParams,
           resinPostProcess: snapshot.resinPostProcess,
           resinMachine: snapshot.resinMachine,
           resinHardware: snapshot.resinHardware,
-          resinLabor: resolveLaborCosts(snapshot.resinLabor, DEFAULT_RESIN_LABOR),
+          resinLabor: snapshot.resinLabor,
           resinExtras: snapshot.resinExtras,
           resinSales: snapshot.resinSales,
           resinOps: snapshot.resinOps,
@@ -740,7 +694,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           quantity: snapshot.quantity,
           infillPercent: snapshot.infillPercent,
           targetMarginMode: snapshot.targetMarginMode,
-          enabledSections: snapshot.enabledSections,
+          enabledSections: snapshot.enabledSections ?? state.enabledSections,
         };
       });
     },
