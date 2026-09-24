@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import ptBR from "@/shared/i18n/locales/pt-BR.json";
+import enUS from "@/shared/i18n/locales/en-US.json";
 
 const projectRoot = resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(resolve(projectRoot, p), "utf-8");
@@ -15,6 +17,30 @@ const webHeader = read("shared/components/Header/Header.tsx");
 const desktopHeader = read("platform/desktop/components/Header/Header.tsx");
 const inputGroup = read("shared/components/ui/InputGroup.tsx");
 const select = read("shared/components/ui/Select/Select.tsx");
+
+describe("Classic-only tutorial locale", () => {
+  it("keeps launcher translations in sync between pt-BR and en-US", () => {
+    expect(Object.keys(ptBR.tutorial.launcher)).toEqual(
+      Object.keys(enUS.tutorial.launcher),
+    );
+    expect(ptBR.tutorial.launcher.classicOnly).toBe(
+      "Disponível apenas no layout Clássico",
+    );
+    expect(enUS.tutorial.launcher.classicOnly).toBe(
+      "Available only in the Classic layout",
+    );
+  });
+});
+
+describe("Classic-only tutorial mount points", () => {
+  it.each([
+    ["web", webApp],
+    ["desktop", desktopApp],
+  ])("mounts the tutorial only in the %s Classic layout", (_name, app) => {
+    expect(app).toMatch(/layoutMode === ["']classic["'] && <Tutorial \/>/);
+    expect(app).toMatch(/useLayoutStore/);
+  });
+});
 
 describe("Ultrawide shell & overflow containment", () => {
   it("shell grows to 1920px on 2xl screens instead of staying at 1600px", () => {

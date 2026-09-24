@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/shared/components/Header/Header";
 import { DemoModeIndicator } from "@/shared/components/DemoMode/DemoModeIndicator";
 import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportBlockedToast";
@@ -6,6 +6,8 @@ import { PrivacyBanner } from "@/shared/components/ui/PrivacyBanner";
 import { Tutorial } from "@/shared/components/ui/Tutorial";
 import { AppShell } from "@/shared/components/AppShell/AppShell";
 import { useAppInit } from "@/shared/hooks/useAppInit";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
+import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 import { SecondaryNavigation } from "./SecondaryNavigation";
 import { MobileNav } from "./components/MobileNav";
@@ -19,6 +21,15 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>("calculator");
 
   useAppInit(setActiveTab);
+  const layoutMode = useLayoutStore((state) => state.layoutMode);
+
+  // Classic is the only surface with these tour anchors. A tour pointing to a
+  // missing control is worse than no tour; Guided is already its own experience.
+  useEffect(() => {
+    if (layoutMode !== "classic" && useTutorialStore.getState().isActive) {
+      useTutorialStore.getState().skipTutorial();
+    }
+  }, [layoutMode]);
 
   return (
     <div className="min-h-dvh flex flex-col overflow-x-clip">
@@ -51,7 +62,7 @@ function App() {
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
       <Footer onInternalNavigate={setActiveTab} />
 
-      <Tutorial />
+      {layoutMode === "classic" && <Tutorial />}
     </div>
   );
 }

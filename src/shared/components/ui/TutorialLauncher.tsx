@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { BookOpen, Check, ChevronDown } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
 import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import {
   TOUR_IDS,
@@ -39,10 +40,15 @@ export function TutorialLauncher() {
     contentRef,
   } = useDismissablePopover<HTMLButtonElement>();
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const layoutMode = useLayoutStore((state) => state.layoutMode);
+  const isClassicLayout = layoutMode === "classic";
+  const classicOnlyDescriptionId = useId();
+  const classicOnlyLabel = t("tutorial.launcher.classicOnly");
 
   const tours = TOUR_IDS.filter(isTourAvailable);
 
   const handleToggle = () => {
+    if (!isClassicLayout) return;
     if (!open && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       setPos({
@@ -54,6 +60,7 @@ export function TutorialLauncher() {
   };
 
   const handleSelect = (tourId: TourId) => {
+    if (!isClassicLayout) return;
     startTour(tourId);
     setOpen(false);
   };
@@ -62,22 +69,47 @@ export function TutorialLauncher() {
     <>
       <button
         ref={triggerRef}
+        type="button"
         onClick={handleToggle}
         aria-haspopup="menu"
-        aria-expanded={open}
+        aria-expanded={isClassicLayout && open}
         aria-controls={MENU_ID}
-        className="flex items-center gap-2 p-2.5 lg:px-3.5 lg:py-2.5 min-h-[44px] min-w-[44px] text-[var(--color-accent-light)] hover:bg-[var(--color-accent-muted)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded-xl border border-transparent hover:border-[var(--color-accent-muted)]"
-        title={t("tutorial.launcher.title")}
+        aria-disabled={!isClassicLayout ? "true" : undefined}
+        aria-describedby={
+          isClassicLayout ? undefined : classicOnlyDescriptionId
+        }
+        tabIndex={0}
+        className={`flex items-center gap-2 p-2.5 lg:px-3.5 lg:py-2.5 min-h-[44px] min-w-[44px] text-[var(--color-accent-light)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded-xl border border-transparent ${
+          isClassicLayout
+            ? "hover:bg-[var(--color-accent-muted)] hover:border-[var(--color-accent-muted)]"
+            : "cursor-not-allowed opacity-60"
+        }`}
+        title={
+          isClassicLayout
+            ? t("tutorial.launcher.title")
+            : `${t("tutorial.launcher.title")} — ${classicOnlyLabel}`
+        }
         aria-label={t("tutorial.launcher.title")}
       >
-        <BookOpen className="w-5 h-5" />
-        <span className="hidden lg:inline text-[13px] font-semibold">
-          {t("tutorial.launcher.title")}
+        <BookOpen className="w-5 h-5" aria-hidden="true" />
+        <span className="hidden lg:flex flex-col items-start leading-tight">
+          <span className="text-[13px] font-semibold">
+            {t("tutorial.launcher.title")}
+          </span>
+          {!isClassicLayout && (
+            <span
+              id={classicOnlyDescriptionId}
+              className="max-w-44 text-[10px] font-normal text-[var(--color-text-muted)]"
+            >
+              {classicOnlyLabel}
+            </span>
+          )}
         </span>
-        <ChevronDown className="w-3 h-3 opacity-40" />
+        <ChevronDown className="w-3 h-3 opacity-40" aria-hidden="true" />
       </button>
 
-      {open &&
+      {isClassicLayout &&
+        open &&
         pos &&
         typeof document !== "undefined" &&
         createPortal(

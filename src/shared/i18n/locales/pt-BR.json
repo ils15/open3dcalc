@@ -834,7 +834,8 @@
     "stepOf": "Passo {{current}} de {{total}}",
     "launcher": {
       "title": "Tutoriais",
-      "completed": "concluído"
+      "completed": "concluído",
+      "classicOnly": "Disponível apenas no layout Clássico"
     },
     "tours": {
       "calc-basico": {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/platform/desktop/components/Header/Header";
 import { DemoModeIndicator } from "@/shared/components/DemoMode/DemoModeIndicator";
 import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportBlockedToast";
@@ -7,6 +7,8 @@ import { Tutorial } from "@/shared/components/ui/Tutorial";
 import { UpdateNotification } from "@/platform/desktop/components/UpdateNotification/UpdateNotification";
 import { AppShell } from "@/shared/components/AppShell/AppShell";
 import { useAppInit } from "@/shared/hooks/useAppInit";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
+import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 import { useUpdaterAutoCheck } from "./hooks/useUpdaterAutoCheck";
 import { MobileNav } from "./components/MobileNav";
@@ -21,6 +23,15 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>("calculator");
 
   useAppInit(setActiveTab);
+  const layoutMode = useLayoutStore((state) => state.layoutMode);
+
+  // Classic is the only surface with these tour anchors. A tour pointing to a
+  // missing control is worse than no tour; Guided is already its own experience.
+  useEffect(() => {
+    if (layoutMode !== "classic" && useTutorialStore.getState().isActive) {
+      useTutorialStore.getState().skipTutorial();
+    }
+  }, [layoutMode]);
 
   // Auto-check for updates on desktop
   useUpdaterAutoCheck();
@@ -46,7 +57,7 @@ function App() {
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
       <Footer />
 
-      <Tutorial />
+      {layoutMode === "classic" && <Tutorial />}
     </div>
   );
 }
