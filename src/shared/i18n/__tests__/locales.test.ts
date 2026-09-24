@@ -329,7 +329,12 @@ const WIZARD_UNIT_KEYS = [
   "profitMarginPercent",
 ] as const;
 
-const WIZARD_ERROR_KINDS = ["required", "positive", "minQuantity"] as const;
+const WIZARD_ERROR_KINDS = [
+  "required",
+  "positive",
+  "minQuantity",
+  "invalidQuantity",
+] as const;
 
 describe("i18n locales (wizard.*) — W4 guided wizard", () => {
   it.each([
@@ -401,6 +406,19 @@ describe("i18n locales (wizard.*) — W4 guided wizard", () => {
     for (const kind of WIZARD_ERROR_KINDS) {
       const value = resolve(dict, ["wizard", "errors", kind]);
       expect(typeof value, `wizard.errors.${kind}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("i18n locales (results stock errors)", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves stock error messages in %s", (_locale, dict) => {
+    for (const key of ["insufficientStock", "spoolNotFound"] as const) {
+      const value = resolve(dict, ["results", key]);
+      expect(typeof value, `results.${key}`).toBe("string");
       expect((value as string).length).toBeGreaterThan(0);
     }
   });

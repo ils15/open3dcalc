@@ -479,17 +479,42 @@ describe('CalculatorStore core', () => {
       expect(mockDeductWeight).toHaveBeenCalledTimes(1)
     })
 
-    it('rejects an insufficient spool before changing history or stock', () => {
+    it('rejects an insufficient spool with a translatable error code', () => {
       addMockSpool('spool_insufficient', 1)
       const store = useCalculatorStore.getState()
       store.setQuantity(3)
       store.setSelectedSpoolId('spool_insufficient')
       store.setProductName('Insufficient Stock')
 
-      expect(() => store.addToHistory()).toThrow(
-        /Insufficient filament stock/,
+      let caught: unknown
+      try {
+        store.addToHistory()
+      } catch (error) {
+        caught = error
+      }
+
+      expect(caught).toEqual(
+        expect.objectContaining({
+          code: 'INSUFFICIENT_FILAMENT_STOCK',
+          available: 1,
+          required: expect.any(Number),
+        }),
       )
       expect(mockDeductWeight).not.toHaveBeenCalled()
+      expect(mockAddEntry).not.toHaveBeenCalled()
+    })
+
+    it('does not compensate when deduction throws before mutating stock', () => {
+      addMockSpool('spool_deduction_before_mutation', 700)
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_deduction_before_mutation')
+      store.setProductName('Deduction Before Mutation')
+      mockDeductWeight.mockImplementationOnce(() => {
+        throw new Error('inventory unavailable')
+      })
+
+      expect(() => store.addToHistory()).toThrow('inventory unavailable')
+      expect(mockUpdateSpool).not.toHaveBeenCalled()
       expect(mockAddEntry).not.toHaveBeenCalled()
     })
   })

@@ -764,6 +764,8 @@
     "usingExistingSpool": "Existing spool selected: {{spool}}.",
     "deductConfirm": "Deduct {{weight}}g from spool {{spool}}?",
     "deductSuccess": "Weight deducted successfully!",
+    "insufficientStock": "Insufficient filament stock: {{required}}g required, {{available}}g available.",
+    "spoolNotFound": "The selected spool was not found in the inventory.",
     "deductSelect": "Select spool to deduct from",
     "deductAvailable": "{{weight}}g available",
     "autoDeductSuccess": "{{weight}}g automatically deducted from spool",
@@ -2421,7 +2423,8 @@
     "errors": {
       "required": "This field is required.",
       "positive": "Enter a positive value.",
-      "minQuantity": "Quantity must be at least 1."
+      "minQuantity": "Quantity must be at least 1.",
+      "invalidQuantity": "Enter a whole-number quantity between 1 and 100,000."
     }
   },
 

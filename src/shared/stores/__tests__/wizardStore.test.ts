@@ -149,13 +149,15 @@ describe("wizardStore — validateStep", () => {
     expect(useWizardStore.getState().errors.weightGrams).toBe("positive");
   });
 
-  it("rejects a quantity below 1 on step 1", () => {
-    useWizardStore.setState({
-      seeded: true,
-      draft: { ...VALID_DRAFT, quantity: 0 },
-    });
-    expect(useWizardStore.getState().validateStep(1)).toBe(false);
-    expect(useWizardStore.getState().errors.quantity).toBe("minQuantity");
+  it("rejects a quantity outside the shared domain on step 1", () => {
+    for (const quantity of [0, 1.5, 100_001]) {
+      useWizardStore.setState({
+        seeded: true,
+        draft: { ...VALID_DRAFT, quantity },
+      });
+      expect(useWizardStore.getState().validateStep(1)).toBe(false);
+      expect(useWizardStore.getState().errors.quantity).toBe("invalidQuantity");
+    }
   });
 
   it("rejects an empty material type on step 1", () => {

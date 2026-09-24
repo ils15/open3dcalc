@@ -1,3 +1,4 @@
+import { QUANTITY_RULE } from "@/shared/lib/quantity";
 import type { SalesParameters } from "@/shared/types";
 import type { ComputeStoreInput } from "./calculatorStore.types";
 import {
@@ -215,7 +216,7 @@ export function normalizeCalculationInput(
       { quantity: raw.quantity },
       { quantity: fallback.quantity },
       "quantity",
-      { quantity: { kind: "number", positive: true, integer: true } },
+      { quantity: QUANTITY_RULE },
       issues,
     ).quantity,
     enabledSections: normalizeSections(raw.enabledSections, fallback.enabledSections, "enabledSections", issues),

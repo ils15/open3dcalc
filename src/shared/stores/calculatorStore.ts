@@ -1,4 +1,9 @@
 import { create } from "zustand";
+import {
+  assertSufficientFilamentStock,
+  createFilamentStockError,
+  FILAMENT_SPOOL_NOT_FOUND,
+} from "@/shared/lib/filamentStock";
 import { marketplaces } from "@/shared/lib/marketplace";
 import { printers } from "@/shared/lib/printers";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
@@ -643,16 +648,15 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
             (spool) => spool.id === selectedSpoolId,
           );
           if (!selectedSpool) {
-            throw new Error("Selected filament spool was not found");
+            throw createFilamentStockError(FILAMENT_SPOOL_NOT_FOUND);
           }
-          if (selectedSpool.weightGrams < deductionWeight) {
-            throw new Error(
-              `Insufficient filament stock: ${deductionWeight.toFixed(2)}g required, ${selectedSpool.weightGrams.toFixed(2)}g available`,
-            );
-          }
+          assertSufficientFilamentStock(
+            selectedSpool.weightGrams,
+            deductionWeight,
+          );
           previousWeight = selectedSpool.weightGrams;
-          deductionStarted = true;
           inventory.deductWeight(selectedSpoolId, deductionWeight);
+          deductionStarted = true;
         }
 
         historyAddStarted = true;

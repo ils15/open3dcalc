@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { isValidQuantity } from "@/shared/lib/quantity";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { printers } from "@/shared/lib/printers";
@@ -31,7 +32,11 @@ import type { CalculatorState } from "@/shared/stores/calculatorStore.types";
 export type WizardStep = 1 | 2 | 3 | 4;
 export type WizardDirection = "forward" | "backward";
 /** Validation kinds the UI renders via `t("wizard.errors.<kind>")`. */
-export type WizardErrorKind = "required" | "positive" | "minQuantity";
+export type WizardErrorKind =
+  | "required"
+  | "positive"
+  | "minQuantity"
+  | "invalidQuantity";
 
 export const WIZARD_TOTAL_STEPS = 4;
 export const WIZARD_STEPS: readonly WizardStep[] = [1, 2, 3, 4];
@@ -153,7 +158,7 @@ function fieldError(
       if (typeof value !== "string" || value.length === 0) return "required";
       return printers.some((p) => p.id === value) ? null : "required";
     case "quantity":
-      return Number(value) >= 1 ? null : "minQuantity";
+      return isValidQuantity(value) ? null : "invalidQuantity";
     case "weightGrams":
     case "printTimeHours":
       return Number(value) > 0 ? null : "positive";

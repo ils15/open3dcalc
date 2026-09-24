@@ -231,6 +231,41 @@ describe("InventoryDeductionCard — deduction", () => {
     expect(deductWeight).toHaveBeenCalledWith("s1", 255);
   });
 
+  it("rejects a deduction when stock changes before confirmation", async () => {
+    const user = userEvent.setup();
+    useCalculatorStore.setState({ quantity: 3 });
+    const deductWeight = vi.spyOn(
+      useFilamentInventory.getState(),
+      "deductWeight",
+    );
+    render(<InventoryDeductionCard />);
+
+    await user.click(
+      screen.getByRole("button", { name: "results.deductFromInventory" }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /MarcaX/ }),
+    );
+    useFilamentInventory.setState((state) => ({
+      spools: state.spools.map((spool) =>
+        spool.id === "s1" ? { ...spool, weightGrams: 1 } : spool,
+      ),
+    }));
+    const dialog = screen.getByRole("dialog", {
+      name: "results.deductFromInventory",
+    });
+    const confirmButton = within(dialog).getByRole("button", {
+      name: "common.confirm",
+    });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    await user.click(confirmButton);
+
+    expect(deductWeight).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "results.insufficientStock",
+    );
+  });
+
   it("confirms the deduction in the action button", async () => {
     const user = userEvent.setup();
     render(<InventoryDeductionCard />);
