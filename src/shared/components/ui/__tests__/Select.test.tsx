@@ -474,13 +474,13 @@ describe("Select", () => {
     // highlight global = índice 2 = Charlie; não o idx local do grupo.
     // (o nome acessível inclui o monograma do grupo — "G2Charlie")
     expect(screen.getByRole("option", { name: /Charlie/ })).toHaveClass(
-      "bg-[var(--color-accent)]/20",
+      "bg-[var(--accent)]/20",
     );
     expect(screen.getByRole("option", { name: /Alpha/ })).not.toHaveClass(
-      "bg-[var(--color-accent)]/20",
+      "bg-[var(--accent)]/20",
     );
     expect(screen.getByRole("option", { name: /Bravo/ })).not.toHaveClass(
-      "bg-[var(--color-accent)]/20",
+      "bg-[var(--accent)]/20",
     );
 
     // Enter acerta a opção sob o cursor global (2 = 'c').
@@ -507,11 +507,11 @@ describe("Select", () => {
     fireEvent.keyDown(window, { key: "ArrowUp" });
 
     expect(screen.getByRole("option", { name: /Bravo/ })).toHaveClass(
-      "bg-[var(--color-accent)]/20",
+      "bg-[var(--accent)]/20",
     );
     // antes do fix, idx local 1 destacava Bravo E Delta simultaneamente.
     expect(screen.getByRole("option", { name: /Delta/ })).not.toHaveClass(
-      "bg-[var(--color-accent)]/20",
+      "bg-[var(--accent)]/20",
     );
   });
 });
