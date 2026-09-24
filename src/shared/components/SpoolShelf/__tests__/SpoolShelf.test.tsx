@@ -159,6 +159,41 @@ describe("SpoolShelf", () => {
     expect(useSpoolStore.getState().spools).toHaveLength(0);
   });
 
+  it("labels the destructive remove action and keeps an accessible touch target", () => {
+    setSpools([makeSpool()]);
+    render(<SpoolShelf />);
+
+    const removeButton = screen.getByRole("button", {
+      name: "spools.removeSpool",
+    });
+    const visibleLabel = within(removeButton).getByText("spools.removeSpool", {
+      selector: "span",
+    });
+
+    expect(removeButton).toHaveAttribute("type", "button");
+    expect(removeButton).toHaveAttribute("aria-label", "spools.removeSpool");
+    expect(removeButton).toHaveAttribute("title", "spools.removeSpool");
+    expect(visibleLabel).toHaveClass("hidden", "sm:inline");
+    expect(removeButton).toHaveClass(
+      "min-h-[44px]",
+      "min-w-[44px]",
+      "focus-visible:ring-2",
+    );
+  });
+
+  it("uses the same resolved color fallback for the swatch and thumbnail", () => {
+    setSpools([makeSpool({ colorHex: "" })]);
+    render(<SpoolShelf />);
+
+    const card = screen.getByRole("article", { name: "Red" });
+    const swatch = within(card).getByTestId("spool-color-spool-1");
+    const thumb = within(card).getByTestId("spool-thumb");
+
+    expect(swatch).toHaveStyle({ backgroundColor: "#6366f1" });
+    expect(thumb.querySelector("svg")).toBeInTheDocument();
+    expect(thumb).not.toHaveTextContent("Pr");
+  });
+
   it("searches spools by visible text", async () => {
     setSpools([
       makeSpool({ id: "pla", brand: "Prusament", color: "Red" }),
