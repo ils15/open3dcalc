@@ -35,7 +35,6 @@ export function HardwareSection() {
             ? "calc.sectionDesc.fdmHardware"
             : "calc.sectionDesc.resinHardware",
         )}
-        sectionId="hardware"
       />
       {isFDM && (
         <>

@@ -22,7 +22,6 @@ export function OpsSection() {
 				Icon={ShieldCheck}
 				title={t("calc.opsSoftware")}
 				subtitle={t("calc.sectionDesc.ops")}
-				sectionId="ops"
 			/>
 			<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 				<div>

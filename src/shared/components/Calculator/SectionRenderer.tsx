@@ -14,6 +14,7 @@ import { OpsSection } from "./sections/OpsSection";
 import { SalesSection } from "./sections/SalesSection";
 import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { SectionHeader } from "./sections/SectionHeader";
+import { FieldCustomizer } from "./FieldCustomizer";
 import { SECTIONS, LEVEL_SECTIONS, isFieldVisibleForLevel } from "./Calculator.constants";
 
 interface SectionRendererProps {
@@ -58,8 +59,8 @@ export function SectionRenderer(props: SectionRendererProps) {
 	);
 
 	const renderSectionHeader = useCallback(
-		(Icon: LucideIcon, title: string, subtitle?: string, sectionId?: string) => (
-			<SectionHeader Icon={Icon} title={title} subtitle={subtitle} sectionId={sectionId} />
+		(Icon: LucideIcon, title: string, subtitle?: string) => (
+			<SectionHeader Icon={Icon} title={title} subtitle={subtitle} />
 		),
 		[],
 	);
@@ -70,6 +71,8 @@ export function SectionRenderer(props: SectionRendererProps) {
 
 	return (
 		<div className="space-y-4">
+			{/* SectionRenderer is the Classic-only mount point, so one control owns all sections without touching Calculator.tsx. */}
+			<FieldCustomizer />
 			{visibleSections.map((s) => {
 				switch (s.id) {
 					case "material":

@@ -8,7 +8,6 @@ export interface FixedCostsSectionProps {
 		Icon: typeof Receipt,
 		title: string,
 		subtitle?: string,
-		sectionId?: string,
 	) => React.ReactNode
 	t: (key: string) => string
 	currencySymbol: string
@@ -29,7 +28,6 @@ export function FixedCostsSection({
 				Receipt,
 				t('calc.fixedCost.title'),
 				t('calc.fixedCost.description'),
-				'fixedCost',
 			)}
 			<div className="flex items-center justify-between mb-3">
 			<span className="text-xs text-[var(--color-text-secondary)]">

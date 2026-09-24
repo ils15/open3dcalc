@@ -8,7 +8,6 @@ export interface MachineSectionProps {
     Icon: typeof Printer,
     title: string,
     subtitle?: string,
-    sectionId?: string,
   ) => React.ReactNode;
   t: (key: string) => string;
   currencySymbol: string;
@@ -31,7 +30,6 @@ export function MachineSection({
         Printer,
         t("calc.machine"),
         t("calc.sectionDesc.machine"),
-        "machine",
       )}
       <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
         <InputGroup
