@@ -14,7 +14,7 @@ import { OpsSection } from "./sections/OpsSection";
 import { SalesSection } from "./sections/SalesSection";
 import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { SectionHeader } from "./sections/SectionHeader";
-import { SECTIONS, INTERMEDIATE_FIELDS, BASIC_FIELDS, LEVEL_SECTIONS } from "./Calculator.constants";
+import { SECTIONS, LEVEL_SECTIONS, isFieldVisibleForLevel } from "./Calculator.constants";
 
 interface SectionRendererProps {
 	t: (key: string) => string;
@@ -52,18 +52,8 @@ export function SectionRenderer(props: SectionRendererProps) {
 	const store = useCalculatorStore();
 
 	const isFieldVisible = useCallback(
-		(sectionId: string, fieldId: string) => {
-			const level = calcLevel;
-			const sectionFields = INTERMEDIATE_FIELDS[sectionId] ?? [];
-			const basicFields = BASIC_FIELDS[sectionId] ?? [];
-
-			if (level === "basic") return basicFields.includes(fieldId);
-			if (level === "intermediate") {
-				return (basicFields.includes(fieldId) || sectionFields.includes(fieldId))
-					&& !hiddenFields.includes(`${sectionId}.${fieldId}`);
-			}
-			return !hiddenFields.includes(`${sectionId}.${fieldId}`);
-		},
+		(sectionId: string, fieldId: string) =>
+			isFieldVisibleForLevel(calcLevel, hiddenFields, sectionId, fieldId),
 		[calcLevel, hiddenFields],
 	);
 

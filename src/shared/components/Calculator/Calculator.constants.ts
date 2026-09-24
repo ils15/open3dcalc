@@ -116,6 +116,30 @@ export const BASIC_FIELDS: Record<string, string[]> = {
 	sales: ['quantity', 'packagingCost', 'profitMarginPercent'],
 };
 
+/**
+ * Shared visibility contract for the Classic and Bento surfaces.
+ * Basic fields are always present; intermediate fields honor the user's
+ * field-level disclosures; advanced mode exposes the complete field set.
+ */
+export function isFieldVisibleForLevel(
+	calcLevel: CalcLevel,
+	hiddenFields: readonly string[],
+	sectionId: string,
+	fieldId: string,
+): boolean {
+	const sectionFields = INTERMEDIATE_FIELDS[sectionId] ?? [];
+	const basicFields = BASIC_FIELDS[sectionId] ?? [];
+
+	if (calcLevel === "basic") return basicFields.includes(fieldId);
+	if (calcLevel === "intermediate") {
+		return (
+			(basicFields.includes(fieldId) || sectionFields.includes(fieldId)) &&
+			!hiddenFields.includes(`${sectionId}.${fieldId}`)
+		);
+	}
+	return !hiddenFields.includes(`${sectionId}.${fieldId}`);
+}
+
 export const FIELD_LABELS: Record<string, string> = {
 	purgeWeight: 'calc.purge',
 	spoolEfficiency: 'calc.spoolEfficiency',
