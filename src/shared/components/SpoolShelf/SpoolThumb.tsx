@@ -73,7 +73,8 @@ export const SpoolThumb = memo(function SpoolThumb({
     return (
       <div
         aria-hidden="true"
-        className={`shrink-0 rounded-lg bg-[var(--color-accent)]/20 flex items-center justify-center font-bold text-[var(--color-accent)] leading-none select-none ${className}`}
+        data-testid="spool-thumb"
+        className={`shrink-0 rounded-full bg-[var(--color-accent)]/20 flex items-center justify-center font-bold text-[var(--color-accent)] leading-none select-none ${className}`}
         style={{ width: size, height: size, fontSize: size * 0.2 }}
       >
         {getMonogram(monogramFrom)}
@@ -83,7 +84,8 @@ export const SpoolThumb = memo(function SpoolThumb({
 
   return (
     <div
-      className={`shrink-0 rounded-lg p-0.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] ${className}`}
+      data-testid="spool-thumb"
+      className={`shrink-0 rounded-full p-0.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] ${className}`}
       style={{ width: size, height: size }}
     >
       <SpoolIcon color={color} size={size - 4} />

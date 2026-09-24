@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, X, Plus, ArrowDownAZ, ArrowUpZA, Spool } from "lucide-react";
 import { useSpoolStore } from "@/shared/stores/spoolStore";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import {
+  isLowStockSpool,
   SPOOL_MATERIALS,
   type FilamentSpool,
   type SpoolSortDir,
@@ -40,6 +42,11 @@ export function SpoolShelf(): React.ReactElement {
   const updateSpool = useSpoolStore((s) => s.updateSpool);
   const removeSpool = useSpoolStore((s) => s.removeSpool);
   const getVisibleSpools = useSpoolStore((s) => s.getVisibleSpools);
+  const unitWeight = useCalculatorStore((s) => s.results?.unitWeight ?? 0);
+  const quantity = useCalculatorStore((s) => s.quantity);
+  const activeTab = useCalculatorStore((s) => s.activeTab);
+  const requiredGrams =
+    activeTab === "fdm" && unitWeight > 0 ? unitWeight * quantity : 0;
 
   const [search, setSearch] = useState("");
   const [filterMaterial, setFilterMaterial] = useState<string>(NO_MATERIAL);
@@ -62,10 +69,7 @@ export function SpoolShelf(): React.ReactElement {
   );
 
   const lowCount = useMemo(
-    () =>
-      spools.filter(
-        (s) => s.status === "in_stock" && s.weightGrams < LOW_STOCK_GRAMS,
-      ).length,
+    () => spools.filter((s) => isLowStockSpool(s, LOW_STOCK_GRAMS)).length,
     [spools],
   );
 
@@ -229,6 +233,7 @@ export function SpoolShelf(): React.ReactElement {
             <div role="listitem" key={spool.id} className="contents">
               <SpoolCard
                 spool={spool}
+                requiredGrams={requiredGrams}
                 onEdit={openEdit}
                 onRemove={setDeleteTarget}
               />

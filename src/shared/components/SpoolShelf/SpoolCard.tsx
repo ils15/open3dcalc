@@ -2,7 +2,8 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pencil, Trash2, AlertTriangle } from "lucide-react";
 import type { FilamentSpool, SpoolStatus } from "@/shared/stores/spoolStore";
-import { remainingPct } from "@/shared/stores/spoolStore";
+import { isLowStockSpool, remainingPct } from "@/shared/stores/spoolStore";
+import { SpoolRemainingBlock } from "@/shared/components/Catalog/SpoolRemainingBlock";
 import { SpoolThumb, FALLBACK_HEX } from "./SpoolThumb";
 
 /** Limiar (g) abaixo do qual um carretel em estoque é sinalizado como baixo. */
@@ -22,25 +23,45 @@ const STATUS_I18N_KEY: Record<SpoolStatus, string> = {
   empty: "spools.statusEmpty",
 };
 
+/** Escolhe texto claro/escuro pelo contraste real do hex (WCAG AA). */
+function readableTextColor(hex: string): "#111827" | "#ffffff" {
+  const match = hex.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (!match) return "#ffffff";
+  const raw = match[1].length === 3
+    ? match[1].split("").map((part) => `${part}${part}`).join("")
+    : match[1];
+  const channels = [0, 2, 4].map((offset) => parseInt(raw.slice(offset, offset + 2), 16) / 255);
+  const linear = channels.map((channel) =>
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+  );
+  const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  const darkContrast = (luminance + 0.05) / 0.05;
+  const lightContrast = 1.05 / (luminance + 0.05);
+  return darkContrast >= lightContrast ? "#111827" : "#ffffff";
+}
+
 interface SpoolCardProps {
   spool: FilamentSpool;
+  requiredGrams?: number;
   onEdit: (spool: FilamentSpool) => void;
   onRemove: (spool: FilamentSpool) => void;
 }
 
 export const SpoolCard = memo(function SpoolCard({
   spool,
+  requiredGrams = 0,
   onEdit,
   onRemove,
 }: SpoolCardProps) {
   const { t } = useTranslation();
   const pct = remainingPct(spool);
   const status: SpoolStatus = spool.status || "in_stock";
-  const isLow = status === "in_stock" && spool.weightGrams < LOW_STOCK_GRAMS;
+  const isLow = isLowStockSpool(spool, LOW_STOCK_GRAMS);
   // O hex armazenado é a fonte da verdade; sem ele, fallback indigo
   // (mesmo último recurso do resolveHex do FilamentInventory).
   const hex = spool.colorHex || FALLBACK_HEX;
   const barColor = pct < 20 ? "#f97316" : hex;
+  const textOnColor = readableTextColor(hex);
 
   return (
     <article
@@ -74,10 +95,24 @@ export const SpoolCard = memo(function SpoolCard({
         </span>
       </div>
 
+      <div
+        data-testid={`spool-color-${spool.id}`}
+        className="rounded-xl border border-black/10 px-3 py-2.5 shadow-sm"
+        style={{ backgroundColor: hex, color: textOnColor }}
+      >
+        <div className="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-widest opacity-80">
+          <span>{t("spools.color")}</span>
+          <span className="font-mono normal-case tracking-normal">{hex}</span>
+        </div>
+        <p className="mt-1 text-sm font-bold leading-tight">
+          {spool.color || t("spools.colorUnknown")}
+        </p>
+      </div>
+
       <div>
         <div className="flex justify-between text-xs mb-1.5">
           <span className="text-[var(--color-text-secondary)] font-medium">
-            {t("spools.remaining")}
+            {t("spools.grossWeight")}
           </span>
           <span aria-hidden="true">
             <span className="font-bold text-[var(--color-text-primary)]">
@@ -95,7 +130,11 @@ export const SpoolCard = memo(function SpoolCard({
           aria-valuenow={pct}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuetext={`${pct}%, ${spool.weightGrams} de ${spool.originalWeightGrams} gramas`}
+          aria-valuetext={t("spools.remainingProgress", {
+            pct,
+            current: spool.weightGrams,
+            original: spool.originalWeightGrams,
+          })}
           className="h-1.5 bg-[var(--color-bg-elevated)] rounded-full overflow-hidden"
         >
           <div
@@ -107,6 +146,8 @@ export const SpoolCard = memo(function SpoolCard({
           {pct}%
         </div>
       </div>
+
+      <SpoolRemainingBlock spool={spool} requiredGrams={requiredGrams} />
 
       {spool.notes && (
         <p className="text-xs text-[var(--color-text-secondary)] italic line-clamp-2 break-words">
