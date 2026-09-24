@@ -460,7 +460,7 @@ Every phase and change must complete this checklist:
 
 ### 🏗️ Phase 7e: Modo Farm (par. print farms)
 
-**Status:** escopo definido; modo e forma de integração ainda pendentes de decisão. **Depende da Phase 7d — Gestão de Frota & Parque de Impressoras.**
+**Status:** escopo definido; Farm é o quarto modo do seletor. **Depende da Phase 7d — Gestão de Frota & Parque de Impressoras:** o modo só pode existir depois dessa fase, pois exibe dados da frota.
 
 **Contexto:** o modo Clássico se rotula “Desktop Pro / alta densidade para fazendas 3D”, mas não existe um modo de verdade para operar múltiplas impressoras.
 
@@ -471,13 +471,13 @@ Every phase and change must complete this checklist:
 - [ ] Mostrar a capacidade da oficina em horas disponíveis versus horas demandadas.
 - [ ] Usar densidade alta e manter o painel da frota sempre visível.
 
-**Decisão pendente:** Farm será um quarto valor de `layoutStore`, além de `classic`, `guided` e `bento`, ou uma variação do modo Clássico? A recomendação é um quarto modo, `farm`; a decisão permanece pendente.
+**Decisão tomada:** Farm é o quarto modo do seletor. O tipo `LayoutMode` e o `layoutStore` passam a ter quatro valores: `classic | guided | bento | farm`. A implementação implica atualizar o tipo `LayoutMode`, o `layoutStore`, o `CalculatorSurface` (case `farm` → `FarmSurface`) e o `LayoutSwitcher` (4 botões).
 
 **Acceptance criteria:**
 
 - [ ] O painel de frota e a capacidade da oficina usam os dados locais da Phase 7d, sem API de fabricante.
 - [ ] A relação entre trabalho atribuído e capacidade disponível é atualizada sem ambiguidade.
-- [ ] A forma de incorporação do modo é decidida antes da implementação e registrada no SPEC-01 quando exigir nova preferência.
+- [ ] A implementação só introduz o modo Farm depois que os dados locais da Phase 7d estão disponíveis.
 
 ---
 
@@ -485,7 +485,7 @@ Every phase and change must complete this checklist:
 
 **Status:** visual da Estante de Carretéis entregue na beta; unificação de inventário planejada.
 
-**Decisão de produto:** haverá uma aba somente, chamada **Estante de Filamento** / **Filament Shelf**. O grid, a busca, os filtros e a ordenação do `SpoolShelf` ficam por cima das capacidades da tela antiga: tara, peso líquido, metros restantes, cobertura da peça e “deduzir do inventário”.
+**Decisão de produto:** haverá uma aba somente, chamada **Estante de Filamento** / **Filament Shelf**. A Estante de Filamento é o trabalho já feito no `SpoolShelf`, mantido e refinado — não uma tela nova do zero: o grid, a busca e a ordenação existentes são a base. A diretriz de execução é incorporar layout, ícones Lucide (sem emoji) e filtros melhores, além dos cálculos e dados que faltam: tara, peso líquido, metros restantes e cobertura da peça.
 
 **Implementação:**
 
