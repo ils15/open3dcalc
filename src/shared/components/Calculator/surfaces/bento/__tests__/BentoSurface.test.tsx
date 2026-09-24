@@ -63,6 +63,8 @@ beforeEach(async () => {
   useSpoolStore.setState({ spools: [] });
   useCalculatorStore.setState({
     activeTab: "fdm",
+    calcLevel: "basic",
+    hiddenFields: [],
     results: result,
     productName: "Suporte de câmera",
     quantity: 3,
@@ -216,5 +218,146 @@ describe("BentoSurface", () => {
       expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
     }
     expect(screen.queryByText(/bento\./i)).not.toBeInTheDocument();
+  });
+
+  it("exposes the shared three-level toggle in the Bento surface", () => {
+    useLayoutStore.setState({ layoutMode: "bento" });
+    useCalculatorStore.setState({ calcLevel: "basic", hiddenFields: [] });
+
+    render(<CalculatorSurface />);
+
+    const quick = screen.getByRole("button", { name: "Rápido" });
+    const detailed = screen.getByRole("button", { name: "Detalhado" });
+    const complete = screen.getByRole("button", { name: "Completo" });
+
+    expect(quick).toHaveAttribute("aria-pressed", "true");
+    expect(detailed).toHaveAttribute("aria-pressed", "false");
+    expect(complete).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("updates Bento field visibility immediately through the shared store", async () => {
+    const user = userEvent.setup();
+    useLayoutStore.setState({ layoutMode: "bento" });
+    useCalculatorStore.setState({ calcLevel: "basic", hiddenFields: [] });
+
+    render(<CalculatorSurface />);
+
+    const materialCard = screen.getByRole("article", { name: "Material" });
+    expect(
+      within(materialCard).queryByRole("spinbutton", { name: "Densidade" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Detalhado" }));
+    expect(useCalculatorStore.getState().calcLevel).toBe("intermediate");
+    expect(
+      within(materialCard).getByRole("spinbutton", { name: "Densidade" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Completo" }));
+    expect(useCalculatorStore.getState().calcLevel).toBe("advanced");
+    expect(
+      within(materialCard).getByRole("spinbutton", { name: "Purga / Perda" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps hidden fields hidden after changing the level in Bento", async () => {
+    const user = userEvent.setup();
+    useLayoutStore.setState({ layoutMode: "bento" });
+    useCalculatorStore.setState({
+      calcLevel: "basic",
+      hiddenFields: ["material.density"],
+    });
+
+    render(<CalculatorSurface />);
+    await user.click(screen.getByRole("button", { name: "Completo" }));
+
+    const materialCard = screen.getByRole("article", { name: "Material" });
+    expect(
+      within(materialCard).queryByRole("spinbutton", { name: "Densidade" }),
+    ).not.toBeInTheDocument();
+    expect(useCalculatorStore.getState().calcLevel).toBe("advanced");
+  });
+
+  it("uses the same level state and labels when returning to Classic", async () => {
+    const user = userEvent.setup();
+    await i18n.changeLanguage("pt-BR");
+    useCalculatorStore.setState({ calcLevel: "basic", hiddenFields: [] });
+
+    render(
+      <>
+        <LayoutSwitcher />
+        <CalculatorSurface />
+      </>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Bento Grid" }));
+    const bentoLabels = ["Rápido", "Detalhado", "Completo"].map((label) =>
+      screen.getByRole("button", { name: label }),
+    );
+    await user.click(bentoLabels[2]);
+
+    expect(useCalculatorStore.getState().calcLevel).toBe("advanced");
+    await user.click(
+      screen.getByRole("button", { name: i18n.t("layoutSwitcher.classic") }),
+    );
+
+    for (const label of ["Rápido", "Detalhado", "Completo"]) {
+      expect(screen.getByRole("button", { name: label })).toHaveAttribute(
+        "aria-pressed",
+        label === "Completo" ? "true" : "false",
+      );
+    }
+  });
+
+  it.each([
+    ["pt-BR", ["Rápido", "Detalhado", "Completo"]],
+    ["en-US", ["Quick", "Detailed", "Complete"]],
+  ] as const)(
+    "keeps the Classic level labels in parity in %s",
+    async (language, labels) => {
+      const user = userEvent.setup();
+      await i18n.changeLanguage(language);
+      useCalculatorStore.setState({ calcLevel: "basic", hiddenFields: [] });
+
+      render(
+        <>
+          <LayoutSwitcher />
+          <CalculatorSurface />
+        </>,
+      );
+
+      await user.click(screen.getByRole("button", { name: "Bento Grid" }));
+      for (const label of labels) {
+        expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+      }
+
+      await user.click(
+        screen.getByRole("button", { name: i18n.t("layoutSwitcher.classic") }),
+      );
+      for (const label of labels) {
+        expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+      }
+    },
+  );
+
+  it("is keyboard operable and exposes a visible focus ring", async () => {
+    const user = userEvent.setup();
+    useLayoutStore.setState({ layoutMode: "bento" });
+    useCalculatorStore.setState({ calcLevel: "basic", hiddenFields: [] });
+
+    render(<CalculatorSurface />);
+
+    const quick = screen.getByRole("button", { name: "Rápido" });
+    quick.focus();
+    expect(quick).toHaveFocus();
+    expect(quick).toHaveClass("focus-visible:ring-2");
+
+    await user.keyboard("{Tab}");
+    const detailed = screen.getByRole("button", { name: "Detalhado" });
+    expect(detailed).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    expect(useCalculatorStore.getState().calcLevel).toBe("intermediate");
+    expect(detailed).toHaveAttribute("aria-pressed", "true");
   });
 });
