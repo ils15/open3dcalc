@@ -123,9 +123,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       return {
         ...nextState,
         fdmAmsEnabled: false,
-        // A calculation edit starts a new save operation. The marker itself is
-        // ephemeral and must never enter undo snapshots.
-        lastHistoryKey: null,
+        // The history key is derived from the calculation snapshot. Keep it
+        // across cosmetic preference changes so they cannot duplicate a save.
         ...validated.input,
         results: validated.results,
         calculationIssues: validated.calculationIssues,
@@ -364,7 +363,6 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
             ...data,
             fdmAmsEnabled: false,
             lastDeductedInfo: null,
-            lastHistoryKey: null,
           };
           const validated = computeValidatedStoreResults(merged);
           return {
@@ -616,9 +614,8 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         results: r,
       };
 
-      // The normalized snapshot identifies the same save operation. A state
-      // edit clears lastHistoryKey through setWithCompute, so a new calculation
-      // can be saved again while repeated clicks cannot be duplicated.
+      // The normalized snapshot identifies the same save operation. Compare the
+      // key directly so cosmetic preference changes cannot duplicate a save.
       const historyKey = JSON.stringify({ ...snapshot, id: "", timestamp: 0 });
       if (s.lastHistoryKey === historyKey) return;
 
@@ -632,6 +629,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       const history = useHistoryStore.getState();
       const inventory = useFilamentInventory.getState();
       let deductionStarted = false;
+      let historyAddStarted = false;
       let previousWeight: number | null = null;
 
       try {
@@ -647,11 +645,17 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           if (!selectedSpool) {
             throw new Error("Selected filament spool was not found");
           }
+          if (selectedSpool.weightGrams < deductionWeight) {
+            throw new Error(
+              `Insufficient filament stock: ${deductionWeight.toFixed(2)}g required, ${selectedSpool.weightGrams.toFixed(2)}g available`,
+            );
+          }
           previousWeight = selectedSpool.weightGrams;
           deductionStarted = true;
           inventory.deductWeight(selectedSpoolId, deductionWeight);
         }
 
+        historyAddStarted = true;
         history.addEntry({
           id,
           timestamp: now,
@@ -677,13 +681,38 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
             : {}),
         });
       } catch (error) {
-        // Roll back either side of the two-store transaction. removeEntry is
-        // harmless when addEntry failed before mutating history.
-        history.removeEntry(id);
-        if (deductionStarted && previousWeight !== null && selectedSpoolId !== null) {
-          inventory.updateSpool(selectedSpoolId, {
-            weightGrams: previousWeight,
-          });
+        // Roll back both sides independently. A failed rollback must not hide
+        // the original operation error or prevent the other side from running.
+        const compensationErrors: unknown[] = [];
+        if (historyAddStarted) {
+          try {
+            history.removeEntry(id);
+          } catch (compensationError) {
+            compensationErrors.push(compensationError);
+          }
+        }
+        if (
+          deductionStarted &&
+          previousWeight !== null &&
+          selectedSpoolId !== null
+        ) {
+          try {
+            inventory.updateSpool(selectedSpoolId, {
+              weightGrams: previousWeight,
+            });
+          } catch (compensationError) {
+            compensationErrors.push(compensationError);
+          }
+        }
+        if (compensationErrors.length > 0) {
+          console.error(
+            "[calculatorStore] History transaction compensation failed",
+            {
+              historyId: id,
+              spoolId: selectedSpoolId,
+              errors: compensationErrors,
+            },
+          );
         }
         throw error;
       }

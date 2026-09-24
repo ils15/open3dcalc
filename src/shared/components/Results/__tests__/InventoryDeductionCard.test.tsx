@@ -56,6 +56,7 @@ function seedStore(activeTab: "fdm" | "resin" = "fdm") {
     },
     resinMaterial: { type: "Standard" } as never,
     selectedSpoolId: null,
+    quantity: 1,
     results: { ...results },
   } as Partial<ReturnType<typeof useCalculatorStore.getState>>);
   useFilamentInventory.setState({
@@ -201,6 +202,33 @@ describe("InventoryDeductionCard — deduction", () => {
     await user.click(confirmButton);
 
     expect(deductWeight).toHaveBeenCalledWith("s1", 85);
+  });
+
+  it("deducts the total weight for the selected quantity", async () => {
+    const user = userEvent.setup();
+    useCalculatorStore.setState({ quantity: 3 });
+    const deductWeight = vi.spyOn(
+      useFilamentInventory.getState(),
+      "deductWeight",
+    );
+    render(<InventoryDeductionCard />);
+
+    await user.click(
+      screen.getByRole("button", { name: "results.deductFromInventory" }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /MarcaX/ }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "results.deductFromInventory",
+    });
+    const confirmButton = within(dialog).getByRole("button", {
+      name: "common.confirm",
+    });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    await user.click(confirmButton);
+
+    expect(deductWeight).toHaveBeenCalledWith("s1", 255);
   });
 
   it("confirms the deduction in the action button", async () => {

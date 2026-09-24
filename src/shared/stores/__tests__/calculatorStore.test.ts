@@ -431,5 +431,66 @@ describe('CalculatorStore core', () => {
         unitWeight * 3,
       )
     })
+
+    it('attempts every compensation and preserves the original error', () => {
+      addMockSpool('spool_compensation_failure', 700)
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_compensation_failure')
+      store.setProductName('Compensation Failure')
+      mockAddEntry.mockImplementationOnce(() => {
+        throw new Error('history unavailable')
+      })
+      mockRemoveEntry.mockImplementationOnce(() => {
+        throw new Error('remove failed')
+      })
+      mockUpdateSpool.mockImplementationOnce(() => {
+        throw new Error('restore failed')
+      })
+      const errorLog = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined)
+
+      try {
+        expect(() => store.addToHistory()).toThrow('history unavailable')
+        expect(mockRemoveEntry).toHaveBeenCalledTimes(1)
+        expect(mockUpdateSpool).toHaveBeenCalledWith(
+          'spool_compensation_failure',
+          { weightGrams: 700 },
+        )
+        expect(errorLog).toHaveBeenCalled()
+      } finally {
+        errorLog.mockRestore()
+      }
+    })
+
+    it('does not duplicate after cosmetic calculator preferences change', () => {
+      addMockSpool('spool_cosmetic_change', 1000)
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_cosmetic_change')
+      store.setProductName('Cosmetic Change')
+
+      store.addToHistory()
+      store.setCalcLevel('advanced')
+      store.toggleField('materialCost')
+      store.setActiveTab('fdm')
+      store.addToHistory()
+
+      expect(mockAddEntry).toHaveBeenCalledTimes(1)
+      expect(mockDeductWeight).toHaveBeenCalledTimes(1)
+    })
+
+    it('rejects an insufficient spool before changing history or stock', () => {
+      addMockSpool('spool_insufficient', 1)
+      const store = useCalculatorStore.getState()
+      store.setQuantity(3)
+      store.setSelectedSpoolId('spool_insufficient')
+      store.setProductName('Insufficient Stock')
+
+      expect(() => store.addToHistory()).toThrow(
+        /Insufficient filament stock/,
+      )
+      expect(mockDeductWeight).not.toHaveBeenCalled()
+      expect(mockAddEntry).not.toHaveBeenCalled()
+    })
   })
 })

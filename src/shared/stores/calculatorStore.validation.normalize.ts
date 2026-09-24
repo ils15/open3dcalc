@@ -215,7 +215,7 @@ export function normalizeCalculationInput(
       { quantity: raw.quantity },
       { quantity: fallback.quantity },
       "quantity",
-      { quantity: { kind: "number" } },
+      { quantity: { kind: "number", positive: true, integer: true } },
       issues,
     ).quantity,
     enabledSections: normalizeSections(raw.enabledSections, fallback.enabledSections, "enabledSections", issues),

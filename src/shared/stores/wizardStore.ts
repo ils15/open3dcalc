@@ -291,11 +291,10 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       energyCostPerKwh: d.energyCostPerKwh,
     });
     calc.setSelectedPrinter(printer);
-    // Labor is an explicit Guided step. Enable it so the exposed time/rate
-    // values contribute to the result; no other labor setting is overwritten.
+    // Labor enablement is not a WizardDraft field. Preserve the user's Classic
+    // or Bento choice; this step only writes the time and rate it exposes.
     calc.setFdmLabor({
       ...calc.fdmLabor,
-      enabled: true,
       setupTimeMinutes: d.setupTimeMinutes,
       postProcessingTimeMinutes: d.postProcessingMinutes,
       hourlyRate: d.hourlyRate,

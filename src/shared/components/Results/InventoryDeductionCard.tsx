@@ -33,6 +33,7 @@ export function InventoryDeductionCard() {
     setLastDeductedInfo,
     selectedSpoolId,
     setSelectedSpoolId,
+    quantity,
   } = useCalculatorStore(
     useShallow((s) => ({
       activeTab: s.activeTab,
@@ -42,6 +43,7 @@ export function InventoryDeductionCard() {
       setLastDeductedInfo: s.setLastDeductedInfo,
       selectedSpoolId: s.selectedSpoolId,
       setSelectedSpoolId: s.setSelectedSpoolId,
+      quantity: s.quantity,
     })),
   );
   const results = useCalculatorStore((s) => s.results);
@@ -68,6 +70,7 @@ export function InventoryDeductionCard() {
   const isFDM = activeTab === "fdm";
   const currentMaterial = isFDM ? fdmMaterial.type : resinType;
   const unitWeight = results?.unitWeight ?? 0;
+  const requiredWeight = unitWeight * quantity;
 
   const selectedSpoolForForm = useMemo(
     () => spools.find((spool) => spool.id === selectedSpoolId) ?? null,
@@ -96,9 +99,9 @@ export function InventoryDeductionCard() {
         (s) =>
           s.status === "in_stock" &&
           s.material.toLowerCase() === currentMaterial.toLowerCase() &&
-          s.weightGrams >= unitWeight,
+          s.weightGrams >= requiredWeight,
       ),
-    [spools, currentMaterial, unitWeight],
+    [spools, currentMaterial, requiredWeight],
   );
 
   // Close dropdown on click outside
@@ -155,7 +158,7 @@ export function InventoryDeductionCard() {
 
   const handleConfirmDeduct = () => {
     if (!selectedSpool) return;
-    deductWeightFromSpool(selectedSpool.id, unitWeight);
+    deductWeightFromSpool(selectedSpool.id, requiredWeight);
     setShowDeductConfirm(false);
     setSelectedSpool(null);
     setDeductSuccess(true);
@@ -246,7 +249,7 @@ export function InventoryDeductionCard() {
                       </div>
                     </div>
                     <div className="text-[10px] font-mono text-[var(--positive)]/70 whitespace-nowrap">
-                      -{unitWeight.toFixed(1)}g
+                      -{requiredWeight.toFixed(1)}g
                     </div>
                   </button>
                 ))}

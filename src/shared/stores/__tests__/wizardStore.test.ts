@@ -323,6 +323,18 @@ describe("wizardStore — commit", () => {
     expect(calc.fdmSales.profitMarginPercent).toBe(40);
   });
 
+  it("preserves a labor section disabled outside the wizard", () => {
+    const current = useCalculatorStore.getState();
+    useCalculatorStore.setState({
+      fdmLabor: { ...current.fdmLabor, enabled: false },
+    });
+    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT } });
+
+    useWizardStore.getState().commit();
+
+    expect(useCalculatorStore.getState().fdmLabor.enabled).toBe(false);
+  });
+
   it("preserves purgeWeight when advancing a step", () => {
     const current = useCalculatorStore.getState();
     useCalculatorStore.setState({

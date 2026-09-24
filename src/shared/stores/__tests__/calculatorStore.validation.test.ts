@@ -120,6 +120,21 @@ describe("calculator computation boundary", () => {
     );
   });
 
+  it.each([
+    [0, "invalid_denominator"],
+    [1.5, "out_of_domain"],
+  ])("rejects invalid quantity %s", (quantity, reason) => {
+    const base = createDefaultComputeInput();
+    const normalized = normalizeCalculationInput({ ...base, quantity });
+
+    expect(normalized.validation.valid).toBe(false);
+    expect(normalized.validation.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "quantity.quantity", reason }),
+      ]),
+    );
+  });
+
   it("normalizes invalid values to finite values before calculation", () => {
     const base = createDefaultComputeInput();
     const source = {
