@@ -1,6 +1,22 @@
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
-import { resolveFdmSlicerProfile } from "@/shared/stores/calculatorStore.helpers";
-import { resolveFdmFilament } from "@/shared/stores/calculatorStore.helpers";
+import {
+  resolveFdmSlicerProfile,
+  resolveFdmFilament,
+  resolvePrintParameters,
+  resolveLaborCosts,
+  resolveFdmMaterial,
+  resolveResinMaterial,
+} from "@/shared/stores/calculatorStore.helpers";
+import {
+  DEFAULT_FDM_PARAMS,
+  DEFAULT_FDM_MATERIAL,
+  DEFAULT_LABOR,
+  DEFAULT_RESIN_PARAMS,
+  DEFAULT_RESIN_MATERIAL,
+  DEFAULT_RESIN_LABOR,
+} from "@/shared/stores/calculatorStore.defaults";
+import { computeStoreResults } from "@/shared/stores/calculatorStore.compute";
+import type { ComputeStoreInput } from "@/shared/stores/calculatorStore.types";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import type { FilamentSpool } from "@/shared/stores/filamentInventory";
 import type { PrinterProfile, Marketplace } from "@/shared/types";
@@ -31,10 +47,17 @@ export function restoreAutoSnapshot(): boolean {
       (m: { id: string }) => m.id === data.selectedMarketplaceId,
     );
 
-    useCalculatorStore.setState({
+    const restored = {
+      ...calc,
       activeTab: data.activeTab || "fdm",
-      fdmMaterial: data.fdmMaterial || calc.fdmMaterial,
-      fdmPrintParams: data.fdmPrintParams || calc.fdmPrintParams,
+      fdmMaterial: resolveFdmMaterial(
+        data.fdmMaterial || calc.fdmMaterial,
+        DEFAULT_FDM_MATERIAL,
+      ),
+      fdmPrintParams: resolvePrintParameters(
+        data.fdmPrintParams,
+        DEFAULT_FDM_PARAMS,
+      ),
       fdmSlicerProfile:
         data.fdmSlicerProfile !== undefined
           ? resolveFdmSlicerProfile(data.fdmSlicerProfile)
@@ -49,17 +72,23 @@ export function restoreAutoSnapshot(): boolean {
       fdmMachine: data.fdmMachine || calc.fdmMachine,
       fdmHardware: data.fdmHardware || calc.fdmHardware,
       fdmFinishing: data.fdmFinishing || calc.fdmFinishing,
-      fdmLabor: data.fdmLabor || calc.fdmLabor,
+      fdmLabor: resolveLaborCosts(data.fdmLabor, DEFAULT_LABOR),
       fdmExtras: data.fdmExtras || calc.fdmExtras,
       fdmSales: data.fdmSales || calc.fdmSales,
       fdmOps: data.fdmOps || calc.fdmOps,
       fdmSoft: data.fdmSoft || calc.fdmSoft,
-      resinMaterial: data.resinMaterial || calc.resinMaterial,
-      resinPrintParams: data.resinPrintParams || calc.resinPrintParams,
+      resinMaterial: resolveResinMaterial(
+        data.resinMaterial || calc.resinMaterial,
+        DEFAULT_RESIN_MATERIAL,
+      ),
+      resinPrintParams: resolvePrintParameters(
+        data.resinPrintParams,
+        DEFAULT_RESIN_PARAMS,
+      ),
       resinPostProcess: data.resinPostProcess || calc.resinPostProcess,
       resinMachine: data.resinMachine || calc.resinMachine,
       resinHardware: data.resinHardware || calc.resinHardware,
-      resinLabor: data.resinLabor || calc.resinLabor,
+      resinLabor: resolveLaborCosts(data.resinLabor, DEFAULT_RESIN_LABOR),
       resinExtras: data.resinExtras || calc.resinExtras,
       resinSales: data.resinSales || calc.resinSales,
       resinOps: data.resinOps || calc.resinOps,
@@ -73,7 +102,9 @@ export function restoreAutoSnapshot(): boolean {
         catalogPrinters[0]) as unknown as PrinterProfile,
       selectedMarketplace: (marketplace ||
         catalogMarketplaces[0]) as unknown as Marketplace,
-    });
+    };
+    const results = computeStoreResults(restored as ComputeStoreInput);
+    useCalculatorStore.setState({ ...restored, results });
     return true;
   } catch {
     return false;
