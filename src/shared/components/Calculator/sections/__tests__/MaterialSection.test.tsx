@@ -413,12 +413,11 @@ describe("MaterialSection", () => {
   it("uses FDM icon when isFDM is true", () => {
     const store = createMockStore();
     render(<MaterialSection {...defaultProps} store={store} isFDM={true} />);
-    // renderSectionHeader is called with the icon, title, subtitle, and sectionId
+    // renderSectionHeader is called with the icon, title, and subtitle
     expect(defaultProps.renderSectionHeader).toHaveBeenCalledWith(
       expect.anything(),
       "calc.material",
       "calc.sectionDesc.fdmMaterial",
-      "material",
     );
   });
 
@@ -429,7 +428,6 @@ describe("MaterialSection", () => {
       expect.anything(),
       "calc.material",
       "calc.sectionDesc.resinMaterial",
-      "material",
     );
   });
 

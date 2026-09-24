@@ -8,7 +8,6 @@ export interface PrintSectionProps {
     Icon: typeof SlidersHorizontal,
     title: string,
     subtitle?: string,
-    sectionId?: string,
   ) => React.ReactNode;
   t: (key: string) => string;
   currencySymbol: string;
@@ -44,7 +43,6 @@ export function PrintSection({
         SlidersHorizontal,
         t("calc.printParams"),
         t("calc.sectionDesc.print"),
-        "print",
       )}
       <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
         <InputGroup

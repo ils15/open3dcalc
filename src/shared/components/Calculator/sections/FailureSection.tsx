@@ -9,7 +9,6 @@ export interface FailureSectionProps {
     Icon: typeof AlertTriangle,
     title: string,
     subtitle?: string,
-    sectionId?: string,
   ) => React.ReactNode;
   t: (key: string) => string;
   currencySymbol: string;
@@ -52,7 +51,6 @@ export function FailureSection({
         AlertTriangle,
         t("calc.failure.title"),
         t("calc.failure.description"),
-        "failure",
       )}
       <div className="space-y-4">
         <div className="flex items-center justify-between surface rounded-xl px-4 py-3">

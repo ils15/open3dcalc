@@ -8,7 +8,7 @@ import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { SectionHeader } from "./SectionHeader";
 import { DerivedMarginDisplay } from "../DerivedMarginDisplay";
-import { INTERMEDIATE_FIELDS, BASIC_FIELDS } from "../Calculator.constants";
+import { isFieldVisibleForLevel } from "../Calculator.constants";
 
 const MARKUP_PRESETS = [100, 150, 200, 250, 300, 500];
 
@@ -25,20 +25,13 @@ export function SalesSection() {
   };
 
   const isFieldVisible = useCallback(
-    (sectionId: string, fieldId: string) => {
-      const level = store.calcLevel;
-      const sectionFields = INTERMEDIATE_FIELDS[sectionId] ?? [];
-      const basicFields = BASIC_FIELDS[sectionId] ?? [];
-
-      if (level === "basic") return basicFields.includes(fieldId);
-      if (level === "intermediate") {
-        return (
-          (basicFields.includes(fieldId) || sectionFields.includes(fieldId)) &&
-          !store.hiddenFields.includes(`${sectionId}.${fieldId}`)
-        );
-      }
-      return !store.hiddenFields.includes(`${sectionId}.${fieldId}`);
-    },
+    (sectionId: string, fieldId: string) =>
+      isFieldVisibleForLevel(
+        store.calcLevel,
+        store.hiddenFields,
+        sectionId,
+        fieldId,
+      ),
     [store.calcLevel, store.hiddenFields],
   );
 
@@ -61,7 +54,6 @@ export function SalesSection() {
         Icon={DollarSign}
         title={t("calc.sales")}
         subtitle={t("calc.sectionDesc.sales")}
-        sectionId="sales"
       />
       <div className="space-y-4">
         <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">

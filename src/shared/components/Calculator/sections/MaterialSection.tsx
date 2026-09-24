@@ -25,7 +25,6 @@ export interface MaterialSectionProps {
     Icon: typeof Layers,
     title: string,
     subtitle?: string,
-    sectionId?: string,
   ) => React.ReactNode;
   t: (key: string) => string;
   currencySymbol: string;
@@ -145,7 +144,6 @@ export function MaterialSection({
             ? "calc.sectionDesc.fdmMaterial"
             : "calc.sectionDesc.resinMaterial",
         ),
-        "material",
       )}
       {isFDM ? (
         <>

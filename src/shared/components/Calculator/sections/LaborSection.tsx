@@ -7,7 +7,6 @@ export interface LaborSectionProps {
 		Icon: typeof HardHat,
 		title: string,
 		subtitle?: string,
-		sectionId?: string,
 	) => React.ReactNode
 	t: (key: string) => string
 	currencySymbol: string
@@ -30,7 +29,6 @@ export function LaborSection({
 				HardHat,
 				t('calc.labor'),
 				t('calc.sectionDesc.labor'),
-				'labor',
 			)}
 			<div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
 				<InputGroup
