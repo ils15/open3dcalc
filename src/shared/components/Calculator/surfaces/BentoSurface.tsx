@@ -54,7 +54,7 @@ function categoryValue(
     .reduce((total, segment) => total + segment.value, 0);
 }
 
-/** Third calculator surface: a responsive, read-only five-card financial grid. */
+/** Third calculator surface: a responsive five-card calculation grid. */
 export function BentoSurface(): React.ReactElement {
   const { t } = useTranslation();
   const { format } = useCurrency();
@@ -64,13 +64,8 @@ export function BentoSurface(): React.ReactElement {
     productName,
     quantity,
     selectedSpoolId,
-    selectedPrinter,
     fdmMaterial,
     resinMaterial,
-    fdmPrintParams,
-    resinPrintParams,
-    fdmMachine,
-    resinMachine,
     fdmLabor,
     resinLabor,
     fdmExtras,
@@ -85,13 +80,8 @@ export function BentoSurface(): React.ReactElement {
       productName: state.productName,
       quantity: state.quantity,
       selectedSpoolId: state.selectedSpoolId,
-      selectedPrinter: state.selectedPrinter,
       fdmMaterial: state.fdmMaterial,
       resinMaterial: state.resinMaterial,
-      fdmPrintParams: state.fdmPrintParams,
-      resinPrintParams: state.resinPrintParams,
-      fdmMachine: state.fdmMachine,
-      resinMachine: state.resinMachine,
       fdmLabor: state.fdmLabor,
       resinLabor: state.resinLabor,
       fdmExtras: state.fdmExtras,
@@ -117,8 +107,6 @@ export function BentoSurface(): React.ReactElement {
     : resinMaterial.density > 0
       ? (resinMaterial.costPerLiter / resinMaterial.density) * 1000
       : 0;
-  const printParams = isFDM ? fdmPrintParams : resinPrintParams;
-  const machine = isFDM ? fdmMachine : resinMachine;
   const labor = isFDM ? fdmLabor : resinLabor;
   const extras = isFDM ? fdmExtras : resinExtras;
   const sales = isFDM ? fdmSales : resinSales;
@@ -140,12 +128,9 @@ export function BentoSurface(): React.ReactElement {
             selectedSpoolId={selectedSpoolId}
           />
           <BentoMachineCard
-            printerName={selectedPrinter.name}
             printHours={breakdown.time.estimatedHours}
-            printerPowerWatts={printParams.printerPowerWatts}
             energyCost={categoryValue(breakdown.chartData, "energy")}
             machineCost={categoryValue(breakdown.chartData, "machine")}
-            machine={machine}
           />
           <BentoLaborCard
             labor={labor}

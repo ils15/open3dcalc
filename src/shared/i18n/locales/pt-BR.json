@@ -1058,6 +1058,11 @@
     "minuteCount_other": "{{count}} minutos",
     "perMonth": "mês",
     "notIncluded": "Não incluída",
+    "noSpoolSelected": "Nenhum carretel selecionado",
+    "units": {
+      "months": "meses",
+      "hoursPerMonth": "h/mês"
+    },
     "cards": {
       "material": "Material",
       "machine": "Máquina e energia",
@@ -1070,6 +1075,7 @@
       "weight": "Peso",
       "costPerKg": "Custo por kg",
       "materialCost": "Custo do material",
+      "spool": "Carretel do inventário",
       "printer": "Perfil da impressora",
       "printHours": "Horas de impressão",
       "energy": "Energia",
@@ -1094,6 +1100,16 @@
       "taxAmount": "Imposto calculado",
       "marketplaceFeeAmount": "Taxa calculada",
       "totalFees": "Total de taxas"
+    },
+    "helpers": {
+      "resinType": "Escolha a resina usada nesta peça.",
+      "spool": "Selecione um carretel para acompanhar o saldo real do inventário.",
+      "printer": "Selecione um perfil do catálogo para atualizar potência e custos.",
+      "monthlyUsage": "Ative o cálculo da depreciação com base no uso mensal.",
+      "maintenance": "Ative os custos recorrentes de manutenção da impressora."
+    },
+    "toggles": {
+      "monthlyUsage": "Ativar uso mensal"
     }
   },
   "onboarding": {

@@ -1058,6 +1058,11 @@
     "minuteCount_other": "{{count}} minutes",
     "perMonth": "month",
     "notIncluded": "Not included",
+    "noSpoolSelected": "No spool selected",
+    "units": {
+      "months": "months",
+      "hoursPerMonth": "h/month"
+    },
     "cards": {
       "material": "Material",
       "machine": "Machine & energy",
@@ -1070,6 +1075,7 @@
       "weight": "Weight",
       "costPerKg": "Cost per kg",
       "materialCost": "Material cost",
+      "spool": "Inventory spool",
       "printer": "Printer profile",
       "printHours": "Print hours",
       "energy": "Energy",
@@ -1094,6 +1100,16 @@
       "taxAmount": "Calculated tax",
       "marketplaceFeeAmount": "Calculated fee",
       "totalFees": "Total fees"
+    },
+    "helpers": {
+      "resinType": "Choose the resin used for this part.",
+      "spool": "Select a spool to track its real inventory balance.",
+      "printer": "Choose a catalog profile to update power and costs.",
+      "monthlyUsage": "Enable depreciation based on monthly machine use.",
+      "maintenance": "Enable recurring printer maintenance costs."
+    },
+    "toggles": {
+      "monthlyUsage": "Enable monthly usage"
     }
   },
   "onboarding": {
