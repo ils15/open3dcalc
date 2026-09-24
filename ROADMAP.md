@@ -321,99 +321,215 @@ Every phase and change must complete this checklist:
 
 ### 🌈 Phase 7: Adaptive Layouts & Progressive Onboarding
 
-**Problem:** The calculator exposes every parameter at once. Beginners drown before they price their first print; power users click through sections they never use. One rigid layout cannot serve both.
+**Status em `2.0.0-beta.1` (PRs #182–#192):** parcial. A base de layouts, o shell da aplicação, o Inspetor Financeiro e o wizard foram entregues; o Bento Grid e o seletor de layout ainda não estavam acessíveis na beta.
 
-**What to investigate first:**
+**Entregue:**
 
-- [ ] Which user persona maps to which layout density (maker hobbyist vs. small shop vs. pro studio)
-- [ ] How much of the current `ResultsPanel` (975 lines) can be decomposed without breaking the existing keyboard-shortcut and SectionNav contracts
-- [ ] Whether the existing `calcLevel` axis (Quick/Detailed/Complete, already in the store) can be reused as the density axis instead of inventing a new one
+- [x] `layoutStore` com os modos `classic`, `guided` e `bento`, com persistência local.
+- [x] `AppShell` extraído para Concentrar o ponto de troca da superfície de cálculo.
+- [x] Inspetor Financeiro como refactor behavior-preserving do `ResultsPanel`: cálculos mantidos no hook e apresentação em 8 cards.
+- [x] Wizard progressivo de 4 passos (`GuidedWizard`).
+- [x] SPEC-01 na versão 1.4, com três chaves de dados `ui_preference`, incluindo a chave de layout.
 
-**What needs to be done:**
+**Pendente:**
 
-- [ ] Layout engine: `classic` (today's full form), `guided` (step-by-step, sections released progressively), `bento` (compact cards dashboard-style)
-- [ ] `layoutStore` — separate from the undo stack (layout switches are NOT calculation changes), persisted under `open3dcalc_layout_v1` (class `ui_preference`, sync never)
-- [ ] AppShell refactor: web and desktop `App.tsx` each under ~120 lines, single `CalculatorSurface` switch point
-- [ ] Profile Guide (Guia de Perfis): pick a persona → applies (layout, calcLevel) using the existing `calcLevel` axis
-- [ ] LayoutSwitcher in the header with live preview
-- [ ] Progressive onboarding Wizard: 4 steps, non-blocking, skippable, replaces the current one-shot tutorial
-- [ ] `FinancialInspector` — decomposed, focused view of the pricing breakdown (profit, fees, margin, break-even)
-- [ ] Informative empty states and visual feedback for actions across the new surfaces
-- [ ] Bento cards responsive across the existing breakpoints (640/768/1024/1280px)
+- [ ] Bento Grid: não implementado; o modo `bento` cai em `ClassicSurface` com `TODO(W3)`.
+- [ ] `LayoutSwitcher`: ausente na beta; a correção pertence à onda A1, ainda não lançada na beta.
+- [ ] Guia de Perfis para associar persona a layout e `calcLevel`.
+- [ ] Estados vazios e feedback visual completos para as novas superfícies.
+- [ ] Bento cards responsivos nos breakpoints existentes.
 
 **Acceptance criteria:**
 
-- [ ] All three layouts render the SAME calculation results (zero divergence)
-- [ ] Layout switches never enter the undo stack and never dirty the calculation
-- [ ] Wizard is skippable and dismissable at any step; the calculator is fully usable without it
-- [ ] `open3dcalc_layout_v1` appears in the SPEC-01 manifest (policy_version 1.4) and is covered by delete-all and privacy regression tests
-- [ ] All existing tests still pass; new surfaces have RTL tests (no snapshot testing)
+- [ ] Os três layouts renderizam os mesmos resultados de cálculo.
+- [ ] Trocas de layout nunca entram no undo stack nem tornam o cálculo pendente.
+- [ ] O wizard pode ser pulado ou dispensado em qualquer etapa; a calculadora permanece utilizável sem ele.
+- [x] A chave de layout aparece no manifesto SPEC-01.
+- [ ] A chave de layout está incluída na limpeza de dados e nos testes de regressão de privacidade.
+- [ ] Os testes existentes continuam passando e as novas superfícies têm testes RTL.
 
 ---
 
 ### 💰 Phase 7b: Multi-Network Quotes, Marketplace Profit Comparison & Suggested Price
 
-**Problem:** Pricing a part is only half the job — makers also have to **sell** it. Today the app exports a JSON quote and copies a calculation link, but offers no help for the three questions that decide whether a print is worth running: _How do I post this?_, _Which marketplace pays me the most?_, and _What price should I actually charge?_
+**Status em `2.0.0-beta.1`:** parcial. As três bibliotecas puras foram entregues; as interfaces de usuário permanecem pendentes.
 
-**What to investigate first (real capability):**
+**Entregue como lib pura, sem interface:**
 
-- [ ] Which social networks offer **official**, key-free sharing web intents (verified: WhatsApp, Telegram, X, e-mail — official; Instagram and Facebook do NOT accept a pre-filled caption, so they get an honest copy-to-clipboard path instead of a fake deep link)
-- [ ] How the existing `marketplaces` catalog (Shopee, Mercado Livre, Amazon, Etsy, Direct — with percent + fixed fees) can be compared **without touching the frozen calculation layer**
-- [ ] Reuse of `getBulkDiscount` (pure helper) and `reverseFromSellPrice` (pure reverse-pricing) so nothing is rewritten
+- [x] `socialShare.ts` para links oficiais de compartilhamento e modelos de texto, sem chamadas de rede durante a geração.
+- [x] `compareMarketplaces.ts` para comparar o lucro líquido no mesmo conjunto de marketplaces.
+- [x] `suggestedPrice.ts` para cenários de preço, margem-alvo e profitabilidade.
 
-**What needs to be done:**
+**Pendente de interface:**
 
-- [ ] **Multi-network quote sharing** — `socialShare.ts` pure lib (official web intents + per-network copy templates, pt-BR/en-US), `SocialShareModal` with live preview card, character counters (280 for X, hashtag block for Instagram), `useReducedMotion`-aware success feedback
-- [ ] **Marketplace profit comparison** — `compareMarketplaceProfits()` pure lib: same part, net profit ranked across the whole catalog (percent + fixed fees), parity test locked to the real calculator; `MarketplaceComparison` UI (ranked table, best highlighted, delta vs. best, "use this marketplace" writes the existing `marketplaceFeePercent` — calculation layer untouched)
-- [ ] **Suggested price tool** — `suggestPrices()` pure lib: target margin %, desired profit per part, desired monthly profit (projections), fee-inclusive break-even, and competitor-price mode (reusing `reverseFromSellPrice`); integrates existing `VolumeDiscount` tiers and already consumes post-`riskMultiplier` cost; `SuggestedPriceTool` UI with scenario cards and an "apply price" action
-- [ ] Copy templates and every label in pt-BR + en-US, with explicit "margin over price" vs. "markup over cost" wording
-- [ ] Assumptions panel reuse so the fee-fixed vs. fee-percent difference between the comparison and the main calculation is stated, not hidden
+- [ ] `SocialShareModal` com pré-visualização e contadores.
+- [ ] `MarketplaceComparison` com tabela ordenada, melhor resultado e ação para usar o marketplace.
+- [ ] `SuggestedPriceTool` com cenários e ação para aplicar o preço.
+- [ ] Textos e rótulos completos em pt-BR e en-US, incluindo a diferença entre margem sobre preço e markup sobre custo.
+- [ ] Painel de premissas para explicitar as diferenças de taxa fixa e percentual.
 
 **Acceptance criteria:**
 
-- [ ] Sharing works with zero network calls at generation time (the OS/browser opens the intent); no undocumented deep links
-- [ ] Comparison and suggested-price libs are pure, NaN-safe, and never return Infinity; infeasible price targets report `feasible: false` with a human explanation
-- [ ] Parity test proves the mirrored pricing formula matches the real calculator to the cent; any drift fails CI
-- [ ] Calculation layer (`calculator.ts`) is not modified — verified by diff in the PRs
-- [ ] Pure libs at ≥90% coverage; UI components RTL-tested, keyboard-navigable, WCAG AA
-- [ ] Only `open3dcalc_share_prefs_v1` and `open3dcalc_marketplace_comparison_v1` are added to SPEC-01 (last network id and last marketplace ids — catalog ids only, no message text, no user data); the suggested-price tool is stateless per session
-- [ ] LGPD checklist and privacy regression tests pass for every new key
+- [ ] O compartilhamento funciona sem chamadas de rede na geração e sem deep links não documentados.
+- [ ] As libs permanecem puras, seguras para NaN e sem Infinity; metas inviáveis são explicadas à pessoa usuária.
+- [ ] O teste de paridade preserva a fórmula da calculadora até a centavo.
+- [x] `src/shared/lib/calculator.ts` não foi alterado.
+- [ ] As libs mantêm cobertura ≥90% e as interfaces, quando entregues, terão testes RTL, navegação por teclado e WCAG AA.
+- [ ] A checklist de LGPD e os testes de regressão de privacidade passam para cada nova chave.
 
 ---
 
 ### 🎨 Phase 7c: Visual Catalogs (Printers & Marketplaces)
 
-**Problem:** The catalogs are functional but visually flat — 103 printers in a text-only dropdown, 6 marketplaces with no branding, materials without color swatches. The `image` field already exists in `PrinterProfile` and even in the `Select` component's option API, but it is dangling: zero files under `public/images/` and the `<img>` render path was never finished.
+**Status em `2.0.0-beta.1`:** parcial. Os selects passaram a exibir thumbnails e o catálogo de impressoras recebeu enriquecimento técnico; a arte própria dos fallbacks e a modernização completa do `CatalogTab` continuam pendentes.
 
-**What to investigate first:**
+**Entregue:**
 
-- [ ] Trademark/copyright posture for manufacturer product photos and marketplace logos (verified: brand names in text are nominative fair use; logos and product photos are NOT freely usable — we ship our own SVG art and link out instead)
-- [ ] Which manufacturers publish press/media kits with permissive terms for a future "featured" photo subset
-- [ ] Whether the `public/` static path behaves identically on web/PWA and Electron
+- [x] Thumbnails nos selects, com o caminho visual já existente em `Select`.
+- [x] Dados técnicos de 103 impressoras enriquecidos com atribuição CC-BY-4.0.
 
-**What needs to be done:**
+**Pendente:**
 
-- [ ] Finish the `Select` render path: render `<img>` when `option.image` is present (keep the monogram as fallback)
-- [ ] `public/images/printers/fallback-fdm.svg` + `fallback-resin.svg` — our own illustrations by technology
-- [ ] Add `technology: "fdm" | "resin"` to the printer catalog entries (derivable from model families: Photon/Halot/Saturn/Mars/SL1S/Sonic-style names are resin, the rest FDM)
-- [ ] Fill the printer entries missing `image` with the fallback path so nothing is ever broken
-- [ ] Add `logo?` to `Marketplace` + our own stylized marketplace art (never the trademarked logos)
-- [ ] Optional `websiteUrl?` on `PrinterProfile` — an external link the user clicks; the app itself makes zero network calls
-- [ ] Rewrite `CatalogTab` cards: printer thumbnails, technology badges, marketplace art, text search
+- [ ] Ilustrações próprias `fallback-fdm.svg` e `fallback-resin.svg`.
+- [ ] Preenchimento das imagens ausentes do catálogo sem imagens quebradas.
+- [ ] Arte própria para marketplaces, sem uso de logotipos registrados.
+- [ ] Reescrita dos cards de `CatalogTab` com thumbnails, badges de tecnologia, arte de marketplace e busca textual.
 
 **Acceptance criteria:**
 
-- [ ] Every catalog entry renders a thumbnail (real art or our fallback) with zero broken images
-- [ ] No trademarked logo or manufacturer photo ships without documented permission; brand names in text are fine
-- [ ] `public/` assets never enter the JS bundle and load lazily (`loading="lazy" decoding="async"`)
-- [ ] Catalog data stays code-seeded and non-PII (SPEC-01 catalog keys unchanged)
-- [ ] i18n pt-BR/en-US for all new labels; a11y: thumbnails are decorative or carry alt text
+- [ ] Nenhuma entrada do catálogo renderiza uma imagem quebrada.
+- [ ] Nenhuma foto de fabricante ou logotipo registrado entra no repositório sem permissão documentada.
+- [ ] Os assets de `public/` permanecem fora do bundle JavaScript e sob carregamento tardio.
+- [ ] Os dados do catálogo permanecem sem PII e as chaves de catálogo do SPEC-01 não mudam.
+- [ ] Todos os rótulos novos existem em pt-BR e en-US; thumbnails são decorativas ou têm texto alternativo.
+
+### 🔎 Achados técnicos da `2.0.0-beta.1`
+
+- **Ausência de seletor de layout na interface:** o `GuidedWizard` existia e funcionava, mas nenhum componente chamava `setLayoutMode`; portanto, o modo guiado era inalcançável pela interface. A correção foi integrada à onda A1.
+- **Teste flaky de foco no Wiki** (`WikiPage.test.tsx`): falhava em cerca de 5% das execuções. A causa raiz era o uso de `useEffect` (fase passiva) em vez de `useLayoutEffect` no foco entre artigos; era um bug real de acessibilidade, não uma instabilidade artificial do teste. Corrigido em `f366726`.
+- **Duplicação de inventário:** “Filamentos” e “Carretéis” apresentavam o mesmo array. O `spoolStore` é o owner único de `open3dcalc_filaments`; `filamentInventory.ts` é um shim. Não havia bug de dados, mas havia confusão de UX e ausência de deduplicação.
+
+---
+
+### 🏭 Phase 7d: Gestão de Frota & Parque de Impressoras
+
+**Status:** planejada. Esta fase introduz dados operacionais da oficina e depende de uma nova entidade, um novo store e uma nova chave no manifesto SPEC-01.
+
+**KPIs de frota:**
+
+- [ ] Máquinas na oficina: total e quantas estão imprimindo.
+- [ ] Capital em equipamentos: valor contábil de aquisição.
+- [ ] Horas totais rodadas, com histórico acumulado.
+- [ ] Saúde operacional: percentual da frota pronta para produzir e contagem de máquinas em manutenção.
+
+**Entidade `FleetMachine`:**
+
+- [ ] Identificação: marca, modelo e tecnologia FDM/RESINA.
+- [ ] Bico (`nozzleDiameterMm`), potência (`powerW`) e volume útil (`buildVolumeMm`), reaproveitando o tipo que já existe em `src/shared/lib/printers.ts`.
+- [ ] Preço de aquisição e data de aquisição.
+- [ ] Vida útil estimada em horas e horas já consumidas.
+- [ ] Custo de manutenção por hora.
+- [ ] Status: `printing`, `available`, `maintenance` ou `idle`.
+- [ ] Trabalho em execução com nome e progresso, por exemplo “Camada 180/420”.
+- [ ] Motivo de parada quando a máquina estiver em manutenção.
+
+**Custos e integração com a calculadora:**
+
+- [ ] Depreciação contábil por hora = preço de aquisição ÷ vida útil estimada em horas. Este é um cálculo novo e não deve alterar `src/shared/lib/calculator.ts`, que é intocável por contrato.
+- [ ] A depreciação entra como parâmetro de entrada no orçamento ativo, no mesmo padrão dos demais custos de máquina.
+- [ ] Ação **Usar no Cálculo Atual** para aplicar potência, depreciação por hora e manutenção por hora. A impressora selecionada recebe contorno roxo como indicador visual.
+- [ ] Modal de cadastro para máquinas fora do catálogo, com depreciação calculada a partir do preço pago e da vida útil estimada.
+- [ ] Barra de vida útil consumida, por exemplo “1240h de 4000h — 31%”, com transição de cor por proximidade do fim da vida útil.
+- [ ] Badge **Dados Reais & Telemetria** e sinalização da impressora em uso na calculadora.
+
+**Privacidade e dependências obrigatórias:**
+
+- [ ] Status e horas são declarados pela pessoa usuária e mantidos local-first. Não haverá integração com API de fabricante nem qualquer telemetria externa nesta fase.
+- [ ] Definir a nova entidade `FleetMachine` e seu store próprio.
+- [ ] Adicionar uma chave nova ao SPEC-01. A classe de dados precisa ser definida antes da implementação; `user_content` é a hipótese mais provável.
+- [ ] Incluir a chave, os dados da frota e seus backups na exportação, exclusão e regressão de privacidade.
+
+**Acceptance criteria:**
+
+- [ ] Os KPIs são calculados exclusivamente a partir dos registros locais declarados pela pessoa usuária.
+- [ ] A depreciação por hora é exibida e aplicada sem modificar `src/shared/lib/calculator.ts`.
+- [ ] A máquina selecionada no cálculo é identificável visualmente e pode ser removida da seleção.
+- [ ] A implementação é bloqueada até a classe de dados e o tratamento de privacidade da nova chave do SPEC-01 estarem aprovados.
+
+---
+
+### 🏗️ Phase 7e: Modo Farm (par. print farms)
+
+**Status:** escopo definido; modo e forma de integração ainda pendentes de decisão. **Depende da Phase 7d — Gestão de Frota & Parque de Impressoras.**
+
+**Contexto:** o modo Clássico se rotula “Desktop Pro / alta densidade para fazendas 3D”, mas não existe um modo de verdade para operar múltiplas impressoras.
+
+**Escopo do modo Farm:**
+
+- [ ] Apresentar a frota: quantas máquinas existem, o que está rodando, o que está livre e o que está em manutenção.
+- [ ] Permitir atribuir trabalho por máquina.
+- [ ] Mostrar a capacidade da oficina em horas disponíveis versus horas demandadas.
+- [ ] Usar densidade alta e manter o painel da frota sempre visível.
+
+**Decisão pendente:** Farm será um quarto valor de `layoutStore`, além de `classic`, `guided` e `bento`, ou uma variação do modo Clássico? A recomendação é um quarto modo, `farm`; a decisão permanece pendente.
+
+**Acceptance criteria:**
+
+- [ ] O painel de frota e a capacidade da oficina usam os dados locais da Phase 7d, sem API de fabricante.
+- [ ] A relação entre trabalho atribuído e capacidade disponível é atualizada sem ambiguidade.
+- [ ] A forma de incorporação do modo é decidida antes da implementação e registrada no SPEC-01 quando exigir nova preferência.
+
+---
+
+### 🧵 Phase 7f: Estante de Filamento — unificação do inventário
+
+**Status:** visual da Estante de Carretéis entregue na beta; unificação de inventário planejada.
+
+**Decisão de produto:** haverá uma aba somente, chamada **Estante de Filamento** / **Filament Shelf**. O grid, a busca, os filtros e a ordenação do `SpoolShelf` ficam por cima das capacidades da tela antiga: tara, peso líquido, metros restantes, cobertura da peça e “deduzir do inventário”.
+
+**Implementação:**
+
+- [x] Grid, busca, filtros e ordenação do `SpoolShelf` entregues na beta.
+- [ ] Substituir as abas duplicadas “Filamentos” e “Carretéis” pela Estante unificada.
+- [ ] Não exibir aviso genérico de duplicidade. A ação ao usar um material no cálculo deve oferecer **Adicionar à Estante** com peso e custo pré-preenchidos.
+- [ ] Quando já existir filamento compatível, oferecer **usar o existente** em vez de duplicar o registro.
+- [ ] Exibir rótulos explícitos para peso bruto, que é o valor mostrado pela balança e inclui o carretel, e peso líquido, calculado como bruto menos a tara. A distinção evita que um carretel completo pareça não estar em 100%.
+- [ ] Adotar uma única regra de baixo estoque: `status === "in_stock" && weightGrams < threshold`. Contador e badge passam a usar a mesma condição.
+- [ ] Tornar o padrão de grid, busca, filtros e ordenação da Estante a referência para modernizar os demais layouts.
+
+**Acceptance criteria:**
+
+- [ ] Não existem dois caminhos de edição para o mesmo inventário.
+- [ ] Peso bruto e peso líquido são legíveis em todos os pontos da interface que exibem massa.
+- [ ] A oferta de material existente não cria uma duplicata sem ação explícita da pessoa usuária.
+- [ ] A regra de baixo estoque é coberta por teste e o contador coincide com o badge.
+
+---
+
+### ⚡ Phase 7g: Presets estáticos de calculadora (sem IA)
+
+**Status:** planejada. São três cenários demonstrativos estáticos; não usam IA, backend ou serviço externo.
+
+**Cenários:**
+
+- [ ] Vaso Espiral Geométrico — 140g, PLA Silk.
+- [ ] Suporte Reforçado de Guidão para GoPro — 48g, PETG.
+- [ ] Estatueta Colecionável RPG/Dragão — Resina UV 8K.
+- [ ] Botão **Preencher Calculadora com esses Dados** para carregar cada cenário.
+
+**Fora desta fase:** as abas Consultor de Risco & Margem, WhatsApp Pitch e Visão Multimodal do protótipo dependem de backend e foram explicitamente adiadas. Nenhuma delas é requisito dos presets estáticos ou da V2.0.
+
+**Acceptance criteria:**
+
+- [ ] Os valores de cada cenário são determinísticos e podem ser revisados como dados versionados no código.
+- [ ] O botão substitui somente os campos do cenário e deixa claro que os dados podem ser editáveis.
+- [ ] A funcionalidade funciona offline, sem chamadas de rede ou consentimento de IA.
 
 ---
 
 ### ⏸️ Deferred: Optional AI (out of V2.0)
 
-The optional BYOK AI features (text analysis, photo-based estimation, AI-assisted pitch generation) and the PBR skin for `StlPreview` are **deferred to a future major version**. They stay off by default, behind privacy councils, an ADR and a separate consent policy version. Nothing in V2.0 depends on them.
+As abas **Consultor de Risco & Margem**, **WhatsApp Pitch** e **Visão Multimodal**, a estimativa por foto e os recursos BYOK de análise textual e geração assistida de pitch dependem de backend ou de uma política de IA e foram explicitamente adiados para uma versão futura. Eles ficam fora da V2.0, desligados por padrão e sujeitos aos conselhos de privacidade, a um ADR e a uma política de consentimento separada. Nenhuma das fases acima depende deles.
 
 ---
 
@@ -429,6 +545,12 @@ The optional BYOK AI features (text analysis, photo-based estimation, AI-assiste
 
 ## 🔒 Not in scope (for now)
 
+- ❌ Modo **Studio**: quarto layout experimental do protótipo, fora da tríade `classic` / `guided` / `bento`
+- ❌ Abas de IA: Consultor de Risco & Margem, WhatsApp Pitch e Visão Multimodal (ver Deferred: Optional AI)
+- ❌ Estimativa por foto: adiada por depender de backend e de uma política de IA
+- ❌ Extras itemizados: o app tem `extrasCost` escalar; a lista do protótipo exigiria um novo contrato de dados
+- ❌ Viewer 3D sintético do protótipo: o app já tem `StlPreview` e `GcodePreviewPanel` reais, que devem ser usados
+- ❌ Skin PBR experimental para o `StlPreview`: os previews reais existentes permanecem como referência
 - ❌ Paid plans, subscriptions, monetization, checkout, and billing — permanently out of scope
 - ❌ Transactional marketplace and marketplace/API synchronization
 - ❌ Mandatory cloud sync or multi-user cloud architecture
@@ -451,4 +573,4 @@ The optional BYOK AI features (text analysis, photo-based estimation, AI-assiste
 
 ---
 
-_Updated 23 September 2026 — V2.0 phases 7/7b/7c added (adaptive layouts & progressive onboarding, multi-network quotes with marketplace profit comparison and suggested price, visual catalogs); optional BYOK AI deferred to a future major version. Phase 6 was added 18 September 2026 after benchmarking Creative3DP Tools. Quality metrics refreshed from the current suite run. This roadmap is alive and changes based on user feedback._
+_Updated 23 September 2026 — V2.0 phases 7/7b/7c now record the actual `2.0.0-beta.1` delivery state (PRs #182–#192), including the pure-library-only state of Phase 7b and the pending UI work. Added Phase 7d fleet management, Phase 7e Farm mode, Phase 7f unified Filament Shelf and Phase 7g static presets. The out-of-scope list and the optional BYOK AI deferral are explicit._
