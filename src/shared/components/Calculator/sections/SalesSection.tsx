@@ -7,16 +7,18 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { SectionHeader } from "./SectionHeader";
+import { DerivedMarginDisplay } from "../DerivedMarginDisplay";
 import { INTERMEDIATE_FIELDS, BASIC_FIELDS } from "../Calculator.constants";
 
 const MARKUP_PRESETS = [100, 150, 200, 250, 300, 500];
 
 export function SalesSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const store = useCalculatorStore();
   const catalogMarketplaces = useCatalogStore((s) => s.marketplaces);
   const { symbol: currencySymbol } = useCurrency();
   const isFDM = store.activeTab === "fdm";
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "pt-BR";
 
   const handleInput = (value: string, setter: (v: number) => void) => {
     setter(value === "" ? 0 : parseFloat(value) || 0);
@@ -256,6 +258,14 @@ export function SalesSection() {
             type="number"
             unit="%"
             tooltip={t("tooltip.profitMargin")}
+          />
+          <DerivedMarginDisplay
+            profit={store.results?.profit}
+            sellPrice={store.results?.sellPrice}
+            label={t("calc.actualMargin")}
+            helper={t("tooltip.profitMargin")}
+            locale={locale}
+            testId="classic-derived-real-margin"
           />
         </div>
       </div>
