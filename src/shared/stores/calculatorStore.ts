@@ -1,5 +1,9 @@
 import { create } from "zustand";
 import {
+  assertPersistableCalculationState,
+  isPersistableCalculationState,
+} from "@/shared/lib/calculationState";
+import {
   assertSufficientFilamentStock,
   createFilamentStockError,
   FILAMENT_SPOOL_NOT_FOUND,
@@ -50,6 +54,7 @@ import {
   debouncedAutoSave,
   loadStr,
   migrateQuickMode,
+  resolveFdmFilament,
 } from "./calculatorStore.helpers";
 import { computeValidatedStoreResults } from "./calculatorStore.validation";
 
@@ -366,10 +371,21 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           const merged = {
             ...state,
             ...data,
+            // Normalize legacy filament fields before undo validates the
+            // restored state; quantity and remaining issues still hit the gate.
+            fdmFilament: resolveFdmFilament(data.fdmFilament ?? state.fdmFilament),
             fdmAmsEnabled: false,
             lastDeductedInfo: null,
           };
           const validated = computeValidatedStoreResults(merged);
+          if (
+            !isPersistableCalculationState({
+              calculationIssues: validated.calculationIssues,
+              quantity: validated.input.quantity,
+            })
+          ) {
+            return state;
+          }
           return {
             ...merged,
             ...validated.input,
@@ -570,6 +586,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       const s = get();
       const r = s.results;
       if (!r) return;
+      assertPersistableCalculationState(s);
       const name =
         s.productName.trim() ||
         (s.activeTab === "fdm"
@@ -795,6 +812,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     saveSettings: () => {
       const s = get();
+      assertPersistableCalculationState(s);
       const data = {
         fdmMaterial: s.fdmMaterial,
         fdmPrintParams: s.fdmPrintParams,

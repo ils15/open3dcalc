@@ -416,7 +416,11 @@ describe("i18n locales (results stock errors)", () => {
     ["pt-BR", ptBR],
     ["en-US", enUS],
   ])("resolves stock error messages in %s", (_locale, dict) => {
-    for (const key of ["insufficientStock", "spoolNotFound"] as const) {
+    for (const key of [
+      "insufficientStock",
+      "spoolNotFound",
+      "invalidCalculationState",
+    ] as const) {
       const value = resolve(dict, ["results", key]);
       expect(typeof value, `results.${key}`).toBe("string");
       expect((value as string).length).toBeGreaterThan(0);

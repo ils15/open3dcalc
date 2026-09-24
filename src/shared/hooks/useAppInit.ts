@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { isPersistableCalculationState } from "@/shared/lib/calculationState";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { useHistoryStore } from "@/shared/stores/historyStore";
@@ -135,6 +136,12 @@ function migrateLegacyData(): void {
 
 function saveSettingsBeforeUnload(): void {
   const calc = useCalculatorStore.getState();
+  if (!isPersistableCalculationState(calc)) {
+    console.warn(
+      "[calculatorStore] Skipped beforeunload save: INVALID_CALCULATION_STATE",
+    );
+    return;
+  }
   const data = {
     activeTab: calc.activeTab,
     fdmMaterial: calc.fdmMaterial,
@@ -221,6 +228,15 @@ function loadSharedCalculation(): void {
   }
   // Recompute through the same boundary used by every other restore path.
   const validated = computeValidatedStoreResults(merged);
+  if (
+    !isPersistableCalculationState({
+      calculationIssues: validated.calculationIssues,
+      quantity: validated.input.quantity,
+    })
+  ) {
+    window.location.hash = "";
+    return;
+  }
   useCalculatorStore.setState({
     ...merged,
     ...validated.input,

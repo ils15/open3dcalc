@@ -1,4 +1,6 @@
+import { isPersistableCalculationState } from "@/shared/lib/calculationState";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { resolveFdmFilament } from "@/shared/stores/calculatorStore.helpers";
 import { computeValidatedStoreResults } from "@/shared/stores/calculatorStore.validation";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import type { FilamentSpool } from "@/shared/stores/filamentInventory";
@@ -36,7 +38,9 @@ export function restoreAutoSnapshot(): boolean {
       fdmMaterial: data.fdmMaterial ?? calc.fdmMaterial,
       fdmPrintParams: data.fdmPrintParams ?? calc.fdmPrintParams,
       fdmSlicerProfile: data.fdmSlicerProfile ?? calc.fdmSlicerProfile,
-      fdmFilament: data.fdmFilament ?? calc.fdmFilament,
+      // Recover legacy filament fields before the persistence gate validates
+      // the normalized calculation state.
+      fdmFilament: resolveFdmFilament(data.fdmFilament ?? calc.fdmFilament),
       fdmAmsEnabled: false,
       fdmAmsSlots: data.fdmAmsSlots ?? calc.fdmAmsSlots,
       fdmMachine: data.fdmMachine ?? calc.fdmMachine,
@@ -68,6 +72,14 @@ export function restoreAutoSnapshot(): boolean {
         calc.selectedMarketplace) as unknown as Marketplace,
     };
     const validated = computeValidatedStoreResults(restored);
+    if (
+      !isPersistableCalculationState({
+        calculationIssues: validated.calculationIssues,
+        quantity: validated.input.quantity,
+      })
+    ) {
+      return false;
+    }
     useCalculatorStore.setState({
       ...restored,
       ...validated.input,

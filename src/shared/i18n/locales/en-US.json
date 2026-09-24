@@ -766,6 +766,7 @@
     "deductSuccess": "Weight deducted successfully!",
     "insufficientStock": "Insufficient filament stock: {{required}}g required, {{available}}g available.",
     "spoolNotFound": "The selected spool was not found in the inventory.",
+    "invalidCalculationState": "Fix the invalid fields before saving the calculation.",
     "deductSelect": "Select spool to deduct from",
     "deductAvailable": "{{weight}}g available",
     "autoDeductSuccess": "{{weight}}g automatically deducted from spool",

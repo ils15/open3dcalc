@@ -504,18 +504,66 @@ describe('CalculatorStore core', () => {
       expect(mockAddEntry).not.toHaveBeenCalled()
     })
 
-    it('does not compensate when deduction throws before mutating stock', () => {
-      addMockSpool('spool_deduction_before_mutation', 700)
-      const store = useCalculatorStore.getState()
-      store.setSelectedSpoolId('spool_deduction_before_mutation')
-      store.setProductName('Deduction Before Mutation')
-      mockDeductWeight.mockImplementationOnce(() => {
-        throw new Error('inventory unavailable')
-      })
+    it.each([1.5, 1e15])(
+      'rejects invalid quantity %s before any history or stock write',
+      (quantity) => {
+        addMockSpool('spool_invalid_quantity', 1000)
+        const store = useCalculatorStore.getState()
+        store.setQuantity(quantity)
+        store.setSelectedSpoolId('spool_invalid_quantity')
+        store.setProductName('Invalid Quantity')
+        const stockBefore = mockSpools[0].weightGrams
 
-      expect(() => store.addToHistory()).toThrow('inventory unavailable')
-      expect(mockUpdateSpool).not.toHaveBeenCalled()
+        expect(() => store.addToHistory()).toThrow(
+          'INVALID_CALCULATION_STATE',
+        )
+        expect(mockDeductWeight).not.toHaveBeenCalled()
+        expect(mockAddEntry).not.toHaveBeenCalled()
+        expect(mockSpools[0].weightGrams).toBe(stockBefore)
+      },
+    )
+
+    it('rejects a non-quantity calculation issue before any write', () => {
+      addMockSpool('spool_invalid_slice', 1000)
+      const store = useCalculatorStore.getState()
+      store.setSelectedSpoolId('spool_invalid_slice')
+      store.setProductName('Invalid Slice')
+      useCalculatorStore.setState({
+        calculationIssues: [
+          {
+            path: 'fdmPrintParams.energyCostPerKwh',
+            reason: 'non_finite',
+            received: Number.NaN,
+          },
+        ],
+      })
+      const stockBefore = mockSpools[0].weightGrams
+
+      expect(useCalculatorStore.getState().calculationIssues.length).toBeGreaterThan(0)
+      expect(() => store.addToHistory()).toThrow(
+        'INVALID_CALCULATION_STATE',
+      )
+      expect(mockDeductWeight).not.toHaveBeenCalled()
       expect(mockAddEntry).not.toHaveBeenCalled()
+      expect(mockSpools[0].weightGrams).toBe(stockBefore)
+    })
+
+    it('does not persist invalid calculation settings', () => {
+      const store = useCalculatorStore.getState()
+      store.setQuantity(1.5)
+
+      expect(() => store.saveSettings()).toThrow('INVALID_CALCULATION_STATE')
+      expect(localStorage.getItem('open3dcalc_settings_v2')).toBeNull()
+    })
+
+    it('does not restore an invalid undo snapshot', () => {
+      const invalidSnapshot = buildSnapshot({ quantity: 1.5 })
+      useCalculatorStore.setState({ history: [JSON.stringify(invalidSnapshot)] })
+      const quantityBefore = useCalculatorStore.getState().quantity
+
+      useCalculatorStore.getState().undo()
+
+      expect(useCalculatorStore.getState().quantity).toBe(quantityBefore)
     })
   })
 })

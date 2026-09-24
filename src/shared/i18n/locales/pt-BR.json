@@ -766,6 +766,7 @@
     "deductSuccess": "Peso deduzido com sucesso!",
     "insufficientStock": "Estoque insuficiente: {{required}}g necessários, {{available}}g disponíveis.",
     "spoolNotFound": "O carretel selecionado não foi encontrado no inventário.",
+    "invalidCalculationState": "Corrija os campos inválidos antes de salvar o cálculo.",
     "deductSelect": "Selecionar carretel para deduzir",
     "deductAvailable": "{{weight}}g disponíveis",
     "autoDeductSuccess": "{{weight}}g deduzidos automaticamente do carretel",

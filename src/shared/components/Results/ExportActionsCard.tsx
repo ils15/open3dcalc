@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { isInvalidCalculationStateError } from "@/shared/lib/calculationState";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useDemoExportGuard } from "@/shared/hooks/useDemoExportGuard";
@@ -34,9 +35,25 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
   const { isDemoMode, guard } = useDemoExportGuard(onExportBlocked);
 
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle");
 
   const saveSettings = useCalculatorStore((s) => s.saveSettings);
+
+  const handleSaveSettings = () => {
+    try {
+      saveSettings();
+      setSaveError(null);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (error) {
+      if (isInvalidCalculationStateError(error)) {
+        setSaveError(t("results.invalidCalculationState"));
+        return;
+      }
+      throw error;
+    }
+  };
 
   const handleExportQuote = () => {
     if (guard()) return;
@@ -133,11 +150,7 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
         )}
         <button
           type="button"
-          onClick={() => {
-            saveSettings();
-            setSaveStatus("saved");
-            setTimeout(() => setSaveStatus("idle"), 2000);
-          }}
+          onClick={handleSaveSettings}
           className={`min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate ${
             saveStatus === "saved"
               ? "bg-[var(--positive)] text-[var(--text-inverse)]"
@@ -153,6 +166,11 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
             {saveStatus === "saved" ? t("calc.saved") : t("calc.saveSettings")}
           </span>
         </button>
+        {saveError && (
+          <p role="alert" className="col-span-2 text-xs text-[var(--critical)]">
+            {saveError}
+          </p>
+        )}
         <button
           type="button"
           data-shortcut="export"

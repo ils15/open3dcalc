@@ -205,6 +205,31 @@ describe("BentoSurface", () => {
     expect(addToHistory).toHaveBeenCalledOnce();
   });
 
+  it("translates a stock error from the summary CTA", async () => {
+    const user = userEvent.setup();
+    const error = Object.assign(new Error("INSUFFICIENT_FILAMENT_STOCK"), {
+      code: "INSUFFICIENT_FILAMENT_STOCK",
+      required: 308.4,
+      available: 1,
+    });
+    useLayoutStore.setState({ layoutMode: "bento" });
+    useCalculatorStore.setState({
+      addToHistory: () => {
+        throw error;
+      },
+    });
+
+    render(<CalculatorSurface />);
+    await user.click(screen.getByRole("button", { name: "Salvar no histórico" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      i18n.t("results.insufficientStock", {
+        required: "308.40",
+        available: "1.00",
+      }),
+    );
+  });
+
   it.each([
     ["pt-BR", ["Material", "Máquina e energia", "Mão de obra e extras", "Precificação", "Resumo financeiro"]],
     ["en-US", ["Material", "Machine & energy", "Labor & extras", "Pricing", "Financial summary"]],

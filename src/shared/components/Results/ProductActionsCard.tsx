@@ -7,6 +7,7 @@ import {
   isFilamentSpoolNotFoundError,
   isInsufficientFilamentStockError,
 } from "@/shared/lib/filamentStock";
+import { isInvalidCalculationStateError } from "@/shared/lib/calculationState";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { useProductInventory } from "@/shared/stores/productInventory";
@@ -82,6 +83,13 @@ export function ProductActionsCard({ displaySellPrice }: ProductActionsCardProps
       }
       if (isFilamentSpoolNotFoundError(error)) {
         setProductMsg({ kind: "error", text: t("results.spoolNotFound") });
+        return;
+      }
+      if (isInvalidCalculationStateError(error)) {
+        setProductMsg({
+          kind: "error",
+          text: t("results.invalidCalculationState"),
+        });
         return;
       }
       throw error;
