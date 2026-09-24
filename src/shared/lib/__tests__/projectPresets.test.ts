@@ -1,13 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { materials } from "@/shared/lib/materials";
 import { printers } from "@/shared/lib/printers";
 import {
-  buildProjectPresetSnapshot,
+  buildProjectPresetDraft,
   hasCalculationInProgress,
   projectPresets,
+  resinWeightToVolume,
 } from "@/shared/lib/projectPresets";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 
 const getPreset = (id: string) => {
   const preset = projectPresets.find((item) => item.id === id);
@@ -15,38 +17,40 @@ const getPreset = (id: string) => {
   return preset;
 };
 
+const resetCatalog = () => {
+  useCatalogStore.setState({
+    printers: printers.map((printer) => ({ ...printer })),
+    materials: materials.map((material) => ({ ...material })),
+  });
+};
+
+const resetCalculator = () => {
+  useCalculatorStore.getState().resetCalculator();
+  useCalculatorStore.setState({ history: [], productName: "" });
+};
+
 describe("project presets — static data and catalog mapping", () => {
+  beforeEach(() => {
+    resetCatalog();
+    resetCalculator();
+  });
+
   it("exposes exactly the three requested projects", () => {
     expect(projectPresets.map(({ id }) => id)).toEqual([
       "spiral-vase",
       "reinforced-gopro-handlebar",
       "rpg-dragon-statue",
     ]);
+    expect(projectPresets.every((preset) => preset.schemaVersion === 1)).toBe(true);
   });
 
   it.each([
-    ["spiral-vase", "pla_silk", "fdm", 140, 6.8, 10, 110],
-    [
-      "reinforced-gopro-handlebar",
-      "petg",
-      "fdm",
-      48,
-      2.3,
-      5,
-      140,
-    ],
-    [
-      "rpg-dragon-statue",
-      "standard",
-      "resin",
-      85,
-      4.5,
-      15,
-      null,
-    ],
+    ["spiral-vase", "pla_silk", "fdm", 140, 6.8, 10],
+    ["reinforced-gopro-handlebar", "petg", "fdm", 48, 2.3, 5],
+    ["rpg-dragon-statue", "standard", "resin", 85, 4.5, 15],
   ] as const)(
     "%s references real catalog entries and keeps the extracted values",
-    (id, materialId, technology, weight, time, failure, margin) => {
+    (id, materialId, technology, weight, time, failure) => {
       const preset = getPreset(id);
       expect(preset.catalogMaterialId).toBe(materialId);
       const material = materials.find((item) => item.id === materialId);
@@ -61,22 +65,20 @@ describe("project presets — static data and catalog mapping", () => {
       expect(preset.printParameters.printTimeHours).toBe(time);
       expect(preset.printParameters.failureMode).toBe("percent");
       expect(preset.printParameters.failureValue).toBe(failure);
+      expect(preset.printParameters.riskMultiplier).toBeUndefined();
 
       if (preset.technology === "fdm") {
-        expect(preset.sales?.profitMarginPercent).toBe(margin);
         expect(preset.material.weightUsed).toBe(weight);
+        expect("sales" in preset).toBe(false);
       } else {
-        expect(preset.sales).toBeUndefined();
         expect(preset.material.weightUsed).toBe(weight);
-        if (!("volumeUsedMl" in preset.material)) {
-          throw new Error("Resin preset is missing volumeUsedMl");
-        }
+        expect("volumeUsedMl" in preset.material).toBe(true);
         expect(preset.material.volumeUsedMl).toBeCloseTo(77.27, 2);
       }
     },
   );
 
-  it("uses PLA Silk, PETG and the closest real resin catalog entry", () => {
+  it("uses the canonical material names and keeps demo prices outside the draft", () => {
     const vase = getPreset("spiral-vase");
     const support = getPreset("reinforced-gopro-handlebar");
     const statue = getPreset("rpg-dragon-statue");
@@ -89,79 +91,130 @@ describe("project presets — static data and catalog mapping", () => {
     expect(vase.demoSellPriceBRL).toBe(68.5);
     expect(support.demoSellPriceBRL).toBe(49);
     expect(statue.demoSellPriceBRL).toBe(115);
-    expect(support.sales?.profitMarginRange).toEqual({ min: 140, max: 180 });
+
+    const draft = buildProjectPresetDraft(useCalculatorStore.getState(), vase, {
+      catalog: useCatalogStore.getState(),
+      productName: "Vaso Espiral Geométrico",
+      exampleLabel: "Exemplo",
+    });
+    expect(draft).not.toHaveProperty("demoSellPriceBRL");
+    expect(draft.reset.productName).toContain("Exemplo");
   });
 
-  it("applies printer-derived values before the preset material so material wins conflicts", () => {
-    const store = useCalculatorStore.getState();
-    const preset = getPreset("spiral-vase");
-    const conflictingState = {
-      ...store,
-      fdmAmsEnabled: true,
-      fdmMaterial: {
-        ...store.fdmMaterial,
-        type: "PETG",
-        weightUsed: 999,
-        costPerKg: 999,
+  it("derives canonical values from the catalog, not the static preset list", () => {
+    const state = useCalculatorStore.getState();
+    const catalog = useCatalogStore.getState();
+    const customPrinter = catalog.printers.find(
+      (item) => item.id === "bambu_p1s",
+    );
+    expect(customPrinter).toBeDefined();
+
+    useCatalogStore.setState({
+      printers: catalog.printers.map((item) =>
+        item.id === "bambu_p1s"
+          ? { ...item, value: 7777, maintenancePerHour: 0.9, custom: true }
+          : item,
+      ),
+    });
+    const draft = buildProjectPresetDraft(
+      state,
+      getPreset("spiral-vase"),
+      {
+        catalog: useCatalogStore.getState(),
+        productName: "Vaso Espiral Geométrico",
+        exampleLabel: "Exemplo",
       },
-      resinPostProcess: { ...store.resinPostProcess, washType: "water" as const },
-    };
-
-    const snapshot = buildProjectPresetSnapshot(conflictingState, preset, {
-      productName: "VasoEspiral Geométrico",
-      catalogMaterials: materials,
-      catalogPrinters: printers,
-    });
-
-    expect(snapshot.fdmMaterial).toMatchObject(preset.material);
-    expect(snapshot.fdmAmsEnabled).toBe(false);
-    expect(snapshot.selectedPrinterId).toBe("bambu_p1s");
-    expect(snapshot.fdmPrintParams.printerPowerWatts).toBe(350);
-    expect(snapshot.fdmMachine.machineCost).toBe(5500);
+    );
+    expect(draft.printerRef.origin).toBe("custom");
+    expect(draft.printerRef.customized).toBe(true);
+    expect(draft.reset.fdmMachine.machineCost).toBe(7777);
+    expect(draft.printerRef.canonical.value).toBe(7777);
   });
 
-  it("normalizes a non-water preset back to alcohol washing", () => {
-    const store = useCalculatorStore.getState();
-    const preset = getPreset("rpg-dragon-statue");
-    const snapshot = buildProjectPresetSnapshot(store, preset, {
-      productName: "Estatueta Colecionável RPG / Dragão",
-      catalogMaterials: materials,
-      catalogPrinters: printers,
+  it("resets AMS, material and process baselines while preserving maker margin", () => {
+    const state = useCalculatorStore.getState();
+    useCalculatorStore.setState({
+      fdmAmsEnabled: true,
+      fdmAmsSlots: state.fdmAmsSlots.map((slot, index) => ({
+        ...slot,
+        enabled: index === 3,
+        materialType: "CUSTOM",
+      })),
+      fdmMaterial: {
+        ...state.fdmMaterial,
+        type: "CUSTOM",
+        weightUsed: 999,
+        purgeWeight: 99,
+        spoolEfficiency: 77,
+      },
+      fdmPrintParams: {
+        ...state.fdmPrintParams,
+        energyCostPerKwh: 0.42,
+        failureMode: "fixed",
+        failureValue: 99,
+        riskMultiplier: 9,
+        heatUpTimeMinutes: 99,
+        heatUpPowerPercent: 999,
+      },
+      fdmSales: { ...state.fdmSales, profitMarginPercent: 27 },
     });
 
-    expect(snapshot.resinPostProcess.washType).toBe("alcohol");
-    expect(snapshot.resinMaterial).toMatchObject(preset.material);
-    expect(snapshot.resinPrintParams.printerPowerWatts).toBe(150);
+    const draft = buildProjectPresetDraft(
+      useCalculatorStore.getState(),
+      getPreset("spiral-vase"),
+      {
+        catalog: useCatalogStore.getState(),
+        productName: "Vaso Espiral Geométrico",
+        exampleLabel: "Exemplo",
+      },
+    );
+    expect(draft.reset.fdmAmsEnabled).toBe(false);
+    expect(draft.reset.fdmAmsSlots).toEqual(
+      useCalculatorStore.getState().fdmAmsSlots.map((slot, index) => ({
+        ...slot,
+        enabled: index === 0,
+        materialType: "PLA",
+      })),
+    );
+    expect(draft.reset.fdmPrintParams.energyCostPerKwh).toBe(0.42);
+    expect(draft.reset.fdmPrintParams.riskMultiplier).toBe(1);
+    expect(draft.reset.fdmPrintParams.heatUpTimeMinutes).toBe(5);
+    expect(draft.reset.fdmPrintParams.heatUpPowerPercent).toBe(150);
+    expect(draft.reset.fdmMaterial.purgeWeight).toBe(0);
+    expect(draft.reset.fdmMaterial.spoolEfficiency).toBe(98);
+    expect(draft.preserved.fdmSales.profitMarginPercent).toBe(27);
+  });
+
+  it("resets the resin process to the canonical alcohol baseline", () => {
+    const state = useCalculatorStore.getState();
+    useCalculatorStore.setState({
+      resinPostProcess: { ...state.resinPostProcess, washType: "water" },
+    });
+    const draft = buildProjectPresetDraft(
+      useCalculatorStore.getState(),
+      getPreset("rpg-dragon-statue"),
+      {
+        catalog: useCatalogStore.getState(),
+        productName: "Estatueta Colecionável RPG / Dragão",
+        exampleLabel: "Exemplo",
+      },
+    );
+    expect(draft.reset.resinPostProcess.washType).toBe("alcohol");
+    expect(draft.reset.resinMaterial.wasteMarginPercent).toBe(5);
+    expect(draft.reset.resinPrintParams.energyCostPerKwh).toBe(
+      state.resinPrintParams.energyCostPerKwh,
+    );
   });
 
   it("detects whether applying a preset would replace existing work", () => {
-    const store = useCalculatorStore.getState();
-    expect(hasCalculationInProgress(store)).toBe(false);
+    const state = useCalculatorStore.getState();
+    expect(hasCalculationInProgress(state)).toBe(false);
     expect(
-      hasCalculationInProgress({ ...store, productName: "Cálculo em andamento" }),
+      hasCalculationInProgress({ ...state, productName: "Cálculo em andamento" }),
     ).toBe(true);
   });
 
-  it("loads the printer and marketplace while clearing an unrelated spool", () => {
-    const store = useCalculatorStore.getState();
-    store.setSelectedSpoolId("spool-from-another-project");
-    const snapshot = buildProjectPresetSnapshot(
-      store,
-      getPreset("spiral-vase"),
-      {
-        productName: "Vaso Espiral Geométrico",
-        catalogMaterials: materials,
-        catalogPrinters: printers,
-      },
-    );
-    const historyLength = useCalculatorStore.getState().history.length;
-
-    store.loadHistoryItem(snapshot);
-
-    const loaded = useCalculatorStore.getState();
-    expect(loaded.selectedPrinter.id).toBe("bambu_p1s");
-    expect(loaded.selectedMarketplace.id).toBe(snapshot.selectedMarketplaceId);
-    expect(loaded.selectedSpoolId).toBeNull();
-    expect(loaded.history).toHaveLength(historyLength + 1);
+  it("provides the canonical resin volume conversion", () => {
+    expect(resinWeightToVolume(85)).toBe(77.27);
   });
 });

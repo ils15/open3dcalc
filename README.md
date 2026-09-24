@@ -85,6 +85,7 @@ Para além da estimativa de volume, o Open3DCalc calcula o custo real do seu dia
 | 📊 **Comparador de materiais**      | No painel de resultados, uma tabela colapsável mostra quanto a peça atual custaria em **cada material FDM do catálogo**, ordenável por custo — antes de comprar, você vê qual filamento sai mais barato. Resina não é comparável com FDM (processos diferentes) e a própria tabela explica o porquê.                                                              |
 | 🖨️ **Custo de máquina do catálogo** | Ao selecionar uma impressora do catálogo, os custos de máquina da aba ativa são auto-preenchidos (valor, vida útil e manutenção). Como o catálogo guarda a manutenção em **R$/hora**, o app faz a conversão obrigatória para **R$/mês** a partir das suas horas de uso mensais. A derivação ocorre só na seleção — ajustar as horas mensais depois não recalcula. |
 
+| 🎯 **Presets de projeto** | Aplica um `PresetDraftV1` versionado com fail-closed e provenance de catálogo; o preview separa o closure resetado/preservado e sempre recalcula os resultados. |
 ---
 
 ## 🎓 Onboarding, tours e Wiki
