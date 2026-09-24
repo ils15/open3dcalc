@@ -134,7 +134,7 @@ describe("BentoSurface", () => {
     expect(screen.getAllByLabelText(/Custo total: R\$ 58,34/).length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText(/Lucro: R\$ 30,00/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("2,5 h").length).toBeGreaterThan(0);
-    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Quantidade" })).toHaveValue(3);
   });
 
   it("derives the spool gauge from the selected inventory spool", async () => {
