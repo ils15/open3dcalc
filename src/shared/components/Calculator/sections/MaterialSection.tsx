@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import {
   FlaskConical,
   Layers,
@@ -58,6 +58,8 @@ export function MaterialSection({
   // shows 1 decimal. While focused we keep the user's in-progress string so a
   // raw "45." isn't clobbered by formatting; onBlur we drop back to formatted.
   const [weightDraft, setWeightDraft] = useState<string | null>(null);
+  const multiMaterialLabelId = useId();
+  const multiMaterialDescriptionId = useId();
   const weightValue = weightDraft ?? formatWeight(store.fdmMaterial.weightUsed);
 
   const handleStlParsed = useCallback(
@@ -149,32 +151,32 @@ export function MaterialSection({
         <>
           {isFieldVisible("material", "purgeWeight") &&
             (store.selectedPrinter.maxFilaments ?? 1) > 1 && (
-              <div className="flex items-center justify-end gap-2 mb-3">
-                <span className="text-[10px] font-semibold text-[var(--color-info)] uppercase tracking-wide">
-                  AMS Multi-material
-                </span>
-                <button
-                  onClick={() => {
-                    const was = store.fdmAmsEnabled;
-                    if (!was) {
-                      const slot0 = { ...store.fdmAmsSlots[0] };
-                      slot0.materialType = store.fdmMaterial.type;
-                      slot0.costPerKg = store.fdmMaterial.costPerKg;
-                      slot0.weightUsedGrams = store.fdmMaterial.weightUsed;
-                      slot0.purgeWeightGrams = store.fdmMaterial.purgeWeight;
-                      slot0.density = store.fdmMaterial.density;
-                      slot0.spoolEfficiency = store.fdmMaterial.spoolEfficiency;
-                      store.setFdmAmsSlot(0, slot0);
-                    }
-                    store.setFdmAmsEnabled(!was);
-                  }}
-                  aria-pressed={store.fdmAmsEnabled}
-                  className={`relative w-9 h-4 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-info)] focus-visible:outline-none shrink-0 ${store.fdmAmsEnabled ? "bg-[var(--color-info)]" : "bg-[var(--color-bg-elevated)]"}`}
-                >
+              <div className="mb-3 space-y-1">
+                <div className="flex items-center justify-end gap-2">
                   <span
-                    className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-md transition-all duration-200 ${store.fdmAmsEnabled ? "left-[18px]" : "left-0.5"}`}
-                  />
-                </button>
+                    id={multiMaterialLabelId}
+                    className="text-[10px] font-semibold text-[var(--color-info)] uppercase tracking-wide"
+                  >
+                    {t("calc.multiMaterialLabel")}
+                  </span>
+                  <button
+                    type="button"
+                    aria-disabled="true"
+                    aria-describedby={multiMaterialDescriptionId}
+                    aria-labelledby={multiMaterialLabelId}
+                    aria-pressed={false}
+                    tabIndex={0}
+                    className="relative h-4 w-9 shrink-0 cursor-not-allowed rounded-full bg-[var(--color-bg-elevated)] opacity-70 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-info)]"
+                  >
+                    <span className="absolute left-0.5 top-0.5 h-3 w-3 rounded-full bg-white shadow-md transition-all duration-200" />
+                  </button>
+                </div>
+                <p
+                  id={multiMaterialDescriptionId}
+                  className="text-right text-[11px] leading-relaxed text-[var(--color-text-secondary)]"
+                >
+                  {t("calc.multiMaterialDisabledDescription")}
+                </p>
               </div>
             )}
           {store.fdmAmsEnabled ? (

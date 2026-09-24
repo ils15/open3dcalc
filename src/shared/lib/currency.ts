@@ -35,7 +35,7 @@ export function formatCurrency(val: number, currency: CurrencyCode): string {
  * (store, panels, PDF docs) shares the same rounding.
  */
 export function roundCurrency(val: number): number {
-  if (!Number.isFinite(val)) return 0;
+  if (!Number.isFinite(val)) return val;
   return Math.round(val * 100) / 100;
 }
 
