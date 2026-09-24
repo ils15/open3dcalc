@@ -31,18 +31,40 @@ The section mixes logistics, fees and profit:
 - **Marketplace** — the sales platform, picked from the catalog. Each one carries
   its own percentage fee, filled in automatically.
 - **Taxes** — taxes over the sale amount (ICMS, ISS, Simples Nacional).
-- **Profit margin** — the desired profit percentage over the total cost.
+- **Markup on cost** — the desired profit percentage over the total cost.
+
+## Markup vs. real margin
+
+The `profitMarginPercent` field is a **markup on cost**, not the final profit
+percentage on the sale price. For example, `110%` markup means the sale price
+must be `2.10 ×` the cost: a cost of `R$ 100,00` becomes `R$ 210,00`, leaving
+`R$ 110,00` of gross profit.
+
+**Real margin** is derived and read-only:
+
+```
+real margin = profit ÷ sale price × 100
+```
+
+Here, `R$ 110,00 ÷ R$ 210,00 = 52,38%` real margin. Taxes and fees can change
+the final price and therefore the net profit, so read real margin together with
+the result.
+
+The interface shows real margin in five places so the comparison stays visible.
+Its tooltip says: **“Markup: profit over cost. Margin: profit over the price the
+customer pays.”** To change real margin, adjust the markup or the sale price
+instead of trying to edit the derived value.
 
 ## The sale price formula
 
 The mechanics are less obvious than they look, and worth understanding. First
 the base is closed: production cost plus failures plus packaging plus shipping.
-On top of that base the margin is applied. Only then do taxes and fees enter —
+On top of that base the markup is applied. Only then do taxes and fees enter —
 but in a special way, **by division**, so they do not eat your profit:
 
 ```
 base cost       = production + failures + packaging + shipping
-profit          = base cost * (margin / 100)
+profit          = base cost * (markup / 100)
 price w/o fees  = base cost + profit
 sale price      = price w/o fees / (1 - (taxes + marketplace fee) / 100)
 ```
@@ -55,7 +77,7 @@ is exactly the percentage you declared — not a cent less.
 
 A part with a R$ 20.00 production cost, R$ 2.00 in failures, R$ 2.00 in packaging
 and R$ 1.00 in shipping, sold on a platform with a 10% fee, with 15% in taxes and
-a 100% margin:
+a 100% markup:
 
 ```
 base cost       = 20 + 2 + 2 + 1        = R$ 25.00
@@ -90,13 +112,13 @@ and changing the value afterward clears the button's highlight. What they really
 save is the reasoning — for anyone selling wholesale, for instance, 100% over
 cost is a standard markup repeated across every quote.
 
-## Conscious margin vs. hidden rounding
+## Conscious markup vs. hidden rounding
 
 The difference between pricing well and pricing poorly is the order of the sums:
 
-- **Conscious margin**: you know the cost, you choose the margin, and the price
+- **Conscious markup**: you know the cost, you choose the markup, and the price
   follows. If the market pushes back, you know whether the problem is the cost or
-  the margin — and you can move either one.
+  the markup — and you can move either one.
 - **Hidden rounding**: you pick a price that "feels right" and the profit is
   whatever is left. It works until nothing is left, and you cannot tell why.
 
@@ -116,6 +138,7 @@ Four pitfalls live in this section, and each one shrinks the profit without show
   ten percent of the cost; leaving the field at zero is a gift to the platform.
 - **Packaging and shipping outside the base.** They add to the cost before the
   margin — R$ 3.00 of shipping left unrated is profit that vanishes on every sale.
-- **Margin over the price instead of the cost.** The margin here is markup over
-  cost. 100% means selling for twice the cost — not "100% of the price as
-  profit," which would be a different number.
+- **Confusing markup with real margin.** The `profitMarginPercent` field is
+  markup on cost. `100%` means selling for twice the cost — not "100% of the
+  price as profit," which would be a different number. Read the derived real
+  margin as well.

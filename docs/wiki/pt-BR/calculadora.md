@@ -22,34 +22,54 @@ A calculadora responde a duas perguntas separadas, sempre na ordem:
 1. **Quanto esta peça custa para existir?** É a soma de tudo que você consome
    para produzi-la: material, energia, desgaste da máquina, mão de obra,
    falhas e os custos fixos da oficina.
-2. **Por quanto ela deve ser vendida?** Sobre o custo de produção você aplica a
-   margem, os impostos e as taxas de marketplace — e o preço de venda aparece
+2. **Por quanto ela deve ser vendida?** Sobre o custo de produção você aplica o
+   markup, os impostos e as taxas de marketplace — e o preço de venda aparece
    ao lado do custo, nunca sozinho.
 
 Manter essas duas contas separadas é o que transforma a margem em uma **escolha
 consciente**. Quando custo e preço de venda são apresentados lado a lado, você
 decide se quer ganhar mais ajustando a margem ou reduzindo um custo real.
 
-## Três níveis de detalhe
+## Layouts disponíveis
 
-Nem todo orçamento precisa de todas as seções. Por isso a calculadora tem três
-níveis, e cada um revela mais seções:
+A beta 3 oferece três layouts implementados para a mesma calculadora:
 
-- **Rápido** — quatro seções: `material`, `print`, `sales` e `results`. É o
-  suficiente para uma estimativa em 30 segundos.
-- **Detalhado** — adiciona a seção `failure`, para quem já tem um histórico de
-  perdas e quer precificá-lo.
-- **Completo** — revela todas as dez seções, incluindo `hardware`, `machine`,
-  `fixedCost`, `labor` e `ops`. Controle total sobre cada parâmetro.
+- **Clássico** — a calculadora completa, organizada em seções, com navegação e
+  controle de nível no topo. É o caminho para uma visão completa e para quem já
+  conhece o fluxo de trabalho.
+- **Guided (Fluxo Guiado)** — uma sequência de perguntas, passo a passo, para
+  quem está começando e para o uso no celular. Ele conduz a estimativa sem
+  expor todas as seções de uma vez.
+- **Bento Grid** — cinco cards organizados em uma grade responsiva. Ele não é mais
+  um painel somente informativo: agora é uma calculadora editável, com os mesmos
+  campos do Classic, e os cards alimentam o cálculo real.
 
-A lógica é gradual: o nível **Rápido** cobre o caminho do filamento ao preço de
-venda; o **Detalhado** acende a contabilidade de falhas; o **Completo** abre a
-planilha inteira.
+O seletor de layout fica no cabeçalho e a preferência é lembrada pelo aplicativo.
+O modo Farm está no roadmap e não está disponível nesta beta; não há um quarto
+layout para usar.
 
-**Mudar de nível não apaga nada.** Os campos que você já preencheu continuam
-lá, guardados no estado da calculadora — você só deixa de ver as seções que o
-nível atual esconde. Pode começar no Rápido para fechar um preço rápido e subir
-de nível depois, quando precisar de precisão.
+## Nível de detalhe: Rápido, Detalhado e Completo
+
+O seletor **Rápido / Detalhado / Completo** aparece no topo do Classic e do
+Bento. É o mesmo componente e o mesmo estado nos dois layouts: mudar o nível em
+um deles reflete imediatamente no outro.
+
+- **Rápido** — mostra `material`, `print`, `sales` e `results`, o caminho mínimo
+  para uma estimativa rápida.
+- **Detalhado** — acrescenta a seção `failure`, para quem quer incluir perdas e
+  retrabalho.
+- **Completo** — libera todas as dez seções, incluindo `hardware`, `machine`,
+  `fixedCost`, `labor` e `ops`.
+
+A visibilidade é regida pelo contrato
+`isFieldVisibleForLevel(calcLevel, hiddenFields, sectionId, fieldId)`. Ele é
+compartilhado pelo Classic e pelo Bento e também respeita `hiddenFields`, ou
+seja, as escolhas de campos ocultos não são descartadas ao trocar de layout.
+
+**Mudar de nível não apaga valores.** Os campos preenchidos continuam guardados;
+apenas as seções ou os campos que o nível atual oculta deixam de aparecer. Você
+pode começar no Rápido e aumentar o detalhe quando precisar.
+
 
 ## O mapa das dez seções
 
@@ -93,7 +113,7 @@ custo de produção = material + print + hardware + machine
 
 custo total       = produção + failure + embalagem + frete
 
-preço de venda    = custo total + margem
+preço de venda    = custo total + markup
                   + impostos e taxas de marketplace
 ```
 
@@ -102,9 +122,100 @@ ao total, mas margem, impostos e taxas são aplicados **por cima** dele. Por
 isso o preço de venda cresce de forma diferente do custo — e por isso a seção
 `results` existe, para mostrar essa diferença com clareza.
 
+## Regras que evitam números enganosos
+
+### Margem real x markup
+
+O campo `profitMarginPercent` representa **markup sobre o custo**, não a
+percentagem final do lucro sobre o preço. Por exemplo, `110%` de markup significa
+que o preço deve ser `2,10 ×` o custo: um custo de `R$ 100,00` vira
+`R$ 210,00`, com `R$ 110,00` de lucro.
+
+A **margem real** é derivada e somente-leitura:
+
+```
+margem real = lucro ÷ preço de venda × 100
+```
+
+Nesse exemplo, `R$ 110,00 ÷ R$ 210,00 = 52,38%`. O valor aparece em cinco pontos
+da interface para ficar visível perto do preço. O tooltip da interface resume a
+diferença: “Markup: lucro sobre o custo. Margem: lucro sobre o preço que o
+cliente paga.” Consulte também [Vendas](#user-content-custos-adicionais-e-vendas)
+e [Resultados](#user-content-resultados).
+
+### Ausência não é zero
+
+Na beta 3, `R$ 0,00` nunca mais significa que o cálculo terminou em zero. Um
+valor não-finito é mostrado como `—`, e não como uma quantia inventada.
+
+Isso corrige um caso real: ao restaurar um cálculo antigo, o campo
+`energyCostPerKwh` podia estar ausente. O `NaN` percorria a cadeia de
+cálculo e a tela acabava mostrando `R$ 0,00`, parecendo um custo válido. Agora a
+regra é:
+
+- **Ausência em um snapshot legado:** o app usa o default da aplicação para o
+  campo que falta e tenta concluir o cálculo.
+- **Corrupção ou valor inválido:** `NaN`, negativo, tipo errado ou divisão por
+  zero geram um erro explícito, com o caminho do campo exato.
+- **Resultado não-finito:** a interface exibe `—` e o aviso de cálculo
+  inválido; não transforma o problema em zero.
+
+A validação acontece antes do cálculo em sete caminhos: carga inicial,
+`loadHistoryItem`, `undo`, `restoreAutoSnapshot`, `loadSharedCalculation`,
+setters e `setWithCompute`. Isso mantém a regra para abrir, desfazer, restaurar,
+compartilhar e editar valores.
+
+Quando aparecer `—`, leia o nome do campo indicado no alerta e corrija esse
+campo. Se o erro veio de um histórico ou de um cálculo compartilhado, restaure
+uma configuração válida ou preencha o valor ausente antes de usar o resultado.
+Não compense um valor desconhecido com `0`: nesse caso o app ainda não tem um número
+confiável para a peça.
+
+### Presets de demonstração removidos
+
+Os três presets de demonstração — **Vaso**, **Suporte GoPro** e **Estatueta** —
+foram removidos. Eles preenchiam peso e tempo inventados; esses dados são
+propriedade do modelo e não do fluxo de cálculo, portanto um preset não deve
+fingir que conhece a peça.
+
+Para ver o funcionamento, use o **Modo Demo**, que é explicitamente uma
+demonstração. Para trabalhar com uma configuração real, calcule a peça e
+carregue-a do **Histórico**.
+
+### Multi-material temporariamente desativado
+
+O suporte a múltiplos materiais está desativado nesta beta. O toggle continua
+visível, mas fica indisponível e explica que o modelo completo virá em uma fase
+própria. O motivo é objetivo: o custo dos slots substituía apenas
+`materialCost`; `subtotal`, `totalCost`, `sellPrice` e `profit` não recebiam
+essa parcela, deixando o preço subestimado em silêncio.
+
+Não use um valor parcial de multi-material para fechar um orçamento. O campo
+`fdmAmsSlots` é preservado para essa fase futura, mas não representa hoje um
+modelo de custo completo.
+
+## Controles e apresentação
+
+O controle de personalização de campos agora aparece uma única vez, no
+componente `FieldCustomizer`. Antes o mesmo ajuste era repetido de duas a
+quatro vezes em seções diferentes. `SectionHeader` é apenas apresentacional;
+ele não mantém uma segunda cópia do estado. O nível de detalhe e
+`hiddenFields` continuam sendo a fonte única de verdade para o Classic e o
+Bento.
+
+A interface usa **Plus Jakarta Sans auto-hospedada** em WOFF2, sob a licença
+OFL 1.1. A fonte anterior do Google era bloqueada pela CSP, então o app não
+depende dela para exibir a Wiki. O arquivo `tokens.css` é a fonte única dos
+tokens visuais, com os mesmos valores semânticos para os temas claro e escuro.
+
+A Wiki também preserva a acessibilidade ao navegar entre artigos: o destino é
+rolado e recebe foco antes da interação seguinte. A correção usa
+`useLayoutEffect` no lugar de `useEffect`, evitando que o foco seja aplicado
+antes da montagem do título.
+
 ## Um exemplo completo
 
-Uma peça decorativa em PLA, 50 g, 5 horas de impressão, margem de 100%:
+Uma peça decorativa em PLA, 50 g, 5 horas de impressão, markup de 100%:
 
 ```
 material    50 g a R$ 125/kg (eficiência 98%)  = R$  6,38
@@ -137,7 +248,7 @@ O caminho recomendado, do primeiro número ao preço final:
    impressora e o custo do kWh.
 4. **Olhe a seção `results`** — ela já mostra um custo e um preço de venda
    com a margem padrão.
-5. **Ajuste a seção `sales`** — a margem é o seu lucro declarado. Suba ou
+5. **Ajuste a seção `sales`** — o markup é o lucro declarado sobre o custo. Suba ou
    desça conforme o mercado; o preço de venda se atualiza na hora.
 6. **Suba de nível** se precisar: ative `failure` para incluir perdas, ou vá ao
    Completo para ratear máquina, mão de obra e custos fixos.
@@ -148,9 +259,9 @@ O caminho recomendado, do primeiro número ao preço final:
 
 Quatro erros cercam quem está começando com a calculadora, e todos eles se disfarçam de pressa.
 
-- **Aplicar a margem sem saber o custo.** O preço de venda se atualiza na hora quando você
+- **Aplicar markup sem saber o custo.** O preço de venda se atualiza na hora quando você
   mexe na porcentagem, o que convida ao ajuste às cegas. Sem olhar o `results` lado a lado,
-  100% de margem parece 100% de lucro — e não é.
+  100% de markup parece 100% de lucro — e não é.
 - **Somar a margem e esquecer o que vem por cima.** Custo total mais margem dá R$ 28,84 no
   exemplo; o preço de venda é R$ 38,45. Os R$ 9,61 de diferença são impostos e marketplace,
   aplicados por cima do total, e não são lucro.

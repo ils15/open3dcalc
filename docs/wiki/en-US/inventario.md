@@ -10,30 +10,39 @@ The **Inventory** is the catalog that feeds the calculator. Instead of
 estimating cost from generic values, you enter once what you bought and what
 you use — and every estimate starts from real numbers.
 
-It lives across two tabs, side by side in the app:
+The **Filament Shelf** is a single tab, identified internally as `inventory`.
+The old `spools` tab has been removed, so there is no second list to keep in
+sync. **Cadastros**, which stores printers, materials and marketplaces, remains
+a separate tab used to fill other calculator fields.
 
-- **Filaments**: the filament spools on your shelf.
-- **Cadastros**: printers, materials and marketplaces used as presets.
+Every shelf value is read by a specific calculator section. Get one wrong and
+every quote that uses it comes out wrong — which is why this catalog is the
+cheapest place to gain accuracy.
 
-Every field in those tabs is read by a specific calculator section. Get one
-wrong and every quote that uses it comes out wrong — which is why this catalog
-is the cheapest place to gain accuracy.
+## The Filament Shelf
 
-## The Filaments tab
-
-Each entry is a physical **spool**, with these fields:
+Each entry is a physical **spool**. The shelf keeps the data you need to decide
+whether it can cover the current part:
 
 - **Brand** and **material** (PLA, PETG, ABS, TPU, ASA, SILK...).
-- **Color** and its hex value, to tell similar spools apart.
-- **Remaining weight** and **original weight**, in grams.
+- **Color** and its hexadecimal value, so similar spools are easy to tell apart.
+- **Gross weight** and **net weight**, in grams. Net weight is the filament left
+  after the tare.
+- **Spool tare**, the weight of the empty bobbin.
+- **Remaining meters**, when diameter and density make the conversion possible.
 - **Price per kg**, meaning what you actually paid per kilogram.
 - **Diameter**, in millimeters — the default is `1.75`.
 - **Status**: `In stock`, `On the way` or `Empty`.
-- **Spool tare**, the weight of the empty bobbin.
 - **Where bought** and **notes**, free-form.
 
-The list filters by material and by status, so you quickly find the right
-spool before starting a print.
+The list filters by material and status. Each card shows a circular swatch in the
+registered color, the remaining percentage, the coverage required for the active
+part, and a low-stock warning when `isLowStockSpool` is true.
+
+The shelf also participates in the calculator flow: the action to **add to the
+shelf** can receive the current material and configuration, so you do not have
+to register the same spool again. Selecting a spool in the calculator feeds its
+data into the estimate.
 
 ## The Cadastros tab
 
@@ -97,9 +106,9 @@ no way to guess either number.
 
 ## Partial spools, tare and coverage
 
-**Remaining weight** is what makes the inventory useful day to day. It tracks
-the calculator: the active part and the current quantity define how much
-plastic the run needs, and each spool answers whether it can cover it:
+**Net weight** is what makes the inventory useful day to day. It tracks the
+calculator: the active part and the current quantity define how much plastic the
+run needs, and each spool answers whether it can cover it:
 
 ```
 needed    = part unit weight * quantity
@@ -119,6 +128,11 @@ the table, because lot variation is real.
 Example: the scale reads 400 g on a Bambu Lab spool. Discounting the 210 g
 tare leaves **190 g** of actual filament. Skipping the tare would make the
 calculator overstate the material by more than 100%.
+
+Alongside grams, the shelf calculates **remaining meters** when the material's
+diameter and density are filled in. Use that information to plan a larger batch:
+compare available meters with estimated demand instead of replacing net weight
+with a catalog number.
 
 ## Pitfalls that cost money
 
