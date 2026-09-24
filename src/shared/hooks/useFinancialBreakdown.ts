@@ -1,10 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import type {
-  CalculationResult,
-  SalesParameters,
-} from "@/shared/types";
+import type { CalculationResult, SalesParameters } from "@/shared/types";
 import type { SellPriceOverrideResult } from "@/shared/lib/sellPriceOverride";
 import { reverseFromSellPrice } from "@/shared/lib/sellPriceOverride";
 
@@ -14,14 +11,9 @@ import { reverseFromSellPrice } from "@/shared/lib/sellPriceOverride";
  */
 export type CalculatorTab = "fdm" | "resin";
 
-/** Stable cost-distribution categories used to select a semantic color token. */
+/** Stable semantic cost groups used by token-aware presentation surfaces. */
 export type CostCategory =
-  | "filament"
-  | "energy"
-  | "machine"
-  | "labor"
-  | "failure"
-  | "other";
+  "filament" | "energy" | "machine" | "labor" | "failure" | "other";
 
 /** One slice of the cost-distribution chart. */
 export interface CostSegment {
