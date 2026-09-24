@@ -59,7 +59,7 @@ export const SpoolCard = memo(function SpoolCard({
   const isLow = isLowStockSpool(spool, LOW_STOCK_GRAMS);
   // O hex armazenado é a fonte da verdade; sem ele, fallback indigo
   // (mesmo último recurso do resolveHex do FilamentInventory).
-  const hex = spool.colorHex || FALLBACK_HEX;
+  const hex = spool.colorHex?.trim() || FALLBACK_HEX;
   const barColor = pct < 20 ? "#f97316" : hex;
   const textOnColor = readableTextColor(hex);
 
@@ -76,7 +76,7 @@ export const SpoolCard = memo(function SpoolCard({
       )}
 
       <div className="flex items-center gap-3">
-        <SpoolThumb hex={spool.colorHex} monogramFrom={spool.brand || spool.color} />
+        <SpoolThumb hex={hex} monogramFrom={spool.brand || spool.color} />
         <div className="min-w-0 flex-1">
           <h3
             id={`spool-${spool.id}-title`}
@@ -167,10 +167,14 @@ export const SpoolCard = memo(function SpoolCard({
         <button
           type="button"
           onClick={() => onRemove(spool)}
-          className="w-9 h-9 flex items-center justify-center rounded-lg bg-red-600/10 text-[var(--color-danger)] hover:bg-red-600/30 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-lg bg-red-600/10 text-[var(--color-danger)] hover:bg-red-600/30 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          title={t("spools.removeSpool")}
           aria-label={t("spools.removeSpool")}
         >
-          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+          <Trash2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          <span className="hidden sm:inline text-xs font-semibold whitespace-nowrap">
+            {t("spools.removeSpool")}
+          </span>
         </button>
       </div>
     </article>
