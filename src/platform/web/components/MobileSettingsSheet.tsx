@@ -8,6 +8,7 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { APP_VERSION } from "@/shared/version";
 import { SecondaryNavigation } from "@/platform/web/SecondaryNavigation";
+import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 
 /**
  * Mobile settings bottom sheet (web only — settings only, never tabs).
@@ -70,6 +71,10 @@ export function MobileSettingsSheet({
               />
             </div>
             <div className="px-3 pb-4 overflow-y-auto space-y-0.5">
+              <div className="px-1 py-2">
+                <LayoutSwitcher showLabels className="w-full justify-between" />
+              </div>
+
               {/* ── Settings heading ── */}
               <div className="flex items-center gap-3 pt-3 pb-1 px-4">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">

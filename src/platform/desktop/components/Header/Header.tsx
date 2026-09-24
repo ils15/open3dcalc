@@ -18,6 +18,7 @@ import { ThemeToggle } from "@/shared/components/Header/ThemeToggle";
 import { useUpdaterStore } from "../UpdateNotification/UpdaterStore";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
+import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -94,6 +95,8 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-2">
+          <LayoutSwitcher />
+
           <a
             href="https://t.me/Impressao3DBR"
             target="_blank"

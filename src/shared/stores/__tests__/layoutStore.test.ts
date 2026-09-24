@@ -111,6 +111,15 @@ describe("layoutStore — undo isolation from calculatorStore", () => {
     useCalculatorStore.setState({ history: [], quantity: 1 });
   });
 
+  it("switching layout does not add an entry to the calculator undo stack", () => {
+    const historyBefore = [...useCalculatorStore.getState().history];
+
+    useLayoutStore.getState().setLayoutMode("guided");
+    useLayoutStore.getState().setLayoutMode("bento");
+
+    expect(useCalculatorStore.getState().history).toEqual(historyBefore);
+  });
+
   it("layoutMode is absent from the calculator undo snapshot", () => {
     useLayoutStore.getState().setLayoutMode("guided");
     useCalculatorStore.getState().setQuantity(5);

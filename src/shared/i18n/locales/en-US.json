@@ -973,6 +973,12 @@
       }
     }
   },
+  "layoutSwitcher": {
+    "ariaLabel": "Choose calculator layout",
+    "classic": "Classic",
+    "guided": "Guided flow",
+    "bento": "Bento Grid"
+  },
   "onboarding": {
     "title": "Welcome to Open3DCalc",
     "start": "Start",
