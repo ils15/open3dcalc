@@ -1,4 +1,4 @@
-import { Wrench, Info } from "lucide-react";
+import { FlaskConical, Info, Monitor, Palette, Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
 import { ToggleSwitch } from "@/shared/components/ui/ToggleCard";
@@ -126,7 +126,10 @@ export function HardwareSection() {
           </div>
           <div className="border-t border-[var(--color-border)] pt-6">
             <div className="flex items-center gap-2 mb-4">
-              <span>🎨</span>
+              <Palette
+                className="h-4 w-4 text-[var(--color-accent)]"
+                aria-hidden="true"
+              />
               <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                 {t("calc.fdmFinishing")}
               </span>
@@ -153,7 +156,10 @@ export function HardwareSection() {
         <>
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
-              <span>🧪</span>
+              <FlaskConical
+                className="h-4 w-4 text-[var(--color-accent)]"
+                aria-hidden="true"
+              />
               <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                 {t("calc.resinPostProcess")}
               </span>
@@ -319,7 +325,10 @@ export function HardwareSection() {
           </div>
           <div className="border-t border-[var(--color-border)] pt-6">
             <div className="flex items-center gap-2 mb-4">
-              <span>🖥️</span>
+              <Monitor
+                className="h-4 w-4 text-[var(--color-accent)]"
+                aria-hidden="true"
+              />
               <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                 {t("calc.resinHardware")}
               </span>

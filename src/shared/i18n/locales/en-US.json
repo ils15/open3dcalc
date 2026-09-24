@@ -83,7 +83,7 @@
     "customGoal": "Monthly Profit Goal",
     "goalInput": "Monthly profit goal",
     "printsNeeded": "You need {{count}} prints/month to reach your goal of {{value}}",
-    "goalWarning": "⚠ Current profit per unit is negative. Increase sell price or reduce costs.",
+    "goalWarning": "Current profit per unit is negative. Increase sell price or reduce costs.",
     "lowMarginAlerts": "Low Margin Alerts",
     "lowMarginCount": "{{count}} items with low margin (<20%)",
     "revenue": "Revenue",
@@ -804,7 +804,7 @@
     },
     "steps": {
       "welcome": {
-        "title": "Welcome to Open3DCalc! 🎉",
+        "title": "Welcome to Open3DCalc!",
         "description": "Let's calculate the cost of your 3D prints together. Start by filling in the material data — we've already added example values for you to test."
       },
       "material": {
@@ -828,11 +828,11 @@
         "description": "Save your calculation to history or export as PDF to send to your client."
       },
       "complete": {
-        "title": "All set! 🚀",
-        "description": "Now you know how to calculate the cost of any print. Use the tooltips (ℹ️ icon) on each field if you have questions. Happy printing!"
+        "title": "All set!",
+        "description": "Now you know how to calculate the cost of any print. Use the tooltips on each field if you have questions. Happy printing!"
       },
       "upload-intro": {
-        "title": "Bring in your 3D file 📦",
+        "title": "Bring in your 3D file",
         "description": "This tour shows how to import an STL, OBJ, 3MF, or G-code and explore the built-in 3D viewer."
       },
       "upload-dropzone": {
@@ -848,11 +848,11 @@
         "description": "Drag to orbit, scroll to zoom, and use the toolbar buttons to refit the frame or go fullscreen."
       },
       "upload-complete": {
-        "title": "Ready to calculate 🎯",
+        "title": "Ready to calculate",
         "description": "With a model loaded, the volume and weight estimates feed the calculator automatically. See the calculator tour for the details."
       },
       "inv-intro": {
-        "title": "Manage your filament 🧵",
+        "title": "Manage your filament",
         "description": "This tour shows how to register a spool, use search and material filters, and read the stock card grid."
       },
       "inv-add": {
@@ -872,11 +872,11 @@
         "description": "Each card shows remaining weight, the consumption bar, and the low-stock alert."
       },
       "inv-complete": {
-        "title": "Stock under control ✅",
+        "title": "Stock under control",
         "description": "The inventory feeds weight and price into the calculator. Check the dashboard tour to track your KPIs."
       },
       "dash-intro": {
-        "title": "Your numbers in one place 📊",
+        "title": "Your numbers in one place",
         "description": "This tour shows the financial summary, the date-range filter, the history KPIs, and the monthly profit projection."
       },
       "dash-summary": {
@@ -896,11 +896,11 @@
         "description": "Enter how many parts you print per month to estimate projected profit and plan your prices."
       },
       "dash-complete": {
-        "title": "Data-driven decisions 🎯",
+        "title": "Data-driven decisions",
         "description": "Tweak the period and monthly volume to simulate scenarios. History keeps every calculation for later comparison."
       },
       "qc-intro": {
-        "title": "Quotes and customers 📄",
+        "title": "Quotes and customers",
         "description": "In this tour you turn saved calculations into professional quotes and keep your clients organized in one place."
       },
       "qc-list": {
@@ -916,7 +916,7 @@
         "description": "In the form, pick the customer in the selector to link them to the quote — the contact is printed on the PDF."
       },
       "cs-intro": {
-        "title": "Customers 👥",
+        "title": "Customers",
         "description": "Now the Customers tab: register name, company and contacts to reuse across quotes."
       },
       "cs-list": {
@@ -928,11 +928,11 @@
         "description": "Register a new customer with name, company, email, phone and notes."
       },
       "qc-complete": {
-        "title": "Ready to quote! 🎉",
+        "title": "Ready to quote!",
         "description": "Customer registered and quote linked: export it as a PDF and send it. Everything stays saved on your device."
       },
       "adv-intro": {
-        "title": "Complete mode 🧮",
+        "title": "Complete mode",
         "description": "This tour switches the calculator to the advanced level and walks the sections that add up every cost factor of a print."
       },
       "adv-level": {
@@ -968,7 +968,7 @@
         "description": "With every factor filled in, the result shows the full cost breakdown and the suggested sale price at the advanced level."
       },
       "adv-complete": {
-        "title": "Cost mastered 🏆",
+        "title": "Cost mastered",
         "description": "You've added material, machine, labor, fixed costs and failures. Tweak any section and the result recalculates instantly."
       }
     }
@@ -1002,7 +1002,7 @@
   },
   "privacy": {
     "banner": {
-      "text": "🔒 Your data stays only in your browser. Nothing you type — customer data, quotes, or logs — is sent to servers. You have full control: export, import, or delete your data anytime.",
+      "text": "Your data stays only in your browser. Nothing you type — customer data, quotes, or logs — is sent to servers. You have full control: export, import, or delete your data anytime.",
       "dismiss": "Got it"
     },
     "consent": {
@@ -1013,8 +1013,8 @@
       "item3": "You are solely responsible for data backup and security.",
       "item4": "Data may be lost when clearing browser cache — we recommend periodic backups.",
       "item5": "This software does not collect telemetry, analytics, or personal information.",
-      "accept": "✅ I understand and want to continue",
-      "readPolicy": "📖 Read full Privacy Policy"
+      "accept": "I understand and want to continue",
+      "readPolicy": "Read full Privacy Policy"
     },
     "policy": {
       "title": "Privacy Policy",

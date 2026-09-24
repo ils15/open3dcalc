@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
   Box,
+  Check,
   Code2,
   Globe,
   ChevronDown,
@@ -176,7 +177,7 @@ export function Header() {
                     <span>{t("settings.currencyAuto")}</span>
                     {currencySetting === "auto" && (
                       <span className="ml-auto text-[var(--color-accent)]">
-                        ✓
+                        <Check className="h-4 w-4" aria-hidden="true" />
                       </span>
                     )}
                   </button>
@@ -205,7 +206,7 @@ export function Header() {
                       </span>
                       {currencySetting === code && (
                         <span className="text-[var(--color-accent)] ml-1">
-                          ✓
+                          <Check className="h-4 w-4" aria-hidden="true" />
                         </span>
                       )}
                     </button>

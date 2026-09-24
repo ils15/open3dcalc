@@ -83,7 +83,7 @@
     "customGoal": "Meta de Lucro Mensal",
     "goalInput": "Meta de lucro mensal",
     "printsNeeded": "Você precisa de {{count}} prints/mês para atingir sua meta de {{value}}",
-    "goalWarning": "⚠ Lucro por unidade atual é negativo. Aumente o preço de venda ou reduza custos.",
+    "goalWarning": "Lucro por unidade atual é negativo. Aumente o preço de venda ou reduza custos.",
     "lowMarginAlerts": "Alertas de Margem Baixa",
     "lowMarginCount": "{{count}} itens com margem baixa (<20%)",
     "revenue": "Receita",
@@ -804,7 +804,7 @@
     },
     "steps": {
       "welcome": {
-        "title": "Bem-vindo ao Open3DCalc! 🎉",
+        "title": "Bem-vindo ao Open3DCalc!",
         "description": "Vamos calcular juntos o custo das suas impressões 3D. Comece preenchendo os dados do material — já colocamos valores de exemplo para você testar."
       },
       "material": {
@@ -828,11 +828,11 @@
         "description": "Salve seu cálculo no histórico ou exporte como PDF para enviar ao cliente."
       },
       "complete": {
-        "title": "Tudo pronto! 🚀",
-        "description": "Agora você já sabe calcular o custo de qualquer impressão. Use os tooltips (ícone ℹ️) em cada campo se tiver dúvidas. Bons prints!"
+        "title": "Tudo pronto!",
+        "description": "Agora você já sabe calcular o custo de qualquer impressão. Use os tooltips em cada campo se tiver dúvidas. Bons prints!"
       },
       "upload-intro": {
-        "title": "Leve seu arquivo 3D 📦",
+        "title": "Leve seu arquivo 3D",
         "description": "Neste tour você importa um STL, OBJ, 3MF ou G-code e explora o visualizador 3D integrado."
       },
       "upload-dropzone": {
@@ -848,11 +848,11 @@
         "description": "Gire com o mouse, aproxime com a roda e use os botões para ajustar o enquadramento ou expandir para tela cheia."
       },
       "upload-complete": {
-        "title": "Pronto para calcular 🎯",
+        "title": "Pronto para calcular",
         "description": "Com o modelo carregado, a estimativa de volume e peso alimenta a calculadora automaticamente. Volte ao tour da calculadora para detalhes."
       },
       "inv-intro": {
-        "title": "Gerencie seu filamento 🧵",
+        "title": "Gerencie seu filamento",
         "description": "Neste tour você cadastra uma bobina, usa a busca e os filtros de material e lê a grade de cartões de estoque."
       },
       "inv-add": {
@@ -872,11 +872,11 @@
         "description": "Cada cartão mostra o peso restante, a barra de consumo e o alerta de estoque baixo."
       },
       "inv-complete": {
-        "title": "Estoque sob controle ✅",
+        "title": "Estoque sob controle",
         "description": "O inventário alimenta a calculadora com peso e preço. Veja o tour do dashboard para acompanhar seus KPIs."
       },
       "dash-intro": {
-        "title": "Seus números em um lugar 📊",
+        "title": "Seus números em um lugar",
         "description": "Neste tour você lê o resumo financeiro, filtra por período, analisa os KPIs do histórico e simula a projeção de lucro."
       },
       "dash-summary": {
@@ -896,11 +896,11 @@
         "description": "Informe quantas peças você imprime por mês para estimar o lucro projetado e planejar seus preços."
       },
       "dash-complete": {
-        "title": "Decisões com dados 🎯",
+        "title": "Decisões com dados",
         "description": "Ajuste período e volume mensal para simular cenários. O histórico guarda cada cálculo para comparar depois."
       },
       "qc-intro": {
-        "title": "Orçamentos e clientes 📄",
+        "title": "Orçamentos e clientes",
         "description": "Neste tour você transforma cálculos salvos em orçamentos profissionais e organiza seus clientes em um só lugar."
       },
       "qc-list": {
@@ -916,7 +916,7 @@
         "description": "No formulário, escolha o cliente no seletor para vinculá-lo ao orçamento — o contato vai impresso no PDF."
       },
       "cs-intro": {
-        "title": "Clientes 👥",
+        "title": "Clientes",
         "description": "Agora a aba Clientes: cadastre nome, empresa e contatos para reutilizar em vários orçamentos."
       },
       "cs-list": {
@@ -928,11 +928,11 @@
         "description": "Cadastre um novo cliente com nome, empresa, e-mail, telefone e observações."
       },
       "qc-complete": {
-        "title": "Pronto para orçar! 🎉",
+        "title": "Pronto para orçar!",
         "description": "Cliente cadastrado e orçamento vinculado: agora é só exportar em PDF e enviar. Tudo fica salvo no seu dispositivo."
       },
       "adv-intro": {
-        "title": "Modo completo 🧮",
+        "title": "Modo completo",
         "description": "Neste tour você ativa o nível avançado da calculadora e percorre as seções que somam todos os fatores de custo de uma impressão."
       },
       "adv-level": {
@@ -968,7 +968,7 @@
         "description": "Com todos os fatores preenchidos, o resultado traz o custo total detalhado e o preço de venda sugerido no nível avançado."
       },
       "adv-complete": {
-        "title": "Custo dominado 🏆",
+        "title": "Custo dominado",
         "description": "Você somou material, máquina, mão de obra, custos fixos e falhas. Ajuste qualquer seção e o resultado se recalcula na hora."
       }
     }
@@ -1002,7 +1002,7 @@
   },
   "privacy": {
     "banner": {
-      "text": "🔒 Seus dados ficam apenas no seu navegador. Nada do que você digita — dados de clientes, orçamentos ou logs — é enviado para servidores. Você tem controle total: exporte, importe ou apague seus dados quando quiser.",
+      "text": "Seus dados ficam apenas no seu navegador. Nada do que você digita — dados de clientes, orçamentos ou logs — é enviado para servidores. Você tem controle total: exporte, importe ou apague seus dados quando quiser.",
       "dismiss": "Entendi"
     },
     "consent": {
@@ -1013,8 +1013,8 @@
       "item3": "A responsabilidade pelo backup e segurança dos dados é integralmente sua.",
       "item4": "Os dados podem ser perdidos ao limpar o cache do navegador — recomendamos exportar backups periodicamente.",
       "item5": "Este software não coleta telemetria, dados analíticos ou informações pessoais.",
-      "accept": "✅ Entendi e quero continuar",
-      "readPolicy": "📖 Ler Política de Privacidade completa"
+      "accept": "Entendi e quero continuar",
+      "readPolicy": "Ler Política de Privacidade completa"
     },
     "policy": {
       "title": "Política de Privacidade",

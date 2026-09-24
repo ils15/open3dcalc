@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, DollarSign, Globe, Info } from "lucide-react";
+import { BookOpen, Check, DollarSign, Globe, Info } from "lucide-react";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
@@ -140,7 +140,7 @@ export function MobileSettingsSheet({
                       </span>
                       {currencySetting === code && (
                         <span className="text-[var(--color-accent)] ml-1">
-                          ✓
+                          <Check className="h-4 w-4" aria-hidden="true" />
                         </span>
                       )}
                     </button>
