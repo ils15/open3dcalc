@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, DollarSign, Globe, Info } from "lucide-react";
+import { BookOpen, Check, DollarSign, Globe, Info } from "lucide-react";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { APP_VERSION } from "@/shared/version";
 import { SecondaryNavigation } from "@/platform/web/SecondaryNavigation";
+import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 
 /**
  * Mobile settings bottom sheet (web only — settings only, never tabs).
@@ -70,6 +71,10 @@ export function MobileSettingsSheet({
               />
             </div>
             <div className="px-3 pb-4 overflow-y-auto space-y-0.5">
+              <div className="px-1 py-2">
+                <LayoutSwitcher showLabels className="w-full justify-between" />
+              </div>
+
               {/* ── Settings heading ── */}
               <div className="flex items-center gap-3 pt-3 pb-1 px-4">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
@@ -135,7 +140,7 @@ export function MobileSettingsSheet({
                       </span>
                       {currencySetting === code && (
                         <span className="text-[var(--color-accent)] ml-1">
-                          ✓
+                          <Check className="h-4 w-4" aria-hidden="true" />
                         </span>
                       )}
                     </button>
