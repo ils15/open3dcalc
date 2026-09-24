@@ -190,14 +190,14 @@ export function InventoryDeductionCard() {
           ref={inventoryBtnRef}
           type="button"
           onClick={() => setShowInventoryDropdown((prev) => !prev)}
-          className="w-full min-h-[44px] py-3 rounded-xl text-[11px] sm:text-xs font-bold bg-emerald-800/40 text-emerald-300 hover:bg-emerald-700/50 transition-all focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none flex items-center justify-center gap-1.5 relative"
+          className="w-full min-h-[44px] py-3 rounded-xl text-[11px] sm:text-xs font-bold bg-[var(--positive-subtle)] text-[var(--positive)] hover:bg-[var(--positive)]/15 transition-all focus-visible:ring-2 focus-visible:ring-[var(--positive)] focus-visible:outline-none flex items-center justify-center gap-1.5 relative"
           aria-label={t("results.deductFromInventory")}
           aria-expanded={showInventoryDropdown}
         >
           <Database className="w-3.5 h-3.5" />
           {deductSuccess ? (
             <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />{" "}
+              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--positive)]" />{" "}
               {t("results.deductSuccess")}
             </>
           ) : (
@@ -208,15 +208,15 @@ export function InventoryDeductionCard() {
         {showInventoryDropdown && (
           <div
             ref={dropdownRef}
-            className="absolute z-50 mt-2 w-full surface rounded-xl p-3 border border-[var(--color-border)] shadow-2xl animate-fade-in"
+            className="absolute z-50 mt-2 w-full surface rounded-xl p-3 border border-[var(--border-default)] shadow-2xl animate-fade-in"
             role="listbox"
             aria-label={t("results.deductSelect")}
           >
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">
               {t("results.deductSelect")}
             </div>
             {availableSpools.length === 0 ? (
-              <p className="text-xs text-[var(--color-text-muted)] text-center py-4">
+              <p className="text-xs text-[var(--text-muted)] text-center py-4">
                 {t("common.noData")}
               </p>
             ) : (
@@ -226,26 +226,26 @@ export function InventoryDeductionCard() {
                     key={spool.id}
                     type="button"
                     onClick={() => handleDeductClick(spool)}
-                    className="w-full text-left p-2.5 rounded-xl bg-[var(--color-bg-hover)] hover:bg-[var(--color-bg-hover)] transition-colors flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+                    className="w-full text-left p-2.5 rounded-xl bg-[var(--surface-sunken)] hover:bg-[var(--surface-sunken)] transition-colors flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-[var(--positive)] focus-visible:outline-none"
                     role="option"
                     aria-selected={selectedSpool?.id === spool.id}
                   >
                     <span
-                      className="w-3 h-3 rounded-full flex-shrink-0 ring-1 ring-[var(--color-border)]"
+                      className="w-3 h-3 rounded-full flex-shrink-0 ring-1 ring-[var(--border-default)]"
                       style={{ backgroundColor: spool.colorHex }}
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-white font-medium truncate">
+                      <div className="text-xs text-[var(--text-primary)] font-medium truncate">
                         {spool.brand} — {spool.material}
                       </div>
-                      <div className="text-[10px] text-[var(--color-text-muted)]">
+                      <div className="text-[10px] text-[var(--text-muted)]">
                         {spool.color} &middot;{" "}
                         {t("results.deductAvailable", {
                           weight: spool.weightGrams.toFixed(0),
                         })}
                       </div>
                     </div>
-                    <div className="text-[10px] font-mono text-emerald-400/70 whitespace-nowrap">
+                    <div className="text-[10px] font-mono text-[var(--positive)]/70 whitespace-nowrap">
                       -{unitWeight.toFixed(1)}g
                     </div>
                   </button>
@@ -259,7 +259,7 @@ export function InventoryDeductionCard() {
       <button
         type="button"
         onClick={openAddToShelf}
-        className="w-full min-h-[44px] py-3 rounded-xl text-[11px] sm:text-xs font-bold bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-1.5"
+        className="w-full min-h-[44px] py-3 rounded-xl text-[11px] sm:text-xs font-bold bg-[var(--surface-raised)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1.5"
         aria-label={t("results.addToShelf")}
       >
         <PackagePlus className="w-3.5 h-3.5" aria-hidden="true" />
@@ -267,7 +267,7 @@ export function InventoryDeductionCard() {
       </button>
 
       {shelfMessage && (
-        <p role="status" className="text-xs text-emerald-600 dark:text-emerald-300 text-center">
+        <p role="status" className="text-xs text-emerald-600 dark:text-[var(--positive)] text-center">
           {shelfMessage}
         </p>
       )}

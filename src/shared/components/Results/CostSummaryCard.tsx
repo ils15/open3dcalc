@@ -19,19 +19,19 @@ export function CostSummaryCard({ costPerGram, failureCost }: CostSummaryCardPro
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:gap-4">
-      <div className="rounded-xl p-3 sm:p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
-        <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-0.5 sm:mb-1">
+      <div className="rounded-xl p-3 sm:p-5 bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center">
+        <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5 sm:mb-1">
           {t("calc.costPerGram")}
         </div>
-        <div className="text-sm sm:text-lg font-black text-[var(--color-info)] font-mono">
+        <div className="text-sm sm:text-lg font-black text-[var(--cost)] font-mono">
           {costPerGram > 0 ? fmtCurrency(costPerGram) + "/g" : "---"}
         </div>
       </div>
-      <div className="rounded-xl p-3 sm:p-5 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
-        <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-0.5 sm:mb-1">
+      <div className="rounded-xl p-3 sm:p-5 bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center">
+        <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5 sm:mb-1">
           {t("breakdown.failure")}
         </div>
-        <div className="text-sm sm:text-lg font-black text-[var(--color-danger)] font-mono">
+        <div className="text-sm sm:text-lg font-black text-[var(--cost-failure)] font-mono">
           {failureCost > 0 ? fmtCurrency(failureCost) : "---"}
         </div>
       </div>

@@ -1,10 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import type {
-  CalculationResult,
-  SalesParameters,
-} from "@/shared/types";
+import type { CalculationResult, SalesParameters } from "@/shared/types";
 import type { SellPriceOverrideResult } from "@/shared/lib/sellPriceOverride";
 import { reverseFromSellPrice } from "@/shared/lib/sellPriceOverride";
 
@@ -14,22 +11,16 @@ import { reverseFromSellPrice } from "@/shared/lib/sellPriceOverride";
  */
 export type CalculatorTab = "fdm" | "resin";
 
-/** Semantic cost groups exposed to token-aware presentation surfaces. */
+/** Stable semantic cost groups used by token-aware presentation surfaces. */
 export type CostCategory =
-  | "filament"
-  | "energy"
-  | "machine"
-  | "labor"
-  | "failure"
-  | "other";
+  "filament" | "energy" | "machine" | "labor" | "failure" | "other";
 
 /** One slice of the cost-distribution chart. */
 export interface CostSegment {
   /** Already-translated label (chart + legend text). */
   readonly name: string;
   readonly value: number;
-  readonly color: string;
-  /** Semantic category used by themed result surfaces. */
+  /** Stable category used by the UI to resolve its design-token color. */
   readonly category: CostCategory;
   /** Share of `totalCost` in percent; 0 when the total is not positive. */
   readonly pct: number;
@@ -75,8 +66,6 @@ export interface FinancialBreakdownInput {
   readonly resinSales: SalesParameters;
 }
 
-const MATERIAL_COLOR_FDM = "#38bdf8";
-const MATERIAL_COLOR_RESIN = "#a855f7";
 /** Segments at or below this value are hidden from the chart (matches UI). */
 const SEGMENT_MIN_VALUE = 0.01;
 
@@ -88,31 +77,27 @@ const SEGMENT_MIN_VALUE = 0.01;
  */
 function buildChartSegments(
   result: CalculationResult,
-  isFDM: boolean,
   t: (key: string) => string,
 ): CostSegment[] {
   const total = result.totalCost;
-  const raw: ReadonlyArray<
-    readonly [string, number, string, CostCategory]
-  > = [
-    ["Material", result.materialCost, isFDM ? MATERIAL_COLOR_FDM : MATERIAL_COLOR_RESIN, "filament"],
-    [t("calc.chartLabels.energy"), result.energyCost, "#facc15", "energy"],
-    [t("calc.chartLabels.machine"), result.machineCost, "#94a3b8", "machine"],
-    ["Hardware", result.hardwareCost, "#f97316", "other"],
-    [t("calc.chartLabels.finishing"), result.postProcessingCost, "#22d3ee", "other"],
-    [t("calc.chartLabels.consumables"), result.consumablesCost, "#06b6d4", "other"],
-    [t("calc.chartLabels.software"), result.softwareCost, "#818cf8", "other"],
-    [t("calc.chartLabels.labor"), result.laborCost, "#f472b6", "labor"],
-    [t("calc.chartLabels.failure"), result.failureCost, "#f87171", "failure"],
-    [t("calc.chartLabels.extras"), result.extrasCost, "#cbd5e1", "other"],
+  const raw: ReadonlyArray<readonly [string, number, CostCategory]> = [
+    ["Material", result.materialCost, "filament"],
+    [t("calc.chartLabels.energy"), result.energyCost, "energy"],
+    [t("calc.chartLabels.machine"), result.machineCost, "machine"],
+    ["Hardware", result.hardwareCost, "other"],
+    [t("calc.chartLabels.finishing"), result.postProcessingCost, "other"],
+    [t("calc.chartLabels.consumables"), result.consumablesCost, "other"],
+    [t("calc.chartLabels.software"), result.softwareCost, "other"],
+    [t("calc.chartLabels.labor"), result.laborCost, "labor"],
+    [t("calc.chartLabels.failure"), result.failureCost, "failure"],
+    [t("calc.chartLabels.extras"), result.extrasCost, "other"],
   ];
 
   return raw
     .filter(([, value]) => value > SEGMENT_MIN_VALUE)
-    .map(([name, value, color, category]) => ({
+    .map(([name, value, category]) => ({
       name,
       value,
-      color,
       category,
       pct: total > 0 ? (value / total) * 100 : 0,
     }));
@@ -173,7 +158,7 @@ export function useFinancialBreakdown(
     const marketplaceFee = result.marketplaceFee;
 
     return {
-      chartData: buildChartSegments(result, isFDM, t),
+      chartData: buildChartSegments(result, t),
       overrideCalc,
       displaySellPrice: sellOverride ?? result.sellPrice,
       displayProfit: overrideCalc?.profit ?? result.profit,

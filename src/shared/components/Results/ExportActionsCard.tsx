@@ -125,7 +125,7 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
         {isDemoMode && (
           <div
             role="status"
-            className="col-span-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--color-violet-muted)] border border-[var(--color-violet)]/30 text-[11px] font-semibold text-[var(--color-violet)]"
+            className="col-span-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent)]/30 text-[11px] font-semibold text-[var(--accent)]"
           >
             <Sparkles className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>{t("demo.export.badge")}</span>
@@ -138,10 +138,10 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
             setSaveStatus("saved");
             setTimeout(() => setSaveStatus("idle"), 2000);
           }}
-          className={`min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate ${
+          className={`min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate ${
             saveStatus === "saved"
-              ? "bg-emerald-600 text-white"
-              : "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]"
+              ? "bg-[var(--positive)] text-[var(--text-inverse)]"
+              : "bg-[var(--accent)] text-[var(--text-inverse)] hover:bg-[var(--accent-hover)]"
           }`}
         >
           {saveStatus === "saved" ? (
@@ -165,7 +165,7 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
             const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
             exportPdf(results, locale, currency);
           }}
-          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--color-bg-surface)] text-white hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-bg-surface)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--surface-sunken)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-overlay)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
         >
           <FileText className="w-3.5 h-3.5 shrink-0" />{" "}
           <span className="truncate">{t("calc.exportPdf")}</span>
@@ -186,14 +186,14 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
             );
             downloadCsv(csv, "open3dcalc_resultado.csv");
           }}
-          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--color-info)] text-white hover:bg-[var(--color-info)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-info)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--info)] text-[var(--text-inverse)] hover:bg-[var(--info)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--info)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
         >
           <BarChart2 className="w-3.5 h-3.5 shrink-0" /> CSV
         </button>
         <button
           type="button"
           onClick={handleExportQuote}
-          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--color-warning)] text-white hover:bg-[var(--color-warning)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-warning)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--warning)] text-[var(--text-inverse)] hover:bg-[var(--warning)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--warning)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
         >
           <ScrollText className="w-3.5 h-3.5 shrink-0" />{" "}
           <span className="truncate">{t("results.exportQuote")}</span>
@@ -204,10 +204,10 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
       <button
         type="button"
         onClick={handleShareLink}
-        className={`w-full min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2 ${
+        className={`w-full min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-2 ${
           shareStatus === "copied"
-            ? "bg-emerald-600 text-white"
-            : "bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-hover)]"
+            ? "bg-[var(--positive)] text-[var(--text-inverse)]"
+            : "bg-[var(--surface-sunken)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]"
         }`}
         aria-label={t("results.shareLink")}
       >

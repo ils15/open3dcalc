@@ -44,7 +44,7 @@ export function LayoutSwitcher({
     <div
       role="group"
       aria-label={t("layoutSwitcher.ariaLabel")}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1 ${className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-overlay)] p-1 ${className}`}
     >
       {LAYOUT_OPTIONS.map(({ mode, labelKey, icon: Icon }) => {
         const isActive = layoutMode === mode;
@@ -59,10 +59,10 @@ export function LayoutSwitcher({
             aria-current={isActive ? "true" : undefined}
             aria-pressed={isActive}
             onClick={() => setLayoutMode(mode)}
-            className={`inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
+            className={`inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
               isActive
-                ? "bg-[var(--color-accent)] text-[var(--color-text-primary)] shadow-sm"
-                : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
+                ? "bg-[var(--accent)] text-[var(--text-inverse)] shadow-sm"
+                : "text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />

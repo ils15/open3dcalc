@@ -26,8 +26,8 @@ vi.mock("@/shared/components/Dashboard/RechartsLazy", () => ({
 }));
 
 const segments: CostSegment[] = [
-  { name: "Material", value: 10, color: "#38bdf8", category: "filament", pct: 33.33 },
-  { name: "Energia", value: 20, color: "#facc15", category: "energy", pct: 66.67 },
+  { name: "Material", value: 10, category: "filament", pct: 33.33 },
+  { name: "Energia", value: 20, category: "energy", pct: 66.67 },
 ];
 
 beforeEach(() => {
@@ -60,7 +60,7 @@ describe("CostBreakdownCard", () => {
     expect(screen.getByText(/R\$\s*20,00/)).toBeInTheDocument();
   });
 
-  it("scales each bar to its share of the total cost", () => {
+  it("scales each bar to its share and maps its category to a token", () => {
     render(
       <CostBreakdownCard
         chartData={segments}
@@ -71,8 +71,14 @@ describe("CostBreakdownCard", () => {
 
     const bars = document.querySelectorAll(".h-full.rounded-full");
     expect(bars).toHaveLength(2);
-    expect(bars[0]).toHaveStyle({ width: "33.33%", backgroundColor: "#38bdf8" });
-    expect(bars[1]).toHaveStyle({ width: "66.67%", backgroundColor: "#facc15" });
+    expect(bars[0]).toHaveAttribute(
+      "style",
+      "width: 33.33%; background-color: var(--cost-filament);",
+    );
+    expect(bars[1]).toHaveAttribute(
+      "style",
+      "width: 66.67%; background-color: var(--cost-energy);",
+    );
   });
 
   it("renders the donut in the non-sidebar variant", () => {

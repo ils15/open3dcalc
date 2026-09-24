@@ -88,8 +88,8 @@ export function GuideDrawer({ align = "button" }: GuideDrawerProps) {
         aria-controls={DRAWER_ID}
         className={
           align === "inline"
-            ? "w-full flex items-center gap-3 px-4 py-3 min-h-[48px] text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-            : "flex items-center gap-2 p-2.5 lg:px-3.5 lg:py-2.5 min-h-[44px] min-w-[44px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded-xl border border-transparent hover:border-[var(--color-border)]"
+            ? "w-full flex items-center gap-3 px-4 py-3 min-h-[48px] text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
+            : "flex items-center gap-2 p-2.5 lg:px-3.5 lg:py-2.5 min-h-[44px] min-w-[44px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-xl border border-transparent hover:border-[var(--border-default)]"
         }
         title={t("nav.wiki")}
         aria-label={t("nav.wiki")}
@@ -97,7 +97,7 @@ export function GuideDrawer({ align = "button" }: GuideDrawerProps) {
         <HelpCircle
           className={
             align === "inline"
-              ? "w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]"
+              ? "w-[18px] h-[18px] shrink-0 text-[var(--accent-hover)]"
               : "w-5 h-5"
           }
           aria-hidden="true"
@@ -122,7 +122,7 @@ export function GuideDrawer({ align = "button" }: GuideDrawerProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-[70] bg-black/40"
+                className="fixed inset-0 z-[70] bg-[var(--surface-sunken)]/40"
                 onClick={closeDrawer}
                 aria-hidden="true"
               />
@@ -132,38 +132,38 @@ export function GuideDrawer({ align = "button" }: GuideDrawerProps) {
                 key="guide-panel"
                 ref={contentRef}
                 id={DRAWER_ID}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby={titleId}
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="fixed top-0 right-0 bottom-0 z-[70] w-full sm:max-w-md flex flex-col surface border-l border-[var(--color-border)] shadow-2xl"
-              style={{ background: "var(--color-bg-primary)" }}
-            >
-              <div
-                className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)]"
-                style={{
-                  paddingBottom: "calc(16px + env(safe-area-inset-top, 0px))",
-                }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                className="fixed top-0 right-0 bottom-0 z-[70] w-full sm:max-w-md flex flex-col surface border-l border-[var(--border-default)] shadow-2xl"
+                style={{ background: "var(--surface-overlay)" }}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <HelpCircle className="w-5 h-5 text-[var(--color-accent)] shrink-0" />
-                  <h2
-                    id={titleId}
-                    className="text-base font-bold text-[var(--color-text-primary)] truncate"
-                  >
-                    {t("nav.wiki")}
-                  </h2>
-                </div>
+                <div
+                  className="flex items-center justify-between px-4 py-4 border-b border-[var(--border-default)]"
+                  style={{
+                    paddingBottom: "calc(16px + env(safe-area-inset-top, 0px))",
+                  }}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <HelpCircle className="w-5 h-5 text-[var(--accent)] shrink-0" />
+                    <h2
+                      id={titleId}
+                      className="text-base font-bold text-[var(--text-primary)] truncate"
+                    >
+                      {t("nav.wiki")}
+                    </h2>
+                  </div>
                   <button
                     onClick={closeDrawer}
-                    className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-                  aria-label={t("common.close")}
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                    className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
+                    aria-label={t("common.close")}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
               </div>
 
               <div
@@ -179,12 +179,12 @@ export function GuideDrawer({ align = "button" }: GuideDrawerProps) {
                   return (
                     <div
                       key={area}
-                      className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-3.5"
+                      className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] p-3.5"
                     >
-                      <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                         {t(`guide.${area}.title`)}
                       </h3>
-                      <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-text-muted)]">
+                      <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-muted)]">
                         {t(`guide.${area}.description`)}
                       </p>
 
@@ -200,7 +200,7 @@ export function GuideDrawer({ align = "button" }: GuideDrawerProps) {
                                 ? `guide-tours-${area}`
                                 : undefined
                             }
-                            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded-md min-h-[32px]"
+                            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded-md min-h-[32px]"
                           >
                             {t(`guide.${area}.cta`)}
                             {tours.length > 1 && (
@@ -216,18 +216,18 @@ export function GuideDrawer({ align = "button" }: GuideDrawerProps) {
                           {tours.length > 1 && isExpanded && (
                             <ul
                               id={`guide-tours-${area}`}
-                              className="mt-1.5 space-y-1 border-l-2 border-[var(--color-accent-muted)] pl-3"
+                              className="mt-1.5 space-y-1 border-l-2 border-[var(--accent-subtle)] pl-3"
                             >
                               {tours.map((tourId) => (
                                 <li key={tourId}>
                                   <button
                                     onClick={() => handleTourStart(tourId)}
-                                    className="w-full text-left rounded-md px-2 py-1.5 text-[12px] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[36px]"
+                                    className="w-full text-left rounded-md px-2 py-1.5 text-[12px] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none min-h-[36px]"
                                   >
                                     <span className="font-semibold block">
                                       {t(`tutorial.tours.${tourId}.title`)}
                                     </span>
-                                    <span className="block text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                                    <span className="block text-[11px] text-[var(--text-muted)] mt-0.5">
                                       {t(
                                         `tutorial.tours.${tourId}.description`,
                                       )}

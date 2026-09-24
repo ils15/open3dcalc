@@ -122,10 +122,10 @@ describe("Ultrawide shell & overflow containment", () => {
 
   it("primary form labels are at least 12px and use text-secondary", () => {
     expect(inputGroup).toMatch(
-      /text-\[12px\][^"]*text-\[var\(--color-text-secondary\)\]/,
+      /text-\[12px\][^"]*text-\[var\(--text-secondary\)\]/,
     );
     expect(select).toMatch(
-      /text-\[12px\][^"]*text-\[var\(--color-text-secondary\)\]/,
+      /text-\[12px\][^"]*text-\[var\(--text-secondary\)\]/,
     );
   });
 });
