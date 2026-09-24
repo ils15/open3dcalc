@@ -6,9 +6,13 @@ import {
   DEFAULT_FDM_FINISHING,
   DEFAULT_FDM_HARDWARE,
   DEFAULT_FDM_MATERIAL,
+  DEFAULT_FDM_PARAMS,
   DEFAULT_FDM_SLICER_PROFILE,
+  DEFAULT_LABOR,
   DEFAULT_RESIN_HARDWARE,
   DEFAULT_RESIN_MATERIAL,
+  DEFAULT_RESIN_PARAMS,
+  DEFAULT_RESIN_LABOR,
   DEFAULT_RESIN_PP,
 } from "@/shared/stores/calculatorStore.defaults";
 import type {
@@ -16,6 +20,13 @@ import type {
   CalcLevel,
   ComputeStoreInput,
 } from "@/shared/stores/calculatorStore.types";
+import {
+  resolveFdmFilament,
+  resolveFdmMaterial,
+  resolveLaborCosts,
+  resolvePrintParameters,
+  resolveResinMaterial,
+} from "@/shared/stores/calculatorStore.helpers";
 import type {
   AMSSlot,
   CalculationResult,
@@ -613,16 +624,20 @@ const buildPrintParameters = (
   current: PrintParameters,
   preset: PresetPrintParameters,
   printer: PresetCatalogPrinter,
-): PrintParameters => ({
-  ...clone(current),
-  printerPowerWatts: printer.power,
-  printTimeHours: preset.printTimeHours,
-  failureMode: preset.failureMode,
-  failureValue: preset.failureValue,
-  riskMultiplier: preset.riskMultiplier ?? PROJECT_PRESET_BASELINE.riskMultiplier,
-  heatUpTimeMinutes: preset.heatUpTimeMinutes ?? PROJECT_PRESET_BASELINE.heatUpTimeMinutes,
-  heatUpPowerPercent: preset.heatUpPowerPercent ?? PROJECT_PRESET_BASELINE.heatUpPowerPercent,
-});
+  defaults: PrintParameters,
+): PrintParameters => {
+  const resolvedCurrent = resolvePrintParameters(current, defaults);
+  return {
+    ...clone(resolvedCurrent),
+    printerPowerWatts: printer.power,
+    printTimeHours: preset.printTimeHours,
+    failureMode: preset.failureMode,
+    failureValue: preset.failureValue,
+    riskMultiplier: preset.riskMultiplier ?? PROJECT_PRESET_BASELINE.riskMultiplier,
+    heatUpTimeMinutes: preset.heatUpTimeMinutes ?? PROJECT_PRESET_BASELINE.heatUpTimeMinutes,
+    heatUpPowerPercent: preset.heatUpPowerPercent ?? PROJECT_PRESET_BASELINE.heatUpPowerPercent,
+  };
+};
 
 const buildInactive = (
   state: CalculatorState,
@@ -632,12 +647,14 @@ const buildInactive = (
     return {
       fdm: null,
       resin: {
-        material: clone(state.resinMaterial),
-        printParams: clone(state.resinPrintParams),
+        material: clone(resolveResinMaterial(state.resinMaterial)),
+        printParams: clone(
+          resolvePrintParameters(state.resinPrintParams, DEFAULT_RESIN_PARAMS),
+        ),
         postProcess: clone(state.resinPostProcess),
         machine: clone(state.resinMachine),
         hardware: clone(state.resinHardware),
-        labor: clone(state.resinLabor),
+        labor: clone(resolveLaborCosts(state.resinLabor, DEFAULT_RESIN_LABOR)),
         extras: clone(state.resinExtras),
         ops: clone(state.resinOps),
         soft: clone(state.resinSoft),
@@ -647,14 +664,16 @@ const buildInactive = (
   }
   return {
     fdm: {
-      material: clone(state.fdmMaterial),
-      printParams: clone(state.fdmPrintParams),
+      material: clone(resolveFdmMaterial(state.fdmMaterial)),
+      printParams: clone(
+        resolvePrintParameters(state.fdmPrintParams, DEFAULT_FDM_PARAMS),
+      ),
       slicerProfile: clone(state.fdmSlicerProfile),
-      filament: clone(state.fdmFilament),
+      filament: clone(resolveFdmFilament(state.fdmFilament)),
       machine: clone(state.fdmMachine),
       hardware: clone(state.fdmHardware),
       finishing: clone(state.fdmFinishing),
-      labor: clone(state.fdmLabor),
+      labor: clone(resolveLaborCosts(state.fdmLabor, DEFAULT_LABOR)),
       extras: clone(state.fdmExtras),
       ops: clone(state.fdmOps),
       soft: clone(state.fdmSoft),
@@ -693,7 +712,12 @@ export function buildProjectPresetDraft(
   const activeMachine = isFdm ? state.fdmMachine : state.resinMachine;
   const activePrint = isFdm ? state.fdmPrintParams : state.resinPrintParams;
   const machine = deriveMachine(activeMachine, printer);
-  const printParams = buildPrintParameters(activePrint, preset.printParameters, printer);
+  const printParams = buildPrintParameters(
+    activePrint,
+    preset.printParameters,
+    printer,
+    isFdm ? DEFAULT_FDM_PARAMS : DEFAULT_RESIN_PARAMS,
+  );
   const fdmMaterial: MaterialStateFDM = isFdm
     ? {
         ...clone(DEFAULT_FDM_MATERIAL),
@@ -704,9 +728,9 @@ export function buildProjectPresetDraft(
         density: material.density,
         spoolEfficiency: PROJECT_PRESET_BASELINE.spoolEfficiency,
       }
-    : clone(state.fdmMaterial);
+    : resolveFdmMaterial(state.fdmMaterial);
   const resinMaterial: MaterialStateResin = isFdm
-    ? clone(state.resinMaterial)
+    ? resolveResinMaterial(state.resinMaterial)
     : {
         ...clone(DEFAULT_RESIN_MATERIAL),
         type: material.name,
@@ -723,12 +747,18 @@ export function buildProjectPresetDraft(
     selectedPrinterId: printer.id,
     fdmMaterial,
     resinMaterial,
-    fdmPrintParams: isFdm ? printParams : clone(state.fdmPrintParams),
-    resinPrintParams: isFdm ? clone(state.resinPrintParams) : printParams,
+    fdmPrintParams: isFdm
+      ? printParams
+      : resolvePrintParameters(state.fdmPrintParams, DEFAULT_FDM_PARAMS),
+    resinPrintParams: isFdm
+      ? resolvePrintParameters(state.resinPrintParams, DEFAULT_RESIN_PARAMS)
+      : printParams,
     fdmMachine: isFdm ? machine : clone(state.fdmMachine),
     resinMachine: isFdm ? clone(state.resinMachine) : machine,
     fdmSlicerProfile: isFdm ? clone(DEFAULT_FDM_SLICER_PROFILE) : clone(state.fdmSlicerProfile),
-    fdmFilament: isFdm ? clone(DEFAULT_FDM_FILAMENT) : clone(state.fdmFilament),
+    fdmFilament: isFdm
+      ? clone(DEFAULT_FDM_FILAMENT)
+      : resolveFdmFilament(state.fdmFilament),
     fdmHardware: isFdm ? clone(DEFAULT_FDM_HARDWARE) : clone(state.fdmHardware),
     fdmFinishing: isFdm ? clone(DEFAULT_FDM_FINISHING) : clone(state.fdmFinishing),
     resinHardware: isFdm ? clone(state.resinHardware) : clone(DEFAULT_RESIN_HARDWARE),
@@ -756,8 +786,8 @@ export function buildProjectPresetDraft(
       quantity: state.quantity,
       currency: state.currency,
       fixedCosts: clone(state.fixedCosts),
-      fdmLabor: clone(state.fdmLabor),
-      resinLabor: clone(state.resinLabor),
+      fdmLabor: clone(resolveLaborCosts(state.fdmLabor, DEFAULT_LABOR)),
+      resinLabor: clone(resolveLaborCosts(state.resinLabor, DEFAULT_RESIN_LABOR)),
       fdmExtras: clone(state.fdmExtras),
       resinExtras: clone(state.resinExtras),
       fdmOps: clone(state.fdmOps),

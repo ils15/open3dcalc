@@ -1,8 +1,18 @@
 import type { CalcLevel, CalculatorState } from "./calculatorStore.types";
-import type { FdmSlicerProfile } from "@/shared/types";
-import { DEFAULT_FDM_SLICER_PROFILE } from "./calculatorStore.defaults";
-import type { FdmFilamentParams } from "@/shared/types";
-import { DEFAULT_FDM_FILAMENT } from "./calculatorStore.defaults";
+import type {
+  FdmSlicerProfile,
+  FdmFilamentParams,
+  MaterialStateFDM,
+  MaterialStateResin,
+  PrintParameters,
+  LaborCosts,
+} from "@/shared/types";
+import {
+  DEFAULT_FDM_SLICER_PROFILE,
+  DEFAULT_FDM_FILAMENT,
+  DEFAULT_FDM_MATERIAL,
+  DEFAULT_RESIN_MATERIAL,
+} from "./calculatorStore.defaults";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -160,7 +170,135 @@ export function resolveFdmSlicerProfile(
  * corrompido sempre termina num objeto completo e válido.
  */
 export function resolveFdmFilament(
-  input: Partial<FdmFilamentParams> | undefined | null,
+  input: Partial<FdmFilamentParams> | null | undefined,
 ): FdmFilamentParams {
-  return { ...DEFAULT_FDM_FILAMENT, ...sanitizeFdmFilament(input) };
+  const sanitized = sanitizeFdmFilament(input);
+  return { ...DEFAULT_FDM_FILAMENT, ...sanitized };
+}
+
+const PRINT_PARAMETER_NUMERIC_FIELDS = [
+  "printTimeHours",
+  "printerPowerWatts",
+  "energyCostPerKwh",
+  "failureValue",
+  "riskMultiplier",
+  "heatUpTimeMinutes",
+  "heatUpPowerPercent",
+] as const;
+
+const PRINT_FAILURE_MODES: readonly PrintParameters["failureMode"][] = [
+  "none",
+  "percent",
+  "fixed",
+];
+
+/**
+ * Complete a print-parameter slice before it reaches the calculator.
+ *
+ * Persisted settings and shared snapshots can predate a field.  A shallow
+ * object spread would carry an explicit `undefined` over the default and turn
+ * the derived result into NaN, which the UI renders as zero/dashes.
+ */
+export function resolvePrintParameters(
+  input: Partial<PrintParameters> | null | undefined,
+  defaults: PrintParameters,
+): PrintParameters {
+  if (!input || typeof input !== "object") return { ...defaults };
+
+  const sanitized: Partial<PrintParameters> = {};
+  for (const key of PRINT_PARAMETER_NUMERIC_FIELDS) {
+    const value = input[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      Object.assign(sanitized, { [key]: value });
+    }
+  }
+  if (
+    input.failureMode !== undefined &&
+    PRINT_FAILURE_MODES.includes(input.failureMode)
+  ) {
+    sanitized.failureMode = input.failureMode;
+  }
+  return { ...defaults, ...sanitized };
+}
+
+const LABOR_NUMERIC_FIELDS = [
+  "setupTimeMinutes",
+  "postProcessingTimeMinutes",
+  "hourlyRate",
+] as const;
+
+/** Complete a labor slice using the same migration-safe policy as print params. */
+export function resolveLaborCosts(
+  input: Partial<LaborCosts> | null | undefined,
+  defaults: LaborCosts,
+): LaborCosts {
+  if (!input || typeof input !== "object") return { ...defaults };
+
+  const sanitized: Partial<LaborCosts> = {};
+  if (typeof input.enabled === "boolean") sanitized.enabled = input.enabled;
+  for (const key of LABOR_NUMERIC_FIELDS) {
+    const value = input[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      Object.assign(sanitized, { [key]: value });
+    }
+  }
+  return { ...defaults, ...sanitized };
+}
+
+const FDM_MATERIAL_NUMERIC_FIELDS = [
+  "weightUsed",
+  "purgeWeight",
+  "costPerKg",
+  "density",
+  "spoolEfficiency",
+] as const;
+
+/** Complete a persisted FDM material before it reaches material cost derivation. */
+export function resolveFdmMaterial(
+  input: Partial<MaterialStateFDM> | null | undefined,
+  defaults: MaterialStateFDM = DEFAULT_FDM_MATERIAL,
+): MaterialStateFDM {
+  if (!input || typeof input !== "object") return { ...defaults };
+
+  const sanitized: Partial<MaterialStateFDM> = {};
+  if (typeof input.type === "string" && input.type.trim().length > 0) {
+    sanitized.type = input.type;
+  }
+  for (const key of FDM_MATERIAL_NUMERIC_FIELDS) {
+    const value = input[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      Object.assign(sanitized, { [key]: value });
+    }
+  }
+  return { ...defaults, ...sanitized };
+}
+
+const RESIN_MATERIAL_NUMERIC_FIELDS = [
+  "volumeUsedMl",
+  "costPerLiter",
+  "density",
+  "wasteMarginPercent",
+] as const;
+
+/** Complete a persisted resin material before it reaches material cost derivation. */
+export function resolveResinMaterial(
+  input: Partial<MaterialStateResin> | null | undefined,
+  defaults: MaterialStateResin = DEFAULT_RESIN_MATERIAL,
+): MaterialStateResin {
+  if (!input || typeof input !== "object") return { ...defaults };
+
+  const sanitized: Partial<MaterialStateResin> = {};
+  if (typeof input.type === "string" && input.type.trim().length > 0) {
+    sanitized.type = input.type;
+  }
+  for (const key of RESIN_MATERIAL_NUMERIC_FIELDS) {
+    const value = input[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      Object.assign(sanitized, { [key]: value });
+    }
+  }
+  if (typeof input.weightUsed === "number" && Number.isFinite(input.weightUsed)) {
+    sanitized.weightUsed = input.weightUsed;
+  }
+  return { ...defaults, ...sanitized };
 }

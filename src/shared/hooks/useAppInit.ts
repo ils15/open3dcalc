@@ -4,6 +4,20 @@ import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { computeStoreResults } from "@/shared/stores/calculatorStore.compute";
+import {
+  resolveFdmMaterial,
+  resolveLaborCosts,
+  resolvePrintParameters,
+  resolveResinMaterial,
+} from "@/shared/stores/calculatorStore.helpers";
+import {
+  DEFAULT_FDM_MATERIAL,
+  DEFAULT_FDM_PARAMS,
+  DEFAULT_LABOR,
+  DEFAULT_RESIN_MATERIAL,
+  DEFAULT_RESIN_PARAMS,
+  DEFAULT_RESIN_LABOR,
+} from "@/shared/stores/calculatorStore.defaults";
 import type { ComputeStoreInput } from "@/shared/stores/calculatorStore.types";
 import { getSharedCalculation } from "@/shared/lib/calculationLink";
 import { printers } from "@/shared/lib/printers";
@@ -179,26 +193,39 @@ function loadSharedCalculation(): void {
   const merged: Record<string, unknown> = {
     ...state,
     activeTab: shared.activeTab,
-    ...(shared.fdmMaterial && { fdmMaterial: shared.fdmMaterial }),
-    ...(shared.fdmPrintParams && { fdmPrintParams: shared.fdmPrintParams }),
+    fdmMaterial: resolveFdmMaterial(
+      shared.fdmMaterial ?? state.fdmMaterial,
+      DEFAULT_FDM_MATERIAL,
+    ),
+    fdmPrintParams: resolvePrintParameters(
+      shared.fdmPrintParams ?? state.fdmPrintParams,
+      DEFAULT_FDM_PARAMS,
+    ),
     ...(shared.fdmMachine && { fdmMachine: shared.fdmMachine }),
     ...(shared.fdmHardware && { fdmHardware: shared.fdmHardware }),
     ...(shared.fdmFinishing && { fdmFinishing: shared.fdmFinishing }),
-    ...(shared.fdmLabor && { fdmLabor: shared.fdmLabor }),
+    fdmLabor: resolveLaborCosts(shared.fdmLabor ?? state.fdmLabor, DEFAULT_LABOR),
     ...(shared.fdmExtras && { fdmExtras: shared.fdmExtras }),
     ...(shared.fdmSales && { fdmSales: shared.fdmSales }),
     ...(shared.fdmOps && { fdmOps: shared.fdmOps }),
     ...(shared.fdmSoft && { fdmSoft: shared.fdmSoft }),
-    ...(shared.resinMaterial && { resinMaterial: shared.resinMaterial }),
-    ...(shared.resinPrintParams && {
-      resinPrintParams: shared.resinPrintParams,
-    }),
+    resinMaterial: resolveResinMaterial(
+      shared.resinMaterial ?? state.resinMaterial,
+      DEFAULT_RESIN_MATERIAL,
+    ),
+    resinPrintParams: resolvePrintParameters(
+      shared.resinPrintParams ?? state.resinPrintParams,
+      DEFAULT_RESIN_PARAMS,
+    ),
     ...(shared.resinMachine && { resinMachine: shared.resinMachine }),
     ...(shared.resinHardware && { resinHardware: shared.resinHardware }),
     ...(shared.resinPostProcess && {
       resinPostProcess: shared.resinPostProcess,
     }),
-    ...(shared.resinLabor && { resinLabor: shared.resinLabor }),
+    resinLabor: resolveLaborCosts(
+      shared.resinLabor ?? state.resinLabor,
+      DEFAULT_RESIN_LABOR,
+    ),
     ...(shared.resinExtras && { resinExtras: shared.resinExtras }),
     ...(shared.resinSales && { resinSales: shared.resinSales }),
     ...(shared.resinOps && { resinOps: shared.resinOps }),
