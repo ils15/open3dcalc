@@ -219,6 +219,8 @@
     "results": "Resultados",
     "invalidCalculationTitle": "Dados inválidos",
     "invalidCalculation": "Dados inválidos em {{path}}. Corrija o valor e o cálculo será refeito.",
+    "multiMaterialLabel": "Multi-material",
+    "multiMaterialDisabledDescription": "Em desenvolvimento: o custo dos materiais múltiplos ainda não entra no subtotal, custo total, preço de venda ou lucro. O recurso fica indisponível nesta beta para evitar um preço incorreto.",
     "directProduction": "Produção Direta",
     "equipment": "Equipamento & Desgaste",
     "operational": "Operacional & Trabalho",

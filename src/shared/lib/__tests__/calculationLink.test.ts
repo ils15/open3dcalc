@@ -361,6 +361,26 @@ describe('URL helpers', () => {
       expect(result!.fdmMaterial?.weightUsed).toBe(100)
     })
 
+    it('forces AMS off from a shared URL while preserving slots', () => {
+      const slots = [{
+        enabled: true,
+        materialType: 'PETG',
+        costPerKg: 90,
+        weightUsedGrams: 42,
+        purgeWeightGrams: 4,
+        transitionPurgeGrams: 3,
+        density: 1.27,
+        spoolEfficiency: 97,
+        color: '#00ff00',
+      }]
+      const original = createSampleState({ fdmAmsEnabled: true, fdmAmsSlots: slots })
+      window.location.hash = `#calc=${encodeCalculationState(original)}`
+
+      const result = getSharedCalculation()
+      expect(result?.fdmAmsEnabled).toBe(false)
+      expect(result?.fdmAmsSlots).toEqual(slots)
+    })
+
     it('should return null for an invalid hash', () => {
       window.location.hash = '#calc=invalid!@#'
       expect(getSharedCalculation()).toBeNull()

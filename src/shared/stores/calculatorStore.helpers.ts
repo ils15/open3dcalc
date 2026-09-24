@@ -47,7 +47,7 @@ export function debouncedAutoSave(getState: () => CalculatorState) {
       resinSoft: s.resinSoft,
       selectedPrinterId: s.selectedPrinter.id,
       selectedMarketplaceId: s.selectedMarketplace.id,
-      fdmAmsEnabled: s.fdmAmsEnabled,
+      fdmAmsEnabled: false,
       fdmAmsSlots: s.fdmAmsSlots,
       fixedCosts: s.fixedCosts,
       productName: s.productName,

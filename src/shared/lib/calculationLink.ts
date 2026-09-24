@@ -267,7 +267,11 @@ export function hasSharedCalculation(): boolean {
 export function getSharedCalculation(): SharedCalculationState | null {
   if (!hasSharedCalculation()) return null
   const hash = window.location.hash.replace(HASH_PREFIX, '')
-  return decodeCalculationState(hash)
+  const decoded = decodeCalculationState(hash)
+  if (!decoded) return null
+  // Keep the slot configuration for the future Phase 7m work, but never
+  // activate the incomplete beta pricing path from a shared URL.
+  return { ...decoded, fdmAmsEnabled: false }
 }
 
 /**

@@ -145,4 +145,5 @@ describe("calculation fail-high surfaces", () => {
       language === "pt-BR" ? "Dados inválidos" : "Invalid calculation data",
     );
   });
+
 });

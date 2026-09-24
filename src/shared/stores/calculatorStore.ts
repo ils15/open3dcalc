@@ -5,7 +5,11 @@ import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import type { CalculatorState } from "./calculatorStore.types";
-import type { PostProcessingResin, MachineCosts } from "@/shared/types";
+import type {
+  AMSSlot,
+  PostProcessingResin,
+  MachineCosts,
+} from "@/shared/types";
 import type { CalcLevel } from "./calculatorStore.types";
 import type { CurrencySetting } from "@/shared/lib/currency";
 import type { CalculationSnapshot } from "@/shared/types";
@@ -84,7 +88,7 @@ function captureSnapshot(s: CalculatorState): string {
     selectedPrinter: s.selectedPrinter,
     selectedMarketplace: s.selectedMarketplace,
     selectedSpoolId: s.selectedSpoolId,
-    fdmAmsEnabled: s.fdmAmsEnabled,
+    fdmAmsEnabled: false,
     fdmAmsSlots: s.fdmAmsSlots,
     fixedCosts: s.fixedCosts,
     productName: s.productName,
@@ -111,10 +115,14 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         ? [...(state.history || []), captureSnapshot(state)].slice(-UNDO_LIMIT)
         : state.history || [];
       const nextState = typeof update === "function" ? update(state) : update;
-      const merged = { ...state, ...nextState };
+      // Multi-material pricing is deferred until the Phase 7m model is
+      // complete. Keep the slot configuration, but never let an action or
+      // legacy snapshot reactivate the incomplete pricing path.
+      const merged = { ...state, ...nextState, fdmAmsEnabled: false };
       const validated = computeValidatedStoreResults(merged);
       return {
         ...nextState,
+        fdmAmsEnabled: false,
         ...validated.input,
         results: validated.results,
         calculationIssues: validated.calculationIssues,
@@ -165,7 +173,10 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     fixedCosts: { ...DEFAULT_FIXED_COSTS, ...loadStr("fixedCosts", {}) },
 
     fdmAmsEnabled: false,
-    fdmAmsSlots: DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
+    fdmAmsSlots: loadStr<AMSSlot[]>(
+      "fdmAmsSlots",
+      DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
+    ),
 
     productName: "",
     calcLevel: loadStr<CalcLevel>(
@@ -275,8 +286,6 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     setResinSoft: (v) => setWithCompute({ resinSoft: v }),
 
     setSelectedPrinter: (selectedPrinter) => {
-      const hasAms = (selectedPrinter.maxFilaments ?? 1) > 1;
-      const wasAmsEnabled = get().fdmAmsEnabled;
       const state = get();
 
       // Wave B (B4): preenche os custos da MAQUINA ATIVA a partir do catálogo
@@ -301,7 +310,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
       setWithCompute({
         selectedPrinter,
-        fdmAmsEnabled: hasAms && wasAmsEnabled,
+        fdmAmsEnabled: false,
         fdmPrintParams: {
           ...state.fdmPrintParams,
           printerPowerWatts: selectedPrinter.power,
@@ -327,7 +336,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         fixedCosts: { ...state.fixedCosts, [field]: value as never },
       })),
 
-    setFdmAmsEnabled: (fdmAmsEnabled) => setWithCompute({ fdmAmsEnabled }),
+    setFdmAmsEnabled: () => setWithCompute({ fdmAmsEnabled: false }),
     setFdmAmsSlot: (index, slot) => {
       const slots = [...get().fdmAmsSlots];
       slots[index] = slot;
@@ -346,7 +355,12 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       try {
         const data = JSON.parse(snapshot) as Record<string, unknown>;
         set((state) => {
-          const merged = { ...state, ...data, lastDeductedInfo: null };
+          const merged = {
+            ...state,
+            ...data,
+            fdmAmsEnabled: false,
+            lastDeductedInfo: null,
+          };
           const validated = computeValidatedStoreResults(merged);
           return {
             ...merged,
@@ -561,7 +575,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         timestamp: now,
         type: s.activeTab,
         summary: name,
-        fdmAmsEnabled: s.fdmAmsEnabled || undefined,
+        fdmAmsEnabled: false,
         fdmAmsSlots: s.fdmAmsSlots,
         fixedCosts: s.fixedCosts,
         fdmMaterial: s.fdmMaterial,
@@ -658,7 +672,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           selectedMarketplace,
           selectedSpoolId,
           lastDeductedInfo: null,
-          fdmAmsEnabled: snapshot.fdmAmsEnabled ?? state.fdmAmsEnabled,
+          fdmAmsEnabled: false,
           fdmAmsSlots:
             snapshot.fdmAmsSlots ?? state.fdmAmsSlots ?? DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
           fixedCosts: snapshot.fixedCosts ?? { ...DEFAULT_FIXED_COSTS },
@@ -724,7 +738,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         resinSales: s.resinSales,
         resinOps: s.resinOps,
         resinSoft: s.resinSoft,
-        fdmAmsEnabled: s.fdmAmsEnabled,
+        fdmAmsEnabled: false,
         fdmAmsSlots: s.fdmAmsSlots,
         fixedCosts: s.fixedCosts,
         quantity: s.quantity,

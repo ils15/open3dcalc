@@ -64,7 +64,7 @@ export function ResultsPanel({ variant, onExportBlocked }: ResultsPanelProps) {
 
   if (!results) {
     return isSidebar ? (
-      calculationNotice
+      <>{calculationNotice}</>
     ) : (
       <div className="space-y-4 2xl:hidden">{calculationNotice}</div>
     );

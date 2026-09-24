@@ -39,10 +39,10 @@ describe("CalculatorStore logic", () => {
   // ══════════════════════════════════════════════════════════════
 
   describe("setSelectedPrinter", () => {
-    it("setSelectedPrinter with multi-filament → fdmAmsEnabled stays if was enabled", () => {
+    it("keeps AMS disabled when selecting a multi-filament printer", () => {
       const store = useCalculatorStore.getState();
       store.setFdmAmsEnabled(true);
-      expect(useCalculatorStore.getState().fdmAmsEnabled).toBe(true);
+      expect(useCalculatorStore.getState().fdmAmsEnabled).toBe(false);
 
       // Printer with maxFilaments > 1
       store.setSelectedPrinter({
@@ -57,14 +57,14 @@ describe("CalculatorStore logic", () => {
       });
 
       const after = useCalculatorStore.getState();
-      expect(after.fdmAmsEnabled).toBe(true);
+      expect(after.fdmAmsEnabled).toBe(false);
       expect(after.selectedPrinter.id).toBe("bambu_p1s");
     });
 
     it("setSelectedPrinter with single-filament → fdmAmsEnabled forced off", () => {
       const store = useCalculatorStore.getState();
       store.setFdmAmsEnabled(true);
-      expect(useCalculatorStore.getState().fdmAmsEnabled).toBe(true);
+      expect(useCalculatorStore.getState().fdmAmsEnabled).toBe(false);
 
       // Printer with no maxFilaments (defaults to 1)
       store.setSelectedPrinter({
@@ -338,11 +338,11 @@ describe("CalculatorStore logic", () => {
   });
 
   describe("AMS logic", () => {
-    it("AMS enabled persists in state", () => {
+    it("AMS activation is ignored while the beta feature is disabled", () => {
       const store = useCalculatorStore.getState();
       store.setFdmAmsEnabled(true);
       const state = useCalculatorStore.getState();
-      expect(state.fdmAmsEnabled).toBe(true);
+      expect(state.fdmAmsEnabled).toBe(false);
     });
 
     it("AMS disabled persists in state", () => {
@@ -371,12 +371,12 @@ describe("CalculatorStore logic", () => {
       expect(state.fdmAmsSlots[0].color).toBe("#ff0000");
     });
 
-    it("AMS history reload preserves fdmAmsEnabled", () => {
+    it("AMS history reload forces fdmAmsEnabled off", () => {
       const entry = buildSnapshot({ fdmAmsEnabled: true });
       const store = useCalculatorStore.getState();
       store.loadHistoryItem(entry);
       const state = useCalculatorStore.getState();
-      expect(state.fdmAmsEnabled).toBe(true);
+      expect(state.fdmAmsEnabled).toBe(false);
     });
 
     it("AMS reload preserves fdmAmsSlots", () => {

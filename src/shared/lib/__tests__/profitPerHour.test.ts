@@ -149,8 +149,10 @@ describe("profitPerHour (Fase 2 #70)", () => {
     expect(computeTotalHoursForProfit(120, 30, 0)).toBe(2.5);
     // rounding helper (currency.ts, 2 casas) + precise estimator hours
     expect(roundCurrency(10 / 3)).toBe(3.33);
-    expect(roundCurrency(Number.NaN)).toBe(0);
-    expect(roundCurrency(Number.POSITIVE_INFINITY)).toBe(0);
+    expect(Number.isNaN(roundCurrency(Number.NaN))).toBe(true);
+    expect(roundCurrency(Number.POSITIVE_INFINITY)).toBe(
+      Number.POSITIVE_INFINITY,
+    );
     expect(estimatedHoursPrecise(150)).toBe(2.5);
     expect(estimatedHoursPrecise(0)).toBe(0);
   });

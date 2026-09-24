@@ -437,6 +437,27 @@ function collectStrings(
   }
 }
 
+describe("i18n locales — multi-material disabled explanation", () => {
+  it.each([
+    [
+      "pt-BR",
+      ptBR,
+      "Em desenvolvimento: o custo dos materiais múltiplos ainda não entra no subtotal, custo total, preço de venda ou lucro. O recurso fica indisponível nesta beta para evitar um preço incorreto.",
+    ],
+    [
+      "en-US",
+      enUS,
+      "In development: multi-material cost is not yet included in the subtotal, total cost, sell price, or profit. The feature is unavailable in this beta to avoid an incorrect price.",
+    ],
+  ])("has the same explanation key in %s", (locale, dict, expected) => {
+    const value = resolve(dict, ["calc", "multiMaterialDisabledDescription"]);
+    expect(typeof value, `calc.multiMaterialDisabledDescription (${locale})`).toBe(
+      "string",
+    );
+    expect(value).toBe(expected);
+  });
+});
+
 describe("i18n locales — no hardcoded currency symbol (R$) in en-US", () => {
   it("en-US labels never hardcode R$; the symbol comes from useCurrency()", () => {
     const all: { key: string; value: string }[] = [];

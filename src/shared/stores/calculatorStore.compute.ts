@@ -50,35 +50,9 @@ export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
       s.fdmFinishing,
       fixedCostPerHour,
     );
-    let amsMaterialCost = 0;
-    if (s.fdmAmsEnabled && s.fdmAmsSlots) {
-      const enabledSlots = s.fdmAmsSlots.filter((sl) => sl.enabled);
-      const activeCount = enabledSlots.filter(
-        (sl) => sl.weightUsedGrams > 0,
-      ).length;
-      for (const slot of enabledSlots) {
-        const materialCost = (slot.weightUsedGrams / 1000) * slot.costPerKg;
-        const purgeCost = (slot.purgeWeightGrams / 1000) * slot.costPerKg;
-        amsMaterialCost += materialCost + purgeCost;
-      }
-      if (activeCount > 1) {
-        const transitions = activeCount * (activeCount - 1);
-        const avgCost =
-          enabledSlots.reduce((a, s) => a + s.costPerKg, 0) /
-          enabledSlots.length;
-        amsMaterialCost +=
-          ((transitions * (enabledSlots[0]?.transitionPurgeGrams ?? 3)) /
-            1000) *
-          avgCost;
-      }
-    }
     const filtered = {
       ...result,
-      materialCost: es.material
-        ? s.fdmAmsEnabled && s.fdmAmsSlots
-          ? amsMaterialCost
-          : result.materialCost
-        : 0,
+      materialCost: es.material ? result.materialCost : 0,
       energyCost: es.energy ? result.energyCost : 0,
       machineCost: es.machine ? result.machineCost : 0,
       hardwareCost: es.hardware ? result.hardwareCost : 0,
