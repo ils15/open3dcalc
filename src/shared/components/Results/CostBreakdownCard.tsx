@@ -10,16 +10,25 @@ import {
 } from "@/shared/components/Dashboard/RechartsLazy";
 
 import { useCurrency } from "@/shared/hooks/useCurrency";
-import type { CostSegment } from "@/shared/hooks/useFinancialBreakdown";
+import type { CostCategory, CostSegment } from "@/shared/hooks/useFinancialBreakdown";
 
 export interface CostBreakdownCardProps {
   /** Pre-filtered, translated cost segments (empty ⇒ the card is not rendered). */
-  chartData: readonly CostSegment[];
+  readonly chartData: readonly CostSegment[];
   /** Total cost used as the denominator for the distribution bars. */
-  totalCost: number;
+  readonly totalCost: number;
   /** Sidebar variant hides the pie (space constraint) — matches the legacy panel. */
-  isSidebar: boolean;
+  readonly isSidebar: boolean;
 }
+
+const CATEGORY_COLOR_TOKEN: Record<CostCategory, string> = {
+  filament: "var(--cost-filament)",
+  energy: "var(--cost-energy)",
+  machine: "var(--cost-machine)",
+  labor: "var(--cost-labor)",
+  failure: "var(--cost-failure)",
+  other: "var(--cost-other)",
+};
 
 /**
  * Cost-distribution card: labelled bars (always) + donut chart (non-sidebar).
@@ -41,36 +50,38 @@ export function CostBreakdownCard({
     <Suspense
       fallback={
         <div className="surface-elevated rounded-xl p-4 sm:p-5">
-          <div className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-4">
+          <div className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-4">
             {t("calc.costDistribution")}
           </div>
-          <p className="text-sm text-[var(--color-text-muted)] text-center py-8">
+          <p className="text-sm text-[var(--text-muted)] text-center py-8">
             {t("dashboard.loadingCharts")}
           </p>
         </div>
       }
     >
       <div className="surface-elevated rounded-xl p-3 sm:p-5">
-        <div className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2 sm:mb-4">
+        <div className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2 sm:mb-4">
           {t("calc.costDistribution")}
         </div>
         <div className="space-y-1.5 sm:space-y-3">
           {chartData.map((item) => (
             <div key={item.name}>
               <div className="flex justify-between items-center mb-1">
-                <span className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                <span className="text-xs sm:text-sm text-[var(--text-secondary)]">
                   {item.name}
                 </span>
-                <span className="text-xs sm:text-sm font-mono font-bold text-[var(--color-text-primary)]">
+                <span className="text-xs sm:text-sm font-mono font-bold text-[var(--text-primary)]">
                   {fmtCurrency(item.value)}
                 </span>
               </div>
-              <div className="h-1.5 bg-[var(--color-bg-secondary)] rounded-full overflow-hidden">
+              <div className="h-1.5 bg-[var(--surface-sunken)] rounded-full overflow-hidden">
                 <div
+                  role="img"
+                  aria-label={`${item.name}: ${fmtCurrency(item.value)}`}
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${totalCost > 0 ? item.pct : 0}%`,
-                    backgroundColor: item.color,
+                    backgroundColor: CATEGORY_COLOR_TOKEN[item.category],
                   }}
                 />
               </div>
@@ -94,23 +105,24 @@ export function CostBreakdownCard({
                 {chartData.map((entry, i) => (
                   <Cell
                     key={i}
-                    fill={entry.color}
-                    stroke="rgba(0,0,0,0.3)"
+                    fill={CATEGORY_COLOR_TOKEN[entry.category]}
+                    stroke="var(--border-subtle)"
                   />
                 ))}
               </Pie>
               <Tooltip
                 formatter={(value: unknown) => fmtCurrency(Number(value))}
                 contentStyle={{
-                  backgroundColor: "var(--color-chart-tooltip-bg)",
-                  borderColor: "var(--color-chart-tooltip-border)",
-                  color: "var(--color-chart-tooltip-text)",
+                  backgroundColor: "var(--surface-overlay)",
+                  borderColor: "var(--border-subtle)",
+                  color: "var(--text-primary)",
                   borderRadius: "12px",
                   fontSize: "12px",
                 }}
-                itemStyle={{ color: "var(--color-chart-tooltip-text)" }}
+                itemStyle={{ color: "var(--text-primary)" }}
               />
               <Legend
+                aria-label={t("calc.costDistribution")}
                 layout="vertical"
                 verticalAlign="middle"
                 align="right"

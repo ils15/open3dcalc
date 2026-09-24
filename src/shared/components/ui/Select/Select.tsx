@@ -222,12 +222,12 @@ export function Select({
       aria-controls={`${id}-listbox`}
       aria-label={label}
       onClick={handleTriggerClick}
-      className={`w-full flex items-center gap-2.5 surface border ${open ? "border-[var(--color-accent)]/60" : "border-[var(--color-border)] hover:border-[var(--color-border-hover)]"} rounded-xl text-sm text-[var(--color-text-primary)] h-11 px-3 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:border-[var(--color-accent)]/60 ${className}`}
+      className={`w-full flex items-center gap-2.5 surface border ${open ? "border-[var(--accent)]/60" : "border-[var(--border-default)] hover:border-[var(--border-strong)]"} rounded-xl text-sm text-[var(--text-primary)] h-11 px-3 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)]/60 ${className}`}
     >
       {selected?.color ? (
         <span
           aria-hidden="true"
-          className="w-6 h-6 rounded-full shrink-0 border border-[var(--color-border)]"
+          className="w-6 h-6 rounded-full shrink-0 border border-[var(--border-default)]"
           style={{ backgroundColor: selected.color }}
         />
       ) : (
@@ -237,17 +237,17 @@ export function Select({
         />
       )}
       <span
-        className={`flex-1 text-left truncate ${selected ? "" : "text-[var(--color-text-muted)]"}`}
+        className={`flex-1 text-left truncate ${selected ? "" : "text-[var(--text-muted)]"}`}
       >
         {selected ? selected.label : placeholder || label}
       </span>
       {selected?.subtitle && (
-        <span className="text-[10px] text-[var(--color-text-muted)] shrink-0 hidden sm:inline">
+        <span className="text-[10px] text-[var(--text-muted)] shrink-0 hidden sm:inline">
           {selected.subtitle}
         </span>
       )}
       <ChevronDown
-        className={`w-4 h-4 text-[var(--color-text-muted)] shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        className={`w-4 h-4 text-[var(--text-muted)] shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
       />
     </button>
   );
@@ -257,7 +257,7 @@ export function Select({
       <div className="min-h-[2.5rem] flex items-start">
         <label
           htmlFor={`${id}-trigger`}
-          className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]"
+          className="text-[12px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]"
         >
           {label}
         </label>
@@ -279,13 +279,13 @@ export function Select({
                 ease: "easeOut",
               }}
               style={floatingStyle}
-              className={`flex flex-col surface border border-[var(--color-border)] shadow-2xl overflow-hidden ${
+              className={`flex flex-col surface border border-[var(--border-default)] shadow-2xl overflow-hidden ${
                 isMobile ? "rounded-t-2xl max-h-[60dvh]" : "rounded-xl"
               }`}
             >
               {search && (
-                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--color-border)] shrink-0">
-                  <Search className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+                <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--border-default)] shrink-0">
+                  <Search className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
                   <input
                     type="text"
                     value={query}
@@ -294,7 +294,7 @@ export function Select({
                       setFocusIdx(0);
                     }}
                     placeholder="Buscar..."
-                    className="flex-1 bg-transparent text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
+                    className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
                     autoFocus
                   />
                 </div>
@@ -317,7 +317,7 @@ export function Select({
                   : grouped.map((g, gi) => (
                       <div key={g.group}>
                         {g.group && (
-                          <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)]">
+                          <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] bg-[var(--surface-sunken)]">
                             {g.group}
                           </div>
                         )}
@@ -337,7 +337,7 @@ export function Select({
                       </div>
                     ))}
                 {filtered.length === 0 && (
-                  <div className="px-4 py-6 text-center text-sm text-[var(--color-text-muted)]">
+                  <div className="px-4 py-6 text-center text-sm text-[var(--text-muted)]">
                     Nenhum resultado
                   </div>
                 )}
@@ -363,7 +363,7 @@ function OptionThumb({
     return (
       <div
         aria-hidden="true"
-        className="w-6 h-6 rounded-md bg-[var(--color-accent)]/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-[var(--color-accent)] leading-none select-none"
+        className="w-6 h-6 rounded-md bg-[var(--accent)]/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-[var(--accent)] leading-none select-none"
       >
         {getMonogram(fallback)}
       </div>
@@ -378,7 +378,7 @@ function OptionThumb({
       loading="lazy"
       decoding="async"
       onError={() => setBroken(true)}
-      className="w-6 h-6 rounded-md object-cover shrink-0 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]"
+      className="w-6 h-6 rounded-md object-cover shrink-0 border border-[var(--border-default)] bg-[var(--surface-sunken)]"
     />
   );
 }
@@ -408,14 +408,14 @@ function OptionItem({
       onClick={onSelect}
       className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${
         isFocused
-          ? "bg-[var(--color-accent)]/20 text-[var(--color-text-primary)]"
-          : "hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
-      } ${isSelected ? "text-[var(--color-text-primary)] font-semibold bg-[var(--color-accent)]/10" : ""}`}
+          ? "bg-[var(--accent)]/20 text-[var(--text-primary)]"
+          : "hover:bg-[var(--surface-sunken)] text-[var(--text-secondary)]"
+      } ${isSelected ? "text-[var(--text-primary)] font-semibold bg-[var(--accent)]/10" : ""}`}
     >
       {opt.color ? (
         <span
           aria-hidden="true"
-          className="w-6 h-6 rounded-full shrink-0 border border-[var(--color-border)]"
+          className="w-6 h-6 rounded-full shrink-0 border border-[var(--border-default)]"
           style={{ backgroundColor: opt.color }}
         />
       ) : (
@@ -424,13 +424,13 @@ function OptionItem({
       <div className="flex-1 min-w-0">
         <div className="whitespace-normal break-words">{opt.label}</div>
         {opt.subtitle && (
-          <div className="text-[10px] text-[var(--color-text-muted)] truncate">
+          <div className="text-[10px] text-[var(--text-muted)] truncate">
             {opt.subtitle}
           </div>
         )}
       </div>
       {isSelected && (
-        <Check className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
+        <Check className="w-4 h-4 text-[var(--accent)] shrink-0" />
       )}
     </button>
   );

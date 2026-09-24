@@ -33,13 +33,13 @@ export function HistoryCard() {
     <>
       <div className="surface-elevated rounded-xl p-4 sm:p-5">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+          <span className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">
             {t("calc.history")} ({historyCount})
           </span>
           <button
             type="button"
             onClick={() => setShowClearConfirm(true)}
-            className="text-[10px] sm:text-xs text-red-400/70 hover:text-red-400 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded"
+            className="text-[10px] sm:text-xs text-[var(--critical)]/70 hover:text-[var(--critical)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded"
           >
             {t("calc.clearHistory")}
           </button>
@@ -48,9 +48,9 @@ export function HistoryCard() {
           {recentEntries.map((item) => (
             <div
               key={item.id}
-              className="p-2.5 rounded-xl bg-[var(--color-bg-hover)] border border-[var(--color-border)]"
+              className="p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-default)]"
             >
-              <div className="flex justify-between text-[10px] text-[var(--color-text-muted)] mb-1">
+              <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1">
                 <span>
                   {new Date(item.timestamp).toLocaleDateString(
                     i18n.resolvedLanguage || i18n.language,
@@ -61,14 +61,14 @@ export function HistoryCard() {
                   {item.type}
                 </span>
               </div>
-              <div className="font-medium text-[var(--color-text-primary)] text-xs truncate mb-1">
+              <div className="font-medium text-[var(--text-primary)] text-xs truncate mb-1">
                 {item.summary}
               </div>
               <div className="flex justify-between">
-                <span className="text-orange-400 font-mono text-xs">
+                <span className={`font-mono text-xs ${item.profit < 0 ? "text-[var(--margin-negative)]" : "text-[var(--margin)]"}`}>
                   {fmtCurrency(item.profit)}
                 </span>
-                <span className="text-emerald-400 font-mono font-bold text-xs">
+                <span className="text-[var(--revenue)] font-mono font-bold text-xs">
                   {fmtCurrency(item.sellPrice)}
                 </span>
               </div>

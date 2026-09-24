@@ -109,7 +109,7 @@ export function ProductActionsCard({ displaySellPrice }: ProductActionsCardProps
       <button
         type="button"
         onClick={() => addToHistory()}
-        className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+        className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[var(--surface-sunken)] border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)]"
       >
         <FolderOpen className="w-4 h-4" />
         {t("calc.addHistory")}
@@ -118,7 +118,7 @@ export function ProductActionsCard({ displaySellPrice }: ProductActionsCardProps
       <button
         type="button"
         onClick={handleRegisterProduct}
-        className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]"
+        className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[var(--accent)] text-[var(--text-inverse)] hover:bg-[var(--accent-hover)]"
       >
         <PackagePlus className="w-4 h-4" />
         {t("results.registerProduct")}
@@ -130,10 +130,10 @@ export function ProductActionsCard({ displaySellPrice }: ProductActionsCardProps
           aria-live="polite"
           className={`rounded-xl p-3 sm:p-4 text-center text-xs sm:text-sm font-medium border ${
             productMsg.kind === "error"
-              ? "bg-[var(--color-danger)]/10 border-[var(--color-danger)]/30 text-[var(--color-danger)]"
+              ? "bg-[var(--critical)]/10 border-[var(--critical)]/30 text-[var(--critical)]"
               : productMsg.kind === "warn"
-                ? "bg-[var(--color-warning-muted)] border-[var(--color-warning)]/30 text-[var(--color-warning)]"
-                : "bg-emerald-600/10 border-emerald-500/30 text-emerald-400"
+                ? "bg-[var(--warning-subtle)] border-[var(--warning)]/30 text-[var(--warning)]"
+                : "bg-[var(--positive-subtle)] border-[var(--positive)]/30 text-[var(--positive)]"
           }`}
         >
           <p>{productMsg.text}</p>
@@ -141,7 +141,7 @@ export function ProductActionsCard({ displaySellPrice }: ProductActionsCardProps
             <button
               type="button"
               onClick={handleGoToProducts}
-              className="mt-1.5 underline underline-offset-2 font-semibold hover:opacity-80 transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded"
+              className="mt-1.5 underline underline-offset-2 font-semibold hover:opacity-80 transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded"
             >
               {t("results.viewProducts")}
             </button>

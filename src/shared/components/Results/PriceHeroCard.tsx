@@ -62,7 +62,7 @@ export function PriceHeroCard({
   return (
     <div className="result-hero rounded-xl p-3 sm:p-5 text-center">
       <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-success)]/70">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--revenue)]/70">
           {t("calc.sellPrice")}
         </div>
         {!isEditingPrice && (
@@ -70,7 +70,7 @@ export function PriceHeroCard({
             type="button"
             onClick={openPriceEditor}
             aria-label={t("calc.sellPriceEdit")}
-            className="p-1.5 rounded-lg text-[var(--color-success)]/70 hover:text-[var(--color-success)] hover:bg-[var(--color-success)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="p-1.5 rounded-lg text-[var(--revenue)]/70 hover:text-[var(--revenue)] hover:bg-[var(--revenue)]/10 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
@@ -97,13 +97,13 @@ export function PriceHeroCard({
             aria-label={t("calc.sellPriceInputLabel")}
             aria-invalid={priceError}
             aria-describedby={priceError ? "sell-price-error" : undefined}
-            className="w-36 sm:w-44 px-3 py-2 rounded-xl text-center text-lg sm:text-xl font-mono font-bold bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="w-36 sm:w-44 px-3 py-2 rounded-xl text-center text-lg sm:text-xl font-mono font-bold bg-[var(--surface-sunken)] border border-[var(--border-default)] text-[var(--text-primary)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
           />
           <button
             type="button"
             onClick={handleConfirmPrice}
             aria-label={t("calc.sellPriceConfirm")}
-            className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none flex items-center justify-center"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-[var(--positive)] text-[var(--text-inverse)] hover:bg-[var(--positive)]/90 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--positive)] focus-visible:outline-none flex items-center justify-center"
           >
             <Check className="w-4 h-4" />
           </button>
@@ -111,13 +111,13 @@ export function PriceHeroCard({
             type="button"
             onClick={handleCancelPrice}
             aria-label={t("calc.sellPriceCancel")}
-            className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       ) : (
-        <div className="text-3xl sm:text-5xl font-black font-mono tracking-tight leading-none text-[var(--color-text-primary)]">
+        <div className="text-3xl sm:text-5xl font-black font-mono tracking-tight leading-none text-[var(--text-primary)]">
           {fmtCurrency(breakdown.displaySellPrice)}
         </div>
       )}
@@ -125,17 +125,17 @@ export function PriceHeroCard({
         <p
           id="sell-price-error"
           role="alert"
-          className="text-xs sm:text-sm text-[var(--color-danger)] mt-2"
+          className="text-xs sm:text-sm text-[var(--critical)] mt-2"
         >
           {t("calc.sellPriceInvalid")}
         </p>
       )}
       {overrideCalc ? (
         <div className="mt-2 space-y-1.5">
-          <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30">
+          <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30">
             {t("calc.sellPriceCustom")}
           </span>
-          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
             {t("calc.profit")}: {fmtCurrency(overrideCalc.profit)} ·{" "}
             {t("calc.actualMargin")}: {overrideCalc.marginReal.toFixed(1)}% ·{" "}
             {t("calc.effectiveMarkup")}:{" "}
@@ -144,7 +144,7 @@ export function PriceHeroCard({
           {overrideCalc.belowBreakEven && (
             <p
               role="alert"
-              className="text-xs sm:text-sm font-semibold text-[var(--color-danger)]"
+              className="text-xs sm:text-sm font-semibold text-[var(--margin-negative)]"
             >
               {t("calc.belowBreakEven", {
                 value: fmtCurrency(breakEvenPrice),
@@ -154,14 +154,14 @@ export function PriceHeroCard({
           <button
             type="button"
             onClick={handleResetPrice}
-            className="text-[11px] sm:text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] underline underline-offset-2 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded"
+            className="text-[11px] sm:text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] underline underline-offset-2 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none rounded"
           >
             {t("calc.sellPriceReset")}
           </button>
         </div>
       ) : (
         fees.hasFees && (
-          <div className="text-xs sm:text-sm text-[var(--color-success)]/80 mt-2">
+          <div className="text-xs sm:text-sm text-[var(--revenue)]/80 mt-2">
             {t("calc.taxesAndFeesIncluded", {
               value: fmtCurrency(fees.taxAmount),
             })}

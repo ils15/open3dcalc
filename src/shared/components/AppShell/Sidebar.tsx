@@ -27,18 +27,18 @@ export function TabletSidebar({
   const { t } = useTranslation();
 
   return (
-    <aside className="hidden md:flex lg:hidden flex-col gap-1 w-16 shrink-0 px-2 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--color-border)]">
-      <p className="text-[9px] font-semibold text-[var(--color-text-muted)] px-2 mb-2 uppercase tracking-wider">
+    <aside className="hidden md:flex lg:hidden flex-col gap-1 w-16 shrink-0 px-2 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--border-subtle)]">
+      <p className="text-[9px] font-semibold text-[var(--text-muted)] px-2 mb-2 uppercase tracking-wider">
         Nav
       </p>
       {TABS.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
+          className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
             activeTab === tab.id
-              ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)] border border-[var(--color-accent-muted)]"
-              : `text-[var(--color-text-muted)] ${tabletInactiveHoverClassName ?? "hover:text-[var(--color-text-primary)]"} hover:bg-[var(--color-bg-hover)] border border-transparent`
+              ? "bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-subtle)]"
+              : `text-[var(--text-muted)] ${tabletInactiveHoverClassName ?? "hover:text-[var(--text-primary)]"} hover:bg-[var(--surface-sunken)] border border-transparent`
           }`}
           title={t(tab.labelKey)}
         >
@@ -57,13 +57,13 @@ export function DesktopSidebar({
   const { t } = useTranslation();
 
   return (
-    <aside className="hidden lg:flex flex-col gap-1 w-60 xl:w-68 shrink-0 px-4 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--color-border)]">
+    <aside className="hidden lg:flex flex-col gap-1 w-60 xl:w-68 shrink-0 px-4 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--border-subtle)]">
       <p className="label-xs px-3 mb-2">{t("nav.navigation")}</p>
       {TABS.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onTabChange(tab.id)}
-          className={`nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${activeTab === tab.id ? "active" : ""}`}
+          className={`nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${activeTab === tab.id ? "active" : ""}`}
           role="tab"
           aria-selected={activeTab === tab.id}
         >

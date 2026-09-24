@@ -92,7 +92,7 @@ describe("useFinancialBreakdown — null safety", () => {
 });
 
 describe("useFinancialBreakdown — cost segments", () => {
-  it("maps every positive cost into a chart segment with its color", () => {
+  it("maps every positive cost into a chart segment with its category", () => {
     const breakdown = render({});
 
     expect(breakdown.chartData.map((s) => s.name)).toEqual([
@@ -110,19 +110,20 @@ describe("useFinancialBreakdown — cost segments", () => {
     const byName = Object.fromEntries(
       breakdown.chartData.map((s) => [s.name, s]),
     );
-    expect(byName["Material"]?.color).toBe("#38bdf8");
-    expect(byName["calc.chartLabels.energy"]?.color).toBe("#facc15");
-    expect(byName["calc.chartLabels.machine"]?.color).toBe("#94a3b8");
-    expect(byName["Hardware"]?.color).toBe("#f97316");
-    expect(byName["calc.chartLabels.failure"]?.color).toBe("#f87171");
+    expect(byName["Material"]?.category).toBe("filament");
+    expect(byName["calc.chartLabels.energy"]?.category).toBe("energy");
+    expect(byName["calc.chartLabels.machine"]?.category).toBe("machine");
+    expect(byName["Hardware"]?.category).toBe("other");
+    expect(byName["calc.chartLabels.labor"]?.category).toBe("labor");
+    expect(byName["calc.chartLabels.failure"]?.category).toBe("failure");
   });
 
-  it("uses the resin material color on the resin tab", () => {
+  it("keeps the filament category on the resin tab", () => {
     const breakdown = render({ activeTab: "resin" });
 
     expect(breakdown.isFDM).toBe(false);
     expect(breakdown.chartData[0]).toEqual(
-      expect.objectContaining({ name: "Material", color: "#a855f7" }),
+      expect.objectContaining({ name: "Material", category: "filament" }),
     );
   });
 
