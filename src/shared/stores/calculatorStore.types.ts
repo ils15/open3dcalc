@@ -1,5 +1,4 @@
 import type { CurrencySetting } from "@/shared/lib/currency";
-import type { PresetDraftV1 } from "@/shared/lib/projectPresetDraft";
 import type {
   MaterialStateFDM,
   MaterialStateResin,
@@ -122,8 +121,6 @@ export interface CalculatorState {
     info: { spoolId: string; weight: number } | null,
   ) => void;
   results: CalculationResult | null;
-  /** Applies a validated PresetDraftV1 in one calculator-store transaction. */
-  applyProjectPresetDraft: (draft: PresetDraftV1) => void;
   loadHistoryItem: (snapshot: CalculationSnapshot) => void;
   addToHistory: () => void;
   saveSettings: () => void;

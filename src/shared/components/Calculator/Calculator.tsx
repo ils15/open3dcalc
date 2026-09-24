@@ -12,7 +12,6 @@ import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { TechToggle } from "./TechToggle";
 import { LevelToggle } from "./LevelToggle";
 import { ProductName } from "./ProductName";
-import { ProjectPresetPicker } from "./ProjectPresetPicker";
 import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./SectionRenderer";
 
@@ -115,7 +114,6 @@ export function Calculator() {
             <LevelToggle />
           </div>
           <ProductName />
-          <ProjectPresetPicker />
           <SectionRenderer
             t={t}
             currencySymbol={currencySymbol}

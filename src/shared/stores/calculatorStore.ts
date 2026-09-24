@@ -52,7 +52,6 @@ import {
   resolveResinMaterial,
 } from "./calculatorStore.helpers";
 import { computeStoreResults } from "./calculatorStore.compute";
-import { createProjectPresetApplicationPatch } from "@/shared/lib/projectPresetDraft";
 
 type PrinterProfile = (typeof printers)[number];
 
@@ -580,17 +579,6 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         selectedSpoolId: null,
         lastDeductedInfo: null,
       });
-    },
-
-    applyProjectPresetDraft: (draft) => {
-      // Validation (including live catalog provenance) completes before the
-      // single setWithCompute transaction; failures therefore cannot mutate
-      // calculator state or append an undo entry.
-      const patch = createProjectPresetApplicationPatch(
-        draft,
-        useCatalogStore.getState(),
-      );
-      setWithCompute(patch);
     },
 
     addToHistory: () => {
