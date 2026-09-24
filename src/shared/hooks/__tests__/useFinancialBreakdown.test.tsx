@@ -115,6 +115,11 @@ describe("useFinancialBreakdown — cost segments", () => {
     expect(byName["calc.chartLabels.machine"]?.color).toBe("#94a3b8");
     expect(byName["Hardware"]?.color).toBe("#f97316");
     expect(byName["calc.chartLabels.failure"]?.color).toBe("#f87171");
+    expect(byName["Material"]?.category).toBe("filament");
+    expect(byName["calc.chartLabels.energy"]?.category).toBe("energy");
+    expect(byName["calc.chartLabels.machine"]?.category).toBe("machine");
+    expect(byName["calc.chartLabels.labor"]?.category).toBe("labor");
+    expect(byName["calc.chartLabels.failure"]?.category).toBe("failure");
   });
 
   it("uses the resin material color on the resin tab", () => {

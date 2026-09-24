@@ -17,6 +17,10 @@ vi.mock("@/shared/components/Wizard/GuidedWizard", () => ({
   GuidedWizard: () => <div data-testid="guided-wizard">guided</div>,
 }));
 
+vi.mock("../BentoSurface", () => ({
+  BentoSurface: () => <div data-testid="bento-surface">bento</div>,
+}));
+
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 import { CalculatorSurface } from "../CalculatorSurface";
@@ -24,10 +28,8 @@ import { CalculatorSurface } from "../CalculatorSurface";
 /**
  * Wave 1 + W4 — the single switch point between layout surfaces.
  *
- * "classic" and "guided" (W4 wizard) exist today; "bento" (W3) intentionally
- * falls back to the classic surface until its wave lands, so a persisted future
- * mode never renders a blank surface. This test locks the mapping and the
- * fallback.
+ * "classic", "guided" (W4 wizard), and "bento" (W3) each map to their dedicated
+ * surface. The classic mode remains the safe fallback for unknown state.
  */
 
 beforeEach(() => {
@@ -77,12 +79,13 @@ describe("CalculatorSurface", () => {
     expect(screen.queryByTestId("classic-surface")).not.toBeInTheDocument();
   });
 
-  it("falls back to the classic surface for bento until W3 lands", () => {
+  it("renders the bento surface for the bento mode", () => {
     useLayoutStore.setState({ layoutMode: "bento" });
 
     render(<CalculatorSurface />);
 
-    expect(screen.getByTestId("classic-surface")).toBeInTheDocument();
+    expect(screen.getByTestId("bento-surface")).toBeInTheDocument();
+    expect(screen.queryByTestId("classic-surface")).not.toBeInTheDocument();
   });
 
   it("subscribes to the layout store — switching mode re-renders", () => {

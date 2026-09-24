@@ -14,12 +14,23 @@ import { reverseFromSellPrice } from "@/shared/lib/sellPriceOverride";
  */
 export type CalculatorTab = "fdm" | "resin";
 
+/** Semantic cost groups exposed to token-aware presentation surfaces. */
+export type CostCategory =
+  | "filament"
+  | "energy"
+  | "machine"
+  | "labor"
+  | "failure"
+  | "other";
+
 /** One slice of the cost-distribution chart. */
 export interface CostSegment {
   /** Already-translated label (chart + legend text). */
   readonly name: string;
   readonly value: number;
   readonly color: string;
+  /** Semantic category used by themed result surfaces. */
+  readonly category: CostCategory;
   /** Share of `totalCost` in percent; 0 when the total is not positive. */
   readonly pct: number;
 }
@@ -81,25 +92,28 @@ function buildChartSegments(
   t: (key: string) => string,
 ): CostSegment[] {
   const total = result.totalCost;
-  const raw: ReadonlyArray<readonly [string, number, string]> = [
-    ["Material", result.materialCost, isFDM ? MATERIAL_COLOR_FDM : MATERIAL_COLOR_RESIN],
-    [t("calc.chartLabels.energy"), result.energyCost, "#facc15"],
-    [t("calc.chartLabels.machine"), result.machineCost, "#94a3b8"],
-    ["Hardware", result.hardwareCost, "#f97316"],
-    [t("calc.chartLabels.finishing"), result.postProcessingCost, "#22d3ee"],
-    [t("calc.chartLabels.consumables"), result.consumablesCost, "#06b6d4"],
-    [t("calc.chartLabels.software"), result.softwareCost, "#818cf8"],
-    [t("calc.chartLabels.labor"), result.laborCost, "#f472b6"],
-    [t("calc.chartLabels.failure"), result.failureCost, "#f87171"],
-    [t("calc.chartLabels.extras"), result.extrasCost, "#cbd5e1"],
+  const raw: ReadonlyArray<
+    readonly [string, number, string, CostCategory]
+  > = [
+    ["Material", result.materialCost, isFDM ? MATERIAL_COLOR_FDM : MATERIAL_COLOR_RESIN, "filament"],
+    [t("calc.chartLabels.energy"), result.energyCost, "#facc15", "energy"],
+    [t("calc.chartLabels.machine"), result.machineCost, "#94a3b8", "machine"],
+    ["Hardware", result.hardwareCost, "#f97316", "other"],
+    [t("calc.chartLabels.finishing"), result.postProcessingCost, "#22d3ee", "other"],
+    [t("calc.chartLabels.consumables"), result.consumablesCost, "#06b6d4", "other"],
+    [t("calc.chartLabels.software"), result.softwareCost, "#818cf8", "other"],
+    [t("calc.chartLabels.labor"), result.laborCost, "#f472b6", "labor"],
+    [t("calc.chartLabels.failure"), result.failureCost, "#f87171", "failure"],
+    [t("calc.chartLabels.extras"), result.extrasCost, "#cbd5e1", "other"],
   ];
 
   return raw
     .filter(([, value]) => value > SEGMENT_MIN_VALUE)
-    .map(([name, value, color]) => ({
+    .map(([name, value, color, category]) => ({
       name,
       value,
       color,
+      category,
       pct: total > 0 ? (value / total) * 100 : 0,
     }));
 }

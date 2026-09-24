@@ -26,8 +26,8 @@ vi.mock("@/shared/components/Dashboard/RechartsLazy", () => ({
 }));
 
 const segments: CostSegment[] = [
-  { name: "Material", value: 10, color: "#38bdf8", pct: 33.33 },
-  { name: "Energia", value: 20, color: "#facc15", pct: 66.67 },
+  { name: "Material", value: 10, color: "#38bdf8", category: "filament", pct: 33.33 },
+  { name: "Energia", value: 20, color: "#facc15", category: "energy", pct: 66.67 },
 ];
 
 beforeEach(() => {
