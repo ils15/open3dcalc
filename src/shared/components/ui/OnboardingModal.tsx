@@ -1,7 +1,15 @@
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, ChevronRight, ArrowLeft, Play } from "lucide-react";
+import {
+  ArrowLeft,
+  Calculator,
+  ChevronRight,
+  Database,
+  Play,
+  Settings2,
+  X,
+} from "lucide-react";
 import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
@@ -77,21 +85,22 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
 
   const slides = [
     {
-      icon: "🧮",
+      Icon: Calculator,
       title: t("onboarding.slide1.title"),
       description: t("onboarding.slide1.description"),
     },
     {
-      icon: "⚙️",
+      Icon: Settings2,
       title: t("onboarding.slide2.title"),
       description: t("onboarding.slide2.description"),
     },
     {
-      icon: "💾",
+      Icon: Database,
       title: t("onboarding.slide3.title"),
       description: t("onboarding.slide3.description"),
     },
   ];
+  const SlideIcon = slides[slideIndex].Icon;
 
   return (
     <div
@@ -135,7 +144,7 @@ export function OnboardingModal({ onComplete }: OnboardingModalProps) {
               className="flex flex-col items-center gap-4 w-full"
             >
               <span className="text-5xl" role="img" aria-hidden="true">
-                {slides[slideIndex].icon}
+                <SlideIcon className="h-12 w-12" />
               </span>
               <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
                 {slides[slideIndex].title}

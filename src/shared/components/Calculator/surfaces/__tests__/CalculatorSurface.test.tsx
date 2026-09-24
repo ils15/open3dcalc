@@ -1,15 +1,24 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      key === "layoutSwitcher.guided" ? "Fluxo Guiado" : key,
+  }),
+}));
 
 vi.mock("@/shared/components/Calculator/Calculator", () => ({
   Calculator: () => <div data-testid="classic-surface">classic</div>,
 }));
 
-vi.mock("@/shared/components/Calculator/surfaces/GuidedSurface", () => ({
-  GuidedSurface: () => <div data-testid="guided-surface">guided</div>,
+vi.mock("@/shared/components/Wizard/GuidedWizard", () => ({
+  GuidedWizard: () => <div data-testid="guided-wizard">guided</div>,
 }));
 
 import { useLayoutStore } from "@/shared/stores/layoutStore";
+import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 import { CalculatorSurface } from "../CalculatorSurface";
 
 /**
@@ -46,7 +55,25 @@ describe("CalculatorSurface", () => {
 
     render(<CalculatorSurface />);
 
-    expect(screen.getByTestId("guided-surface")).toBeInTheDocument();
+    expect(screen.getByTestId("guided-wizard")).toBeInTheDocument();
+    expect(screen.queryByTestId("classic-surface")).not.toBeInTheDocument();
+  });
+
+  it("renders the guided wizard when the header control selects guided mode", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <>
+        <LayoutSwitcher />
+        <CalculatorSurface />
+      </>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Fluxo Guiado" }),
+    );
+
+    expect(screen.getByTestId("guided-wizard")).toBeInTheDocument();
     expect(screen.queryByTestId("classic-surface")).not.toBeInTheDocument();
   });
 
@@ -65,6 +92,6 @@ describe("CalculatorSurface", () => {
     useLayoutStore.getState().setLayoutMode("guided");
     rerender(<CalculatorSurface />);
 
-    expect(screen.getByTestId("guided-surface")).toBeInTheDocument();
+    expect(screen.getByTestId("guided-wizard")).toBeInTheDocument();
   });
 });

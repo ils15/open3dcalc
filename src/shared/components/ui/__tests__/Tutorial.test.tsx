@@ -12,7 +12,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, params?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
-        "tutorial.steps.welcome.title": "Bem-vindo ao Open3DCalc! 🎉",
+        "tutorial.steps.welcome.title": "Bem-vindo ao Open3DCalc!",
         "tutorial.steps.welcome.description": "Calculadora 3D completa.",
         "tutorial.steps.material.title": "Materiais",
         "tutorial.steps.material.description": "Selecione o filamento.",
@@ -24,7 +24,7 @@ vi.mock("react-i18next", () => ({
         "tutorial.steps.results.description": "Resultados calculados.",
         "tutorial.steps.export.title": "Exportar",
         "tutorial.steps.export.description": "Exporte seus dados.",
-        "tutorial.steps.complete.title": "Tudo pronto! 🚀",
+        "tutorial.steps.complete.title": "Tudo pronto!",
         "tutorial.steps.complete.description": "Você já sabe usar!",
         "tutorial.stepOf": "Passo {{current}} de {{total}}",
         "tutorial.next": "Próximo",
@@ -201,7 +201,7 @@ describe("Tutorial", () => {
   it("renders tooltip card when active", () => {
     useTutorialStore.getState().startTutorial();
     render(<Tutorial />);
-    expect(screen.getByText("Bem-vindo ao Open3DCalc! 🎉")).toBeInTheDocument();
+    expect(screen.getByText("Bem-vindo ao Open3DCalc!")).toBeInTheDocument();
   });
 
   it("shows step counter (1 / 7)", () => {

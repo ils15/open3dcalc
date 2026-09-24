@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
   Box,
+  Check,
   Code2,
   Globe,
   ChevronDown,
@@ -18,6 +19,7 @@ import { ThemeToggle } from "@/shared/components/Header/ThemeToggle";
 import { useUpdaterStore } from "../UpdateNotification/UpdaterStore";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
+import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -94,6 +96,8 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-2">
+          <LayoutSwitcher />
+
           <a
             href="https://t.me/Impressao3DBR"
             target="_blank"
@@ -173,7 +177,7 @@ export function Header() {
                     <span>{t("settings.currencyAuto")}</span>
                     {currencySetting === "auto" && (
                       <span className="ml-auto text-[var(--color-accent)]">
-                        ✓
+                        <Check className="h-4 w-4" aria-hidden="true" />
                       </span>
                     )}
                   </button>
@@ -202,7 +206,7 @@ export function Header() {
                       </span>
                       {currencySetting === code && (
                         <span className="text-[var(--color-accent)] ml-1">
-                          ✓
+                          <Check className="h-4 w-4" aria-hidden="true" />
                         </span>
                       )}
                     </button>

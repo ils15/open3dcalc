@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import type { MeshValidation } from "@/shared/lib/meshValidation";
 
 /**
@@ -47,9 +48,7 @@ export function MeshWarning({ validation, t }: MeshWarningProps) {
       title={t("stl.meshWarning.tooltip")}
       className="flex items-start gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 p-2.5 text-xs text-amber-400"
     >
-      <span aria-hidden="true" className="leading-5">
-        ⚠️
-      </span>
+      <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
       <div className="space-y-1">
         <p className="font-semibold">{t("stl.meshWarning.title")}</p>
         <ul className="space-y-0.5 text-[11px] text-amber-400/90">

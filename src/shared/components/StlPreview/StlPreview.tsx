@@ -1249,7 +1249,7 @@ export function StlPreview({
                           aria-label={t("stl.compare.remove")}
                           className="text-[var(--color-text-muted)] hover:text-red-400 min-h-[36px] min-w-[36px]"
                         >
-                          ✕
+                          <X className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </td>
                     </tr>

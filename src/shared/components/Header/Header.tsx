@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import {
   Box,
+  Check,
   Globe,
   ChevronDown,
   BookOpen,
@@ -24,6 +25,7 @@ import { APP_VERSION } from "@/shared/version";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 import { DemoModeButton } from "@/shared/components/DemoMode/DemoModeButton";
+import { LayoutSwitcher } from "./LayoutSwitcher";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -101,6 +103,8 @@ export function Header() {
         <div className="flex shrink-0 items-center gap-2">
           {/* Desktop-only actions */}
           <div className="hidden sm:flex items-center gap-2">
+            <LayoutSwitcher />
+
             {/* Guide / help drawer (22 areas) */}
             <GuideDrawer />
 
@@ -156,7 +160,7 @@ export function Header() {
                       <span>{t("settings.currencyAuto")}</span>
                       {currencySetting === "auto" && (
                         <span className="ml-auto text-[var(--color-accent)]">
-                          ✓
+                          <Check className="h-4 w-4" aria-hidden="true" />
                         </span>
                       )}
                     </button>
@@ -185,7 +189,7 @@ export function Header() {
                         </span>
                         {currencySetting === code && (
                           <span className="text-[var(--color-accent)] ml-1">
-                            ✓
+                            <Check className="h-4 w-4" aria-hidden="true" />
                           </span>
                         )}
                       </button>
@@ -268,6 +272,10 @@ export function Header() {
               </div>
 
               <div className="px-3 pb-4 space-y-0.5">
+                <div className="px-1 py-2">
+                  <LayoutSwitcher showLabels className="w-full justify-between" />
+                </div>
+
                 {/* Tutorial */}
                 <button
                   onClick={() => {

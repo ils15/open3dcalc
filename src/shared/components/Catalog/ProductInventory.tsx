@@ -6,7 +6,15 @@ import {
   exportProductsCSV,
 } from "@/shared/stores/productInventory";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
-import { Package, Plus, Pencil, Trash2, Search, Download } from "lucide-react";
+import {
+  AlertTriangle,
+  Package,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Download,
+} from "lucide-react";
 import type { Product } from "@/shared/types";
 import { downloadBlob } from "@/shared/lib/download";
 import { DemoExportBadge } from "@/shared/components/DemoMode/DemoExportBadge";
@@ -198,8 +206,15 @@ function ProductFormModal({
             </div>
           </div>
           {belowCost && (
-            <p role="alert" className="text-xs font-medium text-amber-400">
-              ⚠ {t("products.belowCostWarn")}
+            <p
+              role="alert"
+              className="flex items-center gap-1.5 text-xs font-medium text-amber-400"
+            >
+              <AlertTriangle
+                className="h-3.5 w-3.5 shrink-0"
+                aria-hidden="true"
+              />
+              {t("products.belowCostWarn")}
             </p>
           )}
         </div>
@@ -370,7 +385,10 @@ export function ProductInventory() {
                         className="ml-2 text-amber-400"
                         aria-label={t("products.belowCostWarn")}
                       >
-                        ⚠
+                        <AlertTriangle
+                          className="h-3.5 w-3.5"
+                          aria-hidden="true"
+                        />
                       </span>
                     )}
                   </td>
