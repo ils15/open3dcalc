@@ -183,7 +183,11 @@ describe("BentoSurface", () => {
     expect(firstCard).toHaveFocus();
 
     await user.tab();
-    expect(screen.getByRole("article", { name: "Máquina e energia" })).toHaveFocus();
+    expect(screen.getByRole("combobox", { name: "Tipo de Filamento" })).toHaveFocus();
+
+    const machineCard = screen.getByRole("article", { name: "Máquina e energia" });
+    machineCard.focus();
+    expect(machineCard).toHaveFocus();
   });
 
   it("saves the current calculation from the summary CTA", async () => {
