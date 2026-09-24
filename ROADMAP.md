@@ -197,7 +197,7 @@ Every phase and change must complete this checklist:
 - [ ] Separate `Marketplace` as a fee-template from `StoreChannel` as a concrete store/channel.
 - [ ] Support multiple stores/channels and product offers with price, fee, shipping, margin, SKU, and URL.
 - [ ] Preserve historical price and calculation snapshots.
-- [ ] Separate `PrinterProfile` from `PrinterInstance`.
+- [ ] Separate `PrinterProfile` from `PrinterAsset` conforme a decisão da Phase 7d.
 - [ ] Add printer location, group, technology, status, capacity, and maintenance data.
 - [ ] Add filters, cards, tables, and a "use in calculator" action for printers.
 - [ ] Add contextual dashboards and alerts for margin, stock, and maintenance.
@@ -321,27 +321,29 @@ Every phase and change must complete this checklist:
 
 ### 🌈 Phase 7: Adaptive Layouts & Progressive Onboarding
 
-**Status em `2.0.0-beta.1` (PRs #182–#192):** parcial. A base de layouts, o shell da aplicação, o Inspetor Financeiro e o wizard foram entregues; o Bento Grid e o seletor de layout ainda não estavam acessíveis na beta.
+**Status em `2.0.0-beta.2`:** entregue para `classic`, `guided` e `bento`, com uma limitação conhecida: o Bento é uma superfície financeira read-only e ainda não substitui os campos editáveis do Clássico.
 
 **Entregue:**
 
 - [x] `layoutStore` com os modos `classic`, `guided` e `bento`, com persistência local.
-- [x] `AppShell` extraído para Concentrar o ponto de troca da superfície de cálculo.
-- [x] Inspetor Financeiro como refactor behavior-preserving do `ResultsPanel`: cálculos mantidos no hook e apresentação em 8 cards.
+- [x] `AppShell` extraído para concentrar a troca da superfície de cálculo.
+- [x] `LayoutSwitcher` no header. O Guided já existia, mas era inalcançável porque nenhum componente chamava `setLayoutMode`; o seletor corrigiu esse ponto de entrada.
+- [x] Inspetor Financeiro como refactor behavior-preserving do `ResultsPanel`: cálculos mantidos no hook e apresentação em cards.
 - [x] Wizard progressivo de 4 passos (`GuidedWizard`).
+- [x] `BentoSurface` com cinco cards financeiros e grid responsivo `1 / md:2 / lg:3`.
+- [x] Gauge do Bento ligado ao inventário real, sem dados fictícios ou contagem local.
 - [x] SPEC-01 na versão 1.4, com três chaves de dados `ui_preference`, incluindo a chave de layout.
 
-**Pendente:**
+**Limitação conhecida:**
 
-- [ ] Bento Grid: não implementado; o modo `bento` cai em `ClassicSurface` com `TODO(W3)`.
-- [ ] `LayoutSwitcher`: ausente na beta; a correção pertence à onda A1, ainda não lançada na beta.
-- [ ] Guia de Perfis para associar persona a layout e `calcLevel`.
-- [ ] Estados vazios e feedback visual completos para as novas superfícies.
-- [ ] Bento cards responsivos nos breakpoints existentes.
+- [ ] O Bento foi entregue deliberadamente como read-only. A cobertura editável está especificada na Phase 7i; não deve ser tratada como bug do layout atual.
+- [ ] O Guide de Perfis para associar persona a layout e `calcLevel` continua pendente.
+- [ ] Estados vazios e feedback visual completos para as novas superfícies continuam em aberto.
 
 **Acceptance criteria:**
 
-- [ ] Os três layouts renderizam os mesmos resultados de cálculo.
+- [x] Os três layouts estão acessíveis pelo header e o Guided deixou de ser um modo órfão.
+- [ ] Os três layouts renderizam os mesmos resultados e oferecem a mesma cobertura de edição; hoje isso é bloqueado pela limitação read-only do Bento.
 - [ ] Trocas de layout nunca entram no undo stack nem tornam o cálculo pendente.
 - [ ] O wizard pode ser pulado ou dispensado em qualquer etapa; a calculadora permanece utilizável sem ele.
 - [x] A chave de layout aparece no manifesto SPEC-01.
@@ -352,7 +354,7 @@ Every phase and change must complete this checklist:
 
 ### 💰 Phase 7b: Multi-Network Quotes, Marketplace Profit Comparison & Suggested Price
 
-**Status em `2.0.0-beta.1`:** parcial. As três bibliotecas puras foram entregues; as interfaces de usuário permanecem pendentes.
+**Status em `2.0.0-beta.2`:** as três bibliotecas puras foram entregues; não existe interface para nenhuma delas.
 
 **Entregue como lib pura, sem interface:**
 
@@ -368,6 +370,8 @@ Every phase and change must complete this checklist:
 - [ ] Textos e rótulos completos em pt-BR e en-US, incluindo a diferença entre margem sobre preço e markup sobre custo.
 - [ ] Painel de premissas para explicitar as diferenças de taxa fixa e percentual.
 
+**Referência de precificação:** [NovaLab 3D — `precificar-impressao-marketplaces`](https://www.novalab3d.app/documentacao).
+
 **Acceptance criteria:**
 
 - [ ] O compartilhamento funciona sem chamadas de rede na geração e sem deep links não documentados.
@@ -381,77 +385,100 @@ Every phase and change must complete this checklist:
 
 ### 🎨 Phase 7c: Visual Catalogs (Printers & Marketplaces)
 
-**Status em `2.0.0-beta.1`:** parcial. Os selects passaram a exibir thumbnails e o catálogo de impressoras recebeu enriquecimento técnico; a arte própria dos fallbacks e a modernização completa do `CatalogTab` continuam pendentes.
+**Status em `2.0.0-beta.2`:** baseline visual entregue. Os selects têm thumbnails com fallback monograma `aria-hidden`; parte do catálogo de impressoras foi enriquecida com dados técnicos licenciados e a atribuição foi documentada.
 
 **Entregue:**
 
-- [x] Thumbnails nos selects, com o caminho visual já existente em `Select`.
-- [x] Dados técnicos de 103 impressoras enriquecidos com atribuição CC-BY-4.0.
+- [x] Thumbnails no `Select`, com fallback de monograma marcado como decorativo por `aria-hidden`.
+- [x] Enrichment de 70 das 103 impressoras com dados técnicos CC-BY-4.0 do swordlab.
+- [x] Dados econômicos existentes preservados: o enrichment nunca sobrescreve preço ou outros valores comerciais.
+- [x] `docs/CREDITS.md` com a atribuição da fonte.
+- [x] Arte SVG própria para os fallbacks visuais, sem depender de logotipos registrados.
 
 **Pendente:**
 
-- [ ] Ilustrações próprias `fallback-fdm.svg` e `fallback-resin.svg`.
-- [ ] Preenchimento das imagens ausentes do catálogo sem imagens quebradas.
-- [ ] Arte própria para marketplaces, sem uso de logotipos registrados.
 - [ ] Reescrita dos cards de `CatalogTab` com thumbnails, badges de tecnologia, arte de marketplace e busca textual.
+- [ ] Completar a arte própria e a revisão visual dos assets ainda ausentes.
+- [ ] Confirmar carregamento tardio e ausência de imagens quebradas em todos os estados do catálogo.
 
 **Acceptance criteria:**
 
+- [x] O fallback de monograma não é anunciado como informação por leitores de tela.
 - [ ] Nenhuma entrada do catálogo renderiza uma imagem quebrada.
-- [ ] Nenhuma foto de fabricante ou logotipo registrado entra no repositório sem permissão documentada.
+- [x] Nenhuma foto de fabricante ou logotipo registrado entra no repositório sem permissão documentada.
 - [ ] Os assets de `public/` permanecem fora do bundle JavaScript e sob carregamento tardio.
+- [x] O enrichment técnico não altera os dados econômicos existentes.
+
 - [ ] Os dados do catálogo permanecem sem PII e as chaves de catálogo do SPEC-01 não mudam.
 - [ ] Todos os rótulos novos existem em pt-BR e en-US; thumbnails são decorativas ou têm texto alternativo.
 
-### 🔎 Achados técnicos da `2.0.0-beta.1`
+### 🧾 Pipeline e achados técnicos das betas 1 e 2
 
-- **Ausência de seletor de layout na interface:** o `GuidedWizard` existia e funcionava, mas nenhum componente chamava `setLayoutMode`; portanto, o modo guiado era inalcançável pela interface. A correção foi integrada à onda A1.
+- **PR #191 — `package-lock.json` sincronizado:** o lockfile passou a refletir o grafo efetivamente instalado, removendo uma divergência entre manifesto, lockfile e ambiente de release.
+- **PR #192 — trim de whitespace no input de versão:** o campo aceitou espaço no início ou fim; a release caiu duas vezes por esse caractere. O hotfix normaliza o valor antes do uso.
+- **Ausência de seletor de layout na beta 1:** o `GuidedWizard` existia e funcionava, mas nenhum componente chamava `setLayoutMode`; portanto, o modo guiado era inalcançável pela interface. A correção foi integrada à onda A1 e entregue na beta 2.
 - **Teste flaky de foco no Wiki** (`WikiPage.test.tsx`): falhava em cerca de 5% das execuções. A causa raiz era o uso de `useEffect` (fase passiva) em vez de `useLayoutEffect` no foco entre artigos; era um bug real de acessibilidade, não uma instabilidade artificial do teste. Corrigido em `f366726`.
 - **Duplicação de inventário:** “Filamentos” e “Carretéis” apresentavam o mesmo array. O `spoolStore` é o owner único de `open3dcalc_filaments`; `filamentInventory.ts` é um shim. Não havia bug de dados, mas havia confusão de UX e ausência de deduplicação.
+- **Alcance dos achados da beta 2:** PRs #191 e #192 corrigiram pipeline/operação e não indicam regressão na fórmula de cálculo.
 
 ---
 
-### 🏭 Phase 7d: Gestão de Frota & Parque de Impressoras
+### 🏭 Phase 7d: Gestão de Impressoras — perfis e ativos
 
-**Status:** planejada. Esta fase introduz dados operacionais da oficina e depende de uma nova entidade, um novo store e uma nova chave no manifesto SPEC-01.
+**Status:** decisão arquitetural tomada; implementação planejada. Esta fase depende de uma nova chave no manifesto SPEC-01 e não modifica a biblioteca de cálculo protegida.
 
-**KPIs de frota:**
+**Decisão arquitetural central:** `PrinterProfile` e `PrinterAsset` são entidades distintas.
 
-- [ ] Máquinas na oficina: total e quantas estão imprimindo.
-- [ ] Capital em equipamentos: valor contábil de aquisição.
-- [ ] Horas totais rodadas, com histórico acumulado.
-- [ ] Saúde operacional: percentual da frota pronta para produzir e contagem de máquinas em manutenção.
+**`PrinterProfile` — modelo reutilizável, sem estado operacional:**
 
-**Entidade `FleetMachine`:**
+- [ ] Identificação: `id`, nome, fabricante, modelo e `technology`.
+- [ ] Capacidade: `buildVolumeX`, `buildVolumeY` e `buildVolumeZ`.
+- [ ] Custos padrão: `typicalPowerW`, custo de aquisição padrão, moeda, `defaultUsefulLifeYears`, `defaultResidualValue`, `defaultDepreciationMethod`, `defaultMaintenanceCostPerHour` e `defaultLaborRate`.
+- [ ] Override de energia previsto no perfil para consumidores que precisem substituir a premissa padrão.
 
-- [ ] Identificação: marca, modelo e tecnologia FDM/RESINA.
-- [ ] Bico (`nozzleDiameterMm`), potência (`powerW`) e volume útil (`buildVolumeMm`), reaproveitando o tipo que já existe em `src/shared/lib/printers.ts`.
-- [ ] Preço de aquisição e data de aquisição.
-- [ ] Vida útil estimada em horas e horas já consumidas.
-- [ ] Custo de manutenção por hora.
-- [ ] Status: `printing`, `available`, `maintenance` ou `idle`.
-- [ ] Trabalho em execução com nome e progresso, por exemplo “Camada 180/420”.
-- [ ] Motivo de parada quando a máquina estiver em manutenção.
+**`PrinterAsset` — máquina física possuída e mantida:**
 
-**Custos e integração com a calculadora:**
+- [ ] Identificação e vínculo: `id`/`assetTag`, `profileId`, `serialNumber` e `siteId`/`locationId`.
+- [ ] Operação: `status`, `acquisitionDate`, `acquisitionCost`, `availableForUseDate` e `queueEligible`.
+- [ ] Contabilidade: overrides de vida útil, valor residual e método de depreciação.
+- [ ] Uso e manutenção: `hourMeter`, `lastServiceAt`, `nextMaintenanceAt`, `bridgeId`/`externalDeviceId` e `lastSeenAt`.
+- [ ] Observação livre: `notes`, sem armazenamento de credenciais.
 
-- [ ] Depreciação contábil por hora = preço de aquisição ÷ vida útil estimada em horas. Este é um cálculo novo e não deve alterar `src/shared/lib/calculator.ts`, que é intocável por contrato.
-- [ ] A depreciação entra como parâmetro de entrada no orçamento ativo, no mesmo padrão dos demais custos de máquina.
-- [ ] Ação **Usar no Cálculo Atual** para aplicar potência, depreciação por hora e manutenção por hora. A impressora selecionada recebe contorno roxo como indicador visual.
-- [ ] Modal de cadastro para máquinas fora do catálogo, com depreciação calculada a partir do preço pago e da vida útil estimada.
-- [ ] Barra de vida útil consumida, por exemplo “1240h de 4000h — 31%”, com transição de cor por proximidade do fim da vida útil.
-- [ ] Badge **Dados Reais & Telemetria** e sinalização da impressora em uso na calculadora.
+**Justificativa:** duas impressoras idênticas podem ter custos, valor residual, uso e manutenção diferentes; o mesmo modelo pode estar em várias lojas. Depreciação contábil pertence ao ativo, não ao modelo, e manutenção pertence à máquina física.
 
-**Privacidade e dependências obrigatórias:**
+**Estados separados, sem badge único:**
 
-- [ ] Status e horas são declarados pela pessoa usuária e mantidos local-first. Não haverá integração com API de fabricante nem qualquer telemetria externa nesta fase.
-- [ ] Definir a nova entidade `FleetMachine` e seu store próprio.
-- [ ] Adicionar uma chave nova ao SPEC-01. A classe de dados precisa ser definida antes da implementação; `user_content` é a hipótese mais provável.
-- [ ] Incluir a chave, os dados da frota e seus backups na exportação, exclusão e regressão de privacidade.
+- [ ] Capacidade: ligada, conexão instável, offline ou ocupada.
+- [ ] Job: livre, a imprimir, em pausa ou com erro.
+- [ ] Manutenção: agendada, em curso, concluída ou atrasada.
+- [ ] Saúde da conexão, independente dos três domínios anteriores.
+- [ ] **Anti-padrão:** não tratar uma máquina offline como quebrada.
+
+**Manutenção:**
+
+- [ ] Plano com intervalos preventivos, registro de avaria, checklist, teste e liberação documentados.
+- [ ] A máquina fica `out of use` até a manutenção ser concluída.
+- [ ] A referência consultada não bloqueia a máquina automaticamente na fila; a elegibilidade é uma decisão operacional explícita.
+
+**Custo por hora:** `energia + depreciação/h + reserva de manutenção/h + mão de obra amortizada`. A calculadora oferece três ações: **usar perfil padrão**, **usar ativo real** e **criar ativo a partir do perfil**.
+
+**Integração com o cálculo:** a ação **Usar no Cálculo Atual** aplica potência, depreciação por hora e manutenção por hora. `src/shared/lib/calculator.ts` permanece intocável; a depreciação entra como parâmetro de entrada, no mesmo padrão dos demais custos de máquina.
+
+**Privacidade no MVP:** sem telemetria externa. Status e horas são declarados pela pessoa usuária e mantidos local-first; não há integração com API de fabricante nem Bridge obrigatório. Evoluções externas ficam para uma fase futura e precisam de decisão própria de privacidade.
+
+**Dependência obrigatória:** definir a classe e o tratamento de uma chave nova no manifesto SPEC-01 antes de implementar. Incluir a chave, os dados da frota e seus backups na exportação, exclusão e regressão de privacidade.
+
+**Fila de produção — futuro, não MVP:** `aguardando material/aprovação → pronto para fila → em impressão → acabamento/QC → embalado → falhou`, com ordenação por prazo, dependências, material/cor para reduzir purga e SLA.
+
+- [ ] **Anti-padrão:** conclusão da máquina não equivale a peça aprovada.
+- [ ] **Anti-padrão:** reimpressão não substitui o job anterior; cria novo job e preserva a falha e seu custo.
+
+**Referências consultadas:** [ERPNext Asset, Maintenance, Depreciation e Repair](https://docs.frappe.io/erpnext/asset), [LutraCAD Print Farm](https://academy.lutracad.com/printfarm/), [Bambu Studio Advanced Settings](https://wiki.bambulab.com/en/software/bambu-studio/parameter/quality-advance-settings), [Ecmaker Machines](https://wiki.ecmaker.space/docs/machines) e [NovaLab 3D](https://www.novalab3d.app/documentacao), especialmente `maquinas-impressoras`, `manutencao`, `telemetria-bridge`, `fila-3d` e `como-calcular-custo-impressao-3d`.
 
 **Acceptance criteria:**
 
-- [ ] Os KPIs são calculados exclusivamente a partir dos registros locais declarados pela pessoa usuária.
+- [ ] Um mesmo perfil pode referenciar vários ativos com contabilidade e manutenção independentes.
+- [ ] Capacidade, job, manutenção e conexão são exibidos e persistidos separadamente.
 - [ ] A depreciação por hora é exibida e aplicada sem modificar `src/shared/lib/calculator.ts`.
 - [ ] A máquina selecionada no cálculo é identificável visualmente e pode ser removida da seleção.
 - [ ] A implementação é bloqueada até a classe de dados e o tratamento de privacidade da nova chave do SPEC-01 estarem aprovados.
@@ -460,7 +487,7 @@ Every phase and change must complete this checklist:
 
 ### 🏗️ Phase 7e: Modo Farm (par. print farms)
 
-**Status:** escopo definido; Farm é o quarto modo do seletor. **Depende da Phase 7d — Gestão de Frota & Parque de Impressoras:** o modo só pode existir depois dessa fase, pois exibe dados da frota.
+**Status:** escopo definido; Farm é o quarto modo do seletor. **Depende da Phase 7d — Gestão de Impressoras:** o modo só pode existir depois dessa fase, pois exibe dados da frota.
 
 **Contexto:** o modo Clássico se rotula “Desktop Pro / alta densidade para fazendas 3D”, mas não existe um modo de verdade para operar múltiplas impressoras.
 
@@ -470,8 +497,11 @@ Every phase and change must complete this checklist:
 - [ ] Permitir atribuir trabalho por máquina.
 - [ ] Mostrar a capacidade da oficina em horas disponíveis versus horas demandadas.
 - [ ] Usar densidade alta e manter o painel da frota sempre visível.
+- [ ] O `LayoutSwitcher` ganha o quarto botão.
 
 **Decisão tomada:** Farm é o quarto modo do seletor. O tipo `LayoutMode` e o `layoutStore` passam a ter quatro valores: `classic | guided | bento | farm`. A implementação implica atualizar o tipo `LayoutMode`, o `layoutStore`, o `CalculatorSurface` (case `farm` → `FarmSurface`) e o `LayoutSwitcher` (4 botões).
+
+**Referências de operação:** [LutraCAD Print Farm](https://academy.lutracad.com/printfarm/) e [NovaLab 3D — `print-farm-vs-impressao-amadora`](https://www.novalab3d.app/documentacao).
 
 **Acceptance criteria:**
 
@@ -483,53 +513,242 @@ Every phase and change must complete this checklist:
 
 ### 🧵 Phase 7f: Estante de Filamento — unificação do inventário
 
-**Status:** visual da Estante de Carretéis entregue na beta; unificação de inventário planejada.
+**Status em `2.0.0-beta.2`:** entregue.
 
-**Decisão de produto:** haverá uma aba somente, chamada **Estante de Filamento** / **Filament Shelf**. A Estante de Filamento é o trabalho já feito no `SpoolShelf`, mantido e refinado — não uma tela nova do zero: o grid, a busca e a ordenação existentes são a base. A diretriz de execução é incorporar layout, ícones Lucide (sem emoji) e filtros melhores, além dos cálculos e dados que faltam: tara, peso líquido, metros restantes e cobertura da peça.
+**Decisão de produto:** haverá uma aba somente, chamada **Estante de Filamento** / **Filament Shelf**. A Estante é o trabalho já feito no `SpoolShelf`, não uma tela nova do zero.
 
-**Implementação:**
+**Entregue:**
 
-- [x] Grid, busca, filtros e ordenação do `SpoolShelf` entregues na beta.
-- [ ] Substituir as abas duplicadas “Filamentos” e “Carretéis” pela Estante unificada.
-- [ ] Não exibir aviso genérico de duplicidade. A ação ao usar um material no cálculo deve oferecer **Adicionar à Estante** com peso e custo pré-preenchidos.
-- [ ] Quando já existir filamento compatível, oferecer **usar o existente** em vez de duplicar o registro.
-- [ ] Exibir rótulos explícitos para peso bruto, que é o valor mostrado pela balança e inclui o carretel, e peso líquido, calculado como bruto menos a tara. A distinção evita que um carretel completo pareça não estar em 100%.
-- [ ] Adotar uma única regra de baixo estoque: `status === "in_stock" && weightGrams < threshold`. Contador e badge passam a usar a mesma condição.
-- [ ] Tornar o padrão de grid, busca, filtros e ordenação da Estante a referência para modernizar os demais layouts.
+- [x] Grid, busca, filtros e ordenação da Estante.
+- [x] `isLowStockSpool` como regra única para contador e badge.
+- [x] Card com peso bruto, peso líquido, tara, metros, cobertura e status textual.
+- [x] Integração **Adicionar à Estante**.
+- [x] Oferta de usar carretel compatível antes de criar duplicata.
+- [x] Swatch circular com painel de cor.
+
+**Referência de inventário:** [NovaLab 3D — `gerenciar-estoque-filamento`](https://www.novalab3d.app/documentacao).
 
 **Acceptance criteria:**
 
-- [ ] Não existem dois caminhos de edição para o mesmo inventário.
-- [ ] Peso bruto e peso líquido são legíveis em todos os pontos da interface que exibem massa.
-- [ ] A oferta de material existente não cria uma duplicata sem ação explícita da pessoa usuária.
-- [ ] A regra de baixo estoque é coberta por teste e o contador coincide com o badge.
+- [x] Não existem dois caminhos de edição para o mesmo inventário.
+- [x] Peso bruto e peso líquido são legíveis em todos os pontos da interface que exibem massa.
+- [x] A oferta de material existente não cria uma duplicata sem ação explícita da pessoa usuária.
+- [x] A regra de baixo estoque faz o contador coincidir com o badge.
 
 ---
 
 ### ⚡ Phase 7g: Presets estáticos de calculadora (sem IA)
 
-**Status:** planejada. São três cenários demonstrativos estáticos; não usam IA, backend ou serviço externo.
+**Status em `2.0.0-beta.2`:** entregue com ressalva. São três presets estáticos, sem IA, backend ou serviço externo; o seletor aparece somente no layout Clássico.
 
 **Cenários:**
 
-- [ ] Vaso Espiral Geométrico — 140g, PLA Silk.
-- [ ] Suporte Reforçado de Guidão para GoPro — 48g, PETG.
-- [ ] Estatueta Colecionável RPG/Dragão — Resina UV 8K.
-- [ ] Botão **Preencher Calculadora com esses Dados** para carregar cada cenário.
+- [x] Vaso Espiral Geométrico — 140g, PLA Silk.
+- [x] Suporte Reforçado de Guidão para GoPro — 48g, PETG.
+- [x] Estatueta Colecionável RPG/Dragão — Resina UV 8K.
+- [x] Preenchimento atômico do cálculo, com uma única operação de undo.
+- [x] Deterministicos, revisáveis como dados versionados e funcionais offline.
+- [ ] Disponíveis nos layouts Guided e Bento; essa correção está especificada em C1.
 
-**Fora desta fase:** as abas Consultor de Risco & Margem, WhatsApp Pitch e Visão Multimodal do protótipo dependem de backend e foram explicitamente adiadas. Nenhuma delas é requisito dos presets estáticos ou da V2.0.
+**Fora desta fase:** as abas Consultor de Risco & Margem, WhatsApp Pitch e Visão Multimodal do protótipo dependem de backend e foram adiadas. Nenhuma delas é requisito dos presets estáticos ou da V2.0.
 
 **Acceptance criteria:**
 
-- [ ] Os valores de cada cenário são determinísticos e podem ser revisados como dados versionados no código.
-- [ ] O botão substitui somente os campos do cenário e deixa claro que os dados podem ser editáveis.
-- [ ] A funcionalidade funciona offline, sem chamadas de rede ou consentimento de IA.
+- [x] Os valores de cada cenário são determinísticos e revisáveis no código.
+- [x] O botão substitui somente os campos do cenário e mantém os dados editáveis.
+- [x] A funcionalidade funciona offline, sem chamadas de rede ou consentimento de IA.
+- [ ] O seletor aparece em todos os layouts preservando a semântica de cada modo.
 
 ---
 
-### ⏸️ Deferred: Optional AI (out of V2.0)
+### 🧯 Phase 7h: Correções prioritárias da beta 2
 
-As abas **Consultor de Risco & Margem**, **WhatsApp Pitch** e **Visão Multimodal**, a estimativa por foto e os recursos BYOK de análise textual e geração assistida de pitch dependem de backend ou de uma política de IA e foram explicitamente adiados para uma versão futura. Eles ficam fora da V2.0, desligados por padrão e sujeitos aos conselhos de privacidade, a um ADR e a uma política de consentimento separada. Nenhuma das fases acima depende deles.
+**Status:** prioridade. C2 e a direção de C5 estão decididas; C1 ainda tem decisões de contrato; C3 exige reprodução antes de qualquer correção.
+
+#### C1 — Presets em todos os layouts
+
+**Causa raiz:** `ProjectPresetPicker` é montado em `Calculator.tsx:117-119`, mas esse trecho só é renderizado pelo `ClassicSurface` (`ClassicSurface.tsx:12-14`). `GuidedSurface.tsx:3-5` e `BentoSurface.tsx:126-175` não renderizam o picker; portanto, o recurso não aparece nesses dois layouts.
+
+**Estado do Guided:** ao exibir o picker, o `wizardStore` precisa ser resetado. O draft atual fica `seeded: true` em `wizardStore.ts:197-205` e sobrescreveria o preset recém-aplicado.
+
+**Falha de catálogo:** falta `try/catch` no caminho de aplicação. `buildProjectPresetSnapshot` lança exceção quando o ID não existe ou quando a tecnologia não corresponde (`projectPresets.ts:173-183`). Um catálogo customizado antigo sem `technology` também falha silenciosamente no `ProjectPresetPicker.tsx:32-56`.
+
+**Decisões ainda pendentes:**
+
+- [ ] Definir se o snapshot deve ser completo ou apenas o núcleo compartilhado entre os layouts.
+- [ ] Definir o destino de `demoSellPriceBRL` (R$ 68,50, R$ 49,00 e R$ 115,00), hoje metadado que nunca aparece na interface.
+
+**Acceptance criteria:** o picker aparece nos três layouts; o Guided não reintroduz o seed antigo; incompatibilidades e catálogos legados produzem feedback explícito, nunca falha silenciosa.
+
+#### C2 — Tutorial somente no Clássico
+
+**Decisão tomada:** o tutorial fica disponível apenas no layout Clássico.
+
+**Causa raiz:** `Tutorial` é montado no nível de app (`platform/web/App.tsx:54` e `platform/desktop/App.tsx:49`) sem guarda de `layoutMode`; o auto-start dispara 1,5 s após carregar (`useAppInit.ts:271-284`). As âncoras do tour são do Classic (`tutorialTours.ts:92-100` e `tutorialTours.ts:206-256`) e não existem em Guided/Bento; nesses layouts, o engine degrada para um card sem overlay (`tutorialTours.ts:8-10`).
+
+**Justificativa:** um tutorial que aponta para elemento inexistente é pior que tutorial ausente. Quem está no Guided não precisa dele, porque o Guided já é a experiência guiada; o Clássico precisa de orientação porque reúne mais controles.
+
+**Correção adicional:** os passos do tour básico devem especificar `tab: "calculator"` (`tutorialTours.ts:90-100`). Não há hipótese de referência obsoleta a `spools`: essa hipótese foi refutada e o registro já usa `inventory`.
+
+**Acceptance criteria:** o auto-start e as âncoras do tutorial são habilitados somente no Clássico; no Guided/Bento não há card sem alvo nem modal vazio. A navegação e os nomes acessíveis seguem [W3C WCAG 2.2](https://www.w3.org/WAI/WCAG22/).
+
+#### C3 — Guided: “Horas 0 / 54 min”
+
+**Status:** reproduzir antes de corrigir. Nenhuma causa foi confirmada e não há correção autorizada sem evidência do bundle afetado.
+
+**O que o código faz:** não existe `Math.floor` nesse caminho. `Step2Printer.tsx:55-59` repassa `draft.printTimeHours` diretamente ao input com `step="0.1"`; `InputGroup.tsx:59-69` não converte o valor; `calculatorStore.compute.ts:25` multiplica horas por 60 para o cálculo.
+
+**Hipóteses, ainda não confirmadas:** `Number("")` resulta em 0 (`Step2Printer.tsx:56`); o valor persistido é 0; locale `0,9` versus `0.9` em `<input type="number">`; ou existe um bundle diferente do inspecionado.
+
+**Sinal adicional:** o sintoma mostra o rótulo “Minutos: 54 min”, mas esse rótulo não existe em `Step2Printer.tsx`. Isso aponta para outro bundle até que a reprodução confirme o caso.
+
+**Acceptance criteria:** primeiro registrar valor persistido, valor do input, locale e versão/bundle; então reproduzir a divergência entre o input e o resultado antes de escolher uma conversão. Não mascarar o problema com `Math.floor` sem evidência.
+
+#### C4 — Bento: espaço vazio e controles duplicados
+
+**Causa raiz do espaço vazio:** o grid não declara `items-start` (`BentoSurface.tsx:134`) e `BentoCard.tsx:23-27` não define `self-start`/`h-fit`; os cards esticam até a altura do mais alto.
+
+**Causa raiz da duplicação:** o mesmo controle foi observado repetido duas, três ou quatro vezes entre os cards. A decisão é unificar cada controle em uma única instância, mantendo contexto e rótulo suficiente para evitar ambiguidade.
+
+**Anti-padrão:** resolver a repetição escondendo controles por breakpoint sem identificar um owner único. A correção deve tratar a origem da duplicação, não apenas a aparência em um tamanho de tela.
+
+**Acceptance criteria:** os cards ocupam apenas sua altura natural; cada controle aparece uma vez; navegação por teclado e ordem de foco permanecem previsíveis conforme [W3C WCAG 2.2](https://www.w3.org/WAI/WCAG22/).
+
+#### C5 — Estante: ação destrutiva sem rótulo visível
+
+**Causa raiz:** a ação inferior usa `Trash2` (`SpoolCard.tsx:3` e `SpoolCard.tsx:167-174`) e possui apenas `aria-label`; não há texto visível.
+
+**Decisão tomada:** manter a ação destrutiva para não aumentar o risco de exclusão acidental e adicionar rótulo/tooltip visível, mantendo também o nome acessível.
+
+**Inconsistência secundária:** `SpoolCard.tsx:62` usa `FALLBACK_HEX` na caixa de cor, enquanto `SpoolCard.tsx:79` passa `spool.colorHex` ao `SpoolThumb`. Sem cor, a caixa fica indigo e o thumbnail vira monograma.
+
+**Acceptance criteria:** a ação destrutiva tem rótulo visível e nome acessível; ausência de cor usa fallback coerente entre caixa e thumbnail; texto e ícone mantêm contraste e alvo suficiente conforme [W3C WCAG 2.2](https://www.w3.org/WAI/WCAG22/).
+
+---
+
+### 🧩 Phase 7i: Bento como calculadora editável
+
+**Status:** direção aprovada, implementação planejada. O objetivo é oferecer os mesmos campos do Clássico com templates de complexidade, não criar um terceiro contrato de cálculo.
+
+**Estado atual, por design:** o Bento é read-only. Os comentários “read-only five-card financial grid” (`BentoSurface.tsx:57`) e “no calculation is performed here” (`BentoPricingCard.tsx:17-18`) são intencionais; não existe um único `<input>` nessa superfície. Tratar isso como bug seria incorreto.
+
+**Cobertura que falta:**
+
+| Domínio | Cobertura no Clássico | Cobertura atual no Bento |
+| --- | --- | --- |
+| Material | Tipo, peso, custo, densidade, purga, eficiência do carretel, seleção de carretel, volume e custo por litro | Apenas resumo |
+| Falhas | Modo, valor e multiplicador | Apenas custo |
+| Vendas | Quantidade, infill, extras, embalagem, frete, marketplace, imposto, margem/markup e presets | Apenas exibição |
+| Custos fixos, mão de obra, hardware/acabamento, operações/PPE e software | Campos no Clássico | Resumo parcial; o restante é omitido |
+
+**Direção de implementação:**
+
+- [ ] Reaproveitar o `calcLevel` que já existe em `Calculator.constants.ts:99-117` (básico, intermediário e completo), hoje ignorado pelo Bento.
+- [ ] Usar `Example/src/components/BentoLayout.tsx` como inspiração visual, nunca como cópia de estrutura, estado ou cálculo.
+- [ ] Criar três templates de inicialização, não três formulários: **Básico** com defaults seguros, **Avançado** com disclosure progressivo e **Completo** com organização por processo.
+- [ ] Exibir rótulo textual e valor em todos os cards; cor e ícone não substituem o significado.
+- [ ] Compartilhar setters e condicionamento FDM/resina com o Clássico em vez de reproduzir regras em componentes locais.
+
+**Risco principal:** tornar a superfície editável duplica inputs, condicionamento FDM/resina e setters. Um campo que atualiza o estado mas não recalcula é o pior resultado possível; paridade de estado e resultado precisa ser testada como um único contrato.
+
+**Acceptance criteria:** os mesmos valores produzem o mesmo resultado nos layouts Clássico e Bento; toda edição recalcula; alternar FDM/resina preserva as premissas corretas; os três templates usam os mesmos componentes de campo e regras.
+
+---
+
+### 🧭 Phase 7j: Guided com abas rígidas e retorno aos passos anteriores
+
+**Status:** decidido; implementação pendente.
+
+**Decisão:** o Guided mantém abas rígidas, mas permite voltar aos passos anteriores. É permitido voltar e corrigir; não é permitido pular uma etapa obrigatória.
+
+**Comportamento existente:** `wizardStore.goTo` (`wizardStore.ts:266-303`) já implementa essa regra. O retorno é livre; o avanço exige que os passos pulados sejam válidos e redireciona para o primeiro infrator. A correção deve preservar esse contrato, não criar um segundo navegador de etapas no componente.
+
+**Justificativa:** o Guided é para iniciantes, e iniciante precisa de menos intervenção possível. Quem quer navegação flexível usa o Bento ou o Clássico. Três modos com responsabilidades claras valem mais que um único modo que tenta fazer tudo.
+
+**Animação:** moderada, preservando o backstop de `prefers-reduced-motion` já existente em `.wizard-step-enter` e sua keyframe. A mudança de estado não pode depender de movimento para ser explicada.
+
+**Anti-padrão:** habilitar indiscriminadamente “próximo” e esconder a invalidação do formulário; isso transfere para a pessoa usuária o trabalho de descobrir qual etapa está bloqueando o avanço.
+
+**Acceptance criteria:** voltar nunca perde dados; avançar encontra o primeiro passo inválido; a transição moderada respeita a preferência de movimento reduzido; foco e estado da etapa permanecem acessíveis.
+
+---
+
+### 🏬 Phase 7k: Lojas, Canais e Locais de Produção
+
+**Status:** modelo semântico definido; implementação e decisão de reaproveitamento ainda pendentes.
+
+**Decisão semântica central:** produção e retail são domínios separados. Uma loja vende e atende, mas não deve representar automaticamente a fábrica, o laboratório ou a bancada que produz.
+
+**Referência e limite de uso:** a documentação de [NovaLab 3D — primeiros passos](https://www.novalab3d.app/documentacao?doc=primeiros-passos) assume “uma organização = uma loja”. O produto aqui quer o contrário, portanto essa referência não serve como modelo de multi-loja. Para o fluxo de venda e PDV, usar [Odoo POS Workflow](https://www.odoo.com/documentation/19.0/applications/sales/point_of_sale/use.html) apenas como referência de canal. A página [NovaLab 3D — `clientes-crm`](https://www.novalab3d.app/documentacao) foi consultada como referência de cadastro, não de vínculo entre loja e produção.
+
+**Entidades:**
+
+- `Store`: vende e atende.
+- `SalesChannel`: loja online, PDV, marketplace ou B2B.
+- `ProductionSite`: fábrica, laboratório ou bancada.
+- `PickupPoint`: retirada sem venda.
+- `SalesPoint` só deve ser separado se a mesma loja tiver vários balcões ou terminais.
+
+**Dados de `Store`:**
+
+- [ ] Identidade: nome, razão social, documento fiscal, país/estado, status, timezone e moeda.
+- [ ] Endereço e contato.
+- [ ] Parâmetros comerciais: imposto incluído, regime, margem padrão, método de markup, arredondamento, validade padrão de orçamento, catálogo padrão e SLA.
+- [ ] Frete e entrega: transportadora, modo, taxa fixa, percentual, handling, frete grátis acima de valor, endereço de coleta e região atendida.
+- [ ] Pagamentos: perfil referenciado, métodos, parcelamento e moeda.
+- [ ] Operação: canal padrão, local de produção padrão, unidade/estoque padrão, fila habilitada e ID externo.
+
+**Regras de vínculo:** uma oficina pode produzir para várias lojas; uma loja pode enviar produção para vários locais. A relação é muitos-para-muitos, não uma organização apontando para uma única loja.
+
+**Segurança:** nunca armazenar token ou chave secreta no cadastro da loja. O cadastro referencia um perfil de integração seguro, que responde pelo segredo fora do domínio comercial.
+
+**Dependência obrigatória:** adicionar uma chave nova ao manifesto SPEC-01 antes da implementação e cobrir exportação, exclusão e regressão de privacidade.
+
+**Decisão pendente, deliberadamente não resolvida:** o app já possui `customerStore` e `quoteStore`. Auditar antes de decidir entre reaproveitar, estender ou criar `Store` e `SalesChannel` separados.
+
+**Acceptance criteria:** retail, canal e produção permanecem distinguíveis; uma loja e um local de produção aceitam múltiplos vínculos; segredo não é armazenado no cadastro; a chave nova do SPEC-01 está aprovada antes de persistir dados.
+
+---
+
+### 🔒 Phase 7l: Snapshot imutável de precificação
+
+**Status:** decisão de produto tomada; implementação pendente.
+
+> **Não recalcular orçamentos antigos com a configuração atual.** Margem, frete, impostos e perfil de máquina devem ser versionados no momento do cálculo.
+
+**Snapshot mínimo por orçamento:** loja e canal, moeda, alíquota, método de markup, margem, frete, taxas, premissas de produção, perfil/ativo usado e versão do cálculo.
+
+**Justificativa:** o app já tem `quoteStore` com status, validade, termos de pagamento e entrega. Sem snapshot, editar a loja ou a margem hoje reescreve o passado de orçamentos já emitidos.
+
+**Anti-padrões:** recalcular silenciosamente um orçamento emitido; mostrar o preço histórico como se refletisse premissas atuais; substituir a versão do cálculo sem distinguí-la de uma revisão humana.
+
+**Acceptance criteria:** abrir um orçamento antigo reproduz seus valores mesmo depois de mudanças na loja, na máquina ou nos parâmetros; qualquer mudança posterior gera uma revisão ou novo orçamento, não sobrescrita retroativa.
+
+---
+
+### 🔎 Investigação — uso atual de lojas e clientes
+
+**Status:** investigação; não é uma fase de implementação.
+
+Auditar como o app atualmente usa lojas e clientes, com foco em `customerStore` e `quoteStore`, e estabelecer o que “loja” significa no código e na experiência existente. Levantar dados órfãos, duplicados ou sem uso real. Só depois decidir o que reaproveitar, estender ou substituir na Phase 7k.
+
+---
+
+### ✅ Decisão TAKEN — margem vs markup
+
+**Decisão:** a entrada será **“Markup sobre custo (%)”**, preservando os valores atuais e resultando em zero mudança de preço e zero preset quebrado. A saída será **“Margem real”**, campo derivado somente-leitura, exibido como informação com rótulo explicativo.
+
+**Problema que motivou:** `profitMarginPercent` executa `lucro = custo × margem / 100` (`calculatorStore.compute.ts:97-105`). Esse valor é markup, não margem: “Margem 110%” significa lucro igual a 110% do custo e venda a 2,1× o custo. Como margem real, o valor seria impossível, pois acima de 100% o custo-resultante seria negativo. Os presets de 110% e 140% são markup válido.
+
+**Justificativa da interface:** quem faz impressão fala em custo — “cobro 3× o custo” é a linguagem real. Forçar margem abstrata no campo de entrada trocaria a linguagem certa por uma menos natural. Exibir as duas grandezas elimina a confusão e evita mais um controle repetido.
+
+**Objetivos já cobertos pela lib:** `suggestedPrice` resolve margem-alvo, lucro por peça, lucro mensal, break-even e preço de concorrente. O campo manual fica para quem decide sair desses padrões.
+
+---
+
+### ⏸️ Deferred: IA/BYOK (sem IA nesta V2.0)
+
+IA foi explicitamente confirmada como fora da V2.0. A única área deferred é IA/BYOK: Consultor de Risco & Margem, WhatsApp Pitch, Visão Multimodal, estimativa por foto, análise textual e geração assistida de pitch. Esses recursos dependem de backend ou de política de IA e só poderão voltar em uma decisão futura, com assessor de privacidade, ADR e consentimento separados. Nenhuma fase acima depende deles.
 
 ---
 
@@ -545,8 +764,8 @@ As abas **Consultor de Risco & Margem**, **WhatsApp Pitch** e **Visão Multimoda
 
 ## 🔒 Not in scope (for now)
 
-- ❌ Modo **Studio**: quarto layout experimental do protótipo, fora da tríade `classic` / `guided` / `bento`
-- ❌ Abas de IA: Consultor de Risco & Margem, WhatsApp Pitch e Visão Multimodal (ver Deferred: Optional AI)
+- ❌ Modo **Studio**: quinto layout experimental do protótipo, fora do conjunto `classic` / `guided` / `bento` / `farm`
+- ❌ Abas de IA: Consultor de Risco & Margem, WhatsApp Pitch e Visão Multimodal (ver Deferred: IA/BYOK)
 - ❌ Estimativa por foto: adiada por depender de backend e de uma política de IA
 - ❌ Extras itemizados: o app tem `extrasCost` escalar; a lista do protótipo exigiria um novo contrato de dados
 - ❌ Viewer 3D sintético do protótipo: o app já tem `StlPreview` e `GcodePreviewPanel` reais, que devem ser usados
@@ -573,4 +792,4 @@ As abas **Consultor de Risco & Margem**, **WhatsApp Pitch** e **Visão Multimoda
 
 ---
 
-_Updated 23 September 2026 — V2.0 phases 7/7b/7c now record the actual `2.0.0-beta.1` delivery state (PRs #182–#192), including the pure-library-only state of Phase 7b and the pending UI work. Added Phase 7d fleet management, Phase 7e Farm mode, Phase 7f unified Filament Shelf and Phase 7g static presets. The out-of-scope list and the optional BYOK AI deferral are explicit._
+_Atualizado em 24 de setembro de 2026 — as phases 7/7b/7c, 7f e 7g registram a entrega real da `2.0.0-beta.2`; as correções C1–C5, o Bento editável, a navegação do Guided, a reformulação da Phase 7d, lojas/canais/locais, snapshot de precificação e a decisão margem vs. markup foram incorporadas. A ausência de IA foi mantida explícita; PRs #191 e #192 e seus efeitos de pipeline também estão registrados._
