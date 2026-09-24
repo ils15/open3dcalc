@@ -19,6 +19,7 @@ function makeBreakdown(
 ): FinancialBreakdown {
   return {
     chartData: [],
+    invalidSegmentPaths: [],
     overrideCalc: null,
     displaySellPrice: 105.88,
     displayProfit: 30,

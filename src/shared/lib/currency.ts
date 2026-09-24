@@ -8,9 +8,22 @@ export const CURRENCIES = {
 export type CurrencyCode = keyof typeof CURRENCIES;
 export type CurrencySetting = "auto" | CurrencyCode;
 
+/**
+ * Neutral marker used when a currency value is not a number.
+ *
+ * The application must not turn a non-finite value into a believable zero:
+ * zero is a valid calculated result, while this marker means "no value yet".
+ * Keeping the fallback in the shared formatter protects existing UI and export
+ * callers without making them each invent their own invalid-value behavior.
+ */
+export const INVALID_CURRENCY_MARKER = "—";
+
+/** Formats finite currency values and fails visibly for non-finite input. */
 export function formatCurrency(val: number, currency: CurrencyCode): string {
+  if (!Number.isFinite(val)) return INVALID_CURRENCY_MARKER;
+
   const { locale, code } = CURRENCIES[currency];
-  return (val || 0).toLocaleString(locale, {
+  return val.toLocaleString(locale, {
     style: "currency",
     currency: code,
   });

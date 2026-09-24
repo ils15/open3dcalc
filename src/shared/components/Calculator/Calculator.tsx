@@ -86,18 +86,6 @@ export function Calculator() {
     [],
   );
 
-  const results = store.results;
-
-  if (!results) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-[var(--color-text-muted)] text-sm">
-          {t("common.loading")}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <ToastContainer items={toastItems} onDismiss={dismissToast} />

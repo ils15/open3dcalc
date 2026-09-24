@@ -13,6 +13,7 @@ import { ProductActionsCard } from "./ProductActionsCard";
 import { HistoryCard } from "./HistoryCard";
 import { ExportActionsCard } from "./ExportActionsCard";
 import { InventoryDeductionCard } from "./InventoryDeductionCard";
+import { CalculationErrorState } from "./CalculationErrorState";
 
 interface ResultsPanelProps {
   variant: "sidebar" | "mobile";
@@ -29,14 +30,16 @@ interface ResultsPanelProps {
  * rendered output stays identical to the former monolith.
  */
 export function ResultsPanel({ variant, onExportBlocked }: ResultsPanelProps) {
-  const { results, activeTab, fdmSales, resinSales } = useCalculatorStore(
-    useShallow((s) => ({
-      results: s.results,
-      activeTab: s.activeTab,
-      fdmSales: s.fdmSales,
-      resinSales: s.resinSales,
-    })),
-  );
+  const { results, activeTab, fdmSales, resinSales, calculationIssues } =
+    useCalculatorStore(
+      useShallow((s) => ({
+        results: s.results,
+        activeTab: s.activeTab,
+        fdmSales: s.fdmSales,
+        resinSales: s.resinSales,
+        calculationIssues: s.calculationIssues,
+      })),
+    );
 
   // Display-local sell-price override (issue #85): never writes back to the
   // store, so the global margin stays untouched.
@@ -51,11 +54,25 @@ export function ResultsPanel({ variant, onExportBlocked }: ResultsPanelProps) {
   });
 
   const isSidebar = variant === "sidebar";
+  const calculationNotice = (
+    <CalculationErrorState
+      issues={calculationIssues}
+      hasResult={results !== null}
+      additionalPaths={breakdown.invalidSegmentPaths}
+    />
+  );
 
-  if (!results) return null;
+  if (!results) {
+    return isSidebar ? (
+      calculationNotice
+    ) : (
+      <div className="space-y-4 2xl:hidden">{calculationNotice}</div>
+    );
+  }
 
   const content = (
     <>
+      {calculationNotice}
       <PriceHeroCard
         breakdown={breakdown}
         onSellOverrideChange={setSellOverride}

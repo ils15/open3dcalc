@@ -2,13 +2,14 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import { INVALID_CURRENCY_MARKER } from "@/shared/lib/currency";
 import {
   useFinancialBreakdown,
   type CostCategory,
   type CostSegment,
 } from "@/shared/hooks/useFinancialBreakdown";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
-import type { CalculationResult } from "@/shared/types";
+import { CalculationErrorState } from "@/shared/components/Results/CalculationErrorState";
 import { LevelToggle } from "../LevelToggle";
 import { BentoHeader } from "./bento/BentoHeader";
 import { BentoLaborCard } from "./bento/BentoLaborCard";
@@ -16,35 +17,6 @@ import { BentoMachineCard } from "./bento/BentoMachineCard";
 import { BentoMaterialCard } from "./bento/BentoMaterialCard";
 import { BentoPricingCard } from "./bento/BentoPricingCard";
 import { BentoSummaryCard } from "./bento/BentoSummaryCard";
-
-const EMPTY_RESULT: CalculationResult = {
-  materialCost: 0,
-  energyCost: 0,
-  machineCost: 0,
-  hardwareCost: 0,
-  consumablesCost: 0,
-  laborCost: 0,
-  softwareCost: 0,
-  failureCost: 0,
-  extrasCost: 0,
-  postProcessingCost: 0,
-  subtotal: 0,
-  totalCost: 0,
-  sellPrice: 0,
-  profit: 0,
-  marketplaceFee: 0,
-  taxAmount: 0,
-  costPerGram: 0,
-  costPerUnit: 0,
-  unitWeight: 0,
-  estimatedPrintTime: 0,
-  targetMarginPercent: 0,
-  breakEvenPrice: 0,
-  actualMargin: 0,
-  carbonFootprintGrams: 0,
-  profitPerHour: 0,
-  totalHoursForProfit: 0,
-};
 
 function categoryValue(
   segments: readonly CostSegment[],
@@ -73,6 +45,7 @@ export function BentoSurface(): React.ReactElement {
     resinExtras,
     fdmSales,
     resinSales,
+    calculationIssues,
     addToHistory,
   } = useCalculatorStore(
     useShallow((state) => ({
@@ -89,6 +62,7 @@ export function BentoSurface(): React.ReactElement {
       resinExtras: state.resinExtras,
       fdmSales: state.fdmSales,
       resinSales: state.resinSales,
+      calculationIssues: state.calculationIssues,
       addToHistory: state.addToHistory,
     })),
   );
@@ -100,7 +74,6 @@ export function BentoSurface(): React.ReactElement {
     fdmSales,
     resinSales,
   });
-  const result = results ?? EMPTY_RESULT;
   const isFDM = activeTab === "fdm";
   const materialType = isFDM ? fdmMaterial.type : resinMaterial.type;
   const materialCostPerKg = isFDM
@@ -111,6 +84,45 @@ export function BentoSurface(): React.ReactElement {
   const labor = isFDM ? fdmLabor : resinLabor;
   const extras = isFDM ? fdmExtras : resinExtras;
   const sales = isFDM ? fdmSales : resinSales;
+  const calculationNotice = (
+    <CalculationErrorState
+      issues={calculationIssues}
+      hasResult={results !== null}
+      additionalPaths={breakdown.invalidSegmentPaths}
+    />
+  );
+  const header = (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <BentoHeader
+          projectName={productName}
+          finalPrice={
+            results === null ? INVALID_CURRENCY_MARKER : format(breakdown.displaySellPrice)
+          }
+        />
+      </div>
+      <div className="flex shrink-0 sm:justify-end">
+        <LevelToggle />
+      </div>
+    </div>
+  );
+
+  if (!results) {
+    return (
+      <section
+        aria-label={t("bento.regionLabel")}
+        className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 sm:py-6"
+      >
+        <h1 className="sr-only">{t("bento.title")}</h1>
+        <div className="space-y-4 sm:space-y-5">
+          {header}
+          {calculationNotice}
+        </div>
+      </section>
+    );
+  }
+
+  const result = results;
 
   return (
     <section
@@ -119,14 +131,8 @@ export function BentoSurface(): React.ReactElement {
     >
       <h1 className="sr-only">{t("bento.title")}</h1>
       <div className="space-y-4 sm:space-y-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <BentoHeader projectName={productName} finalPrice={format(breakdown.displaySellPrice)} />
-          </div>
-          <div className="flex shrink-0 sm:justify-end">
-            <LevelToggle />
-          </div>
-        </div>
+        {header}
+        {calculationNotice}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <BentoMaterialCard
             materialType={materialType}
@@ -159,7 +165,7 @@ export function BentoSurface(): React.ReactElement {
             marketplaceFee={breakdown.fees.marketplaceFee}
             totalFees={breakdown.fees.total}
             profit={breakdown.displayProfit}
-            hasResult={results !== null}
+            hasResult
             onSave={() => addToHistory()}
           />
         </div>
