@@ -47,6 +47,8 @@ export interface TimeMetrics {
 /** Full financial decomposition consumed by the results cards. */
 export interface FinancialBreakdown {
   readonly chartData: readonly CostSegment[];
+  /** Result paths whose cost values cannot be safely charted. */
+  readonly invalidSegmentPaths: readonly string[];
   readonly overrideCalc: SellPriceOverrideResult | null;
   readonly displaySellPrice: number;
   readonly displayProfit: number;
@@ -78,29 +80,71 @@ const SEGMENT_MIN_VALUE = 0.01;
 function buildChartSegments(
   result: CalculationResult,
   t: (key: string) => string,
-): CostSegment[] {
+): { readonly segments: CostSegment[]; readonly invalidSegmentPaths: string[] } {
   const total = result.totalCost;
-  const raw: ReadonlyArray<readonly [string, number, CostCategory]> = [
-    ["Material", result.materialCost, "filament"],
-    [t("calc.chartLabels.energy"), result.energyCost, "energy"],
-    [t("calc.chartLabels.machine"), result.machineCost, "machine"],
-    ["Hardware", result.hardwareCost, "other"],
-    [t("calc.chartLabels.finishing"), result.postProcessingCost, "other"],
-    [t("calc.chartLabels.consumables"), result.consumablesCost, "other"],
-    [t("calc.chartLabels.software"), result.softwareCost, "other"],
-    [t("calc.chartLabels.labor"), result.laborCost, "labor"],
-    [t("calc.chartLabels.failure"), result.failureCost, "failure"],
-    [t("calc.chartLabels.extras"), result.extrasCost, "other"],
+  const invalidSegmentPaths: string[] = [];
+  const raw: ReadonlyArray<
+    readonly [path: string, name: string, value: number, category: CostCategory]
+  > = [
+    ["results.materialCost", "Material", result.materialCost, "filament"],
+    [
+      "results.energyCost",
+      t("calc.chartLabels.energy"),
+      result.energyCost,
+      "energy",
+    ],
+    [
+      "results.machineCost",
+      t("calc.chartLabels.machine"),
+      result.machineCost,
+      "machine",
+    ],
+    ["results.hardwareCost", "Hardware", result.hardwareCost, "other"],
+    [
+      "results.postProcessingCost",
+      t("calc.chartLabels.finishing"),
+      result.postProcessingCost,
+      "other",
+    ],
+    [
+      "results.consumablesCost",
+      t("calc.chartLabels.consumables"),
+      result.consumablesCost,
+      "other",
+    ],
+    [
+      "results.softwareCost",
+      t("calc.chartLabels.software"),
+      result.softwareCost,
+      "other",
+    ],
+    ["results.laborCost", t("calc.chartLabels.labor"), result.laborCost, "labor"],
+    ["results.failureCost", t("calc.chartLabels.failure"), result.failureCost, "failure"],
+    ["results.extrasCost", t("calc.chartLabels.extras"), result.extrasCost, "other"],
   ];
 
-  return raw
-    .filter(([, value]) => value > SEGMENT_MIN_VALUE)
-    .map(([name, value, category]) => ({
-      name,
-      value,
-      category,
-      pct: total > 0 ? (value / total) * 100 : 0,
-    }));
+  if (!Number.isFinite(total) || total < 0) {
+    invalidSegmentPaths.push("results.totalCost");
+  }
+
+  const segments = raw.flatMap(([path, name, value, category]) => {
+    if (!Number.isFinite(value) || value < 0) {
+      invalidSegmentPaths.push(path);
+      return [];
+    }
+    if (value <= SEGMENT_MIN_VALUE) return [];
+
+    return [
+      {
+        name,
+        value,
+        category,
+        pct: total > 0 ? (value / total) * 100 : 0,
+      },
+    ];
+  });
+
+  return { segments, invalidSegmentPaths };
 }
 
 /**
@@ -127,6 +171,7 @@ export function useFinancialBreakdown(
     if (!result) {
       return {
         chartData: [],
+        invalidSegmentPaths: [],
         overrideCalc: null,
         displaySellPrice: 0,
         displayProfit: 0,
@@ -156,9 +201,11 @@ export function useFinancialBreakdown(
 
     const taxAmount = result.taxAmount;
     const marketplaceFee = result.marketplaceFee;
+    const chart = buildChartSegments(result, t);
 
     return {
-      chartData: buildChartSegments(result, t),
+      chartData: chart.segments,
+      invalidSegmentPaths: chart.invalidSegmentPaths,
       overrideCalc,
       displaySellPrice: sellOverride ?? result.sellPrice,
       displayProfit: overrideCalc?.profit ?? result.profit,

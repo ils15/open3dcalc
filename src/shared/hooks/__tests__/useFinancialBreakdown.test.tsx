@@ -231,4 +231,19 @@ describe("useFinancialBreakdown — fees and time", () => {
       profitPerHour: 0,
     });
   });
+
+  it("signals non-finite cost segments instead of silently filtering them", () => {
+    const breakdown = render({
+      result: { ...result, materialCost: Number.NaN },
+    });
+
+    expect(breakdown.invalidSegmentPaths).toContain("results.materialCost");
+    expect(breakdown.chartData.some((segment) => segment.name === "Material")).toBe(false);
+  });
+
+  it("has no invalid segment signal when the result is absent", () => {
+    const breakdown = render({ result: null });
+
+    expect(breakdown.invalidSegmentPaths).toEqual([]);
+  });
 });

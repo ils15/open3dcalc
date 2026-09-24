@@ -217,6 +217,8 @@
     "costDistribution": "Distribuição de Custos",
     "summary": "Resumo de Custos",
     "results": "Resultados",
+    "invalidCalculationTitle": "Dados inválidos",
+    "invalidCalculation": "Dados inválidos em {{path}}. Corrija o valor e o cálculo será refeito.",
     "directProduction": "Produção Direta",
     "equipment": "Equipamento & Desgaste",
     "operational": "Operacional & Trabalho",
