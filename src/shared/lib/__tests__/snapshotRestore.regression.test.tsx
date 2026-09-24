@@ -1,11 +1,11 @@
 import { render, renderHook, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useFinancialBreakdown } from "@/shared/hooks/useFinancialBreakdown";
 import { CostSummaryCard } from "@/shared/components/Results/CostSummaryCard";
-import { buildProjectPresetDraft, projectPresets } from "@/shared/lib/projectPresets";
+import { useFinancialBreakdown } from "@/shared/hooks/useFinancialBreakdown";
 import { materials } from "@/shared/lib/materials";
 import { printers } from "@/shared/lib/printers";
+import { buildSnapshot } from "@/shared/stores/__tests__/calculatorStore.test-utils";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
@@ -31,6 +31,9 @@ const LABOR: LaborCosts = {
   hourlyRate: 25,
 };
 
+const RESTORE_SCENARIOS = ["fdm-default", "resin-default", "partial-legacy"] as const;
+type RestoreScenario = (typeof RESTORE_SCENARIOS)[number];
+
 const resetAll = (): void => {
   localStorage.clear();
   useCatalogStore.setState({
@@ -42,20 +45,6 @@ const resetAll = (): void => {
   useLayoutStore.setState({ layoutMode: "classic" });
 };
 
-const buildDraft = (index: number) =>
-  buildProjectPresetDraft(
-    useCalculatorStore.getState(),
-    projectPresets[index],
-    {
-      catalog: useCatalogStore.getState(),
-      productName: projectPresets[index].id,
-    },
-  );
-
-const applyPreset = (index: number): void => {
-  useCalculatorStore.getState().applyProjectPresetDraft(buildDraft(index));
-};
-
 const partialFdmPrintParams = (): PrintParameters =>
   ({
     printTimeHours: 2.3,
@@ -65,6 +54,56 @@ const partialFdmPrintParams = (): PrintParameters =>
     energyCostPerKwh: undefined,
   }) as unknown as PrintParameters;
 
+const partialFdmMaterial = (): CalculationSnapshot["fdmMaterial"] =>
+  ({
+    type: "PETG",
+    weightUsed: 48,
+    costPerKg: 110,
+  }) as CalculationSnapshot["fdmMaterial"];
+
+const partialFdmLabor = (): LaborCosts =>
+  ({
+    enabled: true,
+    setupTimeMinutes: 30,
+  }) as LaborCosts;
+
+const buildRestoreSnapshot = (scenario: RestoreScenario): CalculationSnapshot => {
+  const snapshot = buildSnapshot();
+
+  if (scenario === "partial-legacy") {
+    return {
+      ...snapshot,
+      type: "fdm",
+      fdmMaterial: partialFdmMaterial(),
+      fdmPrintParams: partialFdmPrintParams(),
+      fdmLabor: partialFdmLabor(),
+      results: null,
+    };
+  }
+
+  if (scenario === "resin-default") {
+    return {
+      ...snapshot,
+      type: "resin",
+      resinPrintParams: {
+        ...snapshot.resinPrintParams,
+        printTimeHours: 4,
+        printerPowerWatts: 150,
+        failureMode: "percent",
+        failureValue: 15,
+      },
+    };
+  }
+
+  return snapshot;
+};
+
+const restoreSnapshot = (scenario: RestoreScenario): void => {
+  useCalculatorStore
+    .getState()
+    .loadHistoryItem(buildRestoreSnapshot(scenario));
+};
+
 const cloneResult = (result: CalculationResult): CalculationResult =>
   JSON.parse(JSON.stringify(result)) as CalculationResult;
 
@@ -72,11 +111,11 @@ beforeEach(() => {
   resetAll();
 });
 
-describe("project preset result regression", () => {
-  it.each(projectPresets.map((preset, index) => [preset.id, index] as const))(
+describe("snapshot restore result regression", () => {
+  it.each(RESTORE_SCENARIOS)(
     "recalculates positive total and sell price for %s",
-    (_id, index) => {
-      applyPreset(index);
+    (scenario) => {
+      restoreSnapshot(scenario);
 
       const result = useCalculatorStore.getState().results;
       expect(result).not.toBeNull();
@@ -102,10 +141,10 @@ describe("project preset result regression", () => {
     );
 
     expect(restoreAutoSnapshot()).toBe(true);
-    applyPreset(1);
 
     const state = useCalculatorStore.getState();
     const result = state.results;
+    expect(result).not.toBeNull();
     expect(state.fdmPrintParams.energyCostPerKwh).toBe(0.8);
     expect(state.fdmMaterial.spoolEfficiency).toBe(98);
     expect(state.fdmFilament.filamentDiameterMm).toBe(1.75);
@@ -117,11 +156,12 @@ describe("project preset result regression", () => {
     expect(Number.isFinite(result?.profit)).toBe(true);
   });
 
-  it("keeps the failure cost visible instead of rendering the dash placeholder", () => {
-    applyPreset(1);
+  it("keeps energy and failure visible instead of rendering the dash placeholder", () => {
+    restoreSnapshot("partial-legacy");
     const state = useCalculatorStore.getState();
     const result = state.results;
     expect(result).not.toBeNull();
+    expect(result?.energyCost).toBeGreaterThan(0);
     expect(result?.failureCost).toBeGreaterThan(0);
 
     const { result: hook } = renderHook(() =>
@@ -147,28 +187,30 @@ describe("project preset result regression", () => {
   });
 
   it.each([
-    "labor-before-preset",
-    "preset-before-labor",
-    "labor-before-preset-level",
-    "preset-twice",
-    "preset-hidden-field",
+    "labor-before-snapshot",
+    "snapshot-before-labor",
+    "labor-before-level",
+    "snapshot-twice",
+    "snapshot-hidden-field",
   ] as const)("keeps results finite for %s", (scenario) => {
+    const snapshot = buildRestoreSnapshot("partial-legacy");
     useCalculatorStore.setState({ fdmPrintParams: partialFdmPrintParams() });
-    if (scenario === "labor-before-preset" || scenario === "labor-before-preset-level") {
+    if (scenario === "labor-before-snapshot" || scenario === "labor-before-level") {
       useCalculatorStore.getState().setFdmLabor(LABOR);
     }
-    if (scenario === "preset-hidden-field") {
+    if (scenario === "snapshot-hidden-field") {
       useCalculatorStore.getState().toggleField("labor.hourlyRate");
     }
-    applyPreset(1);
-    if (scenario === "preset-before-labor") {
+
+    useCalculatorStore.getState().loadHistoryItem(snapshot);
+    if (scenario === "snapshot-before-labor") {
       useCalculatorStore.getState().setFdmLabor(LABOR);
     }
-    if (scenario === "labor-before-preset-level") {
+    if (scenario === "labor-before-level") {
       useCalculatorStore.getState().setCalcLevel("advanced");
     }
-    if (scenario === "preset-twice") {
-      applyPreset(1);
+    if (scenario === "snapshot-twice") {
+      useCalculatorStore.getState().loadHistoryItem(snapshot);
     }
 
     const result = useCalculatorStore.getState().results;
@@ -179,18 +221,12 @@ describe("project preset result regression", () => {
   });
 
   it("normalizes partial material, print, labor, and history slices", () => {
-    const state = useCalculatorStore.getState();
-    const partialSnapshot = {
-      ...state,
-      fdmMaterial: {
-        type: "PETG",
-        weightUsed: 48,
-        costPerKg: 110,
-      },
+    const partialSnapshot = buildSnapshot({
+      fdmMaterial: partialFdmMaterial(),
       fdmPrintParams: partialFdmPrintParams(),
-      fdmLabor: { enabled: true, setupTimeMinutes: 30 } as LaborCosts,
+      fdmLabor: partialFdmLabor(),
       results: null,
-    } as unknown as CalculationSnapshot;
+    });
 
     useCalculatorStore.getState().loadHistoryItem(partialSnapshot);
     const restored = useCalculatorStore.getState();
@@ -198,19 +234,20 @@ describe("project preset result regression", () => {
     expect(restored.fdmPrintParams.energyCostPerKwh).toBe(0.8);
     expect(restored.fdmLabor.hourlyRate).toBe(25);
     expect(restored.results?.totalCost).toBeGreaterThan(0);
+    expect(restored.results?.failureCost).toBeGreaterThan(0);
   });
 
-  it.each(projectPresets.map((preset, index) => [preset.id, index] as const))(
+  it.each(RESTORE_SCENARIOS)(
     "keeps Classic and Bento results in parity for %s",
-    (_id, index) => {
+    (scenario) => {
       resetAll();
       useLayoutStore.setState({ layoutMode: "classic" });
-      applyPreset(index);
+      restoreSnapshot(scenario);
       const classic = cloneResult(useCalculatorStore.getState().results!);
 
       resetAll();
       useLayoutStore.setState({ layoutMode: "bento" });
-      applyPreset(index);
+      restoreSnapshot(scenario);
       const bento = cloneResult(useCalculatorStore.getState().results!);
 
       expect(bento).toEqual(classic);

@@ -537,48 +537,9 @@ Every phase and change must complete this checklist:
 
 ---
 
-### ⚡ Phase 7g: Presets estáticos de calculadora (sem IA)
-
-**Status em `2.0.0-beta.2`:** entregue com ressalva. São três presets estáticos, sem IA, backend ou serviço externo; o seletor aparece somente no layout Clássico.
-
-**Cenários:**
-
-- [x] Vaso Espiral Geométrico — 140g, PLA Silk.
-- [x] Suporte Reforçado de Guidão para GoPro — 48g, PETG.
-- [x] Estatueta Colecionável RPG/Dragão — Resina UV 8K.
-- [x] Preenchimento atômico do cálculo, com uma única operação de undo.
-- [x] Deterministicos, revisáveis como dados versionados e funcionais offline.
-- [ ] Disponíveis nos layouts Guided e Bento; essa correção está especificada em C1.
-
-**Fora desta fase:** as abas Consultor de Risco & Margem, WhatsApp Pitch e Visão Multimodal do protótipo dependem de backend e foram adiadas. Nenhuma delas é requisito dos presets estáticos ou da V2.0.
-
-**Acceptance criteria:**
-
-- [x] Os valores de cada cenário são determinísticos e revisáveis no código.
-- [x] O botão substitui somente os campos do cenário e mantém os dados editáveis.
-- [x] A funcionalidade funciona offline, sem chamadas de rede ou consentimento de IA.
-- [ ] O seletor aparece em todos os layouts preservando a semântica de cada modo.
-
----
-
 ### 🧯 Phase 7h: Correções prioritárias da beta 2
 
-**Status:** prioridade. C2 e a direção de C5 estão decididas; C1 ainda tem decisões de contrato; C3 exige reprodução antes de qualquer correção.
-
-#### C1 — Presets em todos os layouts
-
-**Causa raiz:** `ProjectPresetPicker` é montado em `Calculator.tsx:117-119`, mas esse trecho só é renderizado pelo `ClassicSurface` (`ClassicSurface.tsx:12-14`). `GuidedSurface.tsx:3-5` e `BentoSurface.tsx:126-175` não renderizam o picker; portanto, o recurso não aparece nesses dois layouts.
-
-**Estado do Guided:** ao exibir o picker, o `wizardStore` precisa ser resetado. O draft atual fica `seeded: true` em `wizardStore.ts:197-205` e sobrescreveria o preset recém-aplicado.
-
-**Falha de catálogo:** falta `try/catch` no caminho de aplicação. `buildProjectPresetSnapshot` lança exceção quando o ID não existe ou quando a tecnologia não corresponde (`projectPresets.ts:173-183`). Um catálogo customizado antigo sem `technology` também falha silenciosamente no `ProjectPresetPicker.tsx:32-56`.
-
-**Decisões ainda pendentes:**
-
-- [ ] Definir se o snapshot deve ser completo ou apenas o núcleo compartilhado entre os layouts.
-- [ ] Definir o destino de `demoSellPriceBRL` (R$ 68,50, R$ 49,00 e R$ 115,00), hoje metadado que nunca aparece na interface.
-
-**Acceptance criteria:** o picker aparece nos três layouts; o Guided não reintroduz o seed antigo; incompatibilidades e catálogos legados produzem feedback explícito, nunca falha silenciosa.
+**Status:** prioridade. C2 e a direção de C5 estão decididas; C3 exige reprodução antes de qualquer correção.
 
 #### C2 — Tutorial somente no Clássico
 
