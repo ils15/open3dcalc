@@ -1,135 +1,15 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
+@import "../../styles/tokens.css";
+@import "../../styles/fonts.css";
 
-/* ===================================================================
-   THEME SYSTEM
-   Light theme as CSS default, .dark class overrides.
-   =================================================================== */
-
-:root {
-  /* === Light Theme (default) === */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-bg-surface: #ffffff;
-  --color-bg-elevated: #ffffff;
-  --color-bg-hover: #f1f5f9;
-  --color-bg-input: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-border-subtle: #f1f5f9;
-  --color-border-hover: #cbd5e1;
-  --color-border-focus: #6366f1;
-
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94a3b8;
-  --color-text-inverse: #ffffff;
-
-  --color-accent: #4f46e5;
-  --color-accent-hover: #4338ca;
-  --color-accent-light: #6366f1;
-  --color-accent-muted: rgba(79, 70, 229, 0.1);
-  --color-accent-text: #ffffff;
-
-  --color-success: #059669;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
-  --color-info: #2563eb;
-
-  --color-success-muted: rgba(5, 150, 105, 0.1);
-  --color-warning-muted: rgba(217, 119, 6, 0.1);
-  --color-danger-muted: rgba(220, 38, 38, 0.1);
-  --color-info-muted: rgba(37, 99, 235, 0.1);
-  --color-violet: #7c3aed;
-  --color-violet-muted: rgba(124, 58, 237, 0.12);
-
-  --color-chart-tooltip-bg: #ffffff;
-  --color-chart-tooltip-border: #e2e8f0;
-  --color-chart-tooltip-text: #0f172a;
-
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.10);
-
-  /* === Layering (z-index scale) ===
-     Bottom nav e sheets mobile usam z-50; dropdowns portados precisam
-     ficar acima deles. Tooltip mantem 100 inline. */
-  --z-dropdown: 60;
-}
-
-.dark {
-  /* === Dark Theme === */
-  --color-bg-primary: #0f1117;
-  --color-bg-secondary: #1a1d2e;
-  --color-bg-surface: #1e2030;
-  --color-bg-elevated: #232738;
-  --color-bg-hover: #2a2f42;
-  --color-bg-input: rgba(0, 0, 0, 0.25);
-  --color-border: #2e3348;
-  --color-border-subtle: #232738;
-  --color-border-hover: #3a4057;
-  --color-border-focus: #6366f1;
-
-  --color-text-primary: #e2e8f0;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
-  --color-text-inverse: #0f172a;
-
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-accent-light: #818cf8;
-  --color-accent-muted: rgba(99, 102, 241, 0.15);
-  --color-accent-text: #ffffff;
-
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #3b82f6;
-
-  --color-success-muted: rgba(34, 197, 94, 0.12);
-  --color-warning-muted: rgba(245, 158, 11, 0.12);
-  --color-danger-muted: rgba(239, 68, 68, 0.12);
-  --color-info-muted: rgba(59, 130, 246, 0.12);
-  --color-violet: #a78bfa;
-  --color-violet-muted: rgba(124, 58, 237, 0.12);
-
-  --color-chart-tooltip-bg: #1e293b;
-  --color-chart-tooltip-border: #334155;
-  --color-chart-tooltip-text: #e2e8f0;
-
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.45);
-}
-
-/* ===================================================================
-   TAILWIND @theme — Design tokens for utility generation
-   =================================================================== */
-@theme {
-  /* === Semantic Colors (mapped to CSS vars) === */
-  --color-accent: #4f46e5;
-  --color-accent-hover: #4338ca;
-  --color-accent-light: #6366f1;
-  --color-accent-muted: rgba(79, 70, 229, 0.1);
-
-  --color-success: #059669;
-  --color-danger: #dc2626;
-  --color-warning: #d97706;
-  --color-info: #2563eb;
-
-  /* === Fonts === */
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
-
-  /* === Radii === */
+/* Layout-only Tailwind theme tokens. Colors and fonts live in shared sources. */
+@theme inline {
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 10px;
   --radius-xl: 12px;
   --radius-2xl: 14px;
 
-  /* === Container queries === */
   /* Calculator form grids only go 2-up when the container has room (~608px). */
   --container-form: 38rem;
 }
@@ -156,7 +36,8 @@
 
 body {
   font-family: var(--font-sans);
-  font-size: clamp(0.9375rem, 0.9rem + 0.2vw, 1.0625rem);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   min-height: 100dvh;
@@ -239,8 +120,9 @@ body {
 }
 
 .label-xs {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--type-micro-label-size);
+  line-height: var(--type-micro-label-line-height);
+  font-weight: var(--type-micro-label-weight);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-muted);

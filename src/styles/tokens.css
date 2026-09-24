@@ -1,0 +1,242 @@
+/*
+ * Shared color foundation for web and desktop.
+ * Light is the default; the existing .dark class switches semantic values.
+ * Every background color is opaque so contrast does not depend on compositing.
+ */
+
+:root {
+  /* Surfaces */
+  --surface-canvas: #F6F7FB;
+  --surface-raised: #FFFFFF;
+  --surface-overlay: #FCFCFF;
+  --surface-sunken: #EDF0F7;
+  --surface-input: #FFFFFF;
+
+  /* Borders */
+  --border-subtle: #E2E8F0;
+  --border-default: #CBD5E1;
+  --border-strong: #64748B;
+  --border-accent: #4F46E5;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #475569;
+  --text-muted: #596579;
+  --text-disabled: #94A3B8;
+  --text-inverse: #FFFFFF;
+
+  /* State and accent */
+  --accent: #4F46E5;
+  --accent-hover: #4338CA;
+  --accent-subtle: #EEF2FF;
+  --positive: #047857;
+  --positive-subtle: #ECFDF5;
+  --warning: #92400E;
+  --warning-subtle: #FFFBEB;
+  --critical: #B91C1C;
+  --critical-subtle: #FFF1F2;
+  --info: #1D4ED8;
+  --info-subtle: #EFF6FF;
+
+  /* Financial semantics */
+  --cost: #C2410C;
+  --revenue: #047857;
+  --margin: #1D4ED8;
+  --margin-negative: #B91C1C;
+
+  /* Cost distribution categories */
+  --cost-filament: #6D28D9;
+  --cost-energy: #B45309;
+  --cost-machine: #1D4ED8;
+  --cost-labor: #047857;
+  --cost-failure: #BE123C;
+  --cost-other: #475569;
+
+  /* Theme-aware elevation and layering */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 4%);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 6%);
+  --shadow-md: 0 2px 8px rgb(0 0 0 / 8%);
+  --shadow-lg: 0 4px 16px rgb(0 0 0 / 10%);
+  --z-dropdown: 60;
+}
+
+.dark {
+  --surface-canvas: #0A0B10;
+  --surface-raised: #11131C;
+  --surface-overlay: #181B27;
+  --surface-sunken: #06070B;
+  --surface-input: #0E1018;
+
+  --border-subtle: #272B3B;
+  --border-default: #394057;
+  --border-strong: #94A3B8;
+  --border-accent: #818CF8;
+
+  --text-primary: #F1F5F9;
+  --text-secondary: #B7C2D2;
+  --text-muted: #94A3B8;
+  --text-disabled: #526179;
+  --text-inverse: #0A0B10;
+
+  --accent: #818CF8;
+  --accent-hover: #A5B4FC;
+  --accent-subtle: #242746;
+  --positive: #34D399;
+  --positive-subtle: #102B25;
+  --warning: #FBBF24;
+  --warning-subtle: #302711;
+  --critical: #FDA4AF;
+  --critical-subtle: #351820;
+  --info: #7DD3FC;
+  --info-subtle: #102B3B;
+
+  --cost: #FDBA74;
+  --revenue: #34D399;
+  --margin: #7DD3FC;
+  --margin-negative: #FDA4AF;
+
+  --cost-filament: #C4B5FD;
+  --cost-energy: #FDE68A;
+  --cost-machine: #93C5FD;
+  --cost-labor: #6EE7B7;
+  --cost-failure: #FDA4AF;
+  --cost-other: #CBD5E1;
+
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 35%);
+  --shadow-md: 0 2px 8px rgb(0 0 0 / 40%);
+  --shadow-lg: 0 4px 16px rgb(0 0 0 / 45%);
+}
+
+/*
+ * Temporary compatibility layer for B.1. Component migrations remove these
+ * aliases in B.2/B.3; until then, all web and desktop CSS keeps working.
+ */
+:root {
+  --color-bg-primary: var(--surface-canvas);
+  --color-bg-secondary: var(--surface-sunken);
+  --color-bg-surface: var(--surface-raised);
+  --color-bg-elevated: var(--surface-overlay);
+  --color-bg-hover: var(--surface-sunken);
+  --color-bg-input: var(--surface-input);
+
+  --color-border: var(--border-subtle);
+  --color-border-subtle: var(--surface-sunken);
+  --color-border-hover: var(--border-default);
+  --color-border-focus: var(--accent);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-light: var(--accent);
+  --color-accent-muted: var(--accent-subtle);
+  --color-accent-text: var(--text-inverse);
+
+  --color-success: var(--positive);
+  --color-warning: var(--warning);
+  --color-danger: var(--critical);
+  --color-info: var(--info);
+  --color-success-muted: var(--positive-subtle);
+  --color-warning-muted: var(--warning-subtle);
+  --color-danger-muted: var(--critical-subtle);
+  --color-info-muted: var(--info-subtle);
+  --color-violet: var(--cost-filament);
+  --color-violet-muted: var(--accent-subtle);
+
+  --color-chart-tooltip-bg: var(--surface-overlay);
+  --color-chart-tooltip-border: var(--border-subtle);
+  --color-chart-tooltip-text: var(--text-primary);
+
+  --color-bg-base: var(--color-bg-primary);
+  --color-bg-subtle: var(--color-bg-secondary);
+  --color-bg-card: var(--color-bg-surface);
+  --color-primary: var(--color-accent);
+  --color-primary-hover: var(--color-accent-hover);
+  --color-primary-light: var(--color-accent-light);
+  --color-primary-muted: var(--color-accent-muted);
+  --color-text-subtle: var(--color-text-secondary);
+}
+
+/* Tailwind v4 consumes semantic values instead of publishing static colors. */
+@theme inline {
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-input: var(--surface-input);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-accent: var(--border-accent);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-positive: var(--positive);
+  --color-positive-subtle: var(--positive-subtle);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-critical: var(--critical);
+  --color-critical-subtle: var(--critical-subtle);
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+
+  --color-cost: var(--cost);
+  --color-revenue: var(--revenue);
+  --color-margin: var(--margin);
+  --color-margin-negative: var(--margin-negative);
+
+  --color-cost-filament: var(--cost-filament);
+  --color-cost-energy: var(--cost-energy);
+  --color-cost-machine: var(--cost-machine);
+  --color-cost-labor: var(--cost-labor);
+  --color-cost-failure: var(--cost-failure);
+  --color-cost-other: var(--cost-other);
+
+  --color-bg-primary: var(--surface-canvas);
+  --color-bg-secondary: var(--surface-sunken);
+  --color-bg-surface: var(--surface-raised);
+  --color-bg-elevated: var(--surface-overlay);
+  --color-bg-hover: var(--surface-sunken);
+  --color-bg-input: var(--surface-input);
+  --color-border: var(--border-subtle);
+  --color-border-subtle: var(--surface-sunken);
+  --color-border-hover: var(--border-default);
+  --color-border-focus: var(--accent);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+  --color-accent-light: var(--accent);
+  --color-accent-muted: var(--accent-subtle);
+  --color-accent-text: var(--text-inverse);
+  --color-success: var(--positive);
+  --color-danger: var(--critical);
+  --color-success-muted: var(--positive-subtle);
+  --color-warning-muted: var(--warning-subtle);
+  --color-danger-muted: var(--critical-subtle);
+  --color-info-muted: var(--info-subtle);
+  --color-violet: var(--cost-filament);
+  --color-violet-muted: var(--accent-subtle);
+  --color-chart-tooltip-bg: var(--surface-overlay);
+  --color-chart-tooltip-border: var(--border-subtle);
+  --color-chart-tooltip-text: var(--text-primary);
+  --color-bg-base: var(--color-bg-primary);
+  --color-bg-subtle: var(--color-bg-secondary);
+  --color-bg-card: var(--color-bg-surface);
+  --color-primary: var(--color-accent);
+  --color-primary-hover: var(--color-accent-hover);
+  --color-primary-light: var(--color-accent-light);
+  --color-primary-muted: var(--color-accent-muted);
+  --color-text-subtle: var(--color-text-secondary);
+}

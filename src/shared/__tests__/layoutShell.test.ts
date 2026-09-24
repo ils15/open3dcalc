@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const projectRoot = resolve(__dirname, "../..");
@@ -9,6 +9,8 @@ const webApp = read("platform/web/App.tsx");
 const desktopApp = read("platform/desktop/App.tsx");
 const webCss = read("platform/web/index.css");
 const desktopCss = read("platform/desktop/index.css");
+const tokensPath = resolve(projectRoot, "styles/tokens.css");
+const tokensCss = existsSync(tokensPath) ? readFileSync(tokensPath, "utf-8") : "";
 const webHeader = read("shared/components/Header/Header.tsx");
 const desktopHeader = read("platform/desktop/components/Header/Header.tsx");
 const inputGroup = read("shared/components/ui/InputGroup.tsx");
@@ -38,10 +40,71 @@ describe("Ultrawide shell & overflow containment", () => {
     expect(webApp).not.toMatch(/max-w-\[1600px\][^"]*overflow-hidden/);
   });
 
-  it("defines --color-border-hover in light (:root) and dark themes", () => {
+  it("defines centralized light and dark semantic themes", () => {
+    expect(tokensCss).toMatch(
+      /:root\s*{[^}]*--surface-canvas:\s*#f6f7fb;/i,
+    );
+    expect(tokensCss).toMatch(
+      /\.dark\s*{[^}]*--surface-canvas:\s*#0a0b10;/i,
+    );
+  });
+
+  it("imports the shared tokens and fonts without remote Google Fonts", () => {
     for (const css of [webCss, desktopCss]) {
-      expect(css).toMatch(/:root\s*{[^}]*--color-border-hover:\s*#cbd5e1/s);
-      expect(css).toMatch(/\.dark\s*{[^}]*--color-border-hover:\s*#3a4057/s);
+      expect(css).toMatch(/@import\s+"\.\.\/\.\.\/styles\/tokens\.css";/);
+      expect(css).toMatch(/@import\s+"\.\.\/\.\.\/styles\/fonts\.css";/);
+      expect(css).not.toMatch(/fonts\.googleapis\.com/i);
+    }
+  });
+
+  it("keeps every legacy color name as a compatibility alias", () => {
+    const legacyAliases = {
+      "--color-bg-primary": "--surface-canvas",
+      "--color-bg-secondary": "--surface-sunken",
+      "--color-bg-surface": "--surface-raised",
+      "--color-bg-elevated": "--surface-overlay",
+      "--color-bg-hover": "--surface-sunken",
+      "--color-bg-input": "--surface-input",
+      "--color-border": "--border-subtle",
+      "--color-border-subtle": "--surface-sunken",
+      "--color-border-hover": "--border-default",
+      "--color-border-focus": "--accent",
+      "--color-text-primary": "--text-primary",
+      "--color-text-secondary": "--text-secondary",
+      "--color-text-muted": "--text-muted",
+      "--color-text-inverse": "--text-inverse",
+      "--color-accent": "--accent",
+      "--color-accent-hover": "--accent-hover",
+      "--color-accent-light": "--accent",
+      "--color-accent-muted": "--accent-subtle",
+      "--color-accent-text": "--text-inverse",
+      "--color-success": "--positive",
+      "--color-warning": "--warning",
+      "--color-danger": "--critical",
+      "--color-info": "--info",
+      "--color-success-muted": "--positive-subtle",
+      "--color-warning-muted": "--warning-subtle",
+      "--color-danger-muted": "--critical-subtle",
+      "--color-info-muted": "--info-subtle",
+      "--color-violet": "--cost-filament",
+      "--color-violet-muted": "--accent-subtle",
+      "--color-chart-tooltip-bg": "--surface-overlay",
+      "--color-chart-tooltip-border": "--border-subtle",
+      "--color-chart-tooltip-text": "--text-primary",
+      "--color-bg-base": "--color-bg-primary",
+      "--color-bg-subtle": "--color-bg-secondary",
+      "--color-bg-card": "--color-bg-surface",
+      "--color-primary": "--color-accent",
+      "--color-primary-hover": "--color-accent-hover",
+      "--color-primary-light": "--color-accent-light",
+      "--color-primary-muted": "--color-accent-muted",
+      "--color-text-subtle": "--color-text-secondary",
+    } as const;
+
+    for (const [legacyName, semanticName] of Object.entries(legacyAliases)) {
+      expect(tokensCss).toMatch(
+        new RegExp(`${legacyName}:\\s*var\\(${semanticName}\\);`),
+      );
     }
   });
 

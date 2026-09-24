@@ -1,0 +1,41 @@
+/* Shared system-font fallback and typographic scale. */
+
+:root {
+  --font-sans-stack:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono-stack:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
+  --font-sans: var(--font-sans-stack);
+  --font-mono: var(--font-mono-stack);
+
+  --type-micro-label-size: 0.6875rem;
+  --type-micro-label-line-height: 1rem;
+  --type-micro-label-weight: 700;
+
+  --type-body-size: 0.9375rem;
+  --type-body-line-height: 1.5rem;
+  --type-body-weight: 400;
+
+  --type-compact-size: 0.8125rem;
+  --type-compact-line-height: 1.25rem;
+  --type-compact-weight: 400;
+
+  --type-card-title-size: 1rem;
+  --type-card-title-line-height: 1.5rem;
+  --type-card-title-weight: 600;
+
+  --type-section-title-size: 1.25rem;
+  --type-section-title-line-height: 1.75rem;
+  --type-section-title-weight: 700;
+
+  --type-hero-numeric-size: clamp(2.25rem, 2rem + 1.25vw, 3rem);
+  --type-hero-numeric-line-height: 1.1;
+  --type-hero-numeric-weight: 700;
+  --type-hero-numeric-font-variant: tabular-nums;
+}
+
+@theme inline {
+  --font-sans: var(--font-sans-stack);
+  --font-mono: var(--font-mono-stack);
+}
