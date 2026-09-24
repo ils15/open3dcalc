@@ -1061,7 +1061,8 @@
     "noSpoolSelected": "No spool selected",
     "units": {
       "months": "months",
-      "hoursPerMonth": "h/month"
+      "hoursPerMonth": "h/month",
+      "items": "units"
     },
     "cards": {
       "material": "Material",
@@ -1092,6 +1093,7 @@
       "fee": "Marketplace fee",
       "tax": "Tax",
       "failure": "Failure",
+      "failureRate": "Failure rate",
       "quantity": "Quantity",
       "breakEven": "Break-even",
       "profit": "Profit",
@@ -1217,6 +1219,7 @@
     "finishing": "Estimated cost of sandpaper, primer, paints, putty or acetone used on this part.",
     "ppe": "Gloves, masks, paper towels, filters, etc. Fixed cost per print.",
     "extras": "Screws, adhesives, varnishes, paints, etc.",
+    "marketplaceFee": "Percentage charged by the marketplace on the sale value.",
     "printTimeHours": "Total time the print takes to complete. Use the value from your slicer software.",
     "printerPowerWatts": "Average power consumption of your printer. Most FDM printers use between 100W and 350W.",
     "energyCostPerKwh": "Your electricity rate per kWh. Check your utility bill for the exact value.",
