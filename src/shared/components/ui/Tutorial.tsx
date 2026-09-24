@@ -18,6 +18,7 @@ import {
 } from "./tutorialTours";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 
 // ── Step resolution ───────────────────────────────────────────────────────────
 // Cross-tab steps resolve asynchronously: the engine navigates to the owning
@@ -369,6 +370,7 @@ export function Tutorial() {
     sessionDismissed,
   } = useTutorialStore();
   const totalSteps = useTourStepCount();
+  const layoutMode = useLayoutStore((state) => state.layoutMode);
 
   // ── Anchor resolution ──────────────────────────────────────────────────
   // Sync attempt first (same-tab steps resolve immediately, no flicker);
@@ -391,7 +393,13 @@ export function Tutorial() {
   // would freeze the pre-scroll rect, and a synthetic `resize` event has no
   // listener (Floating UI was removed), so nothing would ever re-measure it.
   useLayoutEffect(() => {
-    if (!isActive || sessionDismissed || !step) return;
+    if (
+      layoutMode !== "classic" ||
+      !isActive ||
+      sessionDismissed ||
+      !step
+    )
+      return;
     if (!step.target) return; // centered card with full overlay (welcome/complete)
     const selector = step.target;
 
@@ -445,7 +453,7 @@ export function Tutorial() {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [isActive, sessionDismissed, step]);
+  }, [isActive, sessionDismissed, step, layoutMode]);
 
   const stepKey = step?.key ?? "";
   const currentAnchor =
@@ -469,6 +477,22 @@ export function Tutorial() {
     if (!isActive) restoreLevel();
   }, [isActive, restoreLevel]);
 
+  // A layout switch is an intentional cancellation, not a completion. Restore
+  // any borrowed calculator level before the engine can be left half-applied.
+  useEffect(() => {
+    if (layoutMode === "classic" || !isActive) return;
+    restoreLevel();
+    skipTutorial();
+  }, [isActive, layoutMode, restoreLevel, skipTutorial]);
+
+  // The App conditionally unmounts this engine when leaving Classic; restore a
+  // borrowed level on that path as well as on the store-driven exit paths.
+  useEffect(() => {
+    return () => {
+      restoreLevel();
+    };
+  }, [restoreLevel]);
+
   const handleSkip = useCallback(() => {
     skipTutorial();
   }, [skipTutorial]);
@@ -479,7 +503,7 @@ export function Tutorial() {
 
   // Keyboard navigation
   useEffect(() => {
-    if (!isActive || sessionDismissed) return;
+    if (layoutMode !== "classic" || !isActive || sessionDismissed) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -504,6 +528,7 @@ export function Tutorial() {
   }, [
     isActive,
     sessionDismissed,
+    layoutMode,
     currentStep,
     totalSteps,
     nextStep,
@@ -514,7 +539,7 @@ export function Tutorial() {
 
   // Pause tutorial when a MODAL dialog is open (not the tutorial card itself)
   useEffect(() => {
-    if (!isActive || sessionDismissed) return;
+    if (layoutMode !== "classic" || !isActive || sessionDismissed) return;
     const checkModal = () => {
       // Only close for real modals, not the tutorial card which has data-tutorial="true"
       const modal = document.querySelector(
@@ -529,7 +554,7 @@ export function Tutorial() {
     const observer = new MutationObserver(checkModal);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [isActive, sessionDismissed, skipTutorial]);
+  }, [isActive, sessionDismissed, layoutMode, skipTutorial]);
 
   // Mark step as completed when navigating forward
   const handleNext = useCallback(() => {
@@ -553,7 +578,9 @@ export function Tutorial() {
   ]);
 
   // If the user dismissed the tutorial this session, don't show it
-  if (!isActive || sessionDismissed || !step) return null;
+  if (layoutMode !== "classic" || !isActive || sessionDismissed || !step) {
+    return null;
+  }
 
   const duration = prefersReduced ? 0 : 0.2;
 

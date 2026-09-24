@@ -88,16 +88,17 @@ export interface StepConfig {
  */
 export const TOURS: Record<TourId, StepConfig[]> = {
   "calc-basico": [
-    { key: "welcome", target: null },
-    { key: "material", target: '[data-tutorial="material"]' },
-    { key: "print", target: '[data-tutorial="print"]' },
-    { key: "sales", target: '[data-tutorial="sales"]' },
+    { key: "welcome", target: null, tab: "calculator" },
+    { key: "material", target: '[data-tutorial="material"]', tab: "calculator" },
+    { key: "print", target: '[data-tutorial="print"]', tab: "calculator" },
+    { key: "sales", target: '[data-tutorial="sales"]', tab: "calculator" },
     {
       key: "results",
       target: '[data-tutorial="results-sidebar"], [data-tutorial="results"]',
+      tab: "calculator",
     },
-    { key: "export", target: '[data-tutorial="export"]' },
-    { key: "complete", target: null },
+    { key: "export", target: '[data-tutorial="export"]', tab: "calculator" },
+    { key: "complete", target: null, tab: "calculator" },
   ],
   "upload-3d-preview": [
     { key: "upload-intro", target: null },

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Check, DollarSign, Globe, Info } from "lucide-react";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { APP_VERSION } from "@/shared/version";
 import { SecondaryNavigation } from "@/platform/web/SecondaryNavigation";
@@ -33,6 +34,15 @@ export function MobileSettingsSheet({
   const { symbol } = useCurrency();
   const currencySetting = useCalculatorStore((s) => s.currency);
   const setCurrency = useCalculatorStore((s) => s.setCurrency);
+  const layoutMode = useLayoutStore((state) => state.layoutMode);
+  const isClassicLayout = layoutMode === "classic";
+  const classicOnlyDescriptionId = useId();
+
+  const handleStartTutorial = (): void => {
+    if (!isClassicLayout) return;
+    useTutorialStore.getState().startTutorial();
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -88,14 +98,37 @@ export function MobileSettingsSheet({
 
               {/* Tutorial */}
               <button
-                onClick={() => {
-                  useTutorialStore.getState().startTutorial();
-                  onClose();
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px]"
+                type="button"
+                onClick={handleStartTutorial}
+                aria-label={t("nav.tutorial")}
+                aria-disabled={!isClassicLayout ? "true" : undefined}
+                aria-describedby={
+                  isClassicLayout ? undefined : classicOnlyDescriptionId
+                }
+                tabIndex={0}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-[var(--color-text-primary)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[48px] ${
+                  isClassicLayout
+                    ? "hover:bg-[var(--color-bg-hover)]"
+                    : "cursor-not-allowed opacity-60"
+                }`}
               >
-                <BookOpen className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]" />
-                <span className="text-sm font-medium">{t("nav.tutorial")}</span>
+                <BookOpen
+                  className="w-[18px] h-[18px] shrink-0 text-[var(--color-accent-light)]"
+                  aria-hidden="true"
+                />
+                <span className="flex min-w-0 flex-col items-start text-left">
+                  <span className="text-sm font-medium">
+                    {t("nav.tutorial")}
+                  </span>
+                  {!isClassicLayout && (
+                    <span
+                      id={classicOnlyDescriptionId}
+                      className="text-xs font-normal text-[var(--color-text-muted)]"
+                    >
+                      {t("tutorial.launcher.classicOnly")}
+                    </span>
+                  )}
+                </span>
               </button>
 
               {/* Currency */}

@@ -797,7 +797,8 @@
     "stepOf": "Step {{current}} of {{total}}",
     "launcher": {
       "title": "Tutorials",
-      "completed": "completed"
+      "completed": "completed",
+      "classicOnly": "Available only in the Classic layout"
     },
     "tours": {
       "calc-basico": {

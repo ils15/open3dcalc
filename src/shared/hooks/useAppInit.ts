@@ -9,6 +9,7 @@ import { getSharedCalculation } from "@/shared/lib/calculationLink";
 import { printers } from "@/shared/lib/printers";
 import { marketplaces } from "@/shared/lib/marketplace";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 import type { CalculationResult, CalculationSnapshot } from "@/shared/types";
@@ -241,6 +242,8 @@ function loadSharedCalculation(): void {
 }
 
 export function useAppInit(onTabChange: (tab: Tab) => void): void {
+  const layoutMode = useLayoutStore((state) => state.layoutMode);
+
   // Deep-link from the calculator → product bridge (ResultsPanel dispatches
   // "open3dcalc:go-products" after registering a product). Issue #85.
   useEffect(() => {
@@ -268,9 +271,15 @@ export function useAppInit(onTabChange: (tab: Tab) => void): void {
     loadSharedCalculation();
   }, []);
 
-  // Auto-start tutorial on first visit (after short delay)
+  // Auto-start tutorial on first visit (after short delay). Classic is the only
+  // surface with the Classic tour anchors; Guided is already the guided flow.
   useEffect(() => {
+    if (layoutMode !== "classic") return;
+
     const timer = setTimeout(() => {
+      // Re-check at execution time so a layout switch during the delay wins.
+      if (useLayoutStore.getState().layoutMode !== "classic") return;
+
       // Don't start tutorial if onboarding is still pending
       const onboardingDone = guardedStorage.getItem("open3dcalc_onboarded");
       if (!onboardingDone) return;
@@ -281,5 +290,5 @@ export function useAppInit(onTabChange: (tab: Tab) => void): void {
       }
     }, 1500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [layoutMode]);
 }

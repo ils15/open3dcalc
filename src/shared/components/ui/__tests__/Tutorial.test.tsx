@@ -1,8 +1,9 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Tutorial } from "../Tutorial";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 import type { TourId, StepConfig, TutorialTab } from "../tutorialTours";
 
 // ── Mocks ────────────────────────────────────────────────────────────
@@ -183,6 +184,7 @@ vi.mock("../tutorialTours", () => {
 describe("Tutorial", () => {
   beforeEach(() => {
     localStorage.clear();
+    useLayoutStore.setState({ layoutMode: "classic" });
     useTutorialStore.setState({
       isActive: false,
       isCompleted: false,
@@ -198,10 +200,67 @@ describe("Tutorial", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("renders tooltip card when active", () => {
+  it("renders tooltip card when active in Classic", () => {
     useTutorialStore.getState().startTutorial();
     render(<Tutorial />);
     expect(screen.getByText("Bem-vindo ao Open3DCalc!")).toBeInTheDocument();
+  });
+
+  it("does not render outside Classic and safely cancels an active tour", () => {
+    useLayoutStore.setState({ layoutMode: "guided" });
+    useTutorialStore.getState().startTutorial();
+
+    const { container } = render(<Tutorial />);
+
+    expect(container.innerHTML).toBe("");
+    expect(useTutorialStore.getState().isActive).toBe(false);
+  });
+
+  it("restores a borrowed calculator level when leaving Classic", () => {
+    useCalculatorStore.setState({ calcLevel: "basic" });
+    useTutorialStore.getState().startTour("nivel-avancado");
+    render(<Tutorial />);
+    expect(useCalculatorStore.getState().calcLevel).toBe("advanced");
+
+    act(() => {
+      useLayoutStore.setState({ layoutMode: "bento" });
+    });
+
+    expect(useTutorialStore.getState().isActive).toBe(false);
+    expect(useCalculatorStore.getState().calcLevel).toBe("basic");
+  });
+
+  it("stops keyboard and modal handling after leaving Classic", async () => {
+    useTutorialStore.getState().startTutorial();
+    const skipTutorialSpy = vi
+      .spyOn(useTutorialStore.getState(), "skipTutorial")
+      .mockImplementation(() => undefined);
+    const modal = document.createElement("div");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    const { unmount } = render(<Tutorial />);
+    const observed = { stepAfterKeyboard: 0, skipCalls: 0 };
+
+    try {
+      act(() => {
+        useLayoutStore.setState({ layoutMode: "guided" });
+      });
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+      observed.stepAfterKeyboard = useTutorialStore.getState().currentStep;
+
+      document.body.appendChild(modal);
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+      observed.skipCalls = skipTutorialSpy.mock.calls.length;
+    } finally {
+      modal.remove();
+      skipTutorialSpy.mockRestore();
+      unmount();
+    }
+
+    // The layout switch performs the one cancellation. No stale keyboard or
+    // modal listener may advance or skip the hidden engine afterwards.
+    expect(observed.skipCalls).toBe(1);
+    expect(observed.stepAfterKeyboard).toBe(1);
   });
 
   it("shows step counter (1 / 7)", () => {

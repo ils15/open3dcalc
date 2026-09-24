@@ -18,6 +18,7 @@ import enUS from "@/shared/i18n/locales/en-US.json";
 import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 import type { TutorialTab, TourId } from "../tutorialTours";
 
 // ── Mocks (the engine is real; only its presentational deps are stubbed) ────
@@ -77,8 +78,16 @@ Object.defineProperty(Element.prototype, "scrollIntoView", {
 // picks it from the header launcher), so the navigate listener is attached
 // before the engine dispatches.
 
-function TabHarness({ tab, anchors }: { tab: TutorialTab; anchors: string[] }) {
-  const [activeTab, setActiveTab] = useState<TutorialTab>("calculator");
+function TabHarness({
+  tab,
+  anchors,
+  initialTab = "calculator",
+}: {
+  tab: TutorialTab;
+  anchors: string[];
+  initialTab?: TutorialTab;
+}) {
+  const [activeTab, setActiveTab] = useState<TutorialTab>(initialTab);
   useTutorialTabNavigation(setActiveTab);
 
   return (
@@ -108,6 +117,43 @@ function resetTutorialStore() {
     sessionDismissed: false,
   });
 }
+
+describe("tour: calc-basico", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useLayoutStore.setState({ layoutMode: "classic" });
+    resetTutorialStore();
+  });
+
+  it("wires every basic step to the calculator tab", () => {
+    expect(TOURS["calc-basico"].every((step) => step.tab === "calculator")).toBe(
+      true,
+    );
+  });
+
+  it("navigates to the calculator tab when started elsewhere", async () => {
+    render(
+      <TabHarness
+        tab="calculator"
+        anchors={["material"]}
+        initialTab="dashboard"
+      />,
+    );
+    useTutorialStore.getState().startTour("calc-basico");
+
+    expect(
+      await screen.findByText("tutorial.steps.welcome.title"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("tutorial.next"));
+
+    expect(
+      await screen.findByText("tutorial.steps.material.title"),
+    ).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(screen.getByTestId("active-tab").textContent).toBe("calculator"),
+    );
+  });
+});
 
 // ── U4: inventario-bobinas (inventory tab — cross-tab anchors) ──────────────
 
