@@ -5,7 +5,7 @@ import i18n from "@/shared/i18n/i18n";
 import { ClassicSurface } from "@/shared/components/Calculator/surfaces/ClassicSurface";
 import { BentoSurface } from "@/shared/components/Calculator/surfaces/BentoSurface";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
-import type { CalculationResult } from "@/shared/types";
+import type { AMSSlot, CalculationResult } from "@/shared/types";
 import type { CalculationValidationIssue } from "@/shared/stores/calculatorStore.validation";
 
 const finiteResult: CalculationResult = {
@@ -43,9 +43,24 @@ const invalidIssue: CalculationValidationIssue = {
   received: Number.NaN,
 };
 
+const activeMultiMaterialSlots: AMSSlot[] = [
+  {
+    enabled: true,
+    materialType: "PLA",
+    costPerKg: 80,
+    weightUsedGrams: 50,
+    purgeWeightGrams: 5,
+    transitionPurgeGrams: 3,
+    density: 1.24,
+    spoolEfficiency: 98,
+    color: "#ff0000",
+  },
+];
+
 function setCalculation(
   results: CalculationResult | null,
   calculationIssues: CalculationValidationIssue[] = [],
+  multiMaterialActive = false,
 ): void {
   useCalculatorStore.setState({
     results,
@@ -53,7 +68,15 @@ function setCalculation(
     activeTab: "fdm",
     currency: "BRL",
     productName: "Teste de cálculo",
+    fdmAmsEnabled: multiMaterialActive,
+    fdmAmsSlots: multiMaterialActive ? activeMultiMaterialSlots : [],
   });
+}
+
+function commonDisplayedFinancialValues(): string[] {
+  return ["R$ 105,88", "R$ 58,34", "R$ 30,00"].filter(
+    (value) => screen.queryAllByText(value).length > 0,
+  );
 }
 
 beforeEach(async () => {
@@ -145,4 +168,40 @@ describe("calculation fail-high surfaces", () => {
       language === "pt-BR" ? "Dados inválidos" : "Invalid calculation data",
     );
   });
+
+  it("keeps the rendered multi-material warning and common financial text in parity", () => {
+    setCalculation(finiteResult, [], true);
+
+    const classic = render(<ClassicSurface />);
+    const classicWarning = screen.getAllByTestId("multi-material-warning")[0]
+      ?.textContent;
+    const classicValues = commonDisplayedFinancialValues();
+    classic.unmount();
+
+    render(<BentoSurface />);
+    const bentoWarning = screen.getByTestId("multi-material-warning").textContent;
+    const bentoValues = commonDisplayedFinancialValues();
+
+    expect(bentoWarning).toBe(classicWarning);
+    expect(bentoValues).toEqual(classicValues);
+    expect(screen.getByTestId("multi-material-warning")).toHaveTextContent(
+      "não é somado",
+    );
+  });
+
+  it.each(["pt-BR", "en-US"] as const)(
+    "translates the multi-material warning in %s",
+    async (language) => {
+      await i18n.changeLanguage(language);
+      setCalculation(finiteResult, [], true);
+
+      render(<BentoSurface />);
+
+      const notice = screen.getByTestId("multi-material-warning");
+      expect(notice.textContent).not.toContain("calc.");
+      expect(notice).toHaveTextContent(
+        language === "pt-BR" ? "não é somado" : "is not added",
+      );
+    },
+  );
 });

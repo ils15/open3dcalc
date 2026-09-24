@@ -299,7 +299,7 @@ describe("MaterialSection", () => {
     expect(screen.queryByText("calc.wasteMargin")).not.toBeInTheDocument();
   });
 
-  it("shows AMS toggle when printer has multiple filaments and purgeWeight is visible", () => {
+  it("shows the neutral multi-material toggle when printer has multiple filaments and purgeWeight is visible", () => {
     const store = createMockStore({
       selectedPrinter: {
         id: "printer-1",
@@ -322,7 +322,7 @@ describe("MaterialSection", () => {
         )}
       />,
     );
-    expect(screen.getByText("AMS Multi-material")).toBeInTheDocument();
+    expect(screen.getByText("calc.multiMaterialLabel")).toBeInTheDocument();
   });
 
   it("hides AMS toggle when printer has only one filament", () => {

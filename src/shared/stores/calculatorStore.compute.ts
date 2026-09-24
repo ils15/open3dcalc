@@ -7,6 +7,7 @@ import {
   computeTotalHoursForProfit,
   getBulkDiscount,
 } from "@/shared/lib/calculator";
+import { isMultiMaterialActive } from "@/shared/lib/multiMaterial";
 
 /**
  * Billable-minutes behind profit/hr (Fase 2 #70).
@@ -50,12 +51,17 @@ export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
       s.fdmFinishing,
       fixedCostPerHour,
     );
-    let amsMaterialCost = 0;
-    if (s.fdmAmsEnabled && s.fdmAmsSlots) {
-      const enabledSlots = s.fdmAmsSlots.filter((sl) => sl.enabled);
+    const hasActiveMultiMaterial = isMultiMaterialActive(
+      s.fdmAmsEnabled,
+      s.fdmAmsSlots,
+    );
+    let amsMaterialCost: number | undefined;
+    if (hasActiveMultiMaterial) {
+      const enabledSlots = (s.fdmAmsSlots ?? []).filter((sl) => sl.enabled);
       const activeCount = enabledSlots.filter(
         (sl) => sl.weightUsedGrams > 0,
       ).length;
+      amsMaterialCost = 0;
       for (const slot of enabledSlots) {
         const materialCost = (slot.weightUsedGrams / 1000) * slot.costPerKg;
         const purgeCost = (slot.purgeWeightGrams / 1000) * slot.costPerKg;
@@ -75,9 +81,7 @@ export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
     const filtered = {
       ...result,
       materialCost: es.material
-        ? s.fdmAmsEnabled && s.fdmAmsSlots
-          ? amsMaterialCost
-          : result.materialCost
+        ? amsMaterialCost ?? result.materialCost
         : 0,
       energyCost: es.energy ? result.energyCost : 0,
       machineCost: es.machine ? result.machineCost : 0,

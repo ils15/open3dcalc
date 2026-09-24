@@ -151,7 +151,7 @@ export function MaterialSection({
             (store.selectedPrinter.maxFilaments ?? 1) > 1 && (
               <div className="flex items-center justify-end gap-2 mb-3">
                 <span className="text-[10px] font-semibold text-[var(--color-info)] uppercase tracking-wide">
-                  AMS Multi-material
+                  {t("calc.multiMaterialLabel")}
                 </span>
                 <button
                   onClick={() => {

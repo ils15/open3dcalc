@@ -8,10 +8,8 @@ import { printers } from "@/shared/lib/printers";
 import { buildSnapshot } from "@/shared/stores/__tests__/calculatorStore.test-utils";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
-import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import type {
-  CalculationResult,
   CalculationSnapshot,
   LaborCosts,
   PrintParameters,
@@ -42,7 +40,6 @@ const resetAll = (): void => {
   });
   useCalculatorStore.getState().resetCalculator();
   useCalculatorStore.setState({ history: [], productName: "" });
-  useLayoutStore.setState({ layoutMode: "classic" });
 };
 
 const partialFdmPrintParams = (): PrintParameters =>
@@ -104,9 +101,6 @@ const restoreSnapshot = (scenario: RestoreScenario): void => {
     .loadHistoryItem(buildRestoreSnapshot(scenario));
 };
 
-const cloneResult = (result: CalculationResult): CalculationResult =>
-  JSON.parse(JSON.stringify(result)) as CalculationResult;
-
 beforeEach(() => {
   resetAll();
 });
@@ -123,6 +117,14 @@ describe("snapshot restore result regression", () => {
       expect(result?.sellPrice).toBeGreaterThan(0);
     },
   );
+
+  it("keeps restored material cost positive without configured multi-material slots", () => {
+    restoreSnapshot("partial-legacy");
+
+    const result = useCalculatorStore.getState().results;
+    expect(result).not.toBeNull();
+    expect(result?.materialCost).toBeGreaterThan(0);
+  });
 
   it("restores a partial legacy slice without losing energy or failure cost", () => {
     localStorage.setItem(
@@ -279,22 +281,4 @@ describe("snapshot restore result regression", () => {
     expect(restored.fdmMachine.hoursPerMonth).toBe(123);
     expect(restored.fdmSales.taxPercent).toBe(7);
   });
-  it.each(RESTORE_SCENARIOS)(
-    "keeps Classic and Bento results in parity for %s",
-    (scenario) => {
-      resetAll();
-      useLayoutStore.setState({ layoutMode: "classic" });
-      restoreSnapshot(scenario);
-      const classic = cloneResult(useCalculatorStore.getState().results!);
-
-      resetAll();
-      useLayoutStore.setState({ layoutMode: "bento" });
-      restoreSnapshot(scenario);
-      const bento = cloneResult(useCalculatorStore.getState().results!);
-
-      expect(bento).toEqual(classic);
-      expect(bento.totalCost).toBeGreaterThan(0);
-      expect(bento.sellPrice).toBeGreaterThan(0);
-    },
-  );
 });
