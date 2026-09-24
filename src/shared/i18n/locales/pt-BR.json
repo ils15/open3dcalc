@@ -247,6 +247,19 @@
     "customizeFields": "Personalizar campos",
     "productName": "Nome do Produto",
     "productNamePlaceholder": "Ex: Vaso Decorativo",
+    "projectPresets": {
+      "label": "Preset de projeto",
+      "selectLabel": "Escolher preset",
+      "fill": "Preencher calculadora",
+      "confirmOverwrite": "Já existe um cálculo em andamento. Substituir os valores atuais por este preset?",
+      "applied": "Preset {{name}} aplicado à calculadora.",
+      "cancelled": "Aplicação cancelada. Os valores atuais foram mantidos.",
+      "items": {
+        "spiral-vase": { "name": "Vaso Espiral Geométrico" },
+        "reinforced-gopro-handlebar": { "name": "Suporte Reforçado de Guidão para GoPro" },
+        "rpg-dragon-statue": { "name": "Estatueta Colecionável RPG / Dragão" }
+      }
+    },
     "costPerGram": "Custo por Grama",
     "quantity": "Quantidade",
     "infillPercent": "Preenchimento (Infill)",

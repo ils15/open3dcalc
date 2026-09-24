@@ -247,6 +247,19 @@
     "customizeFields": "Customize fields",
     "productName": "Product Name",
     "productNamePlaceholder": "E.g.: Decorative Vase",
+    "projectPresets": {
+      "label": "Project preset",
+      "selectLabel": "Choose a preset",
+      "fill": "Fill calculator",
+      "confirmOverwrite": "A calculation is already in progress. Replace the current values with this preset?",
+      "applied": "Preset {{name}} applied to the calculator.",
+      "cancelled": "Application cancelled. Current values were kept.",
+      "items": {
+        "spiral-vase": { "name": "Geometric Spiral Vase" },
+        "reinforced-gopro-handlebar": { "name": "Reinforced GoPro Handlebar Mount" },
+        "rpg-dragon-statue": { "name": "Collectible RPG / Dragon Statue" }
+      }
+    },
     "costPerGram": "Cost per Gram",
     "quantity": "Quantity",
     "infillPercent": "Infill Percentage",

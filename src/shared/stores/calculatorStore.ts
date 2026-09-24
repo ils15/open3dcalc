@@ -614,49 +614,76 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     },
 
     loadHistoryItem: (snapshot: CalculationSnapshot) => {
-      setWithCompute({
-        activeTab: snapshot.type,
-        fdmAmsEnabled: snapshot.fdmAmsEnabled ?? false,
-        fdmAmsSlots:
-          snapshot.fdmAmsSlots ?? DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
-        fixedCosts: snapshot.fixedCosts ?? { ...DEFAULT_FIXED_COSTS },
-        fdmMaterial: snapshot.fdmMaterial,
-        fdmPrintParams: snapshot.fdmPrintParams,
-        // Snapshot antigo (pré-D-EA1) sem o campo → mantém o perfil atual.
-        ...(snapshot.fdmSlicerProfile
-          ? {
-              fdmSlicerProfile: resolveFdmSlicerProfile(
-                snapshot.fdmSlicerProfile,
-              ),
-            }
-          : {}),
-        // Snapshot antigo (pré-D-EA2) sem o campo → mantém os params atuais.
-        ...(snapshot.fdmFilament
-          ? { fdmFilament: resolveFdmFilament(snapshot.fdmFilament) }
-          : {}),
-        fdmMachine: snapshot.fdmMachine,
-        fdmHardware: snapshot.fdmHardware,
-        fdmFinishing: snapshot.fdmFinishing,
-        fdmLabor: snapshot.fdmLabor,
-        fdmExtras: snapshot.fdmExtras,
-        fdmSales: snapshot.fdmSales,
-        fdmOps: snapshot.fdmOps,
-        fdmSoft: snapshot.fdmSoft,
-        resinMaterial: snapshot.resinMaterial,
-        resinPrintParams: snapshot.resinPrintParams,
-        resinPostProcess: snapshot.resinPostProcess,
-        resinMachine: snapshot.resinMachine,
-        resinHardware: snapshot.resinHardware,
-        resinLabor: snapshot.resinLabor,
-        resinExtras: snapshot.resinExtras,
-        resinSales: snapshot.resinSales,
-        resinOps: snapshot.resinOps,
-        resinSoft: snapshot.resinSoft,
-        productName: snapshot.productName,
-        quantity: snapshot.quantity,
-        infillPercent: snapshot.infillPercent,
-        targetMarginMode: snapshot.targetMarginMode,
-        enabledSections: snapshot.enabledSections,
+      setWithCompute((state) => {
+        const selectedPrinter =
+          printers.find((printer) => printer.id === snapshot.selectedPrinterId) ??
+          state.selectedPrinter;
+        const selectedMarketplace =
+          marketplaces.find(
+            (marketplace) => marketplace.id === snapshot.selectedMarketplaceId,
+          ) ?? state.selectedMarketplace;
+        const snapshotSpool = snapshot.spoolId
+          ? useFilamentInventory
+              .getState()
+              .spools.find((spool) => spool.id === snapshot.spoolId)
+          : undefined;
+        const selectedSpoolId =
+          snapshot.type === "fdm" &&
+          snapshotSpool &&
+          snapshot.fdmMaterial.type
+            .toLowerCase()
+            .includes(snapshotSpool.material.toLowerCase())
+            ? snapshotSpool.id
+            : null;
+
+        return {
+          activeTab: snapshot.type,
+          selectedPrinter,
+          selectedMarketplace,
+          selectedSpoolId,
+          lastDeductedInfo: null,
+          fdmAmsEnabled: snapshot.fdmAmsEnabled ?? false,
+          fdmAmsSlots:
+            snapshot.fdmAmsSlots ?? DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
+          fixedCosts: snapshot.fixedCosts ?? { ...DEFAULT_FIXED_COSTS },
+          fdmMaterial: snapshot.fdmMaterial,
+          fdmPrintParams: snapshot.fdmPrintParams,
+          // Snapshot antigo (pré-D-EA1) sem o campo → mantém o perfil atual.
+          ...(snapshot.fdmSlicerProfile
+            ? {
+                fdmSlicerProfile: resolveFdmSlicerProfile(
+                  snapshot.fdmSlicerProfile,
+                ),
+              }
+            : {}),
+          // Snapshot antigo (pré-D-EA2) sem o campo → mantém os params atuais.
+          ...(snapshot.fdmFilament
+            ? { fdmFilament: resolveFdmFilament(snapshot.fdmFilament) }
+            : {}),
+          fdmMachine: snapshot.fdmMachine,
+          fdmHardware: snapshot.fdmHardware,
+          fdmFinishing: snapshot.fdmFinishing,
+          fdmLabor: snapshot.fdmLabor,
+          fdmExtras: snapshot.fdmExtras,
+          fdmSales: snapshot.fdmSales,
+          fdmOps: snapshot.fdmOps,
+          fdmSoft: snapshot.fdmSoft,
+          resinMaterial: snapshot.resinMaterial,
+          resinPrintParams: snapshot.resinPrintParams,
+          resinPostProcess: snapshot.resinPostProcess,
+          resinMachine: snapshot.resinMachine,
+          resinHardware: snapshot.resinHardware,
+          resinLabor: snapshot.resinLabor,
+          resinExtras: snapshot.resinExtras,
+          resinSales: snapshot.resinSales,
+          resinOps: snapshot.resinOps,
+          resinSoft: snapshot.resinSoft,
+          productName: snapshot.productName,
+          quantity: snapshot.quantity,
+          infillPercent: snapshot.infillPercent,
+          targetMarginMode: snapshot.targetMarginMode,
+          enabledSections: snapshot.enabledSections,
+        };
       });
     },
 
