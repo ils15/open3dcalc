@@ -687,6 +687,79 @@ Every phase and change must complete this checklist:
 
 ---
 
+### 🧵 Phase 7m: Multi-material (AMS/CFS/ACE 2)
+
+**Status:** decisão de produto registrada. **M1 — Honestidade imediata entra na beta 3**; M2–M7 ficam para depois da beta 3. A beta 3 não deve apresentar o cálculo multi-material como correto enquanto o custo multi-material ainda não chegar ao preço.
+
+**Objetivo:** suportar a mesma forma de dados para AMS, CFS e ACE 2, sem criar um modelo por hardware. O fatiador é a fonte autoritativa; o app não deve inventar uma taxonomia de máquinas diferente da relatada pelo fatiador.
+
+#### M1 — Honestidade imediata *(entra na beta 3)*
+
+- [ ] Exibir aviso de que o custo de material multi-material não entra no total, no preço nem no lucro.
+- [ ] Corrigir o furo que transforma um array de materiais vazio em custo zero; o caso inválido precisa ser explícito, não um total silenciosamente incorreto.
+- [ ] Usar o rótulo neutro **Multi-material**, em vez de “AMS”, em qualquer aviso ou cálculo que apresente esse recurso como suporte a um único sistema.
+- [ ] Fazer `roundCurrency` usar arredondamento *fail-high* (para cima), sem subestimar o preço ao arredondar valores monetários.
+
+**Aceite da beta 3:** o aviso é visível antes de a pessoa confiar no resultado; array vazio não produz custo zero sem sinal explícito; o rótulo é neutro; e o arredondamento monetário não reduz o valor cobrado.
+
+#### M2 — Modelo de dados por material
+
+- [ ] A peça passa a ter uma **composição de materiais**: N materiais, cada um com peso e custo próprios, em vez de um `materialCost` único.
+- [ ] Preservar o cálculo de peça única como caso degenerado dessa composição, sem criar um contrato paralelo para peça simples.
+- [ ] Definir a composição como entrada do cálculo e manter a identificação de material e a origem do peso em um contrato verificável.
+
+#### M3 — Integração no resultado
+
+- [ ] Fazer o custo multi-material entrar em `subtotal` → `totalCost` → `sellPrice` → `profit`.
+- [ ] Fazer `costPerGram` e `unitWeight` deixarem de assumir material único: expor os valores por material ou declarar explicitamente que não se aplicam ao resultado agregado.
+- [ ] Cobrir a integração no resultado com casos de peça única, múltiplos materiais e dados incompletos, sem transformar uma omissão em custo zero.
+
+#### M4 — Purga e transições
+
+- [ ] Separar a purga do material do produto; purga é desperdício de processo, não mais um material que compõe a peça.
+- [ ] Registrar a ordem das trocas, o número de transições e a política `purge-into-infill` (ou destino equivalente informado pelo fatiador).
+- [ ] Manter o custo de purga por placa e a distribuição pelas peças como responsabilidades do cálculo, sem tratá-la como um peso de material da peça.
+
+#### M5 — Tempo multi-cor
+
+- [ ] Aceitar entrada dupla: tempo multi-cor e tempo single-cor de referência.
+- [ ] Calcular a diferença como custo do overhead, mantendo as duas entradas como os dados de origem.
+
+#### M6 — Estoque multi-spool
+
+- [ ] Permitir que uma peça multi-material consuma de vários spools.
+- [ ] Fazer a dedução de estoque por slot e vincular `spoolId` por material.
+
+#### M7 — Suporte a CFS e ACE 2
+
+- [ ] Tratar CFS e ACE 2 sem modelar hardware específico: os três sistemas alimentam a mesma forma de dados.
+- [ ] Usar os campos relatados pelo fatiador como contrato comum para AMS, CFS e ACE 2; diferenças de hardware ficam fora do modelo de cálculo.
+
+**Decisões e riscos registrados:**
+
+- **Decisão:** o modelo de dados segue **o que o fatiador reporta**, não o hardware. AMS, CFS e ACE 2 alimentam a mesma forma — não são três modelos.
+- **Risco registrado:** hoje o custo multi-material é calculado mas **não chega ao preço** (`materialCost` é substituído, `subtotal` não). Qualquer usuário de AMS hoje vê preço subestimado.
+- **Estado atual do AMS:** slots genéricos (4 por padrão), UI parcial, sem validação na restauração, `density` e `spoolEfficiency` ignorados pela fórmula, fórmula de transição inventada (`activeCount × (activeCount − 1)`) usando só o primeiro slot.
+- **Evidência de mercado:** AMS (Bambu), CFS (Creality, até 16 cores), ACE 2 Pro (Anycubic, até 16 cores), Prusa MMU3, Elegoo CANVAS, QIDI Box e ERCF convergem no mesmo modelo: material do produto separado do desperdício de processo; desperdício por placa e dividido pelas peças; fatiador como fonte autoritativa.
+
+**Referências verificadas:**
+
+- [Bambu Studio — Issue #460, flushed filament e flush/prime tower](https://github.com/bambulab/BambuStudio/issues/460)
+- [Prusa MMU3 — Handbook / User Guide](https://help.prusa3d.com/downloads/mmu-family/handbook)
+- [OrcaSlicer Wiki — Flush Options / purge into infill](https://www.orcaslicer.com/wiki/print_settings/multimaterial/multimaterial_settings_flush_options)
+
+#### Dívida rastreada (fora desta frente)
+
+- `loadHistoryItem` resolve a impressora contra o array estático `printers`, enquanto o builder usa `useCatalogStore`; há divergência real em catálogo personalizado.
+- `addToHistory` grava o histórico **antes** da dedução de estoque.
+- `demoDataset.ts` chama `computeStoreResults` diretamente, contornando a fronteira de validação.
+- Resolvers antigos em `calculatorStore.helpers.ts` ficaram órfãos: existem duas políticas de sanitização, com risco de drift.
+- Limites de domínio incompletos: `spoolEfficiency` sem máximo, `wasteMarginPercent` sem máximo e `quantity` sem exigência de inteiro positivo.
+- `Product.weightGrams` armazena peso efetivo, após purga e eficiência; a ambiguidade entre bruto e efetivo pode duplicar ajustes.
+- C3: Guided exibindo “0h / 54min”; causa ainda não confirmada, aguardando URL do usuário.
+
+---
+
 ### 🔎 Investigação — uso atual de lojas e clientes
 
 **Status:** investigação; não é uma fase de implementação.
