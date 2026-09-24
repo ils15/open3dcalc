@@ -3,22 +3,7 @@ import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
-import { computeStoreResults } from "@/shared/stores/calculatorStore.compute";
-import {
-  resolveFdmMaterial,
-  resolveLaborCosts,
-  resolvePrintParameters,
-  resolveResinMaterial,
-} from "@/shared/stores/calculatorStore.helpers";
-import {
-  DEFAULT_FDM_MATERIAL,
-  DEFAULT_FDM_PARAMS,
-  DEFAULT_LABOR,
-  DEFAULT_RESIN_MATERIAL,
-  DEFAULT_RESIN_PARAMS,
-  DEFAULT_RESIN_LABOR,
-} from "@/shared/stores/calculatorStore.defaults";
-import type { ComputeStoreInput } from "@/shared/stores/calculatorStore.types";
+import { computeValidatedStoreResults } from "@/shared/stores/calculatorStore.validation";
 import { getSharedCalculation } from "@/shared/lib/calculationLink";
 import { printers } from "@/shared/lib/printers";
 import { marketplaces } from "@/shared/lib/marketplace";
@@ -192,62 +177,35 @@ function loadSharedCalculation(): void {
   const state = useCalculatorStore.getState();
   const merged: Record<string, unknown> = {
     ...state,
-    activeTab: shared.activeTab,
-    fdmMaterial: resolveFdmMaterial(
-      shared.fdmMaterial ?? state.fdmMaterial,
-      DEFAULT_FDM_MATERIAL,
-    ),
-    fdmPrintParams: resolvePrintParameters(
-      shared.fdmPrintParams ?? state.fdmPrintParams,
-      DEFAULT_FDM_PARAMS,
-    ),
-    ...(shared.fdmMachine && { fdmMachine: shared.fdmMachine }),
-    ...(shared.fdmHardware && { fdmHardware: shared.fdmHardware }),
-    ...(shared.fdmFinishing && { fdmFinishing: shared.fdmFinishing }),
-    fdmLabor: resolveLaborCosts(shared.fdmLabor ?? state.fdmLabor, DEFAULT_LABOR),
-    ...(shared.fdmExtras && { fdmExtras: shared.fdmExtras }),
-    ...(shared.fdmSales && { fdmSales: shared.fdmSales }),
-    ...(shared.fdmOps && { fdmOps: shared.fdmOps }),
-    ...(shared.fdmSoft && { fdmSoft: shared.fdmSoft }),
-    resinMaterial: resolveResinMaterial(
-      shared.resinMaterial ?? state.resinMaterial,
-      DEFAULT_RESIN_MATERIAL,
-    ),
-    resinPrintParams: resolvePrintParameters(
-      shared.resinPrintParams ?? state.resinPrintParams,
-      DEFAULT_RESIN_PARAMS,
-    ),
-    ...(shared.resinMachine && { resinMachine: shared.resinMachine }),
-    ...(shared.resinHardware && { resinHardware: shared.resinHardware }),
-    ...(shared.resinPostProcess && {
-      resinPostProcess: shared.resinPostProcess,
-    }),
-    resinLabor: resolveLaborCosts(
-      shared.resinLabor ?? state.resinLabor,
-      DEFAULT_RESIN_LABOR,
-    ),
-    ...(shared.resinExtras && { resinExtras: shared.resinExtras }),
-    ...(shared.resinSales && { resinSales: shared.resinSales }),
-    ...(shared.resinOps && { resinOps: shared.resinOps }),
-    ...(shared.resinSoft && { resinSoft: shared.resinSoft }),
-    ...(shared.fdmAmsEnabled !== undefined && {
-      fdmAmsEnabled: shared.fdmAmsEnabled,
-    }),
-    ...(shared.fdmAmsSlots && { fdmAmsSlots: shared.fdmAmsSlots }),
-    ...(shared.fixedCosts && { fixedCosts: shared.fixedCosts }),
-    ...(shared.productName !== undefined && {
-      productName: shared.productName,
-    }),
-    ...(shared.quantity !== undefined && { quantity: shared.quantity }),
-    ...(shared.infillPercent !== undefined && {
-      infillPercent: shared.infillPercent,
-    }),
-    ...(shared.targetMarginMode !== undefined && {
-      targetMarginMode: shared.targetMarginMode,
-    }),
-    ...(shared.enabledSections && {
-      enabledSections: shared.enabledSections,
-    }),
+    activeTab: shared.activeTab ?? state.activeTab,
+    fdmMaterial: shared.fdmMaterial ?? state.fdmMaterial,
+    fdmPrintParams: shared.fdmPrintParams ?? state.fdmPrintParams,
+    fdmMachine: shared.fdmMachine ?? state.fdmMachine,
+    fdmHardware: shared.fdmHardware ?? state.fdmHardware,
+    fdmFinishing: shared.fdmFinishing ?? state.fdmFinishing,
+    fdmLabor: shared.fdmLabor ?? state.fdmLabor,
+    fdmExtras: shared.fdmExtras ?? state.fdmExtras,
+    fdmSales: shared.fdmSales ?? state.fdmSales,
+    fdmOps: shared.fdmOps ?? state.fdmOps,
+    fdmSoft: shared.fdmSoft ?? state.fdmSoft,
+    resinMaterial: shared.resinMaterial ?? state.resinMaterial,
+    resinPrintParams: shared.resinPrintParams ?? state.resinPrintParams,
+    resinPostProcess: shared.resinPostProcess ?? state.resinPostProcess,
+    resinMachine: shared.resinMachine ?? state.resinMachine,
+    resinHardware: shared.resinHardware ?? state.resinHardware,
+    resinLabor: shared.resinLabor ?? state.resinLabor,
+    resinExtras: shared.resinExtras ?? state.resinExtras,
+    resinSales: shared.resinSales ?? state.resinSales,
+    resinOps: shared.resinOps ?? state.resinOps,
+    resinSoft: shared.resinSoft ?? state.resinSoft,
+    fdmAmsEnabled: shared.fdmAmsEnabled ?? state.fdmAmsEnabled,
+    fdmAmsSlots: shared.fdmAmsSlots ?? state.fdmAmsSlots,
+    fixedCosts: shared.fixedCosts ?? state.fixedCosts,
+    productName: shared.productName ?? state.productName,
+    quantity: shared.quantity ?? state.quantity,
+    infillPercent: shared.infillPercent ?? state.infillPercent,
+    targetMarginMode: shared.targetMarginMode ?? state.targetMarginMode,
+    enabledSections: shared.enabledSections ?? state.enabledSections,
   };
   // Resolve printer/marketplace by ID
   if (shared.selectedPrinterId) {
@@ -261,9 +219,14 @@ function loadSharedCalculation(): void {
     if (marketplace)
       merged.selectedMarketplace = marketplace as (typeof marketplaces)[number];
   }
-  // Recompute results
-  const results = computeStoreResults(merged as ComputeStoreInput);
-  useCalculatorStore.setState({ ...merged, results });
+  // Recompute through the same boundary used by every other restore path.
+  const validated = computeValidatedStoreResults(merged);
+  useCalculatorStore.setState({
+    ...merged,
+    ...validated.input,
+    results: validated.results,
+    calculationIssues: validated.calculationIssues,
+  });
   // Clear the hash so it doesn't re-trigger
   window.location.hash = "";
 }
