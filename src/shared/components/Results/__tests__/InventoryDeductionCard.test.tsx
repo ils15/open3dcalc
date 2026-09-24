@@ -46,8 +46,16 @@ const results: CalculationResult = {
 function seedStore(activeTab: "fdm" | "resin" = "fdm") {
   useCalculatorStore.setState({
     activeTab,
-    fdmMaterial: { type: "PLA" } as never,
+    fdmMaterial: {
+      type: "PLA",
+      weightUsed: 85,
+      purgeWeight: 0,
+      costPerKg: 120,
+      density: 1.24,
+      spoolEfficiency: 98,
+    },
     resinMaterial: { type: "Standard" } as never,
+    selectedSpoolId: null,
     results: { ...results },
   } as Partial<ReturnType<typeof useCalculatorStore.getState>>);
   useFilamentInventory.setState({
@@ -241,5 +249,78 @@ describe("InventoryDeductionCard — deduction", () => {
     await user.click(cancelButton);
 
     expect(deductWeight).not.toHaveBeenCalled();
+  });
+});
+
+describe("InventoryDeductionCard — add to shelf", () => {
+  it("opens a prefilled form and adds the calculation material", async () => {
+    const user = userEvent.setup();
+    const addSpool = vi.spyOn(useFilamentInventory.getState(), "addSpool");
+    render(<InventoryDeductionCard />);
+
+    await user.click(
+      screen.getByRole("button", { name: "results.addToShelf" }),
+    );
+
+    const dialog = await screen.findByRole("dialog", { name: "spools.newSpool" });
+    expect(
+      within(dialog).getByRole("combobox", { name: "spools.form.material" }),
+    ).toHaveTextContent("PLA");
+    expect(within(dialog).getByLabelText("spools.form.weight")).toHaveValue(85);
+    expect(
+      within(dialog).getByLabelText("spools.form.costPerKg"),
+    ).toHaveValue(120);
+
+    await user.type(
+      within(dialog).getByLabelText("spools.form.brand"),
+      "MarcaNova",
+    );
+    await user.type(
+      within(dialog).getByLabelText("spools.form.color"),
+      "Azul",
+    );
+    await user.type(
+      within(dialog).getByLabelText("spools.form.originalWeight"),
+      "1000",
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "spools.form.save" }),
+    );
+
+    expect(addSpool).toHaveBeenCalledWith(
+      expect.objectContaining({
+        material: "PLA",
+        weightGrams: 85,
+        costPerKg: 120,
+        brand: "MarcaNova",
+      }),
+    );
+  });
+
+  it("offers a compatible existing spool instead of duplicating it", async () => {
+    const user = userEvent.setup();
+    useCalculatorStore.setState({ selectedSpoolId: "s1" });
+    const addSpool = vi.spyOn(useFilamentInventory.getState(), "addSpool");
+    render(<InventoryDeductionCard />);
+
+    await user.click(
+      screen.getByRole("button", { name: "results.addToShelf" }),
+    );
+    const dialog = await screen.findByRole("dialog", { name: "spools.newSpool" });
+    expect(
+      within(dialog).getByRole("button", { name: "spools.useExisting" }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(dialog).getByRole("button", { name: "spools.useExisting" }),
+    );
+
+    expect(addSpool).not.toHaveBeenCalled();
+    expect(useCalculatorStore.getState().selectedSpoolId).toBe("s1");
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "spools.newSpool" }),
+      ).not.toBeInTheDocument();
+    });
   });
 });

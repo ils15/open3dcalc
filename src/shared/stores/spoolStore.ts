@@ -83,6 +83,14 @@ export function remainingPct(spool: FilamentSpool): number {
   );
 }
 
+/** Regra única de baixo estoque usada pela contagem e pelo card. */
+export function isLowStockSpool(
+  spool: Pick<FilamentSpool, "status" | "weightGrams">,
+  thresholdGrams: number,
+): boolean {
+  return spool.status === "in_stock" && spool.weightGrams < thresholdGrams;
+}
+
 /** Filtro puro — não muta a entrada. */
 export function filterSpools(
   spools: readonly FilamentSpool[],
@@ -239,7 +247,7 @@ export const useSpoolStore = create<SpoolInventoryState>((set, get) => ({
   },
 
   getLowStockSpools: (thresholdGrams) => {
-    return get().spools.filter((s) => s.weightGrams < thresholdGrams);
+    return get().spools.filter((s) => isLowStockSpool(s, thresholdGrams));
   },
 
   getVisibleSpools: (filters, sortKey, sortDir) => {

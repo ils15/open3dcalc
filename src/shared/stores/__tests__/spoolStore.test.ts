@@ -6,6 +6,7 @@ import {
   sortSpools,
   SPOOLS_KEY,
   SPOOL_MATERIALS,
+  isLowStockSpool,
   type FilamentSpool,
   type SpoolStatus,
   type SpoolFilters,
@@ -242,6 +243,17 @@ describe("useSpoolStore (integration)", () => {
     useSpoolStore.getState().addSpool(makeSpool({ weightGrams: 500 }));
 
     expect(useSpoolStore.getState().getLowStockSpools(100)).toHaveLength(1);
+  });
+
+  it("isLowStockSpool() só considera carretéis in_stock abaixo do limiar", () => {
+    const low = makeSpool({ weightGrams: 50 });
+    const onTheWay = makeSpool({ weightGrams: 50, status: "on_the_way" });
+    const empty = makeSpool({ weightGrams: 0, status: "empty" });
+
+    expect(isLowStockSpool(low, 100)).toBe(true);
+    expect(isLowStockSpool(onTheWay, 100)).toBe(false);
+    expect(isLowStockSpool(empty, 100)).toBe(false);
+    expect(isLowStockSpool(makeSpool({ weightGrams: 100 }), 100)).toBe(false);
   });
 });
 

@@ -263,6 +263,32 @@ describe("SpoolShelf", () => {
     expect(screen.getByText("spools.filteredEmptyTitle")).toBeInTheDocument();
   });
 
+  it("shows explicit gross/net weights, meters, editable tare, and status", () => {
+    setSpools([
+      makeSpool({
+        weightGrams: 50,
+        originalWeightGrams: 1000,
+        tareGrams: 200,
+      }),
+    ]);
+    render(<SpoolShelf />);
+
+    expect(screen.getByText("spools.grossWeight")).toBeInTheDocument();
+    expect(screen.getByText("inventory.netFilamentWeight")).toBeInTheDocument();
+    expect(screen.getByText("spools.lowStock")).toBeInTheDocument();
+    expect(screen.getAllByText("spools.statusInStock")).toHaveLength(2);
+    expect(screen.getByTestId("net-remaining-spool-1")).toHaveTextContent(
+      "0g",
+    );
+    expect(screen.getByTestId("net-remaining-spool-1")).toHaveTextContent("m");
+
+    const tare = screen.getByTestId("tare-input-spool-1");
+    expect(tare).toHaveValue("200");
+    fireEvent.change(tare, { target: { value: "150" } });
+    fireEvent.blur(tare);
+    expect(useSpoolStore.getState().spools[0]?.tareGrams).toBe(150);
+  });
+
   it("exposes remaining filament as an accessible progressbar", () => {
     setSpools([makeSpool({ weightGrams: 250, originalWeightGrams: 1000 })]);
     render(<SpoolShelf />);
@@ -273,7 +299,7 @@ describe("SpoolShelf", () => {
     expect(progress).toHaveAttribute("aria-valuenow", "25");
     expect(progress).toHaveAttribute(
       "aria-valuetext",
-      "25%, 250 de 1000 gramas",
+      "spools.remainingProgress",
     );
   });
 
@@ -327,5 +353,17 @@ describe("SpoolShelf", () => {
       "data-motion-duration",
       "0",
     );
+  });
+
+  it("renders a circular swatch and surfaces the real filament color", () => {
+    setSpools([makeSpool({ color: "Vermelho", colorHex: "#ef4444" })]);
+    render(<SpoolShelf />);
+
+    const card = screen.getByRole("article", { name: "Vermelho" });
+    expect(within(card).getByTestId("spool-thumb")).toHaveClass("rounded-full");
+    expect(within(card).getByTestId("spool-color-spool-1")).toHaveStyle({
+      backgroundColor: "#ef4444",
+    });
+    expect(within(card).getByText("#ef4444")).toBeInTheDocument();
   });
 });

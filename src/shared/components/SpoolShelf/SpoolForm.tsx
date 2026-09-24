@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { PackageCheck, X } from "lucide-react";
 import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
 import { Select } from "@/shared/components/ui/Select";
@@ -26,10 +26,18 @@ export interface SpoolFormValues {
   purchaseStore: string;
 }
 
-interface SpoolFormProps {
+/** Valores parciais permitidos ao abrir um novo carretel a partir do cálculo. */
+export type SpoolFormInitialValues = Partial<SpoolFormValues>;
+
+export interface SpoolFormProps {
   open: boolean;
   /** Spool existente = modo edição; null = cadastro. */
   initial: FilamentSpool | null;
+  /** Pré-preenche campos de um novo carretel sem transformar o cálculo em edição. */
+  initialValues?: SpoolFormInitialValues;
+  /** Carretéis que podem ser reutilizados em vez de criar uma duplicata. */
+  compatibleSpools?: readonly FilamentSpool[];
+  onUseExisting?: (spool: FilamentSpool) => void;
   onSubmit: (values: SpoolFormValues) => void;
   onClose: () => void;
 }
@@ -44,52 +52,91 @@ const STATUS_KEY: Record<SpoolStatus, string> = {
 
 const toStr = (n: number): string => (n > 0 ? String(n) : "");
 
-function toValues(spool: FilamentSpool | null): Record<string, string> {
-  if (!spool) {
+function toValues(
+  spool: FilamentSpool | null,
+  initialValues?: SpoolFormInitialValues,
+): Record<string, string> {
+  if (spool) {
     return {
-      brand: "", material: "PLA", color: "", colorHex: "",
-      weight: "", originalWeight: "", costPerKg: "", diameter: "1.75",
-      notes: "", status: "in_stock", purchaseStore: "",
+      brand: spool.brand, material: spool.material, color: spool.color,
+      colorHex: spool.colorHex, weight: toStr(spool.weightGrams),
+      originalWeight: toStr(spool.originalWeightGrams),
+      costPerKg: toStr(spool.costPerKg), diameter: toStr(spool.diameterMm),
+      notes: spool.notes, status: spool.status, purchaseStore: spool.purchaseStore,
     };
   }
-  return {
-    brand: spool.brand, material: spool.material, color: spool.color,
-    colorHex: spool.colorHex, weight: toStr(spool.weightGrams),
-    originalWeight: toStr(spool.originalWeightGrams),
-    costPerKg: toStr(spool.costPerKg), diameter: toStr(spool.diameterMm),
-    notes: spool.notes, status: spool.status, purchaseStore: spool.purchaseStore,
+
+  const values: Record<string, string> = {
+    brand: "", material: "PLA", color: "", colorHex: "",
+    weight: "", originalWeight: "", costPerKg: "", diameter: "1.75",
+    notes: "", status: "in_stock", purchaseStore: "",
   };
+  if (!initialValues) return values;
+
+  if (initialValues.brand !== undefined) values.brand = initialValues.brand;
+  if (initialValues.material !== undefined) values.material = initialValues.material;
+  if (initialValues.color !== undefined) values.color = initialValues.color;
+  if (initialValues.colorHex !== undefined) values.colorHex = initialValues.colorHex;
+  if (initialValues.weightGrams !== undefined) {
+    values.weight = toStr(initialValues.weightGrams);
+  }
+  if (initialValues.originalWeightGrams !== undefined) {
+    values.originalWeight = toStr(initialValues.originalWeightGrams);
+  }
+  if (initialValues.costPerKg !== undefined) {
+    values.costPerKg = toStr(initialValues.costPerKg);
+  }
+  if (initialValues.diameterMm !== undefined) {
+    values.diameter = toStr(initialValues.diameterMm);
+  }
+  if (initialValues.notes !== undefined) values.notes = initialValues.notes;
+  if (initialValues.status !== undefined) values.status = initialValues.status;
+  if (initialValues.purchaseStore !== undefined) {
+    values.purchaseStore = initialValues.purchaseStore;
+  }
+  return values;
 }
 
 export function SpoolForm({
   open,
   initial,
+  initialValues,
+  compatibleSpools = [],
+  onUseExisting,
   onSubmit,
   onClose,
 }: SpoolFormProps): React.ReactElement | null {
   const { t } = useTranslation();
   const prefersReduced = useReducedMotion();
   const [values, setValues] = useState<Record<string, string>>(() =>
-    toValues(initial),
+    toValues(initial, initialValues),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  const compatibleSpool = useMemo(() => {
+    const material = values.material.trim().toLowerCase();
+    const brand = values.brand.trim().toLowerCase();
+    if (!material || !brand) return null;
+    return compatibleSpools.find(
+      (spool) =>
+        spool.material.trim().toLowerCase() === material &&
+        spool.brand.trim().toLowerCase() === brand,
+    );
+  }, [compatibleSpools, values.brand, values.material]);
 
   // Reseta o formulário toda vez que o modal (re)abre — cobre cadastro→edição.
   useEffect(() => {
     if (!open) return;
 
     const resetId = setTimeout(() => {
-      setValues(toValues(initial));
+      setValues(toValues(initial, initialValues));
       setErrors({});
     }, 0);
     // Foco no próprio diálogo (tabbable) — leitor de tela anuncia o título.
-    const focusId = setTimeout(() => dialogRef.current?.focus(), 60);
-    return () => {
-      clearTimeout(resetId);
-      clearTimeout(focusId);
-    };
-  }, [open, initial]);
+    dialogRef.current?.focus();
+    return () => clearTimeout(resetId);
+  }, [open, initial, initialValues]);
 
   const upd = useCallback(
     (key: string, value: string) =>
@@ -113,6 +160,11 @@ export function SpoolForm({
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) return;
+
+    if (compatibleSpool && onUseExisting) {
+      onUseExisting(compatibleSpool);
+      return;
+    }
 
     onSubmit({
       brand: values.brand.trim(),
@@ -175,6 +227,28 @@ export function SpoolForm({
             </div>
 
             <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3" noValidate>
+              {compatibleSpool && onUseExisting && (
+                <div
+                  role="status"
+                  className="col-span-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs"
+                >
+                  <span className="flex min-w-0 items-center gap-1.5 text-[var(--color-text-primary)]">
+                    <PackageCheck className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                    {t("spools.compatibleExisting", {
+                      brand: compatibleSpool.brand,
+                      material: compatibleSpool.material,
+                    })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onUseExisting(compatibleSpool)}
+                    className="min-h-[36px] rounded-lg bg-emerald-600 px-3 text-xs font-bold text-white hover:bg-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+                  >
+                    {t("spools.useExisting")}
+                  </button>
+                </div>
+              )}
+
               <div className="col-span-2 flex gap-2 items-end">
                 <div className="flex-1 min-w-0">
                   <InputGroup

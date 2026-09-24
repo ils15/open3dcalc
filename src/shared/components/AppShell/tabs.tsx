@@ -5,7 +5,6 @@ import {
   BarChart3,
   Grid3x3,
   Spool,
-  Boxes,
   FileText,
   Users,
   Package,
@@ -27,7 +26,6 @@ export type Tab =
   | "history"
   | "infill"
   | "inventory"
-  | "spools"
   | "changelog"
   | "quotes"
   | "customers"
@@ -65,13 +63,7 @@ export const TABS: TabEntry[] = [
     id: "inventory",
     icon: <Spool className="w-[18px] h-[18px]" />,
     labelKey: "nav.inventory",
-    label: "Filamentos",
-  },
-  {
-    id: "spools",
-    icon: <Boxes className="w-[18px] h-[18px]" />,
-    labelKey: "nav.spools",
-    label: "Carretéis",
+    label: "Estante de Filamento",
   },
   {
     id: "catalog",
