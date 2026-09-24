@@ -13,6 +13,10 @@ import {
 } from "@/shared/lib/projectPresets";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
+import {
+  deriveRealMarginPercent,
+  formatRealMarginPercent,
+} from "@/shared/lib/realMargin";
 
 function displayValue(value: unknown): string {
   if (typeof value === "number") return String(value);
@@ -22,7 +26,8 @@ function displayValue(value: unknown): string {
 }
 
 export function ProjectPresetPicker() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n?.language?.startsWith("en") ? "en-US" : "pt-BR";
   const calculator = useCalculatorStore();
   const catalog = useCatalogStore(
     useShallow((state) => ({
@@ -63,6 +68,10 @@ export function ProjectPresetPicker() {
   const errorMessage = actionError ?? ("error" in builtPreview ? builtPreview.error : null);
   const preview = "preview" in builtPreview ? builtPreview.preview : null;
   const draft = "draft" in builtPreview ? builtPreview.draft : null;
+  const realMargin = preview
+    ? deriveRealMarginPercent(preview.results.profit, preview.results.sellPrice)
+    : null;
+  const realMarginValue = formatRealMarginPercent(realMargin, locale);
   const activeSales = draft
     ? draft.technology === "fdm"
       ? draft.preserved.fdmSales
@@ -215,7 +224,12 @@ export function ProjectPresetPicker() {
             <dl className="mt-1 space-y-0.5 text-xs">
               <PreviewRow label={t("calc.projectPresets.fields.marketplace")} value={draft.preserved.selectedMarketplace.name} />
               <PreviewRow label={t("calc.projectPresets.fields.quantity")} value={draft.preserved.quantity} />
-              <PreviewRow label={t("calc.projectPresets.fields.sales")} value={activeSales?.profitMarginPercent} suffix="%" />
+              <PreviewRow
+                label={t("calc.profitMargin")}
+                value={activeSales?.profitMarginPercent}
+                suffix="%"
+                helper={t("tooltip.profitMargin")}
+              />
               <PreviewRow label={t("calc.projectPresets.fields.labor")} value={draft.preserved.fdmLabor.enabled ? t("common.yes") : t("common.no")} />
               <PreviewRow label={t("calc.projectPresets.fields.inactive")} value={inactiveName} />
               <PreviewRow label={t("calc.projectPresets.fields.product")} value={draft.preserved.selectedMarketplaceId} />
@@ -229,8 +243,8 @@ export function ProjectPresetPicker() {
               />
               <PreviewRow
                 label={t("calc.projectPresets.fields.actualMargin")}
-                value={preview.results.actualMargin}
-                suffix="%"
+                value={realMarginValue}
+                helper={t("tooltip.profitMargin")}
                 testId="project-preset-results-actual-margin"
               />
               <PreviewRow label={t("calc.projectPresets.fields.totalCost")} value={preview.results.totalCost} />
@@ -255,16 +269,21 @@ function PreviewRow({
   label,
   value,
   suffix = "",
+  helper,
   testId,
 }: {
   label: string;
   value: unknown;
   suffix?: string;
+  helper?: string;
   testId?: string;
 }) {
   return (
     <div className="flex justify-between gap-2" data-testid={testId}>
-      <dt className="text-[var(--text-muted)]">{label}</dt>
+      <div className="min-w-0">
+        <dt className="text-[var(--text-muted)]">{label}</dt>
+        {helper && <p className="text-[10px] text-[var(--text-muted)]">{helper}</p>}
+      </div>
       <dd className="text-right font-medium">{displayValue(value)}{suffix}</dd>
     </div>
   );

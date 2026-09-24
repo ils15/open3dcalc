@@ -132,7 +132,7 @@ describe("BentoSurface", () => {
     expect(screen.getByLabelText("Projeto / cliente: Suporte de câmera")).toBeInTheDocument();
     expect(screen.getAllByLabelText(/Preço final: R\$ 105,88/).length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText(/Custo total: R\$ 58,34/).length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText(/Lucro: R\$ 30,00/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Lucro líquido: R\$ 30,00/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("2,5 h").length).toBeGreaterThan(0);
     expect(screen.getByRole("spinbutton", { name: "Quantidade" })).toHaveValue(3);
   });

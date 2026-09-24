@@ -56,7 +56,14 @@ export function GuidedWizard(): React.ReactElement {
       case 2:
         return <Step2Printer draft={draft} errors={errors} setField={setField} />;
       case 3:
-        return <Step3Labor draft={draft} errors={errors} setField={setField} />;
+        return (
+          <Step3Labor
+            draft={draft}
+            errors={errors}
+            setField={setField}
+            results={results}
+          />
+        );
       case 4:
         return <Step4Result results={results} onFinish={finish} />;
     }

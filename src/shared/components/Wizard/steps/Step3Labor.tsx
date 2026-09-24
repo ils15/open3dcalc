@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import { DerivedMarginDisplay } from "@/shared/components/Calculator/DerivedMarginDisplay";
+import type { CalculationResult } from "@/shared/types";
 import type { WizardDraft, WizardErrorKind } from "@/shared/stores/wizardStore";
 
 type WizardErrors = Partial<Record<keyof WizardDraft, WizardErrorKind>>;
@@ -13,15 +15,18 @@ export interface Step3LaborProps {
   draft: WizardDraft;
   errors: WizardErrors;
   setField: SetWizardField;
+  readonly results?: CalculationResult | null;
 }
 
 export function Step3Labor({
   draft,
   errors,
   setField,
+  results,
 }: Step3LaborProps): React.ReactElement {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { symbol } = useCurrency();
+  const locale = i18n.language?.startsWith("en") ? "en-US" : "pt-BR";
   const currentErrors = errors ?? {};
   const fieldError = (key: keyof WizardDraft): string | undefined => {
     const kind = currentErrors[key];
@@ -78,6 +83,14 @@ export function Step3Labor({
         unit={t("wizard.fields.profitMarginPercent.unit")}
         step="0.1"
         error={fieldError("profitMarginPercent")}
+      />
+      <DerivedMarginDisplay
+        profit={results?.profit}
+        sellPrice={results?.sellPrice}
+        label={t("calc.actualMargin")}
+        helper={t("tooltip.profitMargin")}
+        locale={locale}
+        testId="wizard-derived-real-margin"
       />
     </div>
   );

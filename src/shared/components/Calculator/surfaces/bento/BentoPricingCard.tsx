@@ -6,6 +6,10 @@ import { isFieldVisibleForLevel } from "../../Calculator.constants";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import type { CalculationResult, SalesParameters } from "@/shared/types";
+import {
+  deriveRealMarginPercent,
+  formatRealMarginPercent,
+} from "@/shared/lib/realMargin";
 import { BentoCard } from "./BentoCard";
 import { BentoField } from "./BentoField";
 import { BentoMetric } from "./BentoMetric";
@@ -76,10 +80,11 @@ export function BentoPricingCard({
   const isFailureVisible = (fieldId: string): boolean =>
     isFieldVisibleForLevel(calcLevel, hiddenFields, "failure", fieldId);
   const locale = i18n.resolvedLanguage?.startsWith("en") ? "en-US" : "pt-BR";
-  const percent = (value: number): string =>
-    `${value.toLocaleString(locale, { maximumFractionDigits: 2 })}%`;
+  const realMargin = deriveRealMarginPercent(profit, result.sellPrice);
+  const realMarginValue = formatRealMarginPercent(realMargin, locale);
   const failureIsFixed = printParams.failureMode === "fixed";
-  const marginTone = result.actualMargin < 0 ? "negative" : "margin";
+  const marginTone =
+    realMargin === null ? "neutral" : realMargin < 0 ? "negative" : "margin";
 
   const setSalesField = (
     field: "marketplaceFeePercent" | "taxPercent" | "profitMarginPercent" | "shippingCost",
@@ -205,7 +210,7 @@ export function BentoPricingCard({
       <dl className="mt-4 grid grid-cols-2 gap-2">
         <BentoMetric
           label={t("bento.fields.actualMargin")}
-          value={percent(result.actualMargin)}
+          value={realMarginValue}
           tone={marginTone}
         />
         <BentoMetric

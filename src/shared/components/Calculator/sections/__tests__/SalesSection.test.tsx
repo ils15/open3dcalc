@@ -42,6 +42,7 @@ interface MockStore {
     marketplaceFeePercent: number
     profitMarginPercent: number
   }
+  results: { profit: number; sellPrice: number } | null
   setQuantity: ReturnType<typeof vi.fn>
   setInfillPercent: ReturnType<typeof vi.fn>
   setFdmExtras: ReturnType<typeof vi.fn>
@@ -71,6 +72,7 @@ const createMockStore = (overrides: Partial<MockStore> = {}): MockStore => ({
   resinSales: {
     packagingCost: 2, shippingCost: 0, taxPercent: 0, marketplaceFeePercent: 0, profitMarginPercent: 50,
   },
+  results: { profit: 25, sellPrice: 100 },
   setQuantity: mockSetQuantity,
   setInfillPercent: mockSetInfillPercent,
   setFdmExtras: mockSetFdmExtras,
@@ -221,9 +223,25 @@ describe('SalesSection', () => {
     expect(screen.getByText('500%')).toBeInTheDocument()
   })
 
-  it('shows profit margin input', () => {
+  it('shows the cost-markup input without changing its value', () => {
     render(<SalesSection />)
     expect(screen.getByText('calc.profitMargin')).toBeInTheDocument()
+    expect(screen.getByRole('spinbutton', { name: 'calc.profitMargin' })).toHaveValue(50)
+  })
+
+  it('shows the derived real margin and its explanatory helper', () => {
+    render(<SalesSection />)
+    const margin = screen.getByTestId('classic-derived-real-margin')
+    expect(margin).toHaveTextContent('calc.actualMargin')
+    expect(margin).toHaveTextContent('25%')
+    expect(margin).toHaveTextContent('tooltip.profitMargin')
+  })
+
+  it('uses a safe placeholder when the sell price cannot produce a margin', () => {
+    mockStore = createMockStore({ results: { profit: 25, sellPrice: 0 } })
+    render(<SalesSection />)
+    expect(screen.getByTestId('classic-derived-real-margin')).toHaveTextContent('—')
+    expect(screen.queryByText(/NaN|Infinity/)).not.toBeInTheDocument()
   })
 
   it('highlights active markup preset', () => {
