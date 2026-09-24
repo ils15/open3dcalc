@@ -14,7 +14,6 @@ import { HistoryCard } from "./HistoryCard";
 import { ExportActionsCard } from "./ExportActionsCard";
 import { InventoryDeductionCard } from "./InventoryDeductionCard";
 import { CalculationErrorState } from "./CalculationErrorState";
-import { MultiMaterialWarning } from "./MultiMaterialWarning";
 
 interface ResultsPanelProps {
   variant: "sidebar" | "mobile";
@@ -62,25 +61,17 @@ export function ResultsPanel({ variant, onExportBlocked }: ResultsPanelProps) {
       additionalPaths={breakdown.invalidSegmentPaths}
     />
   );
-  const multiMaterialNotice = <MultiMaterialWarning />;
 
   if (!results) {
     return isSidebar ? (
-      <>
-        {multiMaterialNotice}
-        {calculationNotice}
-      </>
+      <>{calculationNotice}</>
     ) : (
-      <div className="space-y-4 2xl:hidden">
-        {multiMaterialNotice}
-        {calculationNotice}
-      </div>
+      <div className="space-y-4 2xl:hidden">{calculationNotice}</div>
     );
   }
 
   const content = (
     <>
-      {multiMaterialNotice}
       {calculationNotice}
       <PriceHeroCard
         breakdown={breakdown}

@@ -37,7 +37,7 @@ export function restoreAutoSnapshot(): boolean {
       fdmPrintParams: data.fdmPrintParams ?? calc.fdmPrintParams,
       fdmSlicerProfile: data.fdmSlicerProfile ?? calc.fdmSlicerProfile,
       fdmFilament: data.fdmFilament ?? calc.fdmFilament,
-      fdmAmsEnabled: data.fdmAmsEnabled ?? calc.fdmAmsEnabled,
+      fdmAmsEnabled: false,
       fdmAmsSlots: data.fdmAmsSlots ?? calc.fdmAmsSlots,
       fdmMachine: data.fdmMachine ?? calc.fdmMachine,
       fdmHardware: data.fdmHardware ?? calc.fdmHardware,

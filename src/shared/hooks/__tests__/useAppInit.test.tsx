@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const storageGetItem = vi.hoisted(() => vi.fn());
 const storageSetItem = vi.hoisted(() => vi.fn());
 const storageRemoveItem = vi.hoisted(() => vi.fn());
+const calculatorSetState = vi.hoisted(() => vi.fn());
+const sharedCalculation = vi.hoisted(() => ({
+  current: null as Record<string, unknown> | null,
+}));
 
 vi.mock("@/shared/lib/manifestStorage", () => ({
   guardedStorage: {
@@ -26,7 +30,7 @@ vi.mock("@/shared/stores/historyStore", () => ({
 vi.mock("@/shared/stores/calculatorStore", () => ({
   useCalculatorStore: {
     getState: () => ({}),
-    setState: vi.fn(),
+    setState: calculatorSetState,
   },
 }));
 
@@ -35,7 +39,7 @@ vi.mock("@/shared/stores/calculatorStore.compute", () => ({
 }));
 
 vi.mock("@/shared/lib/calculationLink", () => ({
-  getSharedCalculation: vi.fn(() => null),
+  getSharedCalculation: vi.fn(() => sharedCalculation.current),
 }));
 
 vi.mock("@/shared/lib/printers", () => ({ printers: [] }));
@@ -50,6 +54,8 @@ import { useTutorialStore } from "@/shared/stores/tutorialStore";
 
 describe("useAppInit tutorial auto-start", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    sharedCalculation.current = null;
     vi.useFakeTimers();
     localStorage.clear();
     storageGetItem.mockImplementation((key: string) =>
@@ -93,5 +99,35 @@ describe("useAppInit tutorial auto-start", () => {
     });
 
     expect(useTutorialStore.getState().isActive).toBe(true);
+  });
+
+  it("forces AMS off from a shared URL while preserving its slots", () => {
+    const slots = [
+      {
+        enabled: true,
+        materialType: "PETG",
+        costPerKg: 90,
+        weightUsedGrams: 42,
+        purgeWeightGrams: 4,
+        transitionPurgeGrams: 3,
+        density: 1.27,
+        spoolEfficiency: 97,
+        color: "#00ff00",
+      },
+    ];
+    sharedCalculation.current = {
+      activeTab: "fdm",
+      fdmAmsEnabled: true,
+      fdmAmsSlots: slots,
+    };
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    expect(calculatorSetState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fdmAmsEnabled: false,
+        fdmAmsSlots: slots,
+      }),
+    );
   });
 });

@@ -299,7 +299,7 @@ describe("MaterialSection", () => {
     expect(screen.queryByText("calc.wasteMargin")).not.toBeInTheDocument();
   });
 
-  it("shows the neutral multi-material toggle when printer has multiple filaments and purgeWeight is visible", () => {
+  it("keeps the multi-material toggle disabled and explains why", () => {
     const store = createMockStore({
       selectedPrinter: {
         id: "printer-1",
@@ -322,7 +322,21 @@ describe("MaterialSection", () => {
         )}
       />,
     );
-    expect(screen.getByText("calc.multiMaterialLabel")).toBeInTheDocument();
+
+    const toggle = screen.getByRole("button", { name: "calc.multiMaterialLabel" });
+    const descriptionId = toggle.getAttribute("aria-describedby");
+    expect(toggle).toHaveAttribute("aria-disabled", "true");
+    expect(toggle).toHaveAttribute("tabindex", "0");
+    expect(descriptionId).toBeTruthy();
+    expect(document.getElementById(descriptionId!)).toHaveTextContent(
+      "calc.multiMaterialDisabledDescription",
+    );
+
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
+    fireEvent.keyDown(toggle, { key: "Enter" });
+    fireEvent.click(toggle);
+    expect(store.setFdmAmsEnabled).not.toHaveBeenCalled();
   });
 
   it("hides AMS toggle when printer has only one filament", () => {
@@ -348,7 +362,9 @@ describe("MaterialSection", () => {
         )}
       />,
     );
-    expect(screen.queryByText("AMS Multi-material")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "calc.multiMaterialLabel" }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides AMS toggle when purgeWeight field is not visible", () => {
@@ -372,7 +388,9 @@ describe("MaterialSection", () => {
         isFieldVisible={vi.fn(() => false)}
       />,
     );
-    expect(screen.queryByText("AMS Multi-material")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "calc.multiMaterialLabel" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows inventory button when spools are available", () => {

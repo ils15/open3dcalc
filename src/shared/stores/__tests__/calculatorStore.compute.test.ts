@@ -59,4 +59,28 @@ describe("computeStoreResults multi-material boundary", () => {
 
     expect(configuredButEmpty.materialCost).toBe(singleMaterial.materialCost);
   });
+
+  it("keeps the single-material result unchanged for legacy active AMS data", () => {
+    const input = buildInput();
+    const singleMaterial = computeStoreResults(input);
+    const legacyMultiMaterial = computeStoreResults({
+      ...input,
+      fdmAmsEnabled: true,
+      fdmAmsSlots: [
+        {
+          enabled: true,
+          materialType: "PLA",
+          costPerKg: 80,
+          weightUsedGrams: 50,
+          purgeWeightGrams: 5,
+          transitionPurgeGrams: 3,
+          density: 1.24,
+          spoolEfficiency: 98,
+          color: "#ff0000",
+        },
+      ],
+    });
+
+    expect(legacyMultiMaterial).toEqual(singleMaterial);
+  });
 });

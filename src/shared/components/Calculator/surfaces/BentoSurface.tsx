@@ -10,7 +10,6 @@ import {
 } from "@/shared/hooks/useFinancialBreakdown";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { CalculationErrorState } from "@/shared/components/Results/CalculationErrorState";
-import { MultiMaterialWarning } from "@/shared/components/Results/MultiMaterialWarning";
 import { LevelToggle } from "../LevelToggle";
 import { BentoHeader } from "./bento/BentoHeader";
 import { BentoLaborCard } from "./bento/BentoLaborCard";
@@ -92,7 +91,6 @@ export function BentoSurface(): React.ReactElement {
       additionalPaths={breakdown.invalidSegmentPaths}
     />
   );
-  const multiMaterialNotice = <MultiMaterialWarning />;
   const header = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 flex-1">
@@ -118,7 +116,6 @@ export function BentoSurface(): React.ReactElement {
         <h1 className="sr-only">{t("bento.title")}</h1>
         <div className="space-y-4 sm:space-y-5">
           {header}
-          {multiMaterialNotice}
           {calculationNotice}
         </div>
       </section>
@@ -135,7 +132,6 @@ export function BentoSurface(): React.ReactElement {
       <h1 className="sr-only">{t("bento.title")}</h1>
       <div className="space-y-4 sm:space-y-5">
         {header}
-        {multiMaterialNotice}
         {calculationNotice}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <BentoMaterialCard

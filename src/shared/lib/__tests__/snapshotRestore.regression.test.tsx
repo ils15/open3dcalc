@@ -10,6 +10,7 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import type {
+  AMSSlot,
   CalculationSnapshot,
   LaborCosts,
   PrintParameters,
@@ -21,6 +22,20 @@ vi.mock("react-i18next", () => ({
     i18n: { language: "pt-BR", resolvedLanguage: "pt-BR" },
   }),
 }));
+
+const savedAmsSlots: AMSSlot[] = [
+  {
+    enabled: true,
+    materialType: "PETG",
+    costPerKg: 90,
+    weightUsedGrams: 42,
+    purgeWeightGrams: 4,
+    transitionPurgeGrams: 3,
+    density: 1.27,
+    spoolEfficiency: 97,
+    color: "#00ff00",
+  },
+];
 
 const LABOR: LaborCosts = {
   enabled: true,
@@ -124,6 +139,37 @@ describe("snapshot restore result regression", () => {
     const result = useCalculatorStore.getState().results;
     expect(result).not.toBeNull();
     expect(result?.materialCost).toBeGreaterThan(0);
+  });
+
+  it("forces AMS off while preserving slots from history", () => {
+    const snapshot = {
+      ...buildSnapshot(),
+      fdmAmsEnabled: true,
+      fdmAmsSlots: savedAmsSlots,
+    };
+
+    useCalculatorStore.getState().loadHistoryItem(snapshot);
+
+    const state = useCalculatorStore.getState();
+    expect(state.fdmAmsEnabled).toBe(false);
+    expect(state.fdmAmsSlots).toEqual(savedAmsSlots);
+  });
+
+  it("forces AMS off while preserving slots from an auto snapshot", () => {
+    localStorage.setItem(
+      "open3dcalc_settings_v2",
+      JSON.stringify({
+        activeTab: "fdm",
+        fdmAmsEnabled: true,
+        fdmAmsSlots: savedAmsSlots,
+      }),
+    );
+
+    expect(restoreAutoSnapshot()).toBe(true);
+
+    const state = useCalculatorStore.getState();
+    expect(state.fdmAmsEnabled).toBe(false);
+    expect(state.fdmAmsSlots).toEqual(savedAmsSlots);
   });
 
   it("restores a partial legacy slice without losing energy or failure cost", () => {
