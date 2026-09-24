@@ -322,6 +322,166 @@ describe("wizardStore — commit", () => {
     expect(calc.fdmSales.packagingCost).toBe(5);
     expect(calc.fdmSales.profitMarginPercent).toBe(40);
   });
+
+  it("preserves purgeWeight when advancing a step", () => {
+    const current = useCalculatorStore.getState();
+    useCalculatorStore.setState({
+      fdmMaterial: { ...current.fdmMaterial, purgeWeight: 37 },
+    });
+    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT } });
+
+    useWizardStore.getState().next();
+
+    expect(useCalculatorStore.getState().fdmMaterial.purgeWeight).toBe(37);
+  });
+
+  it("preserves every non-guided calculator field during commit", () => {
+    const current = useCalculatorStore.getState();
+    useCalculatorStore.setState({
+      fdmMaterial: {
+        ...current.fdmMaterial,
+        purgeWeight: 73,
+        density: 1.31,
+        spoolEfficiency: 77,
+      },
+      fdmSlicerProfile: {
+        ...current.fdmSlicerProfile,
+        layerHeightMm: 0.31,
+        printSpeedMmPerS: 77,
+        wallCount: 5,
+        lineWidthMm: 0.55,
+        topLayers: 6,
+        bottomLayers: 7,
+      },
+      fdmPrintParams: {
+        ...current.fdmPrintParams,
+        failureValue: 23,
+        riskMultiplier: 1.7,
+        heatUpTimeMinutes: 17,
+        heatUpPowerPercent: 170,
+      },
+      fdmHardware: {
+        ...current.fdmHardware,
+        enabled: false,
+        nozzleCost: 31,
+        nozzleLifespanKg: 7,
+        bedEnabled: false,
+        bedAdhesionCost: 0.31,
+      },
+      fdmFinishing: { ...current.fdmFinishing, enabled: true, suppliesCost: 19 },
+      fdmOps: {
+        ...current.fdmOps,
+        enabled: true,
+        ppeCostPerPrint: 15,
+        carbonIntensity: 116,
+      },
+      fdmSoft: {
+        ...current.fdmSoft,
+        enabled: true,
+        slicerMonthlyCost: 16,
+        modelFileCost: 17,
+      },
+      fdmSales: {
+        ...current.fdmSales,
+        taxPercent: 11,
+        shippingCost: 12,
+        marketplaceFeePercent: 13,
+        volumeDiscounts: [{ minQuantity: 99, discountPercent: 42 }],
+      },
+      fdmExtras: { extrasCost: 14 },
+      fixedCosts: {
+        ...current.fixedCosts,
+        enabled: true,
+        monthlyCost: 18,
+        monthlyPrintHours: 190,
+      },
+      fdmMachine: { ...current.fdmMachine, enabled: false, hoursPerMonth: 77 },
+      infillPercent: 73,
+    });
+    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT } });
+
+    useWizardStore.getState().next();
+    const after = useCalculatorStore.getState();
+
+    expect(after.fdmMaterial.purgeWeight).toBe(73);
+    expect(after.fdmMaterial.density).toBe(1.31);
+    expect(after.fdmMaterial.spoolEfficiency).toBe(77);
+    expect(after.fdmSlicerProfile).toMatchObject({
+      layerHeightMm: 0.31,
+      printSpeedMmPerS: 77,
+      wallCount: 5,
+      lineWidthMm: 0.55,
+      topLayers: 6,
+      bottomLayers: 7,
+    });
+    expect(after.fdmPrintParams.failureValue).toBe(23);
+    expect(after.fdmPrintParams.riskMultiplier).toBe(1.7);
+    expect(after.fdmPrintParams.heatUpTimeMinutes).toBe(17);
+    expect(after.fdmPrintParams.heatUpPowerPercent).toBe(170);
+    expect(after.fdmHardware.enabled).toBe(false);
+    expect(after.fdmHardware.nozzleCost).toBe(31);
+    expect(after.fdmHardware.nozzleLifespanKg).toBe(7);
+    expect(after.fdmHardware.bedEnabled).toBe(false);
+    expect(after.fdmHardware.bedAdhesionCost).toBe(0.31);
+    expect(after.fdmFinishing).toMatchObject({ enabled: true, suppliesCost: 19 });
+    expect(after.fdmOps).toMatchObject({
+      enabled: true,
+      ppeCostPerPrint: 15,
+      carbonIntensity: 116,
+    });
+    expect(after.fdmSoft).toMatchObject({
+      enabled: true,
+      slicerMonthlyCost: 16,
+      modelFileCost: 17,
+    });
+    expect(after.fdmSales.taxPercent).toBe(11);
+    expect(after.fdmSales.shippingCost).toBe(12);
+    expect(after.fdmSales.marketplaceFeePercent).toBe(13);
+    expect(after.fdmSales.volumeDiscounts).toEqual([
+      { minQuantity: 99, discountPercent: 42 },
+    ]);
+    expect(after.fdmExtras.extrasCost).toBe(14);
+    expect(after.fixedCosts).toMatchObject({
+      enabled: true,
+      monthlyCost: 18,
+      monthlyPrintHours: 190,
+    });
+    expect(after.fdmMachine.enabled).toBe(false);
+    expect(after.fdmMachine.hoursPerMonth).toBe(77);
+    expect(after.infillPercent).toBe(73);
+  });
+
+  it("changes only the fields exposed by the wizard when advancing", () => {
+    const before = useCalculatorStore.getState();
+    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT } });
+
+    useWizardStore.getState().next();
+    const after = useCalculatorStore.getState();
+
+    expect(after.fdmPrintParams.printTimeHours).toBe(
+      VALID_DRAFT.printTimeHours,
+    );
+    expect(after.fdmPrintParams.energyCostPerKwh).toBe(
+      VALID_DRAFT.energyCostPerKwh,
+    );
+    expect(after.fdmLabor.setupTimeMinutes).toBe(
+      VALID_DRAFT.setupTimeMinutes,
+    );
+    expect(after.fdmLabor.postProcessingTimeMinutes).toBe(
+      VALID_DRAFT.postProcessingMinutes,
+    );
+    expect(after.fdmLabor.hourlyRate).toBe(VALID_DRAFT.hourlyRate);
+    expect(after.fdmSales.packagingCost).toBe(VALID_DRAFT.packagingCost);
+    expect(after.fdmSales.profitMarginPercent).toBe(
+      VALID_DRAFT.profitMarginPercent,
+    );
+    expect(after.selectedPrinter.id).toBe(VALID_DRAFT.printerId);
+    expect(after.activeTab).toBe("fdm");
+    expect(after.fdmMaterial.weightUsed).toBe(VALID_DRAFT.weightGrams);
+    expect(after.quantity).toBe(VALID_DRAFT.quantity);
+    expect(after.productName).toBe(VALID_DRAFT.productName);
+    expect(before.fdmMaterial.weightUsed).not.toBe(after.fdmMaterial.weightUsed);
+  });
 });
 
 describe("wizardStore — finish / exit / reset", () => {

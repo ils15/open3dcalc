@@ -123,6 +123,9 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       return {
         ...nextState,
         fdmAmsEnabled: false,
+        // A calculation edit starts a new save operation. The marker itself is
+        // ephemeral and must never enter undo snapshots.
+        lastHistoryKey: null,
         ...validated.input,
         results: validated.results,
         calculationIssues: validated.calculationIssues,
@@ -204,6 +207,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     }),
     selectedSpoolId: null,
     lastDeductedInfo: null,
+    lastHistoryKey: null,
     history: [],
   };
 
@@ -360,6 +364,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
             ...data,
             fdmAmsEnabled: false,
             lastDeductedInfo: null,
+            lastHistoryKey: null,
           };
           const validated = computeValidatedStoreResults(merged);
           return {
@@ -611,34 +616,76 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         results: r,
       };
 
-      useHistoryStore.getState().addEntry({
-        id,
-        timestamp: now,
-        type: s.activeTab,
-        name,
-        summary: name,
-        totalCost: r.totalCost,
-        sellPrice: r.sellPrice,
-        profit: r.profit,
-        result: r,
-        snapshot,
-      });
+      // The normalized snapshot identifies the same save operation. A state
+      // edit clears lastHistoryKey through setWithCompute, so a new calculation
+      // can be saved again while repeated clicks cannot be duplicated.
+      const historyKey = JSON.stringify({ ...snapshot, id: "", timestamp: 0 });
+      if (s.lastHistoryKey === historyKey) return;
 
-      // Auto-deduct filament from inventory
-      if (
+      const selectedSpoolId = s.selectedSpoolId;
+      const shouldDeduct =
         s.activeTab === "fdm" &&
-        s.selectedSpoolId !== null &&
-        r.unitWeight > 0
-      ) {
-        useFilamentInventory
-          .getState()
-          .deductWeight(s.selectedSpoolId, r.unitWeight);
-        set({
-          lastDeductedInfo: {
-            spoolId: s.selectedSpoolId,
-            weight: r.unitWeight,
-          },
+        selectedSpoolId !== null &&
+        r.unitWeight > 0;
+      const quantity = s.quantity > 0 ? s.quantity : 1;
+      const deductionWeight = r.unitWeight * quantity;
+      const history = useHistoryStore.getState();
+      const inventory = useFilamentInventory.getState();
+      let deductionStarted = false;
+      let previousWeight: number | null = null;
+
+      try {
+        // Deduct first: a failed deduction must never leave a history entry.
+        if (
+          s.activeTab === "fdm" &&
+          selectedSpoolId !== null &&
+          r.unitWeight > 0
+        ) {
+          const selectedSpool = inventory.spools.find(
+            (spool) => spool.id === selectedSpoolId,
+          );
+          if (!selectedSpool) {
+            throw new Error("Selected filament spool was not found");
+          }
+          previousWeight = selectedSpool.weightGrams;
+          deductionStarted = true;
+          inventory.deductWeight(selectedSpoolId, deductionWeight);
+        }
+
+        history.addEntry({
+          id,
+          timestamp: now,
+          type: s.activeTab,
+          name,
+          summary: name,
+          totalCost: r.totalCost,
+          sellPrice: r.sellPrice,
+          profit: r.profit,
+          result: r,
+          snapshot,
         });
+
+        set({
+          lastHistoryKey: historyKey,
+          ...(shouldDeduct && selectedSpoolId !== null
+            ? {
+                lastDeductedInfo: {
+                  spoolId: selectedSpoolId,
+                  weight: deductionWeight,
+                },
+              }
+            : {}),
+        });
+      } catch (error) {
+        // Roll back either side of the two-store transaction. removeEntry is
+        // harmless when addEntry failed before mutating history.
+        history.removeEntry(id);
+        if (deductionStarted && previousWeight !== null && selectedSpoolId !== null) {
+          inventory.updateSpool(selectedSpoolId, {
+            weightGrams: previousWeight,
+          });
+        }
+        throw error;
       }
     },
 

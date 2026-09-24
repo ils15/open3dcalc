@@ -272,14 +272,17 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     // Order matters: print params are set BEFORE the printer so the catalog's
     // power figure wins the merge inside setSelectedPrinter (it also derives
     // machine cost/depreciation/maintenance from the printer entry).
+    // The printer is exposed by the wizard, so its catalog-owned derived values
+    // are intentionally refreshed; every other unexposed value is preserved.
     calc.setActiveTab("fdm");
     calc.setProductName(d.productName);
     calc.setQuantity(d.quantity);
+    // Merge the current material so fields absent from WizardDraft (notably
+    // purgeWeight) survive a Guided commit.
     calc.setFdmMaterial({
       ...calc.fdmMaterial,
       type: d.materialType,
       weightUsed: d.weightGrams,
-      purgeWeight: 0,
       costPerKg: d.costPerKg,
     });
     calc.setFdmPrintParams({
@@ -288,6 +291,8 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       energyCostPerKwh: d.energyCostPerKwh,
     });
     calc.setSelectedPrinter(printer);
+    // Labor is an explicit Guided step. Enable it so the exposed time/rate
+    // values contribute to the result; no other labor setting is overwritten.
     calc.setFdmLabor({
       ...calc.fdmLabor,
       enabled: true,
