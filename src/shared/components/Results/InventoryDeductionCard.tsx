@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { CheckCircle2, Database } from "lucide-react";
+import { CheckCircle2, Database, PackagePlus } from "lucide-react";
 
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import {
@@ -9,6 +9,11 @@ import {
   type FilamentSpool,
 } from "@/shared/stores/filamentInventory";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
+import {
+  SpoolForm,
+  type SpoolFormInitialValues,
+  type SpoolFormValues,
+} from "@/shared/components/SpoolShelf/SpoolForm";
 
 /**
  * FDM-only "deduct from inventory" dropdown with its confirmation dialog.
@@ -22,23 +27,32 @@ export function InventoryDeductionCard() {
 
   const {
     activeTab,
-    fdmType,
+    fdmMaterial,
     resinType,
     lastDeductedInfo,
     setLastDeductedInfo,
+    selectedSpoolId,
+    setSelectedSpoolId,
   } = useCalculatorStore(
     useShallow((s) => ({
       activeTab: s.activeTab,
-      fdmType: s.fdmMaterial.type,
+      fdmMaterial: s.fdmMaterial,
       resinType: s.resinMaterial.type,
       lastDeductedInfo: s.lastDeductedInfo,
       setLastDeductedInfo: s.setLastDeductedInfo,
+      selectedSpoolId: s.selectedSpoolId,
+      setSelectedSpoolId: s.setSelectedSpoolId,
     })),
   );
   const results = useCalculatorStore((s) => s.results);
-  const { spools, deductWeight: deductWeightFromSpool } = useFilamentInventory(
-    useShallow((s) => ({ spools: s.spools, deductWeight: s.deductWeight })),
-  );
+  const { spools, deductWeight: deductWeightFromSpool, addSpool } =
+    useFilamentInventory(
+      useShallow((s) => ({
+        spools: s.spools,
+        deductWeight: s.deductWeight,
+        addSpool: s.addSpool,
+      })),
+    );
 
   const [showInventoryDropdown, setShowInventoryDropdown] = useState(false);
   const [selectedSpool, setSelectedSpool] = useState<FilamentSpool | null>(
@@ -46,12 +60,35 @@ export function InventoryDeductionCard() {
   );
   const [showDeductConfirm, setShowDeductConfirm] = useState(false);
   const [deductSuccess, setDeductSuccess] = useState(false);
+  const [showSpoolForm, setShowSpoolForm] = useState(false);
+  const [shelfMessage, setShelfMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inventoryBtnRef = useRef<HTMLButtonElement>(null);
 
   const isFDM = activeTab === "fdm";
-  const currentMaterial = isFDM ? fdmType : resinType;
+  const currentMaterial = isFDM ? fdmMaterial.type : resinType;
   const unitWeight = results?.unitWeight ?? 0;
+
+  const selectedSpoolForForm = useMemo(
+    () => spools.find((spool) => spool.id === selectedSpoolId) ?? null,
+    [selectedSpoolId, spools],
+  );
+  const calculationInitialValues = useMemo<SpoolFormInitialValues>(() => {
+    const values: SpoolFormInitialValues = {
+      material: currentMaterial,
+      weightGrams: unitWeight,
+      costPerKg: fdmMaterial.costPerKg,
+    };
+    if (!selectedSpoolForForm) return values;
+    return {
+      ...values,
+      brand: selectedSpoolForForm.brand,
+      color: selectedSpoolForForm.color,
+      colorHex: selectedSpoolForForm.colorHex,
+      originalWeightGrams: selectedSpoolForForm.originalWeightGrams,
+      diameterMm: selectedSpoolForForm.diameterMm,
+    };
+  }, [currentMaterial, fdmMaterial.costPerKg, selectedSpoolForForm, unitWeight]);
 
   const availableSpools = useMemo(
     () =>
@@ -122,6 +159,28 @@ export function InventoryDeductionCard() {
     setShowDeductConfirm(false);
     setSelectedSpool(null);
     setDeductSuccess(true);
+  };
+
+  const openAddToShelf = () => {
+    setShowInventoryDropdown(false);
+    setShelfMessage(null);
+    setShowSpoolForm(true);
+  };
+
+  const handleAddToShelf = (values: SpoolFormValues) => {
+    addSpool(values);
+    setShowSpoolForm(false);
+    setShelfMessage(t("results.addedToShelf"));
+  };
+
+  const handleUseExisting = (spool: FilamentSpool) => {
+    setSelectedSpoolId(spool.id);
+    setShowSpoolForm(false);
+    setShelfMessage(
+      t("results.usingExistingSpool", {
+        spool: `${spool.brand} - ${spool.material}`,
+      }),
+    );
   };
 
   return (
@@ -196,6 +255,32 @@ export function InventoryDeductionCard() {
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={openAddToShelf}
+        className="w-full min-h-[44px] py-3 rounded-xl text-[11px] sm:text-xs font-bold bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-1.5"
+        aria-label={t("results.addToShelf")}
+      >
+        <PackagePlus className="w-3.5 h-3.5" aria-hidden="true" />
+        {t("results.addToShelf")}
+      </button>
+
+      {shelfMessage && (
+        <p role="status" className="text-xs text-emerald-600 dark:text-emerald-300 text-center">
+          {shelfMessage}
+        </p>
+      )}
+
+      <SpoolForm
+        open={showSpoolForm}
+        initial={null}
+        initialValues={calculationInitialValues}
+        compatibleSpools={spools}
+        onUseExisting={handleUseExisting}
+        onSubmit={handleAddToShelf}
+        onClose={() => setShowSpoolForm(false)}
+      />
 
       <ConfirmDialog
         open={showDeductConfirm}

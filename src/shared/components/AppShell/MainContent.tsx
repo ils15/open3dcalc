@@ -4,7 +4,6 @@ import { Dashboard } from "@/shared/components/Dashboard/Dashboard";
 import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
 import { WikiPage } from "@/shared/components/Wiki/WikiPage";
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
-import { FilamentInventory } from "@/shared/components/Catalog/FilamentInventory";
 import { SpoolShelf } from "@/shared/components/SpoolShelf/SpoolShelf";
 import { CustomerTab } from "@/shared/components/Catalog/CustomerTab";
 import { ProductInventory } from "@/shared/components/Catalog/ProductInventory";
@@ -35,8 +34,7 @@ export function MainContent({
       {activeTab === "calculator" && <CalculatorSurface />}
       {activeTab === "dashboard" && <Dashboard />}
       {activeTab === "infill" && <InfillCalculator />}
-      {activeTab === "inventory" && <FilamentInventory />}
-      {activeTab === "spools" && <SpoolShelf />}
+      {activeTab === "inventory" && <SpoolShelf />}
       {activeTab === "catalog" && <CatalogTab />}
       {activeTab === "history" && (
         <HistoryTab onLoadToCalculator={onSelectCalculator} />
