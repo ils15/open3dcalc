@@ -116,8 +116,11 @@ body {
   font-size: var(--type-micro-label-size);
   line-height: var(--type-micro-label-line-height);
   font-weight: var(--type-micro-label-weight);
-  /* tracking-widest (0.1em) — matches the prototype's section labels. */
-  letter-spacing: 0.1em;
+  /* tracking-wider (0.05em) — the value the prototype's CLASSIC layout uses at
+     26 label sites (Example/src/components/EnhancedClassicLayout.tsx) and
+     tracking-widest at 0. The BENTO/WIZARD layouts use tracking-widest, but
+     this port targets the classic layout. */
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
@@ -125,9 +128,15 @@ body {
 /* ===================================================================
    BUTTONS
    =================================================================== */
+/* --accent-fill / -fg / -hover rather than --color-accent / -accent-text:
+   --accent is a foreground/border colour (it inverts to #818cf8 in .dark) and
+   --accent-text aliases --text-inverse, which also inverts. Pairing the two
+   gave dark mode a light fill with near-black ink, and left --accent-fill
+   unreferenced. The prototype's solid buttons are a dark blue with white text
+   in both themes; these three tokens make that the rendered contract. */
 .btn-primary {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
+  background: var(--accent-fill);
+  color: var(--accent-fill-fg);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   padding: 10px 20px;
@@ -143,7 +152,7 @@ body {
   gap: 8px;
 }
 .btn-primary:hover {
-  background: var(--color-accent-hover);
+  background: var(--accent-fill-hover);
 }
 .btn-primary:active {
   transform: scale(0.98);
