@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { CheckCircle2, Database, PackagePlus } from "lucide-react";
+import { CheckCircle2, PackagePlus, TriangleAlert } from "lucide-react";
 
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import {
@@ -64,6 +64,7 @@ export function InventoryDeductionCard() {
   const [shelfMessage, setShelfMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inventoryBtnRef = useRef<HTMLButtonElement>(null);
+  const actionDescriptionId = useId();
 
   const isFDM = activeTab === "fdm";
   const currentMaterial = isFDM ? fdmMaterial.type : resinType;
@@ -122,7 +123,10 @@ export function InventoryDeductionCard() {
   useEffect(() => {
     if (!showInventoryDropdown) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowInventoryDropdown(false);
+      if (e.key === "Escape") {
+        setShowInventoryDropdown(false);
+        inventoryBtnRef.current?.focus();
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -147,6 +151,17 @@ export function InventoryDeductionCard() {
 
   if (!isFDM || !results) return null;
 
+  const restoreInventoryFocus = (): void => {
+    window.setTimeout(() => inventoryBtnRef.current?.focus(), 0);
+  };
+
+  const deductionLabel = t("results.deductFromInventoryWithAmount", {
+    weight: unitWeight.toFixed(1),
+  });
+  const deductionDescription = t("results.inventoryActionDescription", {
+    weight: unitWeight.toFixed(1),
+  });
+
   const handleDeductClick = (spool: FilamentSpool) => {
     setSelectedSpool(spool);
     setShowInventoryDropdown(false);
@@ -159,6 +174,7 @@ export function InventoryDeductionCard() {
     setShowDeductConfirm(false);
     setSelectedSpool(null);
     setDeductSuccess(true);
+    restoreInventoryFocus();
   };
 
   const openAddToShelf = () => {
@@ -186,22 +202,29 @@ export function InventoryDeductionCard() {
   return (
     <>
       <div className="relative">
+        <p
+          id={actionDescriptionId}
+          className="mb-2 text-xs leading-relaxed text-[var(--text-muted)]"
+        >
+          {deductionDescription}
+        </p>
         <button
           ref={inventoryBtnRef}
           type="button"
           onClick={() => setShowInventoryDropdown((prev) => !prev)}
-          className="w-full min-h-[44px] py-3 rounded-xl text-[11px] sm:text-xs font-bold bg-[var(--positive-subtle)] text-[var(--positive)] hover:bg-[var(--positive)]/15 transition-all focus-visible:ring-2 focus-visible:ring-[var(--positive)] focus-visible:outline-none flex items-center justify-center gap-1.5 relative"
+          className="w-full min-h-[44px] rounded-xl border border-[var(--border-default)] bg-[var(--surface-sunken)] py-3 text-[11px] font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-overlay)] focus-visible:ring-2 focus-visible:ring-[var(--critical)] focus-visible:outline-none flex items-center justify-center gap-1.5 relative"
           aria-label={t("results.deductFromInventory")}
+          aria-describedby={actionDescriptionId}
           aria-expanded={showInventoryDropdown}
         >
-          <Database className="w-3.5 h-3.5" />
+          <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0 text-[var(--critical)]" />
           {deductSuccess ? (
             <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--positive)]" />{" "}
+              <CheckCircle2 className="size-3.5 text-[var(--positive)]" aria-hidden="true" />{" "}
               {t("results.deductSuccess")}
             </>
           ) : (
-            t("results.deductFromInventory")
+            deductionLabel
           )}
         </button>
 
@@ -226,7 +249,7 @@ export function InventoryDeductionCard() {
                     key={spool.id}
                     type="button"
                     onClick={() => handleDeductClick(spool)}
-                    className="w-full text-left p-2.5 rounded-xl bg-[var(--surface-sunken)] hover:bg-[var(--surface-sunken)] transition-colors flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-[var(--positive)] focus-visible:outline-none"
+                    className="flex min-h-[44px] w-full items-center gap-3 rounded-xl bg-[var(--surface-sunken)] p-2.5 text-left transition-colors hover:bg-[var(--surface-sunken)] focus-visible:ring-2 focus-visible:ring-[var(--positive)] focus-visible:outline-none"
                     role="option"
                     aria-selected={selectedSpool?.id === spool.id}
                   >
@@ -267,7 +290,7 @@ export function InventoryDeductionCard() {
       </button>
 
       {shelfMessage && (
-        <p role="status" className="text-xs text-emerald-600 dark:text-[var(--positive)] text-center">
+        <p role="status" className="text-center text-xs text-[var(--positive)]">
           {shelfMessage}
         </p>
       )}
@@ -287,19 +310,20 @@ export function InventoryDeductionCard() {
         title={t("results.deductFromInventory")}
         message={
           selectedSpool
-            ? t("results.deductConfirm", {
+            ? `${t("results.deductConfirm", {
                 weight: unitWeight.toFixed(1),
                 spool: `${selectedSpool.brand} - ${selectedSpool.material}`,
-              })
+              })} ${t("results.deductConsequence")}`
             : ""
         }
-        variant="info"
+        variant="danger"
         confirmLabel={t("common.confirm")}
         cancelLabel={t("common.cancel")}
         onConfirm={handleConfirmDeduct}
         onCancel={() => {
           setShowDeductConfirm(false);
           setSelectedSpool(null);
+          restoreInventoryFocus();
         }}
       />
     </>

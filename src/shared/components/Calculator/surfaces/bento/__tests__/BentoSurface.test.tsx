@@ -115,7 +115,7 @@ beforeEach(async () => {
 });
 
 describe("BentoSurface", () => {
-  it("renders the five bento cards with values from CalculationResult", async () => {
+  it("renders the shared response and four input cards with values from CalculationResult", async () => {
     useLayoutStore.setState({ layoutMode: "bento" });
 
     render(<CalculatorSurface />);
@@ -132,9 +132,10 @@ describe("BentoSurface", () => {
     }
 
     expect(screen.getByLabelText("Projeto / cliente: Suporte de câmera")).toBeInTheDocument();
+    expect(screen.getByTestId("price-hero")).toHaveTextContent(/R\$\s*105,88/);
     expect(screen.getAllByLabelText(/Preço final: R\$ 105,88/).length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText(/Custo total: R\$ 58,34/).length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText(/Lucro líquido: R\$ 30,00/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Custo total: R\$ 58,34/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Lucro líquido: R\$ 30,00/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("2,5 h").length).toBeGreaterThan(0);
     expect(screen.getByRole("spinbutton", { name: "Quantidade" })).toHaveValue(3);
   });
@@ -171,7 +172,10 @@ describe("BentoSurface", () => {
     await user.click(screen.getByRole("button", { name: "Bento Grid" }));
 
     expect(screen.getByRole("region", { name: "Calculadora em Bento Grid" })).toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(5);
+    expect(screen.getAllByRole("article")).toHaveLength(4);
+    expect(
+      screen.queryByRole("article", { name: "Resumo financeiro" }),
+    ).not.toBeInTheDocument();
   });
 
   it("exposes keyboard focus for every card", async () => {
