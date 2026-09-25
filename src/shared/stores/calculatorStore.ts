@@ -47,6 +47,7 @@ import {
   loadStr,
   migrateQuickMode,
   persistCalculatorSettings,
+  persistCurrencyPreference,
 } from "./calculatorStore.helpers";
 import { computeValidatedStoreResults } from "./calculatorStore.validation";
 
@@ -100,7 +101,6 @@ function captureSnapshot(s: CalculatorState): string {
     infillPercent: s.infillPercent,
     targetMarginMode: s.targetMarginMode,
     enabledSections: s.enabledSections,
-    currency: s.currency,
   });
 }
 
@@ -349,6 +349,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     setCurrency: (currency) => {
       set({ currency });
+      persistCurrencyPreference(currency);
       debouncedAutoSave(get);
     },
     setSelectedSpoolId: (id) => setWithCompute({ selectedSpoolId: id }),
@@ -365,6 +366,9 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           const merged = {
             ...state,
             ...data,
+            // Currency is a global preference, not an undoable calculation
+            // field. Old persisted snapshots may still contain it.
+            currency: state.currency,
             fdmAmsEnabled: false,
             lastDeductedInfo: null,
           };

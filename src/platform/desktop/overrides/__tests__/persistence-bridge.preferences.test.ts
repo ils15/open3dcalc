@@ -1,6 +1,10 @@
+import { createElement } from "react";
+import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { initTheme } from "@/shared/hooks/useTheme";
+import { ThemeProvider } from "@/shared/contexts/ThemeProvider";
+import { ThemeToggle } from "@/shared/components/Header/ThemeToggle";
 import { initPersistenceBridge } from "../persistence-bridge";
 
 const settingsKey = "open3dcalc_settings_v2";
@@ -91,4 +95,37 @@ describe("desktop preference persistence bridge compatibility", () => {
     expect(useCalculatorStore.getState().quantity).toBe(5);
     expect(localStorage.getItem(settingsKey)).toBe(databaseSettings);
   });
+
+  it.each([
+    ["dark", "light", "light", "Alternar para modo escuro"],
+    ["light", "system", "dark", "Alternar para modo claro"],
+  ] as const)(
+    "applies SQLite-hydrated %s → %s theme to context and document after startup",
+    async (initialTheme, hydratedPreference, expectedTheme, toggleLabel) => {
+      localStorage.setItem(themeKey, initialTheme);
+      database.load.mockImplementation(async (key) => {
+        if (key === settingsKey) return databaseSettings;
+        if (key === themeKey) return hydratedPreference;
+        return null;
+      });
+
+      expect(initTheme()).toBe(initialTheme);
+      expect(document.documentElement.classList.contains(initialTheme)).toBe(
+        true,
+      );
+
+      await initPersistenceBridge();
+      expect(localStorage.getItem(themeKey)).toBe(hydratedPreference);
+
+      render(createElement(ThemeProvider, null, createElement(ThemeToggle)));
+
+      expect(screen.getByRole("button", { name: toggleLabel })).toBeVisible();
+      expect(document.documentElement.classList.contains(expectedTheme)).toBe(
+        true,
+      );
+      expect(document.documentElement.getAttribute("color-scheme")).toBe(
+        expectedTheme,
+      );
+    },
+  );
 });

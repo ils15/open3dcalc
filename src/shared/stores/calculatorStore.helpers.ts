@@ -15,6 +15,7 @@ import {
 } from "./calculatorStore.defaults";
 import { isPersistableCalculationState } from "@/shared/lib/calculationState";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
+import type { CurrencySetting } from "@/shared/lib/currency";
 
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 const SETTINGS_STORAGE_KEY = "open3dcalc_settings_v2";
@@ -41,6 +42,24 @@ export function persistCalculatorSettings(
     SETTINGS_STORAGE_KEY,
     JSON.stringify({ ...existing, ...patch }),
   );
+}
+
+/** Persist an explicit currency change immediately on desktop, outside debounce. */
+export function persistCurrencyPreference(currency: CurrencySetting): void {
+  persistCalculatorSettings({ currency });
+
+  if (typeof window === "undefined" || !window.electronAPI?.db) return;
+  const raw = guardedStorage.getItem(SETTINGS_STORAGE_KEY);
+  if (raw === null) return;
+
+  window.electronAPI.db
+    .save(SETTINGS_STORAGE_KEY, raw)
+    .catch((error: unknown) => {
+      console.warn(
+        "[calculatorStore] Failed to persist currency to SQLite:",
+        error,
+      );
+    });
 }
 
 export function debouncedAutoSave(getState: () => CalculatorState) {

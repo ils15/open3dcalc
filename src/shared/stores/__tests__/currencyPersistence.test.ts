@@ -66,4 +66,28 @@ describe("currency persistence compatibility", () => {
     expect(saved.hiddenFields).toEqual(legacySettings.hiddenFields);
     expect(saved.futureUserField).toEqual(legacySettings.futureUserField);
   });
+
+  it("keeps currency outside undo history and tolerates a legacy snapshot currency", async () => {
+    const { useCalculatorStore } = await import("../calculatorStore");
+    const originalQuantity = useCalculatorStore.getState().quantity;
+
+    useCalculatorStore.getState().setCurrency("USD");
+    useCalculatorStore.getState().setQuantity(originalQuantity + 2);
+    const previousEdit = JSON.parse(
+      useCalculatorStore.getState().history.at(-1)!,
+    ) as Record<string, unknown>;
+    useCalculatorStore.setState({
+      history: [JSON.stringify({ ...previousEdit, currency: "auto" })],
+    });
+    useCalculatorStore.getState().undo();
+
+    expect(useCalculatorStore.getState().quantity).toBe(originalQuantity);
+    expect(useCalculatorStore.getState().currency).toBe("USD");
+
+    useCalculatorStore.getState().setQuantity(originalQuantity + 1);
+    const newSnapshot = JSON.parse(
+      useCalculatorStore.getState().history.at(-1)!,
+    ) as Record<string, unknown>;
+    expect(newSnapshot).not.toHaveProperty("currency");
+  });
 });

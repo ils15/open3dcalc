@@ -64,6 +64,12 @@ export function useTheme() {
     return stored ?? getSystemPreference();
   });
 
+  // Desktop may hydrate a newer preference from SQLite after initTheme() but
+  // before React mounts. Reapply the hydrated value when the hook initializes.
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
   // Listen for system preference changes
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: light)");
