@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { InventoryDeductionCard } from "../InventoryDeductionCard";
@@ -232,6 +232,76 @@ describe("InventoryDeductionCard — deduction", () => {
     await user.dblClick(confirmButton);
 
     expect(deductWeight).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression: ConfirmDialog scheduled a 50ms focus timer with no cleanup.
+  // Confirming inside that window left a stale callback that re-focused the
+  // still-mounted confirm button, clobbering the restored trigger focus; once
+  // the 200ms close transition unmounted the dialog, focus fell back to <body>.
+  it("keeps focus on the restored trigger after the dialog close timers elapse", async () => {
+    const user = userEvent.setup();
+    render(<InventoryDeductionCard />);
+    const stockButton = screen.getByRole("button", {
+      name: "results.deductFromInventory",
+    });
+
+    await user.click(stockButton);
+    await user.click(
+      await screen.findByRole("option", { name: /MarcaX/ }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "results.deductFromInventory",
+    });
+    const confirmButton = within(dialog).getByRole("button", {
+      name: "common.confirm",
+    });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    await user.click(confirmButton);
+
+    // Focus is restored synchronously by the host card.
+    await waitFor(() => expect(stockButton).toHaveFocus());
+
+    // Past the 50ms focus timer AND the 200ms unmount transition: the stale
+    // timer must not have re-stolen focus, and the unmount must not have
+    // dropped it to <body>.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    expect(
+      screen.queryByRole("dialog", { name: "results.deductFromInventory" }),
+    ).not.toBeInTheDocument();
+    expect(stockButton).toHaveFocus();
+    expect(document.body).not.toHaveFocus();
+  });
+
+  it("restores focus to the trigger on cancel without a stale timer stealing it", async () => {
+    const user = userEvent.setup();
+    render(<InventoryDeductionCard />);
+    const stockButton = screen.getByRole("button", {
+      name: "results.deductFromInventory",
+    });
+
+    await user.click(stockButton);
+    await user.click(
+      await screen.findByRole("option", { name: /MarcaX/ }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "results.deductFromInventory",
+    });
+    await user.click(within(dialog).getByRole("button", { name: "common.cancel" }));
+
+    await waitFor(() => expect(stockButton).toHaveFocus());
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    });
+
+    expect(
+      screen.queryByRole("dialog", { name: "results.deductFromInventory" }),
+    ).not.toBeInTheDocument();
+    expect(stockButton).toHaveFocus();
+    expect(document.body).not.toHaveFocus();
   });
 
   it("confirms the deduction in the action button", async () => {

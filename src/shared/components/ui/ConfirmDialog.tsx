@@ -40,12 +40,12 @@ export function ConfirmDialog({
   useEffect(() => {
     if (open) {
       dispatch({ type: 'open' })
-      setTimeout(() => confirmRef.current?.focus(), 50)
-    } else {
-      dispatch({ type: 'close' })
-      const timer = setTimeout(() => dispatch({ type: 'closeComplete' }), 200)
-      return () => clearTimeout(timer)
+      const focusTimer = setTimeout(() => confirmRef.current?.focus(), 50)
+      return () => clearTimeout(focusTimer)
     }
+    dispatch({ type: 'close' })
+    const closeTimer = setTimeout(() => dispatch({ type: 'closeComplete' }), 200)
+    return () => clearTimeout(closeTimer)
   }, [open])
 
   useEffect(() => {
