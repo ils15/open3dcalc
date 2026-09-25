@@ -17,7 +17,7 @@ export function HardwareSection() {
   // payloads legacy (ver PostProcessingResin.washType em types/index.ts).
   const isWaterWash = store.resinPostProcess.washType === "water";
   const segActive =
-    "bg-[var(--color-accent)] text-[var(--color-text-primary)] border-[var(--color-accent)]";
+    "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] border-[var(--color-accent)]";
   const segIdle =
     "bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] border-[var(--color-border)] hover:text-[var(--color-text-secondary)]";
 
