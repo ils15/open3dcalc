@@ -6,50 +6,67 @@
 
 :root {
   /* Surfaces */
-  --surface-canvas: #F6F7FB;
-  --surface-raised: #FFFFFF;
-  --surface-overlay: #FCFCFF;
-  --surface-sunken: #EDF0F7;
-  --surface-input: #FFFFFF;
+  --surface-canvas: #f6f7fb;
+  --surface-raised: #ffffff;
+  --surface-overlay: #fcfcff;
+  --surface-sunken: #edf0f7;
+  --surface-input: #ffffff;
 
   /* Borders */
-  --border-subtle: #E2E8F0;
-  --border-default: #CBD5E1;
-  --border-strong: #64748B;
-  --border-accent: #4F46E5;
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #64748b;
+  --border-accent: #4f46e5;
 
   /* Text */
   --text-primary: #111827;
   --text-secondary: #475569;
   --text-muted: #596579;
-  --text-disabled: #94A3B8;
-  --text-inverse: #FFFFFF;
+  --text-disabled: #94a3b8;
+  --text-inverse: #ffffff;
 
   /* State and accent */
-  --accent: #4F46E5;
-  --accent-hover: #4338CA;
-  --accent-subtle: #EEF2FF;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-subtle: #eef2ff;
+  /* Solid accent BACKGROUND (primary buttons, filled active segments).
+     Text on top is always --text-inverse. Kept separate from --accent because
+     --accent is a FOREGROUND/border colour and would not survive as a fill.
+     #4F46E5: white 6.29:1 (WCAG AA normal text) and 5.87:1 vs the light canvas. */
+  --accent-fill: #4f46e5;
   --positive: #047857;
-  --positive-subtle: #ECFDF5;
-  --warning: #92400E;
-  --warning-subtle: #FFFBEB;
-  --critical: #B91C1C;
-  --critical-subtle: #FFF1F2;
-  --info: #1D4ED8;
-  --info-subtle: #EFF6FF;
+  --positive-subtle: #ecfdf5;
+  --warning: #92400e;
+  --warning-subtle: #fffbeb;
+  --critical: #b91c1c;
+  --critical-subtle: #fff1f2;
+  --info: #1d4ed8;
+  --info-subtle: #eff6ff;
+
+  /* Tinted fills and borders. Derived from the semantic hues above with
+     color-mix() so no new hue enters the palette and .dark follows for free.
+     -wash = 12% surface tint, -wash-strong = 30% border tint. */
+  --accent-wash: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--accent) 30%, transparent);
+  --positive-wash: color-mix(in srgb, var(--positive) 12%, transparent);
+  --positive-wash-strong: color-mix(in srgb, var(--positive) 30%, transparent);
+  --warning-wash: color-mix(in srgb, var(--warning) 12%, transparent);
+  --warning-wash-strong: color-mix(in srgb, var(--warning) 30%, transparent);
+  --info-wash: color-mix(in srgb, var(--info) 12%, transparent);
+  --info-wash-strong: color-mix(in srgb, var(--info) 30%, transparent);
 
   /* Financial semantics */
-  --cost: #C2410C;
+  --cost: #c2410c;
   --revenue: #047857;
-  --margin: #1D4ED8;
-  --margin-negative: #B91C1C;
+  --margin: #1d4ed8;
+  --margin-negative: #b91c1c;
 
   /* Cost distribution categories */
-  --cost-filament: #6D28D9;
-  --cost-energy: #B45309;
-  --cost-machine: #1D4ED8;
+  --cost-filament: #6d28d9;
+  --cost-energy: #b45309;
+  --cost-machine: #1d4ed8;
   --cost-labor: #047857;
-  --cost-failure: #BE123C;
+  --cost-failure: #be123c;
   --cost-other: #475569;
 
   /* Theme-aware elevation and layering */
@@ -58,49 +75,73 @@
   --shadow-md: 0 2px 8px rgb(0 0 0 / 8%);
   --shadow-lg: 0 4px 16px rgb(0 0 0 / 10%);
   --z-dropdown: 60;
+
+  /* Radius — single source of truth for web, desktop and Tailwind's
+     rounded-* utilities. --radius-2xl is 16px to match Tailwind's default
+     scale (1rem); 14px used to drift from `rounded-2xl` (3 call sites). */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
 }
 
 .dark {
-  --surface-canvas: #0A0B10;
-  --surface-raised: #11131C;
-  --surface-overlay: #181B27;
-  --surface-sunken: #06070B;
-  --surface-input: #0E1018;
+  --surface-canvas: #0a0b10;
+  --surface-raised: #11131c;
+  --surface-overlay: #181b27;
+  --surface-sunken: #06070b;
+  --surface-input: #0e1018;
 
-  --border-subtle: #272B3B;
+  --border-subtle: #272b3b;
   --border-default: #394057;
-  --border-strong: #94A3B8;
-  --border-accent: #818CF8;
+  --border-strong: #94a3b8;
+  --border-accent: #818cf8;
 
-  --text-primary: #F1F5F9;
-  --text-secondary: #B7C2D2;
-  --text-muted: #94A3B8;
+  --text-primary: #f1f5f9;
+  --text-secondary: #b7c2d2;
+  --text-muted: #94a3b8;
   --text-disabled: #526179;
-  --text-inverse: #0A0B10;
+  --text-inverse: #0a0b10;
 
-  --accent: #818CF8;
-  --accent-hover: #A5B4FC;
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
   --accent-subtle: #242746;
-  --positive: #34D399;
-  --positive-subtle: #102B25;
-  --warning: #FBBF24;
+  /* Solid accent BACKGROUND. --accent (#818CF8) is a foreground/border colour
+     on dark and only reaches 2.98:1 with white text, so the fill needs its own
+     value. #4F46E5: white 6.29:1 (AA normal text) and 3.13:1 vs the dark
+     canvas, which clears WCAG 1.4.11 non-text contrast. */
+  --accent-fill: #4f46e5;
+  --positive: #34d399;
+  --positive-subtle: #102b25;
+  --warning: #fbbf24;
   --warning-subtle: #302711;
-  --critical: #FDA4AF;
+  --critical: #fda4af;
   --critical-subtle: #351820;
-  --info: #7DD3FC;
-  --info-subtle: #102B3B;
+  --info: #7dd3fc;
+  --info-subtle: #102b3b;
 
-  --cost: #FDBA74;
-  --revenue: #34D399;
-  --margin: #7DD3FC;
-  --margin-negative: #FDA4AF;
+  /* Same derivation as :root — these pick up the .dark hues above. */
+  --accent-wash: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-wash-strong: color-mix(in srgb, var(--accent) 30%, transparent);
+  --positive-wash: color-mix(in srgb, var(--positive) 12%, transparent);
+  --positive-wash-strong: color-mix(in srgb, var(--positive) 30%, transparent);
+  --warning-wash: color-mix(in srgb, var(--warning) 12%, transparent);
+  --warning-wash-strong: color-mix(in srgb, var(--warning) 30%, transparent);
+  --info-wash: color-mix(in srgb, var(--info) 12%, transparent);
+  --info-wash-strong: color-mix(in srgb, var(--info) 30%, transparent);
 
-  --cost-filament: #C4B5FD;
-  --cost-energy: #FDE68A;
-  --cost-machine: #93C5FD;
-  --cost-labor: #6EE7B7;
-  --cost-failure: #FDA4AF;
-  --cost-other: #CBD5E1;
+  --cost: #fdba74;
+  --revenue: #34d399;
+  --margin: #7dd3fc;
+  --margin-negative: #fda4af;
+
+  --cost-filament: #c4b5fd;
+  --cost-energy: #fde68a;
+  --cost-machine: #93c5fd;
+  --cost-labor: #6ee7b7;
+  --cost-failure: #fda4af;
+  --cost-other: #cbd5e1;
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 30%);
   --shadow-sm: 0 1px 3px rgb(0 0 0 / 35%);
