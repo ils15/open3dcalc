@@ -3,6 +3,14 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { CheckCircle2, Database, PackagePlus } from "lucide-react";
 
+import {
+  assertSufficientFilamentStock,
+  createFilamentStockError,
+  FILAMENT_SPOOL_NOT_FOUND,
+  isFilamentSpoolNotFoundError,
+  isInsufficientFilamentStockError,
+} from "@/shared/lib/filamentStock";
+import { isInvalidCalculationStateError } from "@/shared/lib/calculationState";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import {
   useFilamentInventory,
@@ -33,6 +41,8 @@ export function InventoryDeductionCard() {
     setLastDeductedInfo,
     selectedSpoolId,
     setSelectedSpoolId,
+    quantity,
+    calculationIssues,
   } = useCalculatorStore(
     useShallow((s) => ({
       activeTab: s.activeTab,
@@ -42,6 +52,8 @@ export function InventoryDeductionCard() {
       setLastDeductedInfo: s.setLastDeductedInfo,
       selectedSpoolId: s.selectedSpoolId,
       setSelectedSpoolId: s.setSelectedSpoolId,
+      quantity: s.quantity,
+      calculationIssues: s.calculationIssues,
     })),
   );
   const results = useCalculatorStore((s) => s.results);
@@ -60,6 +72,7 @@ export function InventoryDeductionCard() {
   );
   const [showDeductConfirm, setShowDeductConfirm] = useState(false);
   const [deductSuccess, setDeductSuccess] = useState(false);
+  const [deductError, setDeductError] = useState<string | null>(null);
   const [showSpoolForm, setShowSpoolForm] = useState(false);
   const [shelfMessage, setShelfMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -68,6 +81,7 @@ export function InventoryDeductionCard() {
   const isFDM = activeTab === "fdm";
   const currentMaterial = isFDM ? fdmMaterial.type : resinType;
   const unitWeight = results?.unitWeight ?? 0;
+  const requiredWeight = unitWeight * quantity;
 
   const selectedSpoolForForm = useMemo(
     () => spools.find((spool) => spool.id === selectedSpoolId) ?? null,
@@ -96,9 +110,9 @@ export function InventoryDeductionCard() {
         (s) =>
           s.status === "in_stock" &&
           s.material.toLowerCase() === currentMaterial.toLowerCase() &&
-          s.weightGrams >= unitWeight,
+          s.weightGrams >= requiredWeight,
       ),
-    [spools, currentMaterial, unitWeight],
+    [spools, currentMaterial, requiredWeight],
   );
 
   // Close dropdown on click outside
@@ -149,16 +163,53 @@ export function InventoryDeductionCard() {
 
   const handleDeductClick = (spool: FilamentSpool) => {
     setSelectedSpool(spool);
+    setDeductError(null);
     setShowInventoryDropdown(false);
     setShowDeductConfirm(true);
   };
 
   const handleConfirmDeduct = () => {
     if (!selectedSpool) return;
-    deductWeightFromSpool(selectedSpool.id, unitWeight);
-    setShowDeductConfirm(false);
-    setSelectedSpool(null);
-    setDeductSuccess(true);
+    try {
+      const currentSpool = spools.find((spool) => spool.id === selectedSpool.id);
+      if (!currentSpool) {
+        throw createFilamentStockError(FILAMENT_SPOOL_NOT_FOUND);
+      }
+      assertSufficientFilamentStock(currentSpool.weightGrams, requiredWeight);
+      deductWeightFromSpool(currentSpool.id, requiredWeight, {
+        calculationIssues,
+        quantity,
+      });
+      setDeductError(null);
+      setShowDeductConfirm(false);
+      setSelectedSpool(null);
+      setDeductSuccess(true);
+    } catch (error) {
+      if (isInsufficientFilamentStockError(error)) {
+        setDeductError(
+          t("results.insufficientStock", {
+            required: error.required?.toFixed(2) ?? requiredWeight.toFixed(2),
+            available: error.available?.toFixed(2) ?? "0",
+          }),
+        );
+        setShowDeductConfirm(false);
+        setSelectedSpool(null);
+        return;
+      }
+      if (isFilamentSpoolNotFoundError(error)) {
+        setDeductError(t("results.spoolNotFound"));
+        setShowDeductConfirm(false);
+        setSelectedSpool(null);
+        return;
+      }
+      if (isInvalidCalculationStateError(error)) {
+        setDeductError(t("results.invalidCalculationState"));
+        setShowDeductConfirm(false);
+        setSelectedSpool(null);
+        return;
+      }
+      throw error;
+    }
   };
 
   const openAddToShelf = () => {
@@ -246,7 +297,7 @@ export function InventoryDeductionCard() {
                       </div>
                     </div>
                     <div className="text-[10px] font-mono text-[var(--positive)]/70 whitespace-nowrap">
-                      -{unitWeight.toFixed(1)}g
+                      -{requiredWeight.toFixed(1)}g
                     </div>
                   </button>
                 ))}
@@ -255,6 +306,12 @@ export function InventoryDeductionCard() {
           </div>
         )}
       </div>
+
+      {deductError && (
+        <p role="alert" className="text-xs text-[var(--critical)] text-center">
+          {deductError}
+        </p>
+      )}
 
       <button
         type="button"
@@ -288,7 +345,7 @@ export function InventoryDeductionCard() {
         message={
           selectedSpool
             ? t("results.deductConfirm", {
-                weight: unitWeight.toFixed(1),
+                weight: requiredWeight.toFixed(1),
                 spool: `${selectedSpool.brand} - ${selectedSpool.material}`,
               })
             : ""
