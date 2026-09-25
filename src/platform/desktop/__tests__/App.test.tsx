@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 
 // ─── Mock heavy/desktop-only dependencies (parity with the web app tests) ───
 vi.mock("@/platform/desktop/components/Header/Header", () => ({
@@ -81,7 +81,11 @@ vi.mock("react-i18next", () => ({
 
 // ─── Import after mocks ───
 import App from "@/platform/desktop/App";
-import { TABS } from "@/shared/components/AppShell/tabs";
+import {
+  MORE_TABS,
+  PRIMARY_TABS,
+  TABS,
+} from "@/shared/components/AppShell/tabs";
 
 /**
  * Wave 1 — desktop App extraction smoke test.
@@ -99,7 +103,7 @@ describe("desktop App shell (post-extraction)", () => {
     expect(screen.getByTestId("update-notification")).toBeInTheDocument();
   });
 
-  it("tablet sidebar renders one button per primary tab", () => {
+  it("tablet sidebar renders one button per primary destination plus More", () => {
     const { container } = render(<App />);
 
     const tabletSidebar = Array.from(container.querySelectorAll("aside")).find(
@@ -109,7 +113,10 @@ describe("desktop App shell (post-extraction)", () => {
     );
 
     expect(tabletSidebar).toBeDefined();
-    expect(tabletSidebar!.querySelectorAll("button")).toHaveLength(TABS.length);
+    // Phase 7o s3: the five primary destinations + the More disclosure.
+    expect(tabletSidebar!.querySelectorAll("button")).toHaveLength(
+      PRIMARY_TABS.length + 1,
+    );
   });
 
   it("desktop sidebar footer keeps the brand links (no SecondaryNavigation)", () => {
@@ -136,31 +143,35 @@ describe("desktop App shell (post-extraction)", () => {
   });
 
   it("mobile bar has no settings gear (desktop parity difference)", () => {
-    const { container } = render(<App />);
+    render(<App />);
 
     const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
     expect(nav.className).toContain("lg:hidden");
 
+    // The five primary destinations carry aria-selected; the More disclosure
+    // and (web-only) the gear do not.
     expect(nav.querySelectorAll("button[aria-selected]")).toHaveLength(
-      TABS.length,
+      PRIMARY_TABS.length,
     );
-    // The gear (aria-haspopup="dialog") is web-only.
-    expect(
-      container.querySelector('button[aria-haspopup="dialog"]'),
-    ).toBeNull();
+    // The settings GEAR (a button that opens the settings sheet) is web-only.
+    // Scoped to the bar: the desktop sidebar footer legitimately hosts its own
+    // aria-haspopup="dialog" control (Manage Visibility).
+    expect(nav.querySelector('button[aria-haspopup="dialog"]')).toBeNull();
   });
 
-  it("switches surfaces when a tab is selected", () => {
+  it("switches surfaces when a destination is selected", () => {
     const { container } = render(<App />);
 
-    // Calculator surface renders first (default tab).
+    // Calculator surface renders first (default destination).
     expect(screen.getByTestId("calculator-mock")).toBeInTheDocument();
 
     const desktopSidebar = Array.from(container.querySelectorAll("aside")).find(
       (aside) => aside.className.includes("hidden lg:flex"),
     )!;
     fireEvent.click(
-      desktopSidebar.querySelectorAll("button")[1], // dashboard
+      desktopSidebar.querySelectorAll("button")[
+        PRIMARY_TABS.findIndex(({ id }) => id === "dashboard")
+      ],
     );
 
     expect(screen.getByTestId("dashboard-mock")).toBeInTheDocument();
@@ -183,11 +194,16 @@ describe("desktop App shell (post-extraction)", () => {
       ).find((aside) => aside.className.includes("hidden lg:flex"))!;
       const buttons = desktopSidebar.querySelectorAll("button");
 
-      fireEvent.click(buttons[TABS.findIndex(({ id }) => id === "history")]);
+      fireEvent.click(
+        buttons[PRIMARY_TABS.findIndex(({ id }) => id === "history")],
+      );
       expect(screen.getByText("HistoryTab")).toBeInTheDocument();
 
-      fireEvent.click(buttons[TABS.findIndex(({ id }) => id === "calculator")]);
+      fireEvent.click(
+        buttons[PRIMARY_TABS.findIndex(({ id }) => id === "calculator")],
+      );
       expect(screen.getByTestId("calculator-mock")).toBeInTheDocument();
+      // The calculator's own settings key is untouched by navigation.
       expect(localStorage.getItem(key)).toBe(persistedSettings);
     } finally {
       if (previousSettings === null) localStorage.removeItem(key);
@@ -197,18 +213,63 @@ describe("desktop App shell (post-extraction)", () => {
 
   it("keeps the go-products event connected to the shared navigation state", () => {
     render(<App />);
-    const mainNavigation = screen.getByRole("navigation", {
-      name: "nav.mainNavigation",
+    // Products is a demoted destination, so the event must still reach it even
+    // though it is not one of the buttons in the bar.
+    act(() => {
+      window.dispatchEvent(new Event("open3dcalc:go-products"));
     });
-    const productsButton =
-      mainNavigation.querySelectorAll("button")[
-        TABS.findIndex(({ id }) => id === "products")
-      ];
+
+    expect(screen.getByText("ProductInventory")).toBeInTheDocument();
+  });
+
+  it("keeps the go-products event working for a demoted destination", () => {
+    const { container } = render(<App />);
+    const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
+    const moreButton = within(nav).getByRole("button", { name: /nav\.more/ });
 
     act(() => {
       window.dispatchEvent(new Event("open3dcalc:go-products"));
     });
 
-    expect(productsButton).toHaveAttribute("aria-selected", "true");
+    // Products is reached, and the More disclosure owns it (it is demoted).
+    expect(screen.getByText("ProductInventory")).toBeInTheDocument();
+    expect(moreButton).toHaveAttribute("aria-current", "page");
+    void container;
+  });
+
+  it("keeps every demoted destination reachable through More", () => {
+    render(<App />);
+    const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
+
+    fireEvent.click(within(nav).getByRole("button", { name: /nav\.more/ }));
+
+    const moreMenu = screen.getByTestId("more-menu");
+    for (const tab of MORE_TABS) {
+      expect(
+        within(moreMenu).getByRole("button", { name: tab.labelKey }),
+        tab.id,
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("still surfaces the standalone Infill screen from More", () => {
+    render(<App />);
+    const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
+
+    fireEvent.click(within(nav).getByRole("button", { name: /nav\.more/ }));
+    fireEvent.click(
+      within(screen.getByTestId("more-menu")).getByRole("button", {
+        name: "nav.infill",
+      }),
+    );
+
+    expect(screen.getByText("InfillCalculator")).toBeInTheDocument();
+  });
+
+  it("keeps the full surface set reachable (every TABS id has a screen)", () => {
+    // TABS is still the full catalog; the split only changes presentation.
+    for (const tab of TABS) {
+      expect(TABS.filter((entry) => entry.id === tab.id)).toHaveLength(1);
+    }
   });
 });

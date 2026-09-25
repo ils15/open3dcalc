@@ -1,10 +1,14 @@
 import { useTranslation } from "react-i18next";
-import { TABS, type Tab } from "@/shared/components/AppShell/tabs";
+import { MoreMenu } from "@/shared/components/AppShell/MoreMenu";
+import { PRIMARY_TABS, type Tab } from "@/shared/components/AppShell/tabs";
+import { useVisiblePrimaryTabs } from "@/shared/components/AppShell/useVisibleNavigation";
 
 /**
- * Mobile bottom navigation (desktop/Electron) — a simple scrollable strip at
- * the lg breakpoint, no settings gear. Extracted verbatim from the desktop
- * App.tsx body; the web bar differs (gear + sheet, md breakpoint).
+ * Mobile bottom navigation (desktop/Electron) — the five always-available
+ * primary destinations plus a More disclosure for the demoted surfaces, at the
+ * lg breakpoint and with no settings gear. The visible items come from the
+ * shared hook, so this bar and the web bar can never show different sets; only
+ * the gear (web-only) and the breakpoint differ.
  */
 interface MobileNavProps {
   activeTab: Tab;
@@ -16,6 +20,7 @@ export function MobileNav({
   onTabChange,
 }: MobileNavProps): React.ReactElement {
   const { t } = useTranslation();
+  const visiblePrimary = useVisiblePrimaryTabs();
 
   return (
     <nav
@@ -28,27 +33,44 @@ export function MobileNav({
       aria-label={t("nav.mainNavigation")}
     >
       <div className="flex overflow-x-auto h-[68px] px-1.5">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 min-w-[56px] min-h-[48px] px-1.5 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
-              activeTab === tab.id
-                ? "text-[var(--color-accent)]"
-                : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-            }`}
-            aria-selected={activeTab === tab.id}
-          >
-            <span
-              className={`transition-transform ${activeTab === tab.id ? "scale-110" : ""}`}
+        {visiblePrimary.map((id) => {
+          const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onTabChange(tab.id)}
+              aria-current={isActive ? "page" : undefined}
+              aria-selected={isActive}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 min-w-[56px] min-h-[48px] px-1.5 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
+                isActive
+                  ? "text-[var(--color-accent)]"
+                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+              }`}
             >
-              {tab.icon}
-            </span>
-            <span className="text-[10px] font-semibold leading-none tracking-wide">
-              {t(tab.labelKey)}
-            </span>
-          </button>
-        ))}
+              <span
+                className={`transition-transform ${isActive ? "scale-110" : ""}`}
+              >
+                {tab.icon}
+              </span>
+              <span className="text-[10px] font-semibold leading-none tracking-wide">
+                {t(tab.labelKey)}
+              </span>
+            </button>
+          );
+        })}
+
+        <MoreMenu
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          triggerClassName="flex flex-col items-center justify-center gap-1 flex-1 min-w-[56px] min-h-[48px] px-1.5 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+          itemClassName="nav-item"
+        >
+          <span className="text-[10px] font-semibold leading-none tracking-wide">
+            {t("nav.more")}
+          </span>
+        </MoreMenu>
       </div>
     </nav>
   );

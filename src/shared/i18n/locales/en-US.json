@@ -56,7 +56,10 @@
     "quotes": "Quotes",
     "settings": "Settings",
     "privacy": "Privacy",
-    "spools": "Spools"
+    "spools": "Spools",
+    "pricing": "Pricing",
+    "printers": "Printers",
+    "more": "More"
   },
   "dashboard": {
     "totalCost": "Total Cost",
@@ -1248,7 +1251,18 @@
   },
   "settings": {
     "currency": "Currency",
-    "currencyAuto": "Auto"
+    "currencyAuto": "Auto",
+    "manageVisibility": "Manage visibility",
+    "visibility": {
+      "title": "Visible destinations",
+      "description": "Hiding a destination only removes it from the navigation bar. Your data is never deleted, and other parts of the app can still reach it.",
+      "alwaysVisible": "Always visible",
+      "hidden": "Hidden",
+      "show": "Show",
+      "hide": "Hide",
+      "close": "Close",
+      "showAll": "Show all"
+    }
   },
   "update": {
     "checkForUpdates": "Check for Updates",

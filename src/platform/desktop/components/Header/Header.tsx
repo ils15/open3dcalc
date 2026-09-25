@@ -16,6 +16,7 @@ import { useUpdaterStore } from "../UpdateNotification/UpdaterStore";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
+import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -122,6 +123,10 @@ export function Header() {
 
           {/* Tours launcher */}
           <TutorialLauncher />
+
+          {/* Destination visibility (Phase 7o s3) — reachable at every width,
+              including the <lg range where the desktop sidebar is hidden. */}
+          <ManageVisibilityButton variant="icon" />
 
           {/* Currency selector */}
           <div className="flex items-center">
