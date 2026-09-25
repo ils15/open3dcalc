@@ -584,6 +584,7 @@
     "compare": "Compare",
     "compareTitle": "Comparison",
     "compareSelect": "Select 2 records to compare",
+    "compareSelectEntry": "Select {{name}} for comparison",
     "compareField": "Field",
     "valueA": "Record A",
     "valueB": "Record B",

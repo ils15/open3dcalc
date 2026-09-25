@@ -315,8 +315,12 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
         <div className="space-y-2 max-h-[60vh] sm:max-h-80 overflow-y-auto">
           {filtered.map(entry => (
             <div key={entry.id} className={`surface rounded-xl p-3 flex items-center gap-3 hover:bg-[var(--color-bg-elevated)] transition-colors ${selectedForCompare.includes(entry.id) ? 'ring-2 ring-[var(--color-accent)]/50' : ''}`}>
-              <input type="checkbox" checked={selectedForCompare.includes(entry.id)} onChange={() => toggleCompare(entry.id)}
-                className="accent-[var(--color-accent)] w-4 h-4 flex-shrink-0 cursor-pointer" />
+              {/* Label is the 44px touch target; the checkbox inside stays 16px so the dense list keeps its rhythm. */}
+              <label className="flex items-center justify-center flex-shrink-0 -mx-1 -my-1 min-h-[44px] min-w-[44px] cursor-pointer">
+                <input type="checkbox" checked={selectedForCompare.includes(entry.id)} onChange={() => toggleCompare(entry.id)}
+                  aria-label={t('history.compareSelectEntry', { name: entry.name })}
+                  className="accent-[var(--color-accent)] w-4 h-4 flex-shrink-0 cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-base)]" />
+              </label>
               <div>
                 <p className="text-sm font-semibold">{entry.name}</p>
                 <p className="text-xs text-[var(--color-text-muted)]">
