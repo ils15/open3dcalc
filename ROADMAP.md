@@ -161,7 +161,7 @@ Every phase and change must complete this checklist:
 
 - `src/shared/components/Dashboard/Dashboard.tsx`
 - `src/shared/components/Dashboard/RechartsLazy.tsx`
-- Recharts 2 already configured
+- Recharts 3 already configured
 - `historyStore.ts` with historical data
 
 **What needs to be done:**
@@ -757,6 +757,297 @@ Every phase and change must complete this checklist:
 - Limites de domínio incompletos: `spoolEfficiency` sem máximo, `wasteMarginPercent` sem máximo e `quantity` sem exigência de inteiro positivo.
 - `Product.weightGrams` armazena peso efetivo, após purga e eficiência; a ambiguidade entre bruto e efetivo pode duplicar ajustes.
 - C3: Guided exibindo “0h / 54min”; causa ainda não confirmada, aguardando URL do usuário.
+
+---
+
+### 📊 Phase 7n: Ciclo de produção, projeção de faturamento e análise de rentabilidade
+
+**Status:** escopo levantado; **nada implementado**. Esta fase registra intenção de produto e as pré-condições técnicas que hoje não existem. Nenhum item entra em implementação antes de explicitarmos juntos o escopo, a ordem e as premissas.
+
+> **Nota de escopo — o escopo da beta 5 não muda.** O conteúdo desta fase é registro de roadmap. O escopo corrente da `2.0.0-beta.5` permanece as ondas de port visual, e nada aqui autoriza antecipá-las.
+
+#### N0 — Frota de ativos e registro de horas _(pré-requisito duro)_
+
+**Status:** pré-requisito de N2, N3 e N4.
+
+**Problema:** nenhuma análise de rentabilidade por máquina é possível hoje porque **não existe registro de frota própria**. O que existe é um catálogo de produtos, não o que a pessoa usuária possui:
+
+- `src/shared/lib/printers.ts:10` é um array estático de ~80+ especificações de produto. Não é frota.
+- `PrinterProfile` (`src/shared/types/index.ts:36-58`) tem 14 campos e **nenhum** deles é `purchasePrice`, `acquisitionDate`, `status` ou qualquer campo de capacidade, ocupação ou horas.
+- `selectedPrinterId` (`types/index.ts:359`) é uma string opaca que aponta para o catálogo.
+- Busca por `hourMeter`, `acquisitionDate`, `purchasePrice`, `acquisitionCost` e `PrinterAsset` em `*.ts`/`*.tsx`/`/*.css` retorna **zero matches**. **Não existe log de horas por impressora em lugar nenhum do repositório.**
+
+Sem preço de aquisição e sem horas, "quanto falta para amortizar" e "quanto essa máquina rende por mês" não são cálculos: são fiction. Por isso N0 é pré-requisito, não item paralelo.
+
+**O que precisa ser feito:**
+
+- [ ] Store persistido de frota própria, separado do catálogo: preço de aquisição, data de aquisição, status operacional e vínculo com o `profileId`.
+- [ ] Registro de horas/uso por impressora, com origem declarada: digitada pela pessoa usuária ou derivada do histórico. **Derivada é estimativa, não medição** — a origem precisa ser um campo, não uma suposição implícita.
+- [ ] Chave nova no manifesto SPEC-01, com classe de dados e tratamento de privacidade aprovados **antes** de persistir. Incluir frota e backups na exportação, exclusão e regressão de privacidade, como a Phase 7d já exige.
+- [ ] Reconciliar a unidade de `usefulLife` antes de qualquer uso financeiro. Hoje o campo vale `3000`, `4000`, `5000` (`printers.ts:17`, `db/seed.ts:40-44`) e é consumido como **horas** em `calculatorStore.ts:305-308` (`depreciationMonths = round(usefulLife / hoursPerMonth)`). A Phase 7d (linha 436) o descreve como `defaultUsefulLifeYears`. **Horas e anos precisam se tornar a mesma unidade antes de virar número de dinheiro.**
+- [ ] Declarar explicitamente que `usefulLife` do catálogo é **premissa estimada pelo app por modelo**, não dado da pessoa usuária — ver `printers.ts:7-8`.
+
+**Anti-padrão:** usar `value` do catálogo como se fosse o preço que a pessoa usuária pagou. É preço de tabela do modelo, não preço de aquisição do ativo. Os dois números precisam ser campos distintos e separados na interface.
+
+**Anti-padrão:** exibir "a impressora está 62% amortizada" quando os 62% vêm de um `usefulLife` adivinhado no código. A barra fica bonita e o número não é de ninguém.
+
+**Justificativa:** o app já promete custo por hora com depreciação. A Phase 7d formalizou que depreciação contábil pertence ao **ativo**, não ao modelo. N2/N3/N4 apenas aplicam essa decisão a números que hoje não têm dono.
+
+**Acceptance criteria:**
+
+- [ ] A Phase 7d está implementada ou, no mínimo, o recorte de fleet store necessário está aprovado no SPEC-01.
+- [ ] Existe teste que prova que um preço de aquisição definido pela pessoa usuária **sobrevive** à seleção de um modelo de catálogo com `value` diferente.
+- [ ] A unidade de `usefulLife` está documentada em um único lugar, e a documentação bate com o código.
+- [ ] Entradas de histórico sem `snapshot` (`types/index.ts:320`) são tratadas como órfãs explícitas, nunca agrupadas por processador inventado.
+
+---
+
+#### N1 — Seleção em lote e atualização simultânea de status
+
+**Status:** decisão de domínio fechada — pertence à entidade **`Quote`**, na aba de orçamentos. **Não** pertence ao `HistoryEntry`. Implementação pendente.
+
+**O que é:** checkbox por linha no modo tabela e por card no modo grid; checkbox mestre no cabeçalho da tabela com estado **indeterminado** (tri-state) que seleciona ou desseleciona **apenas os itens já filtrados**, nunca a lista inteira; realce visual dos selecionados; barra de ação em lote com contador dinâmico; botões de ação rápida aplicando um status a todos os selecionados de uma vez; comparação lado a lado **habilitada automaticamente quando exatamente 2** estiverem selecionados; exportação CSV somente dos selecionados; exclusão em lote com confirmação de segurança; confirmação imediata por toast.
+
+**Estados:** Aprovado, Em Produção, Concluído, Cancelado.
+
+**Dados e estado de que depende:**
+
+- `Quote.status` — `types/quote.ts:26` — `'draft' | 'sent' | 'approved' | 'rejected'`
+- `QuoteStore.statusFilter` — `quoteStore.ts:14` — `"all" | "draft" | "sent" | "approved" | "rejected"`
+- `QuoteStore.setQuoteStatus` — declarado em `quoteStore.ts:21`, implementado em `quoteStore.ts:127-133`
+- Persistência — `quoteStore.ts:212-216` — `name: "open3dcalc_quotes_v1"`, `version: 1`
+
+**Esta é uma mudança de modelo persistido, não uma feature de UI.** Exige bump de `version` e caminho de normalização em leitura e em import.
+
+**Conflito de eixo a resolver antes de codar:** os quatro status pedidos são um **ciclo de produção**. O union atual é um **ciclo de negociação comercial**. Os dois se sobrepõem em dois pontos: `approved` já é "Aprovado" e `rejected` já é "não". Expandir literalmente o union cria **duas formas de dizer a mesma coisa**. A decisão é de modelo, não de layout: ou `rejected` colapsa em `cancelled`, ou os dois eixos passam a ser campos separados (`dealStatus` + `productionStatus`) em vez de um union só. **Aberto — decisão pendente do usuário.**
+
+**Normalização de import (obrigatória):** `importQuotes` (`quoteStore.ts:171-210`) hoje faz cast cego `e as Quote` na linha 192 e deduplica apenas por `id`. Um payload exportado por versão anterior, ou editado à mão, entra com qualquer string em `status`. Ampliar o union sem normalizar aqui importa lixo para dentro do modelo.
+
+**Não-objetivos:**
+
+- ❌ Seleção em lote no `HistoryEntry`. Decidido: a entidade é `Quote`.
+- ❌ Ações em lote de edição de conteúdo (não é edição em massa de itens, valores ou margens — é status).
+- ❌ Undo/redo em lote além do que o store já garante. O histórico de undo é do `calculatorStore`, não do `quoteStore`.
+- ❌ Seleção persistente entre sessões. A seleção é estado de sessão, não dado persistido.
+
+**Acceptance criteria:**
+
+- [ ] O checkbox mestre reflete tri-state: marcado, desmarcado, indeterminado — e o indeterminado aparece quando a seleção é parcial.
+- [ ] Com um filtro de status ativo, "selecionar todos" seleciona **exatamente** o conjunto filtrado, e o teste prova isso filtrando o store antes de agir.
+- [ ] Selecionar e deselecionar todos não altera a seleção de itens que estavam fora do filtro.
+- [ ] A comparação lado a lado só aparece com **exatamente** 2 selecionados, e some com 1 ou com 3.
+- [ ] O CSV exportado contém **somente** os selecionados, e o teste compara a contagem de linhas com o contador da barra de ação.
+- [ ] A exclusão em lote exige confirmação que **nomeia a quantidade** a ser excluída.
+- [ ] Um payload de import com `status` desconhecido é normalizado, e o teste prova que o payload entra no store com valor válido.
+- [ ] Um orçamento persistido antes do bump de `version` continua legível e aparece com status válido.
+- [ ] Toda etiqueta nova existe em **pt-BR e en-US**, com paridade verificada.
+
+---
+
+#### N2 — Projeção de faturamento mensal e capacidade produtiva
+
+**Status:** escopo definido; implementação bloqueada por N0.
+
+**O que é:** cruzar a rentabilidade real por hora do histórico de orçamentos — **R$/hora faturado, margem líquida média %, consumo de filamento g/h, duração média de projeto** — com a capacidade da frota de impressoras instalada. Destaques: faturamento mensal projetado (**teto e alvo**, a partir das horas produtivas); lucro líquido projetado a partir da margem histórica; horas efetivas por mês na taxa de ocupação da fazenda; output físico estimado (peças/mês e kg de filamento/mês). Barra de progresso do mês corrente contra a meta, com o valor restante. Cenários comparativos de ocupação: **Conservador** (40% / 1 turno de 8h / 22 dias), **Meta Recomendada** (65% / 16h dia / 26 dias), **Alta Demanda** (85% / 16h / 26 dias), **Teto Operacional 24/7** (100% / 30 dias). Parâmetros ajustáveis: horas/dia (8/12/16/24), dias úteis/mês (22/26/30), slider de ocupação, e override de taxa horária de impressão. Tabela por impressora com status, horas mensais e faturamento estimado individual.
+
+**Dados e estado de que depende:**
+
+- Rentabilidade histórica — `HistoryEntry` (`types/index.ts:310-321`) expõe `timestamp`, `totalCost`, `sellPrice`, `profit` **no plano**.
+- **Ressalva:** duração de projeto e consumo de filamento **não são campos planos** de `HistoryEntry`. Vêm de `result` (`types/index.ts:319`) e do `snapshot`. A agregação precisa ler o snapshot, com fallback declarado.
+- **Ressalva:** o vínculo com a impressora vem de `snapshot.selectedPrinterId` (`types/index.ts:359`), e `MachineCosts` (`types/index.ts:183-190`) **não tem `printerId`** — só custos derivados. Entradas com `snapshot === null` são órfãs.
+- **Pré-requisito duro: N0.** "Capacidade da frota instalada" não tem fonte de dados antes de N0.
+
+**Não-objetivos:**
+
+- ❌ Previsão com modelo de série temporal, tendência ou machine learning. É multiplicação declarada, não previsão.
+- ❌ Integração com API de fabricante, telemetria ou readings de máquina. Todos os números são declarados pela pessoa usuária.
+- ❌ Estoque de material como limitante da projeção. Capacidade é horas, não disponibilidade de carretel.
+- ❌ Tratar a projeção como meta operacional ou compromisso. Ver N7.
+
+**Acceptance criteria:**
+
+- [ ] Os quatro cenários carregam simultaneamente e o número exibido muda ao trocar de cenário.
+- [ ] Teto e alvo são valores **distintos e rotulados separadamente** na interface; um nunca é apresentado como o outro.
+- [ ] Trocar `horas/dia`, `dias úteis` ou a ocupação recalcula o conjunto inteiro sem estado residual.
+- [ ] O override de taxa horária tem precedência sobre a taxa derivada do histórico, e a interface mostra qual valor está em uso.
+- [ ] Entradas órfãs (`snapshot === null`) são excluídas da agregação por impressora e a contagem de exclusão é visível, não silenciosa.
+- [ ] A tabela por impressora soma o mesmo total que o total geral do módulo, e um teste prova a paridade.
+
+---
+
+#### N3 — Ponto de equilíbrio e amortização
+
+**Status:** escopo definido; **impossível sem N0**. Esta frente é pré-requisito de dados, não um widget do dashboard.
+
+**O que é:** ponto de equilíbrio em **horas de extrusão** (horas necessárias para amortizar o preço de compra da máquina usando o lucro/h histórico); em **peças/pedidos** (contagem exata de projetos médios para zerar o custo do equipamento); **faturamento bruto alvo** dado a margem média real. Barra sólida de progresso de amortização com o percentual do preço de aquisição já amortizado e o restante. ROI real em %. Notificação automática quando a impressora ultrapassa 100% de amortização.
+
+**Dados e estado de que depende:**
+
+- **Pré-requisito duro: N0.** Sem preço de aquisição (`PrinterProfile` não tem o campo), sem data de aquisição e sem log de horas (zero matches no repositório), não há o que amortizar.
+- `usefulLife` **não é um input da pessoa usuária.** Ver N0. Se a amortização reta usar esse valor, o número é derivado de uma premissa do autor do catálogo (`printers.ts:7-8`) e precisa aparecer na interface como tal.
+- Existe break-even **parcial** hoje: `Dashboard.tsx:139-157` já calcula `breakEvenUnits` e `breakEvenRevenue`, mas a partir de `fixedCosts.monthlyCost` — **não** do preço de uma impressora. `buyPrice` é um input avulso de dashboard persistido em `open3dcalc_dashboard_v1` (`Dashboard.tsx:34`, `46-62`).
+
+**Não-objetivos:**
+
+- ❌ Contabilidade fiscal, DRE, depreciação acelerada, valor residual ou método de cotação. Reta simples basta.
+- ❌ Reimplementar o break-even de custo fixo que já existe. Esta frente **estende** o existente para o eixo máquina.
+- ❌ "Payback" como alerta operacional. A notificação é informativa.
+- ❌ Inferir horas de impressão a partir da data de aquisição. Tempo em espera não é tempo imprimindo.
+
+**Anti-padrão:** notificar "amortização concluída" a partir de um `usefulLife` estimado no código. Não é marco, é eco de uma premissa. A notificação só é legítima se a pessoa usuária forneceu preço, data e horas — e, mesmo assim, é cenário, não medição (ver N7).
+
+**Acceptance criteria:**
+
+- [ ] O break-even em horas só é exibido quando existe preço de aquisição **e** log de horas; caso contrário, a interface explica o que falta em vez de mostrar zero.
+- [ ] O break-even em peças retorna contagem inteira, e um teste cobre o caso de projeto com lucro não positivo — a resposta correta ali é "não existe", não um número gigante.
+- [ ] A barra de amortização mostra percentual e restante, e o rótulo diz de qual valor de aquisição ela foi derivada.
+- [ ] A notificação de 100% só dispara com dados de entrada realmente fornecidos, e existe teste que prova que ela **não** dispara com `usefulLife` de catálogo.
+- [ ] A soma dos valores por impressora bate com o total do módulo, e a cobertura dos cálculos de amortização é ≥ 90%.
+
+---
+
+#### N4 — Simulação dinâmica com o orçamento ativo
+
+**Status:** escopo definido; implementação bloqueada por N0.
+
+**O que é:** cruzar o histórico geral com a peça **atualmente sendo calculada**, exibindo uma linha no formato "Produzindo apenas X unidades deste projeto você quita 100% do saldo restante da impressora". O saldo restante depende do valor de aquisição já amortizado — portanto depende de N0.
+
+**Pontos de integração especificados:**
+
+- [ ] No **Dashboard**, posicionado **abaixo** dos módulos de frota e de estoque crítico, com seletor de máquina e tabela de detalhe dos pedidos vinculados à impressora selecionada.
+- [ ] Na **calculadora de preço**, um resumo rápido de ponto de equilíbrio na barra lateral, mais um painel expansível de parâmetros da máquina com a análise completa.
+
+**Dados e estado de que depende:** mesma base de N3 (N0 + rentabilidade histórica). A peça em cálculo vem de `calculatorStore.results`; o saldo restante vem do valor de aquisição do ativo.
+
+**Não-objetivos:**
+
+- ❌ Um segundo motor de cálculo. A simulação consome `calculateResult`/`calculateBatch`; não os replica.
+- ❌ Pedido de produção, reserva de fila ou commit de capacidade ao clicar. É leitura, não escrita.
+- ❌ Alterar o resultado do cálculo atual ao mover um slider. A simulação é leitura sobre o resultado, não escrita nele.
+
+**Anti-padrão:** o resumo da barra lateral e o painel expandido mostrarem números diferentes porque cada um recalcula por conta própria. São duas letras do mesmo cálculo; divergência entre eles é um bug, não uma escolha de layout.
+
+**Acceptance criteria:**
+
+- [ ] Mover qualquer campo do cálculo atual atualiza a linha de simulação sem recarregar a tela.
+- [ ] O número de unidades é inteiro e deriva do lucro **por unidade** do cálculo atual, com a conta auditável na própria linha.
+- [ ] Trocar a impressora no seletor do Dashboard troca a tabela de detalhe e zera a seleção anterior.
+- [ ] Resumo da barra lateral e painel expandido assertam o mesmo valor, coberto por teste.
+- [ ] Com lucro não positivo, a linha explica a impossibilidade em vez de exibir uma quantidade.
+
+---
+
+#### N5 — Profit Analytics
+
+**Status:** escopo definido; implementação pendente. Não depende de N0.
+
+**O que é:** quebrar a margem de lucro por **tipo de material** ou por **impressora**, usando barras visuais de dados para expor os jobs mais lucrativos. Alternar por material e por impressora é o eixo da feature.
+
+**Tokens — não propõe paleta nova.** Os seis tokens categóricos já existem em `src/styles/tokens.css`:
+
+- `--cost-filament` (`:65` claro, `:139` escuro)
+- `--cost-energy` (`:66` / `:140`)
+- `--cost-machine` (`:67` / `:141`)
+- `--cost-labor` (`:68` / `:142`)
+- `--cost-failure` (`:69` / `:143`)
+- `--cost-other` (`:70` / `:144`)
+
+Aliados como `--color-cost-*` em `:241-246`. A análise por material reutiliza esses tokens; a análise por impressora precisa de uma escala **derivada** de token, nunca de cor hardcoded.
+
+**Dados e estado de que depende:** `HistoryEntry.profit` e `totalCost` (planos, `types/index.ts:316-318`); eixo material via `snapshot.fdmMaterial`/`resinMaterial`; eixo impressora via `snapshot.selectedPrinterId` (`types/index.ts:359`). Mesma ressalva de órfãos de N2.
+
+**Não-objetivos:**
+
+- ❌ Paleta nova. Os tokens existem e têm modo claro e escuro pronto.
+- ❌ Ranqueamento de "melhor impressora" em valor absoluto. A ordenação é por margem, e máquinas sem produção ficam fora, não em zero.
+- ❌ Amostragem, mediação ou ajuste de preço. O módulo mostra o que aconteceu, não sugere o que cobrar.
+
+**Acceptance criteria:**
+
+- [ ] A troca entre "por material" e "por impressora" reordena as barras sem recarregar nem perder a ordenação atual.
+- [ ] Toda cor usada vem de `--cost-*` ou de alias derivado de token; nenhum hex hardcoded no componente.
+- [ ] A ordenação é reprodutível para o mesmo conjunto de entradas, e um teste cobre empate de margem.
+- [ ] Entradas órfãs são excluídas e a contagem da exclusão é visível.
+
+---
+
+#### N6 — Revenue Trends
+
+**Status:** escopo definido; implementação pendente. Não depende de N0.
+
+**O que é:** gráfico de faturamento mensal projetado nos últimos 6 meses.
+
+**A biblioteca já está no projeto — não há decisão de dependência a tomar.** `recharts` já é dependência de produção em `package.json:52` (`^3.10.1`), e `src/shared/components/Dashboard/RechartsLazy.tsx:1-31` já reexporta `AreaChart`, `Area`, `BarChart`, `Bar`, `PieChart`, `Cell`, `ResponsiveContainer`, `Tooltip`, `Legend`, `CartesianGrid`, `XAxis`, `YAxis`. Este item **estende um barrel existente**; não adiciona bundle, não introduz dependência nova e não abre discussão de licença.
+
+**Dados e estado de que depende:** `HistoryEntry.timestamp` e `sellPrice` para o histórico realizado; a projeção usa a mesma base de N2. Gráfico de **projeção** é o rótulo honesto — os meses passados são medidos, os futuros não.
+
+**Não-objetivos:**
+
+- ❌ Adicionar biblioteca de gráfico. Recharts já está lá.
+- ❌ Série temporal contínua, granularidade diária/semanal, ou drill-down por impressora.
+- ❌ Previsão com tendência projetada para frente. O gráfico mostra 6 meses; ele não extrapola.
+- ❌ Animação de entrada como informação. A classe do movimento já respeita `prefers-reduced-motion`.
+
+**Acceptance criteria:**
+
+- [ ] O gráfico renderiza 6 meses e a barra do mês corrente é distinguível das realizadas.
+- [ ] O gráfico usa apenas componentes já reexportados por `RechartsLazy.tsx`, ou o barrel é estendido explicitamente no mesmo PR.
+- [ ] `package.json` não ganha dependência de gráfico nova como efeito deste item.
+- [ ] O gráfico é legível com o dataset mínimo (um único mês) e com o dataset vazio, com estado vazio explícito.
+- [ ] Meses sem histórico aparecem como ausência, não como zero.
+
+---
+
+#### 🔒 N7 — Notas transversais (valem para N1–N6)
+
+**Premissas visíveis — o risco de falsa confiança.** Qualquer notificação automática de "a impressora passou de 100% de amortização", ou de "a meta de faturamento foi atingida", é um **número financeiro computado apresentado como marco**. Cada uma dessas figuras depende de premissas que a pessoa usuária não vê: taxa de venda efetiva, taxa de ocupação, vida útil, preço de aquisição, duração média de projeto. A regra que estas seis frentes devem herdar:
+
+- [ ] **Todo número computado expõe as premissas que o produziram**, na mesma tela, sem clique extra.
+- [ ] **Todo número computado é rotulado como cenário, nunca como medição.** "Medido" é o que saiu do histórico real.
+- [ ] Uma projeção de faturamento **sem a premissa de ocupação visível** repete, em contexto financeiro, uma falha que já aconteceu no protótipo descartado: o `AIAssistantModal.tsx` declarava um estado `analysisError` na linha 53, o renderizava na linha 327, e **nunca o atribuía** no bloco `catch` (linhas 105-111) — cenário simulado entregue silenciosamente como análise real.
+- [ ] Uma barra de progresso que enche sem indicar de onde veio o número é publicidade, não interface.
+
+**Direção visual.** O app está sendo portado para a linguagem visual do protótipo de referência (sidebar, header, menus, cards e layout Bento). **Estes seis itens usam a direção CLASSIC-FLAT** — sem neons, sem sombras em excesso, tipografia tabular e paleta neutra de software de engenharia — porque são telas densas de dados, e é o contexto em que o pedido foi feito. São duas direções convivendo no mesmo app por decisão conscious: **N1–N6 não devem herdar nem contrariar o Bento; elas seguem classic-flat.** Nenhuma decisão de cor, elevação ou densidade de N1–N6 deve ser tomada contra essa direção.
+
+**Tipografia.** O pedido é **tipografia tabular em JetBrains Mono**. Estado atual verificado: `src/styles/fonts.css` auto-hospeda **Plus Jakarta Sans** sob SIL OFL 1.1, em dois subsets `woff2` (latin, latin-ext), com escala `--type-*` e `--type-hero-numeric-font-variant: tabular-nums` na linha 63. `--font-mono-stack` (linhas 34-36) hoje é uma **stack de sistema** — `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono`. **JetBrains Mono não está no projeto.**
+
+- [ ] Se adotado, JetBrains Mono é **bundlado** com subsets `woff2` e `unicode-range` próprios, sob OFL, com a licença em `src/styles/fonts/`. **Nunca CDN** — o app é offline-first e serve local para cumprir CSP.
+- [ ] `tabular-nums` continua obrigatório em qualquer numeral que oscile de valor em tempo real: sem alinhamento de coluna, o número parece piscar.
+- [ ] **Flag:** adotar JetBrains Mono **reverte** a decisão anterior de manter Plus Jakarta Sans, e é uma troca de identidade tipográfica do app inteiro. Precisa ser decidida como decisão, não absorvida aqui. **Aberto — decisão pendente do usuário.**
+
+---
+
+#### 📎 N8 — Dependências e ordem sugerida
+
+```
+N0  Frota de ativos + registro de horas   ── pré-requisito DURO
+      │
+      ├──► N2  Projeção de faturamento e capacidade
+      ├──► N3  Ponto de equilíbrio e amortização
+      └──► N4  Simulação dinâmica com o orçamento ativo
+
+N1  Seleção em lote (Quote)   ── independente, não espera N0
+N5  Profit Analytics          ── independente, não espera N0
+N6  Revenue Trends            ── independente, não espera N0
+```
+
+**Leitura da ordem:**
+
+- **N0 primeiro, sem exceção.** N2, N3 e N4 não são três widgets esperando polimento: são três leituras de dados que não existem. Começar por qualquer um deles entrega tela com número inventado — que é exatamente a falha que N7 existe para impedir.
+- **N1, N5 e N6 podem andar em paralelo** e não dependem de N0. N5 e N6 leem o histórico, que já existe. N1 mexe em `Quote`, outro domínio.
+- **N6 é o de menor risco da lista** — a biblioteca já está no projeto e o dado já existe. Se algo for decidido para sair rápido, é N6.
+- **N3 é o de maior risco.** Depende de N0, depende da reconciliação de unidade de `usefulLife`, e toca um número financeiro. Se N0 demorar, N3 espera; não se contorna.
+
+**Dependências de roadmap, não só técnicas:** N0 depende da **Phase 7d** (`ROADMAP.md:426`). N1 toca a entidade `Quote` e tangencia a **Phase 7l** (snapshot imutável, `ROADMAP.md:674`) — um orçamento com snapshot não deve ser reescrito por status em lote sem que as duas fases concordem sobre o que é fato e o que é estado.
+
+**Acceptance criteria (transversal às seis frentes):**
+
+- [ ] Nenhuma tela de N1–N6 exibe número financeiro sem premissa visível na mesma tela.
+- [ ] Nenhuma notificação automática dispara a partir de dado não fornecido pela pessoa usuária.
+- [ ] Toda etiqueta nova existe em **pt-BR e en-US**, com paridade verificada.
+- [ ] Cobertura: componentes novos ≥ 80%, libs de cálculo ≥ 90%.
+- [ ] WCAG AA, com `prefers-reduced-motion` respeitado em todo gráfico e barra animada.
+- [ ] A checklist de LGPD e os testes de regressão de privacidade passam para cada chave nova.
 
 ---
 
