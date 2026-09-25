@@ -393,12 +393,7 @@ export function Tutorial() {
   // would freeze the pre-scroll rect, and a synthetic `resize` event has no
   // listener (Floating UI was removed), so nothing would ever re-measure it.
   useLayoutEffect(() => {
-    if (
-      layoutMode !== "classic" ||
-      !isActive ||
-      sessionDismissed ||
-      !step
-    )
+    if (layoutMode !== "classic" || !isActive || sessionDismissed || !step)
       return;
     if (!step.target) return; // centered card with full overlay (welcome/complete)
     const selector = step.target;

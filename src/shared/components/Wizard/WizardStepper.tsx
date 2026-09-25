@@ -1,5 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { WIZARD_STEPS, WIZARD_TOTAL_STEPS, type WizardStep } from "@/shared/stores/wizardStore";
+import {
+  WIZARD_STEPS,
+  WIZARD_TOTAL_STEPS,
+  type WizardStep,
+} from "@/shared/stores/wizardStore";
 
 export interface WizardStepperProps {
   currentStep: WizardStep;
