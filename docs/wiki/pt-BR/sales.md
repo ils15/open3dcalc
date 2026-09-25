@@ -33,18 +33,38 @@ A seção mistura logística, taxas e lucro:
   a sua taxa percentual, preenchida automaticamente.
 - **Taxas e impostos** — impostos sobre o valor da venda (ICMS, ISS, Simples
   Nacional).
-- **Margem de lucro** — a porcentagem de lucro desejada sobre o custo total.
+- **Markup sobre o custo** — a porcentagem de lucro desejada sobre o custo total.
+
+## Markup x margem real
+
+O campo `profitMarginPercent` é o **markup sobre o custo**. Ele não é a mesma
+coisa que a margem real:
+
+- `110%` de markup significa `custo + 110% do custo` = **2,10× o custo**;
+- com custo de `R$ 100,00`, o preço antes de impostos e taxas é `R$ 210,00`;
+- o lucro bruto é `R$ 110,00`;
+- a margem real é `lucro ÷ preço de venda × 100`.
+
+Nesse exemplo, `110 ÷ 210 × 100 = 52,38%` de margem real. Impostos e taxas
+podem alterar o preço final e, portanto, o lucro líquido; por isso a margem real
+deve ser lida junto com o resultado.
+
+A margem real é derivada e somente-leitura. Para mudá-la, ajuste o markup ou o
+preço de venda, em vez de tentar editar o valor derivado. A interface mostra a
+margem real em cinco pontos para manter a comparação visível. O tooltip diz:
+**“Markup: lucro sobre o custo. Margem: lucro sobre o preço que o cliente
+paga.”**
 
 ## A fórmula do preço de venda
 
 A mecânica é menos óbvia do que parece, e vale a pena entender. Primeiro se
 fecha a base: custo de produção mais falhas mais embalagem mais frete. Sobre
-essa base aplica-se a margem. E só então entram impostos e taxas — mas de um
+essa base aplica-se o markup. E só então entram impostos e taxas — mas de um
 jeito especial, **por divisão**, para que eles não comam o seu lucro:
 
 ```
 custo base       = produção + falhas + embalagem + frete
-lucro            = custo base * (margem / 100)
+lucro            = custo base * (markup / 100)
 preço s/ taxas   = custo base + lucro
 preço de venda   = preço s/ taxas / (1 - (impostos + taxa marketplace) / 100)
 ```
@@ -57,7 +77,7 @@ fim é exatamente a porcentagem que você declarou — nem um centavo a menos.
 
 Uma peça com R$ 20,00 de custo de produção, R$ 2,00 de falha, R$ 2,00 de
 embalagem e R$ 1,00 de frete, vendida numa plataforma com 10% de taxa, com 15%
-de impostos e margem de 100%:
+de impostos e markup de 100%:
 
 ```
 custo base       = 20 + 2 + 2 + 1        = R$ 25,00
@@ -93,13 +113,13 @@ margem, e mudar o valor depois cancela o destaque do botão. O que eles
 realmente economizam é o raciocínio — em quem vende no atacado, por exemplo,
 100% sobre o custo é uma marcação padrão que se repete em todo orçamento.
 
-## Margem consciente vs. arredondamento oculto
+## Markup consciente vs. arredondamento oculto
 
 A diferença entre precificar bem e precificar mal está na ordem das contas:
 
-- **Margem consciente**: você conhece o custo, decide a margem e o preço é uma
-  consequência. Se o mercado reclama, você sabe se o problema é o custo ou a
-  margem — e pode mexer em qualquer um dos dois.
+- **Markup consciente**: você conhece o custo, decide o markup e o preço é uma
+  consequência. Se o mercado reclama, você sabe se o problema é o custo ou o
+  markup — e pode mexer em qualquer um dos dois.
 - **Arredondamento oculto**: você escolhe o preço que "parece certo" e o lucro é
   o que sobrar. Funciona até o dia em que nada sobra, e você não sabe por quê.
 
@@ -112,13 +132,13 @@ impossível fingir que não se sabe de onde vem o dinheiro.
 
 Quatro armadilhas moram nesta seção, e cada uma diminui o lucro sem aparecer no preço.
 
-- **Margem baixa demais "para vender mais".** Se a margem não cobre as falhas e
+- **Markup baixo demais "para vender mais".** Se o markup não cobre as falhas e
   os custos fixos que você não rateou, vender mais só amplia o prejuízo.
 - **Esquecer a taxa de marketplace.** Dez por cento sobre o preço é muito mais
   que dez por cento sobre o custo; deixar o campo zerado é presentear a
   plataforma.
 - **Embalagem e frete fora da base.** Eles somam no custo antes da margem —
   colocar R$ 3,00 de frete e não rateá-lo é lucro que some a cada venda.
-- **Margem sobre o preço, não sobre o custo.** A margem aqui é markup sobre o
-  custo. 100% significa vender pelo dobro do custo — não "lucro de 100% do
-  preço", que seria outro número.
+- **Confundir markup com margem real.** O campo `profitMarginPercent` é markup
+  sobre o custo. `100%` significa vender pelo dobro do custo — não "lucro de
+  100% do preço", que seria outro número. Consulte a margem real derivada.

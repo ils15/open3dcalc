@@ -14,6 +14,21 @@ Unlike the other advanced sections, results show up at **every** level. What
 changes is the detail of the line items; the final consolidation is always
 there.
 
+## Real margin vs. markup
+
+The value shown as **Actual Margin** is read-only and calculated over the sale
+price:
+
+```
+real margin = profit ÷ sale price × 100
+```
+
+The `profitMarginPercent` field, on the other hand, is markup on cost. With
+`110%` markup, a cost of `R$ 100,00` produces a price of `R$ 210,00`; the
+`R$ 110,00` profit corresponds to `52,38%` real margin. The interface repeats
+this distinction in five places. Its tooltip says: “Markup: profit over cost.
+Margin: profit over the price the customer pays.”
+
 ## The order of the sum matters
 
 The selling price is not "cost plus a markup". It is a sequence where each step
@@ -47,7 +62,7 @@ Four numbers summarize the result, and each one says something different about t
 - **Sell Price** — the one suggested by the formula. Editable; the actual margin
   is recalculated on the spot.
 - **Actual Margin** — net profit over the selling price, not over the cost. It
-  is always lower than the margin you typed — see the example.
+  is always lower than the markup you typed — see the example.
 - **Profit per Hour** — net profit ÷ total hours (print + post + setup). It is
   the best metric for deciding whether a job is worth taking.
 
@@ -58,7 +73,7 @@ stand**, 180 g, 5.5 hours of printing, 250 W of power at R$ 0.80 per kWh, an
 R$ 1,800 printer depreciated over 36 months at 100 h/month, R$ 30/month of
 maintenance, R$ 450 of fixed costs at 150 h/month, 30 minutes of labor at
 R$ 25/h, a R$ 30/month slicer, an R$ 5 STL, R$ 2 of PPE per part, 10% failure,
-R$ 3 packaging, R$ 8 shipping, 50% margin, 6% taxes and 10% marketplace fee.
+R$ 3 packaging, R$ 8 shipping, 50% markup, 6% taxes and 10% marketplace fee.
 
 Each line, coming from its section:
 
@@ -95,10 +110,10 @@ actualMargin   = 40.25 / 143.73                           =   28.0%
 
 ## The lesson hidden in the example
 
-You asked for a **50% margin** and ended with a **28% actual margin**. Nothing
-was miscalculated: the 50% is a margin **over cost** (markup), while the actual
-margin is over the **selling price** — which is bigger, because taxes and fees
-inflated it.
+You asked for **50% markup** and ended with a **28% actual margin**. Nothing
+was miscalculated: the 50% is markup **over cost**, while the actual margin is
+over the **selling price** — which is bigger, because taxes and fees inflated
+it.
 
 The good news is in the profit: **R$ 40.25**, the 50% gross profit on the base
 cost preserved in practice. Not a coincidence: the formula passes taxes and
@@ -163,6 +178,29 @@ Each line of the result comes from a specific place:
 - [ops](#user-content-operational--software) — software, STL and PPE.
 - [failure and sales](#user-content-additional-costs-and-sales) — risk, packaging, shipping, taxes
   and margin.
+
+## When the result is not reliable
+
+`R$ 0,00` is no longer a fallback for an unknown value. When a non-finite number
+reaches the interface, it is shown as `—` and the calculation is marked as
+invalid. This prevents a failure from looking like a real cost.
+
+The difference between **missing data** and **corrupt data** matters:
+
+- a legacy snapshot without `energyCostPerKwh` uses the app default;
+- `NaN`, a negative value, an invalid type, or division by zero produces an
+  explicit error with the exact field path.
+
+The rule is applied before the calculation in seven paths: initial load,
+`loadHistoryItem`, `undo`, `restoreAutoSnapshot`, `loadSharedCalculation`,
+setters, and `setWithCompute`. Opening history, undoing, restoring, sharing, or
+editing a value therefore cannot silently turn a failure into zero.
+
+If you see `—`, open the calculation warning, find the named field, and correct
+it. If the problem came from history or a shared calculation, load a valid
+configuration or fill in the missing value before using the result. Never
+replace an unknown value with `0`: the price is not reliable while the error is
+present.
 
 ## Practical pitfalls
 

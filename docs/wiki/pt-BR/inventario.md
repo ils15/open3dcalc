@@ -10,30 +10,40 @@ O **Inventário** é o catálogo que alimenta a calculadora. Em vez de estimar o
 custo com valores genéricos, você cadastra uma vez o que comprou e o que usa —
 e toda estimativa passa a sair de números reais.
 
-Ele está espalhado em duas abas, lado a lado no app:
+A **Estante de Filamento** é uma aba única (identificada internamente como
+`inventory`). A antiga aba `spools` foi removida: não existe uma segunda lista
+para manter em sincronia. A aba **Cadastros**, que registra impressoras,
+materiais e marketplaces, continua separada e é usada para preencher outros
+campos da calculadora.
 
-- **Filamentos**: os rolos de filamento que você tem na prateleira.
-- **Cadastros**: impressoras, materiais e marketplaces usados como presets.
-
-Cada campo dessas abas é lido por uma seção específica da calculadora. Se um
-deles estiver errado, todo orçamento que o usa sai errado — por isso este
+Cada dado da estante é lido por uma seção específica da calculadora. Se um
+dado estiver errado, todo orçamento que o usa sai errado — por isso este
 catálogo é o lugar mais barato de ganhar precisão.
 
-## A aba Filamentos
+## A Estante de Filamento
 
-Cada entrada é um **rolo** físico, com os campos:
+Cada entrada é um **carretel** físico. A estante reúne os dados que ajudam a
+decidir se ele serve para a peça atual:
 
 - **Marca** e **material** (PLA, PETG, ABS, TPU, ASA, SILK...).
-- **Cor** e a cor em hexa, para diferenciar rolos parecidos.
-- **Peso restante** e **peso original**, em gramas.
+- **Cor** e o valor hexadecimal, para diferenciar carretéis parecidos.
+- **Peso bruto** e **peso líquido**, em gramas. O peso líquido é o filamento que
+  ainda está disponível depois da tara.
+- **Tara do carretel**, o peso da bobina vazia.
+- **Metros restantes**, quando o diâmetro e a densidade permitem a conversão.
 - **Preço por kg**, que é quanto você pagou por quilo.
 - **Diâmetro**, em milímetros — o padrão é `1.75`.
 - **Status**: `Em estoque`, `A caminho` ou `Vazio`.
-- **Tara do carretel**, o peso da bobina vazia.
 - **Onde comprou** e **observações**, livres.
 
-A lista filtra por material e por status, então você acha rápido o rolo certo
-antes de começar uma impressão.
+A lista filtra por material e por status. Cada card mostra um swatch circular
+na cor cadastrada, o percentual restante, a cobertura necessária para a peça
+ativa e um aviso de estoque baixo quando `isLowStockSpool` é verdadeiro.
+
+A estante também participa do fluxo da calculadora: o botão para **adicionar à
+estante** pode receber os dados do material e da configuração atual, sem
+obrigar você a cadastrar o mesmo carretel outra vez. Ao selecionar um carretel
+no cálculo, os dados dele alimentam a estimativa.
 
 ## A aba Cadastros
 
@@ -97,9 +107,9 @@ calculadora não tem como adivinhar nenhum dos dois.
 
 ## Rolo parcial, tara e cobertura
 
-O **peso restante** é o que torna o inventário útil no dia a dia. Ele anda
+O **peso líquido** é o que torna a estante útil no dia a dia. Ele anda
 junto com a calculadora: a peça ativa e a quantidade atual definem quanto
-plástico a impressão vai consumir, e cada rolo responde se dá conta:
+plástico a impressão vai consumir, e cada carretel responde se dá conta:
 
 ```
 necessario = peso unitario da peca * quantidade
@@ -118,6 +128,11 @@ variação de lote existe.
 Exemplo: a balança mostra 400 g num rolo Bambu Lab. Descontando a tara de
 210 g, restam **190 g** de filamento de verdade. Ignorar a tara faria a
 calculadora superestimar o material em mais de 100%.
+
+Além dos gramas, a estante calcula **metros restantes** quando o diâmetro e a
+densidade do material estão preenchidos. A mesma informação pode ser usada para
+planejar um lote maior: compare os metros disponíveis com a demanda estimada,
+sem trocar o peso líquido por um número de catálogo.
 
 ## Armadilhas que custam dinheiro
 

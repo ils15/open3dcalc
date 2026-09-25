@@ -13,6 +13,21 @@ Diferente das outras seções avançadas, os resultados aparecem em **todos os
 níveis**. O que muda é o detalhe das parcelas; a consolidação final está sempre
 lá.
 
+## Margem real x markup
+
+O valor que aparece como **Margem Real** é somente-leitura e calculado sobre o
+preço de venda:
+
+```
+margem real = lucro ÷ preço de venda × 100
+```
+
+O campo `profitMarginPercent`, por outro lado, é markup sobre o custo. Com
+`110%` de markup, um custo de `R$ 100,00` produz um preço de `R$ 210,00`; o
+lucro de `R$ 110,00` corresponde a `52,38%` de margem real. Essa distinção é
+repetida em cinco pontos da interface. O tooltip da UI explica: “Markup: lucro
+sobre o custo. Margem: lucro sobre o preço que o cliente paga.”
+
 ## A ordem da soma importa
 
 O preço de venda não é "custo mais um acréscimo". É uma sequência em que cada
@@ -46,7 +61,7 @@ Quatro números resumem o resultado, e cada um conta uma coisa diferente sobre a
 - **Preço de Venda** — o sugerido pela fórmula. Editável; a margem real é
   recalculada na hora.
 - **Margem Real** — o lucro líquido sobre o preço de venda, não sobre o custo. É
-  sempre menor que a margem digitada — veja o exemplo.
+  sempre menor que o markup digitado — veja o exemplo.
 - **Lucro por Hora** — lucro líquido ÷ horas totais (impressão + pós + setup).
   É a melhor métrica para decidir se um trabalho vale a pena.
 
@@ -57,7 +72,7 @@ celular em PLA**, 180 g, 5,5 horas de impressão, 250 W de potência a R$ 0,80 o
 kWh, impressora de R$ 1.800 depreciada em 36 meses a 100 h/mês, R$ 30/mês de
 manutenção, R$ 450 de custos fixos a 150 h/mês, 30 minutos de mão de obra a
 R$ 25/h, slicer de R$ 30/mês, STL de R$ 5, EPI de R$ 2 por peça, 10% de falha,
-embalagem R$ 3, frete R$ 8, margem de 50%, 6% de impostos e 10% de marketplace.
+embalagem R$ 3, frete R$ 8, markup de 50%, 6% de impostos e 10% de marketplace.
 
 Cada parcela, vinda de sua seção:
 
@@ -162,6 +177,29 @@ Cada parcela do resultado vem de um lugar específico:
 - [ops](#user-content-operacional--software) — software, STL e EPI.
 - [falhas e vendas](#user-content-custos-adicionais-e-vendas) — risco, embalagem, frete, impostos e
   margem.
+
+## Quando o resultado não é confiável
+
+`R$ 0,00` deixou de ser um fallback para valores desconhecidos. Quando um
+número não-finito chega à interface, ela mostra `—` e sinaliza o cálculo como
+inválido. Isso evita que uma falha pareça um custo real.
+
+A diferença entre **ausência** e **corrupção** é importante:
+
+- um snapshot legado que não tem `energyCostPerKwh` usa o default do app;
+- `NaN`, valor negativo, tipo inválido ou divisão por zero gera um erro explícito
+  com o nome exato do campo.
+
+Essa regra é aplicada antes do cálculo em sete caminhos: carga inicial,
+`loadHistoryItem`, `undo`, `restoreAutoSnapshot`, `loadSharedCalculation`,
+setters e `setWithCompute`. Assim, abrir histórico, desfazer, restaurar,
+compartilhar ou editar um valor não pode transformar uma falha em zero.
+
+Se você vir `—`, abra o aviso de cálculo, localize o campo indicado e corrija-o.
+Se o problema veio de um histórico ou de um cálculo compartilhado, carregue uma
+configuração válida ou complete o campo ausente. Não substitua um valor
+desconhecido por `0`: enquanto o alerta existir, o preço não deve ser usado para
+fechar um orçamento.
 
 ## Armadilhas práticas
 

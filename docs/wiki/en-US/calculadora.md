@@ -23,33 +23,51 @@ The calculator answers two separate questions, always in this order:
    consume to produce it: material, power, machine wear, labor, failures and
    the workshop's fixed costs.
 2. **How much should it sell for?** On top of the production cost you apply the
-   margin, taxes and marketplace fees — and the sale price appears next to the
+   markup, taxes and marketplace fees — and the sale price appears next to the
    cost, never on its own.
 
 Keeping these two sums separate is what turns margin into a **conscious
 choice**. When cost and sale price sit side by side, you decide whether to earn
 more by raising the margin or by cutting a real cost.
 
-## Three detail levels
+## Available layouts
 
-Not every quote needs every section. That is why the calculator has three
-levels, and each one reveals more sections:
+Beta 3 provides three implemented layouts for the same calculator:
 
-- **Quick** — four sections: `material`, `print`, `sales` and `results`. Enough
-  for a 30-second estimate.
-- **Detailed** — adds the `failure` section, for anyone with a history of
-  spoiled prints who wants to price it in.
-- **Complete** — reveals all ten sections, including `hardware`, `machine`,
-  `fixedCost`, `labor` and `ops`. Full control over every parameter.
+- **Classic** — the calculator organized into sections, with navigation and a
+  detail-level control at the top. Choose this layout for direct access to the
+  sections and for a familiar workflow.
+- **Guided** — a step-by-step layout for beginners and mobile use. It presents
+  the estimate as a sequence of questions rather than displaying all sections at once.
+- **Bento Grid** — five cards arranged in a responsive grid. It is no longer a
+  read-only dashboard: it is an editable calculator with the same fields as
+  Classic, and its cards feed the real calculation.
 
-The logic is gradual: the **Quick** level covers the path from filament to sale
-price; **Detailed** turns on failure accounting; **Complete** opens the whole
-spreadsheet.
+The layout selector is in the header, and the app remembers the preference. Farm
+is on the roadmap and is not available in this beta; there is no fourth layout
+to use.
 
-**Switching levels never clears anything.** The fields you already filled in
-stay right where they are — you only stop seeing the sections the current level
-hides. Start on Quick to close a fast price, then level up when you need
-precision.
+## Detail level: Quick, Detailed and Complete
+
+The **Quick / Detailed / Complete** selector appears at the top of Classic and
+Bento. It is the same component and the same state in both layouts: changing the
+level in one immediately carries over to the other.
+
+- **Quick** — shows `material`, `print`, `sales` and `results`, the shortest
+  path to an estimate.
+- **Detailed** — adds the `failure` section when you want to include losses and
+  rework.
+- **Complete** — unlocks all ten sections, including `hardware`, `machine`,
+  `fixedCost`, `labor` and `ops`.
+
+Visibility is governed by
+`isFieldVisibleForLevel(calcLevel, hiddenFields, sectionId, fieldId)`. Classic
+and Bento share this contract, and it also respects `hiddenFields`, so choices
+about hidden fields are not discarded when you switch layouts.
+
+**Changing levels never clears values.** Fields you have already filled stay
+stored; only sections or fields hidden by the current level disappear. Start on
+Quick and increase the detail when you need it.
 
 ## The map of the ten sections
 
@@ -94,7 +112,7 @@ production cost = material + print + hardware + machine
 
 total cost      = production + failure + packaging + shipping
 
-sale price      = total cost + margin
+sale price      = total cost + markup
                 + taxes and marketplace fees
 ```
 
@@ -103,9 +121,99 @@ shipping add to the total, but margin, taxes and fees are applied **on top** of
 it. That is why the sale price grows differently from the cost — and why the
 `results` section exists, to make that difference visible.
 
+## Rules that prevent misleading numbers
+
+### Real margin vs. markup
+
+`profitMarginPercent` is a **markup on cost**, not the final profit percentage
+on the sale price. For example, `110%` markup means the sale price must be
+`2.10 ×` the cost: a cost of `$100.00` becomes `$210.00`, leaving `$110.00` of
+gross profit.
+
+**Real margin** is derived and read-only:
+
+```
+real margin = profit ÷ sale price × 100
+```
+
+In this example, `$110.00 ÷ $210.00 = 52.38%` real margin. Taxes and fees can
+change the final price and therefore the net profit, so read real margin
+together with the result.
+
+The interface shows real margin in five places so the comparison stays visible.
+Its tooltip says: **“Markup: profit over cost. Margin: profit over the price the
+customer pays.”** See [Sales](#user-content-additional-costs-and-sales) and
+[Results](#user-content-results) for the full formulas.
+
+### A missing value is not zero
+
+In beta 3, `$0.00` no longer means that the calculation finished at zero. A
+non-finite value is displayed as `—`, never as a made-up amount.
+
+This fixes a real failure: restoring an older calculation could leave
+`energyCostPerKwh` absent. `NaN` then flowed through the calculation chain and
+the screen showed `$0.00` as if it were a valid cost. The rule is now:
+
+- **Missing data in a legacy snapshot:** the app uses its default for the missing
+  field and tries to complete the calculation.
+- **Corrupt or invalid data:** `NaN`, a negative value, the wrong type, or
+  division by zero produces an explicit error with the exact field path.
+- **A non-finite result:** the UI shows `—` and the invalid-calculation notice;
+  it does not turn the problem into zero.
+
+Validation runs before the calculation in seven paths: initial load,
+`loadHistoryItem`, `undo`, `restoreAutoSnapshot`, `loadSharedCalculation`,
+setters, and `setWithCompute`. Opening, undoing, restoring, sharing, or editing
+a value therefore cannot silently turn a failure into zero.
+
+If you see `—`, read the field name in the notice and correct that field. If the
+problem came from history or a shared calculation, load a valid configuration or
+fill in the missing value before using the result. Never replace an unknown
+value with `0`: the price is not reliable while the error is present.
+
+### Demonstration presets removed
+
+The three demonstration presets — **Vase**, **GoPro Mount**, and **Statue** —
+were removed. They supplied invented weights and print times; those values
+belong to the model, not to the calculation workflow, so a preset must not
+pretend to know the part.
+
+Use **Demo Mode** when the goal is to see how the calculator works. Use
+**History** when you want to load a real configuration.
+
+### Multi-material is temporarily disabled
+
+Multi-material support is disabled in this beta. The toggle remains visible but
+unavailable, with text explaining that the complete model will arrive in its
+own phase. The reason is concrete: slot costs replaced only `materialCost`;
+`subtotal`, `totalCost`, `sellPrice`, and `profit` did not include that value,
+which silently underestimated the sale price.
+
+Do not use a partial multi-material value to close a quote. `fdmAmsSlots` is
+preserved for that future phase, but it does not represent a complete cost model
+today.
+
+## Controls and presentation
+
+Field customization now appears once, in the `FieldCustomizer` component. The
+same control used to appear between two and four times in different sections.
+`SectionHeader` is presentational only; it does not keep a second copy of the
+state. Detail level and `hiddenFields` remain the single source of truth for
+Classic and Bento.
+
+The interface uses a self-hosted **Plus Jakarta Sans** WOFF2 file under the OFL
+1.1 license. The Google-hosted font was blocked by CSP, so the app does not
+depend on it to display the Wiki. `tokens.css` is the single source of visual
+tokens, with matching semantic values for the light and dark themes.
+
+The Wiki also preserves accessibility when moving between articles: the target
+is scrolled to and focused before the next interaction. The fix uses
+`useLayoutEffect` instead of `useEffect`, so focus is applied after the heading
+has mounted.
+
 ## A complete example
 
-A decorative PLA part, 50 g, 5 hours of printing, 100% margin:
+A decorative PLA part, 50 g, 5 hours of printing, 100% markup:
 
 ```
 material    50 g at R$ 125/kg (98% efficiency)  = R$  6.38
@@ -138,8 +246,8 @@ The recommended path, from the first number to the final price:
    and your cost per kWh.
 4. **Check the `results` section** — it already shows a cost and a sale price
    with the default margin.
-5. **Tune the `sales` section** — the margin is your declared profit. Move it up
-   or down with the market; the sale price updates instantly.
+5. **Tune the `sales` section** — the markup is your declared profit over cost.
+   Move it up or down with the market; the sale price updates instantly.
 6. **Level up if needed** — enable `failure` to include losses, or go Complete
    to apportion machine, labor and fixed costs.
 7. **Save or export** — the estimate becomes a product in the inventory or a
