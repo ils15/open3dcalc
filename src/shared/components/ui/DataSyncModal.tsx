@@ -419,7 +419,7 @@ function ExportTab({
         <button
           onClick={onExport}
           disabled={phase === "working" || !exportPassword}
-          className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] hover:bg-[var(--accent-fill-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           <Download className="w-4 h-4" />
           {t("sync.export.button")}
@@ -658,7 +658,7 @@ function ImportTab({
         <button
           onClick={onImport}
           disabled={!file || phase === "working" || confirmReplace}
-          className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] hover:bg-[var(--accent-fill-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           <Upload className="w-4 h-4" />
           {t("sync.import.button")}

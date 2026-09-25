@@ -106,7 +106,7 @@ export function ConsentModal({ open, onRequestClose }: ConsentModalProps) {
               <button
                 ref={acceptRef}
                 onClick={handleAccept}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
               >
                 {t("privacy.consent.accept")}
               </button>

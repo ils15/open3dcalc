@@ -138,7 +138,7 @@ export function GuidedWizard(): React.ReactElement {
           <button
             type="button"
             onClick={next}
-            className="min-h-11 rounded-lg bg-[var(--color-accent)] px-5 font-semibold text-[var(--color-bg)] transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
+            className="min-h-11 rounded-lg bg-[var(--accent-fill)] px-5 font-semibold text-[var(--accent-fill-fg)] transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2"
           >
             {t("wizard.nav.next")}
           </button>

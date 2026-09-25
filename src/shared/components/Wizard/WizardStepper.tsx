@@ -44,7 +44,7 @@ export function WizardStepper({
                   aria-hidden="true"
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${
                     isCurrent
-                      ? "bg-[var(--color-accent)] text-[var(--color-bg)]"
+                      ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]"
                       : "bg-[var(--color-bg-elevated)]"
                   }`}
                 >
