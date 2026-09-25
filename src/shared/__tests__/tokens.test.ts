@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import {
+  AA_NON_TEXT,
+  AA_NORMAL_TEXT,
+  WHITE,
+  contrastRatio,
+} from "./helpers/contrast";
 
 const projectRoot = resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(resolve(projectRoot, p), "utf-8");
@@ -24,40 +30,15 @@ const effectivePlatformCss = [
 ];
 
 /* ------------------------------------------------------------------ *
- * WCAG 2.1 relative luminance + contrast ratio.
- * Verified against published reference pairs: #767676/#FFFFFF = 4.54,
- * #0000FF/#FFFFFF = 8.59, #FFFFFF/#000000 = 21.0.
+ * WCAG 2.1 relative luminance + contrast ratio now live in
+ * ./helpers/contrast, shared with the call-site guard in
+ * accentBackgroundContrast.test.ts so the two cannot drift apart.
+ *
+ * tokenInBlock stays local: it ASSERTS that the block and token exist, which
+ * is the right behaviour for a token-level guard. The call-site guard needs
+ * the non-asserting variant, because "token absent" is a finding there
+ * rather than a test-setup error.
  * ------------------------------------------------------------------ */
-function relativeLuminance(hex: string): number {
-  const raw = hex.replace("#", "").trim();
-  const full =
-    raw.length === 3
-      ? raw
-          .split("")
-          .map((c) => c + c)
-          .join("")
-      : raw;
-  const [r, g, b] = [0, 2, 4].map((i) => {
-    const channel = parseInt(full.slice(i, i + 2), 16) / 255;
-    return channel <= 0.03928
-      ? channel / 12.92
-      : Math.pow((channel + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function contrastRatio(foreground: string, background: string): number {
-  const [lighter, darker] = [
-    relativeLuminance(foreground),
-    relativeLuminance(background),
-  ].sort((a, b) => b - a);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-/**
- * Reads a single declaration out of one named top-level block.
- * `[^}]*` mirrors the guard style used by layoutShell.test.ts.
- */
 function tokenInBlock(css: string, block: string, token: string): string {
   const blockMatch = css.match(new RegExp(`${block}\\s*{([^}]*)}`, "i"));
   expect(blockMatch, `${block} block must exist in tokens.css`).not.toBeNull();
@@ -70,10 +51,6 @@ function tokenInBlock(css: string, block: string, token: string): string {
   ).not.toBeNull();
   return declaration![1];
 }
-
-const WHITE = "#FFFFFF";
-const AA_NORMAL_TEXT = 4.5;
-const AA_NON_TEXT = 3;
 
 describe("--accent-fill solid-background invariant", () => {
   /**
