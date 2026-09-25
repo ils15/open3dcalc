@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { isValidQuantity } from "@/shared/lib/quantity";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { printers } from "@/shared/lib/printers";
@@ -31,7 +32,11 @@ import type { CalculatorState } from "@/shared/stores/calculatorStore.types";
 export type WizardStep = 1 | 2 | 3 | 4;
 export type WizardDirection = "forward" | "backward";
 /** Validation kinds the UI renders via `t("wizard.errors.<kind>")`. */
-export type WizardErrorKind = "required" | "positive" | "minQuantity";
+export type WizardErrorKind =
+  | "required"
+  | "positive"
+  | "minQuantity"
+  | "invalidQuantity";
 
 export const WIZARD_TOTAL_STEPS = 4;
 export const WIZARD_STEPS: readonly WizardStep[] = [1, 2, 3, 4];
@@ -153,7 +158,7 @@ function fieldError(
       if (typeof value !== "string" || value.length === 0) return "required";
       return printers.some((p) => p.id === value) ? null : "required";
     case "quantity":
-      return Number(value) >= 1 ? null : "minQuantity";
+      return isValidQuantity(value) ? null : "invalidQuantity";
     case "weightGrams":
     case "printTimeHours":
       return Number(value) > 0 ? null : "positive";
@@ -272,14 +277,17 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     // Order matters: print params are set BEFORE the printer so the catalog's
     // power figure wins the merge inside setSelectedPrinter (it also derives
     // machine cost/depreciation/maintenance from the printer entry).
+    // The printer is exposed by the wizard, so its catalog-owned derived values
+    // are intentionally refreshed; every other unexposed value is preserved.
     calc.setActiveTab("fdm");
     calc.setProductName(d.productName);
     calc.setQuantity(d.quantity);
+    // Merge the current material so fields absent from WizardDraft (notably
+    // purgeWeight) survive a Guided commit.
     calc.setFdmMaterial({
       ...calc.fdmMaterial,
       type: d.materialType,
       weightUsed: d.weightGrams,
-      purgeWeight: 0,
       costPerKg: d.costPerKg,
     });
     calc.setFdmPrintParams({
@@ -288,9 +296,10 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       energyCostPerKwh: d.energyCostPerKwh,
     });
     calc.setSelectedPrinter(printer);
+    // Labor enablement is not a WizardDraft field. Preserve the user's Classic
+    // or Bento choice; this step only writes the time and rate it exposes.
     calc.setFdmLabor({
       ...calc.fdmLabor,
-      enabled: true,
       setupTimeMinutes: d.setupTimeMinutes,
       postProcessingTimeMinutes: d.postProcessingMinutes,
       hourlyRate: d.hourlyRate,

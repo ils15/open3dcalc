@@ -201,7 +201,10 @@ describe("InventoryDeductionCard — deduction", () => {
     await waitFor(() => expect(confirmButton).toBeEnabled());
     await user.click(confirmButton);
 
-    expect(deductWeight).toHaveBeenCalledWith("s1", 85);
+    expect(deductWeight).toHaveBeenCalledWith("s1", 85, {
+      calculationIssues: [],
+      quantity: 1,
+    });
     await waitFor(() => expect(stockButton).toHaveFocus());
   });
 

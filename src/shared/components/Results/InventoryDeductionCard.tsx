@@ -30,6 +30,8 @@ export function InventoryDeductionCard() {
     resinType,
     selectedSpoolId,
     setSelectedSpoolId,
+    quantity,
+    calculationIssues,
   } = useCalculatorStore(
     useShallow((s) => ({
       activeTab: s.activeTab,
@@ -37,6 +39,8 @@ export function InventoryDeductionCard() {
       resinType: s.resinMaterial.type,
       selectedSpoolId: s.selectedSpoolId,
       setSelectedSpoolId: s.setSelectedSpoolId,
+      quantity: s.quantity,
+      calculationIssues: s.calculationIssues,
     })),
   );
   const results = useCalculatorStore((s) => s.results);
@@ -65,7 +69,7 @@ export function InventoryDeductionCard() {
 
   const isFDM = activeTab === "fdm";
   const currentMaterial = isFDM ? fdmMaterial.type : resinType;
-  const unitWeight = results?.unitWeight ?? 0;
+  const unitWeight = (results?.unitWeight ?? 0) * quantity;
 
   const selectedSpoolForForm = useMemo(
     () => spools.find((spool) => spool.id === selectedSpoolId) ?? null,
@@ -164,7 +168,10 @@ export function InventoryDeductionCard() {
   const handleConfirmDeduct = () => {
     if (!selectedSpool || deductionInFlightRef.current) return;
     deductionInFlightRef.current = true;
-    deductWeightFromSpool(selectedSpool.id, unitWeight);
+    deductWeightFromSpool(selectedSpool.id, unitWeight, {
+      calculationIssues,
+      quantity,
+    });
     setShowDeductConfirm(false);
     setSelectedSpool(null);
     setDeductSuccess(true);

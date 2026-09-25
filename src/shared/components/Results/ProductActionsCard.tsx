@@ -3,6 +3,11 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { FolderOpen, PackagePlus } from "lucide-react";
 
+import {
+  isFilamentSpoolNotFoundError,
+  isInsufficientFilamentStockError,
+} from "@/shared/lib/filamentStock";
+import { isInvalidCalculationStateError } from "@/shared/lib/calculationState";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { useProductInventory } from "@/shared/stores/productInventory";
@@ -66,6 +71,36 @@ export function ProductActionsCard({
       s.weightGrams >= unitWeight,
   );
 
+  const handleAddToHistory = () => {
+    try {
+      addToHistory();
+      setProductMsg(null);
+    } catch (error) {
+      if (isInsufficientFilamentStockError(error)) {
+        setProductMsg({
+          kind: "error",
+          text: t("results.insufficientStock", {
+            required: error.required?.toFixed(2) ?? results.unitWeight.toFixed(2),
+            available: error.available?.toFixed(2) ?? "0",
+          }),
+        });
+        return;
+      }
+      if (isFilamentSpoolNotFoundError(error)) {
+        setProductMsg({ kind: "error", text: t("results.spoolNotFound") });
+        return;
+      }
+      if (isInvalidCalculationStateError(error)) {
+        setProductMsg({
+          kind: "error",
+          text: t("results.invalidCalculationState"),
+        });
+        return;
+      }
+      throw error;
+    }
+  };
+
   const handleRegisterProduct = () => {
     let name = productName.trim();
     if (!name) {
@@ -113,7 +148,7 @@ export function ProductActionsCard({
     <>
       <button
         type="button"
-        onClick={() => addToHistory()}
+        onClick={handleAddToHistory}
         className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[var(--surface-sunken)] border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)]"
       >
         <FolderOpen className="w-4 h-4" />

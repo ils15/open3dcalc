@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { assertPersistableCalculationState } from "@/shared/lib/calculationState";
 import { marketplaces } from "@/shared/lib/marketplace";
 import { printers } from "@/shared/lib/printers";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
@@ -204,6 +205,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     }),
     selectedSpoolId: null,
     lastDeductedInfo: null,
+    lastHistoryKey: null,
     history: [],
   };
 
@@ -560,6 +562,10 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     addToHistory: () => {
       const s = get();
+      assertPersistableCalculationState({
+        calculationIssues: s.calculationIssues,
+        quantity: s.quantity,
+      });
       const r = s.results;
       if (!r) return;
       const name =
@@ -611,6 +617,9 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         results: r,
       };
 
+      const historyKey = JSON.stringify({ ...snapshot, id: "", timestamp: 0 });
+      if (s.lastHistoryKey === historyKey) return;
+
       useHistoryStore.getState().addEntry({
         id,
         timestamp: now,
@@ -623,6 +632,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         result: r,
         snapshot,
       });
+      set({ lastHistoryKey: historyKey });
 
     },
 

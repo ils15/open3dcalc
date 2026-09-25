@@ -29,7 +29,10 @@ vi.mock("@/shared/stores/historyStore", () => ({
 
 vi.mock("@/shared/stores/calculatorStore", () => ({
   useCalculatorStore: {
-    getState: () => ({}),
+    getState: () => ({
+      quantity: 1,
+      calculationIssues: [],
+    }),
     setState: calculatorSetState,
   },
 }));

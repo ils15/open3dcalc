@@ -118,6 +118,8 @@ export interface CalculatorState {
   selectedSpoolId: string | null;
   setSelectedSpoolId: (id: string | null) => void;
   lastDeductedInfo: { spoolId: string; weight: number } | null;
+  /** Snapshot-derived guard that makes one calculator save idempotent. */
+  lastHistoryKey: string | null;
   setLastDeductedInfo: (
     info: { spoolId: string; weight: number } | null,
   ) => void;
