@@ -123,6 +123,7 @@ describe("useAppInit tutorial auto-start", () => {
       fdmAmsEnabled: true,
       fdmAmsSlots: slots,
     };
+    window.location.hash = "#shared-calculation";
 
     renderHook(() => useAppInit(vi.fn()));
 
@@ -132,5 +133,25 @@ describe("useAppInit tutorial auto-start", () => {
         fdmAmsSlots: slots,
       }),
     );
+    expect(window.location.hash).toBe("");
+  });
+
+  it("routes go-products events and removes the listener on unmount", () => {
+    const navigate = vi.fn();
+    const { unmount } = renderHook(() => useAppInit(navigate));
+
+    act(() => {
+      window.dispatchEvent(new Event("open3dcalc:go-products"));
+    });
+
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith("products");
+
+    unmount();
+    act(() => {
+      window.dispatchEvent(new Event("open3dcalc:go-products"));
+    });
+
+    expect(navigate).toHaveBeenCalledTimes(1);
   });
 });
