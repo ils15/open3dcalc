@@ -73,6 +73,16 @@ describe("PriceHeroCard — display", () => {
     expect(context).toHaveTextContent("25");
   });
 
+  it("keeps the calculated fee amounts visible in the response", () => {
+    renderCard();
+
+    const feeBreakdown = screen.getByTestId("fee-breakdown");
+    expect(feeBreakdown).toHaveTextContent("bento.fields.taxAmount");
+    expect(feeBreakdown).toHaveTextContent("bento.fields.marketplaceFeeAmount");
+    expect(feeBreakdown).toHaveTextContent("bento.fields.totalFees");
+    expect(feeBreakdown).toHaveTextContent("R$ 15,88");
+  });
+
   it("shows the taxes/marketplace footnote when the result carries fees", () => {
     renderCard();
 

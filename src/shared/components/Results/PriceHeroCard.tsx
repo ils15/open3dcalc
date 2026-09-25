@@ -152,6 +152,23 @@ export function PriceHeroCard({
           {t("calc.actualMargin")}: {realMarginValue}
         </span>
       </div>
+      <div
+        data-testid="fee-breakdown"
+        className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-[var(--text-muted)]"
+        aria-label={`${t("bento.fields.taxAmount")}: ${fmtCurrency(fees.taxAmount)}. ${t("bento.fields.marketplaceFeeAmount")}: ${fmtCurrency(fees.marketplaceFee)}. ${t("bento.fields.totalFees")}: ${fmtCurrency(fees.total)}`}
+      >
+        <span>
+          {t("bento.fields.taxAmount")}: {fmtCurrency(fees.taxAmount)}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {t("bento.fields.marketplaceFeeAmount")}: {fmtCurrency(fees.marketplaceFee)}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {t("bento.fields.totalFees")}: {fmtCurrency(fees.total)}
+        </span>
+      </div>
       {priceError && isEditingPrice && (
         <p
           id="sell-price-error"
