@@ -5,6 +5,15 @@ echo "  • TypeScript type check..."
 npx tsc --noEmit -p tsconfig.app.json || exit 1
 echo "  • Lint..."
 npm run lint || exit 1
+# tsc/eslint/vitest never parse a stylesheet, so a CSS-only refactor used to
+# reach main unverified: a broken color-mix(), an @theme typo under Tailwind v4,
+# a selector that silently fails to parse, or a dropped/misordered @import all
+# pass every check above. Both platform entry stylesheets must go through
+# @tailwindcss/vite's Tailwind v4 engine, so build each of them.
+# Measured: ~4.0s warm against a ~36s hook (+11%). dist/ and dist-web/ are
+# gitignored, so the build leaves the working tree clean.
+echo "  • CSS build (web + desktop)..."
+npm run build:all || exit 1
 echo "  • Tests..."
 npm run test:run || exit 1
 echo "✅ All pre-push checks passed"

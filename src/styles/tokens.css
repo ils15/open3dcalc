@@ -30,10 +30,21 @@
   --accent-hover: #4338ca;
   --accent-subtle: #eef2ff;
   /* Solid accent BACKGROUND (primary buttons, filled active segments).
-     Text on top is always --text-inverse. Kept separate from --accent because
-     --accent is a FOREGROUND/border colour and would not survive as a fill.
-     #4F46E5: white 6.29:1 (WCAG AA normal text) and 5.87:1 vs the light canvas. */
+     Kept separate from --accent because --accent is a FOREGROUND/border
+     colour and would not survive as a fill.
+     #4F46E5: #ffffff 6.29:1 text (WCAG AA normal text) and 5.87:1 vs the light
+     canvas (WCAG 1.4.11 non-text). */
   --accent-fill: #4f46e5;
+  /* Foreground ON TOP of --accent-fill. This is NOT --text-inverse: that token
+     flips per theme, so reusing it put .dark's near-black ink (#0a0b10) on this
+     dark fill — 3.13:1, a WCAG AA failure. An explicit token that does not flip
+     is what makes the invariant testable. The prototype's solid buttons are a
+     dark blue with white text in BOTH themes. */
+  --accent-fill-fg: #ffffff;
+  /* Hover/active companion. Its own token, not --accent-hover: #a5b4fc in .dark
+     is a foreground-weight colour and would wash the fill out.
+     #4338CA: #ffffff 7.90:1 text. */
+  --accent-fill-hover: #4338ca;
   --positive: #047857;
   --positive-subtle: #ecfdf5;
   --warning: #92400e;
@@ -43,17 +54,43 @@
   --info: #1d4ed8;
   --info-subtle: #eff6ff;
 
-  /* Tinted fills and borders. Derived from the semantic hues above with
-     color-mix() so no new hue enters the palette and .dark follows for free.
-     -wash = 12% surface tint, -wash-strong = 30% border tint. */
-  --accent-wash: color-mix(in srgb, var(--accent) 12%, transparent);
-  --accent-wash-strong: color-mix(in srgb, var(--accent) 30%, transparent);
-  --positive-wash: color-mix(in srgb, var(--positive) 12%, transparent);
-  --positive-wash-strong: color-mix(in srgb, var(--positive) 30%, transparent);
-  --warning-wash: color-mix(in srgb, var(--warning) 12%, transparent);
-  --warning-wash-strong: color-mix(in srgb, var(--warning) 30%, transparent);
-  --info-wash: color-mix(in srgb, var(--info) 12%, transparent);
-  --info-wash-strong: color-mix(in srgb, var(--info) 30%, transparent);
+  /* Tinted fills and borders.
+     The HUES are pinned below, not derived from the semantic accents above:
+     these tints are the app's pre-token hardcoded 600-step values, and the
+     semantic accents are 700/800/light-400 steps, so deriving from them moved
+     every rendered wash (worst case .segmented-btn.active-fdm in dark:
+     #0a1226 -> #141f28, Δ13 per channel). The hue tokens restore the exact
+     original output while keeping the wash derivation. Same four values in
+     :root and .dark because the hardcoded rgba() they replace was
+     theme-independent. -wash = 12% surface tint, -wash-strong = 30% border. */
+  --accent-wash-hue: #4f46e5;
+  --info-wash-hue: #2563eb;
+  --positive-wash-hue: #059669;
+  --warning-wash-hue: #d97706;
+  --accent-wash: color-mix(in srgb, var(--accent-wash-hue) 12%, transparent);
+  --accent-wash-strong: color-mix(
+    in srgb,
+    var(--accent-wash-hue) 30%,
+    transparent
+  );
+  --positive-wash: color-mix(
+    in srgb,
+    var(--positive-wash-hue) 12%,
+    transparent
+  );
+  --positive-wash-strong: color-mix(
+    in srgb,
+    var(--positive-wash-hue) 30%,
+    transparent
+  );
+  --warning-wash: color-mix(in srgb, var(--warning-wash-hue) 12%, transparent);
+  --warning-wash-strong: color-mix(
+    in srgb,
+    var(--warning-wash-hue) 30%,
+    transparent
+  );
+  --info-wash: color-mix(in srgb, var(--info-wash-hue) 12%, transparent);
+  --info-wash-strong: color-mix(in srgb, var(--info-wash-hue) 30%, transparent);
 
   /* Financial semantics */
   --cost: #c2410c;
@@ -108,10 +145,15 @@
   --accent-hover: #a5b4fc;
   --accent-subtle: #242746;
   /* Solid accent BACKGROUND. --accent (#818CF8) is a foreground/border colour
-     on dark and only reaches 2.98:1 with white text, so the fill needs its own
-     value. #4F46E5: white 6.29:1 (AA normal text) and 3.13:1 vs the dark
-     canvas, which clears WCAG 1.4.11 non-text contrast. */
+     on dark and only reaches 2.98:1 with white, so the fill needs its own
+     value and its own foreground: --accent-fill-fg, not --text-inverse
+     (which is #0a0b10 here and would land 3.13:1 on this fill).
+     #4F46E5: #ffffff 6.29:1 text (AA normal) and 3.13:1 vs the dark canvas
+     (WCAG 1.4.11 non-text). */
   --accent-fill: #4f46e5;
+  --accent-fill-fg: #ffffff;
+  /* #4338CA: #ffffff 7.90:1 text. Deliberately NOT --accent-hover. */
+  --accent-fill-hover: #4338ca;
   --positive: #34d399;
   --positive-subtle: #102b25;
   --warning: #fbbf24;
@@ -121,15 +163,38 @@
   --info: #7dd3fc;
   --info-subtle: #102b3b;
 
-  /* Same derivation as :root — these pick up the .dark hues above. */
-  --accent-wash: color-mix(in srgb, var(--accent) 12%, transparent);
-  --accent-wash-strong: color-mix(in srgb, var(--accent) 30%, transparent);
-  --positive-wash: color-mix(in srgb, var(--positive) 12%, transparent);
-  --positive-wash-strong: color-mix(in srgb, var(--positive) 30%, transparent);
-  --warning-wash: color-mix(in srgb, var(--warning) 12%, transparent);
-  --warning-wash-strong: color-mix(in srgb, var(--warning) 30%, transparent);
-  --info-wash: color-mix(in srgb, var(--info) 12%, transparent);
-  --info-wash-strong: color-mix(in srgb, var(--info) 30%, transparent);
+  /* Same hues as :root, NOT the .dark accents above — the hardcoded rgba() these
+     replace was theme-independent, so the washes must be too. Re-declared here
+     explicitly (rather than inherited) so both themes are individually auditable
+     and a future one-theme edit is a visible test failure. */
+  --accent-wash-hue: #4f46e5;
+  --info-wash-hue: #2563eb;
+  --positive-wash-hue: #059669;
+  --warning-wash-hue: #d97706;
+  --accent-wash: color-mix(in srgb, var(--accent-wash-hue) 12%, transparent);
+  --accent-wash-strong: color-mix(
+    in srgb,
+    var(--accent-wash-hue) 30%,
+    transparent
+  );
+  --positive-wash: color-mix(
+    in srgb,
+    var(--positive-wash-hue) 12%,
+    transparent
+  );
+  --positive-wash-strong: color-mix(
+    in srgb,
+    var(--positive-wash-hue) 30%,
+    transparent
+  );
+  --warning-wash: color-mix(in srgb, var(--warning-wash-hue) 12%, transparent);
+  --warning-wash-strong: color-mix(
+    in srgb,
+    var(--warning-wash-hue) 30%,
+    transparent
+  );
+  --info-wash: color-mix(in srgb, var(--info-wash-hue) 12%, transparent);
+  --info-wash-strong: color-mix(in srgb, var(--info-wash-hue) 30%, transparent);
 
   --cost: #fdba74;
   --revenue: #34d399;

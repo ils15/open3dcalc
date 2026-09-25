@@ -115,6 +115,18 @@ const desktopRules = effectiveRules(desktopCss);
 
 /* -------------------------------------------------------------------------- */
 /* The pinned baseline — recorded from the pre-consolidation stylesheets.      */
+/*                                                                            */
+/* Re-baselined 3 rows after the gate-clearance wave, each with a cause:       */
+/*   .label-xs         letter-spacing 0.1em -> 0.05em          (B5: the layout */
+/*                     this port targets is the prototype's CLASSIC layout,     */
+/*                     which uses tracking-wider at 26 sites, not widest)       */
+/*   .btn-primary      --color-accent/-accent-text ->           (B3: dark mode */
+/*                     --accent-fill/-fg; see tokens.test.ts)                  */
+/*   .btn-primary:hover  --color-accent-hover ->                 (B3: the fill  */
+/*                       --accent-fill-hover so it cannot inherit hover)       */
+/* Nothing else in this table changed. B4 moved the wash VALUES in tokens.css */
+/* without renaming the tokens, so all five .segmented-btn.active-* rows still */
+/* match. No assertion below was weakened, deleted or loosened.                 */
 /* -------------------------------------------------------------------------- */
 
 const PINNED_SHARED_LAYER: ReadonlyArray<readonly [string, string]> = [
@@ -154,13 +166,13 @@ const PINNED_SHARED_LAYER: ReadonlyArray<readonly [string, string]> = [
   ],
   [
     ".label-xs",
-    "font-size: var(--type-micro-label-size); line-height: var(--type-micro-label-line-height); font-weight: var(--type-micro-label-weight); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted)",
+    "font-size: var(--type-micro-label-size); line-height: var(--type-micro-label-line-height); font-weight: var(--type-micro-label-weight); letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-muted)",
   ],
   [
     ".btn-primary",
-    "background: var(--color-accent); color: var(--color-accent-text); border: 1px solid transparent; border-radius: var(--radius-md); padding: 10px 20px; font-weight: 600; font-size: 0.875rem; transition: background 0.15s ease, transform 0.1s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px",
+    "background: var(--accent-fill); color: var(--accent-fill-fg); border: 1px solid transparent; border-radius: var(--radius-md); padding: 10px 20px; font-weight: 600; font-size: 0.875rem; transition: background 0.15s ease, transform 0.1s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px",
   ],
-  [".btn-primary:hover", "background: var(--color-accent-hover)"],
+  [".btn-primary:hover", "background: var(--accent-fill-hover)"],
   [".btn-primary:active", "transform: scale(0.98)"],
   [
     ".nav-item",
