@@ -227,28 +227,19 @@ describe("desktop App shell (post-extraction)", () => {
 
   it("keeps the go-products event connected to the shared navigation state", () => {
     render(<App />);
-    // Products is a demoted destination, so the event must still reach it even
+    const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
+    const moreButton = within(nav).getByRole("button", { name: /nav\.more/ });
+
+    // Products is a demoted destination: the event must still reach it even
     // though it is not one of the buttons in the bar.
     act(() => {
       window.dispatchEvent(new Event("open3dcalc:go-products"));
     });
 
+    // The surface mounted…
     expect(screen.getByText("ProductInventory")).toBeInTheDocument();
-  });
-
-  it("keeps the go-products event working for a demoted destination", () => {
-    const { container } = render(<App />);
-    const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
-    const moreButton = within(nav).getByRole("button", { name: /nav\.more/ });
-
-    act(() => {
-      window.dispatchEvent(new Event("open3dcalc:go-products"));
-    });
-
-    // Products is reached, and the More disclosure owns it (it is demoted).
-    expect(screen.getByText("ProductInventory")).toBeInTheDocument();
+    // …and the More disclosure, which owns demoted surfaces, reflects it.
     expect(moreButton).toHaveAttribute("aria-current", "page");
-    void container;
   });
 
   it("keeps every demoted destination reachable through More", () => {
@@ -280,10 +271,18 @@ describe("desktop App shell (post-extraction)", () => {
     expect(screen.getByText("InfillCalculator")).toBeInTheDocument();
   });
 
-  it("keeps the full surface set reachable (every TABS id has a screen)", () => {
-    // TABS is still the full catalog; the split only changes presentation.
+  it("keeps every TABS id in the primary or demoted set (none orphaned)", () => {
+    // The Phase 7o s3 split only changes presentation, so no surface may fall
+    // out of both groups. (Reachability itself is covered by the More-menu and
+    // Infill tests above, which drive the real nav.)
+    const grouped = new Set([
+      ...PRIMARY_TABS.map((tab) => tab.id),
+      ...MORE_TABS.map((tab) => tab.id),
+    ]);
+
     for (const tab of TABS) {
-      expect(TABS.filter((entry) => entry.id === tab.id)).toHaveLength(1);
+      expect(grouped.has(tab.id), `${tab.id} is in no nav group`).toBe(true);
     }
+    expect(grouped.size).toBe(TABS.length);
   });
 });

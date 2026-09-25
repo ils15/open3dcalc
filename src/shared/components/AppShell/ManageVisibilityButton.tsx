@@ -109,6 +109,11 @@ export function ManageVisibilityButton({
   // single source of truth for "which destinations are always visible", and a
   // local `tab !== "calculator"` would quietly diverge from the store and the
   // nav the moment the rule changes.
+  // `activeTab` here is a PLACEHOLDER required to satisfy the NavigationPrefs
+  // shape — `isTabHidden` reads only `hiddenTabs`, so it is not load-bearing and
+  // this dialog is unaffected by which destination is active. Do not start
+  // reading it; if the shared type ever splits, pass the real value instead of
+  // widening this comment.
   const prefs = useMemo<NavigationPrefs>(
     () => ({ activeTab: "calculator", hiddenTabs }),
     [hiddenTabs],
