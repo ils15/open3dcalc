@@ -143,7 +143,7 @@ describe("desktop App shell (post-extraction)", () => {
   });
 
   it("mobile bar has no settings gear (desktop parity difference)", () => {
-    render(<App />);
+    const { container } = render(<App />);
 
     const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
     expect(nav.className).toContain("lg:hidden");
@@ -153,10 +153,24 @@ describe("desktop App shell (post-extraction)", () => {
     expect(nav.querySelectorAll("button[aria-selected]")).toHaveLength(
       PRIMARY_TABS.length,
     );
-    // The settings GEAR (a button that opens the settings sheet) is web-only.
-    // Scoped to the bar: the desktop sidebar footer legitimately hosts its own
-    // aria-haspopup="dialog" control (Manage Visibility).
+    // The settings GEAR — the button that opens the settings sheet — is
+    // web-only, so the bar must not own one.
     expect(nav.querySelector('button[aria-haspopup="dialog"]')).toBeNull();
+
+    // The desktop DOES ship dialog-opening controls (Phase 7o s3 added Manage
+    // Visibility to the sidebar footer). Asserted explicitly so this test keeps
+    // guarding the gear's absence without silently depending on "no control
+    // anywhere owns a dialog" — which was the old, now-false premise.
+    const dialogTriggers = Array.from(
+      container.querySelectorAll('button[aria-haspopup="dialog"]'),
+    );
+    expect(dialogTriggers.length).toBeGreaterThan(0);
+    for (const trigger of dialogTriggers) {
+      expect(trigger).toHaveAttribute(
+        "aria-label",
+        "settings.manageVisibility",
+      );
+    }
   });
 
   it("switches surfaces when a destination is selected", () => {

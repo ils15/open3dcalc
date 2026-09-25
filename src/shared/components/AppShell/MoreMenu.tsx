@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
@@ -46,6 +47,14 @@ export function MoreMenu({
   const { open, toggle, close, triggerRef, contentRef } =
     useDismissablePopover<HTMLButtonElement>();
 
+  // Unique per instance: the tablet strip and the desktop sidebar are BOTH
+  // mounted at once (separated only by `display:none`), so a hardcoded id
+  // would be duplicated in the DOM and `aria-controls` would resolve to the
+  // wrong panel for half the instances. Declared ABOVE the early return below:
+  // hiding every demoted destination unmounts the panel, and a hook called
+  // after that bail would change hook order between renders.
+  const panelId = useId();
+
   const items = visibleTabsFrom(
     MORE_TABS.map((tab) => tab.id),
     { activeTab, hiddenTabs },
@@ -58,7 +67,6 @@ export function MoreMenu({
   // of the panel but is still "behind More", so More keeps the current marker
   // and the nav never shows an active destination as unselected.
   const holdsActive = holdsDemotedSurface(activeTab);
-  const panelId = "app-shell-more-menu";
 
   return (
     <div className="relative">

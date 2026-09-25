@@ -264,9 +264,12 @@ describe("mobile bottom navigation", () => {
     expect(within(sheet).getByText("settings.currency")).toBeInTheDocument();
     expect(within(sheet).getByText("nav.language")).toBeInTheDocument();
 
-    // …and no destination does.
-    for (const tab of PRIMARY_TABS) {
-      expect(within(sheet).queryByText(tab.labelKey)).toBeNull();
+    // …and no destination does. Checked across the FULL surface set, not just
+    // the primary five: the sheet is a settings surface, so the demoted
+    // destinations must be absent from it too (the Manage Visibility dialog
+    // lists them, but it is closed by default and must not leak into the sheet).
+    for (const tab of WEB_TABS) {
+      expect(within(sheet).queryByText(tab.labelKey), tab.id).toBeNull();
     }
   });
 });

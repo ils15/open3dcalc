@@ -17,6 +17,7 @@ vi.mock("react-i18next", () => ({
 import { ManageVisibilityButton } from "../ManageVisibilityButton";
 import { NavigationProvider } from "../NavigationProvider";
 import { TABS } from "../tabs";
+import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
 
 /**
  * Phase 7o s3 — Settings → Manage Visibility.
@@ -163,6 +164,44 @@ describe("ManageVisibilityButton — keyboard and focus handling", () => {
     fireEvent.keyDown(document, { key: "Escape" });
 
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it("does not let Escape leak to the enclosing popover", () => {
+    // The settings sheet / header dropdowns are useDismissablePopover, which
+    // listens on `window` — an ancestor of `document`. One Escape must close
+    // only the dialog, or the user loses the layer behind it too.
+    function Host(): React.ReactElement {
+      const { open, toggle, triggerRef, contentRef } =
+        useDismissablePopover<HTMLButtonElement>(true);
+      return (
+        <>
+          <button ref={triggerRef} type="button" onClick={toggle}>
+            host trigger
+          </button>
+          {open && (
+            <div ref={contentRef} data-testid="host-popover">
+              <ManageVisibilityButton />
+            </div>
+          )}
+        </>
+      );
+    }
+    render(
+      <NavigationProvider>
+        <Host />
+      </NavigationProvider>,
+    );
+
+    expect(screen.getByTestId("host-popover")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "settings.manageVisibility" }),
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByTestId("host-popover")).toBeInTheDocument();
   });
 });
 

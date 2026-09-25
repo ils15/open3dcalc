@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 import {
   MORE_TAB_IDS,
@@ -202,6 +202,23 @@ describe("primary navigation — the five always-available destinations", () => 
       expect(button.className).toContain("focus-visible:ring-2");
     }
   });
+
+  it("exposes navigation semantics, not a broken tab pattern", () => {
+    // The base markup put role="tab" on these buttons with NO tablist ancestor
+    // and NO tabpanel siblings (MainContent renders a single main region), so
+    // assistive tech was told "tab" with nothing to anchor it to. These are
+    // navigation items, so aria-current is the correct marker. Pinned here so
+    // the broken pattern cannot creep back.
+    const { desktopSidebar, tabletSidebar } = renderShell();
+
+    for (const aside of [desktopSidebar, tabletSidebar]) {
+      expect(aside.querySelectorAll('[role="tab"]')).toHaveLength(0);
+      expect(aside.getAttribute("role")).not.toBe("tablist");
+    }
+    expect(
+      desktopSidebar.querySelectorAll("button[aria-current='page']"),
+    ).toHaveLength(1);
+  });
 });
 
 describe("primary navigation — Infill is demoted to More, still working", () => {
@@ -264,6 +281,37 @@ describe("primary navigation — Infill is demoted to More, still working", () =
     );
 
     expect(screen.getByTestId("surface-infill")).toBeInTheDocument();
+  });
+
+  it("gives every mounted More instance a unique panel id", () => {
+    // The tablet strip and the desktop sidebar are both in the DOM at once
+    // (separated only by display:none), and so are both mobile bars' siblings.
+    // A shared hardcoded id would be invalid HTML and aria-controls would
+    // resolve to the wrong panel.
+    const { desktopSidebar, tabletSidebar } = renderShell();
+    const navs = [tabletSidebar, desktopSidebar].filter((el) =>
+      el.querySelector("button[aria-controls]"),
+    );
+    expect(navs).toHaveLength(2);
+
+    for (const nav of navs) {
+      const trigger = nav.querySelector<HTMLButtonElement>(
+        "button[aria-controls]",
+      )!;
+      const panelId = trigger.getAttribute("aria-controls")!;
+      expect(panelId).toBeTruthy();
+
+      fireEvent.click(trigger);
+      const panel = document.getElementById(panelId);
+      expect(panel, `panel for ${panelId}`).toBeInTheDocument();
+      expect(trigger.getAttribute("aria-expanded")).toBe("true");
+      fireEvent.click(trigger);
+    }
+
+    const panelIds = [tabletSidebar, desktopSidebar].map((el) =>
+      el.querySelector("button[aria-controls]")!.getAttribute("aria-controls"),
+    );
+    expect(new Set(panelIds).size).toBe(panelIds.length);
   });
 
   it("offers every demoted destination under More", () => {
@@ -416,6 +464,46 @@ describe("primary navigation — hiding affects navigation only", () => {
     expect(desktopSidebar.querySelectorAll("button")).toHaveLength(
       PRIMARY_TABS.length,
     );
+  });
+
+  it("survives the More trigger appearing and disappearing (hook order)", () => {
+    // More bails out entirely when every demoted destination is hidden, so any
+    // hook declared after that bail would change hook order across renders.
+    const Harness = (): React.ReactElement => {
+      const activeTab = useNavigationPrefsStore((s) => s.activeTab);
+      return (
+        <AppShell
+          activeTab={activeTab}
+          onTabChange={vi.fn()}
+          mainClassName=""
+        />
+      );
+    };
+    const tree = (
+      <NavigationProvider>
+        <Harness />
+      </NavigationProvider>
+    );
+    const { container, rerender } = render(tree);
+    const more = (): HTMLElement | null =>
+      within(
+        container.querySelector('[class*="hidden lg:flex"]') as HTMLElement,
+      ).queryByRole("button", { name: "nav.more" });
+
+    expect(more()).toBeInTheDocument();
+    act(() => {
+      for (const tab of MORE_TAB_IDS) {
+        useNavigationPrefsStore.getState().setTabVisibility(tab, false);
+      }
+    });
+    rerender(tree);
+    expect(more()).toBeNull();
+
+    act(() => {
+      useNavigationPrefsStore.getState().resetVisibility();
+    });
+    rerender(tree);
+    expect(more()).toBeInTheDocument();
   });
 });
 

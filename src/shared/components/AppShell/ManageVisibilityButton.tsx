@@ -1,7 +1,12 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Eye, X } from "lucide-react";
 
+import {
+  canHideTab,
+  isTabHidden,
+  type NavigationPrefs,
+} from "@/shared/lib/navigationPrefs";
 import { useNavigationVisibility } from "./NavigationContext";
 import { TABS, type Tab } from "./tabs";
 
@@ -15,9 +20,10 @@ import { TABS, type Tab } from "./tabs";
  * Accessibility: a real `<button>` trigger with `aria-haspopup="dialog"` and
  * `aria-expanded`; a `role="dialog"` `aria-modal` panel labelled by its own
  * title; focus moves in on open, is trapped by Tab, and returns to the trigger
- * on Escape or backdrop click. Each destination is a toggle `<button>` with
- * `aria-pressed`, so the state is announced rather than implied by the label
- * swapping between "Hide" and "Show".
+ * on Escape or backdrop click. Each destination is a VERB button whose label
+ * names the action ("Hide" / "Show") and whose current state is carried by an
+ * adjacent "Hidden" badge — deliberately not `aria-pressed`, because a pressed
+ * button labelled "Hide" reads as "hiding is on", inverting the meaning.
  *
  * Pricing/Calculator renders a static "Always visible" note instead of a
  * control — a disabled button is still a Tab stop, and a stop the user can
@@ -58,6 +64,11 @@ export function ManageVisibilityButton({
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         event.preventDefault();
+        // stopPropagation matters: the enclosing popovers (useDismissablePopover)
+        // listen on `window`, which sits ABOVE `document` in the bubble path.
+        // Without this, one Escape closes the dialog AND the settings dropdown
+        // behind it, skipping a layer the user can still see.
+        event.stopPropagation();
         setOpen(false);
         triggerRef.current?.focus();
         return;
@@ -94,8 +105,16 @@ export function ManageVisibilityButton({
     triggerRef.current?.focus();
   };
 
-  const isHidden = (tab: Tab): boolean => hiddenTabs.includes(tab);
-  const canHide = (tab: Tab): boolean => tab !== "calculator";
+  // Both predicates come from navigationPrefs: this PR exists to establish a
+  // single source of truth for "which destinations are always visible", and a
+  // local `tab !== "calculator"` would quietly diverge from the store and the
+  // nav the moment the rule changes.
+  const prefs = useMemo<NavigationPrefs>(
+    () => ({ activeTab: "calculator", hiddenTabs }),
+    [hiddenTabs],
+  );
+  const isHidden = (tab: Tab): boolean => isTabHidden(prefs, tab);
+  const canHide = (tab: Tab): boolean => canHideTab(tab);
 
   const triggerClassName =
     variant === "icon"
