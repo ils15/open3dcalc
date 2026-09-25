@@ -170,3 +170,94 @@ export function resolveTokenHex(
 export function isUnresolvableValue(raw: string | null): boolean {
   return raw !== null && !/^#[0-9a-f]{3,8}$/i.test(raw) && !/^var\(/i.test(raw);
 }
+
+/**
+ * A colour as LAYERS: an sRGB hex plus the alpha it is painted at. Resolves the
+ * three shapes the token layer actually uses —
+ *
+ *   --x: #4f46e5                                -> { hex, alpha: 1 }
+ *   --color-accent: var(--accent)               -> follows the alias
+ *   --accent-wash: color-mix(in srgb,
+ *       var(--accent-wash-hue) 12%, transparent) -> { hex: <hue>, alpha: 0.12 }
+ *
+ * The third shape is why this exists. `resolveTokenHex()` returns null for a
+ * translucent wash by design, because a 12% wash has no single colour — but
+ * that null is indistinguishable from the undefined-token null, so a guard
+ * cannot tell "this token is a wash" from "--color-bg does not exist". The two
+ * are different findings and need different handling, so washes resolve to
+ * layers here and are composited by `compositeOver()`.
+ *
+ * Returns null for anything else, so an unresolvable value still reads as a
+ * finding at the call site rather than silently passing.
+ */
+export function resolveTokenLayers(
+  css: string,
+  theme: ThemeName,
+  token: string,
+  depth = 0,
+): { hex: string; alpha: number } | null {
+  if (depth > 8) return null;
+  const raw = themeTokenMap(css, theme).get(
+    token.startsWith("--") ? token : `--${token}`,
+  );
+  if (raw === undefined) return null;
+  if (/^#[0-9a-f]{3,8}$/i.test(raw)) return { hex: raw, alpha: 1 };
+
+  const alias = raw.match(/^var\(\s*(--[a-z0-9-]+)\s*\)$/i);
+  if (alias) return resolveTokenLayers(css, theme, alias[1], depth + 1);
+
+  const mix = raw.match(
+    /^color-mix\(\s*in\s+srgb\s*,\s*var\(\s*(--[a-z0-9-]+)\s*\)\s*([\d.]+)%\s*,\s*transparent\s*\)$/i,
+  );
+  if (mix) {
+    const inner = resolveTokenLayers(css, theme, mix[1], depth + 1);
+    if (!inner) return null;
+    return { hex: inner.hex, alpha: (parseFloat(mix[2]) / 100) * inner.alpha };
+  }
+  return null;
+}
+
+/** `rgba()` string for a hex at a given alpha. */
+export function withAlpha(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Source-over composite of a layered colour onto an opaque backdrop. */
+export function compositeOver(
+  layers: { hex: string; alpha: number },
+  backdrop: string,
+): string {
+  const parse = (hex: string): [number, number, number] => {
+    const h = hex.replace("#", "");
+    const full =
+      h.length === 3
+        ? h
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : h;
+    return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16)) as [
+      number,
+      number,
+      number,
+    ];
+  };
+  const [r, g, b] = parse(layers.hex);
+  const [br, bg, bb] = parse(backdrop);
+  const a = layers.alpha;
+  return (
+    "#" +
+    [r * a + br * (1 - a), g * a + bg * (1 - a), b * a + bb * (1 - a)]
+      .map((v) => Math.round(v).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}

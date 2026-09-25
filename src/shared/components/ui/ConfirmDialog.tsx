@@ -28,24 +28,42 @@ function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
 }
 
 /**
- * Each variant owns its OWN foreground. The confirm button used to hardcode
- * `text-[var(--color-text-primary)]` in the shared className and take only its
- * background from here, so no single edit could fix one variant without
- * breaking the others: the `info` variant paints an accent fill, and white ink
- * would have been correct for it while landing 2.49:1 on `warning`'s
- * bg-amber-600. Moving the text token into the map makes each pairing explicit
- * and independently checkable.
+ * Each variant owns its OWN foreground AND its own background pair. The
+ * confirm button used to hardcode `text-[var(--color-text-primary)]` in the
+ * shared className and take only its background from here, so no single edit
+ * could fix one variant without breaking the others: the `info` variant paints
+ * an accent fill, and white ink would have been correct for it while landing
+ * 2.49:1 on `warning`'s bg-amber-600. Moving the text token into the map makes
+ * each pairing explicit and independently checkable.
  *
  * `info` uses --accent-fill / --accent-fill-fg, not --color-accent: the latter
  * flips to #818cf8 in .dark, which put --text-primary ink at 2.72:1 on it.
+ *
+ * `danger` and `warning` were the same defect one level down. Their backgrounds
+ * were raw Tailwind palette utilities — bg-red-600 / bg-amber-600 — which are
+ * theme-INDEPENDENT, so pairing them with a theme-flipping ink fixed light and
+ * broke dark. They now carry token-backed fills and a token-backed ink each:
+ *
+ *   danger   #e7000b + #ffffff  4.77:1 rest, 6.42:1 hover  (red-700  #c10007)
+ *   warning  #e17100 + #0a0b10  6.14:1 rest, 9.21:1 hover  (amber-500 #fe9a00)
+ *
+ * Both figures are identical in BOTH themes, which is the property that the
+ * previous pairing did not have. The hover steps in opposite directions on
+ * purpose: white ink on red must darken to stay legible and near-black ink on
+ * amber must lighten, so a single shared direction cannot clear 4.5:1 for both.
+ *
+ * The values are the sRGB rendering of Tailwind v4's oklch palette. See the
+ * token block in styles/tokens.css for the oklch each one comes from.
  */
 const variantStyles = {
   danger: {
-    button: "bg-red-600 text-[var(--color-text-primary)] hover:bg-red-500",
+    button:
+      "bg-[var(--color-danger-fill)] text-[var(--color-danger-fill-fg)] hover:bg-[var(--color-danger-fill-hover)]",
     icon: "text-[var(--color-danger)]",
   },
   warning: {
-    button: "bg-amber-600 text-[var(--color-text-primary)] hover:bg-amber-500",
+    button:
+      "bg-[var(--color-warning-fill)] text-[var(--color-warning-fill-fg)] hover:bg-[var(--color-warning-fill-hover)]",
     icon: "text-[var(--color-warning)]",
   },
   info: {
