@@ -1145,7 +1145,9 @@ N6  Revenue Trends            ── independente, não espera N0
 
 #### 7o.1 — Façades de estado da aplicação
 
-**Status:** Navigation Context implementado e aprovado pela Themis (uma observação baixa e não bloqueante); PR [#227](https://github.com/ils15/open3dcalc/pull/227) aberto, não mesclado. Commit `f8f6b061ef8a4639f15d162fa4ab12e662aefca3`, baseado em `main` (`ec82f651`); na base exata passaram 218 arquivos / 2.870 testes (baseline: 216 / 2.863), `typecheck`, `typecheck:electron`, `lint`, `build:web` e `build:desktop`. Nenhum dado persistido foi alterado. Currency Context e Theme Context permanecem não iniciados.
+**Status:** Navigation Context implementado e aprovado pela Themis (uma observação baixa e não bloqueante); PR [#227](https://github.com/ils15/open3dcalc/pull/227) aberto, não mesclado. Commit `f8f6b061ef8a4639f15d162fa4ab12e662aefca3`, baseado em `main` (`ec82f651`); na base exata passaram 218 arquivos / 2.870 testes (baseline: 216 / 2.863), `typecheck`, `typecheck:electron`, `lint`, `build:web` e `build:desktop`. Nenhum dado persistido foi alterado.
+
+Currency e Theme Context implementados e aprovados pela Themis após três correções. Phase 2: commits `7a79e373dad2adcb5b3d805c497bd1143988cee0` e `4885cdaa42fcdc07dc0d4be9acd58863d62d97f3`; PR [#228](https://github.com/ils15/open3dcalc/pull/228) aberto, não draft e não mesclado, baseado na Phase 1/PR #227 em `f8f6b061ef8a4639f15d162fa4ab12e662aefca3`, head `4885cdaa`. Na criação do PR, o CI remoto ainda não tinha check runs. A suíte local passou com 223 arquivos / 2.883 testes; typechecks, lint e `build:all` passaram. As chaves de storage existentes não mudaram; a validação cobre Currency/Theme, não o gate completo de compatibilidade v2.0, que permanece aberto. Browser indisponível; sem alterações de CSS/layout.
 
 **Acceptance criteria:**
 
