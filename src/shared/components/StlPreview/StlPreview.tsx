@@ -1103,7 +1103,13 @@ export function StlPreview({
             <button
               type="button"
               onClick={() => setShowToolpath(true)}
-              className="min-h-[44px] w-full px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)]/15 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/25 transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+              /* Secondary action in a column of secondary controls, so it stays
+                 a wash. Same ink rule as the QuoteSection button: accent ink
+                 only clears 4.5:1 on the 12% wash, so the 15%/25% pair could
+                 not be fixed by nudging alpha alone without collapsing the
+                 hover step. Primary ink clears rest and hover in both themes
+                 (14.36:1 / 12.24:1 dark, 13.12:1 / 9.93:1 light). */
+              className="min-h-[44px] w-full px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent-wash)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-wash-strong)] transition-colors flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
               aria-label={t("stl.previewToolpath")}
               title={t("stl.previewToolpathHint")}
             >

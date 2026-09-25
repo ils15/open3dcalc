@@ -341,7 +341,21 @@ function QuoteFormModal({
             </label>
             <button
               onClick={() => setShowHistoryPicker(true)}
-              className="px-4 py-2 rounded-xl text-xs bg-[var(--color-accent)]/30 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/50 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
+              /* Tinted SECONDARY action, so it must not compete with the
+                 quote's primary flow. Kept as a wash rather than promoted to
+                 --accent-fill: this is an occasional shortcut, not the main
+                 path. The ink is --color-text-primary, NOT --color-accent:
+                 accent-coloured text on the wash hue only clears 4.5:1 at the
+                 12% wash (4.65:1 light / 5.28:1 dark) and collapses to
+                 3.52:1 / 4.49:1 on the 30% hover wash, so the hover step
+                 would have been an unreadable state. Primary ink clears both
+                 steps with room to spare (13.12:1 / 9.93:1 light,
+                 14.36:1 / 12.24:1 dark) and the 12% -> 30% move is a clear
+                 ~33-39 per-channel step. Uses the wash tokens rather than a
+                 hardcoded alpha: --color-accent is a FOREGROUND token and the
+                 washes must be built from the pinned wash hue, which is
+                 deliberately theme-independent. */
+              className="px-4 py-2 rounded-xl text-xs bg-[var(--color-accent-wash)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-wash-strong)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
             >
               <Plus className="w-3 h-3" />
               Adicionar do Histórico

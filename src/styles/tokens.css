@@ -54,6 +54,32 @@
   --info: #1d4ed8;
   --info-subtle: #eff6ff;
 
+  /* Solid variant FILLS for the confirm dialog (danger / warning).
+     Same reasoning as --accent-fill above: these are BACKGROUNDS. What broke
+     the dialog is that its backgrounds were raw Tailwind palette utilities
+     (bg-red-600, bg-amber-600) which are theme-INDEPENDENT, while the ink came
+     from --color-text-primary, a FOREGROUND token that flips to near-white in
+     .dark. The pairing that works in light therefore breaks in dark, and no
+     single text token fixes both: white on amber-600 is 3.20:1 while
+     --color-text-primary on red-600 is 3.72:1. Each variant carries its own
+     -fg instead, exactly as --accent-fill-fg does for the accent fill, and
+     both are declared here AND in .dark with identical values so that each
+     theme is individually auditable.
+
+     Values are the sRGB rendering of Tailwind v4's oklch palette:
+     red-600 = oklch(0.577 0.245 27.325) -> #e7000b,
+     amber-600 = oklch(0.666 0.179 58.318) -> #e17100.
+     Written as hex rather than oklch so the contrast guard, which cannot
+     evaluate oklch(), can resolve them; the rendered sRGB is identical.
+     Measured: danger #ffffff 4.77:1 on rest / 6.42:1 on hover;
+     warning #0a0b10 6.14:1 on rest / 9.21:1 on hover. Both in BOTH themes. */
+  --danger-fill: #e7000b;
+  --danger-fill-fg: #ffffff;
+  --danger-fill-hover: #c10007; /* red-700 */
+  --warning-fill: #e17100;
+  --warning-fill-fg: #0a0b10;
+  --warning-fill-hover: #fe9a00; /* amber-500 */
+
   /* Tinted fills and borders.
      The HUES are pinned below, not derived from the semantic accents above:
      these tints are the app's pre-token hardcoded 600-step values, and the
@@ -163,6 +189,22 @@
   --info: #7dd3fc;
   --info-subtle: #102b3b;
 
+  /* Solid variant FILLS. Identical to :root, NOT derived from the .dark
+     semantics above, for the same reason --accent-fill is: the background is
+     theme-independent, so only the INK is allowed to differ — and here the ink
+     is fixed per variant as well, because a single flipping ink is what broke
+     the dialog in the first place. Re-declared rather than inherited so that a
+     one-theme edit becomes a visible test failure.
+     Note the hover direction differs per variant and must: white on red has
+     to DARKEN to stay legible, near-black on amber has to LIGHTEN. One shared
+     direction cannot satisfy both. */
+  --danger-fill: #e7000b;
+  --danger-fill-fg: #ffffff;
+  --danger-fill-hover: #c10007; /* red-700 */
+  --warning-fill: #e17100;
+  --warning-fill-fg: #0a0b10;
+  --warning-fill-hover: #fe9a00; /* amber-500 */
+
   /* Same hues as :root, NOT the .dark accents above — the hardcoded rgba() these
      replace was theme-independent, so the washes must be too. Re-declared here
      explicitly (rather than inherited) so both themes are individually auditable
@@ -241,6 +283,22 @@
   --color-accent-light: var(--accent);
   --color-accent-muted: var(--accent-subtle);
   --color-accent-text: var(--text-inverse);
+  /* Fill and wash families. Aliases exist so a component can stay entirely in
+     the --color-* namespace; mixing the bare --accent/--surface/--text names
+     into the same component is a documented violation. The accent fill/wash
+     call sites are in the same components as the ones still on the bare
+     names, so both spellings are kept until B.2/B.3 migrate them. */
+  --color-accent-fill: var(--accent-fill);
+  --color-accent-fill-fg: var(--accent-fill-fg);
+  --color-accent-fill-hover: var(--accent-fill-hover);
+  --color-accent-wash: var(--accent-wash);
+  --color-accent-wash-strong: var(--accent-wash-strong);
+  --color-danger-fill: var(--danger-fill);
+  --color-danger-fill-fg: var(--danger-fill-fg);
+  --color-danger-fill-hover: var(--danger-fill-hover);
+  --color-warning-fill: var(--warning-fill);
+  --color-warning-fill-fg: var(--warning-fill-fg);
+  --color-warning-fill-hover: var(--warning-fill-hover);
 
   --color-success: var(--positive);
   --color-warning: var(--warning);

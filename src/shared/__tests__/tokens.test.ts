@@ -186,6 +186,98 @@ describe("--accent-fill solid-background invariant", () => {
   });
 });
 
+describe("status variant fills (danger / warning) are theme-independent", () => {
+  /**
+   * The same invariant as --accent-fill, one level down. ConfirmDialog painted
+   * `bg-red-600` / `bg-amber-600` — theme-independent Tailwind palette
+   * utilities — behind `--color-text-primary`, which FLIPS to near-white in
+   * .dark. The pairing that worked in light therefore broke in dark, and no
+   * single text token fixes both: white on amber-600 is 3.20:1 while
+   * --color-text-primary on red-600 is only 4.19:1 in dark. Each variant
+   * carries its own -fg so the pairing is explicit and per-variant.
+   */
+  const VARIANTS = [
+    {
+      name: "danger",
+      fill: "danger-fill",
+      fg: "danger-fill-fg",
+      hover: "danger-fill-hover",
+    },
+    {
+      name: "warning",
+      fill: "warning-fill",
+      fg: "warning-fill-fg",
+      hover: "warning-fill-hover",
+    },
+  ];
+
+  for (const v of VARIANTS) {
+    it.each([
+      [":root", "light"],
+      [".dark", "dark"],
+    ])(
+      `keeps --${v.name}-fill legible with --${v.fg} in %s, at rest and on hover`,
+      (block) => {
+        const fill = tokenInBlock(tokensCss, block, v.fill);
+        const fg = tokenInBlock(tokensCss, block, v.fg);
+        const hover = tokenInBlock(tokensCss, block, v.hover);
+
+        for (const [state, bg] of [
+          ["rest", fill],
+          ["hover", hover],
+        ] as const) {
+          const ratio = contrastRatio(fg, bg);
+          expect(
+            ratio,
+            `${fg} on the ${state} fill ${bg} (--${v.name}) is ${ratio.toFixed(2)}:1 — ` +
+              `dialog button text needs >= ${AA_NORMAL_TEXT}:1 (WCAG 1.4.3)`,
+          ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+        }
+      },
+    );
+
+    it.each([
+      [":root", "light"],
+      [".dark", "dark"],
+    ])(`keeps --${v.name}-fill identical in :root and .dark`, (block) => {
+      // The background was theme-independent before it was tokenised, so it
+      // must not start depending on the theme now. Only the INK is allowed
+      // to be chosen per variant — and this one is a literal in both blocks,
+      // so neither moves.
+      expect(
+        tokenInBlock(tokensCss, block, v.fill),
+        `--${v.fill} must not differ between themes`,
+      ).toBe(tokenInBlock(tokensCss, ":root", v.fill));
+      expect(
+        tokenInBlock(tokensCss, block, v.fg),
+        `--${v.fg} must not differ between themes; a flipping ink is the ` +
+          `defect this token family exists to remove`,
+      ).toBe(tokenInBlock(tokensCss, ":root", v.fg));
+    });
+
+    it(`gives --${v.name}-fill, -fg and -hover a consumer in ConfirmDialog`, () => {
+      const dialog = read("shared/components/ui/ConfirmDialog.tsx");
+      for (const token of [v.fill, v.fg, v.hover]) {
+        expect(
+          dialog.includes(`var(--color-${token})`),
+          `--${token} must be consumed via its --color-* alias; a declared ` +
+            `token with no call site is how --accent-fill shipped unused`,
+        ).toBe(true);
+      }
+    });
+
+    it(`leaves a visible rest->hover step on --${v.name}-fill`, () => {
+      // A hover state that does not change the rendered colour is not a hover
+      // state. The direction is allowed to differ per variant (white on red
+      // darkens, near-black on amber lightens) so this asserts difference, not
+      // a particular direction.
+      const fill = tokenInBlock(tokensCss, ":root", v.fill);
+      const hover = tokenInBlock(tokensCss, ":root", v.hover);
+      expect(fill.toLowerCase()).not.toBe(hover.toLowerCase());
+    });
+  }
+});
+
 describe("radius scale has a single source of truth", () => {
   const RADIUS_SCALE = [
     "radius-sm",
