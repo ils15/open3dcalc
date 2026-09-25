@@ -1,6 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { HistoryTab } from '../HistoryTab'
+import enUS from '@/shared/i18n/locales/en-US.json'
+import ptBR from '@/shared/i18n/locales/pt-BR.json'
 
 // ---------------------------------------------------------------------------
 // Shared mutable state for the history store mock
@@ -77,10 +79,14 @@ vi.mock('@/shared/stores/calculatorStore', () => ({
   },
 }))
 
-// Mock i18n
+// Mock i18n. `t` mirrors i18next closely enough to assert interpolation:
+// without options it returns the raw key, with options it appends them — so a
+// test can prove the component passed the entry name into `t(...)` instead of
+// hardcoding a label.
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, opts?: Record<string, unknown>) =>
+      opts ? `${key}: ${Object.values(opts).join(' ')}` : key,
     i18n: { resolvedLanguage: 'pt', language: 'pt' },
   }),
 }))
@@ -193,5 +199,118 @@ describe('HistoryTab date filter', () => {
     // Only "Produto Resina" has name matching "Resina" AND timestamp within range
     expect(screen.getByText('Produto Resina')).toBeInTheDocument()
     expect(screen.queryByText('Produto FDM')).not.toBeInTheDocument()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Compare checkbox a11y
+//
+// The compare checkbox used to be a bare `<input type="checkbox">`: no
+// accessible name (screen readers announced "checkbox, blank") and a 16x16 hit
+// area, far below the app's own 44px touch-target floor.
+// ---------------------------------------------------------------------------
+const COMPARE_LABEL = /history\.compareSelectEntry/i
+
+describe('HistoryTab compare checkbox a11y', () => {
+  beforeEach(() => {
+    mockEntries = [...sampleEntries]
+    mockDateFrom = null
+    mockDateTo = null
+    mockSearch = ''
+    vi.clearAllMocks()
+  })
+
+  it('gives each compare checkbox an accessible name naming its entry', () => {
+    render(<HistoryTab />)
+
+    // Name must come from t() AND identify which entry it toggles — two
+    // identical "checkbox" announcements are useless in a list of products.
+    expect(
+      screen.getByRole('checkbox', { name: /history\.compareSelectEntry: Produto FDM/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('checkbox', { name: /history\.compareSelectEntry: Produto Resina/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('never renders a compare checkbox without an accessible name', () => {
+    render(<HistoryTab />)
+
+    const checkboxes = screen.getAllByRole('checkbox')
+    expect(checkboxes).toHaveLength(mockEntries.length)
+    for (const checkbox of checkboxes) {
+      expect(checkbox).toHaveAccessibleName()
+    }
+  })
+
+  it('grows the hit area to 44px without enlarging the visible checkbox', () => {
+    render(<HistoryTab />)
+
+    const checkbox = screen.getAllByRole('checkbox', { name: COMPARE_LABEL })[0]
+    // Visual stays compact — this is a dense list, not a mobile-first card.
+    expect(checkbox).toHaveClass('w-4', 'h-4')
+
+    // The wrapper is the real click target.
+    const target = checkbox.closest('label')
+    expect(target).not.toBeNull()
+    expect(target).toHaveClass('min-h-[44px]')
+    expect(target).toHaveClass('min-w-[44px]')
+  })
+
+  it('toggling from the enlarged hit area still drives the compare selection', () => {
+    render(<HistoryTab />)
+
+    const checkbox = screen.getByRole('checkbox', { name: /Produto FDM/i })
+    const target = checkbox.closest('label') as HTMLElement
+
+    // The click target must be a wrapper AROUND the checkbox, not the 16px
+    // input itself — otherwise the extra padding would be dead space.
+    expect(target).not.toBeNull()
+    expect(target).not.toBe(checkbox)
+    expect(target).toContainElement(checkbox)
+
+    // Click the padding, not the 16px input — proves the wrapper is wired up.
+    fireEvent.click(target)
+    expect(checkbox).toBeChecked()
+  })
+
+  it('keeps the A/B selection hard-capped at 2 entries', () => {
+    mockEntries = [
+      ...sampleEntries,
+      {
+        id: '3',
+        name: 'Produto Extra',
+        type: 'fdm' as const,
+        timestamp: 1_700_500_000_000,
+        sellPrice: 300,
+        summary: 'Resumo Extra',
+        snapshot: null,
+      },
+    ]
+    render(<HistoryTab />)
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Produto FDM/i }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /Produto Resina/i }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /Produto Extra/i }))
+
+    // Third selection is rejected by the cap.
+    expect(screen.getByRole('checkbox', { name: /Produto Extra/i })).not.toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /Produto FDM/i })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /Produto Resina/i })).toBeChecked()
+  })
+})
+
+// The repo has no global locale parity gate, so a one-sided key addition would
+// ship silently. Guard the compare-checkbox label key in both files here.
+describe('history.compareSelectEntry locale parity', () => {
+  it.each([
+    ['en-US', enUS],
+    ['pt-BR', ptBR],
+  ])('exists in %s and interpolates {{name}}', (_locale, dict) => {
+    const value = dict.history.compareSelectEntry as unknown
+    expect(typeof value, `history.compareSelectEntry (${_locale})`).toBe('string')
+    expect(value as string).toContain('{{name}}')
+    // en-US must never hardcode the BRL symbol (locales.test.ts leak guard).
+    expect(value as string).not.toContain('R$')
   })
 })
