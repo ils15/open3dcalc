@@ -90,12 +90,30 @@ export function Calculator() {
     <>
       <ToastContainer items={toastItems} onDismiss={dismissToast} />
       <h1 className="sr-only">{t("nav.calculator")}</h1>
-      <div className="flex gap-4 xl:gap-6 2xl:gap-8 pb-[72px] lg:pb-0">
-        <SectionNav
-          activeSection={activeSection}
-          onSectionClick={setActiveSection}
-        />
-        <div className="flex-1 min-w-0 2xl:min-w-[560px] @container space-y-5">
+      <div
+        data-testid="calculator-layout"
+        className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 pb-[72px] lg:pb-0 xl:gap-6 2xl:grid-cols-[auto_minmax(0,1fr)_360px] 2xl:gap-8"
+      >
+        <div data-testid="calculator-section-nav" className="col-start-1 row-start-1 min-w-0">
+          <SectionNav
+            activeSection={activeSection}
+            onSectionClick={setActiveSection}
+          />
+        </div>
+        <div
+          data-tutorial="results-sidebar"
+          data-testid="results-sidebar"
+          className="col-start-2 row-start-1 hidden 2xl:flex 2xl:col-start-3 flex-col gap-5 w-[360px] shrink-0 sticky top-[92px] self-start max-h-[calc(100vh-120px)] overflow-y-auto"
+        >
+          <ResultsPanel
+            variant="sidebar"
+            onExportBlocked={notifyBlockedExport}
+          />
+        </div>
+        <div
+          data-testid="calculator-inputs"
+          className="col-start-2 row-start-1 flex-1 min-w-0 2xl:min-w-[560px] @container space-y-5"
+        >
           <QuickStartBanner />
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 py-1">
             <TechToggle />
@@ -113,15 +131,6 @@ export function Calculator() {
             catalogMaterials={catalogMaterials}
             catalogPrinters={catalogPrinters}
             handlePrinterSelect={handlePrinterSelect}
-            onExportBlocked={notifyBlockedExport}
-          />
-        </div>
-        <div
-          data-tutorial="results-sidebar"
-          className="hidden 2xl:flex flex-col gap-5 w-[360px] shrink-0 sticky top-[92px] self-start max-h-[calc(100vh-120px)] overflow-y-auto"
-        >
-          <ResultsPanel
-            variant="sidebar"
             onExportBlocked={notifyBlockedExport}
           />
         </div>

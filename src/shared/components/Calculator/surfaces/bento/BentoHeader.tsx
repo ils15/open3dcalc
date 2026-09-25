@@ -3,13 +3,16 @@ import { useTranslation } from "react-i18next";
 
 export interface BentoHeaderProps {
   readonly projectName: string;
+  /** Kept as an accessible jump label; the visible price lives in the response. */
   readonly finalPrice: string;
+  readonly hasResults: boolean;
 }
 
-/** Surface-level context and a keyboard-accessible jump to the financial card. */
+/** Surface context and a keyboard-accessible jump to the financial response. */
 export function BentoHeader({
   projectName,
   finalPrice,
+  hasResults,
 }: BentoHeaderProps): React.ReactElement {
   const { t } = useTranslation();
   const displayProject = projectName.trim() || t("bento.unnamedProject");
@@ -29,23 +32,16 @@ export function BentoHeader({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 sm:justify-end">
-          <div aria-label={`${t("bento.finalPrice")}: ${finalPrice}`}>
-            <p className="text-xs font-medium text-[var(--text-secondary)]">
-              {t("bento.finalPrice")}
-            </p>
-            <p className="text-xl font-black text-[var(--color-revenue)]">
-              {finalPrice}
-            </p>
-          </div>
+        {hasResults && (
           <a
-            href="#bento-summary"
+            href="#bento-results"
+            aria-label={`${t("bento.finalPrice")}: ${finalPrice}`}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-bold text-[var(--text-inverse)] outline-none hover:bg-[var(--accent-hover)] focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-overlay)]"
           >
             {t("bento.viewSummary")}
             <ArrowDown aria-hidden="true" className="size-4" />
           </a>
-        </div>
+        )}
       </div>
     </header>
   );

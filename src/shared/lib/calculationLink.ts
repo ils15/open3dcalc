@@ -10,6 +10,7 @@
  * Versioning (payload.v) ensures forward compatibility.
  */
 
+import { isValidQuantity } from "@/shared/lib/quantity";
 import type {
   MaterialStateFDM,
   MaterialStateResin,
@@ -269,6 +270,9 @@ export function getSharedCalculation(): SharedCalculationState | null {
   const hash = window.location.hash.replace(HASH_PREFIX, '')
   const decoded = decodeCalculationState(hash)
   if (!decoded) return null
+  if (decoded.quantity !== undefined && !isValidQuantity(decoded.quantity)) {
+    return null
+  }
   // Keep the slot configuration for the future Phase 7m work, but never
   // activate the incomplete beta pricing path from a shared URL.
   return { ...decoded, fdmAmsEnabled: false }

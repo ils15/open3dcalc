@@ -4,6 +4,10 @@ import { Check, Pencil, X } from "lucide-react";
 
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { roundCurrency } from "@/shared/lib/currency";
+import {
+  deriveRealMarginPercent,
+  formatRealMarginPercent,
+} from "@/shared/lib/realMargin";
 import type { FinancialBreakdown } from "@/shared/hooks/useFinancialBreakdown";
 
 export interface PriceHeroCardProps {
@@ -24,7 +28,7 @@ export function PriceHeroCard({
   breakdown,
   onSellOverrideChange,
 }: PriceHeroCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { format: fmtCurrency } = useCurrency();
 
   const [isEditingPrice, setIsEditingPrice] = useState(false);
@@ -58,9 +62,23 @@ export function PriceHeroCard({
   };
 
   const { overrideCalc, fees, breakEvenPrice } = breakdown;
+  const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
+  const targetMarkup = breakdown.targetMarkupPercent ?? 0;
+  const realMargin = deriveRealMarginPercent(
+    breakdown.displayProfit,
+    breakdown.displaySellPrice,
+  );
+  const realMarginValue = formatRealMarginPercent(realMargin, locale);
+  const formatPercent = (value: number | null): string =>
+    value === null
+      ? "—"
+      : `${value.toLocaleString(locale, { maximumFractionDigits: 1 })}%`;
 
   return (
-    <div className="result-hero rounded-xl p-3 sm:p-5 text-center">
+    <div
+      data-testid="price-hero"
+      className="result-hero min-w-0 rounded-xl p-3 sm:p-5 text-center"
+    >
       <div className="flex items-center justify-center gap-2 mb-1 sm:mb-2">
         <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--revenue)]/70">
           {t("calc.sellPrice")}
@@ -121,6 +139,36 @@ export function PriceHeroCard({
           {fmtCurrency(breakdown.displaySellPrice)}
         </div>
       )}
+      <div
+        data-testid="commercial-context"
+        className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-medium text-[var(--text-secondary)]"
+        aria-label={`${t("calc.markupTarget")}: ${formatPercent(targetMarkup)}. ${t("calc.actualMargin")}: ${realMarginValue}`}
+      >
+        <span>
+          {t("calc.markupTarget")}: {formatPercent(targetMarkup)}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {t("calc.actualMargin")}: {realMarginValue}
+        </span>
+      </div>
+      <div
+        data-testid="fee-breakdown"
+        className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[11px] text-[var(--text-muted)]"
+        aria-label={`${t("bento.fields.taxAmount")}: ${fmtCurrency(fees.taxAmount)}. ${t("bento.fields.marketplaceFeeAmount")}: ${fmtCurrency(fees.marketplaceFee)}. ${t("bento.fields.totalFees")}: ${fmtCurrency(fees.total)}`}
+      >
+        <span>
+          {t("bento.fields.taxAmount")}: {fmtCurrency(fees.taxAmount)}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {t("bento.fields.marketplaceFeeAmount")}: {fmtCurrency(fees.marketplaceFee)}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {t("bento.fields.totalFees")}: {fmtCurrency(fees.total)}
+        </span>
+      </div>
       {priceError && isEditingPrice && (
         <p
           id="sell-price-error"
@@ -137,7 +185,6 @@ export function PriceHeroCard({
           </span>
           <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
             {t("calc.profit")}: {fmtCurrency(overrideCalc.profit)} ·{" "}
-            {t("calc.actualMargin")}: {overrideCalc.marginReal.toFixed(1)}% ·{" "}
             {t("calc.effectiveMarkup")}:{" "}
             {overrideCalc.markupEffective.toFixed(1)}%
           </p>

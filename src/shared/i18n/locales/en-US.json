@@ -258,6 +258,7 @@
     "targetMarginDesc": "Set sell price and calculate margin",
     "sellPriceTarget": "Desired Sell Price",
     "actualMargin": "Real margin",
+    "markupTarget": "Target markup",
     "sellPriceEdit": "Edit sell price",
     "sellPriceInputLabel": "Custom sell price",
     "sellPriceConfirm": "Confirm price",
@@ -764,6 +765,9 @@
     "usingExistingSpool": "Existing spool selected: {{spool}}.",
     "deductConfirm": "Deduct {{weight}}g from spool {{spool}}?",
     "deductSuccess": "Weight deducted successfully!",
+    "insufficientStock": "Insufficient filament stock: {{required}}g required, {{available}}g available.",
+    "spoolNotFound": "The selected spool was not found in the inventory.",
+    "invalidCalculationState": "Fix the invalid fields before saving the calculation.",
     "deductSelect": "Select spool to deduct from",
     "deductAvailable": "{{weight}}g available",
     "autoDeductSuccess": "{{weight}}g automatically deducted from spool",
@@ -777,7 +781,25 @@
     "productNeedsName": "Enter the product name to register it.",
     "productRegistered": "Product registered!",
     "productDuplicateWarn": "A product with this name already exists — registered anyway.",
-    "viewProducts": "View in inventory"
+    "viewProducts": "View in inventory",
+    "details": "Details",
+    "detailsDescription": "Cost per gram, failures, profit per hour, and material comparison",
+    "failureRate": "Failure rate",
+    "saveAndRegister": "Save and register",
+    "saveAndRegisterDescription": "Keep the calculation, register the product, or save your settings. Inventory deduction is handled separately in the Inventory group.",
+    "addHistorySeparate": "Add to history without deducting inventory",
+    "exportAndShare": "Export and share",
+    "exportAndShareDescription": "Take the result to PDF, CSV, a quote, or a link.",
+    "inventory": "Inventory",
+    "inventoryDescription": "Actions that change the real filament inventory.",
+    "deductFromInventoryWithAmount": "Deduct {{weight}}g and reduce inventory",
+    "inventoryActionDescription": "This action reduces the available weight on the selected spool by {{weight}}g.",
+    "deductConsequence": "This confirmation changes real inventory; review the weight and spool before continuing.",
+    "distributionSummary": "Total cost {{total}}. Main portions: {{segments}}.",
+    "distributionMore_one": "{{count}} more portion in the composition.",
+    "distributionMore_other": "{{count}} more portions in the composition.",
+    "distributionDetails": "View detailed composition",
+    "distributionDetailsDescription": "Full bars and chart"
   },
   "tutorial": {
     "start": "Start Tutorial",
@@ -2421,7 +2443,8 @@
     "errors": {
       "required": "This field is required.",
       "positive": "Enter a positive value.",
-      "minQuantity": "Quantity must be at least 1."
+      "minQuantity": "Quantity must be at least 1.",
+      "invalidQuantity": "Enter a whole-number quantity between 1 and 100,000."
     }
   },
 

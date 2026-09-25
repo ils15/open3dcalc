@@ -3,43 +3,63 @@ import { useShallow } from "zustand/react/shallow";
 
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFinancialBreakdown } from "@/shared/hooks/useFinancialBreakdown";
-import { MaterialComparison } from "@/shared/components/Calculator/MaterialComparison";
+import type { PrintParameters } from "@/shared/types";
 
-import { PriceHeroCard } from "./PriceHeroCard";
-import { CostSummaryCard } from "./CostSummaryCard";
-import { ProfitSummaryCard } from "./ProfitSummaryCard";
-import { CostBreakdownCard } from "./CostBreakdownCard";
-import { ProductActionsCard } from "./ProductActionsCard";
-import { HistoryCard } from "./HistoryCard";
-import { ExportActionsCard } from "./ExportActionsCard";
-import { InventoryDeductionCard } from "./InventoryDeductionCard";
 import { CalculationErrorState } from "./CalculationErrorState";
+import { CostBreakdownCard } from "./CostBreakdownCard";
+import { DiagnosticDetailsCard } from "./DiagnosticDetailsCard";
+import { PriceHeroCard } from "./PriceHeroCard";
+import { ProfitSummaryCard } from "./ProfitSummaryCard";
+import { ResultsActions } from "./ResultsActions";
 
-interface ResultsPanelProps {
-  variant: "sidebar" | "mobile";
+export interface ResultsPanelProps {
+  variant: "sidebar" | "mobile" | "bento";
   /** Receives the explanation when an export/share action is blocked in demo. */
-  onExportBlocked?: (message: string) => void;
+  readonly onExportBlocked?: (message: string) => void;
+  /** Bento owns the outer alert slot so it can remain the first child. */
+  readonly suppressCalculationError?: boolean;
+  /** Optional surface-specific label for the history action. */
+  readonly historyActionLabel?: string;
+}
+
+function getFailureRatePercent(params: PrintParameters): number | null {
+  if (params.failureMode !== "percent") return null;
+  const rate = params.failureValue * (params.riskMultiplier ?? 1);
+  return Number.isFinite(rate) ? rate : null;
 }
 
 /**
- * Results panel — thin orchestrator.
+ * Results hierarchy shared by Classic and Bento.
  *
- * Owns only the display-local sell-price override state and mounts the
- * financial cards in the legacy order. All computation lives in
- * {@link useFinancialBreakdown} and each visual block in its own card, so the
- * rendered output stays identical to the former monolith.
+ * The order is intentional: commercial response, profit/cost, compact cost
+ * evidence, secondary diagnostics, then grouped actions. All calculation work
+ * remains in useFinancialBreakdown; this component only arranges presentation.
  */
-export function ResultsPanel({ variant, onExportBlocked }: ResultsPanelProps) {
-  const { results, activeTab, fdmSales, resinSales, calculationIssues } =
-    useCalculatorStore(
-      useShallow((s) => ({
-        results: s.results,
-        activeTab: s.activeTab,
-        fdmSales: s.fdmSales,
-        resinSales: s.resinSales,
-        calculationIssues: s.calculationIssues,
-      })),
-    );
+export function ResultsPanel({
+  variant,
+  onExportBlocked,
+  suppressCalculationError = false,
+  historyActionLabel,
+}: ResultsPanelProps): React.ReactElement {
+  const {
+    results,
+    activeTab,
+    fdmSales,
+    resinSales,
+    fdmPrintParams,
+    resinPrintParams,
+    calculationIssues,
+  } = useCalculatorStore(
+    useShallow((state) => ({
+      results: state.results,
+      activeTab: state.activeTab,
+      fdmSales: state.fdmSales,
+      resinSales: state.resinSales,
+      fdmPrintParams: state.fdmPrintParams,
+      resinPrintParams: state.resinPrintParams,
+      calculationIssues: state.calculationIssues,
+    })),
+  );
 
   // Display-local sell-price override (issue #85): never writes back to the
   // store, so the global margin stays untouched.
@@ -53,8 +73,7 @@ export function ResultsPanel({ variant, onExportBlocked }: ResultsPanelProps) {
     resinSales,
   });
 
-  const isSidebar = variant === "sidebar";
-  const calculationNotice = (
+  const calculationNotice = suppressCalculationError ? null : (
     <CalculationErrorState
       issues={calculationIssues}
       hasResult={results !== null}
@@ -63,45 +82,59 @@ export function ResultsPanel({ variant, onExportBlocked }: ResultsPanelProps) {
   );
 
   if (!results) {
-    return isSidebar ? (
-      <>{calculationNotice}</>
+    const emptyContent = (
+      <div data-testid="results-hierarchy" className="min-w-0 space-y-4">
+        {calculationNotice}
+      </div>
+    );
+    return variant === "mobile" ? (
+      <div className="space-y-4 2xl:hidden">{emptyContent}</div>
     ) : (
-      <div className="space-y-4 2xl:hidden">{calculationNotice}</div>
+      emptyContent
     );
   }
 
   const content = (
-    <>
+    <div
+      data-testid="results-hierarchy"
+      data-layout={variant}
+      className="min-w-0 space-y-4"
+    >
       {calculationNotice}
       <PriceHeroCard
         breakdown={breakdown}
         onSellOverrideChange={setSellOverride}
       />
-      <CostSummaryCard
-        costPerGram={results.costPerGram}
-        failureCost={results.failureCost}
-      />
       <ProfitSummaryCard
         totalCost={results.totalCost}
         profit={breakdown.displayProfit}
         profitPerHour={results.profitPerHour ?? 0}
+        showProfitPerHour={false}
       />
       <CostBreakdownCard
         chartData={breakdown.chartData}
         totalCost={results.totalCost}
-        isSidebar={isSidebar}
+        isSidebar={variant === "sidebar"}
       />
-      <MaterialComparison />
-      <ProductActionsCard displaySellPrice={breakdown.displaySellPrice} />
-      <HistoryCard />
-      <ExportActionsCard onExportBlocked={onExportBlocked} />
-      <InventoryDeductionCard />
-    </>
+      <DiagnosticDetailsCard
+        costPerGram={results.costPerGram}
+        failureCost={results.failureCost}
+        profitPerHour={results.profitPerHour ?? 0}
+        failureRatePercent={getFailureRatePercent(
+          activeTab === "fdm" ? fdmPrintParams : resinPrintParams,
+        )}
+      />
+      <ResultsActions
+        displaySellPrice={breakdown.displaySellPrice}
+        onExportBlocked={onExportBlocked}
+        showInventory={activeTab === "fdm"}
+        historyActionLabel={historyActionLabel}
+      />
+    </div>
   );
 
-  if (isSidebar) {
-    return content;
+  if (variant === "mobile") {
+    return <div className="space-y-4 2xl:hidden">{content}</div>;
   }
-
-  return <div className="space-y-4 2xl:hidden">{content}</div>;
+  return content;
 }

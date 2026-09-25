@@ -68,12 +68,15 @@ export function SectionRenderer(props: SectionRendererProps) {
 	const visibleSections = SECTIONS.filter((s) =>
 		LEVEL_SECTIONS[calcLevel].includes(s.id),
 	);
+	const orderedSections = [...visibleSections].sort((a, b) => {
+		if (a.id === "results") return -1;
+		if (b.id === "results") return 1;
+		return 0;
+	});
 
 	return (
 		<div className="space-y-4">
-			{/* SectionRenderer is the Classic-only mount point, so one control owns all sections without touching Calculator.tsx. */}
-			<FieldCustomizer />
-			{visibleSections.map((s) => {
+			{orderedSections.map((s) => {
 				switch (s.id) {
 					case "material":
 						return (
@@ -188,6 +191,8 @@ export function SectionRenderer(props: SectionRendererProps) {
 						return null;
 				}
 			})}
+			{/* Field customization remains available after the answer-first flow. */}
+			<FieldCustomizer />
 		</div>
 	);
 }

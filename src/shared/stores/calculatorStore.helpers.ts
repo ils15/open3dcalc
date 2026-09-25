@@ -13,6 +13,7 @@ import {
   DEFAULT_FDM_MATERIAL,
   DEFAULT_RESIN_MATERIAL,
 } from "./calculatorStore.defaults";
+import { isPersistableCalculationState } from "@/shared/lib/calculationState";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -21,6 +22,12 @@ export function debouncedAutoSave(getState: () => CalculatorState) {
   if (autoSaveTimer) clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(() => {
     const s = getState();
+    if (!isPersistableCalculationState(s)) {
+      console.warn(
+        "[calculatorStore] Skipped autosave: INVALID_CALCULATION_STATE",
+      );
+      return;
+    }
     const data = {
       activeTab: s.activeTab,
       fdmMaterial: s.fdmMaterial,

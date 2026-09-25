@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import manifestFixture from "../../../../docs/privacy/SPEC-01-manifest-fixture.json";
+import { guardedStorage } from "@/shared/lib/manifestStorage";
+import { INVALID_CALCULATION_STATE } from "@/shared/lib/calculationState";
+
+const VALID_CALCULATION_CONTEXT = {
+  calculationIssues: [],
+  quantity: 1,
+} as const;
 import {
   useSpoolStore,
   filterSpools,
@@ -215,11 +222,64 @@ describe("useSpoolStore (integration)", () => {
     useSpoolStore.getState().addSpool(makeSpool({ weightGrams: 100 }));
     const id = useSpoolStore.getState().spools[0].id;
 
-    useSpoolStore.getState().deductWeight(id, 40);
+    useSpoolStore
+      .getState()
+      .deductWeight(id, 40, VALID_CALCULATION_CONTEXT);
     expect(useSpoolStore.getState().spools[0].weightGrams).toBe(60);
 
-    useSpoolStore.getState().deductWeight(id, 9999);
+    useSpoolStore
+      .getState()
+      .deductWeight(id, 9999, VALID_CALCULATION_CONTEXT);
     expect(useSpoolStore.getState().spools[0].weightGrams).toBe(0);
+  });
+
+  it.each([1.5, 1e15])(
+    "recusa quantity inválida %s antes de qualquer escrita no spoolStore",
+    (quantity) => {
+      useSpoolStore.getState().addSpool(makeSpool({ weightGrams: 1000 }));
+      const id = useSpoolStore.getState().spools[0].id;
+      const before = useSpoolStore.getState().spools;
+      const persistedBefore = localStorage.getItem(SPOOLS_KEY);
+      const persistSpy = vi.spyOn(guardedStorage, "setItem");
+
+      expect(() =>
+        useSpoolStore.getState().deductWeight(id, 10, {
+          calculationIssues: [],
+          quantity,
+        }),
+      ).toThrow(INVALID_CALCULATION_STATE);
+
+      expect(useSpoolStore.getState().spools).toEqual(before);
+      expect(localStorage.getItem(SPOOLS_KEY)).toBe(persistedBefore);
+      expect(persistSpy).not.toHaveBeenCalled();
+      persistSpy.mockRestore();
+    },
+  );
+
+  it("recusa calculationIssues não vazio antes de qualquer escrita no spoolStore", () => {
+    useSpoolStore.getState().addSpool(makeSpool({ weightGrams: 1000 }));
+    const id = useSpoolStore.getState().spools[0].id;
+    const before = useSpoolStore.getState().spools;
+    const persistedBefore = localStorage.getItem(SPOOLS_KEY);
+    const persistSpy = vi.spyOn(guardedStorage, "setItem");
+
+    expect(() =>
+      useSpoolStore.getState().deductWeight(id, 10, {
+        calculationIssues: [
+          {
+            path: "fdmPrintParams.energyCostPerKwh",
+            reason: "non_finite",
+            received: Number.NaN,
+          },
+        ],
+        quantity: 1,
+      }),
+    ).toThrow(INVALID_CALCULATION_STATE);
+
+    expect(useSpoolStore.getState().spools).toEqual(before);
+    expect(localStorage.getItem(SPOOLS_KEY)).toBe(persistedBefore);
+    expect(persistSpy).not.toHaveBeenCalled();
+    persistSpy.mockRestore();
   });
 
   // ── selectors ────────────────────────────────────────────────

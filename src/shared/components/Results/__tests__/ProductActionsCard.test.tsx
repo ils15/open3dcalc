@@ -193,4 +193,27 @@ describe("ProductActionsCard", () => {
 
     expect(addToHistory).toHaveBeenCalledTimes(1);
   });
+
+  it("translates an insufficient-stock error from history save", async () => {
+    const user = userEvent.setup();
+    const error = Object.assign(new Error("INSUFFICIENT_FILAMENT_STOCK"), {
+      code: "INSUFFICIENT_FILAMENT_STOCK",
+      required: 255,
+      available: 1,
+    });
+    vi.spyOn(useCalculatorStore.getState(), "addToHistory").mockImplementation(
+      () => {
+        throw error;
+      },
+    );
+    render(<ProductActionsCard displaySellPrice={105.88} />);
+
+    await user.click(
+      screen.getByRole("button", { name: "calc.addHistory" }),
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "results.insufficientStock",
+    );
+  });
 });

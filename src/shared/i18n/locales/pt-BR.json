@@ -258,6 +258,7 @@
     "targetMarginDesc": "Defina o preço de venda e calcule a margem",
     "sellPriceTarget": "Preço de Venda Desejado",
     "actualMargin": "Margem real",
+    "markupTarget": "Markup alvo",
     "sellPriceEdit": "Editar preço de venda",
     "sellPriceInputLabel": "Preço de venda personalizado",
     "sellPriceConfirm": "Confirmar preço",
@@ -764,6 +765,9 @@
     "usingExistingSpool": "Carretel existente selecionado: {{spool}}.",
     "deductConfirm": "Deduzir {{weight}}g do carretel {{spool}}?",
     "deductSuccess": "Peso deduzido com sucesso!",
+    "insufficientStock": "Estoque insuficiente: {{required}}g necessários, {{available}}g disponíveis.",
+    "spoolNotFound": "O carretel selecionado não foi encontrado no inventário.",
+    "invalidCalculationState": "Corrija os campos inválidos antes de salvar o cálculo.",
     "deductSelect": "Selecionar carretel para deduzir",
     "deductAvailable": "{{weight}}g disponíveis",
     "autoDeductSuccess": "{{weight}}g deduzidos automaticamente do carretel",
@@ -777,7 +781,25 @@
     "productNeedsName": "Informe o nome do produto para cadastrá-lo.",
     "productRegistered": "Produto cadastrado!",
     "productDuplicateWarn": "Já existe um produto com esse nome — cadastrado mesmo assim.",
-    "viewProducts": "Ver no inventário"
+    "viewProducts": "Ver no inventário",
+    "details": "Detalhes",
+    "detailsDescription": "Custo por grama, falhas, lucro por hora e comparação de materiais",
+    "failureRate": "Taxa de falha",
+    "saveAndRegister": "Salvar e cadastrar",
+    "saveAndRegisterDescription": "Guarde o cálculo, registre o produto ou salve as configurações. A dedução de estoque é feita separadamente no grupo Estoque.",
+    "addHistorySeparate": "Adicionar ao histórico sem deduzir estoque",
+    "exportAndShare": "Exportar e compartilhar",
+    "exportAndShareDescription": "Leve o resultado para PDF, CSV, cotação ou link.",
+    "inventory": "Estoque",
+    "inventoryDescription": "Ações que alteram o inventário real de filamento.",
+    "deductFromInventoryWithAmount": "Deduzir {{weight}}g e reduzir o estoque",
+    "inventoryActionDescription": "Esta ação reduz em {{weight}}g o peso disponível no carretel selecionado.",
+    "deductConsequence": "Esta confirmação muda o inventário real; revise peso e carretel antes de continuar.",
+    "distributionSummary": "Custo total {{total}}. Principais parcelas: {{segments}}.",
+    "distributionMore_one": "Mais {{count}} parcela na composição.",
+    "distributionMore_other": "Mais {{count}} parcelas na composição.",
+    "distributionDetails": "Ver composição granular",
+    "distributionDetailsDescription": "Barras e gráfico completo"
   },
   "tutorial": {
     "start": "Iniciar Tutorial",
@@ -2421,7 +2443,8 @@
     "errors": {
       "required": "Este campo é obrigatório.",
       "positive": "Informe um valor positivo.",
-      "minQuantity": "A quantidade deve ser de pelo menos 1."
+      "minQuantity": "A quantidade deve ser de pelo menos 1.",
+      "invalidQuantity": "Informe uma quantidade inteira entre 1 e 100.000."
     }
   },
 
