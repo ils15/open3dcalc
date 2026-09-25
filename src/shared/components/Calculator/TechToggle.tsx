@@ -18,7 +18,7 @@ export function TechToggle() {
         onClick={() => setActiveTab("fdm")}
         className={`min-h-[44px] min-w-[44px] flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
           activeTab === "fdm"
-            ? "bg-[var(--color-accent)] text-white shadow-md shadow-[var(--color-accent-muted)]"
+            ? "bg-[var(--accent-fill)] text-white shadow-md shadow-[var(--color-accent-muted)]"
             : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
         }`}
       >
@@ -29,7 +29,7 @@ export function TechToggle() {
         onClick={() => setActiveTab("resin")}
         className={`min-h-[44px] min-w-[44px] flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
           activeTab === "resin"
-            ? "bg-[var(--color-accent)] text-white shadow-md shadow-[var(--color-accent-muted)]"
+            ? "bg-[var(--accent-fill)] text-white shadow-md shadow-[var(--color-accent-muted)]"
             : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
         }`}
       >

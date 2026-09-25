@@ -377,7 +377,7 @@ export function SpoolForm({
               <div className="col-span-2 flex gap-2 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 min-h-[44px] rounded-xl bg-[var(--color-accent)] text-white text-sm font-bold hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+                  className="flex-1 min-h-[44px] rounded-xl bg-[var(--accent-fill)] text-white text-sm font-bold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
                 >
                   {t("spools.form.save")}
                 </button>

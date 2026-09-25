@@ -580,7 +580,7 @@ export function Dashboard() {
         <button
           onClick={handleExportPdf}
           disabled={exportingPdf || filteredEntries.length === 0}
-          className="px-4 py-2 rounded-lg bg-[var(--color-accent)] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+          className="px-4 py-2 rounded-lg bg-[var(--accent-fill)] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
         >
           {exportingPdf ? t("common.loading") : t("dashboard.exportPdf")}
         </button>

@@ -533,7 +533,7 @@ function QuoteFormModal({
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2"
           >
             <FileText className="w-4 h-4" />
             {isEditing ? "Atualizar" : "Salvar Orçamento"}
@@ -888,7 +888,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
         <button
           data-tutorial="quote-new"
           onClick={handleNewQuote}
-          className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
+          className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
         >
           <Plus className="w-3.5 h-3.5" />
           {t("quotes.newQuote", "Novo Orçamento")}
@@ -907,7 +907,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
               onClick={() => quoteStore.setStatusFilter(f.key)}
               className={`px-3 py-1.5 text-xs rounded-lg transition-colors whitespace-nowrap ${
                 quoteStore.statusFilter === f.key
-                  ? "bg-[var(--color-accent)] text-white"
+                  ? "bg-[var(--accent-fill)] text-white"
                   : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               }`}
             >

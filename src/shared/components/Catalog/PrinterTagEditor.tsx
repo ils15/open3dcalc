@@ -80,7 +80,7 @@ export function PrinterTagEditor({ printer }: PrinterTagEditorProps) {
           type="button"
           onClick={submit}
           disabled={!draft.trim()}
-          className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           {t("catalog.addTag")}
         </button>

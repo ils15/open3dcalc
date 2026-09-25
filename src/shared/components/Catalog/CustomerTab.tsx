@@ -248,7 +248,7 @@ function CustomerFormModal({
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm rounded-xl bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="px-4 py-2 text-sm rounded-xl bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
             {t("common.save")}
           </button>
@@ -356,7 +356,7 @@ export function CustomerTab() {
             setEditingCustomer(null);
             setFormOpen(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-fill)] text-white text-sm font-medium hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           <Plus className="w-4 h-4" />
           {t("customers.newCustomer")}
