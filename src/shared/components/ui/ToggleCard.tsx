@@ -19,7 +19,7 @@ export function ToggleSwitch({
         onClick={() => onToggle(!enabled)}
         className={`flex h-11 w-28 items-center justify-center rounded-lg text-xs font-bold tracking-wider transition-all duration-300 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
           enabled
-            ? "bg-[var(--color-accent)] text-[var(--color-text-primary)]"
+            ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]"
             : "bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] shadow-inner opacity-70 hover:opacity-100"
         }`}
         title={title || (enabled ? "Desativar" : "Ativar")}

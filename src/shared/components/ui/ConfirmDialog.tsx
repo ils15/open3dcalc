@@ -27,17 +27,30 @@ function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
   }
 }
 
+/**
+ * Each variant owns its OWN foreground. The confirm button used to hardcode
+ * `text-[var(--color-text-primary)]` in the shared className and take only its
+ * background from here, so no single edit could fix one variant without
+ * breaking the others: the `info` variant paints an accent fill, and white ink
+ * would have been correct for it while landing 2.49:1 on `warning`'s
+ * bg-amber-600. Moving the text token into the map makes each pairing explicit
+ * and independently checkable.
+ *
+ * `info` uses --accent-fill / --accent-fill-fg, not --color-accent: the latter
+ * flips to #818cf8 in .dark, which put --text-primary ink at 2.72:1 on it.
+ */
 const variantStyles = {
   danger: {
-    button: "bg-red-600 hover:bg-red-500",
+    button: "bg-red-600 text-[var(--color-text-primary)] hover:bg-red-500",
     icon: "text-[var(--color-danger)]",
   },
   warning: {
-    button: "bg-amber-600 hover:bg-amber-500",
+    button: "bg-amber-600 text-[var(--color-text-primary)] hover:bg-amber-500",
     icon: "text-[var(--color-warning)]",
   },
   info: {
-    button: "bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]",
+    button:
+      "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] hover:bg-[var(--accent-fill-hover)]",
     icon: "text-[var(--color-accent)]",
   },
 };
@@ -152,7 +165,7 @@ export function ConfirmDialog({
           <button
             ref={confirmRef}
             onClick={onConfirm}
-            className={`px-4 py-2 text-sm rounded-xl text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/50 focus-visible:outline-none ${styles.button}`}
+            className={`px-4 py-2 text-sm rounded-xl transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/50 focus-visible:outline-none ${styles.button}`}
           >
             {confirmLabel}
           </button>
