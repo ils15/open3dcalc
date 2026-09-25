@@ -12,7 +12,9 @@ const desktopApp = read("platform/desktop/App.tsx");
 const webCss = read("platform/web/index.css");
 const desktopCss = read("platform/desktop/index.css");
 const tokensPath = resolve(projectRoot, "styles/tokens.css");
-const tokensCss = existsSync(tokensPath) ? readFileSync(tokensPath, "utf-8") : "";
+const tokensCss = existsSync(tokensPath)
+  ? readFileSync(tokensPath, "utf-8")
+  : "";
 const webHeader = read("shared/components/Header/Header.tsx");
 const desktopHeader = read("platform/desktop/components/Header/Header.tsx");
 const inputGroup = read("shared/components/ui/InputGroup.tsx");
@@ -67,12 +69,8 @@ describe("Ultrawide shell & overflow containment", () => {
   });
 
   it("defines centralized light and dark semantic themes", () => {
-    expect(tokensCss).toMatch(
-      /:root\s*{[^}]*--surface-canvas:\s*#f6f7fb;/i,
-    );
-    expect(tokensCss).toMatch(
-      /\.dark\s*{[^}]*--surface-canvas:\s*#0a0b10;/i,
-    );
+    expect(tokensCss).toMatch(/:root\s*{[^}]*--surface-canvas:\s*#f6f7fb;/i);
+    expect(tokensCss).toMatch(/\.dark\s*{[^}]*--surface-canvas:\s*#0a0b10;/i);
   });
 
   it("imports the shared tokens and fonts without remote Google Fonts", () => {
@@ -135,14 +133,38 @@ describe("Ultrawide shell & overflow containment", () => {
   });
 
   it("body uses overflow-x: clip to prevent horizontal scroll", () => {
+    // `body` now lives in the shared component layer, which BOTH platforms
+    // import, so the rule is asserted once at its single source and each
+    // platform's import of that source is asserted separately — together these
+    // are equivalent to (and stricter than) the old per-platform check.
+    const componentsPath = resolve(projectRoot, "styles/components.css");
+    const componentsCss = existsSync(componentsPath)
+      ? readFileSync(componentsPath, "utf-8")
+      : "";
+    expect(
+      componentsCss,
+      "styles/components.css must set overflow-x: clip on body",
+    ).toMatch(/body\s*\{[^}]*overflow-x:\s*clip/s);
     for (const css of [webCss, desktopCss]) {
-      expect(css).toMatch(/body\s*\{[^}]*overflow-x:\s*clip/s);
+      expect(
+        css,
+        "each platform must import the shared component layer to get the body rule",
+      ).toMatch(/@import\s+"\.\.\/\.\.\/styles\/components\.css";/);
     }
   });
 
   it("keeps the --container-form token for section grids", () => {
+    // Single source of truth: the token lives in the shared component layer.
+    // Both platforms inherit it from the same @import, so pinning it twice
+    // would only enforce the duplication this consolidation removed.
+    const componentsPath = resolve(projectRoot, "styles/components.css");
+    const componentsCss = existsSync(componentsPath)
+      ? readFileSync(componentsPath, "utf-8")
+      : "";
+    expect(componentsCss).toMatch(/--container-form:\s*38rem/);
+    // Drift guard: neither platform may redeclare it locally.
     for (const css of [webCss, desktopCss]) {
-      expect(css).toMatch(/--container-form:\s*38rem/);
+      expect(css).not.toMatch(/--container-form:/);
     }
   });
 
