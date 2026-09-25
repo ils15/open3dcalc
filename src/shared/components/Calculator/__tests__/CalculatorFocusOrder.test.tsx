@@ -100,6 +100,14 @@ describe("Calculator layout order", () => {
 
     await user.tab();
     expect(screen.getByTestId("nav-control")).toHaveFocus();
+    for (const mode of ["compact", "tabs", "dock", "expanded"]) {
+      await user.tab();
+      expect(screen.getByTestId(`sidebar-mode-${mode}`)).toHaveFocus();
+    }
+    await user.tab();
+    expect(screen.getByTestId("sidebar-compact-chart")).toHaveFocus();
+    await user.tab();
+    expect(screen.getByTestId("sidebar-compact-bars")).toHaveFocus();
     await user.tab();
     expect(screen.getByTestId("sidebar-control")).toHaveFocus();
     await user.tab();

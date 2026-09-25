@@ -34,6 +34,11 @@ describe("Calculator — Complete-mode layout breakpoints", () => {
       expect(calculatorSource).not.toMatch(/w-\[280px\]/);
     });
 
+    it("keeps the sidebar bounded and normally scrollable", () => {
+      expect(calculatorSource).toMatch(/h-\[calc\(100vh-120px\)\]/);
+      expect(calculatorSource).toMatch(/max-h-\[calc\(100vh-120px\)\]/);
+    });
+
     it("guarantees the central form never shrinks below 560px in Complete mode", () => {
       expect(calculatorSource).toMatch(
         /flex-1 min-w-0 2xl:min-w-\[560px\] @container/,

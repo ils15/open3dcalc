@@ -152,6 +152,29 @@ describe("ResultsPanel hierarchy", () => {
     expect(summary).toHaveFocus();
   });
 
+  it("keeps compact distribution visible in the sidebar actions tab", () => {
+    render(<ResultsPanel variant="sidebar" sidebarMode="tabs" sidebarTab="actions" />);
+
+    expect(screen.getByTestId("cost-distribution-compact")).toBeInTheDocument();
+    expect(screen.getByTestId("results-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("action-group-inventory")).toBeInTheDocument();
+  });
+
+  it("includes material in the compact bars view", () => {
+    render(
+      <ResultsPanel
+        variant="sidebar"
+        sidebarMode="compact"
+        compactView="bars"
+      />,
+    );
+
+    expect(screen.getByTestId("compact-cost-bars")).toBeInTheDocument();
+    expect(screen.getByTestId("compact-cost-bar-filament")).toHaveTextContent(
+      "Material",
+    );
+  });
+
   it("groups actions and describes the isolated stock mutation", () => {
     render(<ResultsPanel variant="sidebar" />);
 

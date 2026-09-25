@@ -799,7 +799,18 @@
     "distributionMore_one": "Mais {{count}} parcela na composição.",
     "distributionMore_other": "Mais {{count}} parcelas na composição.",
     "distributionDetails": "Ver composição granular",
-    "distributionDetailsDescription": "Barras e gráfico completo"
+    "distributionDetailsDescription": "Barras e gráfico completo",
+    "sidebar": {
+      "modeLabel": "Layout da barra",
+      "compact": "Compacto",
+      "tabs": "Abas",
+      "dock": "Dock",
+      "expanded": "Expandido",
+      "viewLabel": "Visualização dos resultados",
+      "chart": "Gráfico",
+      "bars": "Barras",
+      "actions": "Ações"
+    }
   },
   "tutorial": {
     "start": "Iniciar Tutorial",

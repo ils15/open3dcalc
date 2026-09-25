@@ -799,7 +799,18 @@
     "distributionMore_one": "{{count}} more portion in the composition.",
     "distributionMore_other": "{{count}} more portions in the composition.",
     "distributionDetails": "View detailed composition",
-    "distributionDetailsDescription": "Full bars and chart"
+    "distributionDetailsDescription": "Full bars and chart",
+    "sidebar": {
+      "modeLabel": "Sidebar layout",
+      "compact": "Compact",
+      "tabs": "Tabs",
+      "dock": "Dock",
+      "expanded": "Expanded",
+      "viewLabel": "Results view",
+      "chart": "Chart",
+      "bars": "Bars",
+      "actions": "Actions"
+    }
   },
   "tutorial": {
     "start": "Start Tutorial",
