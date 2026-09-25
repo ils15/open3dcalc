@@ -6,9 +6,21 @@ const projectRoot = resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(resolve(projectRoot, p), "utf-8");
 
 const tokensCss = read("styles/tokens.css");
-const platformCss = [
-  read("platform/web/index.css"),
-  read("platform/desktop/index.css"),
+const componentsCss = read("styles/components.css");
+const webCss = read("platform/web/index.css");
+const desktopCss = read("platform/desktop/index.css");
+const platformCss = [webCss, desktopCss];
+
+/**
+ * What each platform actually renders: its entry stylesheet plus the shared
+ * component layer it @imports. The component classes (.label-xs,
+ * .segmented-btn.*, …) moved to styles/components.css in the CSS layer
+ * consolidation, so rule-presence assertions must read the effective sheet.
+ * Used with it.each so "both platforms" stays a real requirement.
+ */
+const effectivePlatformCss = [
+  `${componentsCss}\n${webCss}`,
+  `${componentsCss}\n${desktopCss}`,
 ];
 
 /* ------------------------------------------------------------------ *
@@ -132,7 +144,7 @@ describe("radius scale has a single source of truth", () => {
   });
 
   it("no longer duplicates the radius scale in the platform stylesheets", () => {
-    for (const css of platformCss) {
+    for (const css of [...platformCss, componentsCss]) {
       for (const token of RADIUS_SCALE) {
         expect(
           css,
@@ -150,7 +162,7 @@ describe("radius scale has a single source of truth", () => {
 });
 
 describe("tinted fills are token-backed, not inlined rgba()", () => {
-  it.each(platformCss)(
+  it.each(effectivePlatformCss)(
     "keeps the segmented control states on wash tokens",
     (css) => {
       const block = css.match(/\.segmented-btn\.active-fdm\s*{([^}]*)}/);
@@ -176,10 +188,13 @@ describe("tinted fills are token-backed, not inlined rgba()", () => {
 });
 
 describe("section label letter-spacing", () => {
-  it.each(platformCss)("uses the prototype's tracking-widest value", (css) => {
-    const label = css.match(/\.label-xs\s*{([^}]*)}/);
-    expect(label, ".label-xs must exist").not.toBeNull();
-    expect(label![1]).toMatch(/letter-spacing:\s*0\.1em;/);
-    expect(label![1]).not.toMatch(/letter-spacing:\s*0\.08em;/);
-  });
+  it.each(effectivePlatformCss)(
+    "uses the prototype's tracking-widest value",
+    (css) => {
+      const label = css.match(/\.label-xs\s*{([^}]*)}/);
+      expect(label, ".label-xs must exist").not.toBeNull();
+      expect(label![1]).toMatch(/letter-spacing:\s*0\.1em;/);
+      expect(label![1]).not.toMatch(/letter-spacing:\s*0\.08em;/);
+    },
+  );
 });
