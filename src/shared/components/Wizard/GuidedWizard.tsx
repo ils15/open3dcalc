@@ -52,9 +52,13 @@ export function GuidedWizard(): React.ReactElement {
   const renderStep = (): React.ReactNode => {
     switch (step) {
       case 1:
-        return <Step1Material draft={draft} errors={errors} setField={setField} />;
+        return (
+          <Step1Material draft={draft} errors={errors} setField={setField} />
+        );
       case 2:
-        return <Step2Printer draft={draft} errors={errors} setField={setField} />;
+        return (
+          <Step2Printer draft={draft} errors={errors} setField={setField} />
+        );
       case 3:
         return (
           <Step3Labor
