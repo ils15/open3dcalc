@@ -1131,7 +1131,7 @@ N6  Revenue Trends            ── independente, não espera N0
 
 ### 🧭 Phase 7o: App Shell, navegação e espaços de trabalho
 
-**Status:** etapas aprovadas pela pessoa usuária; **todas não iniciadas**. Esta fase descreve oito fatias separadas, cada uma entregável em PR próprio; sequência e dependências estão explícitas abaixo. Nenhuma delas autoriza alterar o escopo vigente da Beta 5.
+**Status:** etapas aprovadas pela pessoa usuária; Stage 1 — Navigation Context — implementada, com PR #227 aberto e não mesclado; etapas 2–8 não iniciadas. Esta fase descreve oito fatias separadas, cada uma entregável em PR próprio; sequência e dependências estão explícitas abaixo. Nenhuma delas autoriza alterar o escopo vigente da Beta 5.
 
 **Relação com o roadmap existente:** esta fase não substitui, reordena nem absorve W1–W3, o port visual da Beta 5 ou a Phase 7n. Esses trabalhos continuam independentes; qualquer dependência entre eles deve ser declarada antes de iniciar a fatia afetada. A Phase 7n mantém seus próprios dados e pré-requisitos: em particular, os itens que dependem de frota real continuam bloqueados até N0, e métricas sem modelos, dados e fórmulas reais permanecem adiadas.
 
@@ -1145,7 +1145,7 @@ N6  Revenue Trends            ── independente, não espera N0
 
 #### 7o.1 — Façades de estado da aplicação
 
-**Status:** aprovada; não iniciada. Criar façades de Context para Navigation, Currency e Theme sobre os stores existentes, sem transferir nem duplicar a propriedade do estado.
+**Status:** Navigation Context implementado e aprovado pela Themis (uma observação baixa e não bloqueante); PR [#227](https://github.com/ils15/open3dcalc/pull/227) aberto, não mesclado. Commit `f8f6b061ef8a4639f15d162fa4ab12e662aefca3`, baseado em `main` (`ec82f651`); na base exata passaram 218 arquivos / 2.870 testes (baseline: 216 / 2.863), `typecheck`, `typecheck:electron`, `lint`, `build:web` e `build:desktop`. Nenhum dado persistido foi alterado. Currency Context e Theme Context permanecem não iniciados.
 
 **Acceptance criteria:**
 
