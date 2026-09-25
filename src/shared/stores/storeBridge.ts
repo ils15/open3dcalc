@@ -67,7 +67,11 @@ export function restoreAutoSnapshot(): boolean {
       infillPercent: data.infillPercent ?? calc.infillPercent,
       targetMarginMode: data.targetMarginMode ?? calc.targetMarginMode,
       enabledSections: data.enabledSections ?? calc.enabledSections,
-      selectedPrinter: (printer ?? calc.selectedPrinter) as unknown as PrinterProfile,
+      // Currency can be hydrated from SQLite only after the store module has
+      // loaded on desktop, so restore the persisted value with the snapshot.
+      currency: data.currency ?? calc.currency,
+      selectedPrinter: (printer ??
+        calc.selectedPrinter) as unknown as PrinterProfile,
       selectedMarketplace: (marketplace ??
         calc.selectedMarketplace) as unknown as Marketplace,
     };

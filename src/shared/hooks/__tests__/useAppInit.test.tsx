@@ -5,6 +5,9 @@ const storageGetItem = vi.hoisted(() => vi.fn());
 const storageSetItem = vi.hoisted(() => vi.fn());
 const storageRemoveItem = vi.hoisted(() => vi.fn());
 const calculatorSetState = vi.hoisted(() => vi.fn());
+const calculatorState = vi.hoisted(() => ({
+  current: null as Record<string, unknown> | null,
+}));
 const sharedCalculation = vi.hoisted(() => ({
   current: null as Record<string, unknown> | null,
 }));
@@ -29,10 +32,11 @@ vi.mock("@/shared/stores/historyStore", () => ({
 
 vi.mock("@/shared/stores/calculatorStore", () => ({
   useCalculatorStore: {
-    getState: () => ({
-      quantity: 1,
-      calculationIssues: [],
-    }),
+    getState: () =>
+      calculatorState.current ?? {
+        quantity: 1,
+        calculationIssues: [],
+      },
     setState: calculatorSetState,
   },
 }));
@@ -59,6 +63,7 @@ describe("useAppInit tutorial auto-start", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sharedCalculation.current = null;
+    calculatorState.current = null;
     vi.useFakeTimers();
     localStorage.clear();
     storageGetItem.mockImplementation((key: string) =>
@@ -153,5 +158,39 @@ describe("useAppInit tutorial auto-start", () => {
     });
 
     expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves the currency and retains older settings fields on beforeunload", () => {
+    const oldSettings = JSON.stringify({
+      quantity: 3,
+      futureUserField: { keep: true },
+    });
+    storageGetItem.mockImplementation((key: string) => {
+      if (key === "open3dcalc_settings_v2") return oldSettings;
+      return key === "open3dcalc_onboarded" ? "1" : null;
+    });
+    calculatorState.current = {
+      quantity: 3,
+      calculationIssues: [],
+      currency: "GBP",
+      selectedPrinter: { id: "printer-legacy" },
+      selectedMarketplace: { id: "marketplace-legacy" },
+    };
+
+    const { unmount } = renderHook(() => useAppInit(vi.fn()));
+    act(() => window.dispatchEvent(new Event("beforeunload")));
+    unmount();
+
+    const settingsWrite = storageSetItem.mock.calls.find(
+      ([key]) => key === "open3dcalc_settings_v2",
+    );
+    expect(settingsWrite).toBeDefined();
+    const saved = JSON.parse(settingsWrite![1] as string) as Record<
+      string,
+      unknown
+    >;
+    expect(saved.currency).toBe("GBP");
+    expect(saved.quantity).toBe(3);
+    expect(saved.futureUserField).toEqual({ keep: true });
   });
 });
