@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 
@@ -9,20 +8,15 @@ import {
   type CostCategory,
   type CostSegment,
 } from "@/shared/hooks/useFinancialBreakdown";
-import {
-  isFilamentSpoolNotFoundError,
-  isInsufficientFilamentStockError,
-} from "@/shared/lib/filamentStock";
-import { isInvalidCalculationStateError } from "@/shared/lib/calculationState";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { CalculationErrorState } from "@/shared/components/Results/CalculationErrorState";
+import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { LevelToggle } from "../LevelToggle";
 import { BentoHeader } from "./bento/BentoHeader";
 import { BentoLaborCard } from "./bento/BentoLaborCard";
 import { BentoMachineCard } from "./bento/BentoMachineCard";
 import { BentoMaterialCard } from "./bento/BentoMaterialCard";
 import { BentoPricingCard } from "./bento/BentoPricingCard";
-import { BentoSummaryCard } from "./bento/BentoSummaryCard";
 
 function categoryValue(
   segments: readonly CostSegment[],
@@ -33,7 +27,7 @@ function categoryValue(
     .reduce((total, segment) => total + segment.value, 0);
 }
 
-/** Third calculator surface: a responsive five-card calculation grid. */
+/** Third calculator surface: a responsive calculation grid with shared results. */
 export function BentoSurface(): React.ReactElement {
   const { t } = useTranslation();
   const { format } = useCurrency();
@@ -52,7 +46,6 @@ export function BentoSurface(): React.ReactElement {
     fdmSales,
     resinSales,
     calculationIssues,
-    addToHistory,
   } = useCalculatorStore(
     useShallow((state) => ({
       results: state.results,
@@ -69,7 +62,6 @@ export function BentoSurface(): React.ReactElement {
       fdmSales: state.fdmSales,
       resinSales: state.resinSales,
       calculationIssues: state.calculationIssues,
-      addToHistory: state.addToHistory,
     })),
   );
 
@@ -80,7 +72,6 @@ export function BentoSurface(): React.ReactElement {
     fdmSales,
     resinSales,
   });
-  const [saveError, setSaveError] = useState<string | null>(null);
   const isFDM = activeTab === "fdm";
   const materialType = isFDM ? fdmMaterial.type : resinMaterial.type;
   const materialCostPerKg = isFDM
@@ -98,39 +89,17 @@ export function BentoSurface(): React.ReactElement {
       additionalPaths={breakdown.invalidSegmentPaths}
     />
   );
-  const handleSave = () => {
-    try {
-      addToHistory();
-      setSaveError(null);
-    } catch (error) {
-      if (isInsufficientFilamentStockError(error)) {
-        setSaveError(
-          t("results.insufficientStock", {
-            required: error.required?.toFixed(2) ?? "0",
-            available: error.available?.toFixed(2) ?? "0",
-          }),
-        );
-        return;
-      }
-      if (isFilamentSpoolNotFoundError(error)) {
-        setSaveError(t("results.spoolNotFound"));
-        return;
-      }
-      if (isInvalidCalculationStateError(error)) {
-        setSaveError(t("results.invalidCalculationState"));
-        return;
-      }
-      throw error;
-    }
-  };
   const header = (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 flex-1">
         <BentoHeader
           projectName={productName}
           finalPrice={
-            results === null ? INVALID_CURRENCY_MARKER : format(breakdown.displaySellPrice)
+            results === null
+              ? INVALID_CURRENCY_MARKER
+              : format(breakdown.displaySellPrice)
           }
+          hasResults={results !== null}
         />
       </div>
       <div className="flex shrink-0 sm:justify-end">
@@ -147,13 +116,8 @@ export function BentoSurface(): React.ReactElement {
       >
         <h1 className="sr-only">{t("bento.title")}</h1>
         <div className="space-y-4 sm:space-y-5">
-          {header}
           {calculationNotice}
-          {saveError && (
-            <p role="alert" className="text-sm text-[var(--critical)]">
-              {saveError}
-            </p>
-          )}
+          {header}
         </div>
       </section>
     );
@@ -168,13 +132,22 @@ export function BentoSurface(): React.ReactElement {
     >
       <h1 className="sr-only">{t("bento.title")}</h1>
       <div className="space-y-4 sm:space-y-5">
-        {header}
         {calculationNotice}
-        {saveError && (
-          <p role="alert" className="text-sm text-[var(--critical)]">
-            {saveError}
-          </p>
-        )}
+        {header}
+        <section
+          id="bento-results"
+          aria-labelledby="bento-results-heading"
+          className="min-w-0"
+        >
+          <h2 id="bento-results-heading" className="sr-only">
+            {t("bento.cards.summary")}
+          </h2>
+          <ResultsPanel
+            variant="bento"
+            suppressCalculationError
+            historyActionLabel={t("results.addHistorySeparate")}
+          />
+        </section>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <BentoMaterialCard
             materialType={materialType}
@@ -199,16 +172,6 @@ export function BentoSurface(): React.ReactElement {
             quantity={quantity}
             breakEvenPrice={breakdown.breakEvenPrice}
             profit={breakdown.displayProfit}
-          />
-          <BentoSummaryCard
-            sellPrice={breakdown.displaySellPrice}
-            totalCost={result.totalCost}
-            taxAmount={breakdown.fees.taxAmount}
-            marketplaceFee={breakdown.fees.marketplaceFee}
-            totalFees={breakdown.fees.total}
-            profit={breakdown.displayProfit}
-            hasResult
-            onSave={handleSave}
           />
         </div>
       </div>

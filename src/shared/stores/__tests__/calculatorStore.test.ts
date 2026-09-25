@@ -3,26 +3,14 @@ import type { MaterialStateFDM, PrintParameters } from '@/shared/types'
 import { useCalculatorStore, initialState, buildSnapshot } from './calculatorStore.test-utils'
 
 // ── Hoisted mocks (executed by vitest BEFORE imports) ──────────────
-const {
-  mockAddEntry,
-  mockDeductWeight,
-  mockRemoveEntry,
-  mockUpdateSpool,
-  mockSpools,
-} = vi.hoisted(() => ({
+const { mockAddEntry, mockDeductWeight } = vi.hoisted(() => ({
   mockAddEntry: vi.fn(),
   mockDeductWeight: vi.fn(),
-  mockRemoveEntry: vi.fn(),
-  mockUpdateSpool: vi.fn(),
-  mockSpools: [] as { id: string; weightGrams: number }[],
 }))
 
 vi.mock('@/shared/stores/historyStore', () => ({
   useHistoryStore: {
-    getState: () => ({
-      addEntry: mockAddEntry,
-      removeEntry: mockRemoveEntry,
-    }),
+    getState: () => ({ addEntry: mockAddEntry }),
     setState: () => {},
     subscribe: () => () => {},
     destroy: () => {},
@@ -31,11 +19,7 @@ vi.mock('@/shared/stores/historyStore', () => ({
 
 vi.mock('@/shared/stores/filamentInventory', () => ({
   useFilamentInventory: {
-    getState: () => ({
-      spools: mockSpools,
-      deductWeight: mockDeductWeight,
-      updateSpool: mockUpdateSpool,
-    }),
+    getState: () => ({ deductWeight: mockDeductWeight }),
     setState: () => {},
     subscribe: () => () => {},
     destroy: () => {},
@@ -48,20 +32,13 @@ vi.mock('@/shared/stores/catalogStore', () => ({
   },
 }))
 
-function addMockSpool(id: string, weightGrams = 1000): void {
-  mockSpools.push({ id, weightGrams })
-}
-
 describe('CalculatorStore core', () => {
   beforeEach(() => {
     vi.clearAllTimers()
     localStorage.clear()
     useCalculatorStore.setState(initialState, true)
-    mockAddEntry.mockReset()
-    mockDeductWeight.mockReset()
-    mockRemoveEntry.mockReset()
-    mockUpdateSpool.mockReset()
-    mockSpools.splice(0, mockSpools.length)
+    mockAddEntry.mockClear()
+    mockDeductWeight.mockClear()
   })
 
   // ══════════════════════════════════════════════════════════════
@@ -279,10 +256,10 @@ describe('CalculatorStore core', () => {
   })
 
   // ══════════════════════════════════════════════════════════════
-  //  Spool auto-deduction (Phase 1)
+  //  Spool selection and explicit deduction contract
   // ══════════════════════════════════════════════════════════════
 
-  describe('Spool auto-deduction', () => {
+  describe('Spool selection and explicit deduction', () => {
     it('setSelectedSpoolId stores and retrieves the ID', () => {
       const store = useCalculatorStore.getState()
       store.setSelectedSpoolId('spool_abc123')
@@ -298,20 +275,15 @@ describe('CalculatorStore core', () => {
       expect(useCalculatorStore.getState().selectedSpoolId).toBeNull()
     })
 
-    it('addToHistory with FDM + selectedSpoolId + unitWeight > 0 calls deductWeight', () => {
-      addMockSpool('spool_456')
+    it('addToHistory with FDM + selectedSpoolId does not deduct implicitly', () => {
       const store = useCalculatorStore.getState()
       store.setSelectedSpoolId('spool_456')
       store.setProductName('Deductible Part')
 
       store.addToHistory()
 
-      expect(mockDeductWeight).toHaveBeenCalledTimes(1)
-      expect(mockDeductWeight).toHaveBeenCalledWith(
-        'spool_456',
-        expect.any(Number),
-        expect.objectContaining({ calculationIssues: [], quantity: 1 }),
-      )
+      expect(mockDeductWeight).not.toHaveBeenCalled()
+      expect(useCalculatorStore.getState().lastDeductedInfo).toBeNull()
     })
 
     it('addToHistory with resin type does NOT deduct', () => {
@@ -337,7 +309,6 @@ describe('CalculatorStore core', () => {
 
     it('addToHistory with unitWeight === 0 does NOT deduct', () => {
       // Override material weight to zero so unitWeight becomes 0
-      addMockSpool('spool_zero')
       const store = useCalculatorStore.getState()
       store.setFdmMaterial({
         ...store.fdmMaterial,
@@ -352,18 +323,14 @@ describe('CalculatorStore core', () => {
       expect(mockDeductWeight).not.toHaveBeenCalled()
     })
 
-    it('lastDeductedInfo is set after auto-deduction', () => {
-      addMockSpool('spool_info_1')
+    it('lastDeductedInfo remains null because deduction is explicit', () => {
       const store = useCalculatorStore.getState()
       store.setSelectedSpoolId('spool_info_1')
       store.setProductName('Info Test')
 
       store.addToHistory()
 
-      const state = useCalculatorStore.getState()
-      expect(state.lastDeductedInfo).not.toBeNull()
-      expect(state.lastDeductedInfo!.spoolId).toBe('spool_info_1')
-      expect(state.lastDeductedInfo!.weight).toBeGreaterThan(0)
+      expect(useCalculatorStore.getState().lastDeductedInfo).toBeNull()
     })
 
     it('lastDeductedInfo is null when no deduction happens', () => {
@@ -374,201 +341,6 @@ describe('CalculatorStore core', () => {
       store.addToHistory()
 
       expect(useCalculatorStore.getState().lastDeductedInfo).toBeNull()
-    })
-
-    it('does not add history when deduction fails', () => {
-      addMockSpool('spool_failure', 500)
-      const store = useCalculatorStore.getState()
-      store.setSelectedSpoolId('spool_failure')
-      store.setProductName('Failed Deduction')
-      mockDeductWeight.mockImplementationOnce(() => {
-        throw new Error('inventory unavailable')
-      })
-
-      expect(() => store.addToHistory()).toThrow('inventory unavailable')
-      expect(mockAddEntry).not.toHaveBeenCalled()
-    })
-
-    it('is idempotent for repeated addToHistory calls', () => {
-      addMockSpool('spool_duplicate', 1000)
-      const store = useCalculatorStore.getState()
-      store.setSelectedSpoolId('spool_duplicate')
-      store.setProductName('Duplicate Click')
-
-      store.addToHistory()
-      store.addToHistory()
-
-      expect(mockAddEntry).toHaveBeenCalledTimes(1)
-      expect(mockDeductWeight).toHaveBeenCalledTimes(1)
-    })
-
-    it('compensates the stock deduction when history persistence fails', () => {
-      addMockSpool('spool_history_failure', 700)
-      const store = useCalculatorStore.getState()
-      store.setSelectedSpoolId('spool_history_failure')
-      store.setProductName('Failed History')
-      mockAddEntry.mockImplementationOnce(() => {
-        throw new Error('history unavailable')
-      })
-
-      expect(() => store.addToHistory()).toThrow('history unavailable')
-      expect(mockUpdateSpool).toHaveBeenCalledWith('spool_history_failure', {
-        weightGrams: 700,
-      })
-    })
-
-    it('deducts the unit weight for every unit in the quantity', () => {
-      addMockSpool('spool_quantity', 1000)
-      const store = useCalculatorStore.getState()
-      store.setQuantity(3)
-      store.setSelectedSpoolId('spool_quantity')
-      store.setProductName('Three Parts')
-      const unitWeight = useCalculatorStore.getState().results!.unitWeight
-
-      store.addToHistory()
-
-      expect(mockDeductWeight).toHaveBeenCalledWith(
-        'spool_quantity',
-        unitWeight * 3,
-        expect.objectContaining({ calculationIssues: [], quantity: 3 }),
-      )
-      expect(useCalculatorStore.getState().lastDeductedInfo!.weight).toBe(
-        unitWeight * 3,
-      )
-    })
-
-    it('attempts every compensation and preserves the original error', () => {
-      addMockSpool('spool_compensation_failure', 700)
-      const store = useCalculatorStore.getState()
-      store.setSelectedSpoolId('spool_compensation_failure')
-      store.setProductName('Compensation Failure')
-      mockAddEntry.mockImplementationOnce(() => {
-        throw new Error('history unavailable')
-      })
-      mockRemoveEntry.mockImplementationOnce(() => {
-        throw new Error('remove failed')
-      })
-      mockUpdateSpool.mockImplementationOnce(() => {
-        throw new Error('restore failed')
-      })
-      const errorLog = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => undefined)
-
-      try {
-        expect(() => store.addToHistory()).toThrow('history unavailable')
-        expect(mockRemoveEntry).toHaveBeenCalledTimes(1)
-        expect(mockUpdateSpool).toHaveBeenCalledWith(
-          'spool_compensation_failure',
-          { weightGrams: 700 },
-        )
-        expect(errorLog).toHaveBeenCalled()
-      } finally {
-        errorLog.mockRestore()
-      }
-    })
-
-    it('does not duplicate after cosmetic calculator preferences change', () => {
-      addMockSpool('spool_cosmetic_change', 1000)
-      const store = useCalculatorStore.getState()
-      store.setSelectedSpoolId('spool_cosmetic_change')
-      store.setProductName('Cosmetic Change')
-
-      store.addToHistory()
-      store.setCalcLevel('advanced')
-      store.toggleField('materialCost')
-      store.setActiveTab('fdm')
-      store.addToHistory()
-
-      expect(mockAddEntry).toHaveBeenCalledTimes(1)
-      expect(mockDeductWeight).toHaveBeenCalledTimes(1)
-    })
-
-    it('rejects an insufficient spool with a translatable error code', () => {
-      addMockSpool('spool_insufficient', 1)
-      const store = useCalculatorStore.getState()
-      store.setQuantity(3)
-      store.setSelectedSpoolId('spool_insufficient')
-      store.setProductName('Insufficient Stock')
-
-      let caught: unknown
-      try {
-        store.addToHistory()
-      } catch (error) {
-        caught = error
-      }
-
-      expect(caught).toEqual(
-        expect.objectContaining({
-          code: 'INSUFFICIENT_FILAMENT_STOCK',
-          available: 1,
-          required: expect.any(Number),
-        }),
-      )
-      expect(mockDeductWeight).not.toHaveBeenCalled()
-      expect(mockAddEntry).not.toHaveBeenCalled()
-    })
-
-    it.each([1.5, 1e15])(
-      'rejects invalid quantity %s before any history or stock write',
-      (quantity) => {
-        addMockSpool('spool_invalid_quantity', 1000)
-        const store = useCalculatorStore.getState()
-        store.setQuantity(quantity)
-        store.setSelectedSpoolId('spool_invalid_quantity')
-        store.setProductName('Invalid Quantity')
-        const stockBefore = mockSpools[0].weightGrams
-
-        expect(() => store.addToHistory()).toThrow(
-          'INVALID_CALCULATION_STATE',
-        )
-        expect(mockDeductWeight).not.toHaveBeenCalled()
-        expect(mockAddEntry).not.toHaveBeenCalled()
-        expect(mockSpools[0].weightGrams).toBe(stockBefore)
-      },
-    )
-
-    it('rejects a non-quantity calculation issue before any write', () => {
-      addMockSpool('spool_invalid_slice', 1000)
-      const store = useCalculatorStore.getState()
-      store.setSelectedSpoolId('spool_invalid_slice')
-      store.setProductName('Invalid Slice')
-      useCalculatorStore.setState({
-        calculationIssues: [
-          {
-            path: 'fdmPrintParams.energyCostPerKwh',
-            reason: 'non_finite',
-            received: Number.NaN,
-          },
-        ],
-      })
-      const stockBefore = mockSpools[0].weightGrams
-
-      expect(useCalculatorStore.getState().calculationIssues.length).toBeGreaterThan(0)
-      expect(() => store.addToHistory()).toThrow(
-        'INVALID_CALCULATION_STATE',
-      )
-      expect(mockDeductWeight).not.toHaveBeenCalled()
-      expect(mockAddEntry).not.toHaveBeenCalled()
-      expect(mockSpools[0].weightGrams).toBe(stockBefore)
-    })
-
-    it('does not persist invalid calculation settings', () => {
-      const store = useCalculatorStore.getState()
-      store.setQuantity(1.5)
-
-      expect(() => store.saveSettings()).toThrow('INVALID_CALCULATION_STATE')
-      expect(localStorage.getItem('open3dcalc_settings_v2')).toBeNull()
-    })
-
-    it('does not restore an invalid undo snapshot', () => {
-      const invalidSnapshot = buildSnapshot({ quantity: 1.5 })
-      useCalculatorStore.setState({ history: [JSON.stringify(invalidSnapshot)] })
-      const quantityBefore = useCalculatorStore.getState().quantity
-
-      useCalculatorStore.getState().undo()
-
-      expect(useCalculatorStore.getState().quantity).toBe(quantityBefore)
     })
   })
 })

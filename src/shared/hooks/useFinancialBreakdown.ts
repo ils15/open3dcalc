@@ -51,6 +51,8 @@ export interface FinancialBreakdown {
   readonly invalidSegmentPaths: readonly string[];
   readonly overrideCalc: SellPriceOverrideResult | null;
   readonly displaySellPrice: number;
+  /** Markup target from the calculation result, shown even without an override. */
+  readonly targetMarkupPercent?: number;
   readonly displayProfit: number;
   readonly breakEvenPrice: number;
   readonly fees: FeeBreakdown;
@@ -174,6 +176,7 @@ export function useFinancialBreakdown(
         invalidSegmentPaths: [],
         overrideCalc: null,
         displaySellPrice: 0,
+        targetMarkupPercent: 0,
         displayProfit: 0,
         breakEvenPrice: 0,
         fees: {
@@ -208,6 +211,7 @@ export function useFinancialBreakdown(
       invalidSegmentPaths: chart.invalidSegmentPaths,
       overrideCalc,
       displaySellPrice: sellOverride ?? result.sellPrice,
+      targetMarkupPercent: result.targetMarginPercent,
       displayProfit: overrideCalc?.profit ?? result.profit,
       breakEvenPrice: result.breakEvenPrice,
       fees: {

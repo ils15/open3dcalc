@@ -10,7 +10,6 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { isInvalidCalculationStateError } from "@/shared/lib/calculationState";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useDemoExportGuard } from "@/shared/hooks/useDemoExportGuard";
@@ -19,7 +18,9 @@ import { generateShareUrl } from "@/shared/lib/calculationLink";
 
 export interface ExportActionsCardProps {
   /** Forwards the explanation when an export/share action is blocked in demo. */
-  onExportBlocked?: (message: string) => void;
+  readonly onExportBlocked?: (message: string) => void;
+  /** The results hierarchy places save-settings with the first action group. */
+  readonly showSaveSettings?: boolean;
 }
 
 /**
@@ -29,31 +30,18 @@ export interface ExportActionsCardProps {
  * forwards the blocked-feedback callback. The `data-tutorial="export"` hook is
  * preserved for the onboarding tours.
  */
-export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
+export function ExportActionsCard({
+  onExportBlocked,
+  showSaveSettings = true,
+}: ExportActionsCardProps) {
   const { t, i18n } = useTranslation();
   const { currency } = useCurrency();
   const { isDemoMode, guard } = useDemoExportGuard(onExportBlocked);
 
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved">("idle");
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle");
 
   const saveSettings = useCalculatorStore((s) => s.saveSettings);
-
-  const handleSaveSettings = () => {
-    try {
-      saveSettings();
-      setSaveError(null);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch (error) {
-      if (isInvalidCalculationStateError(error)) {
-        setSaveError(t("results.invalidCalculationState"));
-        return;
-      }
-      throw error;
-    }
-  };
 
   const handleExportQuote = () => {
     if (guard()) return;
@@ -148,28 +136,29 @@ export function ExportActionsCard({ onExportBlocked }: ExportActionsCardProps) {
             <span>{t("demo.export.badge")}</span>
           </div>
         )}
-        <button
-          type="button"
-          onClick={handleSaveSettings}
-          className={`min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate ${
-            saveStatus === "saved"
-              ? "bg-[var(--positive)] text-[var(--text-inverse)]"
-              : "bg-[var(--accent)] text-[var(--text-inverse)] hover:bg-[var(--accent-hover)]"
-          }`}
-        >
-          {saveStatus === "saved" ? (
-            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-          ) : (
-            <Save className="w-3.5 h-3.5 shrink-0" />
-          )}
-          <span className="truncate">
-            {saveStatus === "saved" ? t("calc.saved") : t("calc.saveSettings")}
-          </span>
-        </button>
-        {saveError && (
-          <p role="alert" className="col-span-2 text-xs text-[var(--critical)]">
-            {saveError}
-          </p>
+        {showSaveSettings && (
+          <button
+            type="button"
+            onClick={() => {
+              saveSettings();
+              setSaveStatus("saved");
+              setTimeout(() => setSaveStatus("idle"), 2000);
+            }}
+            className={`min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate ${
+              saveStatus === "saved"
+                ? "bg-[var(--positive)] text-[var(--text-inverse)]"
+                : "bg-[var(--accent)] text-[var(--text-inverse)] hover:bg-[var(--accent-hover)]"
+            }`}
+          >
+            {saveStatus === "saved" ? (
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            ) : (
+              <Save className="w-3.5 h-3.5 shrink-0" />
+            )}
+            <span className="truncate">
+              {saveStatus === "saved" ? t("calc.saved") : t("calc.saveSettings")}
+            </span>
+          </button>
         )}
         <button
           type="button"

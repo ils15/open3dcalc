@@ -115,7 +115,7 @@ beforeEach(async () => {
 });
 
 describe("BentoSurface", () => {
-  it("renders the five bento cards with values from CalculationResult", async () => {
+  it("renders the shared response and four input cards with values from CalculationResult", async () => {
     useLayoutStore.setState({ layoutMode: "bento" });
 
     render(<CalculatorSurface />);
@@ -132,11 +132,23 @@ describe("BentoSurface", () => {
     }
 
     expect(screen.getByLabelText("Projeto / cliente: Suporte de câmera")).toBeInTheDocument();
+    expect(screen.getByTestId("price-hero")).toHaveTextContent(/R\$\s*105,88/);
     expect(screen.getAllByLabelText(/Preço final: R\$ 105,88/).length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText(/Custo total: R\$ 58,34/).length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText(/Lucro líquido: R\$ 30,00/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Custo total: R\$ 58,34/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/Lucro líquido: R\$ 30,00/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText("2,5 h").length).toBeGreaterThan(0);
     expect(screen.getByRole("spinbutton", { name: "Quantidade" })).toHaveValue(3);
+  });
+
+  it("does not render an orphan summary link without a result", () => {
+    useLayoutStore.setState({ layoutMode: "bento" });
+    useCalculatorStore.setState({ results: null });
+
+    render(<CalculatorSurface />);
+
+    expect(
+      screen.queryByRole("link", { name: /Preço final:/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("derives the spool gauge from the selected inventory spool", async () => {
@@ -171,7 +183,10 @@ describe("BentoSurface", () => {
     await user.click(screen.getByRole("button", { name: "Bento Grid" }));
 
     expect(screen.getByRole("region", { name: "Calculadora em Bento Grid" })).toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(5);
+    expect(screen.getAllByRole("article")).toHaveLength(4);
+    expect(
+      screen.queryByRole("article", { name: "Resumo financeiro" }),
+    ).not.toBeInTheDocument();
   });
 
   it("exposes keyboard focus for every card", async () => {
@@ -200,34 +215,13 @@ describe("BentoSurface", () => {
 
     render(<CalculatorSurface />);
 
-    await user.click(screen.getByRole("button", { name: "Salvar no histórico" }));
+     await user.click(
+       screen.getByRole("button", {
+         name: "Adicionar ao histórico sem deduzir estoque",
+       }),
+     );
 
     expect(addToHistory).toHaveBeenCalledOnce();
-  });
-
-  it("translates a stock error from the summary CTA", async () => {
-    const user = userEvent.setup();
-    const error = Object.assign(new Error("INSUFFICIENT_FILAMENT_STOCK"), {
-      code: "INSUFFICIENT_FILAMENT_STOCK",
-      required: 308.4,
-      available: 1,
-    });
-    useLayoutStore.setState({ layoutMode: "bento" });
-    useCalculatorStore.setState({
-      addToHistory: () => {
-        throw error;
-      },
-    });
-
-    render(<CalculatorSurface />);
-    await user.click(screen.getByRole("button", { name: "Salvar no histórico" }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      i18n.t("results.insufficientStock", {
-        required: "308.40",
-        available: "1.00",
-      }),
-    );
   });
 
   it.each([

@@ -18,7 +18,9 @@ import {
 
 export interface ProductActionsCardProps {
   /** Sell price currently displayed (honors the display-local override). */
-  displaySellPrice: number;
+  readonly displaySellPrice: number;
+  /** Optional surface-specific label for the history action. */
+  readonly historyActionLabel?: string;
 }
 
 /**
@@ -27,7 +29,10 @@ export interface ProductActionsCardProps {
  * Hosts the calculator → product inventory bridge (issue #85 single-spool
  * decision) so the orchestrator stays free of store plumbing.
  */
-export function ProductActionsCard({ displaySellPrice }: ProductActionsCardProps) {
+export function ProductActionsCard({
+  displaySellPrice,
+  historyActionLabel,
+}: ProductActionsCardProps) {
   const { t } = useTranslation();
   const [productMsg, setProductMsg] = useState<{
     kind: "success" | "warn" | "error";
@@ -147,7 +152,7 @@ export function ProductActionsCard({ displaySellPrice }: ProductActionsCardProps
         className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[var(--surface-sunken)] border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)]"
       >
         <FolderOpen className="w-4 h-4" />
-        {t("calc.addHistory")}
+        {historyActionLabel ?? t("calc.addHistory")}
       </button>
 
       <button

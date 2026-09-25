@@ -1,13 +1,5 @@
 import { create } from "zustand";
-import {
-  assertPersistableCalculationState,
-  isPersistableCalculationState,
-} from "@/shared/lib/calculationState";
-import {
-  assertSufficientFilamentStock,
-  createFilamentStockError,
-  FILAMENT_SPOOL_NOT_FOUND,
-} from "@/shared/lib/filamentStock";
+import { assertPersistableCalculationState } from "@/shared/lib/calculationState";
 import { marketplaces } from "@/shared/lib/marketplace";
 import { printers } from "@/shared/lib/printers";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
@@ -54,7 +46,6 @@ import {
   debouncedAutoSave,
   loadStr,
   migrateQuickMode,
-  resolveFdmFilament,
 } from "./calculatorStore.helpers";
 import { computeValidatedStoreResults } from "./calculatorStore.validation";
 
@@ -133,8 +124,6 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       return {
         ...nextState,
         fdmAmsEnabled: false,
-        // The history key is derived from the calculation snapshot. Keep it
-        // across cosmetic preference changes so they cannot duplicate a save.
         ...validated.input,
         results: validated.results,
         calculationIssues: validated.calculationIssues,
@@ -371,21 +360,10 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           const merged = {
             ...state,
             ...data,
-            // Normalize legacy filament fields before undo validates the
-            // restored state; quantity and remaining issues still hit the gate.
-            fdmFilament: resolveFdmFilament(data.fdmFilament ?? state.fdmFilament),
             fdmAmsEnabled: false,
             lastDeductedInfo: null,
           };
           const validated = computeValidatedStoreResults(merged);
-          if (
-            !isPersistableCalculationState({
-              calculationIssues: validated.calculationIssues,
-              quantity: validated.input.quantity,
-            })
-          ) {
-            return state;
-          }
           return {
             ...merged,
             ...validated.input,
@@ -584,9 +562,12 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     addToHistory: () => {
       const s = get();
+      assertPersistableCalculationState({
+        calculationIssues: s.calculationIssues,
+        quantity: s.quantity,
+      });
       const r = s.results;
       if (!r) return;
-      assertPersistableCalculationState(s);
       const name =
         s.productName.trim() ||
         (s.activeTab === "fdm"
@@ -636,110 +617,23 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         results: r,
       };
 
-      // The normalized snapshot identifies the same save operation. Compare the
-      // key directly so cosmetic preference changes cannot duplicate a save.
       const historyKey = JSON.stringify({ ...snapshot, id: "", timestamp: 0 });
       if (s.lastHistoryKey === historyKey) return;
 
-      const selectedSpoolId = s.selectedSpoolId;
-      const shouldDeduct =
-        s.activeTab === "fdm" &&
-        selectedSpoolId !== null &&
-        r.unitWeight > 0;
-      const quantity = s.quantity > 0 ? s.quantity : 1;
-      const deductionWeight = r.unitWeight * quantity;
-      const history = useHistoryStore.getState();
-      const inventory = useFilamentInventory.getState();
-      let deductionStarted = false;
-      let historyAddStarted = false;
-      let previousWeight: number | null = null;
+      useHistoryStore.getState().addEntry({
+        id,
+        timestamp: now,
+        type: s.activeTab,
+        name,
+        summary: name,
+        totalCost: r.totalCost,
+        sellPrice: r.sellPrice,
+        profit: r.profit,
+        result: r,
+        snapshot,
+      });
+      set({ lastHistoryKey: historyKey });
 
-      try {
-        // Deduct first: a failed deduction must never leave a history entry.
-        if (
-          s.activeTab === "fdm" &&
-          selectedSpoolId !== null &&
-          r.unitWeight > 0
-        ) {
-          const selectedSpool = inventory.spools.find(
-            (spool) => spool.id === selectedSpoolId,
-          );
-          if (!selectedSpool) {
-            throw createFilamentStockError(FILAMENT_SPOOL_NOT_FOUND);
-          }
-          assertSufficientFilamentStock(
-            selectedSpool.weightGrams,
-            deductionWeight,
-          );
-          previousWeight = selectedSpool.weightGrams;
-          inventory.deductWeight(selectedSpoolId, deductionWeight, {
-            calculationIssues: s.calculationIssues,
-            quantity: s.quantity,
-          });
-          deductionStarted = true;
-        }
-
-        historyAddStarted = true;
-        history.addEntry({
-          id,
-          timestamp: now,
-          type: s.activeTab,
-          name,
-          summary: name,
-          totalCost: r.totalCost,
-          sellPrice: r.sellPrice,
-          profit: r.profit,
-          result: r,
-          snapshot,
-        });
-
-        set({
-          lastHistoryKey: historyKey,
-          ...(shouldDeduct && selectedSpoolId !== null
-            ? {
-                lastDeductedInfo: {
-                  spoolId: selectedSpoolId,
-                  weight: deductionWeight,
-                },
-              }
-            : {}),
-        });
-      } catch (error) {
-        // Roll back both sides independently. A failed rollback must not hide
-        // the original operation error or prevent the other side from running.
-        const compensationErrors: unknown[] = [];
-        if (historyAddStarted) {
-          try {
-            history.removeEntry(id);
-          } catch (compensationError) {
-            compensationErrors.push(compensationError);
-          }
-        }
-        if (
-          deductionStarted &&
-          previousWeight !== null &&
-          selectedSpoolId !== null
-        ) {
-          try {
-            inventory.updateSpool(selectedSpoolId, {
-              weightGrams: previousWeight,
-            });
-          } catch (compensationError) {
-            compensationErrors.push(compensationError);
-          }
-        }
-        if (compensationErrors.length > 0) {
-          console.error(
-            "[calculatorStore] History transaction compensation failed",
-            {
-              historyId: id,
-              spoolId: selectedSpoolId,
-              errors: compensationErrors,
-            },
-          );
-        }
-        throw error;
-      }
     },
 
     loadHistoryItem: (snapshot: CalculationSnapshot) => {
@@ -815,7 +709,6 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     saveSettings: () => {
       const s = get();
-      assertPersistableCalculationState(s);
       const data = {
         fdmMaterial: s.fdmMaterial,
         fdmPrintParams: s.fdmPrintParams,
