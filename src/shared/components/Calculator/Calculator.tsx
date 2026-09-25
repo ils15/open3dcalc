@@ -95,7 +95,17 @@ export function Calculator() {
           activeSection={activeSection}
           onSectionClick={setActiveSection}
         />
-        <div className="flex-1 min-w-0 2xl:min-w-[560px] @container space-y-5">
+        {/* Sidebar comes first in the accessibility tree; order preserves the visual layout. */}
+        <div
+          data-tutorial="results-sidebar"
+          className="hidden 2xl:flex order-2 flex-col gap-5 w-[360px] shrink-0 sticky top-[92px] self-start max-h-[calc(100vh-120px)] overflow-y-auto"
+        >
+          <ResultsPanel
+            variant="sidebar"
+            onExportBlocked={notifyBlockedExport}
+          />
+        </div>
+        <div className="flex-1 min-w-0 2xl:min-w-[560px] @container order-1 space-y-5">
           <QuickStartBanner />
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 py-1">
             <TechToggle />
@@ -113,15 +123,6 @@ export function Calculator() {
             catalogMaterials={catalogMaterials}
             catalogPrinters={catalogPrinters}
             handlePrinterSelect={handlePrinterSelect}
-            onExportBlocked={notifyBlockedExport}
-          />
-        </div>
-        <div
-          data-tutorial="results-sidebar"
-          className="hidden 2xl:flex flex-col gap-5 w-[360px] shrink-0 sticky top-[92px] self-start max-h-[calc(100vh-120px)] overflow-y-auto"
-        >
-          <ResultsPanel
-            variant="sidebar"
             onExportBlocked={notifyBlockedExport}
           />
         </div>

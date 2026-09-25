@@ -140,6 +140,17 @@ describe("BentoSurface", () => {
     expect(screen.getByRole("spinbutton", { name: "Quantidade" })).toHaveValue(3);
   });
 
+  it("does not render an orphan summary link without a result", () => {
+    useLayoutStore.setState({ layoutMode: "bento" });
+    useCalculatorStore.setState({ results: null });
+
+    render(<CalculatorSurface />);
+
+    expect(
+      screen.queryByRole("link", { name: /Preço final:/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("derives the spool gauge from the selected inventory spool", async () => {
     useLayoutStore.setState({ layoutMode: "bento" });
     useCalculatorStore.setState({ selectedSpoolId: spool.id });
@@ -204,7 +215,11 @@ describe("BentoSurface", () => {
 
     render(<CalculatorSurface />);
 
-    await user.click(screen.getByRole("button", { name: "Salvar no histórico" }));
+     await user.click(
+       screen.getByRole("button", {
+         name: "Adicionar ao histórico sem deduzir estoque",
+       }),
+     );
 
     expect(addToHistory).toHaveBeenCalledOnce();
   });

@@ -256,10 +256,10 @@ describe('CalculatorStore core', () => {
   })
 
   // ══════════════════════════════════════════════════════════════
-  //  Spool auto-deduction (Phase 1)
+  //  Spool selection and explicit deduction contract
   // ══════════════════════════════════════════════════════════════
 
-  describe('Spool auto-deduction', () => {
+  describe('Spool selection and explicit deduction', () => {
     it('setSelectedSpoolId stores and retrieves the ID', () => {
       const store = useCalculatorStore.getState()
       store.setSelectedSpoolId('spool_abc123')
@@ -275,15 +275,15 @@ describe('CalculatorStore core', () => {
       expect(useCalculatorStore.getState().selectedSpoolId).toBeNull()
     })
 
-    it('addToHistory with FDM + selectedSpoolId + unitWeight > 0 calls deductWeight', () => {
+    it('addToHistory with FDM + selectedSpoolId does not deduct implicitly', () => {
       const store = useCalculatorStore.getState()
       store.setSelectedSpoolId('spool_456')
       store.setProductName('Deductible Part')
 
       store.addToHistory()
 
-      expect(mockDeductWeight).toHaveBeenCalledTimes(1)
-      expect(mockDeductWeight).toHaveBeenCalledWith('spool_456', expect.any(Number))
+      expect(mockDeductWeight).not.toHaveBeenCalled()
+      expect(useCalculatorStore.getState().lastDeductedInfo).toBeNull()
     })
 
     it('addToHistory with resin type does NOT deduct', () => {
@@ -323,17 +323,14 @@ describe('CalculatorStore core', () => {
       expect(mockDeductWeight).not.toHaveBeenCalled()
     })
 
-    it('lastDeductedInfo is set after auto-deduction', () => {
+    it('lastDeductedInfo remains null because deduction is explicit', () => {
       const store = useCalculatorStore.getState()
       store.setSelectedSpoolId('spool_info_1')
       store.setProductName('Info Test')
 
       store.addToHistory()
 
-      const state = useCalculatorStore.getState()
-      expect(state.lastDeductedInfo).not.toBeNull()
-      expect(state.lastDeductedInfo!.spoolId).toBe('spool_info_1')
-      expect(state.lastDeductedInfo!.weight).toBeGreaterThan(0)
+      expect(useCalculatorStore.getState().lastDeductedInfo).toBeNull()
     })
 
     it('lastDeductedInfo is null when no deduction happens', () => {

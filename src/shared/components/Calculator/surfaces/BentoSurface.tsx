@@ -99,6 +99,7 @@ export function BentoSurface(): React.ReactElement {
               ? INVALID_CURRENCY_MARKER
               : format(breakdown.displaySellPrice)
           }
+          hasResults={results !== null}
         />
       </div>
       <div className="flex shrink-0 sm:justify-end">
@@ -144,7 +145,7 @@ export function BentoSurface(): React.ReactElement {
           <ResultsPanel
             variant="bento"
             suppressCalculationError
-            historyActionLabel={t("bento.saveHistory")}
+            historyActionLabel={t("results.addHistorySeparate")}
           />
         </section>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

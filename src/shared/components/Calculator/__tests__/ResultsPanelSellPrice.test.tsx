@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
@@ -304,5 +304,38 @@ describe("ResultsPanel — calculator → product bridge", () => {
     );
 
     expect(useProductInventory.getState().products).toHaveLength(0);
+  });
+
+  it("does not deduct a second time when saving after an explicit deduction", async () => {
+    const user = userEvent.setup();
+    useCalculatorStore.setState({ selectedSpoolId: "s1" });
+    const deductWeight = vi.spyOn(
+      useFilamentInventory.getState(),
+      "deductWeight",
+    );
+    render(<ResultsPanel variant="mobile" />);
+
+    await user.click(
+      screen.getByRole("button", { name: "results.deductFromInventory" }),
+    );
+    await user.click(await screen.findByRole("option", { name: /MarcaX/ }));
+    const dialog = screen.getByRole("dialog", {
+      name: "results.deductFromInventory",
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "common.confirm" }),
+    );
+
+    expect(deductWeight).toHaveBeenCalledTimes(1);
+
+    await user.click(
+      screen.getByRole("button", { name: "results.addHistorySeparate" }),
+    );
+
+    expect(deductWeight).toHaveBeenCalledTimes(1);
+    expect(
+      useFilamentInventory.getState().spools.find((spool) => spool.id === "s1")
+        ?.weightGrams,
+    ).toBe(915);
   });
 });

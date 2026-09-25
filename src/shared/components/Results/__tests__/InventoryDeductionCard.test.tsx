@@ -184,6 +184,34 @@ describe("InventoryDeductionCard — deduction", () => {
       "deductWeight",
     );
     render(<InventoryDeductionCard />);
+    const stockButton = screen.getByRole("button", {
+      name: "results.deductFromInventory",
+    });
+
+    await user.click(stockButton);
+    await user.click(
+      await screen.findByRole("option", { name: /MarcaX/ }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "results.deductFromInventory",
+    });
+    const confirmButton = within(dialog).getByRole("button", {
+      name: "common.confirm",
+    });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    await user.click(confirmButton);
+
+    expect(deductWeight).toHaveBeenCalledWith("s1", 85);
+    await waitFor(() => expect(stockButton).toHaveFocus());
+  });
+
+  it("ignores a rapid duplicate confirmation", async () => {
+    const user = userEvent.setup();
+    const deductWeight = vi.spyOn(
+      useFilamentInventory.getState(),
+      "deductWeight",
+    );
+    render(<InventoryDeductionCard />);
 
     await user.click(
       screen.getByRole("button", { name: "results.deductFromInventory" }),
@@ -198,9 +226,9 @@ describe("InventoryDeductionCard — deduction", () => {
       name: "common.confirm",
     });
     await waitFor(() => expect(confirmButton).toBeEnabled());
-    await user.click(confirmButton);
+    await user.dblClick(confirmButton);
 
-    expect(deductWeight).toHaveBeenCalledWith("s1", 85);
+    expect(deductWeight).toHaveBeenCalledTimes(1);
   });
 
   it("confirms the deduction in the action button", async () => {
@@ -232,10 +260,11 @@ describe("InventoryDeductionCard — deduction", () => {
       "deductWeight",
     );
     render(<InventoryDeductionCard />);
+    const stockButton = screen.getByRole("button", {
+      name: "results.deductFromInventory",
+    });
 
-    await user.click(
-      screen.getByRole("button", { name: "results.deductFromInventory" }),
-    );
+    await user.click(stockButton);
     await user.click(
       await screen.findByRole("option", { name: /MarcaX/ }),
     );
@@ -249,6 +278,7 @@ describe("InventoryDeductionCard — deduction", () => {
     await user.click(cancelButton);
 
     expect(deductWeight).not.toHaveBeenCalled();
+    await waitFor(() => expect(stockButton).toHaveFocus());
   });
 });
 

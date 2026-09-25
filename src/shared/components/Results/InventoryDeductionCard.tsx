@@ -18,9 +18,8 @@ import {
 /**
  * FDM-only "deduct from inventory" dropdown with its confirmation dialog.
  *
- * Owns the dropdown open/close interactions (click-outside + Escape), the
- * success auto-hide and the auto-deduction feedback triggered by
- * `addToHistory`, reading everything from the stores directly.
+ * Owns the explicit dropdown deduction, its confirmation and focus return.
+ * Saving a calculation never mutates inventory; this is the only deduction path.
  */
 export function InventoryDeductionCard() {
   const { t } = useTranslation();
@@ -29,8 +28,6 @@ export function InventoryDeductionCard() {
     activeTab,
     fdmMaterial,
     resinType,
-    lastDeductedInfo,
-    setLastDeductedInfo,
     selectedSpoolId,
     setSelectedSpoolId,
   } = useCalculatorStore(
@@ -38,8 +35,6 @@ export function InventoryDeductionCard() {
       activeTab: s.activeTab,
       fdmMaterial: s.fdmMaterial,
       resinType: s.resinMaterial.type,
-      lastDeductedInfo: s.lastDeductedInfo,
-      setLastDeductedInfo: s.setLastDeductedInfo,
       selectedSpoolId: s.selectedSpoolId,
       setSelectedSpoolId: s.setSelectedSpoolId,
     })),
@@ -62,8 +57,10 @@ export function InventoryDeductionCard() {
   const [deductSuccess, setDeductSuccess] = useState(false);
   const [showSpoolForm, setShowSpoolForm] = useState(false);
   const [shelfMessage, setShelfMessage] = useState<string | null>(null);
+  const [focusRestoreToken, setFocusRestoreToken] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inventoryBtnRef = useRef<HTMLButtonElement>(null);
+  const deductionInFlightRef = useRef(false);
   const actionDescriptionId = useId();
 
   const isFDM = activeTab === "fdm";
@@ -139,20 +136,15 @@ export function InventoryDeductionCard() {
     return () => clearTimeout(timer);
   }, [deductSuccess]);
 
-  // Watch for auto-deduction triggered by addToHistory
   useEffect(() => {
-    if (!lastDeductedInfo) return;
-    const timer = setTimeout(() => {
-      setDeductSuccess(true);
-      setLastDeductedInfo(null);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [lastDeductedInfo, setLastDeductedInfo]);
+    if (focusRestoreToken === 0) return;
+    inventoryBtnRef.current?.focus();
+  }, [focusRestoreToken]);
 
   if (!isFDM || !results) return null;
 
   const restoreInventoryFocus = (): void => {
-    window.setTimeout(() => inventoryBtnRef.current?.focus(), 0);
+    setFocusRestoreToken((token) => token + 1);
   };
 
   const deductionLabel = t("results.deductFromInventoryWithAmount", {
@@ -163,18 +155,23 @@ export function InventoryDeductionCard() {
   });
 
   const handleDeductClick = (spool: FilamentSpool) => {
+    deductionInFlightRef.current = false;
     setSelectedSpool(spool);
     setShowInventoryDropdown(false);
     setShowDeductConfirm(true);
   };
 
   const handleConfirmDeduct = () => {
-    if (!selectedSpool) return;
+    if (!selectedSpool || deductionInFlightRef.current) return;
+    deductionInFlightRef.current = true;
     deductWeightFromSpool(selectedSpool.id, unitWeight);
     setShowDeductConfirm(false);
     setSelectedSpool(null);
     setDeductSuccess(true);
     restoreInventoryFocus();
+    window.setTimeout(() => {
+      deductionInFlightRef.current = false;
+    }, 0);
   };
 
   const openAddToShelf = () => {
@@ -321,6 +318,7 @@ export function InventoryDeductionCard() {
         cancelLabel={t("common.cancel")}
         onConfirm={handleConfirmDeduct}
         onCancel={() => {
+          deductionInFlightRef.current = false;
           setShowDeductConfirm(false);
           setSelectedSpool(null);
           restoreInventoryFocus();

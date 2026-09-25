@@ -50,6 +50,18 @@ describe("Calculator — Complete-mode layout breakpoints", () => {
     });
   });
 
+  it("keeps the sidebar before inputs in the accessibility tree while preserving visual order", () => {
+    const sidebarIndex = calculatorSource.indexOf('data-tutorial="results-sidebar"');
+    const formIndex = calculatorSource.indexOf(
+      'className="flex-1 min-w-0 2xl:min-w-[560px] @container order-1',
+    );
+
+    expect(sidebarIndex).toBeGreaterThanOrEqual(0);
+    expect(formIndex).toBeGreaterThan(sidebarIndex);
+    expect(calculatorSource).toMatch(/hidden 2xl:flex order-2/);
+    expect(calculatorSource).toMatch(/@container order-1/);
+  });
+
   describe("breakpoint matrix (390 → 2000px)", () => {
     const matrix = [
       {

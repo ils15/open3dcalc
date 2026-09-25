@@ -624,22 +624,6 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         snapshot,
       });
 
-      // Auto-deduct filament from inventory
-      if (
-        s.activeTab === "fdm" &&
-        s.selectedSpoolId !== null &&
-        r.unitWeight > 0
-      ) {
-        useFilamentInventory
-          .getState()
-          .deductWeight(s.selectedSpoolId, r.unitWeight);
-        set({
-          lastDeductedInfo: {
-            spoolId: s.selectedSpoolId,
-            weight: r.unitWeight,
-          },
-        });
-      }
     },
 
     loadHistoryItem: (snapshot: CalculationSnapshot) => {

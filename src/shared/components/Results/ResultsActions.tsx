@@ -28,6 +28,7 @@ export function ResultsActions({
   const saveHeadingId = `${id}-save`;
   const exportHeadingId = `${id}-export`;
   const inventoryHeadingId = `${id}-inventory`;
+  const historyLabel = historyActionLabel ?? t("results.addHistorySeparate");
 
   return (
     <div className="min-w-0 space-y-6" data-testid="results-actions">
@@ -47,7 +48,7 @@ export function ResultsActions({
         <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           <ProductActionsCard
             displaySellPrice={displaySellPrice}
-            historyActionLabel={historyActionLabel}
+            historyActionLabel={historyLabel}
           />
           <SaveSettingsAction />
         </div>
