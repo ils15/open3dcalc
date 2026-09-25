@@ -57,6 +57,7 @@ function seedStore(activeTab: "fdm" | "resin" = "fdm") {
     resinMaterial: { type: "Standard" } as never,
     selectedSpoolId: null,
     quantity: 1,
+    calculationIssues: [],
     results: { ...results },
   } as Partial<ReturnType<typeof useCalculatorStore.getState>>);
   useFilamentInventory.setState({
@@ -201,7 +202,11 @@ describe("InventoryDeductionCard — deduction", () => {
     await waitFor(() => expect(confirmButton).toBeEnabled());
     await user.click(confirmButton);
 
-    expect(deductWeight).toHaveBeenCalledWith("s1", 85);
+    expect(deductWeight).toHaveBeenCalledWith(
+      "s1",
+      85,
+      expect.objectContaining({ calculationIssues: [], quantity: 1 }),
+    );
   });
 
   it("deducts the total weight for the selected quantity", async () => {
@@ -228,7 +233,86 @@ describe("InventoryDeductionCard — deduction", () => {
     await waitFor(() => expect(confirmButton).toBeEnabled());
     await user.click(confirmButton);
 
-    expect(deductWeight).toHaveBeenCalledWith("s1", 255);
+    expect(deductWeight).toHaveBeenCalledWith(
+      "s1",
+      255,
+      expect.objectContaining({ calculationIssues: [], quantity: 3 }),
+    );
+  });
+
+  it.each([1.5, 1e15])(
+    "rejeita quantity inválida %s na baixa manual sem alterar o estoque",
+    async (quantity) => {
+      const user = userEvent.setup();
+      useCalculatorStore.setState({
+        quantity,
+        calculationIssues: [],
+        results: { ...results, unitWeight: 0 },
+      });
+      const weightBefore = useFilamentInventory.getState().spools[0].weightGrams;
+      render(<InventoryDeductionCard />);
+
+      await user.click(
+        screen.getByRole("button", { name: "results.deductFromInventory" }),
+      );
+      await user.click(
+        await screen.findByRole("option", { name: /MarcaX/ }),
+      );
+      const dialog = screen.getByRole("dialog", {
+        name: "results.deductFromInventory",
+      });
+      const confirmButton = within(dialog).getByRole("button", {
+        name: "common.confirm",
+      });
+      await waitFor(() => expect(confirmButton).toBeEnabled());
+      await user.click(confirmButton);
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "results.invalidCalculationState",
+      );
+      expect(useFilamentInventory.getState().spools[0].weightGrams).toBe(
+        weightBefore,
+      );
+    },
+  );
+
+  it("traduz e bloqueia baixa manual quando há calculationIssues", async () => {
+    const user = userEvent.setup();
+    useCalculatorStore.setState({
+      quantity: 1,
+      calculationIssues: [
+        {
+          path: "fdmPrintParams.energyCostPerKwh",
+          reason: "non_finite",
+          received: Number.NaN,
+        },
+      ],
+      results: { ...results },
+    });
+    const weightBefore = useFilamentInventory.getState().spools[0].weightGrams;
+    render(<InventoryDeductionCard />);
+
+    await user.click(
+      screen.getByRole("button", { name: "results.deductFromInventory" }),
+    );
+    await user.click(
+      await screen.findByRole("option", { name: /MarcaX/ }),
+    );
+    const dialog = screen.getByRole("dialog", {
+      name: "results.deductFromInventory",
+    });
+    const confirmButton = within(dialog).getByRole("button", {
+      name: "common.confirm",
+    });
+    await waitFor(() => expect(confirmButton).toBeEnabled());
+    await user.click(confirmButton);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "results.invalidCalculationState",
+    );
+    expect(useFilamentInventory.getState().spools[0].weightGrams).toBe(
+      weightBefore,
+    );
   });
 
   it("rejects a deduction when stock changes before confirmation", async () => {
@@ -261,7 +345,7 @@ describe("InventoryDeductionCard — deduction", () => {
     await user.click(confirmButton);
 
     expect(deductWeight).not.toHaveBeenCalled();
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByRole("alert")).toHaveTextContent(
       "results.insufficientStock",
     );
   });

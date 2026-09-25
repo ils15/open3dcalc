@@ -672,7 +672,10 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
             deductionWeight,
           );
           previousWeight = selectedSpool.weightGrams;
-          inventory.deductWeight(selectedSpoolId, deductionWeight);
+          inventory.deductWeight(selectedSpoolId, deductionWeight, {
+            calculationIssues: s.calculationIssues,
+            quantity: s.quantity,
+          });
           deductionStarted = true;
         }
 

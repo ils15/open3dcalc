@@ -5,6 +5,11 @@ import {
   type SpoolStatus,
 } from "../filamentInventory";
 
+const VALID_CALCULATION_CONTEXT = {
+  calculationIssues: [],
+  quantity: 1,
+} as const;
+
 function makeSpool(
   overrides: Partial<FilamentSpool> = {},
 ): Omit<FilamentSpool, "id" | "dateAdded"> {
@@ -56,7 +61,9 @@ describe("useFilamentInventory (integration)", () => {
     const { spools: spoolsAfterAdd } = useFilamentInventory.getState();
     const id = spoolsAfterAdd[0].id;
 
-    useFilamentInventory.getState().deductWeight(id, 150);
+    useFilamentInventory
+      .getState()
+      .deductWeight(id, 150, VALID_CALCULATION_CONTEXT);
     const { spools } = useFilamentInventory.getState();
 
     expect(spools[0].weightGrams).toBe(350);
@@ -68,7 +75,9 @@ describe("useFilamentInventory (integration)", () => {
     useFilamentInventory.getState().addSpool(data);
     const id = useFilamentInventory.getState().spools[0].id;
 
-    useFilamentInventory.getState().deductWeight(id, 999);
+    useFilamentInventory
+      .getState()
+      .deductWeight(id, 999, VALID_CALCULATION_CONTEXT);
     const { spools } = useFilamentInventory.getState();
 
     expect(spools[0].weightGrams).toBe(0);
@@ -210,7 +219,9 @@ describe("useFilamentInventory (integration)", () => {
   it("deductWeight() with non-existent ID does not throw", () => {
     useFilamentInventory.getState().addSpool(makeSpool({ weightGrams: 500 }));
     expect(() => {
-      useFilamentInventory.getState().deductWeight("non-existent", 100);
+      useFilamentInventory
+        .getState()
+        .deductWeight("non-existent", 100, VALID_CALCULATION_CONTEXT);
     }).not.toThrow();
     const { spools } = useFilamentInventory.getState();
     expect(spools).toHaveLength(1);
@@ -246,7 +257,9 @@ describe("useFilamentInventory (integration)", () => {
     useFilamentInventory.getState().addSpool(makeSpool({ weightGrams: 500 }));
     const id = useFilamentInventory.getState().spools[0].id;
 
-    useFilamentInventory.getState().deductWeight(id, 0);
+    useFilamentInventory
+      .getState()
+      .deductWeight(id, 0, VALID_CALCULATION_CONTEXT);
     const { spools } = useFilamentInventory.getState();
     expect(spools[0].weightGrams).toBe(500);
   });

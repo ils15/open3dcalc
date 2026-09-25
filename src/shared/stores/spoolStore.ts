@@ -1,4 +1,8 @@
 import { create } from "zustand";
+import {
+  assertPersistableCalculationState,
+  type CalculationStateValidationContext,
+} from "@/shared/lib/calculationState";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 
 /**
@@ -152,7 +156,11 @@ interface SpoolInventoryState {
   addSpool: (spool: Omit<FilamentSpool, "id" | "dateAdded">) => void;
   removeSpool: (id: string) => void;
   updateSpool: (id: string, updates: Partial<FilamentSpool>) => void;
-  deductWeight: (id: string, grams: number) => void;
+  deductWeight: (
+    id: string,
+    grams: number,
+    calculationState: CalculationStateValidationContext,
+  ) => void;
   getTotalWeight: () => number;
   getSpoolsByMaterial: (material: string) => FilamentSpool[];
   getLowStockSpools: (thresholdGrams: number) => FilamentSpool[];
@@ -226,7 +234,11 @@ export const useSpoolStore = create<SpoolInventoryState>((set, get) => ({
     set({ spools });
   },
 
-  deductWeight: (id, grams) => {
+  // This is the final persistence boundary for calculation-driven stock
+  // deductions. Every caller must provide the current validation context so
+  // direct/future callers cannot bypass the calculator gate.
+  deductWeight: (id, grams, calculationState) => {
+    assertPersistableCalculationState(calculationState);
     const spools = get().spools.map((s) =>
       s.id === id
         ? { ...s, weightGrams: Math.max(0, s.weightGrams - grams) }

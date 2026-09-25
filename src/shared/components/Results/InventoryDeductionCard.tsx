@@ -10,6 +10,7 @@ import {
   isFilamentSpoolNotFoundError,
   isInsufficientFilamentStockError,
 } from "@/shared/lib/filamentStock";
+import { isInvalidCalculationStateError } from "@/shared/lib/calculationState";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import {
   useFilamentInventory,
@@ -41,6 +42,7 @@ export function InventoryDeductionCard() {
     selectedSpoolId,
     setSelectedSpoolId,
     quantity,
+    calculationIssues,
   } = useCalculatorStore(
     useShallow((s) => ({
       activeTab: s.activeTab,
@@ -51,6 +53,7 @@ export function InventoryDeductionCard() {
       selectedSpoolId: s.selectedSpoolId,
       setSelectedSpoolId: s.setSelectedSpoolId,
       quantity: s.quantity,
+      calculationIssues: s.calculationIssues,
     })),
   );
   const results = useCalculatorStore((s) => s.results);
@@ -173,7 +176,10 @@ export function InventoryDeductionCard() {
         throw createFilamentStockError(FILAMENT_SPOOL_NOT_FOUND);
       }
       assertSufficientFilamentStock(currentSpool.weightGrams, requiredWeight);
-      deductWeightFromSpool(currentSpool.id, requiredWeight);
+      deductWeightFromSpool(currentSpool.id, requiredWeight, {
+        calculationIssues,
+        quantity,
+      });
       setDeductError(null);
       setShowDeductConfirm(false);
       setSelectedSpool(null);
@@ -192,6 +198,12 @@ export function InventoryDeductionCard() {
       }
       if (isFilamentSpoolNotFoundError(error)) {
         setDeductError(t("results.spoolNotFound"));
+        setShowDeductConfirm(false);
+        setSelectedSpool(null);
+        return;
+      }
+      if (isInvalidCalculationStateError(error)) {
+        setDeductError(t("results.invalidCalculationState"));
         setShowDeductConfirm(false);
         setSelectedSpool(null);
         return;
@@ -296,7 +308,7 @@ export function InventoryDeductionCard() {
       </div>
 
       {deductError && (
-        <p role="status" className="text-xs text-[var(--critical)] text-center">
+        <p role="alert" className="text-xs text-[var(--critical)] text-center">
           {deductError}
         </p>
       )}

@@ -307,7 +307,11 @@ describe('CalculatorStore core', () => {
       store.addToHistory()
 
       expect(mockDeductWeight).toHaveBeenCalledTimes(1)
-      expect(mockDeductWeight).toHaveBeenCalledWith('spool_456', expect.any(Number))
+      expect(mockDeductWeight).toHaveBeenCalledWith(
+        'spool_456',
+        expect.any(Number),
+        expect.objectContaining({ calculationIssues: [], quantity: 1 }),
+      )
     })
 
     it('addToHistory with resin type does NOT deduct', () => {
@@ -426,6 +430,7 @@ describe('CalculatorStore core', () => {
       expect(mockDeductWeight).toHaveBeenCalledWith(
         'spool_quantity',
         unitWeight * 3,
+        expect.objectContaining({ calculationIssues: [], quantity: 3 }),
       )
       expect(useCalculatorStore.getState().lastDeductedInfo!.weight).toBe(
         unitWeight * 3,

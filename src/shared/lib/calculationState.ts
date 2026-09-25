@@ -6,6 +6,12 @@ export interface InvalidCalculationStateError extends Error {
   code: typeof INVALID_CALCULATION_STATE;
 }
 
+/** Context passed to lower-level persistence stores without importing the calculator store. */
+export interface CalculationStateValidationContext {
+  calculationIssues: readonly unknown[];
+  quantity: unknown;
+}
+
 export function createInvalidCalculationStateError(): InvalidCalculationStateError {
   const error = new Error(INVALID_CALCULATION_STATE) as InvalidCalculationStateError;
   error.name = "InvalidCalculationStateError";
@@ -23,17 +29,15 @@ export function isInvalidCalculationStateError(
   );
 }
 
-export function isPersistableCalculationState(state: {
-  calculationIssues: readonly unknown[];
-  quantity: unknown;
-}): boolean {
+export function isPersistableCalculationState(
+  state: CalculationStateValidationContext,
+): boolean {
   return state.calculationIssues.length === 0 && isValidQuantity(state.quantity);
 }
 
-export function assertPersistableCalculationState(state: {
-  calculationIssues: readonly unknown[];
-  quantity: unknown;
-}): void {
+export function assertPersistableCalculationState(
+  state: CalculationStateValidationContext,
+): void {
   if (!isPersistableCalculationState(state)) {
     throw createInvalidCalculationStateError();
   }
