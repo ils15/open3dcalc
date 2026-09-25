@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 
 // ─── Mock heavy/desktop-only dependencies (parity with the web app tests) ───
 vi.mock("@/platform/desktop/components/Header/Header", () => ({
@@ -165,5 +165,50 @@ describe("desktop App shell (post-extraction)", () => {
 
     expect(screen.getByTestId("dashboard-mock")).toBeInTheDocument();
     expect(screen.queryByTestId("calculator-mock")).toBeNull();
+  });
+
+  it("returns from History to Calculator without changing persisted settings", () => {
+    const key = "open3dcalc_settings_v2";
+    const persistedSettings = JSON.stringify({
+      activeTab: "history",
+      quantity: 3,
+    });
+    const previousSettings = localStorage.getItem(key);
+    localStorage.setItem(key, persistedSettings);
+
+    try {
+      const { container } = render(<App />);
+      const desktopSidebar = Array.from(
+        container.querySelectorAll("aside"),
+      ).find((aside) => aside.className.includes("hidden lg:flex"))!;
+      const buttons = desktopSidebar.querySelectorAll("button");
+
+      fireEvent.click(buttons[TABS.findIndex(({ id }) => id === "history")]);
+      expect(screen.getByText("HistoryTab")).toBeInTheDocument();
+
+      fireEvent.click(buttons[TABS.findIndex(({ id }) => id === "calculator")]);
+      expect(screen.getByTestId("calculator-mock")).toBeInTheDocument();
+      expect(localStorage.getItem(key)).toBe(persistedSettings);
+    } finally {
+      if (previousSettings === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, previousSettings);
+    }
+  });
+
+  it("keeps the go-products event connected to the shared navigation state", () => {
+    render(<App />);
+    const mainNavigation = screen.getByRole("navigation", {
+      name: "nav.mainNavigation",
+    });
+    const productsButton =
+      mainNavigation.querySelectorAll("button")[
+        TABS.findIndex(({ id }) => id === "products")
+      ];
+
+    act(() => {
+      window.dispatchEvent(new Event("open3dcalc:go-products"));
+    });
+
+    expect(productsButton).toHaveAttribute("aria-selected", "true");
   });
 });
