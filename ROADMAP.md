@@ -42,6 +42,19 @@ Every phase and change must complete this checklist:
 - [ ] Automated checks confirm that no unapproved PII leaves the device and that logs contain no secrets or excessive PII.
 - [ ] Privacy regression tests pass before the release is approved.
 
+### 🔒 Gate transversal de compatibilidade de dados — v2.0
+
+**Obrigatório para cada etapa de implementação deste roadmap e como gate de release da Beta 5 e da 2.0.0.** A atualização de v1 para v2 precisa preservar os dados de trabalho da pessoa usuária: nenhuma atualização pode apagar, resetar, sobrescrever silenciosamente ou tornar inacessíveis dados de versões anteriores.
+
+- [ ] Ler os dados existentes sem perda e preservar as chaves e formatos atuais de armazenamento dos dados centrais; preferir payloads aditivos para novas preferências.
+- [ ] Antes de qualquer escrita ou migração, manter os dados originais recuperáveis por backup ou mecanismo equivalente. Migrações são versionadas, idempotentes, seguras para repetição após interrupção e falham fechadas — nunca fazem reset ou overwrite silencioso.
+- [ ] Manter fixtures representativas de versões anteriores para configurações da calculadora, histórico, orçamentos, carretéis/inventário, catálogo/impressoras, clientes, produtos e preferências.
+- [ ] Testar leitura das fixtures antigas, migração repetida, interrupção e retomada, round-trip de exportação/importação e a persistência de web e desktop, incluindo bridge, manifesto e sync.
+- [ ] Registrar cada chave de persistência nova no SPEC-01 antes de usá-la, com política explícita de sync, exportação e apagamento. Não enfraquecer a política de privacidade nem sincronizar por acidente a visibilidade local das abas.
+- [ ] Tratar preservação de dados em upgrade v1→v2 como requisito. Compatibilidade de downgrade — binários antigos lendo dados gravados pela v2.0 — é uma decisão separada de produto/release e não pode ser afirmada sem implementação e testes próprios.
+- [ ] Até a decisão explícita sobre downgrade, não reescrever destrutivamente chaves anteriores e manter caminho de exportação/backup. Se uma migração exigida não puder ser não destrutiva, adiar a mudança de schema para depois da v2.0.
+- [ ] Bloquear Beta 5 e 2.0.0 se qualquer fixture de versão anterior falhar, houver perda de dados ou permanecer migração destrutiva sem recuperação.
+
 ### 🔴 Phase 1: Usability & Tutorials
 
 **Problem:** Current tutorials and onboarding are not good. We need a smoother experience that teaches users how to use the calculator without getting in the way.
@@ -595,12 +608,12 @@ Every phase and change must complete this checklist:
 
 **Cobertura que falta:**
 
-| Domínio | Cobertura no Clássico | Cobertura atual no Bento |
-| --- | --- | --- |
-| Material | Tipo, peso, custo, densidade, purga, eficiência do carretel, seleção de carretel, volume e custo por litro | Apenas resumo |
-| Falhas | Modo, valor e multiplicador | Apenas custo |
-| Vendas | Quantidade, infill, extras, embalagem, frete, marketplace, imposto, margem/markup e presets | Apenas exibição |
-| Custos fixos, mão de obra, hardware/acabamento, operações/PPE e software | Campos no Clássico | Resumo parcial; o restante é omitido |
+| Domínio                                                                  | Cobertura no Clássico                                                                                      | Cobertura atual no Bento             |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Material                                                                 | Tipo, peso, custo, densidade, purga, eficiência do carretel, seleção de carretel, volume e custo por litro | Apenas resumo                        |
+| Falhas                                                                   | Modo, valor e multiplicador                                                                                | Apenas custo                         |
+| Vendas                                                                   | Quantidade, infill, extras, embalagem, frete, marketplace, imposto, margem/markup e presets                | Apenas exibição                      |
+| Custos fixos, mão de obra, hardware/acabamento, operações/PPE e software | Campos no Clássico                                                                                         | Resumo parcial; o restante é omitido |
 
 **Direção de implementação:**
 
@@ -693,12 +706,12 @@ Every phase and change must complete this checklist:
 
 **Objetivo:** suportar a mesma forma de dados para AMS, CFS e ACE 2, sem criar um modelo por hardware. O fatiador é a fonte autoritativa; o app não deve inventar uma taxonomia de máquinas diferente da relatada pelo fatiador.
 
-#### M1 — Honestidade imediata *(entra na beta 3)*
+#### M1 — Honestidade imediata _(entra na beta 3)_
 
 - [ ] Exibir aviso de que o custo de material multi-material não entra no total, no preço nem no lucro.
 - [ ] Corrigir o furo que transforma um array de materiais vazio em custo zero; o caso inválido precisa ser explícito, não um total silenciosamente incorreto.
 - [ ] Usar o rótulo neutro **Multi-material**, em vez de “AMS”, em qualquer aviso ou cálculo que apresente esse recurso como suporte a um único sistema.
-- [ ] Fazer `roundCurrency` usar arredondamento *fail-high* (para cima), sem subestimar o preço ao arredondar valores monetários.
+- [ ] Fazer `roundCurrency` usar arredondamento _fail-high_ (para cima), sem subestimar o preço ao arredondar valores monetários.
 
 **Aceite da beta 3:** o aviso é visível antes de a pessoa confiar no resultado; array vazio não produz custo zero sem sinal explícito; o rótulo é neutro; e o arredondamento monetário não reduz o valor cobrado.
 
@@ -1116,6 +1129,111 @@ N6  Revenue Trends            ── independente, não espera N0
 
 ---
 
+### 🧭 Phase 7o: App Shell, navegação e espaços de trabalho
+
+**Status:** etapas aprovadas pela pessoa usuária; **todas não iniciadas**. Esta fase descreve oito fatias separadas, cada uma entregável em PR próprio; sequência e dependências estão explícitas abaixo. Nenhuma delas autoriza alterar o escopo vigente da Beta 5.
+
+**Relação com o roadmap existente:** esta fase não substitui, reordena nem absorve W1–W3, o port visual da Beta 5 ou a Phase 7n. Esses trabalhos continuam independentes; qualquer dependência entre eles deve ser declarada antes de iniciar a fatia afetada. A Phase 7n mantém seus próprios dados e pré-requisitos: em particular, os itens que dependem de frota real continuam bloqueados até N0, e métricas sem modelos, dados e fórmulas reais permanecem adiadas.
+
+**Gate de implementação e entrega por fatia:**
+
+- [ ] Aplicar o gate transversal de compatibilidade v2.0 acima em **cada** fatia, inclusive nas fatias somente visuais; quando uma fatia não tocar persistência, registrar isso e executar os testes de compatibilidade aplicáveis.
+- [ ] Fazer TDD (RED → GREEN → REFACTOR). Antes de cada fatia, reconfirmar a baseline informada de **219 arquivos / 2.924 testes**; a suíte existente deve continuar verde, sem regressões.
+- [ ] Em cada fatia verde, executar e registrar testes, typecheck, lint, builds web e desktop e verificações de acessibilidade, i18n e responsividade. Componentes novos devem ter cobertura ≥80%; WCAG AA, contraste adequado, alvos de toque de pelo menos 44px, paridade pt-BR/en-US, navegação por teclado e movimento reduzido são critérios de aceite.
+- [ ] Abrir um PR separado por fatia verde, prontamente após sua conclusão, para Iris atualizar o PR da fase. Preferir integrar cada fatia antes de começar as dependentes, evitando uma pilha longa. Nenhum PR deve ser mesclado sem aprovação explícita da pessoa usuária.
+- [ ] Usar `Example/` apenas como referência de interação ou linguagem visual quando indicado abaixo; stores, cálculo e dados reais do app continuam sendo a fonte de verdade.
+
+#### 7o.1 — Façades de estado da aplicação
+
+**Status:** aprovada; não iniciada. Criar façades de Context para Navigation, Currency e Theme sobre os stores existentes, sem transferir nem duplicar a propriedade do estado.
+
+**Acceptance criteria:**
+
+- [ ] Navigation Context, Currency Context e Theme Context leem e encaminham atualizações aos owners já existentes; nenhum Context mantém uma cópia independente do mesmo estado.
+- [ ] Atualizações iniciadas pelo store e pela façade permanecem coerentes e são cobertas por testes de integração.
+- [ ] Não há mudança de contrato ou formato dos dados centrais persistidos; o gate transversal de compatibilidade v2.0 permanece obrigatório.
+
+#### 7o.2 — Navegação primária persistente e visibilidade configurável
+
+**Status:** aprovada; não iniciada. Manter cinco destinos primários — **Pricing, Dashboard, History, Printers e Spools** — e persistir a aba ativa conforme o comportamento de referência em `Example/`.
+
+**Acceptance criteria:**
+
+- [ ] A navegação primária contém os cinco destinos aprovados; Pricing permanece sempre acessível e não pode ser ocultado.
+- [ ] Settings oferece **Manage Visibility** para os destinos configuráveis. A visibilidade das abas é uma preferência local e não deve entrar em sync.
+- [ ] Infill sai da navegação primária e fica em **Mais**, sem remover o campo da worksheet nem a função standalone.
+- [ ] A aba ativa é restaurada ao reabrir a aplicação sem sobrescrever dados centrais; qualquer chave nova de preferência segue SPEC-01 e o gate transversal de compatibilidade v2.0.
+- [ ] Os destinos e controles de visibilidade são acessíveis por teclado e leitor de tela, com nomes traduzidos e layout responsivo.
+
+#### 7o.3 — Complexidade escolhida pela pessoa usuária
+
+**Status:** aprovada; não iniciada. Os níveis **Simple** e **Studio Pro** controlam quanto detalhe aparece na calculadora e no Dashboard.
+
+**Acceptance criteria:**
+
+- [ ] Simple reduz a densidade de controles e conteúdo do Dashboard; Studio Pro expande os detalhes, sem mudar os resultados ou apagar entradas.
+- [ ] Complexidade é independente da visibilidade das abas e do Focus Mode; mudar uma dessas preferências não ativa ou redefine as outras.
+- [ ] A preferência é aditiva e reversível, com leitura preservada de dados e preferências de versões anteriores conforme o gate transversal v2.0.
+
+#### 7o.4 — Focus Mode transitório
+
+**Status:** aprovada; não iniciada. Oferecer uma superfície somente de calculadora, escondendo a navegação e a sidebar enquanto o modo estiver ativo.
+
+**Acceptance criteria:**
+
+- [ ] O Focus Mode mostra apenas a calculadora e mantém uma saída segura, visível e utilizável em todos os tamanhos de tela.
+- [ ] Sair do modo restaura o contexto anterior — destino, sidebar, densidade e foco de navegação — sem perder campos ou resultados.
+- [ ] O modo é transitório, não uma nova preferência persistida; entrar ou sair não altera estado de cálculo, undo/redo ou a visibilidade das abas.
+- [ ] A entrada, a saída e a restauração funcionam por teclado e respeitam WCAG AA e movimento reduzido.
+
+#### 7o.5 — Mini-Dash fora do Dashboard
+
+**Status:** aprovada; não iniciada. Disponibilizar um Mini-Dash compacto fora da tela Dashboard, com opção clara de reabrir ou expandir.
+
+**Acceptance criteria:**
+
+- [ ] O Mini-Dash pode ser compactado, reaberto e expandido sem perder o contexto da tela atual.
+- [ ] Exibe somente métricas verificadas que já existam nos dados reais de histórico e carretéis; métricas sem fonte real são omitidas, não simuladas.
+- [ ] Em desktop e mobile, o Mini-Dash e sua versão expandida não cobrem campos, ações, foco nem controles necessários da tela subjacente.
+- [ ] Conteúdo, rótulos e ações são acessíveis e localizados; aplicar o gate transversal de compatibilidade v2.0 a qualquer preferência persistida introduzida.
+
+#### 7o.6 — Gerenciador e guia global de atalhos
+
+**Status:** aprovada; não iniciada. Centralizar atalhos da aplicação e oferecer um guia acessível, após auditoria de conflitos com navegador e sistema operacional.
+
+**Acceptance criteria:**
+
+- [ ] Cada atalho proposto tem conflito de navegador e sistema operacional auditado antes de ser adotado; conflitos não são capturados silenciosamente.
+- [ ] Atalhos não disparam enquanto o foco estiver em entrada de texto/editável, nem atravessam modal ou diálogo ativo de forma inesperada.
+- [ ] O guia lista os atalhos efetivamente ativos, pode ser aberto e fechado por teclado e tem foco, rótulos e textos traduzidos.
+- [ ] Testes cobrem conflito, campos editáveis, modais, navegação por teclado e o comportamento de fechamento.
+
+#### 7o.7 — Quick Actions em speed dial
+
+**Status:** aprovada; não iniciada. Entregar Quick Actions como uma fatia separada, sem agrupar sua implementação com Mini-Dash ou Dashboard.
+
+**Acceptance criteria:**
+
+- [ ] O speed dial é operável por teclado e toque, anuncia estado e ações de forma acessível e não depende apenas de ícones.
+- [ ] Posição, área segura e abertura/fechamento funcionam em telas responsivas sem ocultar controles.
+- [ ] A ordem de camadas e a coexistência são verificadas junto a Mini-Dash, tutorial e diálogos; um overlay nunca bloqueia saída, foco ou confirmação de outro.
+- [ ] Testes verificam a interação e colisões de camadas nos estados simultâneos relevantes.
+
+#### 7o.8 — Quatro espaços de trabalho no Dashboard
+
+**Status:** aprovada; não iniciada. Organizar o Dashboard em quatro espaços: **Overview/Finances**, **Profitability/Pricing**, **Operations/Quality** e **Engineering/Slicer**. `Example/` é referência de UI, não fonte de modelos ou métricas.
+
+**Acceptance criteria:**
+
+- [ ] Os quatro espaços têm nomes, conteúdo e navegação distinguíveis; somente o espaço ativo é montado, com lazy mounting dos demais.
+- [ ] Trocar de espaço preserva dados e estado de cálculo existentes. Componentes reutilizam os stores e cálculos reais do app.
+- [ ] Fleet ROI, live jobs, failure outcomes, tendências de faturamento fabricadas e slicer optimizer do protótipo permanecem adiados até existirem modelos, dados e fórmulas reais aprovados. Dependências de frota continuam subordinadas ao N0 da Phase 7n; nenhuma tela apresenta placeholder como métrica real.
+- [ ] Os espaços funcionam em desktop e mobile, são acessíveis por teclado/leitor de tela e mantêm paridade pt-BR/en-US.
+
+**Dependências entre fatias:** 7o.2 depende das façades de navegação de 7o.1; 7o.4 depende da navegação/sidebar de 7o.2; 7o.5 depende da navegação de 7o.2; 7o.7 deve validar a coexistência com o Mini-Dash de 7o.5; 7o.8 usa a navegação de 7o.2. 7o.3 e 7o.6 podem ser planejadas separadamente, mas continuam sujeitas ao gate e à entrega em PRs próprios. Os componentes de Dashboard que dependem de frota real continuam bloqueados por N0 na Phase 7n, sem bloquear a estrutura dos quatro espaços.
+
+---
+
 ### 🔎 Investigação — uso atual de lojas e clientes
 
 **Status:** investigação; não é uma fase de implementação.
@@ -1182,4 +1300,4 @@ IA foi explicitamente confirmada como fora da V2.0. A única área deferred é I
 
 ---
 
-_Atualizado em 24 de setembro de 2026 — as phases 7/7b/7c, 7f e 7g registram a entrega real da `2.0.0-beta.2`; as correções C1–C5, o Bento editável, a navegação do Guided, a reformulação da Phase 7d, lojas/canais/locais, snapshot de precificação e a decisão margem vs. markup foram incorporadas. A ausência de IA foi mantida explícita; PRs #191 e #192 e seus efeitos de pipeline também estão registrados._
+_Atualizado em 25 de setembro de 2026 — planejamento aprovado da Phase 7o e gate transversal de compatibilidade v2.0 adicionados. As phases 7/7b/7c, 7f e 7g registram a entrega real da `2.0.0-beta.2`; as correções C1–C5, o Bento editável, a navegação do Guided, a reformulação da Phase 7d, lojas/canais/locais, snapshot de precificação e a decisão margem vs. markup foram incorporadas. A ausência de IA foi mantida explícita; PRs #191 e #192 e seus efeitos de pipeline também estão registrados._
