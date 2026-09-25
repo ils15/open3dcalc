@@ -424,7 +424,7 @@ export function FilamentInventory() {
           <button
             onClick={openAdd}
             data-tutorial="inventory-add"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] active:bg-[var(--color-accent-hover)] transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] active:bg-[var(--accent-fill-hover)] transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t("inventory.newSpool")}
@@ -462,7 +462,7 @@ export function FilamentInventory() {
               onClick={() => setFilterMaterial(m)}
               className={`px-3 py-1 rounded-[6px] text-xs font-semibold transition-colors border ${
                 filterMaterial === m
-                  ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
+                  ? "bg-[var(--accent-fill)] text-white border-[var(--color-accent)]"
                   : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-primary)]"
               }`}
             >
@@ -476,7 +476,7 @@ export function FilamentInventory() {
               onClick={() => setFilterStatus(s.value)}
               className={`px-3 py-1 rounded-[6px] text-xs font-semibold transition-colors border ${
                 filterStatus === s.value
-                  ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
+                  ? "bg-[var(--accent-fill)] text-white border-[var(--color-accent)]"
                   : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-primary)]"
               }`}
             >
@@ -691,7 +691,7 @@ export function FilamentInventory() {
                     type="button"
                     onClick={handleAddColor}
                     disabled={!newColorName.trim()}
-                    className="shrink-0 h-11 px-4 rounded-xl bg-[var(--color-accent)] text-white text-sm font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="shrink-0 h-11 px-4 rounded-xl bg-[var(--accent-fill)] text-white text-sm font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Adicionar
                   </button>
@@ -762,7 +762,7 @@ export function FilamentInventory() {
               disabled={
                 !form.brand.trim() || !form.color.trim() || !form.weight
               }
-              className="mt-5 w-full py-3 rounded-xl bg-[var(--color-accent)] text-white font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+              className="mt-5 w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
             >
               {editingId
                 ? t("inventory.saveChanges")

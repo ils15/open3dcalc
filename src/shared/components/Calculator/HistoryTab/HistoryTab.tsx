@@ -344,7 +344,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
               onClick={() => store.setFilterType(tab.key)}
               className={`px-3 py-1.5 text-xs rounded-lg transition-colors whitespace-nowrap ${
                 store.filterType === tab.key
-                  ? "bg-[var(--color-accent)] text-white"
+                  ? "bg-[var(--accent-fill)] text-white"
                   : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               }`}
             >
@@ -373,7 +373,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
             disabled={selectedForCompare.length !== 2}
             className={`px-4 py-2 rounded-xl text-xs transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5 ${
               selectedForCompare.length === 2
-                ? "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]"
+                ? "bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)]"
                 : "bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] cursor-not-allowed"
             }`}
           >
@@ -489,7 +489,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
                 )}
                 <button
                   onClick={() => setSelectedEntry(entry)}
-                  className="px-4 py-2 rounded-xl text-xs bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+                  className="px-4 py-2 rounded-xl text-xs bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
                 >
                   {t("history.details")}
                 </button>

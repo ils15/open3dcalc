@@ -209,7 +209,7 @@ function AvailableBanner({
           <>
             <button
               onClick={onDownload}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-accent)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none shadow-md"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--accent-fill)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none shadow-md"
             >
               <Download className="w-3.5 h-3.5" />
               {t("update.download")}
@@ -316,7 +316,7 @@ function ErrorBanner({ message, onRetry, onDismiss }: ErrorBannerProps) {
       <div className="mt-4">
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--color-accent)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none shadow-md"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--accent-fill)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none shadow-md"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           {t("update.retry")}

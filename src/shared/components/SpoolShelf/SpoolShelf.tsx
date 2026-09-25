@@ -126,7 +126,7 @@ export function SpoolShelf(): React.ReactElement {
         <button
           type="button"
           onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-bold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-bold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
           {t("spools.newSpool")}
@@ -169,7 +169,7 @@ export function SpoolShelf(): React.ReactElement {
             aria-pressed={filterMaterial === m}
             className={`px-3 py-1.5 min-h-[32px] rounded-[6px] text-xs font-semibold transition-colors border ${
               filterMaterial === m
-                ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
+                ? "bg-[var(--accent-fill)] text-white border-[var(--color-accent)]"
                 : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]"
             }`}
           >
@@ -188,7 +188,7 @@ export function SpoolShelf(): React.ReactElement {
             aria-pressed={filterStatus === s}
             className={`px-3 py-1.5 min-h-[32px] rounded-[6px] text-xs font-semibold transition-colors border ${
               filterStatus === s
-                ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]"
+                ? "bg-[var(--accent-fill)] text-white border-[var(--color-accent)]"
                 : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]"
             }`}
           >
