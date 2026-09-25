@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { ConfirmDialog } from '../ConfirmDialog'
 
@@ -76,5 +76,43 @@ describe('ConfirmDialog', () => {
       <ConfirmDialog open={true} message="Test" onConfirm={vi.fn()} onCancel={vi.fn()} />,
     )
     expect(screen.getByLabelText('Fechar')).toBeInTheDocument()
+  })
+
+  it('moves focus to the confirm button once opened', async () => {
+    render(
+      <ConfirmDialog open={true} message="Test" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    )
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Confirmar' })).toHaveFocus(),
+    )
+  })
+
+  // Companion to the restoration tests: the 50ms focus timer must still fire
+  // while the dialog is open, so the fix above cannot be "solved" by deleting
+  // the timer — only by cancelling it correctly on close.
+  it('still focuses the confirm button 50ms after opening', async () => {
+    render(
+      <ConfirmDialog open={true} message="Test" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    )
+    expect(document.body).toHaveFocus()
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 80))
+    })
+    expect(screen.getByRole('button', { name: 'Confirmar' })).toHaveFocus()
+  })
+
+  it('cancels the pending focus timer when closed before it fires', async () => {
+    const { rerender } = render(
+      <ConfirmDialog open={true} message="Test" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    )
+    // Close immediately, before the 50ms focus timer can run.
+    rerender(
+      <ConfirmDialog open={false} message="Test" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    )
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 400))
+    })
+    // Focus must not have been moved to the (now closing) confirm button.
+    expect(document.body).toHaveFocus()
   })
 })
