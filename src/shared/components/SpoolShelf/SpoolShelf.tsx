@@ -176,7 +176,10 @@ export function SpoolShelf(): React.ReactElement {
             {m === NO_MATERIAL ? t("spools.filterAll") : m}
           </button>
         ))}
-        <div className="w-px h-5 bg-[var(--color-border)] mx-0.5" aria-hidden="true" />
+        <div
+          className="w-px h-5 bg-[var(--color-border)] mx-0.5"
+          aria-hidden="true"
+        />
         {(["all", ...STATUSES] as const).map((s) => (
           <button
             key={s}
