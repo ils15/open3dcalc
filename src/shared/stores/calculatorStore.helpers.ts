@@ -17,6 +17,31 @@ import { isPersistableCalculationState } from "@/shared/lib/calculationState";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+const SETTINGS_STORAGE_KEY = "open3dcalc_settings_v2";
+
+/** Merge writes into the existing payload so older/future user fields survive. */
+export function persistCalculatorSettings(
+  patch: Record<string, unknown>,
+): void {
+  let existing: Record<string, unknown> = {};
+  const raw = guardedStorage.getItem(SETTINGS_STORAGE_KEY);
+
+  if (raw) {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        existing = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Replace malformed data using the same known fields as previous writers.
+    }
+  }
+
+  guardedStorage.setItem(
+    SETTINGS_STORAGE_KEY,
+    JSON.stringify({ ...existing, ...patch }),
+  );
+}
 
 export function debouncedAutoSave(getState: () => CalculatorState) {
   if (autoSaveTimer) clearTimeout(autoSaveTimer);
@@ -64,15 +89,16 @@ export function debouncedAutoSave(getState: () => CalculatorState) {
       enabledSections: s.enabledSections,
       calcLevel: s.calcLevel,
       hiddenFields: s.hiddenFields,
+      currency: s.currency,
     };
-    guardedStorage.setItem("open3dcalc_settings_v2", JSON.stringify(data));
+    persistCalculatorSettings(data);
   }, 800);
 }
 
 export const loadStr = <T>(key: string, def: T): T => {
   if (typeof window === "undefined") return def;
   try {
-    const saved = guardedStorage.getItem("open3dcalc_settings_v2");
+    const saved = guardedStorage.getItem(SETTINGS_STORAGE_KEY);
     if (!saved) return def;
     const parsed = JSON.parse(saved);
     return parsed[key] !== undefined ? parsed[key] : def;
@@ -227,7 +253,11 @@ export function resolvePrintParameters(
   const sanitized: Partial<PrintParameters> = {};
   for (const key of PRINT_PARAMETER_NUMERIC_FIELDS) {
     const value = input[key];
-    if (typeof value === "number" && Number.isFinite(value) && isNonNegative(value)) {
+    if (
+      typeof value === "number" &&
+      Number.isFinite(value) &&
+      isNonNegative(value)
+    ) {
       Object.assign(sanitized, { [key]: value });
     }
   }
@@ -257,7 +287,11 @@ export function resolveLaborCosts(
   if (typeof input.enabled === "boolean") sanitized.enabled = input.enabled;
   for (const key of LABOR_NUMERIC_FIELDS) {
     const value = input[key];
-    if (typeof value === "number" && Number.isFinite(value) && isNonNegative(value)) {
+    if (
+      typeof value === "number" &&
+      Number.isFinite(value) &&
+      isNonNegative(value)
+    ) {
       Object.assign(sanitized, { [key]: value });
     }
   }

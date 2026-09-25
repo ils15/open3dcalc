@@ -13,6 +13,7 @@ import {
   useNavigateToTab,
 } from "@/shared/components/AppShell/NavigationContext";
 import { NavigationProvider } from "@/shared/components/AppShell/NavigationProvider";
+import { PreferenceProvider } from "@/shared/contexts/PreferenceProvider";
 import { SecondaryNavigation } from "./SecondaryNavigation";
 import { MobileNav } from "./components/MobileNav";
 import { Footer } from "./components/Footer";
@@ -23,9 +24,11 @@ export { TABS } from "@/shared/components/AppShell/tabs";
 
 function App(): React.ReactElement {
   return (
-    <NavigationProvider>
-      <AppContent />
-    </NavigationProvider>
+    <PreferenceProvider>
+      <NavigationProvider>
+        <AppContent />
+      </NavigationProvider>
+    </PreferenceProvider>
   );
 }
 

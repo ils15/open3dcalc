@@ -14,6 +14,7 @@ import {
   useNavigateToTab,
 } from "@/shared/components/AppShell/NavigationContext";
 import { NavigationProvider } from "@/shared/components/AppShell/NavigationProvider";
+import { PreferenceProvider } from "@/shared/contexts/PreferenceProvider";
 import { useUpdaterAutoCheck } from "./hooks/useUpdaterAutoCheck";
 import { MobileNav } from "./components/MobileNav";
 import { SidebarFooter } from "./components/SidebarFooter";
@@ -25,9 +26,11 @@ export { TABS } from "@/shared/components/AppShell/tabs";
 
 function App(): React.ReactElement {
   return (
-    <NavigationProvider>
-      <AppContent />
-    </NavigationProvider>
+    <PreferenceProvider>
+      <NavigationProvider>
+        <AppContent />
+      </NavigationProvider>
+    </PreferenceProvider>
   );
 }
 
