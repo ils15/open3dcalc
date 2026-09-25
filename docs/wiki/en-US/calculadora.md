@@ -34,11 +34,11 @@ more by raising the margin or by cutting a real cost.
 
 Beta 3 provides three implemented layouts for the same calculator:
 
-- **Classic** — the full calculator, organized into sections, with navigation
-  and a detail-level control at the top. This is the path for a complete view
-  and for people who already know the workflow.
-- **Guided** — a step-by-step sequence of questions for beginners and for mobile
-  use. It guides the estimate without showing every section at once.
+- **Classic** — the calculator organized into sections, with navigation and a
+  detail-level control at the top. Choose this layout for direct access to the
+  sections and for a familiar workflow.
+- **Guided** — a step-by-step layout for beginners and mobile use. It presents
+  the estimate as a sequence of questions rather than displaying all sections at once.
 - **Bento Grid** — five cards arranged in a responsive grid. It is no longer a
   read-only dashboard: it is an editable calculator with the same fields as
   Classic, and its cards feed the real calculation.
@@ -68,7 +68,6 @@ about hidden fields are not discarded when you switch layouts.
 **Changing levels never clears values.** Fields you have already filled stay
 stored; only sections or fields hidden by the current level disappear. Start on
 Quick and increase the detail when you need it.
-
 
 ## The map of the ten sections
 

@@ -34,12 +34,12 @@ decide se quer ganhar mais ajustando a margem ou reduzindo um custo real.
 
 A beta 3 oferece três layouts implementados para a mesma calculadora:
 
-- **Clássico** — a calculadora completa, organizada em seções, com navegação e
-  controle de nível no topo. É o caminho para uma visão completa e para quem já
-  conhece o fluxo de trabalho.
-- **Guided (Fluxo Guiado)** — uma sequência de perguntas, passo a passo, para
-  quem está começando e para o uso no celular. Ele conduz a estimativa sem
-  expor todas as seções de uma vez.
+- **Clássico** — a calculadora organizada em seções, com navegação e controle de
+  nível no topo. Escolha este layout para acessar as seções diretamente e seguir
+  um fluxo de trabalho familiar.
+- **Guided (Fluxo Guiado)** — um layout passo a passo para quem está começando e
+  para uso no celular. Ele apresenta a estimativa como uma sequência de perguntas,
+  em vez de exibir todas as seções de uma vez.
 - **Bento Grid** — cinco cards organizados em uma grade responsiva. Ele não é mais
   um painel somente informativo: agora é uma calculadora editável, com os mesmos
   campos do Classic, e os cards alimentam o cálculo real.
@@ -69,7 +69,6 @@ seja, as escolhas de campos ocultos não são descartadas ao trocar de layout.
 **Mudar de nível não apaga valores.** Os campos preenchidos continuam guardados;
 apenas as seções ou os campos que o nível atual oculta deixam de aparecer. Você
 pode começar no Rápido e aumentar o detalhe quando precisar.
-
 
 ## O mapa das dez seções
 
