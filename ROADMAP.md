@@ -1131,7 +1131,7 @@ N6  Revenue Trends            ── independente, não espera N0
 
 ### 🧭 Phase 7o: App Shell, navegação e espaços de trabalho
 
-**Status:** etapas aprovadas pela pessoa usuária; Stage 1 — Navigation Context — e Stage 2 — Currency/Theme — implementadas e mescladas em `main`; etapas 3–8 não iniciadas. Esta fase descreve oito fatias separadas, cada uma entregável em PR próprio; sequência e dependências estão explícitas abaixo. Nenhuma delas autoriza alterar o escopo vigente da Beta 5.
+**Status:** etapas aprovadas pela pessoa usuária; Stage 1 — Navigation Context —, Stage 2 — Currency/Theme — e Stage 3 — Navegação primária, destino ativo persistido e Manage Visibility — implementadas e mescladas em `main`; etapas 4–8 não iniciadas. Esta fase descreve oito fatias separadas, cada uma entregável em PR próprio; sequência e dependências estão explícitas abaixo. Nenhuma delas autoriza alterar o escopo vigente da Beta 5. O plano desta fase entrou no roadmap pelo PR #223, mesclado como `67b43f34674f2aa5c5c0d394cb68383688509cf1`.
 
 **Relação com o roadmap existente:** esta fase não substitui, reordena nem absorve W1–W3, o port visual da Beta 5 ou a Phase 7n. Esses trabalhos continuam independentes; qualquer dependência entre eles deve ser declarada antes de iniciar a fatia afetada. A Phase 7n mantém seus próprios dados e pré-requisitos: em particular, os itens que dependem de frota real continuam bloqueados até N0, e métricas sem modelos, dados e fórmulas reais permanecem adiadas.
 
@@ -1157,7 +1157,11 @@ Currency e Theme Context implementados, aprovados pela Themis após três corre�
 
 #### 7o.2 — Navegação primária persistente e visibilidade configurável
 
-**Status:** aprovada; não iniciada. Manter cinco destinos primários — **Pricing, Dashboard, History, Printers e Spools** — e persistir a aba ativa conforme o comportamento de referência em `Example/`.
+**Status:** implementada e mesclada em `main`. Manter cinco destinos primários — **Pricing, Dashboard, History, Printers e Spools** — e persistir a aba ativa conforme o comportamento de referência em `Example/`. PR [#229](https://github.com/ils15/open3dcalc/pull/229) squash-merged como `048211ea569c5ad04b13a6b02bf35e803b9dc311`, aprovado pela Themis no SHA exato de revisão `a4333edcd443f965cd8e46d9cb130a2a63fd7a95` após cinco rodadas de revisão.
+
+Duas falhas reais foram encontradas e corrigidas durante a revisão, e não depois do merge. `useDismissablePopover` escuta em `window`, que é ancestral de `document` no caminho de propagação, de modo que Escape fechava o diálogo de visibilidade **e** o dropdown de configurações que estava atrás dele. E `useId` estava declarado depois de um retorno antecipado em `MoreMenu`, o que mudava a ordem de hooks sempre que todos os destinos rebaixados estavam ocultos. A autora reportou e restaurou, por conta própria, duas asserções que havia enfraquecido antes.
+
+A entrega cobre apenas esta fatia. Nenhum dado persistido central mudou e nada aqui fecha o gate transversal de compatibilidade v2.0, que permanece aberto.
 
 **Acceptance criteria:**
 
@@ -1236,6 +1240,25 @@ Currency e Theme Context implementados, aprovados pela Themis após três corre�
 
 ---
 
+### 🎨 Onda de contraste WCAG AA — cadeia consolidada
+
+**Status:** entregue e mesclada em `main`. Onda independente: não substitui, não reordena nem absorve nenhuma fatia da Phase 7o, da Phase 7n ou do port visual da Beta 5, e não fecha o gate transversal de compatibilidade v2.0.
+
+Os quatro PRs empilhados #222, #224, #225 e #226 foram consolidados sobre `main` em um único branch e mesclados como `3761a76a4584f609ee00db7da1b8c8145bffc49c` pelo PR #230, aprovado pela Themis no SHA exato `eadd10e44249535df782b18917b8182fa86378fc` em duas passagens de revisão.
+
+**Por que a consolidação foi necessária:** `ci-cd.yml` dispara apenas em `pull_request` com destino `main`. O PR #226, aberto sobre um branch de feature, nunca teve uma única execução de CI, e a cadeia empilhada não podia ser validada de forma confiável naquela forma.
+
+**Como a aprovação foi verificada:** a Themis reimplementou de forma independente a aritmética de contraste WCAG, em vez de reutilizar o helper do repositório, e as seis razões alegadas bateram em 0,00. Também provou mecanicamente que os dois commits "somente Prettier" eram de fato apenas formatação, executando o Prettier no parent de cada arquivo e comparando por diff.
+
+**Pendência administrativa:** os quatro PRs originais continuam abertos e estão agora totalmente superados; precisam ser fechados pelo owner.
+
+#### Próxima onda de acessibilidade — follow-ups registrados
+
+- [ ] `src/shared/components/ui/Toast.tsx:18` — falha WCAG AA viva: **2,83:1 no claro e 3,26:1 no escuro**. Fundo de acento independente de tema em 90% (`bg-[var(--color-accent)]/90`) com tinta de texto que troca junto com o tema (`text-[var(--color-text-primary)]`). Falha pré-existente, deliberadamente deixada no piso do censo em vez de ser corrigida durante a onda de contraste. **Primeiro ticket da próxima onda de acessibilidade, antes do release da Beta 5.**
+- [ ] O piso de população adiada do guard de contraste prende **contagem de arquivos**, não de sítios. Em `src/shared/__tests__/accentBackgroundContrast.test.ts`, `keeps the deferred translucent-accent population shrinking` assere `files.length <= 16`, e o piso de sítios descobertos assere `files.size > 5`. Um sítio que migra de uma forma quebrada para **outra** forma quebrada mantém as duas contagens iguais, e a falha se esconde. O piso deve prender sítios, não arquivos.
+
+---
+
 ### 🔎 Investigação — uso atual de lojas e clientes
 
 **Status:** investigação; não é uma fase de implementação.
@@ -1302,4 +1325,4 @@ IA foi explicitamente confirmada como fora da V2.0. A única área deferred é I
 
 ---
 
-_Atualizado em 25 de setembro de 2026 — planejamento aprovado da Phase 7o e gate transversal de compatibilidade v2.0 adicionados. As phases 7/7b/7c, 7f e 7g registram a entrega real da `2.0.0-beta.2`; as correções C1–C5, o Bento editável, a navegação do Guided, a reformulação da Phase 7d, lojas/canais/locais, snapshot de precificação e a decisão margem vs. markup foram incorporadas. A ausência de IA foi mantida explícita; PRs #191 e #192 e seus efeitos de pipeline também estão registrados._
+_Atualizado em 25 de setembro de 2026 — planejamento aprovado da Phase 7o e gate transversal de compatibilidade v2.0 adicionados. As phases 7/7b/7c, 7f e 7g registram a entrega real da `2.0.0-beta.2`; as correções C1–C5, o Bento editável, a navegação do Guided, a reformulação da Phase 7d, lojas/canais/locais, snapshot de precificação e a decisão margem vs. markup foram incorporadas. A ausência de IA foi mantida explícita; PRs #191 e #192 e seus efeitos de pipeline também estão registrados. A Stage 3 da Phase 7o passa a constar como entregue (`048211e`, PR #229), a cadeia consolidada de contraste WCAG como entregue (`3761a76`, PR #230) com os dois follow-ups de acessibilidade que ela deixou abertos, e o PR #223 deste roadmap foi mesclado como `67b43f3`. O gate transversal de compatibilidade v2.0 continua aberto; nenhuma das entregas acima o fecha._
