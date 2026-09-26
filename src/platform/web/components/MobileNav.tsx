@@ -32,11 +32,16 @@ export function MobileNav({
   return (
     <>
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+        className="fixed bottom-0 left-0 right-0 md:hidden"
         style={{
           background: "var(--color-bg-primary)",
           borderTop: "1px solid var(--color-border)",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          // --z-app-chrome: persistent chrome, not a modal. It has to beat
+          // scrolling content and lose to every transient, so the two platforms
+          // share one named step instead of drifting apart (this was z-50 and
+          // z-40 for the same component).
+          zIndex: "var(--z-app-chrome)",
         }}
         aria-label={t("nav.mainNavigation")}
       >

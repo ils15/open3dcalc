@@ -143,31 +143,70 @@
      question with a documented answer instead of a class name picked at the
      call site. A new layer JOINS a step; it does not get its own number.
 
+     The scale is sorted by what a surface OWNS, not by how large it looks,
+     because ownership is what decides whether one surface may cover
+     another. Two classes, and the rule between them is the whole model:
+
+       NOTHING passive may occlude the way out. A passive surface owns no
+       scrim, no focus trap and no key, and dismisses itself. It is
+       information, not an interruption, so it has no business hiding a
+       control — least of all the single control that ends Focus Mode.
+
+       A scrim modal MAY sit above chrome, because it genuinely owns the
+       screen until it is answered, and it owns Escape while it is up.
+
+     Steps, low to high:
+
+       --z-app-chrome    persistent chrome that only has to win over
+                         scrolling content: the mobile bottom nav, in BOTH
+                         platforms (they had drifted to 50 and 40 for the same
+                         component, which is the drift a scale prevents).
        --z-viewer        a full-bleed view of the surface you are already on
                          (STL fullscreen, G-code toolpath). Same content, no
                          new task, so it must not hide the way out.
+       --z-passive       PASSIVE transients — toasts, non-scrim popovers,
+                         bounded listboxes. Above a viewer, so a notice is
+                         never lost behind a full-bleed overlay; below the
+                         exit, so it can never cover it. This is the step the
+                         modal tier used to do double duty for, and that
+                         overlap IS the bug: a toast is `role="region"`, has
+                         no scrim and no Escape, so it inherited a tier whose
+                         entire justification was "this owns the screen".
        --z-shell-chrome  chrome that has to stay REACHABLE while a viewer is
-                         up — today only the Focus Mode exit. Sits above a
-                         viewer and BELOW a modal on purpose: a modal asks the
-                         user a question and owns the screen until answered
-                         (and owns Escape), so chrome floating over its scrim
-                         is the bug, not the fix. One Escape dismisses the
-                         modal and the exit is back.
-       z-50 (Tailwind)  the modal tier: dialog backdrops, the mobile bottom
-                         nav, toasts. Above shell chrome by the rule above.
+                         up — today only the Focus Mode exit. Everything that
+                         owns nothing is under it; everything that owns the
+                         screen is over it.
+       z-50 (Tailwind)  the SCRIM-MODAL tier: dialog backdrops and the
+                         owning overlays. Above shell chrome by the rule
+                         above. One Escape dismisses the modal and the exit
+                         is back.
        --z-dropdown     menus, popovers and combobox lists. Pre-existing
                          step, unchanged — it was already the highest tier a
                          transient layer needed.
        --z-panel        side panels and their own dialogs (z-70/71 today).
+       --z-tooltip      the one surface allowed ABOVE shell chrome, and the
+                         exception is asserted rather than assumed: the bubble
+                         is `pointer-events-none`, and `visibility: hidden`
+                         whenever it is closed, so it can overlap the exit
+                         while a trigger is hovered but can never intercept a
+                         click on it. It cannot sit lower either —
+                         FilamentInventory renders a tooltip (through
+                         InputGroup) inside its z-50 modal, so below the
+                         scrim tier real help text would vanish. An inert
+                         annotator is the one thing allowed to outrank the
+                         exit; anything clickable is not.
 
      Consume these as an inline style — `style={{ zIndex: "var(--z-viewer)" }}`
      — which is what `Select` already does for --z-dropdown. It keeps the
      value resolvable (and therefore assertable) instead of only inferable
      from a literal like `z-[100]`. */
-  --z-viewer: 40;
+  --z-app-chrome: 20;
+  --z-viewer: 30;
+  --z-passive: 40;
   --z-shell-chrome: 45;
   --z-dropdown: 60;
   --z-panel: 70;
+  --z-tooltip: 80;
 
   /* Radius — single source of truth for web, desktop and Tailwind's
      rounded-* utilities. --radius-2xl is 16px to match Tailwind's default

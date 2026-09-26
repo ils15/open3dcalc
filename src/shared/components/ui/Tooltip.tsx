@@ -108,7 +108,16 @@ export function Tooltip({
             position: strategy,
             top: y ?? 0,
             left: x ?? 0,
-            zIndex: 100,
+            // --z-tooltip, not the bare 100 this used to carry. 100 outranked
+            // every declared step and documented nothing. It sits above shell
+            // chrome on purpose and is the scale's ONE documented exception,
+            // because it is the only surface in the app that cannot intercept a
+            // click (`pointer-events-none` below, `visibility: hidden` when
+            // closed) — so it can never take the Focus Mode exit out of reach,
+            // only overlap it while a trigger is hovered. It cannot go lower
+            // either: FilamentInventory renders a tooltip inside its z-50
+            // modal, and below the scrim tier that help text would disappear.
+            zIndex: "var(--z-tooltip)",
             ...(!isOpen && { visibility: "hidden", pointerEvents: "none" }),
           }}
           {...getFloatingProps()}
