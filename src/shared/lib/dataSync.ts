@@ -806,7 +806,34 @@ function synchronizeActiveStores(
   if (!hasContent(data.settings) && mode !== "replace") return;
 
   cancelPendingAutoSave();
-  const current = useCalculatorStore.getState();
+  let current = useCalculatorStore.getState();
+  if (mode === "replace") {
+    const undoHistory = current.history;
+    current.resetCalculator();
+    cancelPendingAutoSave();
+    useCalculatorStore.setState({
+      activeTab: "fdm",
+      calcLevel: "basic",
+      hiddenFields: [],
+      currency: "auto",
+      enabledSections: {
+        material: true,
+        energy: true,
+        machine: true,
+        hardware: true,
+        consumables: true,
+        labor: true,
+        software: true,
+        failure: true,
+        extras: true,
+        postProcessing: true,
+        packaging: true,
+        shipping: true,
+      },
+      history: undoHistory,
+    });
+    current = useCalculatorStore.getState();
+  }
   const merged: Record<string, unknown> = { ...current };
   for (const key of CALCULATOR_SETTING_KEYS) {
     if (Object.hasOwn(data.settings, key)) merged[key] = data.settings[key];

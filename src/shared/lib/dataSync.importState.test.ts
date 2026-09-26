@@ -2,6 +2,42 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applySyncData, type SyncData } from "@/shared/lib/dataSync";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 
+const CALCULATOR_SETTING_KEYS = [
+  "activeTab",
+  "fdmMaterial",
+  "fdmPrintParams",
+  "fdmSlicerProfile",
+  "fdmFilament",
+  "fdmMachine",
+  "fdmHardware",
+  "fdmFinishing",
+  "fdmLabor",
+  "fdmExtras",
+  "fdmSales",
+  "fdmOps",
+  "fdmSoft",
+  "resinMaterial",
+  "resinPrintParams",
+  "resinPostProcess",
+  "resinMachine",
+  "resinHardware",
+  "resinLabor",
+  "resinExtras",
+  "resinSales",
+  "resinOps",
+  "resinSoft",
+  "fdmAmsSlots",
+  "fixedCosts",
+  "productName",
+  "quantity",
+  "infillPercent",
+  "targetMarginMode",
+  "enabledSections",
+  "calcLevel",
+  "hiddenFields",
+  "currency",
+] as const;
+
 function makeImportedData(): SyncData {
   return {
     settings: {
@@ -35,6 +71,28 @@ function makeImportedData(): SyncData {
     dashboard: {},
     sections: {},
   };
+}
+
+function calculatorSettingsSnapshot(
+  state: ReturnType<typeof useCalculatorStore.getState>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    CALCULATOR_SETTING_KEYS.map((key) => [key, state[key]]),
+  );
+}
+
+function seedNonDefaultCalculatorState(): void {
+  const current = useCalculatorStore.getState();
+  useCalculatorStore.setState({
+    activeTab: "resin",
+    fdmMachine: { ...current.fdmMachine, machineCost: 98765 },
+    productName: "Old destination value",
+    quantity: 42,
+    calcLevel: "advanced",
+    hiddenFields: ["old-field"],
+    currency: "USD",
+    enabledSections: { ...current.enabledSections, energy: false },
+  });
 }
 
 describe("dataSync active store import consistency", () => {
@@ -73,4 +131,46 @@ describe("dataSync active store import consistency", () => {
     );
     expect(rehydratedCalculator.getState().currency).toBe("EUR");
   });
+
+  it.each([
+    ["empty", {}],
+    ["partial", { quantity: 7, productName: "Imported part" }],
+  ] as const)(
+    "replace with %s settings synchronizes active state with production reload",
+    async (_caseName, settings) => {
+      seedNonDefaultCalculatorState();
+      const imported = makeImportedData();
+      imported.settings = settings;
+
+      applySyncData(imported, "replace");
+
+      expect(
+        JSON.parse(localStorage.getItem("open3dcalc_settings_v2")!),
+      ).toEqual(settings);
+      const activeSettings = calculatorSettingsSnapshot(
+        useCalculatorStore.getState(),
+      );
+      vi.resetModules();
+      const { useCalculatorStore: rehydratedCalculator } =
+        await import("@/shared/stores/calculatorStore");
+      const { restoreAutoSnapshot } =
+        await import("@/shared/stores/storeBridge");
+      expect(restoreAutoSnapshot()).toBe(true);
+
+      expect(activeSettings).toEqual(
+        calculatorSettingsSnapshot(rehydratedCalculator.getState()),
+      );
+      expect(activeSettings.activeTab).toBe("fdm");
+      expect(activeSettings.fdmMachine).not.toMatchObject({
+        machineCost: 98765,
+      });
+      if (Object.keys(settings).length === 0) {
+        expect(activeSettings.quantity).toBe(1);
+        expect(activeSettings.productName).toBe("");
+      } else {
+        expect(activeSettings.quantity).toBe(7);
+        expect(activeSettings.productName).toBe("Imported part");
+      }
+    },
+  );
 });
