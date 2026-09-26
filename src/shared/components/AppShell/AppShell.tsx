@@ -59,14 +59,26 @@ export function AppShell({
 }: AppShellProps): React.ReactElement {
   const { active: focusMode } = useFocusMode();
   const mainRef = useRef<HTMLElement>(null);
+  const exitRef = useRef<HTMLButtonElement>(null);
   const wasFocusMode = useRef(focusMode);
 
-  // Leaving the mode unmounts the exit control, so focus would fall to <body>
-  // and a keyboard user would lose their place entirely. The main landmark is
-  // where they are actually returning to, so it gets the focus. Runs only on
-  // the off transition, never on mount.
+  // Focus has to be placed DELIBERATELY on both edges of the mode, because
+  // each one unmounts the node that currently holds it:
+  //
+  // - On entry the focused `FocusModeButton` lives inside a Header,
+  //   SidebarFooter or MobileSettingsSheet that both Apps unmount, so the
+  //   browser drops focus to <body> and a keyboard user loses their place.
+  //   The exit is the only useful destination: it is the single way out.
+  // - On exit the `FocusModeExit` control unmounts, and the main landmark is
+  //   where the user is actually returning to.
+  //
+  // Both compare against the previous value, so neither fires on mount.
   useEffect(() => {
-    if (wasFocusMode.current && !focusMode) mainRef.current?.focus();
+    if (!wasFocusMode.current && focusMode) {
+      exitRef.current?.focus();
+    } else if (wasFocusMode.current && !focusMode) {
+      mainRef.current?.focus();
+    }
     wasFocusMode.current = focusMode;
   }, [focusMode]);
 
@@ -108,7 +120,7 @@ export function AppShell({
         </div>
       </main>
 
-      {focusMode && <FocusModeExit />}
+      {focusMode && <FocusModeExit buttonRef={exitRef} />}
     </>
   );
 }

@@ -137,7 +137,37 @@
   --shadow-sm: 0 1px 3px rgb(0 0 0 / 6%);
   --shadow-md: 0 2px 8px rgb(0 0 0 / 8%);
   --shadow-lg: 0 4px 16px rgb(0 0 0 / 10%);
+
+  /* ── Layering scale ────────────────────────────────────────────────
+     One ordered set of steps for the shell, so "what is on top" is a
+     question with a documented answer instead of a class name picked at the
+     call site. A new layer JOINS a step; it does not get its own number.
+
+       --z-viewer        a full-bleed view of the surface you are already on
+                         (STL fullscreen, G-code toolpath). Same content, no
+                         new task, so it must not hide the way out.
+       --z-shell-chrome  chrome that has to stay REACHABLE while a viewer is
+                         up — today only the Focus Mode exit. Sits above a
+                         viewer and BELOW a modal on purpose: a modal asks the
+                         user a question and owns the screen until answered
+                         (and owns Escape), so chrome floating over its scrim
+                         is the bug, not the fix. One Escape dismisses the
+                         modal and the exit is back.
+       z-50 (Tailwind)  the modal tier: dialog backdrops, the mobile bottom
+                         nav, toasts. Above shell chrome by the rule above.
+       --z-dropdown     menus, popovers and combobox lists. Pre-existing
+                         step, unchanged — it was already the highest tier a
+                         transient layer needed.
+       --z-panel        side panels and their own dialogs (z-70/71 today).
+
+     Consume these as an inline style — `style={{ zIndex: "var(--z-viewer)" }}`
+     — which is what `Select` already does for --z-dropdown. It keeps the
+     value resolvable (and therefore assertable) instead of only inferable
+     from a literal like `z-[100]`. */
+  --z-viewer: 40;
+  --z-shell-chrome: 45;
   --z-dropdown: 60;
+  --z-panel: 70;
 
   /* Radius — single source of truth for web, desktop and Tailwind's
      rounded-* utilities. --radius-2xl is 16px to match Tailwind's default

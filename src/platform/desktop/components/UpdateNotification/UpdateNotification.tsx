@@ -103,6 +103,12 @@ function AvailableBanner({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !isDownloading) {
+        // One Escape, one layer. This banner is kept MOUNTED in Focus Mode, and
+        // the Focus Mode exit listens on `window` (above `document` in the
+        // bubble path), so without this a single Escape both dismissed the
+        // notice and left the mode. `preventDefault` is the contract the exit
+        // already checks for.
+        e.preventDefault();
         onDismiss();
       }
     };

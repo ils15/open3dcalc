@@ -373,9 +373,16 @@ export function StlPreview({
   // initialGeometry is used as the initial state value above;
   // consumers that need to reset geometry should use a key prop on StlPreview
 
-  // Close the fullscreen overlay with the Escape key
+  // Close the fullscreen overlay with the Escape key.
+  // Armed on EXACTLY the condition that puts the overlay in the DOM. The
+  // portals below are `isFullscreen && geometry` and `showToolpath && gcodeFile`,
+  // so arming on the flags alone left a window where the handler was live with
+  // nothing on screen — and because it runs on `window`, it silently swallowed
+  // an Escape that belonged to whatever layer actually was up.
+  const fullscreenOpen = isFullscreen && geometry !== null;
+  const toolpathOpen = showToolpath && gcodeFile !== null;
   useEffect(() => {
-    if (!isFullscreen && !showToolpath) return;
+    if (!fullscreenOpen && !toolpathOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setIsFullscreen(false);
@@ -384,7 +391,7 @@ export function StlPreview({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isFullscreen, showToolpath]);
+  }, [fullscreenOpen, toolpathOpen]);
 
   const handleClear = useCallback(() => {
     setGeometry(null);
@@ -913,12 +920,18 @@ export function StlPreview({
       )}
 
       {/* Fullscreen 3D Preview (portal overlay) */}
-      {isFullscreen &&
-        geometry &&
+      {fullscreenOpen &&
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] bg-black/90 p-3 sm:p-6"
+            // --z-viewer: a full-bleed view of the surface the user is
+            // already on, not a new task. It must sit under the Focus Mode
+            // exit (--z-shell-chrome) so the way out is never obscured or
+            // intercepted. It was z-[100], above everything, which broke the
+            // stage-4 guarantee precisely because this component is reachable
+            // inside the mode. See the scale in tokens.css.
+            style={{ zIndex: "var(--z-viewer)" }}
+            className="fixed inset-0 bg-black/90 p-3 sm:p-6"
             role="dialog"
             aria-modal="true"
             aria-label={t("stl.fullscreen")}
@@ -937,12 +950,12 @@ export function StlPreview({
           fullscreen portal above — a G-code has no R3F geometry, so this one
           hosts the lazy chestnut viewer instead. Suspense keeps the chunk
           download out of the main bundle; the fallback shows while it loads. */}
-      {showToolpath &&
-        gcodeFile &&
+      {toolpathOpen &&
         typeof document !== "undefined" &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] bg-black/90 p-3 sm:p-6"
+            style={{ zIndex: "var(--z-viewer)" }}
+            className="fixed inset-0 bg-black/90 p-3 sm:p-6"
             role="dialog"
             aria-modal="true"
             aria-label={t("gcodePreview.containerLabel")}

@@ -110,7 +110,14 @@ export function PriceHeroCard({
             onChange={(e) => setPriceDraft(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleConfirmPrice();
-              if (e.key === "Escape") handleCancelPrice();
+              if (e.key === "Escape") {
+                // One Escape, one layer: this cancels the price draft only.
+                // `preventDefault` is the contract the Focus Mode exit
+                // already checks, and without it a single Escape both
+                // abandoned the draft and left the mode.
+                e.preventDefault();
+                handleCancelPrice();
+              }
             }}
             aria-label={t("calc.sellPriceInputLabel")}
             aria-invalid={priceError}
@@ -162,7 +169,8 @@ export function PriceHeroCard({
         </span>
         <span aria-hidden="true">·</span>
         <span>
-          {t("bento.fields.marketplaceFeeAmount")}: {fmtCurrency(fees.marketplaceFee)}
+          {t("bento.fields.marketplaceFeeAmount")}:{" "}
+          {fmtCurrency(fees.marketplaceFee)}
         </span>
         <span aria-hidden="true">·</span>
         <span>

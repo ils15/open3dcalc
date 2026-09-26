@@ -340,6 +340,42 @@ describe("focus mode — the exit is always available", () => {
     expect(screen.queryByTestId("surface-history")).toBeNull();
   });
 
+  it("moves focus to the exit on entry, not into the void", () => {
+    // The mirror of the exit-side case below, and it was the missing half: on
+    // entry the FOCUSED node — the FocusModeButton — lives inside a Header,
+    // SidebarFooter or MobileSettingsSheet that both Apps unmount, so the
+    // browser drops focus to <body> and a keyboard user has to rediscover the
+    // whole page. Landing on the exit is also the only useful destination:
+    // it is the single way out of the mode.
+    renderHarness();
+    // fireEvent.click does not move focus the way a real click does, so this
+    // reproduces what the browser has actually focused at the moment of entry.
+    const entry = screen.getByRole("button", { name: "focusMode.enter" });
+    entry.focus();
+    expect(document.activeElement).toBe(entry);
+
+    fireEvent.click(entry);
+
+    expect(document.activeElement).toBe(exitButton());
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  it("leaves focus alone on a mount that is already in the mode", () => {
+    // The entry case must not fire on first render, or every reload that
+    // happened to start in the mode would steal focus from the user.
+    act(() => {
+      useNavigationPrefsStore.getState().enterFocusMode();
+    });
+    const probe = document.createElement("input");
+    document.body.appendChild(probe);
+
+    renderHarness();
+    probe.focus();
+
+    expect(document.activeElement).toBe(probe);
+    probe.remove();
+  });
+
   it("returns keyboard focus to the content instead of dropping it on the body", () => {
     const { container } = render(
       <NavigationProvider>

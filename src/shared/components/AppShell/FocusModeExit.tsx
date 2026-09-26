@@ -35,7 +35,12 @@ import { useFocusMode } from "./NavigationContext";
  * - No animation at all, which satisfies the reduced-motion requirement by
  *   construction rather than by honouring a media query.
  */
-export function FocusModeExit(): React.ReactElement {
+export function FocusModeExit({
+  buttonRef,
+}: {
+  /** Set by `AppShell` so entering the mode can land focus here. */
+  buttonRef?: React.Ref<HTMLButtonElement>;
+} = {}): React.ReactElement {
   const { t } = useTranslation();
   const { exit } = useFocusMode();
 
@@ -63,7 +68,12 @@ export function FocusModeExit(): React.ReactElement {
   return (
     <div
       data-testid="focus-mode-exit"
-      className="fixed z-[60] top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-xl px-3 py-2"
+      // --z-shell-chrome, not a literal: the bar must clear a full-bleed
+      // viewer (--z-viewer) and stay UNDER a modal (z-50). See the scale in
+      // tokens.css — a modal owns the screen while it is up, so chrome must
+      // not float over its scrim.
+      style={{ zIndex: "var(--z-shell-chrome)" }}
+      className="fixed top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-xl px-3 py-2"
     >
       <span role="status" className="text-xs leading-tight max-w-[46vw]">
         <span className="block font-semibold text-[var(--color-text-primary)]">
@@ -74,6 +84,7 @@ export function FocusModeExit(): React.ReactElement {
         </span>
       </span>
       <button
+        ref={buttonRef}
         type="button"
         onClick={exit}
         className="shrink-0 flex items-center gap-2 min-h-[40px] px-3 rounded-xl text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
