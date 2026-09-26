@@ -493,6 +493,7 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
                 >
                   {t("history.details")}
                 </button>
+                {/* contrast-site: history-tab-delete-entry-button */}
                 <button
                   onClick={() => setConfirmDeleteId(entry.id)}
                   className="p-1.5 text-xs rounded-lg bg-red-600/20 text-[var(--color-danger)] hover:bg-red-600 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none flex items-center justify-center"

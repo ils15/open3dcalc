@@ -896,6 +896,7 @@ export function StlPreview({
 
       {/* Error toast */}
       {error && (
+        /* contrast-site: stl-preview-error-banner */
         <div
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-[var(--color-danger)]/90 text-[var(--color-text-primary)] border border-red-500/30 shadow-lg"
           role="alert"

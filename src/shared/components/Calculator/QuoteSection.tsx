@@ -654,6 +654,7 @@ function QuoteViewModal({
                 { value: "rejected", label: "Recusado" },
               ]}
             />
+            {/* contrast-site: quote-section-export-pdf-button */}
             <button
               onClick={handleExportPdf}
               className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none flex items-center gap-1.5"
@@ -1003,6 +1004,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 shrink-0">
+                  {/* contrast-site: quote-section-view-quote-button */}
                   <button
                     onClick={() => handleViewQuote(quote)}
                     className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"

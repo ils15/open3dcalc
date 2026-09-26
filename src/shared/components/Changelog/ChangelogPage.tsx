@@ -138,6 +138,7 @@ export function ChangelogPage() {
                     </>
                   )}
                   {isLatest && (
+                    /* contrast-site: changelog-latest-badge */
                     <span
                       data-testid={`latest-badge-${entry.version}`}
                       className="shrink-0 rounded-md bg-[var(--color-accent)]/20 px-2 py-1 text-[12px] font-semibold leading-none text-[var(--color-accent)]"

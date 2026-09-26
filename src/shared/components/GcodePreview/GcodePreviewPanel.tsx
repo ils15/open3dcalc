@@ -116,6 +116,7 @@ export function GcodePreviewPanel({
       <div
         className={`flex flex-col items-center justify-center gap-3 p-6 ${className ?? ""}`}
       >
+        {/* contrast-site: gcode-preview-read-error-banner */}
         <div
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-[var(--color-danger)]/90 text-[var(--color-text-primary)] border border-red-500/30 shadow-lg"
           role="alert"
@@ -156,6 +157,7 @@ export function GcodePreviewPanel({
       <div
         className={`flex flex-col items-center justify-center gap-3 p-6 ${className ?? ""}`}
       >
+        {/* contrast-site: gcode-preview-parse-error-banner */}
         <div
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-[var(--color-danger)]/90 text-[var(--color-text-primary)] border border-red-500/30 shadow-lg"
           role="alert"

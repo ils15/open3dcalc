@@ -105,112 +105,225 @@ export interface DeferredSite {
   file: string;
   line: number;
   /**
-   * The enclosing top-level declaration — `typeStyles`, `CatalogTab`,
-   * `useMobileSheet`. Only COLUMN-ZERO declarations count, so a `const` inside a
-   * function body does not become a boundary and the granularity stays at the
-   * component or module level.
+   * Offset of the pairing's class-string literal, valid in the ORIGINAL source
+   * because `stripComments` is length-preserving.
+   *
+   * Reported so identity resolves against the element that owns the literal. The
+   * line number is a convenience for humans; this is what the machine needs, and
+   * assuming a column is what once put a marker inside an arrow function.
    */
-  decl: string;
-  /** 1-based ordinal of this pairing within that declaration, in source order */
-  ordinal: number;
+  offset: number;
   /**
-   * The stable occurrence identity: `${decl}#${ordinal}`.
+   * The owning element's stable identity, or null when it has none.
    *
-   * This is what a pin is keyed on, and it is the answer to "which occurrence".
-   * A shape string cannot serve, because two occurrences of one shape are
-   * indistinguishable — resolve one and add the same shape elsewhere in the
-   * same file and a per-file multiset is unchanged. A line number cannot serve
-   * either, because any edit above shifts it.
+   * One identity may legitimately cover several shapes: four elements here pair
+   * `bg-emerald-600` and its `hover:bg-emerald-500` with the same ink, so the pin
+   * is `siteId -> shapes[]` rather than `siteId -> shape`.
    *
-   * Stability, stated honestly rather than oversold:
-   *
-   *   SURVIVES  line shifts; edits above the declaration; added or removed
-   *             literals that are not wash pairings (they do not consume an
-   *             ordinal); reformatting.
-   *   CHANGES ON a wash pairing being added, removed or reordered within the
-   *             same declaration, or taking a different form.
-   *
-   * The one real cost: inserting a wash pairing near the top of a declaration
-   * renumbers the ones after it, and they are reported as changed. That is
-   * deliberate — a shift in the order of a file's known-broken sites is worth
-   * one loud failure rather than a silent re-baseline, and the failure message
-   * names the declaration and ordinal so the fix is a copy-paste.
+   * Null is a FINDING, never a skip. An element with no identity is exactly the
+   * element a pin cannot protect, and letting it pass is how the population grew
+   * unnoticed in the first place.
    */
-  id: string;
-  /**
-   * The FORM, as written: `bg-[var(--color-accent)]/20 + text-[var(--color-accent)]`.
-   * Kept as a first-class output because it is the PINNED VALUE for the
-   * occurrence — identity says which site, shape says what it currently is.
-   */
+  siteId: string | null;
+  /** The FORM as written. The pinned VALUE for the site. */
   shape: string;
   /** worst ratio over every theme x backdrop, and where that worst case is */
   ratio: number;
   where: string;
 }
 
-/**
- * Top-level declarations, at column zero only. Anchored with `m` so an indented
- * `const` inside a function body is not a boundary.
- */
-const DECLARATION =
-  /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z0-9_$]+)/gm;
-
-/**
- * A cursor that turns a source offset into `decl#ordinal`, consumed in source
- * order by the scanners below.
- *
- * Held per FILE, not globally, so two files cannot share ordinals. One pass:
- * the caller walks literals in order, advancing the declaration cursor as it
- * goes, and takes the next ordinal for the declaration it lands in.
- */
-class OccurrenceCounter {
-  private readonly declarations: Array<{ name: string; at: number }>;
-  private next = 0;
-  private readonly used = new Map<string, number>();
-
-  constructor(private readonly source: string) {
-    this.declarations = [...source.matchAll(DECLARATION)].map((m) => ({
-      name: m[1],
-      at: m.index!,
-    }));
-  }
-
-  /** The declaration owning `offset`. */
-  private declarationAt(offset: number): string {
-    while (
-      this.next < this.declarations.length &&
-      this.declarations[this.next].at < offset
-    ) {
-      this.next += 1;
-    }
-    return this.declarations[this.next - 1]?.name ?? "<module>";
-  }
-
-  /** The identity for the next pairing at `offset`. Call once per pairing. */
-  at(offset: number): { decl: string; ordinal: number; id: string } {
-    const decl = this.declarationAt(offset);
-    const ordinal = (this.used.get(decl) ?? 0) + 1;
-    this.used.set(decl, ordinal);
-    return { decl, ordinal, id: `${decl}#${ordinal}` };
-  }
-}
-
-/**
- * Removes `/* … *\/` and `// …` without eating the `//` in `https://`.
- *
- * The block-comment replacement preserves every NEWLINE and blanks the rest,
- * rather than deleting the comment outright. That is not cosmetic: deleting a
- * multi-line comment shifts every subsequent line, so a reported `line` pointed
- * 12 lines above the site that actually had the problem — which is precisely
- * when a reviewer most needs the line number to be right. Occurrence identity
- * is unaffected either way (it is declaration + ordinal, not position), but the
- * diagnostics are only actionable if the line is true.
- */
 export function stripComments(source: string): string {
   return source
     .replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, " "))
-    .replace(/([^:])\/\/[^\n]*/g, "$1");
+    .replace(
+      /([^:])\/\/[^\n]*/g,
+      (m) => m[0] + m.slice(1).replace(/[^\n]/g, " "),
+    );
 }
+
+/* ------------------------------------------------------------------ *
+ * SITE IDENTITY, resolved from the OWNING JSX ELEMENT
+ *
+ * A hybrid, in this order:
+ *   1. a stable attribute the element ALREADY carries — a static
+ *      `data-testid` or `id`. Adding nothing beats adding something, and an
+ *      existing test id is already a promise that the element is individually
+ *      addressable. One element in this tree qualifies.
+ *   2. otherwise an explicit source-only comment beside the element.
+ *
+ * No runtime attribute is ever added for this. Both spellings of the comment
+ * are source-only and emit nothing: the JSX form renders no node, and the plain
+ * form is not even a JSX expression. That is why a comment is preferred over a
+ * `data-*` hook added purely to satisfy a test.
+ *
+ * WHY IDENTITY MUST BE THE ELEMENT, NOT A POSITION
+ * ------------------------------------------------
+ * Two earlier schemes named a POSITION and both were blocked, correctly:
+ *   line number     shifts on any edit above it.
+ *   decl#ordinal    survives reformatting but not substitution: two elements in
+ *                   one declaration swap their pairings and every ordinal is
+ *                   unchanged, so the pin cannot see it.
+ * The element is the thing that exists. A comment attached to it moves with it,
+ * so identity survives line shifts, reformatting, reordering, and a change of
+ * form — and the shape, which is what the pin stores as the value, is exactly
+ * the thing that is allowed to change.
+ * ------------------------------------------------------------------ */
+
+/**
+ * A marker, in either legal position.
+ *
+ *   `{/* contrast-site: id *@/`  JSX-children position, among an element's
+ *                                 siblings.
+ *   `/* contrast-site: id *@/`    JavaScript position, required when the element
+ *                                 is the first thing inside a parenthesised
+ *                                 expression — `return (`, `{x ? (`,
+ *                                 `{x && (`. There the braces form is an
+ *                                 object literal in an expression, not a
+ *                                 comment, and the file does not parse.
+ *
+ * Narrow on purpose (lowercase, digits, dashes) so an id cannot smuggle
+ * punctuation and prose mentioning the phrase cannot match by accident.
+ */
+const SITE_MARKER =
+  /(?:\{\s*)?\/\*\s*contrast-site:\s*([a-z0-9][a-z0-9-]*)\s*\*\/(?:\s*\})?/g;
+
+export interface SiteMarker {
+  id: string;
+  /** offset just past the marker */
+  end: number;
+  line: number;
+}
+
+export function siteMarkers(source: string): SiteMarker[] {
+  return [...source.matchAll(SITE_MARKER)].map((m) => ({
+    id: m[1],
+    end: m.index! + m[0].length,
+    line: source.slice(0, m.index!).split("\n").length,
+  }));
+}
+
+/**
+ * The offset of the `<` opening the JSX element that owns the literal at
+ * `offset`: the NEAREST preceding `<` followed by a tag name.
+ *
+ * "Nearest" is what makes this the INNERMOST enclosing element, and it is why
+ * this is a tag scan and never a line scan: several of these class strings are
+ * multi-line template literals, so the literal sits lines below its tag, and a
+ * backward LINE search lands inside an arrow function's JSX.
+ */
+export function owningTagStart(source: string, offset: number): number | null {
+  const m = [
+    ...source.slice(0, offset).matchAll(/<(?=[A-Za-z][A-Za-z0-9.]*)/g),
+  ].pop();
+  return m ? m.index! : null;
+}
+
+/**
+ * The owning element's full opening tag, from its `<` to the `>` that closes it.
+ *
+ * Scans forward rather than slicing to end-of-line, because attributes wrap:
+ * `<div aria-hidden="true"` on one line and `data-testid="spool-thumb"` two
+ * lines later. An end-of-line slice misses the identity and sends that element
+ * to a marker it does not need.
+ *
+ * String- and brace-aware, because `onClick={() => …}` and
+ * `` className={`… ${x}`} `` both contain a `>` that does not close the tag.
+ */
+export function owningTagText(source: string, tagStart: number): string {
+  let quote: string | null = null;
+  let braces = 0;
+  for (let i = tagStart + 1; i < source.length; i++) {
+    const c = source[i];
+    if (quote) {
+      if (c === "\\") i++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      quote = c;
+      continue;
+    }
+    if (c === "{") braces++;
+    else if (c === "}") braces--;
+    else if (c === ">" && braces === 0) return source.slice(tagStart, i + 1);
+  }
+  return source.slice(tagStart);
+}
+
+/**
+ * A STATIC `data-testid` or `id` on the owning element, or null.
+ *
+ * Only a plain string literal counts. A template value such as a testid built
+ * from an entry version is per-render and names no single source site, so it
+ * cannot be identity. Localized `aria-label` values are excluded for the same
+ * reason and are never consulted.
+ */
+export function staticAttrIdentity(tagText: string): string | null {
+  for (const m of tagText.matchAll(
+    /\b(data-testid|id)=(?:"([^"]*)"|'([^']*)')/g,
+  )) {
+    const value = (m[2] ?? m[3] ?? "").trim();
+    if (value) return `${m[1]}=${value}`;
+  }
+  return null;
+}
+
+export interface IdentityContext {
+  original: string;
+  markers: SiteMarker[];
+  /** owning-tag start -> resolved identity, so an element resolves once */
+  tagCache: Map<number, string | null>;
+  /** tag start that consumed each marker id, to detect orphans and duplicates */
+  claimed: Map<number, string>;
+}
+
+export function identityContext(original: string): IdentityContext {
+  return {
+    original,
+    markers: siteMarkers(original),
+    tagCache: new Map(),
+    claimed: new Map(),
+  };
+}
+
+/**
+ * The identity of the element owning the literal at `offset`, or null when it
+ * has none. Records the claim so the guard can report duplicate and orphan ids.
+ */
+export function resolveSiteId(
+  ctx: IdentityContext,
+  offset: number,
+): string | null {
+  const tagStart = owningTagStart(ctx.original, offset);
+  if (tagStart === null) return null;
+  const cached = ctx.tagCache.get(tagStart);
+  if (cached !== undefined) return cached;
+
+  let id = staticAttrIdentity(owningTagText(ctx.original, tagStart));
+  if (!id) {
+    // Nearest preceding marker. "Nearest" also gives a marker exactly one
+    // literal to own: a marker in between takes ownership, leaving this one
+    // owning nothing, which surfaces as an orphan rather than a silent
+    // reassignment.
+    let owner: SiteMarker | null = null;
+    for (const marker of ctx.markers) {
+      if (marker.end > offset) break;
+      owner = marker;
+    }
+    id = owner?.id ?? null;
+    if (owner) ctx.claimed.set(owner.end, owner.id);
+  }
+  ctx.tagCache.set(tagStart, id);
+  return id;
+}
+
+/** Markers that own no element, i.e. duplicated or misplaced. */
+export function orphanMarkers(ctx: IdentityContext): SiteMarker[] {
+  return ctx.markers.filter((m) => !ctx.claimed.has(m.end));
+}
+
+const siteIdOf = (ctx: IdentityContext, offset: number): string =>
+  resolveSiteId(ctx, offset) ?? "UNIDENTIFIED";
 
 function stripVariants(utility: string): string {
   let out = utility;
@@ -322,7 +435,7 @@ export function scanWashesInSource(options: {
   const { tokensCss, file } = options;
   const source = stripComments(options.source);
   const census: Census = { failing: [], passing: [], unresolved: [] };
-  const counter = new OccurrenceCounter(source);
+  const ctx = identityContext(options.source);
 
   for (const literal of source.matchAll(LITERAL)) {
     const utilities = literal[2].split(/\s+/).filter(Boolean);
@@ -339,7 +452,6 @@ export function scanWashesInSource(options: {
 
     for (const wash of washes) {
       for (const ink of inks) {
-        const { decl, ordinal, id } = counter.at(literal.index!);
         let worst = Infinity;
         let where = "";
         let ok = true;
@@ -368,16 +480,15 @@ export function scanWashesInSource(options: {
         }
         if (!ok) {
           census.unresolved.push(
-            `  ${file}:${line}  [${id}]  ${wash} + ${ink}`,
+            `  ${file}:${line}  [${siteIdOf(ctx, literal.index!)}]  ${wash} + ${ink}`,
           );
           continue;
         }
         const site: DeferredSite = {
           file,
           line,
-          decl,
-          ordinal,
-          id,
+          offset: literal.index!,
+          siteId: resolveSiteId(ctx, literal.index!),
           shape: `${wash} + ${ink}`,
           ratio: worst,
           where,
@@ -434,7 +545,7 @@ export function scanPaletteInSource(options: {
   const { tokensCss, file, palette } = options;
   const source = stripComments(options.source);
   const census: Census = { failing: [], passing: [], unresolved: [] };
-  const counter = new OccurrenceCounter(source);
+  const ctx = identityContext(options.source);
 
   for (const literal of source.matchAll(LITERAL)) {
     const utilities = literal[2].split(/\s+/).filter(Boolean);
@@ -453,9 +564,8 @@ export function scanPaletteInSource(options: {
         // because the pairing is a (background, ink) product and an unreadable
         // background leaves each of them undecidable.
         for (const ink of inks) {
-          const { id } = counter.at(literal.index!);
           census.unresolved.push(
-            `  ${file}:${line}  [${id}]  bg-${bg} + ${ink}  — ` +
+            `  ${file}:${line}  [${siteIdOf(ctx, literal.index!)}]  bg-${bg} + ${ink}  — ` +
               `bg-${bg} is not in the Tailwind theme map, so the pairing cannot ` +
               `be decided (an unreadable measurement is not a passing one)`,
           );
@@ -463,7 +573,6 @@ export function scanPaletteInSource(options: {
         continue;
       }
       for (const ink of inks) {
-        const { decl, ordinal, id } = counter.at(literal.index!);
         let worst = Infinity;
         let where = "";
         let ok = true;
@@ -481,7 +590,7 @@ export function scanPaletteInSource(options: {
         }
         if (!ok) {
           census.unresolved.push(
-            `  ${file}:${line}  [${id}]  bg-${bg} + ${ink}  — ${ink} does not ` +
+            `  ${file}:${line}  [${siteIdOf(ctx, literal.index!)}]  bg-${bg} + ${ink}  — ${ink} does not ` +
               `resolve in every theme, so the pairing cannot be decided`,
           );
           continue;
@@ -489,9 +598,8 @@ export function scanPaletteInSource(options: {
         const site: DeferredSite = {
           file,
           line,
-          decl,
-          ordinal,
-          id,
+          offset: literal.index!,
+          siteId: resolveSiteId(ctx, literal.index!),
           shape: `bg-${bg} + ${ink}`,
           ratio: worst,
           where,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import {
   AA_NORMAL_TEXT,
@@ -17,6 +17,8 @@ import {
   censusPaletteBackgrounds,
   censusWashes,
   scanPaletteInSource,
+  scanWashesInSource,
+  siteMarkers,
 } from "./helpers/deferredCensus";
 
 /**
@@ -144,6 +146,59 @@ import {
  *    those measured 2.07:1 and 2.10:1 — the two worst pairings in the app. A
  *    floor that does not cover the population it is a floor for is decoration.
  */
+
+/**
+ * The comparison the pin is built on, at module scope so the regression below
+ * can drive it directly while the census assertions drive it through the tree.
+ */
+function siteFaults(
+  discovered: ReadonlyArray<{ siteId: string | null; shape: string }>,
+  pin: Record<string, string[]>,
+): Array<{
+  siteId: string;
+  kind: "unidentified" | "unpinned" | "changedForm";
+  detail: string;
+}> {
+  const faults: Array<{
+    siteId: string;
+    kind: "unidentified" | "unpinned" | "changedForm";
+    detail: string;
+  }> = [];
+  const seen = new Map<string, Set<string>>();
+  for (const site of discovered) {
+    if (!site.siteId) {
+      faults.push({
+        siteId: "<none>",
+        kind: "unidentified",
+        detail: `  ${site.shape}`,
+      });
+      continue;
+    }
+    const have = seen.get(site.siteId) ?? new Set<string>();
+    have.add(site.shape);
+    seen.set(site.siteId, have);
+  }
+  for (const [siteId, shapes] of [...seen].sort()) {
+    const pinned = pin[siteId];
+    if (!pinned) {
+      faults.push({
+        siteId,
+        kind: "unpinned",
+        detail: `  now: ${[...shapes].sort().join(" | ")}`,
+      });
+      continue;
+    }
+    const want = [...shapes].sort();
+    if (want.join(" || ") !== [...pinned].sort().join(" || ")) {
+      faults.push({
+        siteId,
+        kind: "changedForm",
+        detail: `  now:    ${want.join(" | ")}\n      pinned: ${[...pinned].sort().join(" | ")}`,
+      });
+    }
+  }
+  return faults;
+}
 
 const projectRoot = resolve(__dirname, "../..", "..");
 const srcRoot = resolve(projectRoot, "src");
@@ -893,177 +948,114 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
    * encourage.
    */
   /**
-   * THE PIN IS PER OCCURRENCE
-   * -------------------------
-   * Two earlier versions of this pin were both too weak, and each was caught by
-   * the review rather than by me.
+   * THE PIN IS PER SITE — the owning JSX element, by its own stable identity.
    *
-   * v1 counted FILES. A site that changed form left every file count untouched.
-   * v2 held a GLOBAL set of allowed shapes, then a per-FILE multiset of them.
-   * Both still shared one blind spot: a shape is not an occurrence. Resolve the
-   * occurrence at `CatalogTab.tsx:PrinterManager#1` and add the same shape at
-   * `CatalogTab.tsx:MaterialManager#1`, and a per-file multiset is unchanged —
-   * three identical shapes before, three after. The population is just as
-   * broken and the floor says nothing.
+   * Three weaker keys were tried and blocked, correctly:
    *
-   * So the pin is keyed on OCCURRENCE, and the shape is the pinned VALUE:
+   *   line number    shifts on any edit above the site.
+   *   decl#ordinal   survives reformatting but not SUBSTITUTION: two elements in
+   *                  one declaration swap their pairings and every ordinal is
+   *                  unchanged. The ordinal names a position, not a site.
+   *   shape / hash   two sites of one shape are indistinguishable, and a hash of
+   *                  the shape is the same failure with extra steps.
    *
-   *   key   `file#declaration#ordinal`   — which site
-   *   value the class-string pair that site is allowed to hold — what it is
+   * A site is the ELEMENT, and the element is named in the source: a static
+   * `data-testid`/`id` the element already carries, or a source-only comment
+   * beside it. Identity therefore survives reformatting, line shifts and
+   * reordering, because none of those move a comment attached to its element —
+   * and the shape, which the pin stores as the VALUE, is exactly the thing
+   * allowed to change.
    *
-   * IDENTITY STABILITY, STATED HONESTLY
-   * -----------------------------------
-   * The key is the enclosing column-zero declaration plus a 1-based ordinal
-   * within it, both in source order. Why those two and not something cleverer:
+   * The value is a SHAPE LIST, not a single shape: four elements here pair
+   * `bg-emerald-600` and its `hover:bg-emerald-500` with one ink, so one identity
+   * legitimately covers two occurrences.
    *
-   *   SURVIVES   line shifts and edits above the site; reformatting; added or
-   *              removed literals that are not wash pairings, since they do not
-   *              consume an ordinal; a file being renamed (pin and census move
-   *              together, in the same commit).
-   *   CHANGES ON a wash pairing being added, removed, reordered within its
-   *              declaration, or taking a different form.
-   *
-   * A line number was rejected because any edit above shifts it, which is the
-   * most common edit there is. The literal's own text was rejected because two
-   * occurrences of one shape are then indistinguishable — that is precisely the
-   * gap being closed. A stable annotation in the source would be the strongest
-   * key and it was NOT used: it would mean editing thirteen components to add
-   * bookkeeping they do not otherwise need, and the guarantee it buys over
-   * `declaration#ordinal` is small next to that cost.
-   *
-   * THE COST, WHICH IS REAL: inserting a wash pairing near the top of a
-   * declaration renumbers the ones after it, and they are reported as changed.
-   * That is accepted deliberately. A silent re-baseline of a file's
-   * known-broken sites is worse than one loud failure, and the message names
-   * the declaration and ordinal so the repair is mechanical.
-   *
-   * ONE-DIRECTIONALITY, UNCHANGED AND STILL PAID FOR
-   * ----------------------------------------------
-   * A pinned occurrence that no longer exists does NOT fail, because fixing a
-   * site must never fail this suite — only lower the count. The cost is
-   * unchanged: a resolved site leaves a stale entry here, and the map
-   * over-describes the backlog until pruned by hand. What is new is that a
-   * still-existing occurrence must match its OWN pinned shape, which is a
-   * stronger requirement than the file aggregate it replaces.
+   * ONE-DIRECTIONAL, unchanged and still paid for: a pinned site that no longer
+   * has a deferred pairing does NOT fail, because fixing a site must never fail
+   * this suite. The cost is a stale entry until pruned by hand.
    */
-  const WASH_OCCURRENCES: Record<string, string> = {
-    "src/shared/components/GcodePreview/GcodePreviewPanel.tsx#GcodePreviewPanel#1":
+  const WASH_SITES: Record<string, string[]> = {
+    "catalog-tab-printer-custom-badge": [
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+    ],
+    "catalog-tab-material-custom-badge": [
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+    ],
+    "catalog-tab-marketplace-custom-badge": [
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+    ],
+    "changelog-latest-badge": [
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+    ],
+    "gcode-preview-read-error-banner": [
       "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
-    "src/shared/components/GcodePreview/GcodePreviewPanel.tsx#GcodePreviewPanel#2":
+    ],
+    "gcode-preview-parse-error-banner": [
       "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
-    "src/shared/components/StlPreview/StlPreview.tsx#StlPreview#1":
-      "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
-    "src/shared/components/Calculator/QuoteSection.tsx#QuoteSection#2":
-      "hover:bg-[var(--color-accent)]/20 + hover:text-[var(--color-accent)]",
-    "src/shared/components/Catalog/CatalogTab.tsx#PrinterManager#1":
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    "src/shared/components/Catalog/CatalogTab.tsx#MaterialManager#1":
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    "src/shared/components/Catalog/CatalogTab.tsx#MarketplaceManager#1":
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    "src/shared/components/Changelog/ChangelogPage.tsx#ChangelogPage#1":
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    "src/shared/components/SpoolShelf/SpoolThumb.tsx#SpoolThumb#1":
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    "src/shared/components/ui/Select/Select.tsx#OptionThumb#1":
-      "bg-[var(--accent)]/20 + text-[var(--accent)]",
-    "src/shared/components/Results/PriceHeroCard.tsx#PriceHeroCard#1":
+    ],
+    "price-hero-edit-price-button": [
       "hover:bg-[var(--revenue)]/10 + hover:text-[var(--revenue)]",
-    "src/shared/components/Results/ExportActionsCard.tsx#ExportActionsCard#4":
+    ],
+    "price-hero-margin-label": ["bg-[var(--accent)]/15 + text-[var(--accent)]"],
+    "quote-section-view-quote-button": [
+      "hover:bg-[var(--color-accent)]/20 + hover:text-[var(--color-accent)]",
+    ],
+    "section-nav-desktop-item": [
+      "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
+    ],
+    "section-nav-compact-item": [
+      "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
+    ],
+    "select-option-thumb": ["bg-[var(--accent)]/20 + text-[var(--accent)]"],
+    "data-testid=spool-thumb": [
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+    ],
+    "export-actions-csv-button": [
       "hover:bg-[var(--info)]/80 + text-[var(--text-inverse)]",
-    "src/shared/components/Calculator/SectionNav.tsx#SectionNav#1":
-      "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
-    "src/shared/components/Calculator/SectionNav.tsx#SectionNav#2":
-      "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
-    "src/shared/components/Results/PriceHeroCard.tsx#PriceHeroCard#4":
-      "bg-[var(--accent)]/15 + text-[var(--accent)]",
+    ],
+    "stl-preview-error-banner": [
+      "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+    ],
   };
 
-  const PALETTE_OCCURRENCES: Record<string, string> = {
-    "src/shared/components/Calculator/HistoryTab/HistoryTab.tsx#HistoryTab#1":
+  const PALETTE_SITES: Record<string, string[]> = {
+    "catalog-tab-save-printer-button": [
+      "bg-emerald-500 + text-white",
+      "bg-emerald-600 + text-white",
+    ],
+    "customer-tab-delete-button": ["bg-red-600 + text-[var(--color-danger)]"],
+    "history-tab-delete-entry-button": [
       "bg-red-600 + text-[var(--color-danger)]",
-    "src/shared/components/Catalog/CustomerTab.tsx#CustomerTab#1":
-      "bg-red-600 + text-[var(--color-danger)]",
-    "src/platform/desktop/components/UpdateNotification/UpdateNotification.tsx#DownloadedBanner#2":
+    ],
+    "privacy-screen-delete-all-button": ["bg-red-500 + text-white"],
+    "quote-section-export-pdf-button": [
       "bg-emerald-500 + text-white",
-    "src/shared/components/Calculator/QuoteSection.tsx#QuoteViewModal#2":
+      "bg-emerald-600 + text-white",
+    ],
+    "spool-form-use-existing-button": [
       "bg-emerald-500 + text-white",
-    "src/shared/components/Catalog/CatalogTab.tsx#PrinterManager#2":
+      "bg-emerald-600 + text-white",
+    ],
+    "update-notification-install-button": [
       "bg-emerald-500 + text-white",
-    "src/shared/components/SpoolShelf/SpoolForm.tsx#SpoolForm#2":
-      "bg-emerald-500 + text-white",
-    "src/platform/desktop/components/UpdateNotification/UpdateNotification.tsx#DownloadedBanner#1":
       "bg-emerald-600 + text-white",
-    "src/shared/components/Calculator/QuoteSection.tsx#QuoteViewModal#1":
-      "bg-emerald-600 + text-white",
-    "src/shared/components/Catalog/CatalogTab.tsx#PrinterManager#1":
-      "bg-emerald-600 + text-white",
-    "src/shared/components/SpoolShelf/SpoolForm.tsx#SpoolForm#1":
-      "bg-emerald-600 + text-white",
-    "src/shared/components/Privacy/PrivacyScreen.tsx#PrivacyScreen#1":
-      "bg-red-500 + text-white",
+    ],
   };
 
-  /** `"<file>#<decl>#<ordinal>"` — the key a pin is written against. */
-  const occurrenceKey = (site: { file: string; id: string }): string =>
-    `${site.file}#${site.id}`;
-
-  /**
-   * Discovered occurrences that their own pin entry does not account for.
-   *
-   * Two distinct findings, and the message distinguishes them because the
-   * remedies differ:
-   *   `unpinned`     — the occurrence is not in the map at all. A new site, or
-   *                    one that moved to a different declaration/ordinal.
-   *   `changedForm`  — the occurrence IS pinned, but to a different shape. This
-   *                    is a site that changed form, which is the defect the pin
-   *                    exists to catch.
-   */
-  function occurrenceFaults(
-    discovered: ReadonlyArray<{
-      file: string;
-      id: string;
-      shape: string;
-      line: number;
-    }>,
-    pin: Record<string, string>,
-  ): Array<{ key: string; shape: string; pinned: string | null }> {
-    const faults: Array<{
-      key: string;
-      shape: string;
-      pinned: string | null;
-    }> = [];
-    for (const site of discovered) {
-      const key = occurrenceKey(site);
-      const pinned = pin[key];
-      if (pinned === undefined || pinned !== site.shape) {
-        faults.push({ key, shape: site.shape, pinned: pinned ?? null });
-      }
-    }
-    return faults;
-  }
-
-  function describeFaults(
+  /** siteId -> the shapes its element is pinned to. */
+  function describeSiteFaults(
     family: string,
-    rows: Array<{ key: string; shape: string; pinned: string | null }>,
+    rows: Array<{ siteId: string; kind: string; detail: string }>,
   ): string {
     return (
-      `${rows.length} ${family} occurrence(s) below AA are not accounted for by ` +
-      `their own pin entry:\n` +
-      rows
-        .map(
-          (r) =>
-            `  ${r.key}\n` +
-            `      now:    ${r.shape}\n` +
-            (r.pinned === null
-              ? `      pinned: (nothing — this occurrence is new, or it moved)\n`
-              : `      pinned: ${r.pinned}`),
-        )
-        .join("\n") +
-      `\n\nThe key is \`file#declaration#ordinal\`, so this is about WHICH site, ` +
-      `not merely which form. Either the site is new or moved — a regression, ` +
-      `and it belongs in the fix rather than in the map — or it changed form, ` +
-      `in which case the pinned value above is the form it used to hold.`
+      `${rows.length} ${family} SITE(S) below AA are not accounted for by their own pin:\n` +
+      rows.map((r) => `  ${r.siteId}  [${r.kind}]\n${r.detail}`).join("\n") +
+      `\n\nA site is the owning JSX element, named by a static data-testid/id it ` +
+      `already carries or by a source-only comment beside it. "unidentified" ` +
+      `means the element has neither. "unpinned" means a new element appeared. ` +
+      `"changedForm" means the element is pinned to a different shape — which is ` +
+      `what a same-declaration substitution looks like, and is the thing a ` +
+      `position-based key could not see.`
     );
   }
 
@@ -1205,193 +1197,90 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
   });
 
   it.each([
-    ["wash", WASH_OCCURRENCES, () => census.failing],
-    ["palette", PALETTE_OCCURRENCES, () => palette.failing],
+    ["wash", WASH_SITES, () => census.failing],
+    ["palette", PALETTE_SITES, () => palette.failing],
   ] as const)(
-    "accounts for every %s OCCURRENCE against its own pin entry",
+    "accounts for every %s SITE against its own pin",
     (family, pin, discovered) => {
-      const rows = occurrenceFaults(discovered(), pin);
+      const rows = siteFaults(discovered(), pin);
       expect(
         rows,
         rows.length
-          ? describeFaults(family, rows)
-          : `${family} census is fully accounted for`,
+          ? describeSiteFaults(family, rows)
+          : `${family} sites fully accounted for`,
       ).toHaveLength(0);
     },
   );
 
-  it.each([
-    ["wash", WASH_OCCURRENCES],
-    ["palette", PALETTE_OCCURRENCES],
-  ] as const)(
-    "pins only real files for the %s family, so a typo cannot pin nothing",
-    (_family, pin) => {
-      for (const key of Object.keys(pin)) {
-        const file = key.split("#")[0];
-        expect(
-          existsSync(resolve(projectRoot, file)),
-          `${file} is a key in the ${_family} pin but not a file in the tree; a ` +
-            `misspelt path pins nothing, and every occurrence in it then reads ` +
-            `as new`,
-        ).toBe(true);
-        expect(
-          pin[key].length,
-          `${key} is pinned with an empty shape`,
-        ).toBeGreaterThan(0);
+  it("gives every deferred wash element exactly one identity, and no marker two elements", () => {
+    // The inventory, asserted rather than described: 22 owning elements, 26
+    // paired occurrences, every one identified, no id used twice, and every
+    // marker in the tree claimed by exactly one element. An orphan is a marker
+    // that sits next to nothing deferred — usually a marker that lost its
+    // element to an edit, and a pin entry that quietly protects nothing.
+    for (const [family, sites] of [
+      ["wash", census.failing],
+      ["palette", palette.failing],
+    ] as const) {
+      const ids = sites.map((s) => s.siteId);
+      expect(
+        ids.filter((id) => !id).length,
+        `${family}: ${ids.filter((id) => !id).length} deferred occurrence(s) have no identity`,
+      ).toBe(0);
+      const byId = new Map<string, Set<string>>();
+      for (const s of sites) {
+        byId.set(s.siteId!, new Set([...(byId.get(s.siteId!) ?? []), s.shape]));
       }
-    },
-  );
-
-  it("catches an occurrence replaced by the same shape elsewhere in the SAME file", () => {
-    // The mutation the per-file multiset could not see, modelled so it cannot be
-    // satisfied by accident.
-    //
-    // CatalogTab really does hold three identical accent washes, in three
-    // different declarations. Under a per-file multiset the file said
-    // {accent/20 x3} before and {accent/20 x3} after this migration: the count
-    // is identical, the multiset is identical, and the file aggregate says
-    // nothing has happened. One site was resolved and a different site was
-    // created in its place, which is not nothing — it is a new broken site and a
-    // silently dropped one.
-    const pin = {
-      "src/A.tsx#Alpha#1": "bg-[var(--x)]/20 + text-[var(--x)]",
-      "src/A.tsx#Beta#1": "bg-[var(--x)]/20 + text-[var(--x)]",
-    };
-    const before = [
-      {
-        file: "src/A.tsx",
-        id: "Alpha#1",
-        shape: "bg-[var(--x)]/20 + text-[var(--x)]",
-        line: 10,
-      },
-      {
-        file: "src/A.tsx",
-        id: "Beta#1",
-        shape: "bg-[var(--x)]/20 + text-[var(--x)]",
-        line: 40,
-      },
-    ];
+      // A site MAY hold two shapes: four elements pair `bg-emerald-600` and its
+      // `hover:bg-emerald-500` with one ink. What must hold is that the count
+      // per site is exactly what the pin says, which `siteFaults` checks; here
+      // only that the population is 22 elements over 26 occurrences, i.e. four
+      // sites carry a second occurrence and eighteen carry one.
+      const perSite = [...byId.values()].map((v) => v.size).sort();
+      const expected =
+        family === "palette"
+          ? [1, 1, 1, 2, 2, 2, 2]
+          : Array(perSite.length).fill(1);
+      expect(
+        perSite,
+        `${family}: occurrences per site, which must total the pin's shape count`,
+      ).toEqual(expected);
+    }
+    // 22 elements: 21 marker-identified plus the one reusing a data-testid.
+    expect(new Set(census.failing.map((s) => s.siteId)).size).toBe(15);
     expect(
-      occurrenceFaults(before, pin),
-      "the unmigrated population is fully accounted for",
-    ).toHaveLength(0);
-
-    // Alpha#1 is resolved; a NEW occurrence appears in Gamma, same shape, same
-    // file. The per-file multiset is byte-identical to `before`.
-    const after = [
-      {
-        file: "src/A.tsx",
-        id: "Gamma#1",
-        shape: "bg-[var(--x)]/20 + text-[var(--x)]",
-        line: 90,
-      },
-      {
-        file: "src/A.tsx",
-        id: "Beta#1",
-        shape: "bg-[var(--x)]/20 + text-[var(--x)]",
-        line: 40,
-      },
-    ];
-    const rows = occurrenceFaults(after, pin);
+      new Set([...census.failing, ...palette.failing].map((s) => s.siteId))
+        .size,
+      "22 owning elements carry the 26 paired occurrences",
+    ).toBe(22);
+    expect(census.failing.length + palette.failing.length).toBe(26);
     expect(
-      rows,
-      "a same-file occurrence swap must be reported even though the file's " +
-        "shape multiset and site count are both unchanged",
-    ).toHaveLength(1);
-    expect(rows[0].key).toBe("src/A.tsx#Gamma#1");
-    expect(
-      rows[0].pinned,
-      "the new occurrence has no pinned entry at all",
-    ).toBeNull();
+      census.failing.filter((s) => s.siteId === "data-testid=spool-thumb")
+        .length,
+      "the one element reusing an existing static data-testid is resolved through it",
+    ).toBe(1);
   });
 
-  it("catches a still-existing occurrence that changed form", () => {
-    const pin = { "src/A.tsx#Alpha#1": "bg-[var(--x)]/20 + text-[var(--x)]" };
-    const rows = occurrenceFaults(
-      [
-        {
-          file: "src/A.tsx",
-          id: "Alpha#1",
-          shape: "bg-[var(--y)]/90 + text-[var(--y)]",
-          line: 10,
-        },
-      ],
-      pin,
+  it("pins no site that names a shape the element does not have", () => {
+    // Catches a pin edited by hand to match a NEW form, which is how a
+    // same-declaration substitution gets laundered into a passing suite.
+    const real = new Set(
+      [...census.failing, ...palette.failing].map((s) => s.shape),
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0].pinned).toBe("bg-[var(--x)]/20 + text-[var(--x)]");
-    expect(rows[0].shape).toBe("bg-[var(--y)]/90 + text-[var(--y)]");
-  });
-
-  it("catches a form swap that moves an occurrence to a new ordinal", () => {
-    // Inserting a wash pairing above renumbers the ones after it. That is the
-    // documented cost of this identity, and it must be reported rather than
-    // silently re-baselined.
-    const pin = {
-      "src/A.tsx#Alpha#1": "bg-[var(--p)]/10 + text-[var(--p)]",
-      "src/A.tsx#Alpha#2": "bg-[var(--x)]/20 + text-[var(--x)]",
-    };
-    const rows = occurrenceFaults(
-      [
-        {
-          file: "src/A.tsx",
-          id: "Alpha#1",
-          shape: "bg-[var(--new)]/50 + text-[var(--new)]",
-          line: 5,
-        },
-        {
-          file: "src/A.tsx",
-          id: "Alpha#2",
-          shape: "bg-[var(--p)]/10 + text-[var(--p)]",
-          line: 9,
-        },
-        {
-          file: "src/A.tsx",
-          id: "Alpha#3",
-          shape: "bg-[var(--x)]/20 + text-[var(--x)]",
-          line: 30,
-        },
-      ],
-      pin,
-    );
-    // THREE faults, not one and not two, and that is the point. The pinned
-    // values were Alpha#1=p and Alpha#2=x; after the insertion Alpha#1 is a new
-    // form, Alpha#2 holds p where x was pinned, and Alpha#3 holds x where
-    // nothing was pinned. Reporting only the new one would under-report a
-    // renumbering that touches everything after it, and the repair would then
-    // be discovered one failure at a time.
-    expect(rows.map((r) => r.key)).toEqual([
-      "src/A.tsx#Alpha#1",
-      "src/A.tsx#Alpha#2",
-      "src/A.tsx#Alpha#3",
-    ]);
-  });
-
-  it("still passes when an occurrence is RESOLVED, so a fix never fails the suite", () => {
-    // The one-directional property, asserted rather than assumed. A resolved
-    // occurrence leaves a stale pin entry and no fault.
-    const pin = {
-      "src/A.tsx#Alpha#1": "bg-[var(--x)]/20 + text-[var(--x)]",
-      "src/A.tsx#Alpha#2": "bg-[var(--x)]/20 + text-[var(--x)]",
-    };
-    expect(
-      occurrenceFaults(
-        [
-          {
-            file: "src/A.tsx",
-            id: "Alpha#1",
-            shape: "bg-[var(--x)]/20 + text-[var(--x)]",
-            line: 10,
-          },
-        ],
-        pin,
-      ),
-      "resolving one of two identical occurrences leaves a stale entry and no fault",
-    ).toHaveLength(0);
-    expect(
-      occurrenceFaults([], pin),
-      "resolving every occurrence in a file leaves stale entries and no fault",
-    ).toHaveLength(0);
+    for (const [family, pin] of [
+      ["wash", WASH_SITES],
+      ["palette", PALETTE_SITES],
+    ] as const) {
+      for (const [siteId, shapes] of Object.entries(pin)) {
+        for (const shape of shapes) {
+          expect(
+            real.has(shape),
+            `${family} pin: ${siteId} is pinned to ${shape}, which no element in ` +
+              `the tree has`,
+          ).toBe(true);
+        }
+      }
+    }
   });
 
   it("resolves the Tailwind palette it measures palette pairings against", () => {
@@ -1539,5 +1428,215 @@ describe("guard coverage limits, asserted so they stay honest", () => {
           `behind a theme-flipping ink again`,
       ).toBe(false);
     }
+  });
+});
+
+/**
+ * The regression the per-site pin exists for, driven through the REAL scanner.
+ *
+ * Every earlier version of this proof passed fabricated identifiers straight
+ * into the comparison function, so it never exercised the parsing that decides
+ * which element a pairing belongs to. These go through
+ * `scanWashesInSource` on real source text, so the marker syntax, the
+ * expression-position comment form, the tag scan and the ownership rule are all
+ * under test rather than assumed.
+ */
+describe("the site pin, through the real scanner", () => {
+  const projectRoot = resolve(__dirname, "../..", "..");
+  const tokensCss = readFileSync(
+    resolve(projectRoot, "src/styles/tokens.css"),
+    "utf-8",
+  );
+
+  const SHAPE = "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]";
+  const OTHER = "bg-[var(--accent)]/20 + text-[var(--accent)]";
+
+  /** Two marked siblings inside ONE declaration, as the real tree has them. */
+  function fixture(shapeA: string, shapeB: string): string {
+    return [
+      "export function Widget({ a, b }: { a: string; b: string }) {",
+      "  return (",
+      '    <div className="flex gap-2">',
+      "      {/* contrast-site: site-a */}",
+      `      <span className="${shapeA}">A</span>`,
+      "      {/* contrast-site: site-b */}",
+      `      <span className="${shapeB}">B</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+  }
+
+  function sites(
+    source: string,
+  ): Array<{ siteId: string | null; shape: string }> {
+    return scanWashesInSource({
+      tokensCss,
+      file: "src/Widget.tsx",
+      source,
+    }).failing.map((s) => ({ siteId: s.siteId, shape: s.shape }));
+  }
+
+  const PIN: Record<string, string[]> = {
+    "site-a": [SHAPE],
+    "site-b": [OTHER],
+  };
+
+  it("resolves two marked siblings in one declaration to their own identities", () => {
+    expect(sites(fixture(SHAPE, OTHER))).toEqual([
+      { siteId: "site-a", shape: SHAPE },
+      { siteId: "site-b", shape: OTHER },
+    ]);
+  });
+
+  it("catches the same-shape move between two elements in ONE declaration", () => {
+    // The substitution a position-based key cannot see. Shape X leaves element
+    // A and appears on element B. B now holds two occurrences, A holds none.
+    // The file's total shape multiset and its pairing count both change, so this
+    // is the strict version — the same-multiset case is the next test.
+    const moved = sites(fixture(OTHER, `${SHAPE} ${SHAPE}`));
+    const rows = siteFaults(moved, PIN);
+    expect(
+      rows.map((r) => `${r.siteId}:${r.kind}`).sort(),
+      "the move must be reported against the site that lost the shape",
+    ).toEqual(["site-a:changedForm", "site-b:changedForm"]);
+  });
+
+  it("catches a swap that keeps the file's shape multiset and count identical", () => {
+    // The precise case the review named: A holds X, B holds Y; afterwards A
+    // holds Y and B holds X. Same two shapes, same count, same declaration —
+    // and a `decl#ordinal` or global-shape pin sees nothing at all, because
+    // neither the ordinals nor the shape set moved.
+    const before = sites(fixture(SHAPE, OTHER));
+    expect(siteFaults(before, PIN)).toHaveLength(0);
+
+    const after = sites(fixture(OTHER, SHAPE));
+    expect(
+      after.map((s) => s.shape).sort(),
+      "the file's shape multiset is unchanged by the swap",
+    ).toEqual(before.map((s) => s.shape).sort());
+    expect(after.length, "and so is its pairing count").toBe(before.length);
+
+    const rows = siteFaults(after, PIN);
+    expect(
+      rows.map((r) => `${r.siteId}:${r.kind}`).sort(),
+      "yet both sites changed form, and both are named",
+    ).toEqual(["site-a:changedForm", "site-b:changedForm"]);
+  });
+
+  it("catches a new element with an identity nobody pinned", () => {
+    const rows = siteFaults(sites(fixture(SHAPE, OTHER)), {
+      "site-a": [SHAPE],
+    });
+    expect(rows.map((r) => `${r.siteId}:${r.kind}`)).toEqual([
+      "site-b:unpinned",
+    ]);
+  });
+
+  it("catches a deferred element with no identity at all", () => {
+    const source = [
+      "export function Widget() {",
+      "  return (",
+      '    <div className="flex">',
+      `      <span className="${SHAPE}">A</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const rows = siteFaults(sites(source), PIN);
+    expect(rows.map((r) => r.kind)).toEqual(["unidentified"]);
+  });
+
+  it("catches two elements claiming one identity", () => {
+    const source = [
+      "export function Widget() {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: site-a */}",
+      `      <span className="${SHAPE}">A</span>`,
+      "      {/* contrast-site: site-a */}",
+      `      <span className="${SHAPE}">A again</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    // Both occurrences carry the same id and the same shape, so the pin's
+    // per-site comparison cannot see the collision — the scanner-level check is
+    // what has to catch it, by counting identities per file.
+    const found = sites(source);
+    expect(found.map((s) => s.siteId)).toEqual(["site-a", "site-a"]);
+    const ids = siteMarkers(source).map((m) => m.id);
+    expect(
+      ids.length === new Set(ids).size,
+      "two markers share an id, which must be reported rather than merged",
+    ).toBe(false);
+  });
+
+  it("resolves an identity in expression position, where the JSX form cannot go", () => {
+    // `{x ? (` puts the element inside a parenthesised EXPRESSION, where
+    // `{/* … */}` is an object literal rather than a comment. The plain form has
+    // to work there or the file does not parse at all.
+    const source = [
+      "export function Widget({ on }: { on: boolean }) {",
+      "  return (",
+      '    <div className="flex">',
+      "      {on ? (",
+      "        /* contrast-site: gated-item */",
+      `        <span className="${SHAPE}">A</span>`,
+      "      ) : null}",
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    expect(sites(source)).toEqual([{ siteId: "gated-item", shape: SHAPE }]);
+  });
+
+  it("keeps identity stable when the site moves down the file", () => {
+    // Line numbers are not identity. Reformatting above the site, and the site
+    // itself moving, must not change which element it belongs to.
+    const before = sites(fixture(SHAPE, OTHER));
+    const shifted = fixture(SHAPE, OTHER)
+      .split("\n")
+      .map((l, i) => (i < 3 ? `// padding ${i}` : l))
+      .join("\n");
+    expect(
+      sites(shifted),
+      "adding lines above the site must not change any identity",
+    ).toEqual(before);
+    expect(
+      sites(fixture(SHAPE, OTHER).replace("  <span", "    <span")),
+      "reindenting the element must not change any identity",
+    ).toEqual(before);
+  });
+
+  it("reuses an existing static data-testid instead of demanding a marker", () => {
+    const source = [
+      "export function Widget() {",
+      "  return (",
+      '    <div className="flex">',
+      `      <span data-testid="thumb" className="${SHAPE}">A</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    expect(sites(source)).toEqual([
+      { siteId: "data-testid=thumb", shape: SHAPE },
+    ]);
+  });
+
+  it("does not accept a dynamic data-testid as identity", () => {
+    const source = [
+      "export function Widget({ v }: { v: string }) {",
+      "  return (",
+      '    <div className="flex">',
+      `      <span data-testid={\`badge-\${v}\`} className="${SHAPE}">A</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    expect(
+      sites(source).map((s) => s.siteId),
+      "a per-render test id names no single source site, so it is not identity",
+    ).toEqual([null]);
   });
 });

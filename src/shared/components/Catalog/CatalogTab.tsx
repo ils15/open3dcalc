@@ -463,6 +463,7 @@ function PrinterManager() {
                 </button>
               </div>
               {p.custom ? (
+                /* contrast-site: catalog-tab-printer-custom-badge */
                 <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)] shrink-0">
                   Custom
                 </span>
@@ -565,6 +566,7 @@ function PrinterManager() {
               />
             </div>
 
+            {/* contrast-site: catalog-tab-save-printer-button */}
             <button
               onClick={savePrinter}
               disabled={!editForm.name.trim()}
@@ -708,6 +710,7 @@ function MaterialManager() {
                 </div>
               </div>
               {m.custom && (
+                /* contrast-site: catalog-tab-material-custom-badge */
                 <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)]">
                   Custom
                 </span>
@@ -844,6 +847,7 @@ function MarketplaceManager() {
                 </div>
               </div>
               {m.custom && (
+                /* contrast-site: catalog-tab-marketplace-custom-badge */
                 <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)]">
                   Custom
                 </span>

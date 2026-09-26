@@ -84,6 +84,7 @@ export function PriceHeroCard({
           {t("calc.sellPrice")}
         </div>
         {!isEditingPrice && (
+          /* contrast-site: price-hero-edit-price-button */
           <button
             type="button"
             onClick={openPriceEditor}
@@ -188,6 +189,7 @@ export function PriceHeroCard({
       )}
       {overrideCalc ? (
         <div className="mt-2 space-y-1.5">
+          {/* contrast-site: price-hero-margin-label */}
           <span className="inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30">
             {t("calc.sellPriceCustom")}
           </span>

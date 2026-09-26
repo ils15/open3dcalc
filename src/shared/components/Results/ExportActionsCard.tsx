@@ -156,7 +156,9 @@ export function ExportActionsCard({
               <Save className="w-3.5 h-3.5 shrink-0" />
             )}
             <span className="truncate">
-              {saveStatus === "saved" ? t("calc.saved") : t("calc.saveSettings")}
+              {saveStatus === "saved"
+                ? t("calc.saved")
+                : t("calc.saveSettings")}
             </span>
           </button>
         )}
@@ -177,6 +179,7 @@ export function ExportActionsCard({
           <FileText className="w-3.5 h-3.5 shrink-0" />{" "}
           <span className="truncate">{t("calc.exportPdf")}</span>
         </button>
+        {/* contrast-site: export-actions-csv-button */}
         <button
           type="button"
           onClick={async () => {
@@ -184,9 +187,8 @@ export function ExportActionsCard({
             const state = useCalculatorStore.getState();
             const results = state.results;
             if (!results) return;
-            const { exportResultToCsv, downloadCsv } = await import(
-              "@/shared/lib/csvExport"
-            );
+            const { exportResultToCsv, downloadCsv } =
+              await import("@/shared/lib/csvExport");
             const csv = exportResultToCsv(
               results,
               state.productName || "open3dcalc",

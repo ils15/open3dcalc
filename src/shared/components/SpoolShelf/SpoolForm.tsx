@@ -261,6 +261,7 @@ export function SpoolForm({
                       material: compatibleSpool.material,
                     })}
                   </span>
+                  {/* contrast-site: spool-form-use-existing-button */}
                   <button
                     type="button"
                     onClick={() => onUseExisting(compatibleSpool)}

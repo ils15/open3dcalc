@@ -469,6 +469,7 @@ export function PrivacyScreen() {
             </ul>
           </div>
         )}
+        {/* contrast-site: privacy-screen-delete-all-button */}
         <button
           type="button"
           onClick={() => void handleDeleteAll()}

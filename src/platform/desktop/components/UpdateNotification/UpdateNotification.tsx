@@ -274,6 +274,7 @@ function DownloadedBanner({
         </button>
       </div>
       <div className="mt-4">
+        {/* contrast-site: update-notification-install-button */}
         <button
           onClick={onInstall}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-all focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:outline-none shadow-md"

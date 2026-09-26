@@ -419,6 +419,7 @@ export function CustomerTab() {
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
+                {/* contrast-site: customer-tab-delete-button */}
                 <button
                   onClick={() => setConfirmDeleteId(customer.id)}
                   className="p-1.5 text-xs rounded-lg bg-red-600/20 text-[var(--color-danger)] hover:bg-red-600 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"

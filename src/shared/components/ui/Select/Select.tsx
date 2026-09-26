@@ -361,6 +361,7 @@ function OptionThumb({
 
   if (!image || broken) {
     return (
+      /* contrast-site: select-option-thumb */
       <div
         aria-hidden="true"
         className="w-6 h-6 rounded-md bg-[var(--accent)]/20 flex items-center justify-center shrink-0 text-[9px] font-bold text-[var(--accent)] leading-none select-none"
