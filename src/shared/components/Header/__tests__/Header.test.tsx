@@ -136,11 +136,16 @@ describe("Header", () => {
       expect(trigger).toHaveAttribute("aria-expanded", "true");
     });
 
-    it("is positioned fixed with a high z-index so content never covers it", async () => {
+    it("is positioned fixed and takes its band from the scale", async () => {
       render(<Header />);
       await user.click(screen.getByTitle("settings.currency"));
       const menu = screen.getByRole("menu");
-      expect(menu.className).toContain("z-[60]");
+      // Was `z-[60]`, a magic literal that merely happened to equal a declared
+      // step — the same class of drift that filed a toast and a menu as
+      // scrims. Asserting the named step is the stronger claim: it says which
+      // band, not just that the number is high.
+      expect(menu.style.zIndex).toBe("var(--z-dropdown)");
+      expect(menu.className).not.toContain("z-[60]");
       expect(menu).toHaveStyle({ position: "fixed" });
     });
 

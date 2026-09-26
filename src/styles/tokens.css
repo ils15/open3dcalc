@@ -144,16 +144,33 @@
      call site. A new layer JOINS a step; it does not get its own number.
 
      The scale is sorted by what a surface OWNS, not by how large it looks,
-     because ownership is what decides whether one surface may cover
-     another. Two classes, and the rule between them is the whole model:
+     because ownership is what decides whether one surface may cover another.
 
-       NOTHING passive may occlude the way out. A passive surface owns no
-       scrim, no focus trap and no key, and dismisses itself. It is
-       information, not an interruption, so it has no business hiding a
-       control — least of all the single control that ends Focus Mode.
+     THE INVARIANT, in full — the Focus Mode exit is guaranteed REACHABLE:
 
-       A scrim modal MAY sit above chrome, because it genuinely owns the
-       screen until it is answered, and it owns Escape while it is up.
+       1. Nothing passive may sit above it. A passive surface owns no scrim,
+          no focus trap and no key, and dismisses itself. It is information,
+          not an interruption, so it may never occlude or intercept a
+          control — least of all the single control that ends Focus Mode.
+          This is a hard ordering rule: every passive surface is below
+          --z-shell-chrome, and the test suite pins it there.
+
+       2. An owning surface MAY sit above it, and then it owns the way out.
+          A surface with a scrim that takes a click to dismiss and takes
+          Escape is genuinely interrupting: it owns the screen until it is
+          answered, so the exit yields to it by design. The user-visible way
+          out is Escape (or a click on the scrim), and the exit is operable
+          again the instant that layer closes. One key, one layer —
+          `FocusModeExit` implements the yield with `escapeIsOwnedByOverlay`,
+          and the guided tour is verified to end on the same Escape.
+
+       3. One INERT surface is allowed above everything: the tooltip.
+
+       So "always" is not narrowed by rule 2. The exit is never destroyed and
+       never trapped; the worst case is a single Escape away, and only while
+       a surface that itself ends on that Escape is up. Off-calculator
+       surfaces cannot even be in that state: entering the mode forces
+       `activeTab: "calculator"`, so their modals unmount on entry.
 
      Steps, low to high:
 
@@ -165,36 +182,54 @@
                          (STL fullscreen, G-code toolpath). Same content, no
                          new task, so it must not hide the way out.
        --z-passive       PASSIVE transients — toasts, non-scrim popovers,
-                         bounded listboxes. Above a viewer, so a notice is
-                         never lost behind a full-bleed overlay; below the
-                         exit, so it can never cover it. This is the step the
-                         modal tier used to do double duty for, and that
-                         overlap IS the bug: a toast is `role="region"`, has
-                         no scrim and no Escape, so it inherited a tier whose
+                         bounded listboxes, the privacy banner. Above a
+                         viewer, so a notice is never lost behind a full-bleed
+                         overlay; below the exit, per rule 1. This is the step
+                         the scrim tier used to do double duty for, and that
+                         overlap IS a bug: a toast is `role="region"`, has no
+                         scrim and no Escape, so it inherited a tier whose
                          entire justification was "this owns the screen".
        --z-shell-chrome  chrome that has to stay REACHABLE while a viewer is
                          up — today only the Focus Mode exit. Everything that
                          owns nothing is under it; everything that owns the
                          screen is over it.
-       z-50 (Tailwind)  the SCRIM-MODAL tier: dialog backdrops and the
-                         owning overlays. Above shell chrome by the rule
-                         above. One Escape dismisses the modal and the exit
-                         is back.
-       --z-dropdown     menus, popovers and combobox lists. Pre-existing
-                         step, unchanged — it was already the highest tier a
-                         transient layer needed.
+       z-50 (Tailwind)  the SCRIM-MODAL tier: a `fixed inset-0` backdrop with
+                         a dim colour, nothing else. Every remaining z-50 in
+                         the tree is one of these, and a test says so — a menu
+                         left at z-50 is how this scale was breached twice.
+       --z-dropdown     menus, popovers and combobox lists: surfaces the user
+                         is actively operating, which own Escape for as long
+                         as they are open.
        --z-panel        side panels and their own dialogs (z-70/71 today).
-       --z-tooltip      the one surface allowed ABOVE shell chrome, and the
-                         exception is asserted rather than assumed: the bubble
-                         is `pointer-events-none`, and `visibility: hidden`
-                         whenever it is closed, so it can overlap the exit
-                         while a trigger is hovered but can never intercept a
-                         click on it. It cannot sit lower either —
-                         FilamentInventory renders a tooltip (through
-                         InputGroup) inside its z-50 modal, so below the
-                         scrim tier real help text would vanish. An inert
-                         annotator is the one thing allowed to outrank the
-                         exit; anything clickable is not.
+       --z-tour         the guided tour's scrim, and --z-tour-card the card
+                         above it. An owning surface by rule 2 — the scrim
+                         dims the page, a click on it dismisses, and Escape
+                         finishes the tour — so it belongs above the exit, and
+                         the exit is one Escape away while it is up. The
+                         values are unchanged from the old z-[55]/56; naming
+                         them is what makes rule 2 checkable.
+       --z-tooltip      the one INERT surface allowed above shell chrome, per
+                         rule 3. The bubble is `pointer-events-none` and
+                         `visibility: hidden` when closed, so it can overlap
+                         the exit while a trigger is hovered but can never
+                         intercept a click on it. It sits at the top because
+                         a global annotator must outrank every layer its
+                         trigger might live in — a trigger added inside a
+                         dropdown (60) or a panel (70) tomorrow must not
+                         produce help text that renders behind its own
+                         trigger. That is a rule about the primitive, not a
+                         claim about today's call sites: `InputGroup` renders
+                         its tooltip only when the `tooltip` prop is passed,
+                         and no `tooltip=` call site is inside a modal, a
+                         panel or a menu right now. The band is headroom,
+                         pinned by a test rather than by a current usage.
+
+     One consequence worth stating rather than hiding: a passive surface is
+     below the scrim tier, so a toast raised while a modal is open now renders
+     behind the modal. The pixels are lost but the announcement is not — the
+     toast container is `aria-live="polite"` and no modal in this tree applies
+     `inert` or `aria-hidden` to its siblings, so a screen reader still
+     receives the message while it is visually behind the scrim.
 
      Consume these as an inline style — `style={{ zIndex: "var(--z-viewer)" }}`
      — which is what `Select` already does for --z-dropdown. It keeps the
@@ -206,6 +241,8 @@
   --z-shell-chrome: 45;
   --z-dropdown: 60;
   --z-panel: 70;
+  --z-tour: 55;
+  --z-tour-card: 56;
   --z-tooltip: 80;
 
   /* Radius — single source of truth for web, desktop and Tailwind's

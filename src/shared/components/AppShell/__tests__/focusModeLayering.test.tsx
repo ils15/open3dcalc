@@ -123,6 +123,8 @@ import {
 import { StlPreview } from "@/shared/components/StlPreview/StlPreview";
 import { ToastContainer } from "@/shared/components/ui/Toast";
 import { Tooltip } from "@/shared/components/ui/Tooltip";
+import { Tutorial } from "@/shared/components/ui/Tutorial";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 
 const TOKENS_CSS = resolve(process.cwd(), "src/styles/tokens.css");
 
@@ -422,34 +424,223 @@ describe("focus mode — a passive surface never buries the exit", () => {
     }
   });
 
-  it("files the More disclosure as a menu, not as a scrim", () => {
-    // The last non-scrim occupant of the scrim tier. It cannot reach Focus Mode
-    // (the nav chrome is unmounted there), so it is not part of the occlusion
-    // bug — but leaving a `z-50` menu in a tier documented as "scrim modals
-    // only" is how the next surface repeats this defect. It is an interactive
-    // menu the user is operating, so it joins Select at the dropdown step.
-    expect(sourceLayers("src/shared/components/AppShell/MoreMenu.tsx")).toEqual(
-      ["z-dropdown"],
-    );
+  it("files every menu at the dropdown step, not as a scrim", () => {
+    // The last non-scrim occupants of the tiers they do not belong to. None can
+    // reach Focus Mode (the nav chrome is unmounted there), so none is part of
+    // the occlusion bug — but a menu left at z-50 or on a bare literal is how
+    // this scale was breached twice, and the two Headers are the pair that
+    // drifted apart last time (the bottom nav was 50 on web and 40 on desktop
+    // for the same component). Every one of these is a `role="menu"` the user is
+    // actively operating, so they belong with Select at --z-dropdown.
+    //
+    // The marker differs per file on purpose: `MoreMenu` is the one
+    // `useDismissablePopover` panel with no ARIA role at all, which
+    // `focusMode.ts` calls out by name — it needs no marker because it is
+    // navigation chrome and so does not exist while Focus Mode is on. The other
+    // three are `role="menu"`.
+    const menus: Array<[string, string]> = [
+      [
+        "src/shared/components/AppShell/MoreMenu.tsx",
+        'data-testid="more-menu"',
+      ],
+      ["src/shared/components/Header/Header.tsx", 'role="menu"'],
+      ["src/platform/desktop/components/Header/Header.tsx", 'role="menu"'],
+      ["src/shared/components/ui/TutorialLauncher.tsx", 'role="menu"'],
+    ];
+    for (const [file, marker] of menus) {
+      const src = fs.readFileSync(resolve(process.cwd(), file), "utf8");
+      expect(src, `${file} must actually render a menu`).toContain(marker);
+      expect(
+        sourceLayers(file),
+        `${file} must take its band from the scale, not a literal`,
+      ).toEqual(["z-dropdown"]);
+    }
+  });
+
+  it("leaves no undeclared layer above the exit", () => {
+    // The audit, as a test. Every remaining `z-50` in the tree is a real scrim,
+    // so the rule in tokens.css ("z-50 means a surface that owns the screen") is
+    // true rather than aspirational. A menu left at z-50 is how the last two
+    // holes got in, so the tier is pinned here.
+    const scrims = [
+      "src/shared/components/ui/ConfirmDialog.tsx",
+      "src/shared/components/ui/ConsentModal.tsx",
+      "src/shared/components/ui/PrivacyPolicy.tsx",
+      "src/shared/components/ui/DataSyncModal.tsx",
+      "src/shared/components/ui/ComparisonModal.tsx",
+      "src/shared/components/Calculator/QuoteSection.tsx",
+      "src/shared/components/Calculator/HistoryTab/HistoryTab.tsx",
+      "src/shared/components/Catalog/CustomerTab.tsx",
+      "src/shared/components/Catalog/ProductInventory.tsx",
+      "src/shared/components/Catalog/FilamentInventory.tsx",
+      "src/shared/components/Catalog/CatalogTab.tsx",
+      "src/shared/components/SpoolShelf/SpoolForm.tsx",
+    ];
+    for (const file of scrims) {
+      const src = fs.readFileSync(resolve(process.cwd(), file), "utf8");
+      // Each of these is `fixed inset-0 z-50` plus a backdrop colour: the shape
+      // of a surface that dims the page and closes on a click.
+      expect(
+        /fixed inset-0 z-50[^\n]*bg-/.test(src),
+        `${file} must be a scrim if it sits in the scrim tier`,
+      ).toBe(true);
+    }
   });
 });
 
 /**
- * The Tooltip is the one surface allowed above the exit, and that exception is
- * asserted rather than assumed.
+ * Defect 4 — the guided tour is an OWNING surface, and the rule said it was not.
  *
- * It cannot simply join the passive band: `FilamentInventory` renders
- * `InputGroup` (which hosts a tooltip) INSIDE its `z-50` modal, so demoting
- * the tooltip below the modal tier would put real in-modal help text behind
- * the scrim. It also cannot stay an undocumented `zIndex: 100`, which was the
- * defect — a magic number that outranked everything, including the exit.
+ * The tour is a scrim (`rgba(0,0,0,0.6)`, click-to-dismiss) with a card the user
+ * is meant to answer: it has a scrim, it takes a click, and it takes Escape
+ * (`finishTutorial()`, Tutorial.tsx:504). By ownership that puts it in the same
+ * class as a scrim modal, so it is CORRECT for it to sit above the exit, and
+ * correct for the exit to yield while it is up.
  *
- * What makes it safe above the exit is that it is the only surface in the app
- * that cannot intercept a click: `pointer-events-none` on the bubble, and
- * `visibility: hidden` whenever it is closed. So it may overlap the exit
- * visually while a trigger is hovered, and the exit stays operable. These tests
+ * What was wrong was the rule text, which claimed the tooltip was "the one
+ * surface allowed above shell chrome" and that "anything clickable" was
+ * forbidden there. 55 and 56 are above 45, and the tour card is clickable. The
+ * rule was describing a tree it did not match, which is how a second hole got
+ * in after the first was closed.
+ *
+ * `App.tsx:93` mounts the tutorial outside the Focus Mode guard on purpose, and
+ * `App.focusMode.test.tsx` pins that — but it pins it with a MOCK
+ * (`Tutorial: () => <div data-testid="tutorial" />`), so what it actually
+ * asserts is that the component is still mounted, never that a scrim exists.
+ * The decision stands, unchanged; these tests are what finally exercise it. A
+ * keyboard user, with no focus trap to stop them, can Tab to the
+ * FocusModeButton and press Enter mid-tour — the sequence modelled here.
+ */
+describe("focus mode — the guided tour owns the screen, and the exit yields", () => {
+  function TourHarness(): React.ReactElement {
+    const activeTab = useActiveTab();
+    const navigateToTab = useNavigateToTab();
+    return (
+      <>
+        <FocusModeButton />
+        {/* The anchor the first spotlighted step looks for. */}
+        <div data-tutorial="material" data-testid="tour-anchor" />
+        <AppShell
+          activeTab={activeTab}
+          onTabChange={navigateToTab}
+          mainClassName="main-normal"
+          mainFocusClassName="main-focus"
+        />
+        {/* As App.tsx:93 mounts it: outside the Focus Mode guard. */}
+        <Tutorial />
+      </>
+    );
+  }
+
+  function renderTourHarness(): void {
+    render(
+      <NavigationProvider>
+        <TourHarness />
+      </NavigationProvider>,
+    );
+  }
+
+  function startTour(): void {
+    useLayoutStore.setState({ layoutMode: "classic" });
+    act(() => {
+      useTutorialStore.getState().startTutorial();
+    });
+  }
+
+  /** The real scrim, found by its test id rather than by its class. */
+  function tourScrim(): HTMLElement {
+    return screen.getByTestId("tutorial-overlay");
+  }
+
+  it("mounts the REAL tour in Focus Mode and layers it as an owning surface", () => {
+    renderTourHarness();
+    startTour();
+    enterFocusMode();
+
+    // The real component, the real scrim, the real card. Mocking the tutorial is
+    // what `App.focusMode.test.tsx` does, and it is why this went uncaught.
+    const scrim = tourScrim();
+    expect(scrim).toBeInTheDocument();
+    const card = document.querySelector<HTMLElement>('[data-tutorial="true"]');
+    expect(card, "the real tour card must be up").not.toBeNull();
+
+    // Declared steps, not magic literals — the rule can only be true of the
+    // tree if every layer in it is named.
+    expect(resolvedStep(scrim)).toBe("z-tour");
+    expect(resolvedStep(card!)).toBe("z-tour-card");
+
+    // And the relationship is asserted deliberately, not tolerated: an owning
+    // surface belongs above the exit, because it owns the screen and the key.
+    expect(scaleStep("z-tour")).toBeGreaterThan(scaleStep("z-shell-chrome"));
+    expect(scaleStep("z-tour-card")).toBeGreaterThan(scaleStep("z-tour"));
+  });
+
+  it("gives Escape to the tour, and the exit is operable the moment it ends", () => {
+    // "Always reachable" stated honestly: while an owning surface is up, the
+    // exit is not what responds — the owning layer is, and it ends on that same
+    // key. One key, one layer, and the exit is back. This is the contract the
+    // exit has had for scrim modals since the first commit; the tour is the same
+    // class, so it gets the same contract, and the spec's "always" is NOT
+    // narrowed — the exit is never destroyed and never trapped, only deferred.
+    renderTourHarness();
+    startTour();
+    enterFocusMode();
+    expect(useNavigationPrefsStore.getState().focusMode).toBe(true);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(useTutorialStore.getState().isActive).toBe(false);
+    expect(
+      useNavigationPrefsStore.getState().focusMode,
+      "the tour owns Escape, so the mode must survive it",
+    ).toBe(true);
+    expect(screen.queryByTestId("tutorial-overlay")).toBeNull();
+
+    // And the exit now works, for real.
+    const exit = exitButton();
+    act(() => exit.focus());
+    expect(document.activeElement).toBe(exit);
+    fireEvent.click(exit);
+    expect(useNavigationPrefsStore.getState().focusMode).toBe(false);
+  });
+
+  it("is the scrim, not the exit, that the tour intercepts", () => {
+    // The defect was never "the exit is under an opaque scrim" — that is what a
+    // tour IS. It was that the scrim had no declared owner. It takes the click,
+    // and taking it is what dismisses the tour.
+    renderTourHarness();
+    startTour();
+    enterFocusMode();
+
+    fireEvent.click(tourScrim());
+
+    expect(useTutorialStore.getState().isActive).toBe(false);
+    expect(useNavigationPrefsStore.getState().focusMode).toBe(true);
+    expect(exitBar()).toBeInTheDocument();
+  });
+});
+/**
+ * The Tooltip is the one INERT surface allowed above the exit, and that
+ * exception is asserted rather than assumed.
+ *
+ * It cannot simply join the passive band, because it is a global annotator and
+ * its trigger can live inside any layer: a trigger added inside a Select menu
+ * (60) or the guide drawer (70) tomorrow must not produce help text that
+ * renders behind its own trigger. It also cannot stay an undocumented
+ * `zIndex: 100`, which was the defect — a magic number that outranked
+ * everything, including the exit.
+ *
+ * What makes it safe above the exit is inertness: `pointer-events-none` on the
+ * bubble and `visibility: hidden` whenever it is closed. It may overlap the
+ * exit while a trigger is hovered, and the exit stays operable. These tests
  * hold that line: a named step from the scale, no interception, and a real
  * click on the real exit with the real tooltip mounted.
+ *
+ * Worth being precise about, because the first version of this comment was
+ * wrong twice over: no call site needs the top band today. `InputGroup` renders
+ * its tooltip only when the `tooltip` prop is passed, and no `tooltip=` call
+ * site is inside a modal, a panel or a menu — so this is a rule about the
+ * primitive, pinned by a test, not a claim about a usage that does not exist.
  */
 describe("focus mode — the tooltip exception holds", () => {
   function TooltipHarness(): React.ReactElement {

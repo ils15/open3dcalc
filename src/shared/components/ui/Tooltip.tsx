@@ -110,13 +110,15 @@ export function Tooltip({
             left: x ?? 0,
             // --z-tooltip, not the bare 100 this used to carry. 100 outranked
             // every declared step and documented nothing. It sits above shell
-            // chrome on purpose and is the scale's ONE documented exception,
-            // because it is the only surface in the app that cannot intercept a
-            // click (`pointer-events-none` below, `visibility: hidden` when
-            // closed) — so it can never take the Focus Mode exit out of reach,
-            // only overlap it while a trigger is hovered. It cannot go lower
-            // either: FilamentInventory renders a tooltip inside its z-50
-            // modal, and below the scrim tier that help text would disappear.
+            // chrome as rule 3 of the scale: the one INERT surface allowed up
+            // there, because the bubble is `pointer-events-none` (below) and
+            // `visibility: hidden` when closed — it can never intercept a click,
+            // so it can overlap the exit on hover without taking it out of
+            // reach. It is at the top because an annotator must outrank every
+            // layer its trigger might live in. To be precise, that is a rule
+            // about the primitive, not about a current call site: no `tooltip=`
+            // usage sits inside a modal, panel or menu today, so this band is
+            // headroom rather than a response to an existing placement.
             zIndex: "var(--z-tooltip)",
             ...(!isOpen && { visibility: "hidden", pointerEvents: "none" }),
           }}

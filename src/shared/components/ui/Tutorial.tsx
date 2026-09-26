@@ -104,8 +104,13 @@ function SpotlightOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-[55] pointer-events-auto"
+      className="fixed inset-0 pointer-events-auto"
       style={{
+        // --z-tour: an OWNING surface, so above the Focus Mode exit by the rule
+        // in tokens.css. It dims the page, a click on it dismisses, and Escape
+        // finishes the tour — so while it is up the exit yields, and one Escape
+        // (or one click here) brings the exit straight back.
+        zIndex: "var(--z-tour)",
         background: "rgba(0, 0, 0, 0.6)",
         clipPath,
       }}
@@ -227,7 +232,11 @@ function TooltipCard({
         position: "fixed",
         top,
         left,
-        zIndex: 56,
+        // --z-tour-card: one step above its own scrim, both declared in the
+        // scale. The card is clickable and the scrim is not the way out of the
+        // tour by keyboard — Escape is — which is exactly what rule 2 of the
+        // scale expects of an owning surface.
+        zIndex: "var(--z-tour-card)",
         maxWidth: 300,
         width: "max-content",
       }
@@ -236,7 +245,7 @@ function TooltipCard({
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        zIndex: 56,
+        zIndex: "var(--z-tour-card)",
         maxWidth: 300,
         width: "max-content",
         maxHeight: "90vh",
@@ -590,7 +599,9 @@ export function Tutorial() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration }}
-            className="fixed inset-0 z-[55]"
+            // Opacity only. The band belongs to the scrim inside, so there is
+            // exactly one owner of --z-tour rather than a literal here too.
+            className="fixed inset-0"
           >
             <SpotlightOverlay targetRect={targetRect} onClick={handleDismiss} />
           </motion.div>
