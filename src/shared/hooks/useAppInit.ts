@@ -52,10 +52,12 @@ type HistoryMigrationBackup = {
   type: "open3dcalc-history-v2-backup";
   source: string;
   baseEntries: HistoryEntry[];
+  productsSource?: string;
 };
 
 const MIGRATION_MARKER_KEY = "open3dcalc_migration_done_v2";
 const HISTORY_KEY = "open3dcalc_history_v2";
+const PRODUCTS_KEY = "open3dcalc_products";
 
 const FALLBACK_RESULT: CalculationResult = {
   materialCost: 0,
@@ -92,7 +94,9 @@ function isHistoryMigrationBackup(
     if (
       parsed.type === "open3dcalc-history-v2-backup" &&
       typeof parsed.source === "string" &&
-      Array.isArray(parsed.baseEntries)
+      Array.isArray(parsed.baseEntries) &&
+      (parsed.productsSource === undefined ||
+        typeof parsed.productsSource === "string")
     ) {
       return parsed as HistoryMigrationBackup;
     }
@@ -106,10 +110,12 @@ function migrateLegacyHistory(
   legacyItems: unknown[],
   source: string,
   backup?: HistoryMigrationBackup,
+  legacyProducts?: unknown[],
+  restoreBaseEntries = false,
 ): boolean {
   const historyStore = useHistoryStore.getState();
   const baseEntries = backup?.baseEntries ?? historyStore.entries;
-  const entries = legacyItems.map((item) => {
+  const historyEntries = legacyItems.map((item) => {
     const legacyItem = item as LegacyHistoryItem;
     return {
       id: legacyItem.id,
@@ -124,12 +130,41 @@ function migrateLegacyHistory(
       snapshot: legacyItem.snapshot || null,
     };
   });
+  const productEntries = (legacyProducts ?? []).flatMap((item) => {
+    const product = item as LegacyProduct;
+    if (!product.result) return [];
+    const type = product.snapshot?.type ?? "fdm";
+    const summary = product.snapshot?.summary || product.name || "Produto";
+    const totalCost = Number(product.result.totalCost || 0);
+    const sellPrice = Number(product.result.sellPrice || 0);
+    return [
+      {
+        id: product.id,
+        timestamp: product.timestamp,
+        type,
+        name: product.name || "Produto",
+        summary,
+        totalCost,
+        sellPrice,
+        profit: sellPrice - totalCost,
+        result: product.result,
+        snapshot: (product.snapshot as CalculationSnapshot) || null,
+      },
+    ];
+  });
+  const productsFullyConvertible =
+    legacyProducts !== undefined &&
+    productEntries.length === legacyProducts.length;
+  const entries = [
+    ...(productsFullyConvertible ? productEntries : []),
+    ...historyEntries,
+  ];
 
-  if (backup) {
+  if (backup && restoreBaseEntries) {
     // Discard any persisted prefix, retaining entries that predated the
     // legacy-history import (for example products migrated in this startup).
     useHistoryStore.setState({ entries: baseEntries });
-  } else {
+  } else if (!backup) {
     const recovery: HistoryMigrationBackup = {
       type: "open3dcalc-history-v2-backup",
       source,
@@ -202,6 +237,14 @@ function migrateLegacyHistory(
     return false;
   }
 
+  if (backup?.productsSource !== undefined && productsFullyConvertible) {
+    // Retain the independent source until product and history entries have
+    // both passed the in-memory and persisted-wrapper verification above.
+    if (guardedStorage.getItem(PRODUCTS_KEY) === backup.productsSource) {
+      guardedStorage.removeItem(PRODUCTS_KEY);
+    }
+  }
+
   // The original raw source is retained in the recovery marker until both the
   // in-memory store and the persisted Zustand wrapper contain the full result.
   guardedStorage.removeItem(MIGRATION_MARKER_KEY);
@@ -216,7 +259,23 @@ function migrateLegacyData(): void {
     try {
       const parsed = JSON.parse(backup.source) as unknown;
       if (Array.isArray(parsed)) {
-        migrateLegacyHistory(parsed, backup.source, backup);
+        let legacyProducts: unknown[] | undefined;
+        if (backup.productsSource !== undefined) {
+          try {
+            const parsedProducts = JSON.parse(backup.productsSource) as unknown;
+            if (Array.isArray(parsedProducts)) legacyProducts = parsedProducts;
+          } catch {
+            // Keep an unrecognized product source untouched while recovering
+            // the independently backed-up legacy history.
+          }
+        }
+        migrateLegacyHistory(
+          parsed,
+          backup.source,
+          backup,
+          legacyProducts,
+          true,
+        );
       }
     } catch (error) {
       console.warn("Failed to recover open3dcalc_history_v2", error);
@@ -230,6 +289,46 @@ function migrateLegacyData(): void {
   // Skip if already migrated, or if historyStore already holds data
   // (prevent duplicates).
   if (existing > 0) return;
+
+  // Read both independent legacy sources before any product migration can
+  // persist over HISTORY_KEY (the history store's destination key).
+  const oldProducts = guardedStorage.getItem(PRODUCTS_KEY);
+  const oldHistory = guardedStorage.getItem(HISTORY_KEY);
+  if (oldHistory) {
+    try {
+      const parsedHistory = JSON.parse(oldHistory) as unknown;
+      if (Array.isArray(parsedHistory)) {
+        const recovery: HistoryMigrationBackup = {
+          type: "open3dcalc-history-v2-backup",
+          source: oldHistory,
+          baseEntries: historyStore.entries,
+          ...(oldProducts === null ? {} : { productsSource: oldProducts }),
+        };
+        // This durable snapshot must precede every write to the shared history
+        // key, including writes made while converting the legacy products.
+        guardedStorage.setItem(MIGRATION_MARKER_KEY, JSON.stringify(recovery));
+        let legacyProducts: unknown[] | undefined;
+        if (oldProducts !== null) {
+          try {
+            const parsedProducts = JSON.parse(oldProducts) as unknown;
+            if (Array.isArray(parsedProducts)) legacyProducts = parsedProducts;
+          } catch {
+            // The product source is preserved; continue recovering history.
+          }
+        }
+        migrateLegacyHistory(
+          parsedHistory,
+          oldHistory,
+          recovery,
+          legacyProducts,
+        );
+        return;
+      }
+    } catch (error) {
+      console.warn(`Failed to migrate ${HISTORY_KEY}`, error);
+      return;
+    }
+  }
 
   const migrateAndVerify = (
     entries: Array<{
@@ -282,7 +381,6 @@ function migrateLegacyData(): void {
   // Only the old raw array represented the pre-Zustand product store. A
   // Zustand wrapper is the current inventory and must never be discarded.
   try {
-    const oldProducts = guardedStorage.getItem("open3dcalc_products");
     if (oldProducts) {
       const parsed = JSON.parse(oldProducts) as unknown;
       if (Array.isArray(parsed)) {
@@ -314,27 +412,12 @@ function migrateLegacyData(): void {
         if (entries.length === parsed.length && migrateAndVerify(entries)) {
           // This key is distinct from the destination, so remove the legacy
           // source only after every migrated field has been verified.
-          guardedStorage.removeItem("open3dcalc_products");
+          guardedStorage.removeItem(PRODUCTS_KEY);
         }
       }
     }
   } catch (error) {
     console.warn("Failed to migrate open3dcalc_products", error);
-  }
-
-  // Migrar calculatorStore.history antigo (v1)
-  try {
-    const oldHistory = guardedStorage.getItem(HISTORY_KEY);
-    if (oldHistory) {
-      const parsed = JSON.parse(oldHistory) as unknown;
-      if (Array.isArray(parsed)) {
-        // The legacy source key is also the current Zustand destination key.
-        // Back it up before addEntry replaces it with a persisted prefix.
-        migrateLegacyHistory(parsed, oldHistory);
-      }
-    }
-  } catch (error) {
-    console.warn(`Failed to migrate ${HISTORY_KEY}`, error);
   }
 }
 

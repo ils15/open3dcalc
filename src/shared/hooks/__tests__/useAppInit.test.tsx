@@ -65,6 +65,108 @@ import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import type { HistoryEntry } from "@/shared/types";
 
+function createCombinedLegacyFixtures() {
+  const result = (totalCost: number, sellPrice: number) => ({
+    materialCost: totalCost * 0.4,
+    energyCost: totalCost * 0.05,
+    machineCost: totalCost * 0.1,
+    hardwareCost: totalCost * 0.03,
+    consumablesCost: totalCost * 0.02,
+    laborCost: totalCost * 0.1,
+    softwareCost: totalCost * 0.01,
+    failureCost: totalCost * 0.02,
+    extrasCost: totalCost * 0.03,
+    postProcessingCost: totalCost * 0.04,
+    subtotal: totalCost,
+    totalCost,
+    sellPrice,
+    profit: sellPrice - totalCost,
+    marketplaceFee: sellPrice * 0.03,
+    taxAmount: sellPrice * 0.02,
+    costPerGram: totalCost / 50,
+    costPerUnit: totalCost,
+    unitWeight: 50,
+    estimatedPrintTime: 2.5,
+    targetMarginPercent: 50,
+    breakEvenPrice: totalCost,
+    actualMargin: ((sellPrice - totalCost) / sellPrice) * 100,
+    carbonFootprintGrams: totalCost * 0.2,
+  });
+
+  const productSnapshot = {
+    type: "resin" as const,
+    summary: "Resina âmbar • 🧪",
+    selectedPrinterId: "legacy-resin-printer",
+    resinMaterial: { type: "Resina UV", color: "âmbar" },
+  };
+  const product = {
+    id: "legacy-product-compat-01",
+    timestamp: 1_700_000_000_301,
+    name: "Vaso 🪷",
+    result: result(17.25, 34.5),
+    snapshot: productSnapshot,
+  };
+  const historyOne = {
+    id: "legacy-history-compat-01",
+    timestamp: 1_700_000_000_401,
+    type: "fdm" as const,
+    summary: "PETG café • 🫘",
+    totalCost: 12.4,
+    sellPrice: 24.8,
+    profit: 12.4,
+    result: result(12.4, 24.8),
+    snapshot: {
+      type: "fdm" as const,
+      summary: "PETG café • 🫘",
+      selectedPrinterId: "legacy-fdm-printer",
+      fdmMaterial: { type: "PETG", color: "café" },
+    },
+  };
+  const historyTwo = {
+    id: "legacy-history-compat-02",
+    timestamp: 1_700_000_000_402,
+    type: "resin" as const,
+    summary: "Resina • 東京 🗼",
+    totalCost: 31.6,
+    sellPrice: 63.2,
+    profit: 31.6,
+    result: result(31.6, 63.2),
+    snapshot: {
+      type: "resin" as const,
+      summary: "Resina • 東京 🗼",
+      selectedPrinterId: "legacy-history-printer",
+      resinMaterial: { type: "透明レジン", color: "青" },
+    },
+  };
+
+  const expectedProduct = {
+    id: product.id,
+    timestamp: product.timestamp,
+    type: product.snapshot.type,
+    name: product.name,
+    summary: product.snapshot.summary,
+    totalCost: product.result.totalCost,
+    sellPrice: product.result.sellPrice,
+    profit: product.result.sellPrice - product.result.totalCost,
+    result: product.result,
+    snapshot: product.snapshot,
+  };
+  const expectedHistoryOne = {
+    ...historyOne,
+    name: historyOne.summary,
+  };
+  const expectedHistoryTwo = {
+    ...historyTwo,
+    name: historyTwo.summary,
+  };
+
+  return {
+    productSource: JSON.stringify([product]),
+    historySource: JSON.stringify([historyOne, historyTwo]),
+    expectedEntries: [expectedHistoryTwo, expectedHistoryOne, expectedProduct],
+  };
+}
+
 describe("useAppInit tutorial auto-start", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -568,5 +670,146 @@ describe("useAppInit tutorial auto-start", () => {
     expect(useHistoryStore.getState().entries).toEqual(expectedEntries);
     expect(storageValues.get(historyKey)).toBe(recoveredSource);
     expect(useHistoryStore.getState().entries).toHaveLength(2);
+  });
+
+  it("migrates both supported legacy sources with all records and remains idempotent", () => {
+    const { productSource, historySource, expectedEntries } =
+      createCombinedLegacyFixtures();
+    storageValues.set("open3dcalc_products", productSource);
+    storageValues.set("open3dcalc_history_v2", historySource);
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    const migrated = useHistoryStore.getState().entries;
+    expect(migrated).toHaveLength(3);
+    expect(new Set(migrated.map((entry) => entry.id)).size).toBe(3);
+    expect(migrated).toEqual(expectedEntries);
+    expect(migrated.map((entry) => entry.id)).toEqual([
+      "legacy-history-compat-02",
+      "legacy-history-compat-01",
+      "legacy-product-compat-01",
+    ]);
+    expect(migrated[0].snapshot).toEqual(expectedEntries[0].snapshot);
+    expect(migrated[1].result).toEqual(expectedEntries[1].result);
+    expect(migrated[2].snapshot).toEqual(expectedEntries[2].snapshot);
+    expect(storageValues.has("open3dcalc_products")).toBe(false);
+    expect(storageValues.has("open3dcalc_migration_done_v2")).toBe(false);
+    expect(
+      JSON.parse(storageValues.get("open3dcalc_history_v2")!).state.entries,
+    ).toEqual(expectedEntries);
+
+    const persistedAfterMigration = storageValues.get("open3dcalc_history_v2");
+    renderHook(() => useAppInit(vi.fn()));
+    expect(useHistoryStore.getState().entries).toEqual(expectedEntries);
+    expect(storageValues.get("open3dcalc_history_v2")).toBe(
+      persistedAfterMigration,
+    );
+  });
+
+  it("recovers both original sources after a durable product write and partial history write", () => {
+    const historyKey = "open3dcalc_history_v2";
+    const productKey = "open3dcalc_products";
+    const recoveryKey = "open3dcalc_migration_done_v2";
+    const { productSource, historySource, expectedEntries } =
+      createCombinedLegacyFixtures();
+    storageValues.set(productKey, productSource);
+    storageValues.set(historyKey, historySource);
+
+    let historyWriteCount = 0;
+    storageSetItem.mockClear();
+    storageSetItem.mockImplementation((key: string, value: string) => {
+      if (key === historyKey) {
+        historyWriteCount += 1;
+        if (historyWriteCount === 3) {
+          throw new Error(
+            "simulated interruption during legacy history import",
+          );
+        }
+      }
+      storageValues.set(key, value);
+    });
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    expect(historyWriteCount).toBe(3);
+    const interruptedHistory = storageValues.get(historyKey)!;
+    expect(JSON.parse(interruptedHistory).state.entries).toEqual(
+      expectedEntries.slice(1),
+    );
+    expect(storageValues.get(productKey)).toBe(productSource);
+    expect(JSON.parse(storageValues.get(recoveryKey)!)).toEqual({
+      type: "open3dcalc-history-v2-backup",
+      source: historySource,
+      baseEntries: [],
+      productsSource: productSource,
+    });
+    expect(storageRemoveItem).not.toHaveBeenCalledWith(productKey);
+    expect(storageRemoveItem).not.toHaveBeenCalledWith(recoveryKey);
+
+    // Use the exact persisted map from the interrupted startup as the next
+    // process's localStorage; only rehydrate the Zustand store from that map.
+    const interruptedStorage = new Map(storageValues);
+    const persistedPrefix = JSON.parse(interruptedStorage.get(historyKey)!) as {
+      state: { entries: HistoryEntry[] };
+    };
+    useHistoryStore.setState({ entries: persistedPrefix.state.entries });
+    storageGetItem.mockImplementation(
+      (key: string) => interruptedStorage.get(key) ?? null,
+    );
+    storageSetItem.mockImplementation((key: string, value: string) => {
+      interruptedStorage.set(key, value);
+    });
+    let sourcesRemovedAfterVerification = false;
+    storageRemoveItem.mockImplementation((key: string) => {
+      if (key === productKey) {
+        const persisted = JSON.parse(interruptedStorage.get(historyKey)!) as {
+          state: { entries: HistoryEntry[] };
+        };
+        const recovery = JSON.parse(interruptedStorage.get(recoveryKey)!) as {
+          source: string;
+          productsSource: string;
+        };
+        const entriesMatch =
+          persisted.state.entries.length === expectedEntries.length &&
+          expectedEntries.every((expected, index) =>
+            Object.entries(expected).every(
+              ([field, value]) =>
+                JSON.stringify(
+                  (
+                    persisted.state.entries[index] as unknown as Record<
+                      string,
+                      unknown
+                    >
+                  )[field],
+                ) === JSON.stringify(value),
+            ),
+          );
+        sourcesRemovedAfterVerification =
+          entriesMatch &&
+          recovery.source === historySource &&
+          recovery.productsSource === productSource &&
+          interruptedStorage.get(productKey) === productSource;
+      }
+      interruptedStorage.delete(key);
+    });
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    const recovered = useHistoryStore.getState().entries;
+    expect(recovered).toHaveLength(3);
+    expect(new Set(recovered.map((entry) => entry.id)).size).toBe(3);
+    expect(recovered).toEqual(expectedEntries);
+    expect(storageRemoveItem).toHaveBeenCalledWith(productKey);
+    expect(interruptedStorage.get(productKey)).toBeUndefined();
+    expect(interruptedStorage.get(recoveryKey)).toBeUndefined();
+    expect(sourcesRemovedAfterVerification).toBe(true);
+    expect(
+      JSON.parse(interruptedStorage.get(historyKey)!).state.entries,
+    ).toEqual(expectedEntries);
+
+    const persistedAfterRecovery = interruptedStorage.get(historyKey);
+    renderHook(() => useAppInit(vi.fn()));
+    expect(useHistoryStore.getState().entries).toEqual(expectedEntries);
+    expect(interruptedStorage.get(historyKey)).toBe(persistedAfterRecovery);
   });
 });
