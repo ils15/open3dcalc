@@ -228,7 +228,7 @@ function ProductFormModal({
           <button
             onClick={handleSubmit}
             disabled={!canSave}
-            className="px-4 py-2 rounded-xl bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="px-4 py-2 rounded-xl bg-[var(--accent-fill)] text-white text-sm font-medium hover:bg-[var(--accent-fill-hover)] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
             {t("common.save")}
           </button>
@@ -315,7 +315,7 @@ export function ProductInventory() {
               setEditing(null);
               setFormOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent)] text-white text-sm font-medium hover:bg-[var(--color-accent-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-fill)] text-white text-sm font-medium hover:bg-[var(--accent-fill-hover)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
             <Plus className="w-4 h-4" />
             {t("products.newProduct")}

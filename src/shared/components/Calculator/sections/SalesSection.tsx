@@ -214,7 +214,7 @@ export function SalesSection() {
                         (isFDM
                           ? store.fdmSales.profitMarginPercent
                           : store.resinSales.profitMarginPercent) === pct
-                          ? "bg-[var(--color-accent)] text-[var(--color-text-primary)]"
+                          ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]"
                           : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                       }`}
                     >

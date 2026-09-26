@@ -337,10 +337,17 @@ export function MaterialSection({
                   <button
                     type="button"
                     onClick={() => setShowSpoolSelector(!showSpoolSelector)}
+                    /* Stateful TOGGLE, so the background carries on/off and not
+                       just hover: the ACTIVE state sits on the 30% wash and
+                       keeps its border, which is a stronger "selected" signal
+                       at rest than the previous 30%/30% active-vs-resting
+                       wash pair. Ink is --color-text-primary for the same
+                       reason as the QuoteSection button — accent ink on the
+                       30% wash is 3.52:1 light / 4.49:1 dark. */
                     className={`min-h-[44px] absolute right-2 top-7 text-[10px] px-2 py-1 rounded-md transition-colors ${
                       showSpoolSelector
-                        ? "bg-[var(--color-accent)]/30 text-[var(--color-accent)] border border-[var(--color-accent)]/40"
-                        : "bg-[var(--color-accent)]/30 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/50"
+                        ? "bg-[var(--color-accent-wash-strong)] text-[var(--color-text-primary)] border border-[var(--color-accent)]/40"
+                        : "bg-[var(--color-accent-wash)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-wash-strong)]"
                     }`}
                   >
                     Inventário

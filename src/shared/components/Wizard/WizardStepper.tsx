@@ -1,5 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { WIZARD_STEPS, WIZARD_TOTAL_STEPS, type WizardStep } from "@/shared/stores/wizardStore";
+import {
+  WIZARD_STEPS,
+  WIZARD_TOTAL_STEPS,
+  type WizardStep,
+} from "@/shared/stores/wizardStore";
 
 export interface WizardStepperProps {
   currentStep: WizardStep;
@@ -40,7 +44,7 @@ export function WizardStepper({
                   aria-hidden="true"
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${
                     isCurrent
-                      ? "bg-[var(--color-accent)] text-[var(--color-bg)]"
+                      ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]"
                       : "bg-[var(--color-bg-elevated)]"
                   }`}
                 >

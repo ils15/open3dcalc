@@ -1,84 +1,146 @@
-import { useRef, useEffect, useReducer } from 'react'
-import { AlertTriangle, X } from 'lucide-react'
+import { useRef, useEffect, useReducer } from "react";
+import { AlertTriangle, X } from "lucide-react";
 
 interface ConfirmDialogProps {
-  open: boolean
-  title?: string
-  message: string
-  confirmLabel?: string
-  cancelLabel?: string
-  variant?: 'danger' | 'warning' | 'info'
-  onConfirm: () => void
-  onCancel: () => void
+  open: boolean;
+  title?: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: "danger" | "warning" | "info";
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
-type DialogState = 'visible' | 'closing' | 'hidden'
-type DialogAction = { type: 'open' } | { type: 'close' } | { type: 'closeComplete' }
+type DialogState = "visible" | "closing" | "hidden";
+type DialogAction =
+  { type: "open" } | { type: "close" } | { type: "closeComplete" };
 
 function dialogReducer(_state: DialogState, action: DialogAction): DialogState {
   switch (action.type) {
-    case 'open': return 'visible'
-    case 'close': return 'closing'
-    case 'closeComplete': return 'hidden'
+    case "open":
+      return "visible";
+    case "close":
+      return "closing";
+    case "closeComplete":
+      return "hidden";
   }
 }
 
+/**
+ * Each variant owns its OWN foreground AND its own background pair. The
+ * confirm button used to hardcode `text-[var(--color-text-primary)]` in the
+ * shared className and take only its background from here, so no single edit
+ * could fix one variant without breaking the others: the `info` variant paints
+ * an accent fill, and white ink would have been correct for it while landing
+ * 2.49:1 on `warning`'s bg-amber-600. Moving the text token into the map makes
+ * each pairing explicit and independently checkable.
+ *
+ * `info` uses --accent-fill / --accent-fill-fg, not --color-accent: the latter
+ * flips to #818cf8 in .dark, which put --text-primary ink at 2.72:1 on it.
+ *
+ * `danger` and `warning` were the same defect one level down. Their backgrounds
+ * were raw Tailwind palette utilities — bg-red-600 / bg-amber-600 — which are
+ * theme-INDEPENDENT, so pairing them with a theme-flipping ink fixed light and
+ * broke dark. They now carry token-backed fills and a token-backed ink each:
+ *
+ *   danger   #e7000b + #ffffff  4.77:1 rest, 6.42:1 hover  (red-700  #c10007)
+ *   warning  #e17100 + #0a0b10  6.14:1 rest, 9.21:1 hover  (amber-500 #fe9a00)
+ *
+ * Both figures are identical in BOTH themes, which is the property that the
+ * previous pairing did not have. The hover steps in opposite directions on
+ * purpose: white ink on red must darken to stay legible and near-black ink on
+ * amber must lighten, so a single shared direction cannot clear 4.5:1 for both.
+ *
+ * The values are the sRGB rendering of Tailwind v4's oklch palette. See the
+ * token block in styles/tokens.css for the oklch each one comes from.
+ */
 const variantStyles = {
-  danger: { button: 'bg-red-600 hover:bg-red-500', icon: 'text-[var(--color-danger)]' },
-  warning: { button: 'bg-amber-600 hover:bg-amber-500', icon: 'text-[var(--color-warning)]' },
-  info: { button: 'bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]', icon: 'text-[var(--color-accent)]' },
-}
+  danger: {
+    button:
+      "bg-[var(--color-danger-fill)] text-[var(--color-danger-fill-fg)] hover:bg-[var(--color-danger-fill-hover)]",
+    icon: "text-[var(--color-danger)]",
+  },
+  warning: {
+    button:
+      "bg-[var(--color-warning-fill)] text-[var(--color-warning-fill-fg)] hover:bg-[var(--color-warning-fill-hover)]",
+    icon: "text-[var(--color-warning)]",
+  },
+  info: {
+    button:
+      "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] hover:bg-[var(--accent-fill-hover)]",
+    icon: "text-[var(--color-accent)]",
+  },
+};
 
 export function ConfirmDialog({
-  open, title = 'Confirmar', message, confirmLabel = 'Confirmar', cancelLabel = 'Cancelar',
-  variant = 'danger', onConfirm, onCancel,
+  open,
+  title = "Confirmar",
+  message,
+  confirmLabel = "Confirmar",
+  cancelLabel = "Cancelar",
+  variant = "danger",
+  onConfirm,
+  onCancel,
 }: ConfirmDialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const confirmRef = useRef<HTMLButtonElement>(null)
-  const [dialogState, dispatch] = useReducer(dialogReducer, 'hidden')
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const [dialogState, dispatch] = useReducer(dialogReducer, "hidden");
 
   useEffect(() => {
     if (open) {
-      dispatch({ type: 'open' })
-      const focusTimer = setTimeout(() => confirmRef.current?.focus(), 50)
-      return () => clearTimeout(focusTimer)
+      dispatch({ type: "open" });
+      const focusTimer = setTimeout(() => confirmRef.current?.focus(), 50);
+      return () => clearTimeout(focusTimer);
     }
-    dispatch({ type: 'close' })
-    const closeTimer = setTimeout(() => dispatch({ type: 'closeComplete' }), 200)
-    return () => clearTimeout(closeTimer)
-  }, [open])
+    dispatch({ type: "close" });
+    const closeTimer = setTimeout(
+      () => dispatch({ type: "closeComplete" }),
+      200,
+    );
+    return () => clearTimeout(closeTimer);
+  }, [open]);
 
   useEffect(() => {
-    if (!open) return
-    const focusTimer = setTimeout(() => confirmRef.current?.focus(), 50)
+    if (!open) return;
+    const focusTimer = setTimeout(() => confirmRef.current?.focus(), 50);
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onCancel(); return }
-      if (e.key !== 'Tab') return
-      const dialog = dialogRef.current
-      if (!dialog) return
-      const focusable = dialog.querySelectorAll<HTMLElement>('button')
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
-      if (e.shiftKey) {
-        if (document.activeElement === first) { e.preventDefault(); last.focus() }
-      } else {
-        if (document.activeElement === last) { e.preventDefault(); first.focus() }
+      if (e.key === "Escape") {
+        onCancel();
+        return;
       }
-    }
-    document.addEventListener('keydown', handleKeyDown)
+      if (e.key !== "Tab") return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = dialog.querySelectorAll<HTMLElement>("button");
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      clearTimeout(focusTimer)
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [open, onCancel])
+      clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open, onCancel]);
 
-  if (dialogState === 'hidden') return null
+  if (dialogState === "hidden") return null;
 
-  const styles = variantStyles[variant]
+  const styles = variantStyles[variant];
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0'}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`}
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
@@ -86,16 +148,22 @@ export function ConfirmDialog({
     >
       <div
         ref={dialogRef}
-        className={`surface rounded-xl p-6 w-[90%] max-w-sm animate-fade-in transition-transform duration-200 ${open ? 'scale-100' : 'scale-95'}`}
-        onClick={e => e.stopPropagation()}
+        className={`surface rounded-xl p-6 w-[90%] max-w-sm animate-fade-in transition-transform duration-200 ${open ? "scale-100" : "scale-95"}`}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-4">
-          <div className={`p-2 rounded-full bg-[var(--color-bg-elevated)] ${styles.icon}`}>
+          <div
+            className={`p-2 rounded-full bg-[var(--color-bg-elevated)] ${styles.icon}`}
+          >
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div className="flex-1">
-            <h3 className="text-base font-bold text-[var(--color-text-primary)] mb-1">{title}</h3>
-            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{message}</p>
+            <h3 className="text-base font-bold text-[var(--color-text-primary)] mb-1">
+              {title}
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              {message}
+            </p>
           </div>
           <button
             onClick={onCancel}
@@ -115,12 +183,12 @@ export function ConfirmDialog({
           <button
             ref={confirmRef}
             onClick={onConfirm}
-            className={`px-4 py-2 text-sm rounded-xl text-[var(--color-text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/50 focus-visible:outline-none ${styles.button}`}
+            className={`px-4 py-2 text-sm rounded-xl transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/50 focus-visible:outline-none ${styles.button}`}
           >
             {confirmLabel}
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

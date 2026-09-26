@@ -1,0 +1,520 @@
+/* ===================================================================
+   SHARED COMPONENT CLASS LAYER
+   ===================================================================
+   The component class vocabulary that both platforms render: surfaces,
+   cards, typography, buttons, nav, segmented control, badges, toggles,
+   dividers, input tiers, animations, the reduced-motion and print
+   overrides, and the scrollbar chrome.
+
+   This file used to be duplicated byte-for-byte in
+   src/platform/web/index.css and src/platform/desktop/index.css, so every
+   visual change had to be made twice and nothing detected the two copies
+   drifting apart. It is now the single source both platforms @import.
+
+   Rules that legitimately differ per platform are NOT here — they stay in
+   the platform entry stylesheet:
+     · html                  → web scrolls smoothly, desktop does not
+     · input/select/textarea → desktop adds `padding: 10px 14px`
+     · .skip-link            → web only
+     · .surface-secondary    → desktop only
+
+   The form-element block stays per-platform on purpose: its base rule
+   differs, and the shared `select` rule's `padding-right: 36px` must keep
+   coming after it (same specificity, so source order decides). Merging it
+   would drop the custom select-arrow gutter on desktop.
+
+   Unlayered on purpose: Tailwind's utilities live in @layer, and unlayered
+   rules outrank every layer, so these must not be wrapped in @layer.
+   =================================================================== */
+
+@theme inline {
+  /* Calculator form grids only go 2-up when the container has room (~608px). */
+  --container-form: 38rem;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-height: 100dvh;
+  overflow-x: clip;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* ===================================================================
+   SCROLLBAR
+   =================================================================== */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ===================================================================
+   SURFACE CLASSES
+   =================================================================== */
+.surface {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+
+.surface-elevated {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ===================================================================
+   CARDS
+   =================================================================== */
+.card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.card-hover {
+  transition: border-color 0.18s ease;
+}
+.card-hover:hover {
+  border-color: var(--color-accent);
+}
+
+/* ===================================================================
+   TYPOGRAPHY
+   =================================================================== */
+.gradient-text {
+  color: var(--color-accent);
+  font-weight: 800;
+  background: none;
+  -webkit-text-fill-color: var(--color-accent);
+}
+
+.gradient-text-brand {
+  color: var(--color-accent);
+  font-weight: 800;
+  background: none;
+  -webkit-text-fill-color: var(--color-accent);
+}
+
+.label-xs {
+  font-size: var(--type-micro-label-size);
+  line-height: var(--type-micro-label-line-height);
+  font-weight: var(--type-micro-label-weight);
+  /* tracking-wider (0.05em) — the value the prototype's CLASSIC layout uses at
+     26 label sites (Example/src/components/EnhancedClassicLayout.tsx) and
+     tracking-widest at 0. The BENTO/WIZARD layouts use tracking-widest, but
+     this port targets the classic layout. */
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* ===================================================================
+   BUTTONS
+   =================================================================== */
+/* --accent-fill / -fg / -hover rather than --color-accent / -accent-text:
+   --accent is a foreground/border colour (it inverts to #818cf8 in .dark) and
+   --accent-text aliases --text-inverse, which also inverts. Pairing the two
+   gave dark mode a light fill with near-black ink, and left --accent-fill
+   unreferenced. The prototype's solid buttons are a dark blue with white text
+   in both themes; these three tokens make that the rendered contract. */
+.btn-primary {
+  background: var(--accent-fill);
+  color: var(--accent-fill-fg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-primary:hover {
+  background: var(--accent-fill-hover);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* ===================================================================
+   SIDEBAR NAV
+   =================================================================== */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.nav-item:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+}
+.nav-item.active {
+  background: var(--color-accent-muted);
+  border-color: transparent;
+  color: var(--color-accent-light);
+}
+.nav-item.active svg {
+  color: var(--color-accent);
+}
+
+/* ===================================================================
+   SEGMENTED CONTROL (FDM / Resin tabs)
+   =================================================================== */
+.segmented-control {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+}
+
+.segmented-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+}
+.segmented-btn:hover {
+  color: var(--color-text-secondary);
+}
+.segmented-btn.active-fdm {
+  background: var(--info-wash);
+  border-color: var(--info-wash-strong);
+  color: var(--color-info);
+}
+.segmented-btn.active-resin {
+  background: var(--accent-wash);
+  border-color: var(--accent-wash-strong);
+  color: var(--color-accent);
+}
+.segmented-btn.active-basic {
+  background: var(--positive-wash);
+  border-color: var(--positive-wash-strong);
+  color: var(--color-success);
+}
+.segmented-btn.active-intermediate {
+  background: var(--warning-wash);
+  border-color: var(--warning-wash-strong);
+  color: var(--color-warning);
+}
+.segmented-btn.active-advanced {
+  background: var(--accent-wash);
+  border-color: var(--accent-wash-strong);
+  color: var(--color-accent);
+}
+
+/* ===================================================================
+   RESULT HERO CARD
+   =================================================================== */
+.result-hero {
+  background: var(--color-success-muted);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+/* ===================================================================
+   BADGES
+   =================================================================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.badge-indigo {
+  background: var(--color-accent-muted);
+  color: var(--color-accent-light);
+  border: 1px solid var(--color-accent);
+}
+.badge-violet {
+  background: var(--color-violet-muted);
+  color: var(--color-violet);
+  border: 1px solid var(--color-violet);
+}
+.badge-emerald {
+  background: var(--color-success-muted);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+.badge-sky {
+  background: var(--color-info-muted);
+  color: var(--color-info);
+  border: 1px solid var(--color-info);
+}
+.badge-amber {
+  background: var(--color-warning-muted);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+}
+.badge-red {
+  background: var(--color-danger-muted);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+}
+
+/* ===================================================================
+   TOGGLE SWITCH
+   =================================================================== */
+.toggle-track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.25s ease;
+  border: 1px solid var(--color-border);
+}
+.toggle-track.on {
+  background: var(--color-accent);
+}
+.toggle-track.off {
+  background: var(--color-bg-secondary);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  transition:
+    left 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.15s ease;
+}
+.toggle-track.on .toggle-thumb {
+  left: 22px;
+}
+.toggle-track.off .toggle-thumb {
+  left: 2px;
+}
+
+/* ===================================================================
+   DIVIDER
+   =================================================================== */
+.divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0;
+}
+
+/* ===================================================================
+   INPUT TIERS — visual hierarchy for form fields
+   =================================================================== */
+.input-primary .input-group-label {
+  color: var(--color-text-primary);
+  font-weight: 700;
+  font-size: 0.8125rem;
+}
+.input-primary input {
+  border-color: var(--color-accent);
+}
+.input-secondary .input-group-label {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+.input-compact input {
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+}
+
+/* ===================================================================
+   ANIMATIONS
+   =================================================================== */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.25s ease-out;
+}
+.animate-fade-in {
+  animation: fadeUp 0.25s ease-out;
+}
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+.animate-slide-left {
+  animation: slideInLeft 0.2s ease-out;
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-hover) 25%,
+    var(--color-bg-secondary) 50%,
+    var(--color-bg-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* W4 — guided wizard: step panel enter transition. Gated by useReducedMotion in
+   JS (the class is omitted entirely when the user prefers reduced motion); this
+   rule is the CSS-side backstop for the same preference. */
+@keyframes wizardStepEnter {
+  from {
+    opacity: 0;
+    transform: translateX(var(--wizard-enter-from, 8px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.wizard-step-enter {
+  --wizard-enter-from: 8px;
+  animation: wizardStepEnter 0.22s ease-out;
+}
+
+/* ===================================================================
+   REDUCED MOTION
+   =================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-left,
+  .wizard-step-enter,
+  .animate-shimmer {
+    animation: none !important;
+  }
+}
+
+/* ===================================================================
+   PRINT STYLESHEET
+   =================================================================== */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .surface,
+  .surface-elevated {
+    background: white !important;
+    backdrop-filter: none !important;
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+  }
+  header,
+  nav,
+  .fixed,
+  footer,
+  button,
+  .animate-fade-up {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  .gradient-text {
+    color: black !important;
+    -webkit-text-fill-color: black !important;
+  }
+  .result-hero {
+    border: 2px solid #059669 !important;
+    break-inside: avoid;
+  }
+}
+
+/* ===================================================================
+   STANDARD SCROLLBAR (Firefox)
+   =================================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}

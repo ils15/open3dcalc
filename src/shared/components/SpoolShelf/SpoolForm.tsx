@@ -58,25 +58,41 @@ function toValues(
 ): Record<string, string> {
   if (spool) {
     return {
-      brand: spool.brand, material: spool.material, color: spool.color,
-      colorHex: spool.colorHex, weight: toStr(spool.weightGrams),
+      brand: spool.brand,
+      material: spool.material,
+      color: spool.color,
+      colorHex: spool.colorHex,
+      weight: toStr(spool.weightGrams),
       originalWeight: toStr(spool.originalWeightGrams),
-      costPerKg: toStr(spool.costPerKg), diameter: toStr(spool.diameterMm),
-      notes: spool.notes, status: spool.status, purchaseStore: spool.purchaseStore,
+      costPerKg: toStr(spool.costPerKg),
+      diameter: toStr(spool.diameterMm),
+      notes: spool.notes,
+      status: spool.status,
+      purchaseStore: spool.purchaseStore,
     };
   }
 
   const values: Record<string, string> = {
-    brand: "", material: "PLA", color: "", colorHex: "",
-    weight: "", originalWeight: "", costPerKg: "", diameter: "1.75",
-    notes: "", status: "in_stock", purchaseStore: "",
+    brand: "",
+    material: "PLA",
+    color: "",
+    colorHex: "",
+    weight: "",
+    originalWeight: "",
+    costPerKg: "",
+    diameter: "1.75",
+    notes: "",
+    status: "in_stock",
+    purchaseStore: "",
   };
   if (!initialValues) return values;
 
   if (initialValues.brand !== undefined) values.brand = initialValues.brand;
-  if (initialValues.material !== undefined) values.material = initialValues.material;
+  if (initialValues.material !== undefined)
+    values.material = initialValues.material;
   if (initialValues.color !== undefined) values.color = initialValues.color;
-  if (initialValues.colorHex !== undefined) values.colorHex = initialValues.colorHex;
+  if (initialValues.colorHex !== undefined)
+    values.colorHex = initialValues.colorHex;
   if (initialValues.weightGrams !== undefined) {
     values.weight = toStr(initialValues.weightGrams);
   }
@@ -139,8 +155,7 @@ export function SpoolForm({
   }, [open, initial, initialValues]);
 
   const upd = useCallback(
-    (key: string, value: string) =>
-      setValues((v) => ({ ...v, [key]: value })),
+    (key: string, value: string) => setValues((v) => ({ ...v, [key]: value })),
     [],
   );
 
@@ -226,14 +241,21 @@ export function SpoolForm({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3" noValidate>
+            <form
+              onSubmit={handleSubmit}
+              className="grid grid-cols-2 gap-3"
+              noValidate
+            >
               {compatibleSpool && onUseExisting && (
                 <div
                   role="status"
                   className="col-span-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-2.5 text-xs"
                 >
                   <span className="flex min-w-0 items-center gap-1.5 text-[var(--color-text-primary)]">
-                    <PackageCheck className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                    <PackageCheck
+                      className="h-4 w-4 shrink-0 text-emerald-500"
+                      aria-hidden="true"
+                    />
                     {t("spools.compatibleExisting", {
                       brand: compatibleSpool.brand,
                       material: compatibleSpool.material,
@@ -355,7 +377,7 @@ export function SpoolForm({
               <div className="col-span-2 flex gap-2 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 min-h-[44px] rounded-xl bg-[var(--color-accent)] text-white text-sm font-bold hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+                  className="flex-1 min-h-[44px] rounded-xl bg-[var(--accent-fill)] text-white text-sm font-bold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
                 >
                   {t("spools.form.save")}
                 </button>
