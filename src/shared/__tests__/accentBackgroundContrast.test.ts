@@ -14,6 +14,11 @@ import {
 } from "./helpers/contrast";
 import {
   BACKDROPS as CENSUS_BACKDROPS,
+  describeIdentityFaults,
+  identityContext,
+  identityFaults,
+  resolveSiteId,
+  walkComponents,
   censusPaletteBackgrounds,
   censusWashes,
   scanPaletteInSource,
@@ -899,80 +904,27 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
   });
 
   /**
-   * THE PIN IS PER SITE, NOT PER FORM
-   * ---------------------------------
-   * The previous version of this was a GLOBAL set of allowed shapes. That was
-   * a weaker instrument than it looked, and the review was right to call it: a
-   * site could migrate from one already-allowlisted form to a DIFFERENT
-   * already-allowlisted form without changing the count or the set, and pass
-   * silently. The allowlist said "this form is known broken" when what needed
-   * saying was "this form is broken *here*".
+   * THE PIN IS PER SITE — the owning JSX element, by its own identity
    *
-   * So the pin maps FILE -> the multiset of shapes that file is allowed to
-   * hold, and a discovered site is only accounted for if its own file has that
-   * shape still available. Multiset, not set: CatalogTab holds three identical
-   * `bg-[var(--color-accent)]/20 + text-[var(--color-accent)]` sites and that is
-   * three pieces of information, not one.
+   * A site is the element that owns the pairing, resolved by a hybrid: a static
+   * `data-testid`/`id` the element already carries, otherwise a source-only
+   * comment beside it. Never a runtime attribute added for the test, never a
+   * line number (shifts on any edit above), never a per-file or global shape set
+   * (a site migrating to an already-allowlisted form is invisible to both), and
+   * never a localized `aria-label`, which is localized at 20 of these sites and
+   * would make the key a translation string.
    *
-   * HOW SITE IDENTITY STAYS STABLE — the question a line-number pin cannot
-   * answer
-   * ------------------------------------------------------------------------
-   * A site's identity here is the PAIR (file, shape), and the stability is
-   * structural rather than maintained: a site is *defined* by where it is and
-   * what form it takes, so altering either component necessarily produces a
-   * different key, and the check is on keys. There is no separate identifier to
-   * fall out of date — no line number, which any edit above it would shift, and
-   * no counter, which any insertion above it would renumber.
+   * The value is a SHAPE LIST rather than one shape: four elements pair
+   * `bg-emerald-600` and its `hover:bg-emerald-500` with a single ink, so one
+   * identity legitimately covers two occurrences.
    *
-   * The encoding cannot drift silently, which is the property that matters:
-   *
-   *   - a site changes form      -> (file, newShape) is a new key. Even if
-   *                                 newShape is allowlisted for ANOTHER file,
-   *                                 this file's multiset has no copy left, so
-   *                                 it is an excess. Caught.
-   *   - a site appears           -> a new key in some file. Caught.
-   *   - a site is resolved       -> its key simply stops being discovered.
-   *                                 Not caught, deliberately (below).
-   *   - a file is renamed        -> both the pin and the census move together,
-   *                                 so the key still matches; the pin is
-   *                                 updated in the same commit as the rename.
-   *
-   * ONE-DIRECTIONALITY, AND WHAT IT COSTS
-   * -------------------------------------
-   * Still an allowlist, for the same reason as before: fixing a site must never
-   * fail this suite, only lower the number. So a pinned entry that is no longer
-   * discovered does NOT fail — which means a resolved site leaves a stale entry
-   * here. The cost is unchanged and still named in the file header: the list
-   * over-describes the backlog after a wave of fixes, and must be pruned by
-   * hand. The alternative punishes exactly the behaviour the guard exists to
-   * encourage.
-   */
-  /**
-   * THE PIN IS PER SITE — the owning JSX element, by its own stable identity.
-   *
-   * Three weaker keys were tried and blocked, correctly:
-   *
-   *   line number    shifts on any edit above the site.
-   *   decl#ordinal   survives reformatting but not SUBSTITUTION: two elements in
-   *                  one declaration swap their pairings and every ordinal is
-   *                  unchanged. The ordinal names a position, not a site.
-   *   shape / hash   two sites of one shape are indistinguishable, and a hash of
-   *                  the shape is the same failure with extra steps.
-   *
-   * A site is the ELEMENT, and the element is named in the source: a static
-   * `data-testid`/`id` the element already carries, or a source-only comment
-   * beside it. Identity therefore survives reformatting, line shifts and
-   * reordering, because none of those move a comment attached to its element —
-   * and the shape, which the pin stores as the VALUE, is exactly the thing
-   * allowed to change.
-   *
-   * The value is a SHAPE LIST, not a single shape: four elements here pair
-   * `bg-emerald-600` and its `hover:bg-emerald-500` with one ink, so one identity
-   * legitimately covers two occurrences.
-   *
-   * ONE-DIRECTIONAL, unchanged and still paid for: a pinned site that no longer
-   * has a deferred pairing does NOT fail, because fixing a site must never fail
-   * this suite. The cost is a stale entry until pruned by hand.
+   * ONE-DIRECTIONAL, and the cost is still paid: a pinned site that no longer has
+   * a deferred pairing does NOT fail, because fixing a site must never fail this
+   * suite — only lower the count. A resolved site therefore leaves a stale entry
+   * behind, and the map over-describes the backlog until pruned by hand. The
+   * contract is one-directional in BOTH directions of that sentence: every CURRENT
+   * site must exist, hold exactly one identity, and match its own pinned value;
+   * nothing requires a pinned entry to still be in use.
    */
   const WASH_SITES: Record<string, string[]> = {
     "catalog-tab-printer-custom-badge": [
@@ -1212,6 +1164,48 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
     },
   );
 
+  it("binds every identity to exactly one element, across the whole tree", () => {
+    // The ownership rules over the real tree rather than a fixture. Each is a way
+    // the population looks healthy while being wrong: a reused marker, or a
+    // reused static id, leaves every count and every multiset intact when the
+    // two elements happen to share a shape — which is why the guard cannot be
+    // satisfied by comparing totals.
+    const paletteMap = tailwindPaletteMap(
+      readFileSync(
+        resolve(projectRoot, "node_modules/tailwindcss/theme.css"),
+        "utf-8",
+      ),
+    );
+    const faults: string[] = [];
+    for (const file of walkComponents(srcRoot)) {
+      const source = readFileSync(file, "utf-8");
+      const ctx = identityContext(source);
+      for (const site of [
+        ...scanWashesInSource({ tokensCss, file, source }).failing,
+        ...scanPaletteInSource({
+          tokensCss,
+          file,
+          source,
+          palette: paletteMap,
+        }).failing,
+      ]) {
+        resolveSiteId(ctx, site.offset);
+      }
+      for (const fault of identityFaults(ctx)) {
+        faults.push(
+          `  ${relative(projectRoot, file)}
+${describeIdentityFaults([fault])}`,
+        );
+      }
+    }
+    expect(
+      faults.join("\n"),
+      `${faults.length} identity ownership fault(s) in the tree. A marker or a ` +
+        `static id must name exactly one element, and a marker owning nothing is ` +
+        `an orphan rather than protection.`,
+    ).toBe("");
+  });
+
   it("gives every deferred wash element exactly one identity, and no marker two elements", () => {
     // The inventory, asserted rather than described: 22 owning elements, 26
     // paired occurrences, every one identified, no id used twice, and every
@@ -1261,26 +1255,64 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
     ).toBe(1);
   });
 
-  it("pins no site that names a shape the element does not have", () => {
-    // Catches a pin edited by hand to match a NEW form, which is how a
-    // same-declaration substitution gets laundered into a passing suite.
-    const real = new Set(
-      [...census.failing, ...palette.failing].map((s) => s.shape),
+  it("permits a resolved site to leave a stale pin, even for a unique shape", () => {
+    // Finding B: the previous version of this slot demanded the reverse — that
+    // every pinned shape still occurs SOMEWHERE in the tree. That contradicts
+    // the one-directional policy two tests above state, and it fails precisely
+    // when the policy is working: resolve the last site holding a shape and the
+    // shape is gone from the tree, which is progress, yet the assertion demanded
+    // the backlog keep reproducing it.
+    //
+    // The real contract is one-directional: every CURRENT site must exist, hold
+    // exactly one identity, and match its own pinned value. A resolved site is
+    // allowed to leave its entry behind.
+    // A shape whose ONLY owner is one site. The accent wash is deliberately not
+    // used: five sites hold it, so resolving one of them would leave the shape in
+    // the population and the test would pass for the wrong reason.
+    const soleOwner = "price-hero-margin-label";
+    const shape = WASH_SITES[soleOwner][0];
+    const elsewhere = [...census.failing, ...palette.failing].filter(
+      (s) => s.shape === shape,
     );
-    for (const [family, pin] of [
-      ["wash", WASH_SITES],
-      ["palette", PALETTE_SITES],
-    ] as const) {
-      for (const [siteId, shapes] of Object.entries(pin)) {
-        for (const shape of shapes) {
-          expect(
-            real.has(shape),
-            `${family} pin: ${siteId} is pinned to ${shape}, which no element in ` +
-              `the tree has`,
-          ).toBe(true);
-        }
-      }
-    }
+    expect(
+      elsewhere.length,
+      `${soleOwner} is expected to be the only site holding ${shape}; the count ` +
+        `is asserted so this test keeps testing what it claims`,
+    ).toBe(1);
+
+    // Simulate that site being resolved: it stops being a current site, its
+    // shape leaves the population, and its pin entry stays.
+    // Wash sites only: this compares against the WASH pin, and the palette
+    // sites are keyed in PALETTE_SITES, so mixing them in would report every one
+    // of them as unpinned.
+    const remaining = census.failing.filter((s) => s.siteId !== soleOwner);
+    expect(
+      remaining.some((s) => s.shape === shape),
+      "with the site resolved, its shape occurs nowhere",
+    ).toBe(false);
+    expect(
+      siteFaults(remaining, WASH_SITES),
+      "and a stale pin entry for a resolved site is NOT a fault",
+    ).toEqual([]);
+    expect(
+      WASH_SITES[soleOwner],
+      "the stale entry is still there, which is the cost of the policy",
+    ).toEqual([shape]);
+  });
+
+  it("still fails a CURRENT site whose shape no longer matches its pin", () => {
+    // The half of the contract that must not weaken: current sites are checked.
+    const drifted = [
+      {
+        siteId: Object.keys(WASH_SITES)[0],
+        shape: "bg-[var(--z)]/90 + text-[var(--z)]",
+      },
+    ];
+    expect(
+      siteFaults(drifted, {
+        [Object.keys(WASH_SITES)[0]]: ["bg-[var(--x)]/20 + text-[var(--x)]"],
+      }).map((f) => f.kind),
+    ).toEqual(["changedForm"]);
   });
 
   it("resolves the Tailwind palette it measures palette pairings against", () => {

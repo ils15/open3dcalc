@@ -21,29 +21,40 @@
  *    construction, which is the defect: behind an ink that flips. Decidable
  *    because `tailwindPaletteMap` resolves the oklch palette to sRGB.
  *
- * A SITE IS AN OCCURRENCE, NOT A FILE AND NOT A FORM
- * --------------------------------------------------
- * The unit is a site: one (background, ink) pairing at one source location,
- * identified as `declaration#ordinal` within its file. Two weaker units were
- * tried and both were caught by review, and the reasons are the reason this
- * module reports an `id` at all:
+ * A SITE IS AN OWNING JSX ELEMENT
+ * -------------------------------
+ * The unit is a site: one (background, ink) pairing, belonging to the JSX
+ * element that owns it. Three weaker keys were tried and all three were caught
+ * by review, and their failure modes are why the key is an element:
  *
- *   FILE COUNT  cannot distinguish a site that was fixed (count falls — good)
- *               from a site that changed form (count unchanged — BAD, hidden),
- *               or three sites in one file with one fixed (count unchanged).
- *   GLOBAL FORM SET  cannot see a site migrate from one already-allowlisted
- *               form to a DIFFERENT already-allowlisted form. Count unchanged,
- *               set unchanged, guard green.
- *   FILE FORM MULTISET  closes the cross-file case, but not the same-file one:
- *               resolve the occurrence in `PrinterManager` and add the same
- *               shape in `MaterialManager`, and the file still holds three
- *               identical shapes. The population is just as broken and the file
- *               aggregate says nothing happened.
+ *   FILE COUNT          cannot tell a site that was fixed (count falls — good)
+ *                       from one that changed form (count unchanged — hidden).
+ *   GLOBAL FORM SET     cannot see a site migrate to a different
+ *                       already-allowlisted form: count and set both unchanged.
+ *   decl#ORDINAL        survives reformatting but not SUBSTITUTION: two
+ *                       elements in one declaration swap their pairings and
+ *                       every ordinal is still where it was. The ordinal names a
+ *                       position, not a site.
+ *   SHAPE (or its hash)  two sites holding one form are indistinguishable.
  *
- * So the census reports, per site: `decl`, `ordinal`, a combined `id`, and the
- * `shape` it currently holds. The caller pins `id -> shape`, so the pin says
- * which site AND what it is. Occurrence identity and the shape are deliberately
- * separate: identity survives reformatting, shape is the thing that can change.
+ * So the key is the element, resolved by a hybrid: a static `data-testid`/`id`
+ * the element ALREADY carries, otherwise a source-only comment beside it. No
+ * runtime attribute is added. Ownership is EXCLUSIVE — one identity names exactly
+ * one element, and `identityFaults` reports a marker claimed twice, a marker that
+ * owns nothing, and an id reached from two elements. Each of those leaves every
+ * count and every shape multiset untouched when the two elements happen to share
+ * a form, so none of them is visible to a comparison of totals.
+ *
+ * The census reports, per site, the `siteId` and the `shape` it currently holds.
+ * The caller pins `siteId -> shapes[]`, so the pin says which site AND what it
+ * is. Identity and shape are deliberately separate: the identity survives
+ * reformatting because a comment stays attached to its element, and the shape is
+ * the thing allowed to change.
+ *
+ * The pin is ONE-DIRECTIONAL, and the census is not where that is decided: a
+ * site that is resolved stops being a current site and leaves its pin entry
+ * behind, which is not a fault. Requiring the reverse — that a pinned form still
+ * occur somewhere — would fail precisely when the policy is working.
  *
  * The census FAILS CLOSED. A pairing it cannot decide — an unlisted palette
  * step, an ink naming an undeclared token, a surface token that does not
@@ -272,23 +283,42 @@ export interface IdentityContext {
   original: string;
   markers: SiteMarker[];
   /** owning-tag start -> resolved identity, so an element resolves once */
-  tagCache: Map<number, string | null>;
-  /** tag start that consumed each marker id, to detect orphans and duplicates */
-  claimed: Map<number, string>;
+  tagIdentity: Map<number, string | null>;
+  /**
+   * marker end -> the DISTINCT owning elements that claimed it.
+   *
+   * A set, not a single value, and that is the whole fix. The previous version
+   * stored one id per marker, so a second element taking the same marker
+   * overwrote the first and nothing could see it: one marker could name two
+   * elements, and if their shapes were identical the population looked
+   * untouched. Ownership here is EXCLUSIVE — a marker may own exactly one
+   * element, and claiming it twice is a finding, not a merge.
+   */
+  markerOwners: Map<number, Set<number>>;
+  /** tag start -> the marker end that named it, for orphan reporting */
+  tagMarker: Map<number, number>;
+  /** identity -> the distinct elements using it, for duplicate reporting */
+  idOwners: Map<string, Set<number>>;
 }
 
 export function identityContext(original: string): IdentityContext {
   return {
     original,
     markers: siteMarkers(original),
-    tagCache: new Map(),
-    claimed: new Map(),
+    tagIdentity: new Map(),
+    markerOwners: new Map(),
+    tagMarker: new Map(),
+    idOwners: new Map(),
   };
 }
 
 /**
  * The identity of the element owning the literal at `offset`, or null when it
- * has none. Records the claim so the guard can report duplicate and orphan ids.
+ * has none.
+ *
+ * Two sources, in order. A static `data-testid`/`id` the element already carries
+ * wins, because adding nothing beats adding something. Otherwise the marker
+ * immediately preceding it, and only that element may hold it.
  */
 export function resolveSiteId(
   ctx: IdentityContext,
@@ -296,30 +326,117 @@ export function resolveSiteId(
 ): string | null {
   const tagStart = owningTagStart(ctx.original, offset);
   if (tagStart === null) return null;
-  const cached = ctx.tagCache.get(tagStart);
+  const cached = ctx.tagIdentity.get(tagStart);
   if (cached !== undefined) return cached;
 
   let id = staticAttrIdentity(owningTagText(ctx.original, tagStart));
-  if (!id) {
-    // Nearest preceding marker. "Nearest" also gives a marker exactly one
-    // literal to own: a marker in between takes ownership, leaving this one
-    // owning nothing, which surfaces as an orphan rather than a silent
-    // reassignment.
+  if (id) {
+    const owners = ctx.idOwners.get(id) ?? new Set<number>();
+    owners.add(tagStart);
+    ctx.idOwners.set(id, owners);
+  } else {
     let owner: SiteMarker | null = null;
     for (const marker of ctx.markers) {
       if (marker.end > offset) break;
       owner = marker;
     }
     id = owner?.id ?? null;
-    if (owner) ctx.claimed.set(owner.end, owner.id);
+    if (owner) {
+      const owners = ctx.markerOwners.get(owner.end) ?? new Set<number>();
+      owners.add(tagStart);
+      ctx.markerOwners.set(owner.end, owners);
+      ctx.tagMarker.set(tagStart, owner.end);
+      const ids = ctx.idOwners.get(owner.id) ?? new Set<number>();
+      ids.add(tagStart);
+      ctx.idOwners.set(owner.id, ids);
+    }
   }
-  ctx.tagCache.set(tagStart, id);
+  ctx.tagIdentity.set(tagStart, id);
   return id;
 }
 
-/** Markers that own no element, i.e. duplicated or misplaced. */
-export function orphanMarkers(ctx: IdentityContext): SiteMarker[] {
-  return ctx.markers.filter((m) => !ctx.claimed.has(m.end));
+export type IdentityFaultKind =
+  "markerClaimedByTwoElements" | "orphanMarker" | "duplicateIdentity";
+
+export interface IdentityFault {
+  kind: IdentityFaultKind;
+  identity: string;
+  detail: string;
+}
+
+/**
+ * Everything wrong with the identities in ONE file, found by walking what the
+ * scan actually claimed rather than by inspecting the source text.
+ *
+ * Each of these is a way the population can look healthy while being wrong:
+ *
+ *   markerClaimedByTwoElements  one comment naming two elements, so "which
+ *                               site is this?" has two answers. If their shapes
+ *                               match, the multiset is identical to the healthy
+ *                               case and every count-based check passes.
+ *   orphanMarker                a comment that owns nothing — usually one whose
+ *                               element stopped being deferred, or a leftover
+ *                               from an edit. It protects nothing while looking
+ *                               like protection.
+ *   duplicateIdentity           one id reached from two different elements, by
+ *                               marker or by an attribute. Same blindness as the
+ *                               first: the shapes may be identical, so nothing
+ *                               downstream can tell.
+ *
+ * An element with NO identity is not reported here — it is reported per site by
+ * the guard, because an element with no identity may hold no deferred pairing at
+ * all and never become a site.
+ */
+export function identityFaults(ctx: IdentityContext): IdentityFault[] {
+  const faults: IdentityFault[] = [];
+  const lineOf = (offset: number): number =>
+    ctx.original.slice(0, offset).split("\n").length;
+
+  for (const marker of ctx.markers) {
+    const owners = ctx.markerOwners.get(marker.end) ?? new Set<number>();
+    if (owners.size === 0) {
+      faults.push({
+        kind: "orphanMarker",
+        identity: marker.id,
+        detail:
+          `  the marker at line ${lineOf(marker.end)} owns no element. It sits ` +
+          `next to nothing deferred, so the pin entry it backs protects nothing.`,
+      });
+    } else if (owners.size > 1) {
+      const lines = [...owners].sort((a, b) => a - b).map((o) => lineOf(o));
+      faults.push({
+        kind: "markerClaimedByTwoElements",
+        identity: marker.id,
+        detail:
+          `  the marker at line ${lineOf(marker.end)} is claimed by ` +
+          `${owners.size} elements (lines ${lines.join(", ")}). Ownership is ` +
+          `exclusive: a marker names one element, or the identity cannot say ` +
+          `which site a shape belongs to.`,
+      });
+    }
+  }
+
+  for (const [id, owners] of [...ctx.idOwners].sort()) {
+    if (owners.size > 1) {
+      const lines = [...owners].sort((a, b) => a - b).map((o) => lineOf(o));
+      faults.push({
+        kind: "duplicateIdentity",
+        identity: id,
+        detail:
+          `  "${id}" names ${owners.size} distinct elements (lines ` +
+          `${lines.join(", ")}). If their shapes happen to match, the population ` +
+          `is indistinguishable from the healthy case.`,
+      });
+    }
+  }
+  return faults;
+}
+
+/** Rendered form, for a failure message. */
+export function describeIdentityFaults(faults: IdentityFault[]): string {
+  return faults
+    .map((f) => `  ${f.identity}  [${f.kind}]\n${f.detail}`)
+    .join("\n");
 }
 
 const siteIdOf = (ctx: IdentityContext, offset: number): string =>
