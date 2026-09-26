@@ -406,33 +406,174 @@ for (const file of walk(srcRoot).sort()) {
   }
 }
 
-describe("accent-derived call sites meet WCAG AA text contrast", () => {
-  it("finds the accent-background call sites it is meant to police", () => {
-    // A guard that silently matches nothing is worse than no guard: it would
-    // report green forever. Pin a floor on the population.
-    expect(
-      pairings.length,
-      "no accent-background/text pairings were discovered — the literal scan " +
-        "has probably stopped matching the class strings it was written for",
-    ).toBeGreaterThan(20);
+const WASH_SITE_PIN: Record<string, string[]> = {
+  "catalog-tab-printer-custom-badge": [
+    "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+  ],
+  "catalog-tab-material-custom-badge": [
+    "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+  ],
+  "catalog-tab-marketplace-custom-badge": [
+    "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+  ],
+  "changelog-latest-badge": [
+    "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+  ],
+  "gcode-preview-read-error-banner": [
+    "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+  ],
+  "gcode-preview-parse-error-banner": [
+    "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+  ],
+  "price-hero-edit-price-button": [
+    "hover:bg-[var(--revenue)]/10 + hover:text-[var(--revenue)]",
+  ],
+  "price-hero-margin-label": ["bg-[var(--accent)]/15 + text-[var(--accent)]"],
+  "quote-section-view-quote-button": [
+    "hover:bg-[var(--color-accent)]/20 + hover:text-[var(--color-accent)]",
+  ],
+  "section-nav-desktop-item": [
+    "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
+  ],
+  "section-nav-compact-item": [
+    "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
+  ],
+  "select-option-thumb": ["bg-[var(--accent)]/20 + text-[var(--accent)]"],
+  "data-testid=spool-thumb": [
+    "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+  ],
+  "export-actions-csv-button": [
+    "hover:bg-[var(--info)]/80 + text-[var(--text-inverse)]",
+  ],
+  "stl-preview-error-banner": [
+    "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+  ],
+};
 
-    // SHAPES, not files. The previous pin here was `files.size > 5`, and a file
-    // is the wrong thing to count for the reason set out in full below: a site
-    // that changes form leaves the file count untouched. Pinning the set of
-    // FORMS catches a site being rewritten from one pairing into a different
-    // pairing, which is the failure that hides. 14 shapes over 37 files, so
-    // this is not merely a restatement of the file count in other words — the
-    // two genuinely disagree, and the shape set is the one with information in
-    // it.
-    const shapes = new Set(
-      pairings.map((p) => `${p.bgUtility} + ${p.textUtility}`),
-    );
+const PALETTE_SITE_PIN: Record<string, string[]> = {
+  "catalog-tab-save-printer-button": [
+    "bg-emerald-500 + text-white",
+    "bg-emerald-600 + text-white",
+  ],
+  "customer-tab-delete-button": ["bg-red-600 + text-[var(--color-danger)]"],
+  "history-tab-delete-entry-button": [
+    "bg-red-600 + text-[var(--color-danger)]",
+  ],
+  "privacy-screen-delete-all-button": ["bg-red-500 + text-white"],
+  "quote-section-export-pdf-button": [
+    "bg-emerald-500 + text-white",
+    "bg-emerald-600 + text-white",
+  ],
+  "spool-form-use-existing-button": [
+    "bg-emerald-500 + text-white",
+    "bg-emerald-600 + text-white",
+  ],
+  "update-notification-install-button": [
+    "bg-emerald-500 + text-white",
+    "bg-emerald-600 + text-white",
+  ],
+};
+
+/**
+ * The FULL validation path over the real tree, exactly as the guard runs it:
+ * scan every component, resolve each pairing's identity, collect identity
+ * ownership faults, then check every current site against its own pin.
+ *
+ * A function rather than an inline assertion, so a test can drive it against a
+ * MUTATED tree. That is the point: the stale-site regression has to prove the
+ * integrated path still passes after a site is fixed, which it cannot do by
+ * calling `siteFaults` on hand-filtered census rows. The overrides map is keyed
+ * by absolute file path and substitutes source for that file only; every other
+ * file is read from disk, so the rest of the tree stays real.
+ */
+function validateRealTree(
+  washPin: Record<string, string[]>,
+  palettePin: Record<string, string[]>,
+  overrides: Map<string, string> = new Map(),
+): { faults: string[]; active: number } {
+  const paletteMap = tailwindPaletteMap(
+    readFileSync(
+      resolve(projectRoot, "node_modules/tailwindcss/theme.css"),
+      "utf-8",
+    ),
+  );
+  const faults: string[] = [];
+  let active = 0;
+  for (const file of walkComponents(srcRoot)) {
+    const source = overrides.get(file) ?? readFileSync(file, "utf-8");
+    const rel = relative(projectRoot, file);
+    const ctx = identityContext(source);
+    const washSites = scanWashesInSource({ tokensCss, file, source }).failing;
+    const paletteSites = scanPaletteInSource({
+      tokensCss,
+      file,
+      source,
+      palette: paletteMap,
+    }).failing;
+    active += washSites.length + paletteSites.length;
+    for (const site of [...washSites, ...paletteSites]) {
+      resolveSiteId(ctx, site.offset);
+    }
+    for (const fault of identityFaults(ctx)) {
+      faults.push(`${rel}\n${describeIdentityFaults([fault])}`);
+    }
+    for (const [family, sites, pin] of [
+      ["wash", washSites, washPin],
+      ["palette", paletteSites, palettePin],
+    ] as const) {
+      for (const row of siteFaults(sites, pin)) {
+        faults.push(
+          `${rel}\n  ${family} site ${row.siteId} [${row.kind}]\n${row.detail}`,
+        );
+      }
+    }
+  }
+  return { faults, active };
+}
+
+describe("accent-derived call sites meet WCAG AA text contrast", () => {
+  it("discovers accent pairings through the production scanner, on source it owns", () => {
+    // This replaces `expect(pairings.length).toBeGreaterThan(20)` and
+    // `expect(shapes.size).toBeGreaterThan(10)`. Both were floors on the REAL
+    // population, and a floor on the real population is the same defect as an
+    // exact count: it fails as sites are fixed, so it punishes the work it is
+    // supposed to police. What the floors were actually protecting against is
+    // still worth protecting — a scan that silently matches nothing reports
+    // green forever — so it is protected directly, by running the real scanner
+    // over source the test owns and requiring it to find the pairings.
+    const withPairings = scanWashesInSource({
+      tokensCss,
+      file: "src/Fixture.tsx",
+      source: [
+        "export function Fixture() {",
+        "  return (",
+        '    <span className="bg-[var(--color-accent)]/20 text-[var(--color-accent)]">A</span>',
+        '    <span className="bg-[var(--color-accent)]/20 text-[var(--color-text-primary)]">B</span>',
+        "  );",
+        "}",
+      ].join("\n"),
+    });
     expect(
-      shapes.size,
-      `only ${shapes.size} distinct pairing shape(s) were discovered across ` +
-        `${new Set(pairings.map((p) => p.file)).size} file(s); the scan is ` +
-        `matching far less than it was written for`,
-    ).toBeGreaterThan(10);
+      withPairings.failing.length + withPairings.passing.length,
+      "the production scanner must find the two pairings it was written for",
+    ).toBe(2);
+    expect(
+      new Set(
+        [...withPairings.failing, ...withPairings.passing].map((p) => p.shape),
+      ).size,
+      "and it must distinguish their two forms, since a file count cannot",
+    ).toBe(2);
+
+    const withoutPairings = scanWashesInSource({
+      tokensCss,
+      file: "src/Fixture.tsx",
+      source: 'export const x = <span className="flex gap-2" />;',
+    });
+    expect(
+      withoutPairings.failing.length + withoutPairings.passing.length,
+      "and it must report nothing when there is nothing, so a non-zero count " +
+        "above means the scanner matched rather than the fixture being noisy",
+    ).toBe(0);
   });
 
   it.each(THEMES)(
@@ -834,7 +975,7 @@ describe("toast variants keep their ink at >= 4.5:1 in both themes", () => {
   });
 });
 
-describe("the deferred population is floored in SITES, with its forms pinned", () => {
+describe("every CURRENT deferred site is pinned by name, with its form", () => {
   /**
    * WHY THIS BLOCK REPLACED A FILE-COUNT FLOOR
    * -----------------------------------------
@@ -926,73 +1067,6 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
    * site must exist, hold exactly one identity, and match its own pinned value;
    * nothing requires a pinned entry to still be in use.
    */
-  const WASH_SITES: Record<string, string[]> = {
-    "catalog-tab-printer-custom-badge": [
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    ],
-    "catalog-tab-material-custom-badge": [
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    ],
-    "catalog-tab-marketplace-custom-badge": [
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    ],
-    "changelog-latest-badge": [
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    ],
-    "gcode-preview-read-error-banner": [
-      "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
-    ],
-    "gcode-preview-parse-error-banner": [
-      "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
-    ],
-    "price-hero-edit-price-button": [
-      "hover:bg-[var(--revenue)]/10 + hover:text-[var(--revenue)]",
-    ],
-    "price-hero-margin-label": ["bg-[var(--accent)]/15 + text-[var(--accent)]"],
-    "quote-section-view-quote-button": [
-      "hover:bg-[var(--color-accent)]/20 + hover:text-[var(--color-accent)]",
-    ],
-    "section-nav-desktop-item": [
-      "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
-    ],
-    "section-nav-compact-item": [
-      "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
-    ],
-    "select-option-thumb": ["bg-[var(--accent)]/20 + text-[var(--accent)]"],
-    "data-testid=spool-thumb": [
-      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    ],
-    "export-actions-csv-button": [
-      "hover:bg-[var(--info)]/80 + text-[var(--text-inverse)]",
-    ],
-    "stl-preview-error-banner": [
-      "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
-    ],
-  };
-
-  const PALETTE_SITES: Record<string, string[]> = {
-    "catalog-tab-save-printer-button": [
-      "bg-emerald-500 + text-white",
-      "bg-emerald-600 + text-white",
-    ],
-    "customer-tab-delete-button": ["bg-red-600 + text-[var(--color-danger)]"],
-    "history-tab-delete-entry-button": [
-      "bg-red-600 + text-[var(--color-danger)]",
-    ],
-    "privacy-screen-delete-all-button": ["bg-red-500 + text-white"],
-    "quote-section-export-pdf-button": [
-      "bg-emerald-500 + text-white",
-      "bg-emerald-600 + text-white",
-    ],
-    "spool-form-use-existing-button": [
-      "bg-emerald-500 + text-white",
-      "bg-emerald-600 + text-white",
-    ],
-    "update-notification-install-button": [
-      "bg-emerald-500 + text-white",
-      "bg-emerald-600 + text-white",
-    ],
-  };
 
   /** siteId -> the shapes its element is pinned to. */
   function describeSiteFaults(
@@ -1105,52 +1179,106 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
   });
 
   it("measures a population, and not everything in it", () => {
-    // A census that classified every site as failing would satisfy a floor
-    // forever and prove nothing. Both halves must be populated, and the passing
-    // half is the falsifiable one.
-    expect(census.failing.length).toBeGreaterThan(0);
-    expect(census.passing.length).toBeGreaterThan(0);
-    expect(palette.failing.length).toBeGreaterThan(0);
-    expect(palette.passing.length).toBeGreaterThan(0);
+    // A census that classified every site as failing would satisfy any floor
+    // forever and prove nothing. The passing half is the falsifiable one, and it
+    // is asserted on the real tree because it is the half a fix grows. The
+    // failing half used to be asserted too — `expect(census.failing.length)
+    // .toBeGreaterThan(0)` — and that was the same defect as an exact count: it
+    // fails on the day the last deferred site is fixed. Direction now comes from
+    // the per-site pin, which names the site; the two fixture tests above cover
+    // that the scanner still discriminates in both directions.
+    expect(
+      census.passing.length,
+      "census: passing wash pairings, which only grow as sites are fixed",
+    ).toBeGreaterThan(0);
+    expect(
+      palette.passing.length,
+      "palette: same, for the separate queue",
+    ).toBeGreaterThan(0);
   });
 
-  it("keeps the deferred wash population at or below the measured floor", () => {
-    // 15 sites at the time of writing, down from 18 at the base commit: the
-    // toast's three /90 variants left this population when they became solid
-    // fills. `toBeLessThanOrEqual` on purpose — fixing a site must only ever
-    // lower this number.
+  it("still separates failing from passing for the wash family, with no count", () => {
+    // Replaces `expect(census.failing.length).toBeLessThanOrEqual(15)`. An upper
+    // bound happens not to fail when a site is fixed, but it is still a number
+    // about the real population: it goes stale the moment someone fixes two sites
+    // and leaves a floor behind that no longer describes anything. The
+    // measurement it was protecting — that the wash family is really being
+    // judged and not merely counted — is checked here against source the test
+    // owns, and the real tree is left to the per-site pin.
+    const scan = (bg: string, fg: string) =>
+      scanWashesInSource({
+        tokensCss,
+        file: "src/Fixture.tsx",
+        source: `export const x = <span className="${bg} ${fg}" />;`,
+      });
+    const bad = scan(
+      "bg-[var(--color-accent)]/20",
+      "text-[var(--color-accent)]",
+    );
+    // A translucent wash that clears AA. A solid `--*-fill` / `--*-fill-fg` pair
+    // is deliberately outside this census — it is the FIXED form, not a site —
+    // so using one here would have asserted that the scanner ignores it, which
+    // is a different claim from the one being made.
+    const good = scan(
+      "bg-[var(--color-accent)]/5",
+      "text-[var(--color-text-primary)]",
+    );
     expect(
-      census.failing.length,
-      `translucent wash pairings below AA now number ${census.failing.length}; ` +
-        `the floor is 15, so either the deferred population is growing or this ` +
-        `comment is stale:\n` +
-        census.failing
-          .map(
-            (s) => `  ${s.ratio.toFixed(2)}:1  ${s.file}:${s.line}  ${s.shape}`,
-          )
-          .join("\n"),
-    ).toBeLessThanOrEqual(15);
+      bad.failing.map((s) => s.shape),
+      "a wash the tokens cannot clear is reported as failing",
+    ).toEqual(["bg-[var(--color-accent)]/20 + text-[var(--color-accent)]"]);
+    expect(
+      good.passing.map((s) => s.shape),
+      "a translucent wash that clears AA is reported as passing",
+    ).toEqual([
+      "bg-[var(--color-accent)]/5 + text-[var(--color-text-primary)]",
+    ]);
+    expect(
+      good.failing.length,
+      "and a passing form is absent from the deferred population entirely, " +
+        "which is the direction a fix moves in",
+    ).toBe(0);
   });
 
-  it("keeps the deferred palette population at or below the measured floor", () => {
-    // 11 sites, unchanged by the toast work: the palette family is a separate
-    // queue and this branch did not touch it. Pinned anyway, because a floor
-    // that covers one family and not the other is how the other one rots.
+  it("still separates failing from passing for the palette family, with no count", () => {
+    // Replaces `expect(palette.failing.length).toBeLessThanOrEqual(11)`, on the
+    // same reasoning. The palette family is a separate queue from the wash
+    // family, so it is checked separately — a guard that covers one family and
+    // not the other is how the other one rots.
+    const scan = (bg: string, fg: string) =>
+      scanPaletteInSource({
+        tokensCss,
+        file: "src/Fixture.tsx",
+        source: `export const x = <span className="${bg} ${fg}" />;`,
+        palette: tailwindPaletteMap(
+          readFileSync(
+            resolve(projectRoot, "node_modules/tailwindcss/theme.css"),
+            "utf-8",
+          ),
+        ),
+      });
+    // red-600 is dark enough that white clears it; emerald-600 is not. Both
+    // directions are the same scanner, the same tokens file and the same ink
+    // literal, so the difference is the measurement, not the fixture.
+    const bad = scan("bg-emerald-600", "text-white");
+    const good = scan("bg-red-600", "text-white");
     expect(
-      palette.failing.length,
-      `raw Tailwind palette pairings below AA now number ` +
-        `${palette.failing.length}; the floor is 11:\n` +
-        palette.failing
-          .map(
-            (s) => `  ${s.ratio.toFixed(2)}:1  ${s.file}:${s.line}  ${s.shape}`,
-          )
-          .join("\n"),
-    ).toBeLessThanOrEqual(11);
+      bad.failing.map((s) => s.shape),
+      "a raw palette background the ink cannot clear is reported as failing",
+    ).toEqual(["bg-emerald-600 + text-white"]);
+    expect(
+      good.passing.map((s) => s.shape),
+      "a palette pairing that clears AA is reported as passing",
+    ).toEqual(["bg-red-600 + text-white"]);
+    expect(
+      good.failing.length,
+      "and it is absent from the deferred population",
+    ).toBe(0);
   });
 
   it.each([
-    ["wash", WASH_SITES, () => census.failing],
-    ["palette", PALETTE_SITES, () => palette.failing],
+    ["wash", WASH_SITE_PIN, () => census.failing],
+    ["palette", PALETTE_SITE_PIN, () => palette.failing],
   ] as const)(
     "accounts for every %s SITE against its own pin",
     (family, pin, discovered) => {
@@ -1164,111 +1292,159 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
     },
   );
 
-  it("gives every deferred wash element exactly one identity, and no marker two elements", () => {
-    // The inventory, asserted rather than described: 22 owning elements, 26
-    // paired occurrences, every one identified, no id used twice, and every
-    // marker in the tree claimed by exactly one element. An orphan is a marker
-    // that sits next to nothing deferred — usually a marker that lost its
-    // element to an edit, and a pin entry that quietly protects nothing.
+  it("gives every CURRENT deferred occurrence an identity, and no id two elements", () => {
+    // Forward-only, deliberately. There is no aggregate count here and no count
+    // anywhere else in this file: a hard total of sites, elements or markers
+    // fails the moment a real site is FIXED, because the population is one
+    // smaller — which is the opposite of what the guard is for. The per-site pin
+    // replaces that floor: every current failing site must have a unique pinned
+    // identity and its own shape, and new identities, shape drift, ambiguity and
+    // missing identities all fail. A resolved site simply stops appearing.
     for (const [family, sites] of [
       ["wash", census.failing],
       ["palette", palette.failing],
     ] as const) {
-      const ids = sites.map((s) => s.siteId);
+      const missing = sites.filter((x) => !x.siteId);
       expect(
-        ids.filter((id) => !id).length,
-        `${family}: ${ids.filter((id) => !id).length} deferred occurrence(s) have no identity`,
+        missing.length,
+        `${family}: ${missing.length} current occurrence(s) have no identity — a ` +
+          `deferred element with no marker and no static id is a site no pin can ` +
+          `protect`,
       ).toBe(0);
-      const byId = new Map<string, Set<string>>();
-      for (const s of sites) {
-        byId.set(s.siteId!, new Set([...(byId.get(s.siteId!) ?? []), s.shape]));
-      }
-      // A site MAY hold two shapes: four elements pair `bg-emerald-600` and its
-      // `hover:bg-emerald-500` with one ink. What must hold is that the count
-      // per site is exactly what the pin says, which `siteFaults` checks; here
-      // only that the population is 22 elements over 26 occurrences, i.e. four
-      // sites carry a second occurrence and eighteen carry one.
-      const perSite = [...byId.values()].map((v) => v.size).sort();
-      const expected =
-        family === "palette"
-          ? [1, 1, 1, 2, 2, 2, 2]
-          : Array(perSite.length).fill(1);
-      expect(
-        perSite,
-        `${family}: occurrences per site, which must total the pin's shape count`,
-      ).toEqual(expected);
+      // Whether a site's shapes match its pin is `siteFaults`' job and is
+      // checked there. Nothing here counts: a site MAY carry two shapes (four
+      // do, pairing `bg-emerald-600` with its `hover:bg-emerald-500`), and the
+      // population is expected to shrink every time a site is fixed.
     }
-    // 22 elements: 21 marker-identified plus the one reusing a data-testid.
-    expect(new Set(census.failing.map((s) => s.siteId)).size).toBe(15);
-    expect(
-      new Set([...census.failing, ...palette.failing].map((s) => s.siteId))
-        .size,
-      "22 owning elements carry the 26 paired occurrences",
-    ).toBe(22);
-    expect(census.failing.length + palette.failing.length).toBe(26);
-    expect(
-      census.failing.filter((s) => s.siteId === "data-testid=spool-thumb")
-        .length,
-      "the one element reusing an existing static data-testid is resolved through it",
-    ).toBe(1);
   });
 
-  it("permits a resolved site to leave a stale pin, even for a unique shape", () => {
-    // Finding B: the previous version of this slot demanded the reverse — that
-    // every pinned shape still occurs SOMEWHERE in the tree. That contradicts
-    // the one-directional policy two tests above state, and it fails precisely
-    // when the policy is working: resolve the last site holding a shape and the
-    // shape is gone from the tree, which is progress, yet the assertion demanded
-    // the backlog keep reproducing it.
+  it("integrated: a fixed site leaves a stale pin and the full validation still passes", () => {
+    // The real contract is one-directional, and this proves it through the SAME
+    // path the guard runs: scan every component, resolve identities, collect
+    // ownership faults, check every current site against its pin. The previous
+    // version of this test only called `siteFaults` on census rows it had filtered
+    // by hand, which could not see an identity fault or an unresolved pairing and
+    // so could not fail when a fixed site was reported as an orphan marker.
     //
-    // The real contract is one-directional: every CURRENT site must exist, hold
-    // exactly one identity, and match its own pinned value. A resolved site is
-    // allowed to leave its entry behind.
-    // A shape whose ONLY owner is one site. The accent wash is deliberately not
-    // used: five sites hold it, so resolving one of them would leave the shape in
-    // the population and the test would pass for the wrong reason.
-    const soleOwner = "price-hero-margin-label";
-    const shape = WASH_SITES[soleOwner][0];
-    const elsewhere = [...census.failing, ...palette.failing].filter(
-      (s) => s.shape === shape,
+    // The site is real: `price-hero-margin-label` in PriceHeroCard.tsx, a wash
+    // whose shape no other site holds, so resolving it is a genuine drop in the
+    // population and not a reshuffle.
+    const file = resolve(
+      srcRoot,
+      "shared/components/Results/PriceHeroCard.tsx",
+    );
+    const before = validateRealTree(WASH_SITE_PIN, PALETTE_SITE_PIN);
+    expect(
+      before.faults,
+      `the unmodified tree must validate, or this test proves nothing:\n${before.faults.join("\n")}`,
+    ).toEqual([]);
+
+    // Fix the site the way a real fix looks: migrate the element to a solid,
+    // token-backed fill with its paired foreground, and KEEP the marker. The
+    // marker is what the stale pin entry is anchored to, so a fix does not and
+    // must not delete it.
+    const source = readFileSync(file, "utf-8");
+    const from = "bg-[var(--accent)]/15 text-[var(--accent)]";
+    const to = "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]";
+    expect(
+      source.includes(from),
+      "the site under test still has its deferred class, so the mutation applies",
+    ).toBe(true);
+    const fixed = source.replace(from, to);
+    expect(
+      fixed.includes("{/* contrast-site: price-hero-margin-label */}"),
+      "the marker survives the fix",
+    ).toBe(true);
+
+    const after = validateRealTree(
+      WASH_SITE_PIN,
+      PALETTE_SITE_PIN,
+      new Map([[file, fixed]]),
     );
     expect(
-      elsewhere.length,
-      `${soleOwner} is expected to be the only site holding ${shape}; the count ` +
-        `is asserted so this test keeps testing what it claims`,
-    ).toBe(1);
-
-    // Simulate that site being resolved: it stops being a current site, its
-    // shape leaves the population, and its pin entry stays.
-    // Wash sites only: this compares against the WASH pin, and the palette
-    // sites are keyed in PALETTE_SITES, so mixing them in would report every one
-    // of them as unpinned.
-    const remaining = census.failing.filter((s) => s.siteId !== soleOwner);
+      after.active,
+      `the fixed site left the active census: ${before.active} -> ${after.active}`,
+    ).toBe(before.active - 1);
     expect(
-      remaining.some((s) => s.shape === shape),
-      "with the site resolved, its shape occurs nowhere",
-    ).toBe(false);
-    expect(
-      siteFaults(remaining, WASH_SITES),
-      "and a stale pin entry for a resolved site is NOT a fault",
+      after.faults,
+      `and the FULL validation passes with a stale pin entry present:\n${after.faults.join("\n")}`,
     ).toEqual([]);
     expect(
-      WASH_SITES[soleOwner],
-      "the stale entry is still there, which is the cost of the policy",
-    ).toEqual([shape]);
+      WASH_SITE_PIN["price-hero-margin-label"],
+      "the pin entry for the resolved site is still there — the accepted cost of " +
+        "a forward-only pin, and why no reverse-presence assertion may exist",
+    ).toEqual(["bg-[var(--accent)]/15 + text-[var(--accent)]"]);
+  });
+
+  it("integrated: the same path still fails a new site nobody pinned", () => {
+    // The other direction must not weaken. A brand-new deferred element with a
+    // fresh identity is not in the pin, and the integrated path has to say so.
+    const file = resolve(
+      srcRoot,
+      "shared/components/Results/PriceHeroCard.tsx",
+    );
+    const source = readFileSync(file, "utf-8");
+    const injected = source.replace(
+      "</div>\n      )}",
+      [
+        "        {/* contrast-site: brand-new-site */}",
+        '        <span className="bg-[var(--accent)]/15 text-[var(--accent)]">new</span>',
+        "      </div>",
+        "      )}",
+      ].join("\n"),
+    );
+    expect(injected, "the injection applied").not.toBe(source);
+    const found = validateRealTree(
+      WASH_SITE_PIN,
+      PALETTE_SITE_PIN,
+      new Map([[file, injected]]),
+    );
+    expect(
+      found.faults.join("\n"),
+      "a new identity with no pin entry is a fault, named",
+    ).toContain("brand-new-site");
+    expect(
+      found.faults.join("\n"),
+      "and the kind is the pin's, not an identity fault",
+    ).toContain("unpinned");
+  });
+
+  it("integrated: the same path still fails a CURRENT site whose shape changed", () => {
+    // Shape drift on a real, owned site: the identity is unchanged, so the pin
+    // entry still matches by name, but the pinned shape is gone.
+    const file = resolve(
+      srcRoot,
+      "shared/components/Results/PriceHeroCard.tsx",
+    );
+    const source = readFileSync(file, "utf-8");
+    const drifted = source.replace(
+      "bg-[var(--accent)]/15 text-[var(--accent)]",
+      "bg-[var(--accent)]/20 text-[var(--accent)]",
+    );
+    expect(drifted, "the mutation applied").not.toBe(source);
+    const found = validateRealTree(
+      WASH_SITE_PIN,
+      PALETTE_SITE_PIN,
+      new Map([[file, drifted]]),
+    );
+    expect(
+      found.faults.join("\n"),
+      "the pin names the site and the shape it no longer has",
+    ).toContain("price-hero-margin-label");
+    expect(found.faults.join("\n")).toContain("changedForm");
   });
 
   it("still fails a CURRENT site whose shape no longer matches its pin", () => {
-    // The half of the contract that must not weaken: current sites are checked.
+    // The unit-level version of the same rule, on a fixture.
     const drifted = [
       {
-        siteId: Object.keys(WASH_SITES)[0],
+        siteId: Object.keys(WASH_SITE_PIN)[0],
         shape: "bg-[var(--z)]/90 + text-[var(--z)]",
       },
     ];
     expect(
       siteFaults(drifted, {
-        [Object.keys(WASH_SITES)[0]]: ["bg-[var(--x)]/20 + text-[var(--x)]"],
+        [Object.keys(WASH_SITE_PIN)[0]]: ["bg-[var(--x)]/20 + text-[var(--x)]"],
       }).map((f) => f.kind),
     ).toEqual(["changedForm"]);
   });
@@ -1302,10 +1478,15 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
  * because it is cheap and it is the part most likely to be forgotten: the two
  * populations below describe the SAME file before and after a site is migrated
  * from one broken form to a different broken form. The file count is identical
- * in both, so any floor expressed in files reports the migration as neutral. The
- * shape set differs, so a floor expressed in forms does not.
+ * in both, so any floor expressed in files reports the migration as neutral.
+ *
+ * The shape set differs too, and once a floor over it was proposed — then
+ * removed, because a fix also removes a shape and a floor over the shape set
+ * punishes a fix for the same reason a floor over files did. The assertions
+ * here are therefore directional: the pin names the site that changed, and a
+ * resolved site is accepted with a stale entry. Nothing here counts.
  */
-describe("a file count cannot see a site change form", () => {
+describe("a file count cannot see a site change form; the pin can, and nothing counts", () => {
   interface Population {
     /** one entry per SITE, as [file, line, shape] */
     sites: Array<[string, number, string]>;
@@ -1361,34 +1542,82 @@ describe("a file count cannot see a site change form", () => {
 
   const filesOf = (p: Population): string[] =>
     [...new Set(p.sites.map(([file]) => file))].sort();
-  const shapesOf = (p: Population): string[] =>
-    [...new Set(p.sites.map(([, , shape]) => shape))].sort();
+  /** the pin's shape, as the census reports it */
+  const sitesOf = (p: Population): Array<{ siteId: string; shape: string }> =>
+    p.sites.map(([file, line, shape]) => ({
+      siteId: `${file}:${line}`,
+      shape,
+    }));
 
   it("leaves the file count untouched, which is why the old floor hid this", () => {
-    // Not a claim — an assertion. This is the behaviour that made a file-count
-    // floor report green while a site was rewritten into a different failure.
+    // Not a claim — an assertion, and it is about the fixture only, so it cannot
+    // fail when a real site is fixed. This is the behaviour that made a
+    // file-count floor report green while a site was rewritten into a different
+    // failure, which is why the replacement is not another count.
     expect(filesOf(AFTER)).toEqual(filesOf(BEFORE));
   });
 
-  it("moves the shape set, which is what the new floor measures instead", () => {
-    const gained = shapesOf(AFTER).filter((s) => !shapesOf(BEFORE).includes(s));
-    const lost = shapesOf(BEFORE).filter((s) => !shapesOf(AFTER).includes(s));
+  it("the pin names the site whose form moved, which no count ever could", () => {
+    // This replaces the assertion that the shape SET moved, which existed to
+    // justify a floor over that set. There is no such floor any more — a floor
+    // over the shape set punishes a fix exactly like a floor over the file
+    // count did, because a fix removes a shape. What survives is the directional
+    // check, and it is the stronger of the two: it says WHICH site changed, not
+    // merely that some shape went away and another arrived.
+    const pin = {
+      "src/Thing.tsx:10": [
+        "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+      ],
+      "src/Thing.tsx:20": [
+        "bg-[var(--color-accent)]/20 + text-[var(--color-text-primary)]",
+      ],
+      "src/Other.tsx:5": [
+        "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+      ],
+    };
     expect(
-      gained,
-      "the migrated site must present a form that was not listed",
-    ).toHaveLength(1);
-    expect(lost, "and must stop presenting the form that was").toHaveLength(1);
-    expect(gained[0]).toBe(
-      "bg-[var(--color-success)]/80 + text-[var(--color-text-primary)]",
-    );
+      siteFaults(sitesOf(BEFORE), pin),
+      "before the migration every site matches its own pin",
+    ).toEqual([]);
+    expect(
+      siteFaults(sitesOf(AFTER), pin).map((f) => `${f.siteId}:${f.kind}`),
+      "after it, the migrated site is named — a file count would have reported " +
+        "the two populations as identical, and a shape count only that the set " +
+        "moved, without saying which site moved",
+    ).toEqual(["src/Thing.tsx:20:changedForm"]);
   });
 
-  it("still counts a real fix, so the unit is not blind in the other direction", () => {
-    // A site count must fall when work happens, or it is not a floor at all.
-    const FIXED: Population = {
-      sites: BEFORE.sites.slice(0, 2),
+  it("a resolved site leaves a stale pin entry and is accepted, not counted", () => {
+    // This replaces the assertion that a fixed site makes the count FALL, which
+    // was the argument for keeping a floor. The pin does not need the count to
+    // fall, so the claim to test is the one that matters: a site that is gone
+    // from the population is not a fault, and its pin entry is simply left
+    // behind. Same property the integrated real-tree test proves, stated here on
+    // a fixture where the before/after is legible.
+    const pin = {
+      "src/Thing.tsx:10": [
+        "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+      ],
+      "src/Thing.tsx:20": [
+        "bg-[var(--color-accent)]/20 + text-[var(--color-text-primary)]",
+      ],
+      "src/Other.tsx:5": [
+        "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+      ],
     };
-    expect(FIXED.sites.length).toBeLessThan(BEFORE.sites.length);
+    // One of the three sites resolves; the other two are untouched.
+    const RESOLVED: Population = { sites: BEFORE.sites.slice(1) };
+    expect(
+      siteFaults(sitesOf(RESOLVED), pin),
+      "one site resolved and two left: no fault, and both survivors still " +
+        "match their own pins",
+    ).toEqual([]);
+    expect(
+      Object.keys(pin).length,
+      "the pin still lists all three sites, including the resolved one — that " +
+        "stale entry is the accepted cost of a forward-only pin, and no " +
+        "assertion here requires it to disappear",
+    ).toBe(3);
   });
 });
 
@@ -1706,14 +1935,22 @@ describe("marker ownership, through the production identity path", () => {
     ).toEqual(["unidentified"]);
   });
 
-  it("orphans a marker whose element has no deferred pairing", () => {
-    // The other half of the leak: the marked element is not deferred, and a
-    // LATER element must not inherit the marker.
+  it("does NOT orphan a marker whose element is no longer deferred, and does not leak it", () => {
+    // A FIXED site looks exactly like this: the element was migrated to a
+    // token-backed fill, so it holds no deferred pairing, the marker stayed, and
+    // the population is one smaller. Reporting that as a fault would mean the
+    // guard failed whenever a site was fixed.
+    //
+    // The other half matters just as much and is the reason this is a test: the
+    // later element must NOT inherit the earlier marker. That is guaranteed
+    // structurally — a marker is bound to the next JSX element and only to it —
+    // so the later pairing comes back with no identity and is a finding under the
+    // pin instead.
     const source = [
       "export function W() {",
       "  return (",
       '    <div className="flex">',
-      "      {/* contrast-site: stale */}",
+      "      {/* contrast-site: resolved */}",
       '      <span className="px-2 py-1 rounded-full">plain</span>',
       `      <span className="${X}">deferred</span>`,
       "    </div>",
@@ -1721,16 +1958,20 @@ describe("marker ownership, through the production identity path", () => {
       "}",
     ].join("\n");
     const found = inspect(source);
-    expect(kinds(found.faults)).toEqual(["orphanMarker"]);
-    expect(found.faults[0].identity).toBe("stale");
     expect(
-      found.faults[0].detail,
-      "the message must say the marker cannot be inherited",
-    ).toMatch(/cannot be inherited/);
+      kinds(found.faults),
+      "a marker on a FIXED element is not an orphan, and a marker followed by " +
+        "no element at all is a different case",
+    ).toEqual([]);
     expect(
       found.sites.map((s) => s.siteId),
-      "the later deferred element has no identity of its own",
+      "the later deferred element gets no identity — the earlier marker cannot " +
+        "be inherited",
     ).toEqual([null]);
+    expect(
+      kinds(siteFaults(found.sites, { resolved: [X] })),
+      "so the pin reports it as a new, unpinned site, which is the correct fault",
+    ).toEqual(["unidentified"]);
   });
 
   it("rejects two markers claiming one element as ambiguous", () => {
@@ -1856,47 +2097,16 @@ describe("marker ownership, through the production identity path", () => {
     ).toEqual(["site-a:changedForm", "site-b:changedForm"]);
   });
 
-  it("holds across the real tree: 22 elements, no ownership fault", () => {
-    // The real static inventory, so the durable tests above are anchored to a
-    // population that actually exists rather than only to fixtures.
-    const found = inspectRealTree();
-    expect(found.faults, describeIdentityFaults(found.faults)).toEqual([]);
-    expect(found.elements).toBe(22);
-    expect(found.occurrences).toBe(26);
-    expect(found.markers).toBe(21);
-    expect(found.missingIdentity).toBe(0);
+  it("holds across the real tree: every current site pinned, no ownership fault", () => {
+    // Integrity of the parser and the validation path against REAL source. This
+    // asserts nothing about how many sites exist: the population is expected to
+    // shrink every time a site is fixed, so any count here would be a floor
+    // that punishes progress. What must hold is that the scan resolves, every
+    // current site matches its own pin, and no identity is ambiguous.
+    const found = validateRealTree(WASH_SITE_PIN, PALETTE_SITE_PIN);
+    expect(
+      found.faults,
+      `${found.faults.length} fault(s) in the real tree:\n${found.faults.join("\n")}`,
+    ).toEqual([]);
   });
-
-  function inspectRealTree() {
-    const palette = tailwindPaletteMap(
-      readFileSync(
-        resolve(projectRoot, "node_modules/tailwindcss/theme.css"),
-        "utf-8",
-      ),
-    );
-    let elements = 0;
-    let occurrences = 0;
-    let markers = 0;
-    let missingIdentity = 0;
-    const faults: ReturnType<typeof identityFaults> = [];
-    for (const file of walkComponents(srcRoot)) {
-      const source = readFileSync(file, "utf-8");
-      markers += siteMarkers(source).length;
-      const sites = [
-        ...scanWashesInSource({ tokensCss, file, source }).failing,
-        ...scanPaletteInSource({ tokensCss, file, source, palette }).failing,
-      ];
-      const ctx = identityContext(source);
-      const ids = new Set<string | null>();
-      for (const site of sites) {
-        const id = resolveSiteId(ctx, site.offset);
-        ids.add(id);
-        if (!id) missingIdentity++;
-      }
-      elements += ids.size;
-      occurrences += sites.length;
-      faults.push(...identityFaults(ctx));
-    }
-    return { elements, occurrences, markers, missingIdentity, faults };
-  }
 });

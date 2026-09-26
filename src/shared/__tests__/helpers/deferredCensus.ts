@@ -297,8 +297,6 @@ export interface IdentityContext {
   tagIdentity: Map<number, string | null>;
   /** identity -> the distinct elements using it, for duplicate reporting */
   idOwners: Map<string, Set<number>>;
-  /** owning-tag starts that turned out to hold a deferred pairing */
-  deferredTags: Set<number>;
   /** marker end -> the marker that also claims the same element, if any */
   markerRival: Map<number, number>;
 }
@@ -337,7 +335,6 @@ export function identityContext(original: string): IdentityContext {
     markerRival,
     tagIdentity: new Map(),
     idOwners: new Map(),
-    deferredTags: new Set(),
   };
 }
 
@@ -350,8 +347,6 @@ export function identityContext(original: string): IdentityContext {
  * literal", because that let a marker above a non-deferred element name whatever
  * came next.
  *
- * Records the element as holding a deferred pairing, which is what makes a
- * marker whose element is not deferred detectable as an orphan afterwards.
  */
 export function resolveSiteId(
   ctx: IdentityContext,
@@ -377,7 +372,6 @@ export function resolveSiteId(
     ctx.idOwners.set(id, owners);
   }
   ctx.tagIdentity.set(tagStart, id);
-  ctx.deferredTags.add(tagStart);
   return id;
 }
 
@@ -400,10 +394,18 @@ export interface IdentityFault {
  *                               site is this?" has two answers. If their shapes
  *                               match, the multiset is identical to the healthy
  *                               case and every count-based check passes.
- *   orphanMarker                a comment that owns nothing — usually one whose
- *                               element stopped being deferred, or a leftover
- *                               from an edit. It protects nothing while looking
- *                               like protection.
+ *   orphanMarker                a comment that names NO element — a leftover
+ *                               from a deleted element, or a comment that
+ *                               nothing follows. It protects nothing while
+ *                               looking like protection.
+ *
+ *   A marker whose element exists but holds NO deferred pairing is NOT an orphan,
+ *   and that distinction is the whole point. It is what a FIXED site looks like:
+ *   the element was migrated to a token-backed fill, the marker stayed because
+ *   the pin entry it backs stays, and the population is one smaller. Reporting
+ *   that as a fault would mean the guard failed whenever a site was fixed, which
+ *   is precisely what the one-directional pin exists to permit. The stale entry is
+ *   the accepted cost, and the pin is the forward check.
  *   duplicateIdentity           one id reached from two different elements, by
  *                               marker or by an attribute. Same blindness as the
  *                               first: the shapes may be identical, so nothing
@@ -444,17 +446,6 @@ export function identityFaults(ctx: IdentityContext): IdentityFault[] {
           `element at all, so it names nothing.`,
       });
       continue;
-    }
-    if (!ctx.deferredTags.has(owner)) {
-      faults.push({
-        kind: "orphanMarker",
-        identity: marker.id,
-        detail:
-          `  the marker at line ${lineOf(marker.end)} names the element at line ` +
-          `${lineOf(owner)}, which holds no deferred pairing. The marker is ` +
-          `consumed by that element and cannot be inherited by a later one, so ` +
-          `it protects nothing.`,
-      });
     }
   }
 
