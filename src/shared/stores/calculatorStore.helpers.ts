@@ -20,6 +20,12 @@ import type { CurrencySetting } from "@/shared/lib/currency";
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 const SETTINGS_STORAGE_KEY = "open3dcalc_settings_v2";
 
+/** Cancel a stale debounced write before externally imported settings hydrate. */
+export function cancelPendingAutoSave(): void {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = null;
+}
+
 /** Merge writes into the existing payload so older/future user fields survive. */
 export function persistCalculatorSettings(
   patch: Record<string, unknown>,

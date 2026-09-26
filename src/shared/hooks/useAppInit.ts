@@ -25,12 +25,16 @@ import type { CalculationResult, CalculationSnapshot } from "@/shared/types";
  */
 
 type LegacyProduct = {
+  id?: string;
+  timestamp?: number;
   name?: string;
   result?: CalculationResult;
   snapshot?: Partial<CalculationSnapshot> | null;
 };
 
 type LegacyHistoryItem = {
+  id?: string;
+  timestamp?: number;
   type?: "fdm" | "resin";
   summary?: string;
   totalCost?: number;
@@ -76,33 +80,92 @@ function migrateLegacyData(): void {
   if (guardedStorage.getItem("open3dcalc_migration_done_v2")) return;
   if (existing > 0) return;
 
-  // Migrar productStore antigo
+  const migrateAndVerify = (
+    entries: Array<{
+      id?: string;
+      timestamp?: number;
+      type: "fdm" | "resin";
+      name: string;
+      summary: string;
+      totalCost: number;
+      sellPrice: number;
+      profit: number;
+      result: CalculationResult;
+      snapshot: CalculationSnapshot | null;
+    }>,
+  ): boolean => {
+    const expected: Array<Record<string, unknown>> = [];
+    for (const entry of entries) {
+      const id = historyStore.addEntry(entry);
+      const migrated = historyStore.getEntry(id);
+      if (!migrated) return false;
+      expected.push({
+        id,
+        timestamp: entry.timestamp ?? migrated.timestamp,
+        type: entry.type,
+        name: entry.name,
+        summary: entry.summary,
+        totalCost: entry.totalCost,
+        sellPrice: entry.sellPrice,
+        profit: entry.profit,
+        result: entry.result,
+        snapshot: entry.snapshot,
+      });
+    }
+    const migratedById = new Map(
+      useHistoryStore.getState().entries.map((entry) => [entry.id, entry]),
+    );
+    return expected.every((entry) => {
+      const migrated = migratedById.get(entry.id as string);
+      return (
+        migrated !== undefined &&
+        Object.entries(entry).every(
+          ([key, value]) =>
+            JSON.stringify(migrated[key as keyof typeof migrated]) ===
+            JSON.stringify(value),
+        )
+      );
+    });
+  };
+
+  // Only the old raw array represented the pre-Zustand product store. A
+  // Zustand wrapper is the current inventory and must never be discarded.
   try {
     const oldProducts = guardedStorage.getItem("open3dcalc_products");
     if (oldProducts) {
       const parsed = JSON.parse(oldProducts) as unknown;
       if (Array.isArray(parsed)) {
-        parsed.forEach((p) => {
+        const entries = parsed.flatMap((p) => {
           const product = p as LegacyProduct;
-          if (!product.result) return;
+          if (!product.result) return [];
           const type = product.snapshot?.type ?? "fdm";
           const summary =
             product.snapshot?.summary || product.name || "Produto";
           const totalCost = Number(product.result?.totalCost || 0);
           const sellPrice = Number(product.result?.sellPrice || 0);
-          historyStore.addEntry({
-            type,
-            name: product.name || "Produto",
-            summary,
-            totalCost,
-            sellPrice,
-            profit: sellPrice - totalCost,
-            result: product.result,
-            snapshot: (product.snapshot as CalculationSnapshot) || null,
-          });
+          return [
+            {
+              id: product.id,
+              timestamp: product.timestamp,
+              type,
+              name: product.name || "Produto",
+              summary,
+              totalCost,
+              sellPrice,
+              profit: sellPrice - totalCost,
+              result: product.result,
+              snapshot: (product.snapshot as CalculationSnapshot) || null,
+            },
+          ];
         });
+        // Do not discard unconvertible legacy records (for example entries
+        // without a calculation result). Migrate/remove only as a complete set.
+        if (entries.length === parsed.length && migrateAndVerify(entries)) {
+          // This key is distinct from the destination, so remove the legacy
+          // source only after every migrated field has been verified.
+          guardedStorage.removeItem("open3dcalc_products");
+        }
       }
-      guardedStorage.removeItem("open3dcalc_products");
     }
   } catch (error) {
     console.warn("Failed to migrate open3dcalc_products", error);
@@ -114,9 +177,11 @@ function migrateLegacyData(): void {
     if (oldHistory) {
       const parsed = JSON.parse(oldHistory) as unknown;
       if (Array.isArray(parsed)) {
-        parsed.forEach((item) => {
+        const entries = parsed.map((item) => {
           const legacyItem = item as LegacyHistoryItem;
-          historyStore.addEntry({
+          return {
+            id: legacyItem.id,
+            timestamp: legacyItem.timestamp,
             type: legacyItem.type || "fdm",
             name: legacyItem.summary || "Histórico",
             summary: legacyItem.summary || "",
@@ -125,9 +190,12 @@ function migrateLegacyData(): void {
             profit: legacyItem.profit || 0,
             result: legacyItem.result || FALLBACK_RESULT,
             snapshot: legacyItem.snapshot || null,
-          });
+          };
         });
-        guardedStorage.removeItem("open3dcalc_history_v2");
+        // The legacy source key is also the current Zustand destination key.
+        // addEntry replaces the raw array with its persist wrapper; deleting
+        // this key here would delete the just-migrated entries as well.
+        migrateAndVerify(entries);
       }
     }
   } catch (error) {

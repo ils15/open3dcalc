@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const storageGetItem = vi.hoisted(() => vi.fn());
 const storageSetItem = vi.hoisted(() => vi.fn());
 const storageRemoveItem = vi.hoisted(() => vi.fn());
+const storageValues = vi.hoisted(() => new Map<string, string>());
 const calculatorSetState = vi.hoisted(() => vi.fn());
 const calculatorState = vi.hoisted(() => ({
   current: null as Record<string, unknown> | null,
@@ -14,20 +15,23 @@ const sharedCalculation = vi.hoisted(() => ({
 
 vi.mock("@/shared/lib/manifestStorage", () => ({
   guardedStorage: {
-    getItem: storageGetItem,
-    setItem: storageSetItem,
-    removeItem: storageRemoveItem,
+    getItem: (key: string) => storageGetItem(key),
+    setItem: (key: string, value: string) => storageSetItem(key, value),
+    removeItem: (key: string) => storageRemoveItem(key),
   },
+  manifestStorage: () => ({
+    getItem: (key: string) => {
+      const value = storageGetItem(key);
+      return value === null ? null : JSON.parse(value);
+    },
+    setItem: (key: string, value: unknown) =>
+      storageSetItem(key, JSON.stringify(value)),
+    removeItem: (key: string) => storageRemoveItem(key),
+  }),
 }));
 
 vi.mock("@/shared/stores/storeBridge", () => ({
   restoreAutoSnapshot: vi.fn(),
-}));
-
-vi.mock("@/shared/stores/historyStore", () => ({
-  useHistoryStore: {
-    getState: () => ({ entries: [], addEntry: vi.fn() }),
-  },
 }));
 
 vi.mock("@/shared/stores/calculatorStore", () => ({
@@ -56,18 +60,30 @@ vi.mock("@/shared/hooks/useTutorialTabNavigation", () => ({
 }));
 
 import { useAppInit } from "../useAppInit";
+import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 
 describe("useAppInit tutorial auto-start", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    storageValues.clear();
+    storageGetItem.mockImplementation(
+      (key: string) => storageValues.get(key) ?? null,
+    );
+    storageSetItem.mockImplementation((key: string, value: string) => {
+      storageValues.set(key, value);
+    });
+    storageRemoveItem.mockImplementation((key: string) => {
+      storageValues.delete(key);
+    });
+    useHistoryStore.setState({ entries: [] });
     sharedCalculation.current = null;
     calculatorState.current = null;
     vi.useFakeTimers();
     localStorage.clear();
     storageGetItem.mockImplementation((key: string) =>
-      key === "open3dcalc_onboarded" ? "1" : null,
+      key === "open3dcalc_onboarded" ? "1" : (storageValues.get(key) ?? null),
     );
     useLayoutStore.setState({ layoutMode: "classic" });
     useTutorialStore.setState({
@@ -192,5 +208,173 @@ describe("useAppInit tutorial auto-start", () => {
     expect(saved.currency).toBe("GBP");
     expect(saved.quantity).toBe(3);
     expect(saved.futureUserField).toEqual({ keep: true });
+  });
+
+  it("does not delete the current product-store wrapper when history is empty", () => {
+    const wrapper = JSON.stringify({
+      state: { products: [{ id: "product-1", name: "Peça salva" }] },
+      version: 1,
+    });
+    storageValues.set("open3dcalc_products", wrapper);
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    expect(storageValues.get("open3dcalc_products")).toBe(wrapper);
+    expect(useHistoryStore.getState().entries).toEqual([]);
+  });
+
+  it("migrates literal legacy products without removing the source before verifying the entries", () => {
+    const result = {
+      totalCost: 12.5,
+      sellPrice: 25,
+      profit: 12.5,
+      materialCost: 8,
+      energyCost: 1,
+      machineCost: 2,
+      hardwareCost: 0,
+      consumablesCost: 0,
+      laborCost: 0.5,
+      softwareCost: 0,
+      failureCost: 0,
+      extrasCost: 0,
+      postProcessingCost: 1,
+      subtotal: 12.5,
+      marketplaceFee: 0,
+      taxAmount: 0,
+      costPerGram: 0.25,
+      costPerUnit: 12.5,
+      unitWeight: 50,
+      estimatedPrintTime: 2,
+      targetMarginPercent: 50,
+      breakEvenPrice: 12.5,
+      actualMargin: 50,
+      carbonFootprintGrams: 3,
+    };
+    const snapshot = { type: "resin" as const, summary: "Resina • azul" };
+    const legacyProducts = [
+      {
+        id: "legacy-product-7",
+        timestamp: 1_700_000_000_007,
+        name: "Peça 🧪",
+        result,
+        snapshot,
+      },
+    ];
+    storageValues.set("open3dcalc_products", JSON.stringify(legacyProducts));
+    const expectedEntry = {
+      id: "legacy-product-7",
+      timestamp: 1_700_000_000_007,
+      type: "resin",
+      name: "Peça 🧪",
+      summary: "Resina • azul",
+      totalCost: 12.5,
+      sellPrice: 25,
+      profit: 12.5,
+      result,
+      snapshot,
+    };
+    let verifiedAtRemoval = false;
+    storageRemoveItem.mockImplementation((key: string) => {
+      if (key === "open3dcalc_products") {
+        verifiedAtRemoval =
+          JSON.stringify(useHistoryStore.getState().entries) ===
+          JSON.stringify([expectedEntry]);
+      }
+      storageValues.delete(key);
+    });
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    const migrated = useHistoryStore.getState().entries;
+    expect(migrated).toHaveLength(1);
+    expect(migrated[0]).toEqual(expectedEntry);
+    expect(verifiedAtRemoval).toBe(true);
+    expect(storageValues.has("open3dcalc_products")).toBe(false);
+
+    renderHook(() => useAppInit(vi.fn()));
+    expect(useHistoryStore.getState().entries).toEqual(migrated);
+  });
+
+  it("keeps unconvertible legacy product records instead of dropping their source", () => {
+    const raw = JSON.stringify([
+      { id: "legacy-without-result", name: "Salvo" },
+    ]);
+    storageValues.set("open3dcalc_products", raw);
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    expect(storageValues.get("open3dcalc_products")).toBe(raw);
+    expect(useHistoryStore.getState().entries).toEqual([]);
+    expect(storageRemoveItem).not.toHaveBeenCalledWith("open3dcalc_products");
+  });
+
+  it("retains and verifies legacy history in its destination key without deleting it", () => {
+    const result = {
+      totalCost: 18,
+      sellPrice: 36,
+      profit: 18,
+      materialCost: 12,
+      energyCost: 2,
+      machineCost: 2,
+      hardwareCost: 0,
+      consumablesCost: 0,
+      laborCost: 1,
+      softwareCost: 0,
+      failureCost: 0,
+      extrasCost: 0,
+      postProcessingCost: 1,
+      subtotal: 18,
+      marketplaceFee: 0,
+      taxAmount: 0,
+      costPerGram: 0.3,
+      costPerUnit: 18,
+      unitWeight: 60,
+      estimatedPrintTime: 3,
+      targetMarginPercent: 50,
+      breakEvenPrice: 18,
+      actualMargin: 50,
+      carbonFootprintGrams: 4,
+    };
+    const snapshot = { type: "fdm" as const, summary: "PETG café" };
+    storageValues.set(
+      "open3dcalc_history_v2",
+      JSON.stringify([
+        {
+          id: "legacy-history-9",
+          timestamp: 1_700_000_000_009,
+          type: "fdm",
+          summary: "PETG café",
+          totalCost: 18,
+          sellPrice: 36,
+          profit: 18,
+          result,
+          snapshot,
+        },
+      ]),
+    );
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    const migrated = useHistoryStore.getState().entries;
+    expect(migrated).toHaveLength(1);
+    expect(migrated[0]).toEqual({
+      id: "legacy-history-9",
+      timestamp: 1_700_000_000_009,
+      type: "fdm",
+      name: "PETG café",
+      summary: "PETG café",
+      totalCost: 18,
+      sellPrice: 36,
+      profit: 18,
+      result,
+      snapshot,
+    });
+    expect(storageValues.has("open3dcalc_history_v2")).toBe(true);
+    expect(
+      JSON.parse(storageValues.get("open3dcalc_history_v2")!).state.entries,
+    ).toEqual(migrated);
+
+    renderHook(() => useAppInit(vi.fn()));
+    expect(useHistoryStore.getState().entries).toEqual(migrated);
   });
 });

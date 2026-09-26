@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   collectSyncData,
   validateBundle,
@@ -9,9 +9,11 @@ import {
   encryptData,
   decryptData,
   hashData,
+  importData,
   type SyncData,
   type EncryptedBundle,
 } from "@/shared/lib/dataSync";
+import { createExportEnvelope } from "@/shared/lib/exportEnvelope";
 import { APP_VERSION } from "@/shared/version";
 
 /* ------------------------------------------------------------------ */
@@ -27,6 +29,8 @@ function emptySyncData(): SyncData {
     catalog: { printers: [], materials: [], marketplaces: [] },
     filaments: [],
     products: [],
+    colorPalette: [],
+    modelComparison: [],
     theme: "",
     dashboard: {},
     sections: {},
@@ -99,6 +103,91 @@ function base64ToBytes(b64: string): Uint8Array {
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
+}
+
+const MANIFEST_EXPORT_KEYS = [
+  "open3dcalc_settings_v2",
+  "open3dcalc_history_v2",
+  "open3dcalc_customers_v1",
+  "open3dcalc_quotes_v1",
+  "open3dcalc_catalog_v1",
+  "open3dcalc_filaments",
+  "open3dcalc_products",
+  "open3dcalc_theme",
+  "open3dcalc_dashboard_v1",
+  "open3dcalc_dashboard_goal",
+  "open3dcalc_sections",
+  "open3dcalc_color_palette_v1",
+  "open3dcalc_model_comparison",
+] as const;
+
+function fullRoundTripFixture(): SyncData {
+  return {
+    settings: {
+      activeTab: "resin",
+      quantity: 7,
+      selectedPrinterId: "printer-custom-🖨️",
+      selectedMarketplaceId: "market-place-東京",
+      futureSetting: { label: "futuro 🔭", enabled: true },
+    },
+    history: [
+      {
+        id: "hist-β-1",
+        timestamp: 1_700_000_000_001,
+        type: "resin",
+        name: "Protótipo 🧪",
+        summary: "Resina violeta",
+        totalCost: 31.25,
+        sellPrice: 62.5,
+        profit: 31.25,
+        result: { totalCost: 31.25, sellPrice: 62.5, profit: 31.25 },
+        snapshot: { selectedPrinterId: "printer-custom-🖨️" },
+      },
+    ],
+    customers: [{ id: "customer-東京", name: "Zoë 🦊" }],
+    quotes: [{ id: "quote-007", number: 7, total: 62.5 }],
+    quotesNextNumber: 8,
+    catalog: {
+      printers: [
+        { id: "printer-custom-🖨️", name: "Minha impressora", custom: true },
+      ],
+      materials: [{ id: "material-紫", name: "Resina violeta", custom: true }],
+      marketplaces: [
+        { id: "market-place-東京", name: "東京市場", custom: true },
+      ],
+    },
+    filaments: [{ id: "filament-λ", brand: "Filamento Ω" }],
+    products: [
+      {
+        id: "product-β",
+        name: "Peça final",
+        quantity: 2,
+        result: { totalCost: 31.25 },
+      },
+    ],
+    theme: "dark",
+    dashboard: { chartType: "profit", goal: "€ 2.000" },
+    sections: { costs: true, labor: false },
+    colorPalette: [{ id: "color-azul", name: "Azul oceano", hex: "#0af" }],
+    modelComparison: [
+      {
+        id: "comparison-β",
+        fileName: "peça-final.stl",
+        dimensions: { x: 12.5, y: 18, z: 4 },
+        volumeCm3: 2.4,
+        weight: 31,
+        printTimeHours: 1.75,
+        triangleCount: 247,
+      },
+    ],
+  } as SyncData;
+}
+
+function localStorageSnapshot(): [string, string][] {
+  return Array.from({ length: localStorage.length }, (_, index) => {
+    const key = localStorage.key(index)!;
+    return [key, localStorage.getItem(key)!] as [string, string];
+  }).sort(([a], [b]) => a.localeCompare(b));
 }
 
 /* ------------------------------------------------------------------ */
@@ -577,5 +666,269 @@ describe("importBundle error handling", () => {
     const bundle = await exportBundle();
     const corrupted = { ...bundle, checksum: "invalid-checksum-value" };
     await expect(importBundle(corrupted)).rejects.toThrow("checksum");
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  User import compatibility + no-write gate                           */
+/* ------------------------------------------------------------------ */
+
+function seedFromSyncData(data: SyncData): void {
+  localStorage.setItem("open3dcalc_settings_v2", JSON.stringify(data.settings));
+  localStorage.setItem(
+    "open3dcalc_history_v2",
+    JSON.stringify({ state: { entries: data.history }, version: 2 }),
+  );
+  localStorage.setItem(
+    "open3dcalc_customers_v1",
+    JSON.stringify({ state: { customers: data.customers }, version: 1 }),
+  );
+  localStorage.setItem(
+    "open3dcalc_quotes_v1",
+    JSON.stringify({
+      state: { quotes: data.quotes, nextNumber: data.quotesNextNumber },
+      version: 1,
+    }),
+  );
+  localStorage.setItem("open3dcalc_catalog_v1", JSON.stringify(data.catalog));
+  localStorage.setItem("open3dcalc_filaments", JSON.stringify(data.filaments));
+  localStorage.setItem(
+    "open3dcalc_products",
+    JSON.stringify({ state: { products: data.products ?? [] }, version: 1 }),
+  );
+  localStorage.setItem("open3dcalc_theme", data.theme);
+  const { goal, ...dashboard } = data.dashboard;
+  localStorage.setItem("open3dcalc_dashboard_v1", JSON.stringify(dashboard));
+  if (typeof goal === "string")
+    localStorage.setItem("open3dcalc_dashboard_goal", goal);
+  localStorage.setItem("open3dcalc_sections", JSON.stringify(data.sections));
+  localStorage.setItem(
+    "open3dcalc_color_palette_v1",
+    JSON.stringify(data.colorPalette ?? []),
+  );
+  localStorage.setItem(
+    "open3dcalc_model_comparison",
+    JSON.stringify({
+      state: { entries: data.modelComparison ?? [] },
+      version: 1,
+    }),
+  );
+}
+
+function importFile(text: string): File {
+  return new File([text], "synthetic.open3dcalc", { type: "application/json" });
+}
+
+describe("dataSync user import compatibility and no-write gate", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("round-trips all supported user data in encrypted v1.1 envelopes", async () => {
+    const fixture = fullRoundTripFixture();
+    seedFromSyncData(fixture);
+    const before = collectSyncData();
+    const envelope = await createExportEnvelope(before, "synthetic-password");
+    localStorage.clear();
+
+    const result = await importData(importFile(envelope), {
+      password: "synthetic-password",
+      mode: "replace",
+    });
+
+    expect(result.errors).toBe(0);
+    expect(collectSyncData()).toEqual(before);
+    expect(collectSyncData().settings.futureSetting).toEqual({
+      label: "futuro 🔭",
+      enabled: true,
+    });
+  });
+
+  it("round-trips legacy encrypted 1.0 bundles while retaining IDs and fields", async () => {
+    const fixture = fullRoundTripFixture();
+    seedFromSyncData(fixture);
+    const before = collectSyncData();
+    const legacyBundle = await exportBundle("legacy synthetic password");
+    localStorage.clear();
+
+    const result = await importData(importFile(JSON.stringify(legacyBundle)), {
+      password: "legacy synthetic password",
+      mode: "replace",
+    });
+
+    expect(result.errors).toBe(0);
+    expect(collectSyncData()).toEqual(before);
+  });
+
+  it("exports the current supported empty defaults for optional manifest data", () => {
+    expect(collectSyncData()).toEqual({
+      ...emptySyncData(),
+      colorPalette: [],
+      modelComparison: [],
+    });
+  });
+
+  it("rejects invalid files without any Storage mutation or raw-key changes", async () => {
+    const validData = fullRoundTripFixture();
+    const goodEnvelope = JSON.parse(
+      await createExportEnvelope(validData, "synthetic-password"),
+    ) as Record<string, unknown>;
+    const tampered = structuredClone(goodEnvelope) as Record<string, unknown>;
+    const tamperedPayload = tampered.payload as Record<string, unknown>;
+    const tamperedCiphertext = tamperedPayload.ciphertext_base64 as string;
+    tamperedPayload.ciphertext_base64 = `${tamperedCiphertext[0] === "A" ? "B" : "A"}${tamperedCiphertext.slice(1)}`;
+    const badHeader = structuredClone(goodEnvelope) as Record<string, unknown>;
+    const badKdf = badHeader.kdf as Record<string, unknown>;
+    badKdf.iterations = (badKdf.iterations as number) + 1;
+    const badLimits = structuredClone(goodEnvelope) as Record<string, unknown>;
+    const changedLimits = badLimits.limits as Record<string, unknown>;
+    changedLimits.records = (changedLimits.records as number) + 1;
+    const badDigest = structuredClone(goodEnvelope) as Record<string, unknown>;
+    const badIntegrity = badDigest.integrity as Record<string, unknown>;
+    badIntegrity.plaintext_digest_hex = "0".repeat(64);
+    const malformedAuthenticated = await createExportEnvelope(
+      { ...validData, history: null } as unknown as SyncData,
+      "synthetic-password",
+    );
+    const malformedSectionsAuthenticated = await createExportEnvelope(
+      { ...validData, sections: { costs: "enabled" } } as unknown as SyncData,
+      "synthetic-password",
+    );
+    const missingComparisonPayload: Record<string, unknown> = { ...validData };
+    delete missingComparisonPayload.modelComparison;
+    const missingComparisonAuthenticated = await createExportEnvelope(
+      missingComparisonPayload as unknown as SyncData,
+      "synthetic-password",
+    );
+    const legacyBundle = await exportBundle("legacy synthetic password");
+    const malformedLegacy = {
+      version: "1.0",
+      format: "open3dcalc-export",
+      exportedAt: new Date(0).toISOString(),
+      appVersion: APP_VERSION,
+      platform: "web",
+      encrypted: false,
+      data: { settings: {}, history: null },
+    };
+    const invalidLegacyChecksum = {
+      version: "1.0",
+      format: "open3dcalc-export",
+      exportedAt: new Date(0).toISOString(),
+      appVersion: APP_VERSION,
+      platform: "web",
+      encrypted: false,
+      checksum: "invalid-checksum",
+      data: validData,
+    };
+    const cases: Array<{
+      name: string;
+      text: string;
+      password?: string;
+    }> = [
+      { name: "malformed JSON", text: "{not json" },
+      { name: "invalid v1.0 shape", text: JSON.stringify(malformedLegacy) },
+      {
+        name: "unsupported v1.0 version",
+        text: JSON.stringify({ ...malformedLegacy, version: "9.0" }),
+      },
+      { name: "missing v1.1 password", text: JSON.stringify(goodEnvelope) },
+      {
+        name: "wrong v1.1 password",
+        text: JSON.stringify(goodEnvelope),
+        password: "wrong-password",
+      },
+      {
+        name: "tampered authentication tag",
+        text: JSON.stringify(tampered),
+        password: "synthetic-password",
+      },
+      {
+        name: "invalid header",
+        text: JSON.stringify(badHeader),
+        password: "synthetic-password",
+      },
+      {
+        name: "invalid declared limits",
+        text: JSON.stringify(badLimits),
+        password: "synthetic-password",
+      },
+      {
+        name: "plaintext digest mismatch",
+        text: JSON.stringify(badDigest),
+        password: "synthetic-password",
+      },
+      {
+        name: "authenticated but malformed v1.1 SyncData",
+        text: malformedAuthenticated,
+        password: "synthetic-password",
+      },
+      {
+        name: "authenticated v1.1 sections with malformed values",
+        text: malformedSectionsAuthenticated,
+        password: "synthetic-password",
+      },
+      {
+        name: "authenticated v1.1 missing a current supported key",
+        text: missingComparisonAuthenticated,
+        password: "synthetic-password",
+      },
+      {
+        name: "missing legacy 1.0 password",
+        text: JSON.stringify(legacyBundle),
+      },
+      {
+        name: "wrong legacy 1.0 password",
+        text: JSON.stringify(legacyBundle),
+        password: "wrong-password",
+      },
+      {
+        name: "legacy checksum mismatch",
+        text: JSON.stringify(invalidLegacyChecksum),
+      },
+    ];
+
+    localStorage.clear();
+    for (const [index, key] of MANIFEST_EXPORT_KEYS.entries()) {
+      if (index % 2 === 0)
+        localStorage.setItem(key, `raw:${key}:keep-${index}`);
+    }
+    const before = localStorageSnapshot();
+    expect(MANIFEST_EXPORT_KEYS).toEqual([
+      "open3dcalc_settings_v2",
+      "open3dcalc_history_v2",
+      "open3dcalc_customers_v1",
+      "open3dcalc_quotes_v1",
+      "open3dcalc_catalog_v1",
+      "open3dcalc_filaments",
+      "open3dcalc_products",
+      "open3dcalc_theme",
+      "open3dcalc_dashboard_v1",
+      "open3dcalc_dashboard_goal",
+      "open3dcalc_sections",
+      "open3dcalc_color_palette_v1",
+      "open3dcalc_model_comparison",
+    ]);
+    expect(before.map(([key]) => key)).toEqual(
+      MANIFEST_EXPORT_KEYS.filter((_, index) => index % 2 === 0).sort(),
+    );
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    const removeItem = vi.spyOn(Storage.prototype, "removeItem");
+    const clear = vi.spyOn(Storage.prototype, "clear");
+
+    for (const testCase of cases) {
+      await expect(
+        importData(importFile(testCase.text), {
+          password: testCase.password,
+          mode: "replace",
+        }),
+        testCase.name,
+      ).rejects.toThrow();
+      expect(localStorageSnapshot(), testCase.name).toEqual(before);
+      expect(setItem, testCase.name).not.toHaveBeenCalled();
+      expect(removeItem, testCase.name).not.toHaveBeenCalled();
+      expect(clear, testCase.name).not.toHaveBeenCalled();
+    }
+
+    setItem.mockRestore();
+    removeItem.mockRestore();
+    clear.mockRestore();
   });
 });

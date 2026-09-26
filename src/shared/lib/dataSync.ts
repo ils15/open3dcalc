@@ -23,6 +23,20 @@ import {
 } from "./exportEnvelope";
 import { downloadBlob } from "./download";
 import { APP_VERSION } from "@/shared/version";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { cancelPendingAutoSave } from "@/shared/stores/calculatorStore.helpers";
+import { computeValidatedStoreResults } from "@/shared/stores/calculatorStore.validation";
+import { useHistoryStore } from "@/shared/stores/historyStore";
+import { useCustomerStore } from "@/shared/stores/customerStore";
+import { useQuoteStore } from "@/shared/stores/quoteStore";
+import { useProductInventory } from "@/shared/stores/productInventory";
+import {
+  useColorPalette,
+  type CustomColor,
+} from "@/shared/stores/colorPalette";
+import { useModelComparison } from "@/shared/stores/modelComparison";
+import { printers } from "@/shared/lib/printers";
+import { marketplaces } from "@/shared/lib/marketplace";
 
 export const SYNC_FORMAT = "open3dcalc-export" as const;
 export const SYNC_VERSION = "1.0" as const;
@@ -58,6 +72,9 @@ export interface SyncData {
    * exported before Issue #68.
    */
   products?: unknown[]; // open3dcalc_products (zustand persist wrapper)
+  /** Optional in v1.0 bundles created before these manifest keys were supported. */
+  colorPalette?: unknown[]; // open3dcalc_color_palette_v1
+  modelComparison?: unknown[]; // open3dcalc_model_comparison.entries
   theme: string; // open3dcalc_theme
   dashboard: Record<string, unknown>; // open3dcalc_dashboard_v1 + goal
   sections: Record<string, boolean>; // open3dcalc_sections
@@ -100,7 +117,19 @@ const KEYS = {
   dashboard: "open3dcalc_dashboard_v1",
   dashboardGoal: "open3dcalc_dashboard_goal",
   sections: "open3dcalc_sections",
+  colorPalette: "open3dcalc_color_palette_v1",
+  modelComparison: "open3dcalc_model_comparison",
 } as const;
+
+const PERSIST_VERSIONS: Partial<
+  Record<(typeof KEYS)[keyof typeof KEYS], number>
+> = {
+  [KEYS.history]: 2,
+  [KEYS.customers]: 1,
+  [KEYS.quotes]: 1,
+  [KEYS.products]: 1,
+  [KEYS.modelComparison]: 1,
+};
 
 /* ------------------------------------------------------------------ */
 /*  Base64 helpers                                                     */
@@ -158,7 +187,7 @@ function readPlainJSON<T>(key: string, def: T): T {
   }
 }
 
-function readPersistState(key: string): {
+function readPersistState(key: (typeof KEYS)[keyof typeof KEYS]): {
   state: Record<string, unknown>;
   version: number;
 } {
@@ -172,7 +201,7 @@ function readPersistState(key: string): {
       /* ignore malformed value */
     }
   }
-  return { state: {}, version: 0 };
+  return { state: {}, version: PERSIST_VERSIONS[key] ?? 0 };
 }
 
 /** Unwrap a zustand persist wrapper; falls back to the raw object. */
@@ -208,7 +237,10 @@ function writeJSON(key: string, value: unknown): void {
 }
 
 /** Patch a persist-wrapped key, keeping its other state fields and version. */
-function writePersistState(key: string, patch: Record<string, unknown>): void {
+function writePersistState(
+  key: (typeof KEYS)[keyof typeof KEYS],
+  patch: Record<string, unknown>,
+): void {
   const { state, version } = readPersistState(key);
   guardedStorage.setItem(
     key,
@@ -280,6 +312,14 @@ export function collectSyncData(): SyncData {
       ? productsRaw
       : [];
 
+  const modelComparisonRaw = readPlainJSON<unknown>(KEYS.modelComparison, null);
+  const modelComparisonState = unwrapPersist(modelComparisonRaw);
+  const modelComparison = Array.isArray(modelComparisonState.entries)
+    ? modelComparisonState.entries
+    : Array.isArray(modelComparisonRaw)
+      ? modelComparisonRaw
+      : [];
+
   const dashboardRaw = readPlainJSON<Record<string, unknown>>(
     KEYS.dashboard,
     {},
@@ -305,6 +345,8 @@ export function collectSyncData(): SyncData {
     },
     filaments: Array.isArray(filamentsRaw) ? filamentsRaw : [],
     products,
+    colorPalette: readPlainJSON<unknown[]>(KEYS.colorPalette, []),
+    modelComparison,
     theme: getRaw(KEYS.theme) ?? "",
     dashboard,
     sections,
@@ -318,6 +360,22 @@ export function collectSyncData(): SyncData {
 function isSyncData(value: unknown): value is SyncData {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const d = value as Record<string, unknown>;
+  const supportedFields = new Set([
+    "settings",
+    "history",
+    "customers",
+    "quotes",
+    "quotesNextNumber",
+    "catalog",
+    "filaments",
+    "products",
+    "colorPalette",
+    "modelComparison",
+    "theme",
+    "dashboard",
+    "sections",
+  ]);
+  if (Object.keys(d).some((key) => !supportedFields.has(key))) return false;
   if (
     !d.settings ||
     typeof d.settings !== "object" ||
@@ -329,6 +387,17 @@ function isSyncData(value: unknown): value is SyncData {
   if (!Array.isArray(d.quotes)) return false;
   if (!Array.isArray(d.filaments)) return false;
   if (d.products !== undefined && !Array.isArray(d.products)) return false;
+  if (d.colorPalette !== undefined && !Array.isArray(d.colorPalette))
+    return false;
+  if (d.modelComparison !== undefined && !Array.isArray(d.modelComparison))
+    return false;
+  if (
+    d.quotesNextNumber !== undefined &&
+    (typeof d.quotesNextNumber !== "number" ||
+      !Number.isFinite(d.quotesNextNumber) ||
+      d.quotesNextNumber < 1)
+  )
+    return false;
   if (typeof d.theme !== "string") return false;
   if (
     !d.dashboard ||
@@ -342,6 +411,8 @@ function isSyncData(value: unknown): value is SyncData {
     Array.isArray(d.sections)
   )
     return false;
+  if (Object.values(d.sections).some((enabled) => typeof enabled !== "boolean"))
+    return false;
   const catalog = d.catalog;
   if (!catalog || typeof catalog !== "object" || Array.isArray(catalog))
     return false;
@@ -350,6 +421,14 @@ function isSyncData(value: unknown): value is SyncData {
     Array.isArray(c.printers) &&
     Array.isArray(c.materials) &&
     Array.isArray(c.marketplaces)
+  );
+}
+
+function isCurrentEnvelopeSyncData(value: unknown): value is SyncData {
+  return (
+    isSyncData(value) &&
+    Array.isArray(value.colorPalette) &&
+    Array.isArray(value.modelComparison)
   );
 }
 
@@ -559,12 +638,20 @@ export function applySyncData(
       typeof local.state.nextNumber === "number" ? local.state.nextNumber : 1;
     const importedNext =
       typeof data.quotesNextNumber === "number" ? data.quotesNextNumber : 1;
-    // Next number must be strictly greater than anything used on either
-    // device to avoid quote-number collisions.
-    const nextNumber = Math.max(localNext, importedNext) + 1;
     if (mode === "replace") {
-      writePersistState(KEYS.quotes, { quotes: data.quotes, nextNumber });
+      const minimumNext = data.quotes.reduce<number>((maximum, quote) => {
+        const number = (quote as { number?: unknown } | null)?.number;
+        return typeof number === "number"
+          ? Math.max(maximum, number + 1)
+          : maximum;
+      }, 1);
+      writePersistState(KEYS.quotes, {
+        quotes: data.quotes,
+        nextNumber: Math.max(importedNext, minimumNext),
+      });
     } else {
+      // A merge must avoid collisions with quote numbers from either device.
+      const nextNumber = Math.max(localNext, importedNext) + 1;
       const { merged, conflicts: c } = mergeById(localQuotes, data.quotes);
       writePersistState(KEYS.quotes, { quotes: merged, nextNumber });
       if (c > 0) conflicts.push("quotes");
@@ -629,7 +716,135 @@ export function applySyncData(
     imported.push("sections");
   }
 
+  const incomingColors = data.colorPalette ?? [];
+  if (incomingColors.length > 0 || mode === "replace") {
+    const localColors = readPlainJSON<unknown[]>(KEYS.colorPalette, []);
+    if (mode === "replace") {
+      writeJSON(KEYS.colorPalette, incomingColors);
+    } else {
+      const { merged, conflicts: c } = mergeById(localColors, incomingColors);
+      writeJSON(KEYS.colorPalette, merged);
+      if (c > 0) conflicts.push("colorPalette");
+    }
+    imported.push("colorPalette");
+  }
+
+  const incomingComparisons = data.modelComparison ?? [];
+  if (incomingComparisons.length > 0 || mode === "replace") {
+    const local = readPersistState(KEYS.modelComparison);
+    const localEntries = Array.isArray(local.state.entries)
+      ? local.state.entries
+      : [];
+    if (mode === "replace") {
+      writePersistState(KEYS.modelComparison, { entries: incomingComparisons });
+    } else {
+      const { merged, conflicts: c } = mergeById(
+        localEntries,
+        incomingComparisons,
+      );
+      writePersistState(KEYS.modelComparison, { entries: merged });
+      if (c > 0) conflicts.push("modelComparison");
+    }
+    imported.push("modelComparison");
+  }
+
+  synchronizeActiveStores(data, mode);
+
   return { imported, conflicts };
+}
+
+const CALCULATOR_SETTING_KEYS = [
+  "activeTab",
+  "fdmMaterial",
+  "fdmPrintParams",
+  "fdmSlicerProfile",
+  "fdmFilament",
+  "fdmMachine",
+  "fdmHardware",
+  "fdmFinishing",
+  "fdmLabor",
+  "fdmExtras",
+  "fdmSales",
+  "fdmOps",
+  "fdmSoft",
+  "resinMaterial",
+  "resinPrintParams",
+  "resinPostProcess",
+  "resinMachine",
+  "resinHardware",
+  "resinLabor",
+  "resinExtras",
+  "resinSales",
+  "resinOps",
+  "resinSoft",
+  "fdmAmsSlots",
+  "fixedCosts",
+  "productName",
+  "quantity",
+  "infillPercent",
+  "targetMarginMode",
+  "enabledSections",
+  "calcLevel",
+  "hiddenFields",
+  "currency",
+] as const;
+
+function synchronizeActiveStores(
+  data: SyncData,
+  mode: "merge" | "replace",
+): void {
+  useHistoryStore.persist.rehydrate();
+  useCustomerStore.persist.rehydrate();
+  useQuoteStore.persist.rehydrate();
+  useProductInventory.persist.rehydrate();
+  useModelComparison.persist.rehydrate();
+  useColorPalette.setState({
+    colors: readPlainJSON<CustomColor[]>(KEYS.colorPalette, []),
+  });
+
+  if (!hasContent(data.settings) && mode !== "replace") return;
+
+  cancelPendingAutoSave();
+  const current = useCalculatorStore.getState();
+  const merged: Record<string, unknown> = { ...current };
+  for (const key of CALCULATOR_SETTING_KEYS) {
+    if (Object.hasOwn(data.settings, key)) merged[key] = data.settings[key];
+  }
+
+  const selectedPrinterId = data.settings.selectedPrinterId;
+  if (typeof selectedPrinterId === "string") {
+    const selected =
+      printers.find((printer) => printer.id === selectedPrinterId) ??
+      data.catalog.printers.find(
+        (printer) =>
+          !!printer &&
+          typeof printer === "object" &&
+          (printer as { id?: unknown }).id === selectedPrinterId,
+      );
+    if (selected) merged.selectedPrinter = selected;
+  }
+  const selectedMarketplaceId = data.settings.selectedMarketplaceId;
+  if (typeof selectedMarketplaceId === "string") {
+    const selected =
+      marketplaces.find(
+        (marketplace) => marketplace.id === selectedMarketplaceId,
+      ) ??
+      data.catalog.marketplaces.find(
+        (marketplace) =>
+          !!marketplace &&
+          typeof marketplace === "object" &&
+          (marketplace as { id?: unknown }).id === selectedMarketplaceId,
+      );
+    if (selected) merged.selectedMarketplace = selected;
+  }
+
+  const validated = computeValidatedStoreResults(merged);
+  useCalculatorStore.setState({
+    ...merged,
+    ...validated.input,
+    results: validated.results,
+    calculationIssues: validated.calculationIssues,
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -967,6 +1182,12 @@ export async function importData(
     }
     try {
       const payload = await readExportEnvelope(fileText, options.password);
+      if (!isCurrentEnvelopeSyncData(payload)) {
+        throw dataSyncError(
+          "INVALID_FILE",
+          "Conteúdo do arquivo inválido: a estrutura de dados não é reconhecida.",
+        );
+      }
       const result = applySyncData(payload, options.mode);
       return {
         imported: result.imported.length,
