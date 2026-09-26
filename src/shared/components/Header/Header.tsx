@@ -147,11 +147,18 @@ export function Header() {
                     id="header-currency-menu"
                     role="menu"
                     aria-label={t("settings.currency")}
-                    className="fixed z-[60] w-44 rounded-xl shadow-2xl overflow-hidden surface border border-[var(--border-subtle)]"
+                    className="fixed w-44 rounded-xl shadow-2xl overflow-hidden surface border border-[var(--border-subtle)]"
                     style={{
                       position: "fixed",
                       top: currencyMenuPos.top,
                       right: currencyMenuPos.right,
+                      // --z-dropdown, where every other menu lives. This was a
+                      // bare z-[60] — a magic literal that merely happened to
+                      // equal a declared step, which is how two surfaces ended
+                      // up filed as modals. Unreachable in Focus Mode (the
+                      // Header unmounts there), so it was never an occlusion
+                      // bug, but it was drift waiting to become one.
+                      zIndex: "var(--z-dropdown)",
                     }}
                   >
                     <button

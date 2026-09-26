@@ -90,7 +90,11 @@ export function MoreMenu({
           ref={contentRef}
           id={panelId}
           data-testid="more-menu"
-          className="absolute left-0 bottom-full z-50 mb-1 min-w-[200px] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1 shadow-xl"
+          className="absolute left-0 bottom-full mb-1 min-w-[200px] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1 shadow-xl"
+          // An interactive menu, so it belongs with the other dropdowns at
+          // --z-dropdown — not in the scrim tier, which now means "owns the
+          // screen" and nothing else. See the scale in tokens.css.
+          style={{ zIndex: "var(--z-dropdown)" }}
         >
           <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
             {t("nav.more")}

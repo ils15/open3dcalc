@@ -44,14 +44,17 @@ export function InventoryDeductionCard() {
     })),
   );
   const results = useCalculatorStore((s) => s.results);
-  const { spools, deductWeight: deductWeightFromSpool, addSpool } =
-    useFilamentInventory(
-      useShallow((s) => ({
-        spools: s.spools,
-        deductWeight: s.deductWeight,
-        addSpool: s.addSpool,
-      })),
-    );
+  const {
+    spools,
+    deductWeight: deductWeightFromSpool,
+    addSpool,
+  } = useFilamentInventory(
+    useShallow((s) => ({
+      spools: s.spools,
+      deductWeight: s.deductWeight,
+      addSpool: s.addSpool,
+    })),
+  );
 
   const [showInventoryDropdown, setShowInventoryDropdown] = useState(false);
   const [selectedSpool, setSelectedSpool] = useState<FilamentSpool | null>(
@@ -90,7 +93,12 @@ export function InventoryDeductionCard() {
       originalWeightGrams: selectedSpoolForForm.originalWeightGrams,
       diameterMm: selectedSpoolForForm.diameterMm,
     };
-  }, [currentMaterial, fdmMaterial.costPerKg, selectedSpoolForForm, unitWeight]);
+  }, [
+    currentMaterial,
+    fdmMaterial.costPerKg,
+    selectedSpoolForForm,
+    unitWeight,
+  ]);
 
   const availableSpools = useMemo(
     () =>
@@ -221,10 +229,16 @@ export function InventoryDeductionCard() {
           aria-describedby={actionDescriptionId}
           aria-expanded={showInventoryDropdown}
         >
-          <TriangleAlert aria-hidden="true" className="size-3.5 shrink-0 text-[var(--critical)]" />
+          <TriangleAlert
+            aria-hidden="true"
+            className="size-3.5 shrink-0 text-[var(--critical)]"
+          />
           {deductSuccess ? (
             <>
-              <CheckCircle2 className="size-3.5 text-[var(--positive)]" aria-hidden="true" />{" "}
+              <CheckCircle2
+                className="size-3.5 text-[var(--positive)]"
+                aria-hidden="true"
+              />{" "}
               {t("results.deductSuccess")}
             </>
           ) : (
@@ -235,7 +249,14 @@ export function InventoryDeductionCard() {
         {showInventoryDropdown && (
           <div
             ref={dropdownRef}
-            className="absolute z-50 mt-2 w-full surface rounded-xl p-3 border border-[var(--border-default)] shadow-2xl animate-fade-in"
+            className="absolute mt-2 w-full surface rounded-xl p-3 border border-[var(--border-default)] shadow-2xl animate-fade-in"
+            // --z-passive, not z-50. It owns Escape (so `escapeIsOwnedByOverlay`
+            // correctly gives it the key) but it is a bounded `w-full` listbox
+            // inside the sticky results column, not a scrim modal: it must not
+            // paint over a modal's backdrop, and at 2xl a top-of-column dropdown
+            // lands near the same corner the Focus Mode exit occupies. Passive
+            // surfaces go under shell chrome — see the scale in tokens.css.
+            style={{ zIndex: "var(--z-passive)" }}
             role="listbox"
             aria-label={t("results.deductSelect")}
           >

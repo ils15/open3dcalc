@@ -24,11 +24,14 @@ export function MobileNav({
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 lg:hidden"
+      className="fixed bottom-0 left-0 right-0 lg:hidden"
       style={{
         background: "var(--color-bg-primary)",
         borderTop: "1px solid var(--color-border)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        // --z-app-chrome, same as the web nav: persistent chrome that beats
+        // scrolling content and loses to every transient.
+        zIndex: "var(--z-app-chrome)",
       }}
       aria-label={t("nav.mainNavigation")}
     >

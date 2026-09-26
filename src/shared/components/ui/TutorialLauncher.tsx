@@ -32,13 +32,8 @@ export function TutorialLauncher() {
       startTour: s.startTour,
     })),
   );
-  const {
-    open,
-    setOpen,
-    toggle,
-    triggerRef,
-    contentRef,
-  } = useDismissablePopover<HTMLButtonElement>();
+  const { open, setOpen, toggle, triggerRef, contentRef } =
+    useDismissablePopover<HTMLButtonElement>();
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
   const layoutMode = useLayoutStore((state) => state.layoutMode);
   const isClassicLayout = layoutMode === "classic";
@@ -118,8 +113,16 @@ export function TutorialLauncher() {
             id={MENU_ID}
             role="menu"
             aria-label={t("tutorial.launcher.title")}
-            className="fixed z-[60] w-64 max-h-[70vh] overflow-y-auto rounded-xl shadow-2xl surface border border-[var(--color-border)]"
-            style={{ top: pos.top, right: pos.right }}
+            className="fixed w-64 max-h-[70vh] overflow-y-auto rounded-xl shadow-2xl surface border border-[var(--color-border)]"
+            style={{
+              top: pos.top,
+              right: pos.right,
+              // --z-dropdown, like every other menu. This was a bare z-[60].
+              // The launcher lives in the Header, which unmounts in Focus Mode,
+              // so it could never have buried the exit — it was unreachable
+              // drift, not a live defect.
+              zIndex: "var(--z-dropdown)",
+            }}
           >
             {tours.map((tourId) => {
               const completed = completedTours.includes(tourId);

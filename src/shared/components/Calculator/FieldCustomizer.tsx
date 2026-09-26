@@ -80,7 +80,14 @@ export function FieldCustomizer({
           id={popoverId}
           role="dialog"
           aria-labelledby={titleId}
-          className="absolute right-0 top-12 z-50 max-h-[70vh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-overlay)] p-2 shadow-xl"
+          className="absolute right-0 top-12 max-h-[70vh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-overlay)] p-2 shadow-xl"
+          // --z-passive, not z-50. `role="dialog"` but no scrim and no
+          // aria-modal — it is an anchored `w-80` popover, and anchored to
+          // `right-0` it opens into the same corner the Focus Mode exit
+          // occupies. It owns Escape (which is why `escapeIsOwnedByOverlay`
+          // matches it), but owning a key is not the same as owning the
+          // screen: passive surfaces go under shell chrome. See tokens.css.
+          style={{ zIndex: "var(--z-passive)" }}
         >
           <p
             id={titleId}

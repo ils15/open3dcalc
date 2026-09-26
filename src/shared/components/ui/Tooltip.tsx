@@ -108,7 +108,18 @@ export function Tooltip({
             position: strategy,
             top: y ?? 0,
             left: x ?? 0,
-            zIndex: 100,
+            // --z-tooltip, not the bare 100 this used to carry. 100 outranked
+            // every declared step and documented nothing. It sits above shell
+            // chrome as rule 3 of the scale: the one INERT surface allowed up
+            // there, because the bubble is `pointer-events-none` (below) and
+            // `visibility: hidden` when closed — it can never intercept a click,
+            // so it can overlap the exit on hover without taking it out of
+            // reach. It is at the top because an annotator must outrank every
+            // layer its trigger might live in. To be precise, that is a rule
+            // about the primitive, not about a current call site: no `tooltip=`
+            // usage sits inside a modal, panel or menu today, so this band is
+            // headroom rather than a response to an existing placement.
+            zIndex: "var(--z-tooltip)",
             ...(!isOpen && { visibility: "hidden", pointerEvents: "none" }),
           }}
           {...getFloatingProps()}

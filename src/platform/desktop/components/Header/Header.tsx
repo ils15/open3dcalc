@@ -162,11 +162,16 @@ export function Header() {
                   id="header-currency-menu"
                   role="menu"
                   aria-label={t("settings.currency")}
-                  className="fixed z-[60] w-44 rounded-xl shadow-2xl overflow-hidden surface border border-[var(--color-border)]"
+                  className="fixed w-44 rounded-xl shadow-2xl overflow-hidden surface border border-[var(--color-border)]"
                   style={{
                     position: "fixed",
                     top: currencyMenuPos.top,
                     right: currencyMenuPos.right,
+                    // --z-dropdown, matching the web Header's identical menu.
+                    // These two are twins of one component and had drifted onto
+                    // separate bare literals, which is the drift that let a
+                    // toast be filed as a modal once already.
+                    zIndex: "var(--z-dropdown)",
                   }}
                 >
                   <button
