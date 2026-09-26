@@ -74,6 +74,7 @@
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { relative } from "node:path";
+import ts from "typescript";
 
 import {
   AA_NORMAL_TEXT,
@@ -221,46 +222,6 @@ export function siteMarkers(source: string): SiteMarker[] {
  * this is a tag scan and never a line scan: several of these class strings are
  * multi-line template literals, so the literal sits lines below its tag, and a
  * backward LINE search lands inside an arrow function's JSX.
- */
-export function owningTagStart(source: string, offset: number): number | null {
-  const m = [
-    ...source.slice(0, offset).matchAll(/<(?=[A-Za-z][A-Za-z0-9.]*)/g),
-  ].pop();
-  return m ? m.index! : null;
-}
-
-/**
- * The owning element's full opening tag, from its `<` to the `>` that closes it.
- *
- * Scans forward rather than slicing to end-of-line, because attributes wrap:
- * `<div aria-hidden="true"` on one line and `data-testid="spool-thumb"` two
- * lines later. An end-of-line slice misses the identity and sends that element
- * to a marker it does not need.
- *
- * String- and brace-aware, because `onClick={() => …}` and
- * `` className={`… ${x}`} `` both contain a `>` that does not close the tag.
- */
-export function owningTagText(source: string, tagStart: number): string {
-  let quote: string | null = null;
-  let braces = 0;
-  for (let i = tagStart + 1; i < source.length; i++) {
-    const c = source[i];
-    if (quote) {
-      if (c === "\\") i++;
-      else if (c === quote) quote = null;
-      continue;
-    }
-    if (c === '"' || c === "'" || c === "`") {
-      quote = c;
-      continue;
-    }
-    if (c === "{") braces++;
-    else if (c === "}") braces--;
-    else if (c === ">" && braces === 0) return source.slice(tagStart, i + 1);
-  }
-  return source.slice(tagStart);
-}
-
 /**
  * A STATIC `data-testid` or `id` on the owning element, or null.
  *
@@ -299,25 +260,121 @@ export interface IdentityContext {
   idOwners: Map<string, Set<number>>;
   /** marker end -> the marker that also claims the same element, if any */
   markerRival: Map<number, number>;
+  /**
+   * The real JSX elements in this file, in one parse. Every lookup in this
+   * module is a search in here, so re-parsing per lookup would make the census
+   * quadratic in file size for no benefit.
+   */
+  jsxStarts: number[];
+  /** element `<` offset -> where that element's opening tag ends */
+  jsxEnds: Map<number, number>;
 }
 
-/** The `<` of the next JSX opening element at or after `from`. */
-function nextTagStartAfter(source: string, from: number): number | null {
-  const m = /<(?=[A-Za-z][A-Za-z0-9.]*)/g;
-  m.lastIndex = from;
-  const hit = m.exec(source);
-  return hit ? hit.index : null;
+/**
+ * The real JSX opening elements in `source`: each `<` offset, and where that
+ * element's tag ends. One parse, both facts.
+ *
+ * This replaces a regex that looked for `<` followed by a name. A regex cannot
+ * tell an element from a STRING that happens to contain one, so a dangling
+ * marker sitting above the literal `"<span>"` was bound to a node that does not
+ * exist: the marker looked owned, the element resolved, and the census reported
+ * a site backed by nothing. TypeScript already knows the difference and is
+ * installed, so the question is asked of the parser instead of of a pattern.
+ *
+ * Both forms count, because both open a tag: `<div …>` and `<Icon />`.
+ * Fragments and closing tags do not — a marker is about to open something.
+ */
+function jsxElements(source: string): {
+  starts: number[];
+  ends: Map<number, number>;
+} {
+  const sf = ts.createSourceFile(
+    "contrast-site.tsx",
+    source,
+    ts.ScriptTarget.Latest,
+    /* setParentNodes */ true,
+    ts.ScriptKind.TSX,
+  );
+  const starts: number[] = [];
+  const ends = new Map<number, number>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const start = node.getStart(sf);
+      starts.push(start);
+      ends.set(start, node.getEnd());
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  starts.sort((a, b) => a - b);
+  return { starts, ends };
+}
+
+/** The `<` of the next REAL JSX element strictly after `from`, or null. */
+function nextElementAfter(
+  starts: readonly number[],
+  from: number,
+): number | null {
+  for (const start of starts) {
+    if (start > from) return start;
+  }
+  return null;
+}
+
+/**
+ * The element that owns the literal at `offset`: the last real JSX element
+ * opening before it whose tag has not closed yet.
+ *
+ * Parser-driven for the same reason as above, and it fixes the mirror-image bug
+ * too: the old version took the nearest `<Name` before the offset, so a class
+ * literal in a string on an earlier line could be attributed to a tag that does
+ * not contain it.
+ */
+function owningElement(
+  ctx: { jsxStarts: readonly number[]; jsxEnds: ReadonlyMap<number, number> },
+  offset: number,
+): number | null {
+  let owner: number | null = null;
+  for (const start of ctx.jsxStarts) {
+    if (start >= offset) break;
+    owner = start;
+  }
+  if (owner === null) return null;
+  // The owner must still be open at `offset`: a class literal in a sibling that
+  // closed earlier is not inside this one.
+  const end = ctx.jsxEnds.get(owner);
+  return end !== undefined && end > offset ? owner : null;
+}
+
+/**
+ * The owning element's full opening tag, from its `<` to the `>` that closes it.
+ *
+ * The parser already knows where that is, including across wrapped attributes,
+ * `onClick={() => …}` and `` className={`… ${x}`} `` — each of which contains a
+ * `>` that does not close the tag, and each of which the previous hand-rolled
+ * scanner had to special-case. None of that is reimplemented here.
+ */
+function elementText(
+  source: string,
+  tagStart: number,
+  ends: ReadonlyMap<number, number>,
+): string {
+  const end = ends.get(tagStart);
+  return end === undefined
+    ? source.slice(tagStart)
+    : source.slice(tagStart, end);
 }
 
 export function identityContext(original: string): IdentityContext {
   const markers = siteMarkers(original);
+  const { starts, ends } = jsxElements(original);
   const markerOwnerTag = new Map<number, number | null>();
   // Each marker owns the next element after it. Two markers can land on the
   // same element, which is recorded rather than resolved silently.
   const markerRival = new Map<number, number>();
   const byTag = new Map<number, number>();
   for (const marker of markers) {
-    const tag = nextTagStartAfter(original, marker.end);
+    const tag = nextElementAfter(starts, marker.end);
     markerOwnerTag.set(marker.end, tag);
     if (tag === null) continue;
     const prior = byTag.get(tag);
@@ -335,6 +392,8 @@ export function identityContext(original: string): IdentityContext {
     markerRival,
     tagIdentity: new Map(),
     idOwners: new Map(),
+    jsxStarts: starts,
+    jsxEnds: ends,
   };
 }
 
@@ -345,19 +404,20 @@ export function identityContext(original: string): IdentityContext {
  * because adding nothing beats adding something. Otherwise the marker whose
  * BOUND element is this one — which is not "the nearest marker before the
  * literal", because that let a marker above a non-deferred element name whatever
- * came next.
+ * came next. Both sides of that question are now answered by the TSX parser:
+ * which element owns a literal, and which element a marker owns.
  *
  */
 export function resolveSiteId(
   ctx: IdentityContext,
   offset: number,
 ): string | null {
-  const tagStart = owningTagStart(ctx.original, offset);
+  const tagStart = owningElement(ctx, offset);
   if (tagStart === null) return null;
   const cached = ctx.tagIdentity.get(tagStart);
   if (cached !== undefined) return cached;
 
-  let id = staticAttrIdentity(owningTagText(ctx.original, tagStart));
+  let id = staticAttrIdentity(elementText(ctx.original, tagStart, ctx.jsxEnds));
   if (!id) {
     for (const marker of ctx.markers) {
       if (ctx.markerOwnerTag.get(marker.end) === tagStart) {

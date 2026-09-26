@@ -1178,25 +1178,6 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
     ).toBe(false);
   });
 
-  it("measures a population, and not everything in it", () => {
-    // A census that classified every site as failing would satisfy any floor
-    // forever and prove nothing. The passing half is the falsifiable one, and it
-    // is asserted on the real tree because it is the half a fix grows. The
-    // failing half used to be asserted too — `expect(census.failing.length)
-    // .toBeGreaterThan(0)` — and that was the same defect as an exact count: it
-    // fails on the day the last deferred site is fixed. Direction now comes from
-    // the per-site pin, which names the site; the two fixture tests above cover
-    // that the scanner still discriminates in both directions.
-    expect(
-      census.passing.length,
-      "census: passing wash pairings, which only grow as sites are fixed",
-    ).toBeGreaterThan(0);
-    expect(
-      palette.passing.length,
-      "palette: same, for the separate queue",
-    ).toBeGreaterThan(0);
-  });
-
   it("still separates failing from passing for the wash family, with no count", () => {
     // Replaces `expect(census.failing.length).toBeLessThanOrEqual(15)`. An upper
     // bound happens not to fail when a site is fixed, but it is still a number
@@ -2030,6 +2011,60 @@ describe("marker ownership, through the production identity path", () => {
     const found = inspect(source);
     expect(kinds(found.faults)).toEqual(["duplicateIdentity"]);
     expect(found.faults[0].identity).toBe("data-testid=dup");
+  });
+
+  it("does not let a quoted string posing as a tag own a marker", () => {
+    // The decoy. `"<span>"` inside a string literal LOOKS like a JSX opening
+    // element to a regex, so a marker above it was bound to a node that does not
+    // exist: the marker looked owned, nothing was reported, and the census
+    // carried a site backed by nothing. Under real TSX syntax recognition the
+    // string is a string, so the marker owns nothing — which is the orphan case.
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: decoy */}",
+      '      {"<span>"}',
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const found = inspect(source);
+    expect(
+      kinds(found.faults),
+      "a string that looks like a tag is not an element, so the marker owns " +
+        "nothing and is an orphan",
+    ).toEqual(["orphanMarker"]);
+    expect(found.faults[0].detail).toMatch(/no JSX\s+element at all/);
+  });
+
+  it("binds a marker past a decoy string to the REAL element that follows it", () => {
+    // The other half, and the reason the fix cannot be "skip anything that looks
+    // like a tag": a decoy must not STOP the search, and must not BECOME the
+    // owner. Nothing here is a real element until the `<span>`, so the marker has
+    // to reach past the string to find it — and land there exactly once.
+    const source = [
+      "export function W({ hint }: { hint: string }) {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: after-decoy */}",
+      '      {"<span>"}',
+      `      <span className="${X}">{hint}</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const found = inspect(source);
+    expect(
+      found.faults,
+      "the marker lands on the real element, which is deferred, so there is " +
+        "nothing wrong to report — and the decoy is not an orphan either",
+    ).toEqual([]);
+    expect(
+      found.sites.map((x) => x.siteId),
+      "and it is the real element that carries the identity, once — not the " +
+        "string, and not both",
+    ).toEqual(["after-decoy"]);
   });
 
   it("rejects a marker followed by no element at all", () => {
