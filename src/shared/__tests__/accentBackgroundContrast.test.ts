@@ -118,9 +118,14 @@ import {
  * committing red, and quietly adding an xfail allowance instead would convert a
  * conformance guard into a known-issues tracker that can go stale.
  *
- * So the population is pinned as a regression floor at the bottom of this file,
- * in SITES rather than in files. They can only go DOWN as sites are migrated,
- * and a floor that stops moving is a visible signal to schedule the next wave.
+ * So the population is held by a PER-SITE identity pin at the bottom of this
+ * file, not by a count. Every current failing site must have a unique pinned
+ * identity and its own shape; a new identity, a changed shape, ambiguity, a
+ * missing identity, an orphan marker and a duplicated or reused id all fail. No
+ * aggregate population count is asserted anywhere in this file, and none should
+ * be: a number about the real population fails as sites are fixed, so it punishes
+ * the work the guard exists to police. A resolved site simply leaves the active
+ * scan and may leave a stale pin entry behind.
  * The status fill tokens added above are the one part that was brought into
  * scope, because they are solid, so no backdrop has to be assumed and the
  * existing machinery decides them exactly.
@@ -131,23 +136,26 @@ import {
  * failing palette pairings across 8 files, i.e. roughly 23 distinct call sites
  * over ~19 files". Re-deriving both with the helpers in
  * ./helpers/deferredCensus found NEITHER figure correct, and both were wrong in
- * the one direction a floor must never be wrong in:
+ * the one direction a backlog report must never be wrong in:
  *
- *   family        cited      actual (at the base commit)   actual now
+ *   family        cited      actual (at the base commit)   measured at 1b84671
  *   washes        48 / 13    18 sites / 10 shapes / 11 f    15 / 8 / 10
  *   palette       27 /  8    11 sites /  4 shapes /  7 f    11 / 4 / 7
  *
- * The cited numbers were roughly 2.5x the truth. A floor that overstates the
+ * The cited numbers were roughly 2.5x the truth. A figure that overstates the
  * backlog is not merely untidy: it reads as "less work than there is", which is
  * the direction that lets a deferred population age indefinitely without anyone
- * noticing it was never finished.
+ * noticing it was never finished. The right-hand column is a dated measurement,
+ * NOT a threshold: no test compares it, and it is expected to fall as sites are
+ * migrated.
  *
  * Two further reasons the old count was wrong, both now fixed:
  *
  *  - It counted FILES, so a site that migrated from one broken form to a
  *    DIFFERENT broken form left the number untouched and the floor green. That
- *    is the defect the review named, and the floor is now in sites with the
- *    set of shapes pinned beside it.
+ *    is the defect the review named. The replacement is not a count either: it
+ *    is the per-site identity -> shape pin, which names the site that changed
+ *    form instead of only noticing that some total did not move.
  *  - It matched the accent token only, so it never counted the status washes at
  *    all. `--color-danger/90` and `--color-success/90` were invisible to it, and
  *    those measured 2.07:1 and 2.10:1 — the two worst pairings in the app. A
@@ -230,9 +238,10 @@ const BACKDROPS = [...CENSUS_BACKDROPS];
  * tokens (--accent-fill, --accent-fill-hover) and the two status FILL families
  * added for the confirm dialog (--danger-fill/-hover, --warning-fill/-hover).
  * An unlisted token is skipped SILENTLY, which is the main way this guard
- * could go quiet — which is why `finds the accent-background call sites it is
- * meant to police` pins a floor on the discovered population instead of
- * trusting the regex.
+ * could go quiet — which is why `discovers accent pairings through the
+ * production scanner, on source it owns` drives the real scanner over source
+ * the test owns and requires it to find the pairings, instead of trusting the
+ * regex or counting a real population it must not depend on.
  *
  * Both families are policed because both have shipped broken: the foreground
  * family put white on #818cf8 (2.98:1), and the fill family was declared but
@@ -1012,10 +1021,10 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
    *    not cover the population it is a floor for is decoration.
    *
    * The unit is now a SITE — one (background, ink) pairing at one source
-   * location — which falls whenever real work happens, and the set of SHAPES is
-   * pinned alongside it, which is what catches a form change. Both are needed:
-   * a count alone cannot see two sites that share a shape, and a shape set alone
-   * cannot see one of a kind being removed.
+   * location — named by its owning element, with its shape pinned against that
+   * name. Neither half is a count: a count cannot see two sites that share a
+   * shape, and a shape list alone cannot tell which element changed. Naming the
+   * site gives both, and costs nothing when a site is fixed.
    *
    * ONE DIRECTIONALITY, STATED PLAINLY
    * ----------------------------------
@@ -1026,9 +1035,9 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
    * migrated site leaves a stale line here. It is accepted rather than solved
    * with a two-directional assertion because the alternative punishes the exact
    * behaviour the guard exists to encourage, and a guard that cries wolf is
-   * disabled. The site count is pinned beside the list so the two can be read
-   * together, and a count that has fallen without the list being touched is the
-   * prompt to prune it.
+   * disabled. No count is pinned beside the list and none should be: the list is
+   * validated against the CURRENT source only, and a resolved site leaving a
+   * stale entry is the accepted cost of that direction.
    *
    * THE NUMBERS ARE MEASURED, NOT INHERITED
    * ----------------------------------------
@@ -1044,9 +1053,12 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
    *
    * What is pinned below is what the census computes, and the census runs in
    * this suite, so the number can be re-derived rather than taken on trust.
-   * The floors themselves are 15 wash sites and 11 palette sites; the wash
-   * figure fell from 18 because this branch tokenised the toast, which removed
-   * three of them.
+   * There are NO population floors here — not 15 wash sites, not 11 palette
+   * sites, not any other number. The only real-tree population assertion left is
+   * `unresolved === 0` in both families, because the census must fail closed. The
+   * 15 and 11 figures survive only as the dated measurements in the table above;
+   * the wash figure fell from 18 because this branch tokenised the toast, which
+   * removed three of them.
    */
   const census = censusWashes({ tokensCss, srcRoot, projectRoot });
   const palette = censusPaletteBackgrounds({
@@ -1102,13 +1114,14 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
 
   it("resolves every wash token it pairs, so the census is not a partial view", () => {
     // A census that silently skips what it cannot resolve reports a smaller
-    // population, which a `toBeLessThanOrEqual` floor would read as progress.
-    // That is the failure direction a floor must never have, so unresolvable
-    // pairings are a finding rather than a skip.
+    // population, which reads as progress. That is the failure direction this
+    // guard must never have, so unresolvable pairings are a finding, not a skip.
+    // This is also the only population assertion left on the real tree: the one
+    // number that cannot be satisfied by doing less work.
     expect(
       census.unresolved,
       `${census.unresolved.length} wash pairing(s) could not be resolved, so ` +
-        `the floor below is measuring less than it appears to:\n` +
+        `the census below is measuring less than it appears to:\n` +
         census.unresolved.join("\n"),
     ).toHaveLength(0);
   });
@@ -1117,13 +1130,13 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
     // The fail-open this closes: an unlisted palette step used to be `continue`d
     // past, which dropped the site from the population entirely, and because
     // `worst` was still Infinity the pair was then filed as PASSING. An
-    // unreadable measurement was recorded as a clean one, and a `toBeLessThanOr
-    // Equal` count floor read the disappearance as the backlog shrinking — the
-    // one direction a floor must never be fooled in.
+    // unreadable measurement was recorded as a clean one, and the disappearance
+    // read as the backlog shrinking — the one direction this guard must never be
+    // fooled in.
     expect(
       palette.unresolved,
       `${palette.unresolved.length} palette pairing(s) could not be resolved, so ` +
-        `the palette floor below is measuring less than it appears to:\n` +
+        `the palette census below is measuring less than it appears to:\n` +
         palette.unresolved.join("\n"),
     ).toHaveLength(0);
   });
@@ -1553,10 +1566,9 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
 
   it("resolves the Tailwind palette it measures palette pairings against", () => {
     // If Tailwind's theme format changed, the palette map would come back empty
-    // and the census would report ZERO failures — which a `toBeLessThanOrEqual`
-    // floor would read as the whole queue being fixed. So the decoder is pinned
-    // against the two conversions whose provenance tokens.css writes down, and
-    // the map is required to be populated.
+    // and the census would report ZERO failures, which reads as the whole queue
+    // being fixed. So the decoder is pinned against the two conversions whose
+    // provenance tokens.css writes down, and the map is required to be populated.
     for (const [step, expected] of PALETTE_SELF_CHECK) {
       expect(
         tailwindPaletteMap(
@@ -1567,7 +1579,7 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
         ).get(step),
         `${step} must decode to ${expected} — tokens.css documents that value ` +
           `as "the sRGB rendering of Tailwind v4's oklch palette". If Tailwind ` +
-          `changed the format, this floor is measuring nothing.`,
+          `changed the format, the palette scan is deciding nothing.`,
       ).toBe(expected);
     }
   });
