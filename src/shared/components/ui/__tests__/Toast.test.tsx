@@ -176,8 +176,14 @@ describe("Toast — close control and focus indicator meet non-text contrast", (
      * is what made the first version of the resting-state assertion measure
      * full opacity on a control that renders at 70%, and pass.
      */
+    /** opacity utility on the BUTTON — must be absent, see the regression below */
+    buttonAlpha: number | null;
+    /** the GLYPH's opacity utility, which is where the de-emphasis belongs */
     iconAlpha: number | null;
+    /** the GLYPH's hover opacity */
     hoverAlpha: number | null;
+    /** the glyph element itself */
+    glyph: SVGSVGElement;
     /** the focus ring colour, with its alpha, exactly as declared */
     ring: { token: string; hex: string; alpha: number };
     /** the ring's offset colour, or null when there is none */
@@ -185,6 +191,25 @@ describe("Toast — close control and focus indicator meet non-text contrast", (
   }
 
   /** `ring-[var(--x)]/NN`, or `ring-white`, on the close button. */
+  /**
+   * The `opacity-NN` utility on an element, or null when there is none.
+   *
+   * Per TOKEN and per ELEMENT. Both matter: matching a whole className with
+   * `^…$` never fires for a utility in the middle of a long list, so the alpha
+   * silently defaulted to 1 and a resting-state assertion measured full opacity
+   * on a control that rendered at 70%. And it must be read off the element the
+   * opacity actually applies to — an `opacity` on a button composites that
+   * button's own focus-ring box-shadow down with it, so reading the button's
+   * value and applying it only to the glyph understates the ring.
+   */
+  function alphaIn(className: string, prefix = ""): number | null {
+    for (const raw of className.split(/\s+/).filter(Boolean)) {
+      const m = raw.match(new RegExp(`^${prefix}opacity-(\\d{1,3})$`, "i"));
+      if (m) return parseInt(m[1], 10) / 100;
+    }
+    return null;
+  }
+
   function parseColour(
     className: string,
     property: "ring" | "ring-offset",
@@ -244,19 +269,22 @@ describe("Toast — close control and focus indicator meet non-text contrast", (
         `no bare var()-backed fill on the toast body: ${body.className}`,
       );
     }
-    // Per TOKEN. Matching the whole className with `^…$` never fires for a
-    // utility in the middle of a long list, so the alpha silently defaulted to
-    // 1 and the resting-state assertion measured full opacity — passing on a
-    // control that actually renders at 70%. The whole block was red for the
-    // wrong reason twice before this; the parsers are now all token-wise and
-    // `mount` throws rather than defaulting when a token is absent.
-    const alphaOf = (prefix: string): number | null => {
-      for (const raw of close.className.split(/\s+/).filter(Boolean)) {
-        const m = raw.match(new RegExp(`^${prefix}opacity-(\\d{1,3})$`, "i"));
-        if (m) return parseInt(m[1], 10) / 100;
-      }
-      return null;
-    };
+    // The alpha comes from the GLYPH, not the button. `opacity` on the button
+    // composites the element's own focus-ring shadows down with it, so reading
+    // the button's opacity and applying it only to the glyph understated the
+    // ring: it was measured at the raw token value while the browser painted it
+    // 10% fainter. Themis caught that. The ring is now asserted against an
+    // UNDIMMED button, and a separate regression fails if any opacity reappears
+    // on the button or an ancestor.
+    const glyph = close.querySelector<SVGSVGElement>("svg");
+    if (!glyph) {
+      throw new Error("the close control renders no glyph to measure");
+    }
+    const alphaOf = (prefix: string): number | null =>
+      alphaIn(
+        glyph.className.baseVal || glyph.getAttribute("class") || "",
+        prefix,
+      );
     const ring = parseColour(close.className, "ring");
     const offset = parseColour(close.className, "ring-offset");
     return {
@@ -264,8 +292,10 @@ describe("Toast — close control and focus indicator meet non-text contrast", (
       close,
       fillToken: fillMatch[1],
       fillHex: resolveTokenHex(tokensCss, "light", fillMatch[1])!,
+      buttonAlpha: alphaIn(close.className),
       iconAlpha: alphaOf(""),
       hoverAlpha: alphaOf("hover:"),
+      glyph,
       ring: ring ?? { token: "none", hex: "", alpha: 0 },
       offset,
     };
@@ -386,6 +416,61 @@ describe("Toast — close control and focus indicator meet non-text contrast", (
       }
     },
   );
+
+  it("carries NO opacity on the button or its ancestors, so the ring is not dimmed", () => {
+    // The regression Themis asked for. `opacity` composites an element's own
+    // box-shadow, and Tailwind paints the focus ring as a box-shadow, so an
+    // `opacity-90` on the button made the focus INDICATOR 4.01:1 instead of the
+    // 4.77:1 the ring token provides. It cleared 1.4.11, so nothing looked
+    // broken — but the same property at the old 0.7 would have put the ring at
+    // 2.75:1, i.e. the keyboard indicator below the bar, on the very control
+    // that was already below it for the glyph. Asserted structurally so putting
+    // the de-emphasis back where it was fails here rather than in a ratio.
+    for (const { type } of CASES) {
+      const m = mount(type);
+      expect(
+        m.buttonAlpha,
+        `${type}: the close BUTTON has opacity-${(m.buttonAlpha ?? 0) * 100}, which ` +
+          `composites the focus ring down with it. The de-emphasis belongs on ` +
+          `the glyph, which is where it is now.`,
+      ).toBeNull();
+
+      // And no ancestor either, since a wrapper's opacity would dim the ring just
+      // as effectively while looking innocent here.
+      let node: HTMLElement | null = m.close.parentElement;
+      let depth = 0;
+      while (node && depth < 4) {
+        expect(
+          alphaIn(node.className),
+          `${type}: an ANCESTOR of the close control has ` +
+            `opacity-${(alphaIn(node.className) ?? 0) * 100}, which would dim the ` +
+            `focus ring the same way (tag ${node.tagName}).`,
+        ).toBeNull();
+        node = node.parentElement;
+        depth += 1;
+      }
+    }
+  });
+
+  it("keeps the glyph de-emphasised, so the de-emphasis was moved not dropped", () => {
+    // The counterpart to the test above: the point was to move the opacity, not
+    // to delete it. Without this, "no opacity anywhere" would pass while the
+    // glyph sat at full strength and lost its hierarchy against the message.
+    for (const { type } of CASES) {
+      const m = mount(type);
+      expect(
+        m.iconAlpha,
+        `${type}: the close glyph must stay de-emphasised; it is now the only ` +
+          `thing carrying that hierarchy`,
+      ).not.toBeNull();
+      expect(
+        m.iconAlpha,
+        `${type}: the glyph's opacity must clear 1.4.11's 3:1, which is ` +
+          `asserted as a ratio elsewhere — here only that it is a deliberate ` +
+          `de-emphasis and not full strength`,
+      ).toBeLessThan(1);
+    }
+  });
 
   it("cannot satisfy the indicator with a single colour, so the two tones stay", () => {
     // Guards the guard: if a future refactor drops the offset and keeps one

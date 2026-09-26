@@ -254,10 +254,11 @@ O `accentBackgroundContrast.test.ts` lê as class strings reais do `Toast.tsx` e
 
 A correção do texto deixou duas coisas sem medir, e as duas reprovavam. Um botão de fechar é um **controle**, e o indicador visual de um controle é um caso de **contraste não textual** — WCAG 1.4.11 pede 3:1, não os 4,5:1 do texto. O texto da mensagem passar em 1.4.3 não dizia nada sobre o botão.
 
-| o que estava                                          | medido                             | agora                                    | barra (1.4.11) |
-| ----------------------------------------------------- | ---------------------------------- | ---------------------------------------- | -------------- |
-| glifo do fechar a `opacity-70` sobre o fill de danger | **2,75:1**                         | `opacity-90` → **4,01:1** (hover 4,77:1) | 3:1            |
-| anel de foco `ring-[var(--color-accent)]/50`          | **1,00:1** no fill de info (light) | anel opaco de duas tonalidades           | 3:1            |
+| o que estava                                          | medido                                | agora                                    | barra (1.4.11) |
+| ----------------------------------------------------- | ------------------------------------- | ---------------------------------------- | -------------- |
+| glifo do fechar a `opacity-70` sobre o fill de danger | **2,75:1**                            | `opacity-90` → **4,01:1** (hover 4,77:1) | 3:1            |
+| anel de foco `ring-[var(--color-accent)]/50`          | **1,00:1** no fill de info (light)    | anel opaco de duas tonalidades           | 3:1            |
+| o mesmo anel com `opacity-90` no **botão**            | **4,01:1** em vez de 4,77:1 no danger | opacidade movida para o **glifo**        | 3:1            |
 
 O anel antigo media **1,00:1** porque em light `--color-accent` e `--color-accent-fill` são o mesmo valor (`#4f46e5`): o anel a 50% compunha exatamente o próprio fill._some e `focus-visible:outline-none` desligava o contorno do navegador que teria servido de reserva — foco chegava e nada era desenhado.
 
@@ -269,7 +270,21 @@ A troca é por **duas tonalidades**, porque uma cor não dá conta disso: o anel
 
 O guard conta uma população que ele **mede mas não fiscaliza**: as washes translúcidas e os fundos de paleta do Tailwind. Essa população é pinada como piso de regressão — e o piso é expresso em **sites**, nunca em arquivos.
 
-A contagem por **arquivo** é a unidade errada porque **não enxerga uma site mudando de forma**: migrar `bg-[var(--color-accent)]/20 text-[var(--color-accent)]` para um pareamento quebrado _diferente_ deixa a contagem de arquivos intacta, e o piso reporta verde sobre uma população tão quebrada quanto antes. Por isso o piso fixa a **contagem de sites** _e_ a **lista de formas** ao lado.
+A contagem por **arquivo** é a unidade errada porque **não enxerga um site mudando de forma**: migrar `bg-[var(--color-accent)]/20 text-[var(--color-accent)]` para um pareamento quebrado _diferente_ deixa a contagem de arquivos intacta, e o piso reporta verde sobre uma população tão quebrada quanto antes.
+
+Duas unidades intermediárias também foram rejeitadas, ambas pela revisão, e os motivos são a razão de o pin ser por **ocorrência**:
+
+| unidade                                 | o que não enxerga                                                                                                                                                     |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| contagem de arquivos                    | um site corrigido e um site que mudou de forma dão o mesmo número                                                                                                     |
+| conjunto **global** de formas           | um site que migra de uma forma já permitida para **outra** forma já permitida: contagem igual, conjunto igual, guarda verde                                           |
+| multiconjunto de formas **por arquivo** | o caso na mesma arquivo: resolver a ocorrência em `PrinterManager` e criar a mesma forma em `MaterialManager` deixa as três formas idênticas do `CatalogTab` intactas |
+
+Então o censo reporta, por site, a **identidade da ocorrência** (`arquivo#declaração#ordinal`) e a **forma** que ela tem hoje, e o pin é `identidade -> forma`: o pin diz _qual_ site e _o que_ ele é. Identidade e forma são separadas de propósito — a identidade sobrevive a reformatação, a forma é justamente o que pode mudar.
+
+**A identidade é estável, e o custo é real.** A chave é a declaração de coluna zero mais um ordinal dentro dela. Sobrevive a deslocamento de linha, edições acima, reformatação e literais que não são pareamentos de wash. Muda quando um pareamento é adicionado, removido, reordenado ou passa a outra forma. O custo: inserir um pareamento no topo de uma declaração renumera os seguintes, e eles são reportados como alterados — é deliberado, porque rebaselinear em silêncio uma lista de sites quebrados é pior do que uma falha alta e mecânica de consertar.
+
+**O censo falha fechado.** Um pareamento que ele não consegue decidir — um passo de paleta fora do mapa do Tailwind, uma tinta com token não declarado — vai para `unresolved` e **não** conta como site em nenhuma direção. A alternativa é o defeito corrigido aqui: um site descartado é invisível para um piso de contagem, e `worst` deixado em `Infinity` classificava um pareamento não medido como **aprovado** — uma medição ilegível registrada como limpa, e a ausência dela lida como progresso.
 
 Os números citados antes no cabeçalho do arquivo estavam **errados por ~2,5x**, e errados na direção que faz um piso parecer _menos_ trabalho do que existe:
 

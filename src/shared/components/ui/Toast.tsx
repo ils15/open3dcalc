@@ -90,12 +90,20 @@ function ToastItem({
       <span className="flex-1">{item.message}</span>
       <button
         onClick={() => onDismiss(item.id)}
-        // `opacity-90` is the lowest de-emphasis that still clears WCAG 1.4.11's
-        // 3:1 for a non-text indicator: at 70% the glyph measured 2.75:1 on the
-        // danger fill, so the dismiss control was below the bar. At 90% the
-        // worst case is 4.01:1 and hover returns to full 4.77:1, which keeps the
-        // visual hierarchy against the message without the control becoming
-        // hard to find.
+        // The de-emphasis lives on the GLYPH, not on this button, and that is
+        // the whole point of where it sits.
+        //
+        // `opacity` on the button was dimming the button's own focus-ring
+        // shadows: a ring is painted as part of the element, so compositing the
+        // element at 90% composites the INDICATOR too, and the effective ring
+        // contrast was 4.01:1 on the danger fill rather than the 4.77:1 the raw
+        // token suggests. It still cleared 1.4.11's 3:1, so nothing was visibly
+        // broken — but the measurement was overstated by a quarter, and at the
+        // old 70% the ring would have been 2.75:1, i.e. the focus indicator
+        // would have been below the bar on the same control that was already
+        // below it for the glyph. Putting `opacity-90` on the <X> keeps the
+        // glyph de-emphasised (90% is the lowest value that still clears 3:1 on
+        // every fill) and leaves the ring at full strength.
         //
         // The focus ring is a deliberate two-tone sandwich rather than one
         // colour. It was `ring-[var(--color-accent)]/50` with `outline-none`,
@@ -108,10 +116,11 @@ function ToastItem({
         // `outline-none` is kept only because an opaque ring now replaces it,
         // and Toast.test.tsx asserts that pairing directly rather than trusting
         // it.
-        className="shrink-0 opacity-90 hover:opacity-100 transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring-light)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-focus-ring-dark)] focus-visible:outline-none rounded"
+        className="shrink-0 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring-light)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-focus-ring-dark)] focus-visible:outline-none rounded"
         aria-label="Fechar"
       >
-        <X className="w-4 h-4" />
+        {/* The glyph carries the de-emphasis, NOT the button: see above. */}
+        <X className="w-4 h-4 opacity-90 hover:opacity-100 transition-opacity" />
       </button>
     </div>
   );

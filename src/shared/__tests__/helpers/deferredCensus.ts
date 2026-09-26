@@ -21,23 +21,37 @@
  *    construction, which is the defect: behind an ink that flips. Decidable
  *    because `tailwindPaletteMap` resolves the oklch palette to sRGB.
  *
- * A SITE, NOT A FILE
- * ------------------
- * The unit is a site: one (background, ink) pairing at one source location.
- * This is the whole point of the module, so it is worth being explicit about
- * why a file count is the wrong instrument. A file count cannot distinguish
+ * A SITE IS AN OCCURRENCE, NOT A FILE AND NOT A FORM
+ * --------------------------------------------------
+ * The unit is a site: one (background, ink) pairing at one source location,
+ * identified as `declaration#ordinal` within its file. Two weaker units were
+ * tried and both were caught by review, and the reasons are the reason this
+ * module reports an `id` at all:
  *
- *   - a site that was fixed              (count falls — good)
- *   - a site that changed form           (count unchanged — BAD, hidden)
- *   - three sites in one file, one fixed (count unchanged — BAD, hidden)
+ *   FILE COUNT  cannot distinguish a site that was fixed (count falls — good)
+ *               from a site that changed form (count unchanged — BAD, hidden),
+ *               or three sites in one file with one fixed (count unchanged).
+ *   GLOBAL FORM SET  cannot see a site migrate from one already-allowlisted
+ *               form to a DIFFERENT already-allowlisted form. Count unchanged,
+ *               set unchanged, guard green.
+ *   FILE FORM MULTISET  closes the cross-file case, but not the same-file one:
+ *               resolve the occurrence in `PrinterManager` and add the same
+ *               shape in `MaterialManager`, and the file still holds three
+ *               identical shapes. The population is just as broken and the file
+ *               aggregate says nothing happened.
  *
- * The middle case is the one that matters: migrating `bg-[var(--color-accent)]/20
- * text-[var(--color-accent)]` to a *different* broken pairing leaves the file
- * count identical, so a file-count floor reports green over a population that
- * is just as broken as before. A site count falls whenever real work happens.
- * A site count alone is still not sufficient — two sites can share a shape, so
- * deleting one does not change the set of shapes — which is why the census
- * reports both, and the caller floors the count AND pins the shape set.
+ * So the census reports, per site: `decl`, `ordinal`, a combined `id`, and the
+ * `shape` it currently holds. The caller pins `id -> shape`, so the pin says
+ * which site AND what it is. Occurrence identity and the shape are deliberately
+ * separate: identity survives reformatting, shape is the thing that can change.
+ *
+ * The census FAILS CLOSED. A pairing it cannot decide — an unlisted palette
+ * step, an ink naming an undeclared token, a surface token that does not
+ * resolve — is reported in `unresolved` and is NOT counted as a site in either
+ * direction. The alternative is the failure this module was corrected for: a
+ * dropped site is invisible to a count floor, and `worst` left at Infinity filed
+ * an unmeasured pairing under PASSING, so an unreadable measurement was recorded
+ * as a clean one and its absence read as progress.
  *
  * COMMENTS ARE STRIPPED, AND THAT IS NOT COSMETIC
  * ----------------------------------------------
@@ -91,9 +105,42 @@ export interface DeferredSite {
   file: string;
   line: number;
   /**
+   * The enclosing top-level declaration — `typeStyles`, `CatalogTab`,
+   * `useMobileSheet`. Only COLUMN-ZERO declarations count, so a `const` inside a
+   * function body does not become a boundary and the granularity stays at the
+   * component or module level.
+   */
+  decl: string;
+  /** 1-based ordinal of this pairing within that declaration, in source order */
+  ordinal: number;
+  /**
+   * The stable occurrence identity: `${decl}#${ordinal}`.
+   *
+   * This is what a pin is keyed on, and it is the answer to "which occurrence".
+   * A shape string cannot serve, because two occurrences of one shape are
+   * indistinguishable — resolve one and add the same shape elsewhere in the
+   * same file and a per-file multiset is unchanged. A line number cannot serve
+   * either, because any edit above shifts it.
+   *
+   * Stability, stated honestly rather than oversold:
+   *
+   *   SURVIVES  line shifts; edits above the declaration; added or removed
+   *             literals that are not wash pairings (they do not consume an
+   *             ordinal); reformatting.
+   *   CHANGES ON a wash pairing being added, removed or reordered within the
+   *             same declaration, or taking a different form.
+   *
+   * The one real cost: inserting a wash pairing near the top of a declaration
+   * renumbers the ones after it, and they are reported as changed. That is
+   * deliberate — a shift in the order of a file's known-broken sites is worth
+   * one loud failure rather than a silent re-baseline, and the failure message
+   * names the declaration and ordinal so the fix is a copy-paste.
+   */
+  id: string;
+  /**
    * The FORM, as written: `bg-[var(--color-accent)]/20 + text-[var(--color-accent)]`.
-   * This is the unit that catches a site changing shape while its file count
-   * stands still, so it is a first-class output rather than a debug string.
+   * Kept as a first-class output because it is the PINNED VALUE for the
+   * occurrence — identity says which site, shape says what it currently is.
    */
   shape: string;
   /** worst ratio over every theme x backdrop, and where that worst case is */
@@ -101,10 +148,67 @@ export interface DeferredSite {
   where: string;
 }
 
-/** Removes `/* … *\/` and `// …` without eating the `//` in `https://`. */
+/**
+ * Top-level declarations, at column zero only. Anchored with `m` so an indented
+ * `const` inside a function body is not a boundary.
+ */
+const DECLARATION =
+  /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z0-9_$]+)/gm;
+
+/**
+ * A cursor that turns a source offset into `decl#ordinal`, consumed in source
+ * order by the scanners below.
+ *
+ * Held per FILE, not globally, so two files cannot share ordinals. One pass:
+ * the caller walks literals in order, advancing the declaration cursor as it
+ * goes, and takes the next ordinal for the declaration it lands in.
+ */
+class OccurrenceCounter {
+  private readonly declarations: Array<{ name: string; at: number }>;
+  private next = 0;
+  private readonly used = new Map<string, number>();
+
+  constructor(private readonly source: string) {
+    this.declarations = [...source.matchAll(DECLARATION)].map((m) => ({
+      name: m[1],
+      at: m.index!,
+    }));
+  }
+
+  /** The declaration owning `offset`. */
+  private declarationAt(offset: number): string {
+    while (
+      this.next < this.declarations.length &&
+      this.declarations[this.next].at < offset
+    ) {
+      this.next += 1;
+    }
+    return this.declarations[this.next - 1]?.name ?? "<module>";
+  }
+
+  /** The identity for the next pairing at `offset`. Call once per pairing. */
+  at(offset: number): { decl: string; ordinal: number; id: string } {
+    const decl = this.declarationAt(offset);
+    const ordinal = (this.used.get(decl) ?? 0) + 1;
+    this.used.set(decl, ordinal);
+    return { decl, ordinal, id: `${decl}#${ordinal}` };
+  }
+}
+
+/**
+ * Removes `/* … *\/` and `// …` without eating the `//` in `https://`.
+ *
+ * The block-comment replacement preserves every NEWLINE and blanks the rest,
+ * rather than deleting the comment outright. That is not cosmetic: deleting a
+ * multi-line comment shifts every subsequent line, so a reported `line` pointed
+ * 12 lines above the site that actually had the problem — which is precisely
+ * when a reviewer most needs the line number to be right. Occurrence identity
+ * is unaffected either way (it is declaration + ordinal, not position), but the
+ * diagnostics are only actionable if the line is true.
+ */
 export function stripComments(source: string): string {
   return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, (block) => block.replace(/[^\n]/g, " "))
     .replace(/([^:])\/\/[^\n]*/g, "$1");
 }
 
@@ -180,162 +284,245 @@ function washLayers(
   };
 }
 
+export interface Census {
+  failing: DeferredSite[];
+  passing: DeferredSite[];
+  /**
+   * Pairings the scan could not decide, one diagnostic per site.
+   *
+   * This is the fail-closed channel, and it exists because the alternative is
+   * silent. A palette step missing from the theme map, or a `text-[var(--x)]`
+   * naming an undeclared token, used to make the scan `continue`, which left the
+   * site invisible AND — because `worst` was still Infinity — filed it under
+   * PASSING. An unreadable measurement was being recorded as a clean one, and
+   * the count floor read the absence as progress. A scan that cannot decide must
+   * say so; a guard that cannot measure must fail.
+   */
+  unresolved: string[];
+}
+
+const byWorst = (a: DeferredSite, b: DeferredSite): number => a.ratio - b.ratio;
+
+const finish = (c: Census): Census => ({
+  failing: c.failing.sort(byWorst),
+  passing: c.passing.sort(byWorst),
+  unresolved: c.unresolved.sort(),
+});
+
 /**
- * Every wash site that falls below AA in ANY theme over ANY backdrop, together
- * with the ones that clear it.
- *
- * Both are returned: the caller floors the failing count, and a separate
- * assertion uses the passing ones to prove the census is not simply reporting
- * everything as broken (which would make the floor unfalsifiable).
+ * Wash pairings in one file's source. Exported so it can be tested against a
+ * synthetic source, which is the only way to prove the fail-closed and
+ * occurrence-identity behaviour without editing a component.
  */
+export function scanWashesInSource(options: {
+  tokensCss: string;
+  file: string;
+  source: string;
+}): Census {
+  const { tokensCss, file } = options;
+  const source = stripComments(options.source);
+  const census: Census = { failing: [], passing: [], unresolved: [] };
+  const counter = new OccurrenceCounter(source);
+
+  for (const literal of source.matchAll(LITERAL)) {
+    const utilities = literal[2].split(/\s+/).filter(Boolean);
+    const washes = utilities.filter((u) => {
+      const token = stripVariants(u).match(
+        /^bg-\[var\(--([a-z0-9-]+)\)\](?:\/\d{1,3})?$/i,
+      )?.[1];
+      return token !== undefined && WASH_FAMILY.test(token);
+    });
+    if (!washes.length) continue;
+    const inks = utilities.filter(isTextUtility);
+    if (!inks.length) continue;
+    const line = source.slice(0, literal.index!).split("\n").length;
+
+    for (const wash of washes) {
+      for (const ink of inks) {
+        const { decl, ordinal, id } = counter.at(literal.index!);
+        let worst = Infinity;
+        let where = "";
+        let ok = true;
+        for (const theme of THEMES) {
+          const layers = washLayers(tokensCss, wash, theme);
+          const inkHexValue = inkHex(tokensCss, ink, theme);
+          if (!layers || !inkHexValue) {
+            ok = false;
+            continue;
+          }
+          for (const backdrop of BACKDROPS) {
+            const surface = resolveTokenHex(tokensCss, theme, backdrop);
+            if (!surface) {
+              ok = false;
+              continue;
+            }
+            const composited = compositeOver(layers, surface);
+            const ratio = contrastRatio(inkHexValue, composited);
+            if (ratio < worst) {
+              worst = ratio;
+              where =
+                `${inkHexValue} on ${composited} (${ink} on ${wash} over ` +
+                `--${backdrop} ${surface}) in ${theme} mode`;
+            }
+          }
+        }
+        if (!ok) {
+          census.unresolved.push(
+            `  ${file}:${line}  [${id}]  ${wash} + ${ink}`,
+          );
+          continue;
+        }
+        const site: DeferredSite = {
+          file,
+          line,
+          decl,
+          ordinal,
+          id,
+          shape: `${wash} + ${ink}`,
+          ratio: worst,
+          where,
+        };
+        (worst < AA_NORMAL_TEXT ? census.failing : census.passing).push(site);
+      }
+    }
+  }
+  return census;
+}
+
+/** Wash pairings across the tree. */
 export function censusWashes(options: {
   tokensCss: string;
   srcRoot: string;
   projectRoot: string;
-}): {
-  failing: DeferredSite[];
-  passing: DeferredSite[];
-  unresolvable: string[];
-} {
+}): Census {
   const { tokensCss, srcRoot, projectRoot } = options;
-  const failing: DeferredSite[] = [];
-  const passing: DeferredSite[] = [];
-  const unresolvable: string[] = [];
-
+  const census: Census = { failing: [], passing: [], unresolved: [] };
   for (const file of walkComponents(srcRoot)) {
-    const source = stripComments(readFileSync(file, "utf-8"));
-    const rel = relative(projectRoot, file);
-
-    for (const literal of source.matchAll(LITERAL)) {
-      const utilities = literal[2].split(/\s+/).filter(Boolean);
-      const washes = utilities.filter((u) => {
-        const token = stripVariants(u).match(
-          /^bg-\[var\(--([a-z0-9-]+)\)\](?:\/\d{1,3})?$/i,
-        )?.[1];
-        return token !== undefined && WASH_FAMILY.test(token);
-      });
-      if (!washes.length) continue;
-      const inks = utilities.filter(isTextUtility);
-      if (!inks.length) continue;
-      const line = source.slice(0, literal.index!).split("\n").length;
-
-      for (const wash of washes) {
-        for (const ink of inks) {
-          let worst = Infinity;
-          let where = "";
-          let ok = true;
-          for (const theme of THEMES) {
-            const layers = washLayers(tokensCss, wash, theme);
-            const inkHexValue = inkHex(tokensCss, ink, theme);
-            if (!layers || !inkHexValue) {
-              ok = false;
-              continue;
-            }
-            for (const backdrop of BACKDROPS) {
-              const surface = resolveTokenHex(tokensCss, theme, backdrop);
-              if (!surface) {
-                ok = false;
-                continue;
-              }
-              const composited = compositeOver(layers, surface);
-              const ratio = contrastRatio(inkHexValue, composited);
-              if (ratio < worst) {
-                worst = ratio;
-                where =
-                  `${inkHexValue} on ${composited} (${ink} on ${wash} over ` +
-                  `--${backdrop} ${surface}) in ${theme} mode`;
-              }
-            }
-          }
-          if (!ok) {
-            unresolvable.push(`  ${rel}:${line}  ${wash} + ${ink}`);
-            continue;
-          }
-          const site: DeferredSite = {
-            file: rel,
-            line,
-            shape: `${wash} + ${ink}`,
-            ratio: worst,
-            where,
-          };
-          (worst < AA_NORMAL_TEXT ? failing : passing).push(site);
-        }
-      }
-    }
+    const found = scanWashesInSource({
+      tokensCss,
+      file: relative(projectRoot, file),
+      source: readFileSync(file, "utf-8"),
+    });
+    census.failing.push(...found.failing);
+    census.passing.push(...found.passing);
+    census.unresolved.push(...found.unresolved);
   }
-
-  const byWorst = (a: DeferredSite, b: DeferredSite): number =>
-    a.ratio - b.ratio;
-  return {
-    failing: failing.sort(byWorst),
-    passing: passing.sort(byWorst),
-    unresolvable: unresolvable.sort(),
-  };
+  return finish(census);
 }
 
 /**
- * Every raw-palette background site below AA in either theme.
+ * Raw-palette pairings in one file's source.
  *
  * No backdrop set is needed: a palette utility is opaque, so the pairing is
  * decided by the two colours alone. The theme still matters, because the ink
  * flips and the background does not — which is the defect.
+ *
+ * Fail-closed, and this is the whole substance of the change. A `bg-<step>`
+ * whose step is not in the theme map, or a `text-[var(--x)]` naming an
+ * undeclared token, is recorded in `unresolved` and NOT counted as a site. It
+ * used to be `continue`d past, which dropped the site from the population
+ * entirely — and because `worst` stayed `Infinity`, the pair was then filed as
+ * PASSING. So an unmeasurable pairing was silently reported as a clean one, and
+ * the count floor read its disappearance as the backlog shrinking.
  */
+export function scanPaletteInSource(options: {
+  tokensCss: string;
+  file: string;
+  source: string;
+  palette: Map<string, string>;
+}): Census {
+  const { tokensCss, file, palette } = options;
+  const source = stripComments(options.source);
+  const census: Census = { failing: [], passing: [], unresolved: [] };
+  const counter = new OccurrenceCounter(source);
+
+  for (const literal of source.matchAll(LITERAL)) {
+    const utilities = literal[2].split(/\s+/).filter(Boolean);
+    const bgs = utilities
+      .map((u) => stripVariants(u).match(PALETTE_BG)?.[1])
+      .filter((v): v is string => v !== undefined);
+    if (!bgs.length) continue;
+    const inks = utilities.filter((u) => isTextUtility(u) || isInkLiteral(u));
+    if (!inks.length) continue;
+    const line = source.slice(0, literal.index!).split("\n").length;
+
+    for (const bg of bgs) {
+      const hex = palette.get(bg);
+      if (!hex) {
+        // Unresolvable BACKGROUND. Recorded for every ink in the literal,
+        // because the pairing is a (background, ink) product and an unreadable
+        // background leaves each of them undecidable.
+        for (const ink of inks) {
+          const { id } = counter.at(literal.index!);
+          census.unresolved.push(
+            `  ${file}:${line}  [${id}]  bg-${bg} + ${ink}  — ` +
+              `bg-${bg} is not in the Tailwind theme map, so the pairing cannot ` +
+              `be decided (an unreadable measurement is not a passing one)`,
+          );
+        }
+        continue;
+      }
+      for (const ink of inks) {
+        const { decl, ordinal, id } = counter.at(literal.index!);
+        let worst = Infinity;
+        let where = "";
+        let ok = true;
+        for (const theme of THEMES) {
+          const inkHexValue = inkHex(tokensCss, ink, theme);
+          if (!inkHexValue) {
+            ok = false;
+            continue;
+          }
+          const ratio = contrastRatio(inkHexValue, hex);
+          if (ratio < worst) {
+            worst = ratio;
+            where = `${inkHexValue} on ${hex} (${ink} on bg-${bg}) in ${theme} mode`;
+          }
+        }
+        if (!ok) {
+          census.unresolved.push(
+            `  ${file}:${line}  [${id}]  bg-${bg} + ${ink}  — ${ink} does not ` +
+              `resolve in every theme, so the pairing cannot be decided`,
+          );
+          continue;
+        }
+        const site: DeferredSite = {
+          file,
+          line,
+          decl,
+          ordinal,
+          id,
+          shape: `bg-${bg} + ${ink}`,
+          ratio: worst,
+          where,
+        };
+        (worst < AA_NORMAL_TEXT ? census.failing : census.passing).push(site);
+      }
+    }
+  }
+  return census;
+}
+
+/** Raw-palette pairings across the tree. */
 export function censusPaletteBackgrounds(options: {
   tokensCss: string;
   srcRoot: string;
   projectRoot: string;
   themeCss: string;
-}): { failing: DeferredSite[]; passing: DeferredSite[] } {
+}): Census {
   const { tokensCss, srcRoot, projectRoot, themeCss } = options;
   const palette = tailwindPaletteMap(themeCss);
-  const failing: DeferredSite[] = [];
-  const passing: DeferredSite[] = [];
-
+  const census: Census = { failing: [], passing: [], unresolved: [] };
   for (const file of walkComponents(srcRoot)) {
-    const source = stripComments(readFileSync(file, "utf-8"));
-    const rel = relative(projectRoot, file);
-
-    for (const literal of source.matchAll(LITERAL)) {
-      const utilities = literal[2].split(/\s+/).filter(Boolean);
-      const bgs = utilities
-        .map((u) => stripVariants(u).match(PALETTE_BG)?.[1])
-        .filter((v): v is string => v !== undefined);
-      if (!bgs.length) continue;
-      const inks = utilities.filter((u) => isTextUtility(u) || isInkLiteral(u));
-      if (!inks.length) continue;
-      const line = source.slice(0, literal.index!).split("\n").length;
-
-      for (const bg of bgs) {
-        const hex = palette.get(bg);
-        // An unlisted step is NOT measured, and must not be counted as passing.
-        if (!hex) continue;
-        for (const ink of inks) {
-          let worst = Infinity;
-          let where = "";
-          for (const theme of THEMES) {
-            const inkHexValue = inkHex(tokensCss, ink, theme);
-            if (!inkHexValue) continue;
-            const ratio = contrastRatio(inkHexValue, hex);
-            if (ratio < worst) {
-              worst = ratio;
-              where = `${inkHexValue} on ${hex} (${ink} on bg-${bg}) in ${theme} mode`;
-            }
-          }
-          const site: DeferredSite = {
-            file: rel,
-            line,
-            shape: `bg-${bg} + ${ink}`,
-            ratio: worst,
-            where,
-          };
-          (worst < AA_NORMAL_TEXT ? failing : passing).push(site);
-        }
-      }
-    }
+    const found = scanPaletteInSource({
+      tokensCss,
+      file: relative(projectRoot, file),
+      source: readFileSync(file, "utf-8"),
+      palette,
+    });
+    census.failing.push(...found.failing);
+    census.passing.push(...found.passing);
+    census.unresolved.push(...found.unresolved);
   }
-
-  return {
-    failing: failing.sort((a, b) => a.ratio - b.ratio),
-    passing: passing.sort((a, b) => a.ratio - b.ratio),
-  };
+  return finish(census);
 }
