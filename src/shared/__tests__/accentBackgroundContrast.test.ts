@@ -16,6 +16,8 @@ import {
   BACKDROPS as CENSUS_BACKDROPS,
   describeIdentityFaults,
   identityContext,
+  parseCacheStats,
+  resetParseCache,
   identityFaults,
   resolveSiteId,
   siteMarkers,
@@ -486,17 +488,30 @@ const PALETTE_SITE_PIN: Record<string, string[]> = {
  * by absolute file path and substitutes source for that file only; every other
  * file is read from disk, so the rest of the tree stays real.
  */
-function validateRealTree(
-  washPin: Record<string, string[]>,
-  palettePin: Record<string, string[]>,
-  overrides: Map<string, string> = new Map(),
-): { faults: string[]; active: number } {
-  const paletteMap = tailwindPaletteMap(
+/**
+ * Tailwind's theme, converted once.
+ *
+ * `theme.css` is a large file and `tailwindPaletteMap` walks all of it, and this
+ * function is called once per validation pass. Re-reading and re-converting it
+ * each time was pure repeated work.
+ */
+let paletteMemo: Map<string, string> | null = null;
+function tailwindPalette(): Map<string, string> {
+  paletteMemo ??= tailwindPaletteMap(
     readFileSync(
       resolve(projectRoot, "node_modules/tailwindcss/theme.css"),
       "utf-8",
     ),
   );
+  return paletteMemo;
+}
+
+function validateRealTree(
+  washPin: Record<string, string[]>,
+  palettePin: Record<string, string[]>,
+  overrides: Map<string, string> = new Map(),
+): { faults: string[]; active: number } {
+  const paletteMap = tailwindPalette();
   const faults: string[] = [];
   let active = 0;
   for (const file of walkComponents(srcRoot)) {
@@ -1272,6 +1287,112 @@ describe("every CURRENT deferred site is pinned by name, with its form", () => {
       ).toHaveLength(0);
     },
   );
+
+  it("reuses a parsed file and rescans it when its text changes", () => {
+    // The performance contract, stated WITHOUT a clock. A timing assertion here
+    // would be a flake waiting for a busy machine; hit and miss counters are not.
+    //
+    // This matters because the guard parses real TSX for every file, and the
+    // integrated tests drive the full tree several times over. Before the cache
+    // each pass re-parsed every file, so the cost was multiplied by the number
+    // of passes and the suite ran into the per-test timeout under coverage.
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <span className="bg-[var(--color-accent)]/20 text-[var(--color-accent)]">A</span>',
+      "  );",
+      "}",
+    ].join("\n");
+
+    resetParseCache();
+    identityContext(source);
+    const afterFirst = parseCacheStats();
+    expect(
+      afterFirst.misses,
+      "the first parse of a file is real work and is counted as a miss",
+    ).toBe(1);
+    expect(afterFirst.hits, "and nothing was cached yet").toBe(0);
+
+    identityContext(source);
+    const afterSecond = parseCacheStats();
+    expect(
+      afterSecond.hits,
+      "the SAME text is served from cache — this is the reuse that stops the " +
+        "repeated full-tree passes from re-parsing unchanged files",
+    ).toBe(1);
+    expect(afterSecond.misses, "and no second parse happened").toBe(1);
+
+    // Invalidation: the key is the exact text, so ANY change is a different file
+    // as far as the cache is concerned. No hash, so no collision to reason about.
+    identityContext(`${source}\n// one more line`);
+    const afterEdit = parseCacheStats();
+    expect(
+      afterEdit.misses,
+      "changed content must be parsed again, or the guard would validate a stale " +
+        "tree and the override in the integrated tests would do nothing",
+    ).toBe(2);
+    expect(
+      afterEdit.hits,
+      "and the changed text is not served from the old entry",
+    ).toBe(1);
+
+    // And the original text is still cached, so an override that reverts is cheap.
+    identityContext(source);
+    expect(
+      parseCacheStats().hits,
+      "reverting to previously seen text hits the cache again",
+    ).toBe(2);
+
+    resetParseCache();
+  });
+
+  it("parses one file once for BOTH census families", () => {
+    // Each family used to build its own IdentityContext, so one file was parsed
+    // three times per validation pass: once here, once for washes, once for
+    // palette. Two of those are pure duplication, and the integrated tests drive
+    // the whole tree five times over.
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <span className="bg-[var(--color-accent)]/20 text-[var(--color-accent)]">A</span>',
+      '    <span className="bg-emerald-600 text-white">B</span>',
+      "  );",
+      "}",
+    ].join("\n");
+    const palette = tailwindPaletteMap(
+      readFileSync(
+        resolve(projectRoot, "node_modules/tailwindcss/theme.css"),
+        "utf-8",
+      ),
+    );
+
+    resetParseCache();
+    const wash = scanWashesInSource({
+      tokensCss,
+      file: "src/Widget.tsx",
+      source,
+    });
+    const pal = scanPaletteInSource({
+      tokensCss,
+      file: "src/Widget.tsx",
+      source,
+      palette,
+    });
+    const stats = parseCacheStats();
+    expect(
+      wash.failing.length + pal.failing.length,
+      "both families really did find something, so neither scan was a no-op",
+    ).toBeGreaterThan(0);
+    expect(
+      stats.misses,
+      "two scans of the SAME text is exactly one parse",
+    ).toBe(1);
+    expect(
+      stats.hits,
+      "and the second family was served the first family's parse",
+    ).toBe(1);
+    resetParseCache();
+  });
 
   it("gives every CURRENT deferred occurrence an identity, and no id two elements", () => {
     // Forward-only, deliberately. There is no aggregate count here and no count

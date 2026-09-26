@@ -283,11 +283,48 @@ export interface IdentityContext {
  *
  * Both forms count, because both open a tag: `<div …>` and `<Icon />`.
  * Fragments and closing tags do not — a marker is about to open something.
+ *
+ * Memoized on the exact text; see `PARSE_CACHE` for why the key is the text and
+ * not the path, and `parseCacheStats` for the non-timing way to assert it.
  */
-function jsxElements(source: string): {
+interface ParsedJsx {
   starts: number[];
   ends: Map<number, number>;
-} {
+}
+
+/**
+ * Parse results, keyed by the EXACT source text.
+ *
+ * Keyed by text and not by path, deliberately. `validateRealTree` in the census
+ * test drives the whole component tree several times over, and the integrated
+ * tests swap one file's source between passes to simulate a fix. Keying by path
+ * would hand back the previous pass's parse for an overridden file, which is
+ * exactly the bug those tests exist to catch. Keyed by text, an override is a
+ * different key and is parsed for real, while the other 235 files are served
+ * from cache. A hash would be smaller but would need collision reasoning; exact
+ * text comparison cannot collide.
+ *
+ * Bounded, so a long watch session cannot grow it without limit.
+ */
+const PARSE_CACHE = new Map<string, ParsedJsx>();
+const PARSE_CACHE_MAX = 512;
+
+/** Hit and miss counts, so the contract can be asserted without a clock. */
+let parseHits = 0;
+let parseMisses = 0;
+
+export function parseCacheStats(): { hits: number; misses: number } {
+  return { hits: parseHits, misses: parseMisses };
+}
+
+/** Test-only. Clears the cache and the counters. */
+export function resetParseCache(): void {
+  PARSE_CACHE.clear();
+  parseHits = 0;
+  parseMisses = 0;
+}
+
+function jsxElementsUncached(source: string): ParsedJsx {
   const sf = ts.createSourceFile(
     "contrast-site.tsx",
     source,
@@ -308,6 +345,25 @@ function jsxElements(source: string): {
   visit(sf);
   starts.sort((a, b) => a - b);
   return { starts, ends };
+}
+
+/**
+ * `starts` and `ends` are read-only in every caller and are shared deliberately:
+ * handing each caller its own copy would cost more than the parse it saved.
+ */
+function jsxElements(source: string): ParsedJsx {
+  const hit = PARSE_CACHE.get(source);
+  if (hit !== undefined) {
+    parseHits++;
+    return hit;
+  }
+  parseMisses++;
+  const parsed = jsxElementsUncached(source);
+  // Re-insert on hit-to-refresh would be wrong for a FIFO bound; instead clear
+  // when full, which is simple and bounded, and the working set here is ~236.
+  if (PARSE_CACHE.size >= PARSE_CACHE_MAX) PARSE_CACHE.clear();
+  PARSE_CACHE.set(source, parsed);
+  return parsed;
 }
 
 /** The `<` of the next REAL JSX element strictly after `from`, or null. */
