@@ -108,6 +108,37 @@
   --positive-fill: #007a55;
   --positive-fill-fg: #ffffff;
 
+  /* The two tones of a focus indicator, named by their luminance.
+     A focus ring that has to survive an arbitrary backdrop cannot be one
+     colour, and the Toast is the case that proves it. Its ring used to be
+     `focus-visible:ring-[var(--color-accent)]/50` with
+     `focus-visible:outline-none`: in light theme --color-accent is #4f46e5 and
+     the info fill --color-accent-fill is ALSO #4f46e5, so the half-alpha ring
+     composited to exactly its own fill at 1.00:1, and the browser's fallback
+     outline was explicitly removed. A keyboard user focusing the close button
+     got nothing drawn at all.
+
+     So the indicator is a sandwich and each tone has a job:
+       --focus-ring-light   the ring itself, which sits on a saturated fill.
+                            White clears 4.77:1 on danger, 5.36:1 on positive
+                            and 6.29:1 on accent, all above the 3:1 that WCAG
+                            1.4.11 requires of a non-text indicator.
+       --focus-ring-dark    the offset, the only part that can meet a page
+                            surface, since the light ring is invisible on the
+                            light ones. It clears 17:1-20:1 against them.
+
+     Neither is a general focus colour and neither should be used as one: the
+     light ring is 1.00:1 on --surface-raised and the dark ring is 1.00:1 on the
+     dark canvas. That is the trade, and it is why a component picks the pair by
+     its own backdrop rather than reaching for one token.
+
+     Named by luminance, not by component, because the property that matters is
+     which side of the backdrop they are on. Both are declared here AND in .dark
+     with identical values — a focus ring that flips is a ring that vanishes in
+     one theme, which is the same failure the fill families exist to prevent. */
+  --focus-ring-light: #ffffff;
+  --focus-ring-dark: #0a0b10;
+
   /* Tinted fills and borders.
      The HUES are pinned below, not derived from the semantic accents above:
      these tints are the app's pre-token hardcoded 600-step values, and the
@@ -371,6 +402,12 @@
   --positive-fill: #007a55;
   --positive-fill-fg: #ffffff;
 
+  /* Both focus tones identical to :root, re-declared rather than inherited so a
+     one-theme edit is a visible test failure. See the :root note: a flipping
+     focus ring is a ring that vanishes. */
+  --focus-ring-light: #ffffff;
+  --focus-ring-dark: #0a0b10;
+
   /* Same hues as :root, NOT the .dark accents above — the hardcoded rgba() these
      replace was theme-independent, so the washes must be too. Re-declared here
      explicitly (rather than inherited) so both themes are individually auditable
@@ -467,6 +504,8 @@
   --color-warning-fill-hover: var(--warning-fill-hover);
   --color-positive-fill: var(--positive-fill);
   --color-positive-fill-fg: var(--positive-fill-fg);
+  --color-focus-ring-light: var(--focus-ring-light);
+  --color-focus-ring-dark: var(--focus-ring-dark);
 
   --color-success: var(--positive);
   --color-warning: var(--warning);

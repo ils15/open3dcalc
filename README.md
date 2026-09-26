@@ -214,7 +214,7 @@ Seletores com imagens (impressoras, marketplaces) agora renderizam **thumbnails*
 
 ## 🎨 Cadeia de contraste: tokens de preenchimento e o Toast
 
-O app mede contraste de texto com a matemática WCAG 2.1 em `src/shared/__tests__/helpers/contrast.ts`, e três guardas a usam: `tokens.test.ts` (nível de token), `accentBackgroundContrast.test.ts` (call sites) e o próprio `Toast`. A regra que organiza a família toda:
+O app mede contraste com a matemática WCAG 2.1 em `src/shared/__tests__/helpers/contrast.ts`, usada pelos testes: `tokens.test.ts` (nível de token), `accentBackgroundContrast.test.ts` (call sites, que varre as class strings do `Toast.tsx`) e `Toast.test.tsx` (que **renderiza** o componente real e mede as classes resultantes do DOM). O `Toast` em si não importa esse helper — é o que os testes medem, não o componente. A regra que organiza a família toda:
 
 > **Um token de fundo e a tinta que fica sobre ele são escolhidos como um par, e nenhum dos dois muda com o tema.**
 
@@ -249,6 +249,21 @@ O **sólido** também importa mecanicamente: `isSolidBg` mede apenas fundos sól
 Sem `-hover` de propósito, ao contrário dos outros dois: aqueles respondem a um **botão**. Um toast é `role="region"`, não tem interação de ponteiro e se descarta sozinho — um token de hover ficaria sem consumidor, que foi exatamente como `--accent-fill` foi declarado e não usado.
 
 O `accentBackgroundContrast.test.ts` lê as class strings reais do `Toast.tsx` em vez de repetir numa tabela, mede cada variante sobre as 5 superfícies em ambos os temas, e exige que a tinta **não vire** entre eles — a asserção que sobrevive a uma refatoração que mude as cores.
+
+### O botão de fechar e o indicador de foco
+
+A correção do texto deixou duas coisas sem medir, e as duas reprovavam. Um botão de fechar é um **controle**, e o indicador visual de um controle é um caso de **contraste não textual** — WCAG 1.4.11 pede 3:1, não os 4,5:1 do texto. O texto da mensagem passar em 1.4.3 não dizia nada sobre o botão.
+
+| o que estava                                          | medido                             | agora                                    | barra (1.4.11) |
+| ----------------------------------------------------- | ---------------------------------- | ---------------------------------------- | -------------- |
+| glifo do fechar a `opacity-70` sobre o fill de danger | **2,75:1**                         | `opacity-90` → **4,01:1** (hover 4,77:1) | 3:1            |
+| anel de foco `ring-[var(--color-accent)]/50`          | **1,00:1** no fill de info (light) | anel opaco de duas tonalidades           | 3:1            |
+
+O anel antigo media **1,00:1** porque em light `--color-accent` e `--color-accent-fill` são o mesmo valor (`#4f46e5`): o anel a 50% compunha exatamente o próprio fill._some e `focus-visible:outline-none` desligava o contorno do navegador que teria servido de reserva — foco chegava e nada era desenhado.
+
+A troca é por **duas tonalidades**, porque uma cor não dá conta disso: o anel claro senta no fill saturado e passa de 4,77:1 a 6,29:1 em todas as variantes, e o offset escuro é a única parte que encontra uma superfície de página, passando de 17:1 a 20:1 contra as claras. Os tokens são `--focus-ring-light` e `--focus-ring-dark`, declarados em `:root` e em `.dark` com valores idênticos — um anel de foco que troca de tema é um anel que some em um deles. Nenhum dos dois é uma cor de foco geral: o claro é 1,00:1 sobre `--surface-raised` e o escuro é 1,00:1 sobre o canvas escuro, e é por isso que o componente escolhe o par pelo próprio fundo.
+
+`Toast.test.tsx` **renderiza** o componente e mede as classes que o DOM realmente tem. Isso importa: `expect(button.className).toContain("ring-white")` passaria para uma classe que nunca renderiza, num tamanho que não desenha nada, ou com um alpha que cancela o fill. O teste afirma as razões reais.
 
 ### O piso da população adiada, medido em _sites_
 

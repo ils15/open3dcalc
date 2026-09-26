@@ -90,7 +90,25 @@ function ToastItem({
       <span className="flex-1">{item.message}</span>
       <button
         onClick={() => onDismiss(item.id)}
-        className="shrink-0 opacity-70 hover:opacity-100 transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/50 focus-visible:outline-none rounded"
+        // `opacity-90` is the lowest de-emphasis that still clears WCAG 1.4.11's
+        // 3:1 for a non-text indicator: at 70% the glyph measured 2.75:1 on the
+        // danger fill, so the dismiss control was below the bar. At 90% the
+        // worst case is 4.01:1 and hover returns to full 4.77:1, which keeps the
+        // visual hierarchy against the message without the control becoming
+        // hard to find.
+        //
+        // The focus ring is a deliberate two-tone sandwich rather than one
+        // colour. It was `ring-[var(--color-accent)]/50` with `outline-none`,
+        // and in light theme --color-accent is the SAME value as the info fill,
+        // so the half-alpha ring composited to exactly its own fill at 1.00:1 —
+        // and the browser outline that would have covered for it was switched
+        // off, which together meant a keyboard user got nothing drawn. The
+        // light ring clears 4.77:1-6.29:1 on every fill; the dark offset clears
+        // 17:1-20:1 against the light surfaces, which the light ring cannot do.
+        // `outline-none` is kept only because an opaque ring now replaces it,
+        // and Toast.test.tsx asserts that pairing directly rather than trusting
+        // it.
+        className="shrink-0 opacity-90 hover:opacity-100 transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring-light)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-focus-ring-dark)] focus-visible:outline-none rounded"
         aria-label="Fechar"
       >
         <X className="w-4 h-4" />

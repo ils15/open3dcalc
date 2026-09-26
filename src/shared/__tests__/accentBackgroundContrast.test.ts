@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import {
   AA_NORMAL_TEXT,
@@ -843,40 +843,171 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
   });
 
   /**
-   * The forms the census currently finds below AA. Anything NEW is a site that
-   * changed shape, and is the finding.
+   * THE PIN IS PER SITE, NOT PER FORM
+   * ---------------------------------
+   * The previous version of this was a GLOBAL set of allowed shapes. That was
+   * a weaker instrument than it looked, and the review was right to call it: a
+   * site could migrate from one already-allowlisted form to a DIFFERENT
+   * already-allowlisted form without changing the count or the set, and pass
+   * silently. The allowlist said "this form is known broken" when what needed
+   * saying was "this form is broken *here*".
    *
-   * The shape is the utility pair EXACTLY AS WRITTEN, variant prefixes
-   * included, so `bg-x/20 text-x` and `hover:bg-x/20 hover:text-x` are two
-   * forms rather than one. They are measured identically — the main scan strips
-   * variants, which is stricter than the rendered reality and deliberate — but
-   * they are not the same SITE, and a floor that cannot tell a resting pairing
-   * from a hover one cannot see one being rewritten into the other.
+   * So the pin maps FILE -> the multiset of shapes that file is allowed to
+   * hold, and a discovered site is only accounted for if its own file has that
+   * shape still available. Multiset, not set: CatalogTab holds three identical
+   * `bg-[var(--color-accent)]/20 + text-[var(--color-accent)]` sites and that is
+   * three pieces of information, not one.
    *
-   * This list was written by hand first and the assertion below rejected two of
-   * its eight entries, because the census keeps the `hover:` on the background
-   * and the hand-written list had only put it on the ink. That is the list doing
-   * its job during authoring, and it is why it is derived from the census
-   * rather than trusted.
+   * HOW SITE IDENTITY STAYS STABLE — the question a line-number pin cannot
+   * answer
+   * ------------------------------------------------------------------------
+   * A site's identity here is the PAIR (file, shape), and the stability is
+   * structural rather than maintained: a site is *defined* by where it is and
+   * what form it takes, so altering either component necessarily produces a
+   * different key, and the check is on keys. There is no separate identifier to
+   * fall out of date — no line number, which any edit above it would shift, and
+   * no counter, which any insertion above it would renumber.
+   *
+   * The encoding cannot drift silently, which is the property that matters:
+   *
+   *   - a site changes form      -> (file, newShape) is a new key. Even if
+   *                                 newShape is allowlisted for ANOTHER file,
+   *                                 this file's multiset has no copy left, so
+   *                                 it is an excess. Caught.
+   *   - a site appears           -> a new key in some file. Caught.
+   *   - a site is resolved       -> its key simply stops being discovered.
+   *                                 Not caught, deliberately (below).
+   *   - a file is renamed        -> both the pin and the census move together,
+   *                                 so the key still matches; the pin is
+   *                                 updated in the same commit as the rename.
+   *
+   * ONE-DIRECTIONALITY, AND WHAT IT COSTS
+   * -------------------------------------
+   * Still an allowlist, for the same reason as before: fixing a site must never
+   * fail this suite, only lower the number. So a pinned entry that is no longer
+   * discovered does NOT fail — which means a resolved site leaves a stale entry
+   * here. The cost is unchanged and still named in the file header: the list
+   * over-describes the backlog after a wave of fixes, and must be pruned by
+   * hand. The alternative punishes exactly the behaviour the guard exists to
+   * encourage.
    */
-  const WASH_SHAPES: readonly string[] = [
-    "bg-[var(--accent)]/15 + text-[var(--accent)]",
-    "bg-[var(--accent)]/20 + text-[var(--accent)]",
-    "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
-    "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
-    "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
-    "hover:bg-[var(--color-accent)]/20 + hover:text-[var(--color-accent)]",
-    "hover:bg-[var(--info)]/80 + text-[var(--text-inverse)]",
-    "hover:bg-[var(--revenue)]/10 + hover:text-[var(--revenue)]",
-  ];
+  const WASH_SITES: Record<string, readonly string[]> = {
+    "src/shared/components/Calculator/QuoteSection.tsx": [
+      "hover:bg-[var(--color-accent)]/20 + hover:text-[var(--color-accent)]",
+    ],
+    "src/shared/components/Calculator/SectionNav.tsx": [
+      "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
+      "bg-[var(--color-accent)]/15 + text-[var(--color-accent)]",
+    ],
+    "src/shared/components/Catalog/CatalogTab.tsx": [
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+    ],
+    "src/shared/components/Changelog/ChangelogPage.tsx": [
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+    ],
+    "src/shared/components/GcodePreview/GcodePreviewPanel.tsx": [
+      "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+      "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+    ],
+    "src/shared/components/Results/ExportActionsCard.tsx": [
+      "hover:bg-[var(--info)]/80 + text-[var(--text-inverse)]",
+    ],
+    "src/shared/components/Results/PriceHeroCard.tsx": [
+      "bg-[var(--accent)]/15 + text-[var(--accent)]",
+      "hover:bg-[var(--revenue)]/10 + hover:text-[var(--revenue)]",
+    ],
+    "src/shared/components/SpoolShelf/SpoolThumb.tsx": [
+      "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]",
+    ],
+    "src/shared/components/StlPreview/StlPreview.tsx": [
+      "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
+    ],
+    "src/shared/components/ui/Select/Select.tsx": [
+      "bg-[var(--accent)]/20 + text-[var(--accent)]",
+    ],
+  };
 
-  /** The four palette forms, including the 1.36:1 red-on-red hover. */
-  const PALETTE_SHAPES: readonly string[] = [
-    "bg-emerald-500 + text-white",
-    "bg-emerald-600 + text-white",
-    "bg-red-500 + text-white",
-    "bg-red-600 + text-[var(--color-danger)]",
-  ];
+  const PALETTE_SITES: Record<string, readonly string[]> = {
+    "src/platform/desktop/components/UpdateNotification/UpdateNotification.tsx":
+      ["bg-emerald-500 + text-white", "bg-emerald-600 + text-white"],
+    "src/shared/components/Calculator/HistoryTab/HistoryTab.tsx": [
+      "bg-red-600 + text-[var(--color-danger)]",
+    ],
+    "src/shared/components/Calculator/QuoteSection.tsx": [
+      "bg-emerald-500 + text-white",
+      "bg-emerald-600 + text-white",
+    ],
+    "src/shared/components/Catalog/CatalogTab.tsx": [
+      "bg-emerald-500 + text-white",
+      "bg-emerald-600 + text-white",
+    ],
+    "src/shared/components/Catalog/CustomerTab.tsx": [
+      "bg-red-600 + text-[var(--color-danger)]",
+    ],
+    "src/shared/components/Privacy/PrivacyScreen.tsx": [
+      "bg-red-500 + text-white",
+    ],
+    "src/shared/components/SpoolShelf/SpoolForm.tsx": [
+      "bg-emerald-500 + text-white",
+      "bg-emerald-600 + text-white",
+    ],
+  };
+
+  /**
+   * Discovered sites that their own file's pin does not account for.
+   *
+   * Returns one entry per (file, shape) that is over-supplied, with the count by
+   * which it is over-supplied, so the message can say "twice" rather than
+   * listing the same shape twice.
+   */
+  function unaccountedSites(
+    discovered: ReadonlyArray<{ file: string; shape: string }>,
+    pinned: Record<string, readonly string[]>,
+  ): Array<{ file: string; shape: string; excess: number }> {
+    // A working copy of each file's allowance, consumed as sites are matched.
+    const available = new Map<string, string[]>();
+    for (const [file, shapes] of Object.entries(pinned)) {
+      available.set(file, shapes.slice());
+    }
+    const excess = new Map<
+      string,
+      { file: string; shape: string; excess: number }
+    >();
+    for (const site of discovered) {
+      const pool = available.get(site.file) ?? [];
+      const at = pool.indexOf(site.shape);
+      if (at >= 0) {
+        pool.splice(at, 1);
+        continue;
+      }
+      const key = `${site.file} ${site.shape}`;
+      const found = excess.get(key) ?? {
+        file: site.file,
+        shape: site.shape,
+        excess: 0,
+      };
+      found.excess += 1;
+      excess.set(key, found);
+    }
+    return [...excess.values()];
+  }
+
+  function describeExcess(
+    family: string,
+    rows: Array<{ file: string; shape: string; excess: number }>,
+  ): string {
+    return (
+      `${rows.length} ${family} pairing(s) are below AA in a form their own file ` +
+      `is not pinned for:\n` +
+      rows.map((r) => `  ${r.file}  x${r.excess}  ${r.shape}`).join("\n") +
+      `\n\nThe pin is per file, so a form that is allowlisted ELSEWHERE does not ` +
+      `cover this site. Either the site is new — a regression, and it belongs ` +
+      `in the fix rather than in this map — or it migrated from a form this ` +
+      `file WAS pinned for, and that entry is now stale.`
+    );
+  }
 
   it("resolves every wash token it pairs, so the census is not a partial view", () => {
     // A census that silently skips what it cannot resolve reports a smaller
@@ -936,39 +1067,138 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
   });
 
   it.each([
-    ["wash", WASH_SHAPES, () => census.failing.map((s) => s.shape)],
-    ["palette", PALETTE_SHAPES, () => palette.failing.map((s) => s.shape)],
+    ["wash", WASH_SITES, () => census.failing],
+    ["palette", PALETTE_SITES, () => palette.failing],
   ] as const)(
-    "accounts for every %s shape it finds, so a site cannot change form quietly",
+    "accounts for every %s site against its OWN file's pin",
     (family, pinned, discovered) => {
-      // THE assertion the file-count floor could not make. A site that migrates
-      // from one broken form to a different broken form leaves every file count
-      // in the tree untouched; it cannot leave this set untouched, because the
-      // form it now takes is not on the list.
-      const found = [...new Set(discovered())].sort();
-      const unaccounted = found.filter((shape) => !pinned.includes(shape));
+      // THE assertion a global form set cannot make. See the block comment above:
+      // a site may migrate to a form that is allowlisted in a DIFFERENT file and
+      // still be unaccounted for, because the pin is keyed per file.
+      const rows = unaccountedSites(discovered(), pinned);
       expect(
-        unaccounted,
-        unaccounted.length
-          ? `${unaccounted.length} ${family} pairing(s) are below AA in a FORM ` +
-              `this list does not account for:\n` +
-              unaccounted.map((s) => `  ${s}`).join("\n") +
-              `\n\nEither the site is genuinely new — in which case it is a ` +
-              `regression and belongs in the fix, not in this list — or it ` +
-              `migrated from a form that WAS listed, and the old line above is ` +
-              `now stale and should be replaced by this one.`
-          : `${family} census found no unlisted shape`,
+        rows,
+        rows.length
+          ? describeExcess(family, rows)
+          : `${family} census is fully accounted for`,
       ).toHaveLength(0);
     },
   );
 
   it.each([
-    ["palette", PALETTE_SHAPES],
-    ["wash", WASH_SHAPES],
-  ] as const)("pins no %s shape that duplicates another", (_family, pinned) => {
-    // A duplicated line is a list that looks longer than the population it
-    // describes, which is the same rot the file count invited.
-    expect(new Set(pinned).size).toBe(pinned.length);
+    ["wash", WASH_SITES],
+    ["palette", PALETTE_SITES],
+  ] as const)(
+    "pins only real files for the %s family, so a typo cannot pin nothing",
+    (_family, pinned) => {
+      // Replaces the old "no duplicate shape" integrity check, which no longer
+      // applies: duplicates are meaningful in a per-file multiset (CatalogTab
+      // really does hold three identical sites). The risk that check was
+      // guarding against is a MALFORMED key, and this catches that — a path that
+      // does not exist pins nothing, and every site in it would then be reported
+      // as unaccounted, which is confusing rather than informative.
+      for (const file of Object.keys(pinned)) {
+        expect(
+          existsSync(resolve(projectRoot, file)),
+          `${file} is a key in the ${_family} pin but not a file in the tree; a ` +
+            `misspelt path pins nothing`,
+        ).toBe(true);
+        expect(
+          pinned[file].length,
+          `${file} is pinned with an empty shape list, which accounts for nothing`,
+        ).toBeGreaterThan(0);
+      }
+    },
+  );
+
+  it("catches a site that migrates to a form allowlisted in ANOTHER file", () => {
+    // The regression this pin exists for, modelled directly so it cannot be
+    // satisfied by accident.
+    //
+    // Before: a global allowlist. Two sites in two different files, two
+    // different forms, both listed. Migrate file A's site to file B's form —
+    // the count is unchanged, the global set is unchanged, and the old
+    // assertion passed. The site is now broken in a way nobody recorded.
+    //
+    // After: the pin is per file, so file A no longer has a spare copy of the
+    // form its site now takes, and the migration is an excess.
+    const pinned = {
+      "src/A.tsx": ["bg-[var(--x)]/20 + text-[var(--x)]"],
+      "src/B.tsx": ["bg-[var(--y)]/90 + text-[var(--y)]"],
+    };
+    const beforeMigration = [
+      { file: "src/A.tsx", shape: "bg-[var(--x)]/20 + text-[var(--x)]" },
+      { file: "src/B.tsx", shape: "bg-[var(--y)]/90 + text-[var(--y)]" },
+    ];
+    expect(
+      unaccountedSites(beforeMigration, pinned),
+      "the unmigrated population is fully accounted for",
+    ).toHaveLength(0);
+
+    const afterMigration = [
+      // file A's site has taken the form that only file B was pinned for
+      { file: "src/A.tsx", shape: "bg-[var(--y)]/90 + text-[var(--y)]" },
+      { file: "src/B.tsx", shape: "bg-[var(--y)]/90 + text-[var(--y)]" },
+    ];
+    const rows = unaccountedSites(afterMigration, pinned);
+    expect(
+      rows,
+      "a cross-file form swap must be reported, even though the form is " +
+        "globally allowlisted and the site count is unchanged",
+    ).toHaveLength(1);
+    expect(rows[0].file).toBe("src/A.tsx");
+    expect(rows[0].shape).toBe("bg-[var(--y)]/90 + text-[var(--y)]");
+  });
+
+  it("still passes when a site is RESOLVED, so a fix never fails the suite", () => {
+    // The one-directional property, asserted rather than assumed. Dropping a
+    // site must not produce an excess — the pin over-describes, it does not
+    // under-describe.
+    const pinned = {
+      "src/A.tsx": [
+        "bg-[var(--x)]/20 + text-[var(--x)]",
+        "bg-[var(--x)]/20 + text-[var(--x)]",
+      ],
+    };
+    expect(
+      unaccountedSites(
+        [{ file: "src/A.tsx", shape: "bg-[var(--x)]/20 + text-[var(--x)]" }],
+        pinned,
+      ),
+      "resolving one of two identical sites leaves a stale entry and no excess",
+    ).toHaveLength(0);
+    expect(
+      unaccountedSites([], pinned),
+      "resolving every site in a file leaves stale entries and no excess",
+    ).toHaveLength(0);
+  });
+
+  it("catches a site appearing in a file the pin does not mention at all", () => {
+    const rows = unaccountedSites(
+      [
+        {
+          file: "src/Unlisted.tsx",
+          shape: "bg-[var(--z)]/50 + text-[var(--z)]",
+        },
+      ],
+      { "src/A.tsx": ["bg-[var(--x)]/20 + text-[var(--x)]"] },
+    );
+    expect(rows.map((r) => r.file)).toEqual(["src/Unlisted.tsx"]);
+  });
+
+  it("reports the multiplicity when a form is over-supplied in one file", () => {
+    const rows = unaccountedSites(
+      [
+        { file: "src/A.tsx", shape: "bg-[var(--q)]/10 + text-[var(--q)]" },
+        { file: "src/A.tsx", shape: "bg-[var(--q)]/10 + text-[var(--q)]" },
+      ],
+      { "src/A.tsx": [] },
+    );
+    expect(rows).toHaveLength(1);
+    expect(
+      rows[0].excess,
+      "one row, carrying the count, not two identical rows",
+    ).toBe(2);
   });
 
   it("resolves the Tailwind palette it measures palette pairings against", () => {
