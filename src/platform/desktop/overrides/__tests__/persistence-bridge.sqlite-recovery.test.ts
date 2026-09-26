@@ -223,6 +223,107 @@ describe("production Electron persistence bridge over on-disk SQLite", () => {
     );
     expect(sqlite.$client.pragma("foreign_key_check")).toEqual([]);
   });
+
+  it("hydrates atomically when a SQLite read fails", async () => {
+    failureArmed = false;
+    await initPersistenceBridge();
+    const sourcePreimage = localStorageSnapshot();
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    setItem.mockClear();
+    vi.spyOn(dbApi, "load").mockRejectedValue(
+      new Error("synthetic hydration read failure"),
+    );
+
+    await expect(initPersistenceBridge()).rejects.toThrow(
+      "synthetic hydration read failure",
+    );
+    expect(localStorageSnapshot()).toEqual(sourcePreimage);
+    expect(setItem).not.toHaveBeenCalled();
+  });
+
+  it("flushes on close and periodically, prunes stale keys, and reports DB errors", async () => {
+    failureArmed = false;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const save = vi.spyOn(dbApi, "save");
+    await initPersistenceBridge();
+
+    window.dispatchEvent(new Event("beforeunload"));
+    expect(save).toHaveBeenCalledWith(
+      FIRST_BRIDGE_KEY,
+      source.get(FIRST_BRIDGE_KEY),
+    );
+    const closeFailure = new Error("synthetic close-time save failure");
+    save.mockRejectedValueOnce(closeFailure);
+    window.dispatchEvent(new Event("beforeunload"));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(warn).toHaveBeenCalledWith(
+      "[persistence-bridge] Failed to save localStorage to SQLite:",
+      closeFailure,
+    );
+
+    const staleKey = "open3dcalc_synthetic_stale";
+    writeStoredRow(sqlite.$client, staleKey, "synthetic stale value");
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(
+      sqlite.$client
+        .prepare("SELECT key FROM storage WHERE key = ?")
+        .get(staleKey),
+    ).toBeUndefined();
+
+    const cleanupFailure = new Error("synthetic stale-key cleanup failure");
+    vi.spyOn(dbApi, "listKeys").mockRejectedValueOnce(cleanupFailure);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(warn).toHaveBeenCalledWith(
+      "[persistence-bridge] Failed to clean stale keys:",
+      cleanupFailure,
+    );
+
+    const intervalFailure = new Error("synthetic periodic save failure");
+    save.mockRejectedValueOnce(intervalFailure);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(warn).toHaveBeenCalledWith(
+      "[persistence-bridge] Failed to save localStorage to SQLite:",
+      intervalFailure,
+    );
+    warn.mockRestore();
+  });
+
+  it("does not install persistence work outside Electron", async () => {
+    delete (window as unknown as { electronAPI?: unknown }).electronAPI;
+    const schedule = vi.spyOn(globalThis, "setInterval");
+
+    await expect(initPersistenceBridge()).resolves.toBeUndefined();
+    expect(schedule).not.toHaveBeenCalled();
+    schedule.mockRestore();
+  });
+
+  it("dispatches the database warning after five consecutive startup failures", async () => {
+    vi.resetModules();
+    const freshBridge = await import("../persistence-bridge");
+    const listener = vi.fn();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    document.addEventListener("open3dcalc:db-error", listener);
+    vi.spyOn(dbApi, "listKeys").mockRejectedValue(
+      new Error("synthetic repeated startup failure"),
+    );
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await expect(freshBridge.initPersistenceBridge()).rejects.toThrow(
+        "synthetic repeated startup failure",
+      );
+    }
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0][0]).toMatchObject({
+      detail: {
+        message:
+          "Database unavailable — data will not persist between sessions.",
+      },
+    });
+    document.removeEventListener("open3dcalc:db-error", listener);
+    warn.mockRestore();
+  });
 });
 
 function makeSqliteBackend(sqlite: Database.Database) {

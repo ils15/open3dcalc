@@ -5,7 +5,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { closeDatabase, initDatabase } from "../database.js";
+import {
+  closeDatabase,
+  getDbPath,
+  initDatabase,
+  runMigrations,
+  validateDatabaseFile,
+} from "../database.js";
 
 type MigrationFile =
   | "0000_initial.sql"
@@ -284,6 +290,103 @@ describe("production SQLite startup migration recovery", () => {
   afterEach(() => {
     closeDatabase();
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("fails closed for absent or empty migration directories", () => {
+    const sqlite = openSeedDatabase();
+    try {
+      expect(() => runMigrations(sqlite, null)).toThrow(
+        "Database migrations directory is missing",
+      );
+      expect(() =>
+        runMigrations(sqlite, path.join(tmpDir, "missing-migrations")),
+      ).toThrow("Database migrations directory is missing");
+      expect(() => runMigrations(sqlite, migrationDir)).toThrow(
+        "Database migrations directory contains no SQL files",
+      );
+    } finally {
+      sqlite.close();
+    }
+  });
+
+  it("splits statements around comments and semicolons inside quoted SQL", () => {
+    fs.writeFileSync(
+      path.join(migrationDir, "0000_parser.sql"),
+      `-- a line comment; must not end a statement
+       CREATE TABLE parser_table (
+         id INTEGER PRIMARY KEY,
+         [bracket;name] TEXT,
+         "double;name" TEXT,
+         \`tick;name\` TEXT,
+         note TEXT CHECK(note <> 'semi;colon' AND note <> 'it''s;fine')
+       );
+       /* a block comment; between statements */
+       CREATE TABLE parser_after_comments (id INTEGER);`,
+    );
+
+    const sqlite = openSeedDatabase();
+    try {
+      runMigrations(sqlite, migrationDir);
+      expect(tableColumns(sqlite, "parser_table")).toEqual([
+        "id",
+        "bracket;name",
+        "double;name",
+        "tick;name",
+        "note",
+      ]);
+      expect(tableColumns(sqlite, "parser_after_comments")).toEqual(["id"]);
+    } finally {
+      sqlite.close();
+    }
+  });
+
+  it("validates a full SQLite snapshot and rejects invalid, incomplete, or FK-invalid files", () => {
+    initDatabase(dbPath);
+    closeDatabase();
+    expect(() => validateDatabaseFile(dbPath)).not.toThrow();
+
+    const invalidPath = path.join(tmpDir, "not-sqlite.db");
+    fs.writeFileSync(invalidPath, "synthetic non-SQLite bytes");
+    expect(() => validateDatabaseFile(invalidPath)).toThrow(
+      "file is not a database",
+    );
+
+    const incompletePath = path.join(tmpDir, "incomplete.db");
+    const incomplete = new Database(incompletePath);
+    incomplete.close();
+    expect(() => validateDatabaseFile(incompletePath)).toThrow(
+      "Database is missing tables required by this app version",
+    );
+
+    const invalidForeignKey = new Database(dbPath);
+    invalidForeignKey.pragma("foreign_keys = OFF");
+    invalidForeignKey.exec(`
+      CREATE TABLE synthetic_parent (id INTEGER PRIMARY KEY);
+      CREATE TABLE synthetic_child (
+        parent_id INTEGER REFERENCES synthetic_parent(id)
+      );
+      INSERT INTO synthetic_child VALUES (404);
+    `);
+    invalidForeignKey.close();
+    expect(() => validateDatabaseFile(dbPath)).toThrow(
+      "Foreign key check failed",
+    );
+  });
+
+  it("resolves an explicit test DB path and the non-Electron fallback", () => {
+    const previousPath = process.env["OPEN3DCALC_DB_PATH"];
+    try {
+      process.env["OPEN3DCALC_DB_PATH"] = dbPath;
+      expect(getDbPath()).toBe(dbPath);
+      delete process.env["OPEN3DCALC_DB_PATH"];
+      expect(getDbPath()).toMatch(/open3dcalc\.db$/);
+    } finally {
+      if (previousPath === undefined) {
+        delete process.env["OPEN3DCALC_DB_PATH"];
+      } else {
+        process.env["OPEN3DCALC_DB_PATH"] = previousPath;
+      }
+    }
   });
 
   it("resumes a physical multi-statement migration after a durable partial write", () => {
