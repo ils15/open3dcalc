@@ -65,6 +65,47 @@ function db() {
   return window.electronAPI!.db;
 }
 
+/**
+ * Return the known and manifest-approved localStorage source values once.
+ * Capturing before the asynchronous writes keeps iteration stable while the
+ * IPC adapter is saving rows.
+ */
+function collectLocalStorageEntries(): Array<[string, string]> {
+  const entries: Array<[string, string]> = [];
+  const seen = new Set<string>();
+
+  const collect = (key: string): void => {
+    if (seen.has(key) || !isKeyAllowed(key)) return;
+    const raw = localStorage.getItem(key);
+    if (raw === null) return;
+    seen.add(key);
+    entries.push([key, raw]);
+  };
+
+  for (const key of LOCALSTORAGE_KEYS) collect(key);
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith("open3dcalc_")) collect(key);
+  }
+  return entries;
+}
+
+function noteDbFailure(error: unknown, operation: string): void {
+  console.warn(`[persistence-bridge] Failed to ${operation}:`, error);
+  consecutiveDbFailures++;
+  if (consecutiveDbFailures === MAX_FAILURES_BEFORE_WARN) {
+    if (typeof document !== "undefined") {
+      const event = new CustomEvent("open3dcalc:db-error", {
+        detail: {
+          message:
+            "Database unavailable — data will not persist between sessions.",
+        },
+      });
+      document.dispatchEvent(event);
+    }
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Core operations                                                     */
 /* ------------------------------------------------------------------ */
@@ -77,41 +118,22 @@ function db() {
  * what localStorage expects — so we move the raw strings as-is.
  */
 async function loadFromDatabase(): Promise<void> {
-  try {
-    const keys = await db().listKeys();
-    let loaded = 0;
+  const keys = await db().listKeys();
+  const values: Array<[string, string]> = [];
 
-    for (const key of keys) {
-      const raw = await db().load(key);
-      // SPEC-01 gate: unknown keys are never materialized locally.
-      if (!isKeyAllowed(key)) continue;
-      if (raw !== null && raw !== undefined) {
-        localStorage.setItem(key, raw);
-        loaded++;
-      }
-    }
-
-    console.log(
-      `[persistence-bridge] Loaded ${loaded}/${keys.length} keys from SQLite`,
-    );
-  } catch (error) {
-    console.warn(
-      "[persistence-bridge] Failed to load from SQLite, using localStorage fallback:",
-      error,
-    );
-    consecutiveDbFailures++;
-    if (consecutiveDbFailures === MAX_FAILURES_BEFORE_WARN) {
-      if (typeof document !== "undefined") {
-        const event = new CustomEvent("open3dcalc:db-error", {
-          detail: {
-            message:
-              "Database unavailable — data will not persist between sessions.",
-          },
-        });
-        document.dispatchEvent(event);
-      }
-    }
+  for (const key of keys) {
+    // SPEC-01 gate: unknown keys are never materialized locally.
+    if (!isKeyAllowed(key)) continue;
+    const raw = await db().load(key);
+    if (raw !== null && raw !== undefined) values.push([key, raw]);
   }
+
+  // Read every row successfully before touching localStorage. A DB read error
+  // must reject startup without applying a partial hydration to the renderer.
+  for (const [key, raw] of values) localStorage.setItem(key, raw);
+  console.log(
+    `[persistence-bridge] Loaded ${values.length}/${keys.length} keys from SQLite`,
+  );
 }
 
 /**
@@ -121,55 +143,9 @@ async function loadFromDatabase(): Promise<void> {
  * Moves JSON strings as-is from localStorage to SQLite.
  */
 async function saveToDatabase(): Promise<void> {
-  try {
-    let saved = 0;
-
-    // 1. Save known keys from the static list
-    for (const key of LOCALSTORAGE_KEYS) {
-      // SPEC-01 gate: unknown keys are denied and never copied to SQLite.
-      if (!isKeyAllowed(key)) continue;
-      const raw = localStorage.getItem(key);
-      if (raw !== null) {
-        await db().save(key, raw);
-        saved++;
-      }
-    }
-
-    // 2. Also save any dynamic open3dcalc_ keys not in the static list
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (
-        key &&
-        !LOCALSTORAGE_KEYS.includes(
-          key as (typeof LOCALSTORAGE_KEYS)[number],
-        ) &&
-        key.startsWith("open3dcalc_")
-      ) {
-        if (!isKeyAllowed(key)) continue;
-        const raw = localStorage.getItem(key);
-        if (raw !== null) {
-          await db().save(key, raw);
-          saved++;
-        }
-      }
-    }
-
-    console.log(`[persistence-bridge] Saved ${saved} keys to SQLite`);
-  } catch (error) {
-    console.warn("[persistence-bridge] Failed to save to SQLite:", error);
-    consecutiveDbFailures++;
-    if (consecutiveDbFailures === MAX_FAILURES_BEFORE_WARN) {
-      if (typeof document !== "undefined") {
-        const event = new CustomEvent("open3dcalc:db-error", {
-          detail: {
-            message:
-              "Database unavailable — data will not persist between sessions.",
-          },
-        });
-        document.dispatchEvent(event);
-      }
-    }
-  }
+  const entries = collectLocalStorageEntries();
+  for (const [key, raw] of entries) await db().save(key, raw);
+  console.log(`[persistence-bridge] Saved ${entries.length} keys to SQLite`);
 }
 
 /**
@@ -197,29 +173,33 @@ async function deleteStaleKeys(): Promise<void> {
 }
 
 /**
- * Migrate existing localStorage data to SQLite on first run.
- * Only runs if the SQLite storage table is empty (no keys yet).
+ * Import localStorage data when SQLite does not yet contain every approved
+ * source key. This also resumes a previous import interrupted after any
+ * committed prefix of per-key writes.
  */
 async function migrateIfNeeded(): Promise<void> {
-  try {
-    const existingKeys = await db().listKeys();
+  const existingKeys = new Set(await db().listKeys());
+  const sourceEntries = collectLocalStorageEntries();
+  const missingSourceKeys = sourceEntries.some(
+    ([key]) => !existingKeys.has(key),
+  );
 
-    if (existingKeys.length > 0) {
-      // SQLite already has data — skip migration
-      console.log(
-        "[persistence-bridge] SQLite has data, skipping localStorage migration",
-      );
-      return;
-    }
-
-    // SQLite is empty — migrate from localStorage
+  if (!missingSourceKeys) {
+    // SQLite is authoritative only when it already contains every allowed
+    // source key. A theme seed or partial write must never suppress recovery.
     console.log(
-      "[persistence-bridge] First run detected — migrating localStorage → SQLite",
+      "[persistence-bridge] SQLite contains all localStorage source keys; skipping import",
     );
-    await saveToDatabase();
-  } catch (error) {
-    console.warn("[persistence-bridge] Migration check failed:", error);
+    return;
   }
+
+  // Idempotent upserts make this restart-safe after any prefix of db.save
+  // writes has committed. Failure intentionally propagates to abort renderer
+  // startup; localStorage is left untouched until the entire import succeeds.
+  console.log(
+    "[persistence-bridge] SQLite is incomplete — migrating localStorage → SQLite",
+  );
+  for (const [key, raw] of sourceEntries) await db().save(key, raw);
 }
 
 /* ------------------------------------------------------------------ */
@@ -246,11 +226,17 @@ export async function initPersistenceBridge(): Promise<void> {
     return;
   }
 
-  // 1. Migrate localStorage → SQLite if first run
-  await migrateIfNeeded();
+  try {
+    // 1. Migrate localStorage → SQLite if first run or a prior startup was
+    //    interrupted. Any partial failure rejects before renderer hydration.
+    await migrateIfNeeded();
 
-  // 2. Load SQLite data into localStorage (overwrites any stale localStorage)
-  await loadFromDatabase();
+    // 2. Load SQLite data into localStorage only after the complete migration.
+    await loadFromDatabase();
+  } catch (error) {
+    noteDbFailure(error, "initialize persistence bridge");
+    throw error;
+  }
 
   // 3. Set up save-on-close via beforeunload
   //
@@ -259,15 +245,21 @@ export async function initPersistenceBridge(): Promise<void> {
   // As a safety net, the 30 s periodic save guards against data loss
   // if beforeunload doesn't fully complete.
   window.addEventListener("beforeunload", () => {
-    saveToDatabase();
+    void saveToDatabase().catch((error: unknown) =>
+      noteDbFailure(error, "save localStorage to SQLite"),
+    );
   });
 
   // 4. Periodic auto-save every 30 seconds (safety net)
   //    Also runs stale-key cleanup on each cycle.
   const AUTO_SAVE_INTERVAL_MS = 10_000;
   setInterval(async () => {
-    await saveToDatabase();
-    await deleteStaleKeys();
+    try {
+      await saveToDatabase();
+      await deleteStaleKeys();
+    } catch (error) {
+      noteDbFailure(error, "save localStorage to SQLite");
+    }
   }, AUTO_SAVE_INTERVAL_MS);
 
   console.log(

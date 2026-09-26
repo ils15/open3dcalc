@@ -96,43 +96,111 @@ function resolveMigrationsDir(): string | null {
 }
 
 /**
- * Reads and executes SQL migration files in order.
- * Each migration file must be idempotent or guarded with IF NOT EXISTS.
- *
- * Tolerates migrations that were already applied ("table/index already
- * exists", "duplicate column") so the database can be re-initialized after a
- * db:import swap without failing on a fully-migrated backup file. Migration
- * 0003 was the first ALTER TABLE in the project — a re-run on an
- * already-migrated file answers "duplicate column name: tare_grams".
+ * Reads SQL migration files in order and executes each statement separately.
+ * Already-applied DDL statements are skipped individually so a restart after
+ * interruption resumes the remainder of the file instead of accepting a
+ * partial schema as complete.
  */
-export function runMigrations(sqlite: Database.Database): void {
-  const migrationsDir = resolveMigrationsDir();
-  if (migrationsDir === null) {
-    console.warn("[db] Migrations directory not found at:", migrationsDir);
-    console.warn("[db] Tables will NOT be created. The database may be empty.");
-    return;
+function splitSqlStatements(sql: string): string[] {
+  const statements: string[] = [];
+  let start = 0;
+  let quote: "'" | '"' | "`" | "]" | null = null;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let index = 0; index < sql.length; index++) {
+    const char = sql[index];
+    const next = sql[index + 1];
+
+    if (lineComment) {
+      if (char === "\n") lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (char === "*" && next === "/") {
+        blockComment = false;
+        index++;
+      }
+      continue;
+    }
+    if (quote !== null) {
+      const closing = quote === "]" ? "]" : quote;
+      if (char === closing) {
+        if (next === closing && quote !== "]") {
+          index++;
+        } else {
+          quote = null;
+        }
+      }
+      continue;
+    }
+
+    if (char === "-" && next === "-") {
+      lineComment = true;
+      index++;
+    } else if (char === "/" && next === "*") {
+      blockComment = true;
+      index++;
+    } else if (char === "'" || char === '"' || char === "`") {
+      quote = char;
+    } else if (char === "[") {
+      quote = "]";
+    } else if (char === ";") {
+      const statement = sql.slice(start, index + 1).trim();
+      if (statement.length > 0) statements.push(statement);
+      start = index + 1;
+    }
+  }
+
+  const remainder = sql.slice(start).trim();
+  if (remainder.length > 0) statements.push(remainder);
+  return statements;
+}
+
+export function runMigrations(
+  sqlite: Database.Database,
+  migrationsDir: string | null = resolveMigrationsDir(),
+): void {
+  if (migrationsDir === null || !fs.existsSync(migrationsDir)) {
+    throw new Error(
+      "Database migrations directory is missing; startup aborted.",
+    );
   }
 
   const files = fs
     .readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))
     .sort();
+  if (files.length === 0) {
+    throw new Error(
+      "Database migrations directory contains no SQL files; startup aborted.",
+    );
+  }
 
   for (const file of files) {
     const sql = fs.readFileSync(path.join(migrationsDir, file), "utf-8");
-    try {
-      sqlite.exec(sql);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      // CREATE TABLE/INDEX re-runs answer "already exists"; the project's
-      // first ALTER TABLE (0003) answers "duplicate column name".
-      if (/already exists|duplicate column/i.test(message)) {
-        console.warn(
-          `[db] Migration ${file} already applied, skipping (${message})`,
-        );
-        continue;
+    for (const statement of splitSqlStatements(sql)) {
+      try {
+        sqlite.exec(statement);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        // SQLite commits each DDL/DML statement in an exec script unless an
+        // explicit transaction is active. On restart after a partial script,
+        // skip only the statement already applied; never skip the rest of its
+        // migration file.
+        const isAlreadyApplied =
+          /^(?:table|index|view|trigger) .+ already exists$/i.test(message) ||
+          /^duplicate column name:/i.test(message);
+        if (isAlreadyApplied) {
+          console.warn(
+            `[db] Migration ${file} statement already applied, continuing (${message})`,
+          );
+          continue;
+        }
+        throw new Error(`Failed to execute migration ${file}: ${message}`, {
+          cause: error,
+        });
       }
-      throw error;
     }
   }
 }
@@ -242,7 +310,15 @@ export function closeDatabase(): void {
  * In Electron's main process: call initDatabase() once at startup.
  * In tests: call initDatabase(':memory:') for an isolated in-memory DB.
  */
-export function initDatabase(dbPath?: string): ReturnType<typeof drizzle> {
+export interface InitDatabaseOptions {
+  /** Test-only integration seam; application startup should omit this. */
+  migrationsDir?: string;
+}
+
+export function initDatabase(
+  dbPath?: string,
+  options: InitDatabaseOptions = {},
+): ReturnType<typeof drizzle> {
   if (drizzleInstance) return drizzleInstance;
 
   let sqlite: Database.Database | undefined;
@@ -261,7 +337,7 @@ export function initDatabase(dbPath?: string): ReturnType<typeof drizzle> {
     // migrations, when WAL/SHM sidecars have been (re)created).
     restrictFilePermissions(resolvedPath);
 
-    runMigrations(sqlite);
+    runMigrations(sqlite, options.migrationsDir ?? resolveMigrationsDir());
 
     restrictFilePermissions(resolvedPath);
 
