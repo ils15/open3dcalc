@@ -12,12 +12,40 @@ interface ToastProps {
   onDismiss: (id: number) => void;
 }
 
+/**
+ * Per-variant background + ink, as a PAIR.
+ *
+ * These are the `--*-fill` / `--*-fill-fg` families, not the `--color-*`
+ * foreground tokens this used to paint. The old form was
+ * `bg-[var(--color-danger)]/90 text-[var(--color-text-primary)]`, which failed
+ * WCAG AA in BOTH themes: the backdrop came from a FOREGROUND token that is
+ * theme-independent while the ink flipped to near-white in `.dark`, so error
+ * measured 3.10:1 light / 2.07:1 dark and success 3.84:1 / 2.10:1. A light pink
+ * pill behind near-white text is not a contrast miss, it is an unreadable toast.
+ *
+ * No single text token can fix a backdrop that does not move with the theme,
+ * which is the whole reason `--danger-fill-fg` and `--accent-fill-fg` already
+ * exist for the dialog and the primary button. So each variant carries its own
+ * non-flipping ink over a SOLID fill, declared in both `:root` and `.dark` with
+ * identical values.
+ *
+ * Solid, not `/90`: at 90% alpha the effective colour still depends on whatever
+ * is behind the toast, and the toast is `fixed` over arbitrary content, so the
+ * pairing would be undecidable rather than merely wrong. A solid fill is decided
+ * by the tokens alone — and it is also in reach of `accentBackgroundContrast`,
+ * whose scan covers solid backgrounds and skips translucent ones. Leaving the
+ * alpha on would have kept this surface in that guard's documented blind spot.
+ *
+ * The variant colour is the toast's only state distinction — it is not a
+ * control, so there is no hover — and the three fills stay far apart in hue so
+ * a failure remains tellable from a success.
+ */
 const typeStyles: Record<ToastItem["type"], string> = {
   error:
-    "bg-[var(--color-danger)]/90 border-red-500/30 text-[var(--color-text-primary)]",
+    "bg-[var(--color-danger-fill)] border-red-500/30 text-[var(--color-danger-fill-fg)]",
   success:
-    "bg-[var(--color-success)]/90 border-emerald-500/30 text-[var(--color-text-primary)]",
-  info: "bg-[var(--color-accent)]/90 border-[var(--color-accent-muted)] text-[var(--color-text-primary)]",
+    "bg-[var(--color-positive-fill)] border-emerald-500/30 text-[var(--color-positive-fill-fg)]",
+  info: "bg-[var(--color-accent-fill)] border-[var(--color-accent-muted)] text-[var(--color-accent-fill-fg)]",
 };
 
 export function ToastContainer({ items, onDismiss }: ToastProps) {

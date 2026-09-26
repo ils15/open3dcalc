@@ -261,3 +261,85 @@ export function compositeOver(
       .join("")
   );
 }
+
+/* ------------------------------------------------------------------ *
+ * Tailwind v4 palette: oklch() -> sRGB hex
+ *
+ * Written because the deferred-population census has to decide whether a
+ * `bg-red-600` pairing FAILS, not merely that a `bg-red-600` exists. Without a
+ * decoder the palette family can only be counted, and a count cannot tell a
+ * broken pairing from a fine one — so the floor would end up pinning the wrong
+ * number for the right reason.
+ *
+ * The alternative — not decoding — is what left this family unmeasured in the
+ * first place, and the cost of that is concrete rather than theoretical: the
+ * census below measures `bg-red-600` behind `text-[var(--color-danger)]` at
+ * 1.36:1, which is red text on a red button.
+ * ------------------------------------------------------------------ */
+
+/**
+ * OKLCH -> sRGB hex.
+ *
+ * `L` is 0..1 (callers divide Tailwind's percentage by 100), `C` is 0..~0.4,
+ * `hue` is degrees. Goes through OKLab, which is the space OKLCH is defined in,
+ * so this is a conversion rather than an approximation.
+ */
+export function oklchToHex(L: number, C: number, hue: number): string {
+  const h = (hue * Math.PI) / 180;
+  const a = C * Math.cos(h);
+  const b = C * Math.sin(h);
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+  const [l, m, s] = [l_ ** 3, m_ ** 3, s_ ** 3];
+  const linear: [number, number, number] = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+  return (
+    "#" +
+    linear
+      .map((v) => {
+        const channel =
+          v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+        return Math.round(Math.min(1, Math.max(0, channel)) * 255)
+          .toString(16)
+          .padStart(2, "0");
+      })
+      .join("")
+  );
+}
+
+/**
+ * `--color-<name>` -> sRGB hex, from a Tailwind theme.css.
+ *
+ * Keys are the utility suffixes (`red-600`), which is the form call sites write.
+ * Steps written as literal hex or `color-mix()` are skipped rather than guessed:
+ * a missing entry must read as "not measured", never as "measured and fine".
+ */
+export function tailwindPaletteMap(themeCss: string): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of themeCss.matchAll(
+    /--color-([a-z]+-\d{2,3}):\s*oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)\s*\)/g,
+  )) {
+    out.set(m[1], oklchToHex(+m[2] / 100, +m[3], +m[4]));
+  }
+  return out;
+}
+
+/**
+ * Two conversions that are independently documented in tokens.css, and which
+ * this module must reproduce or every palette number derived from it is noise.
+ *
+ * tokens.css records that `--danger-fill: #e7000b` is "the sRGB rendering of
+ * Tailwind v4's oklch palette: red-600 = oklch(0.577 0.245 27.325) -> #e7000b"
+ * and the same for amber-600 -> #e17100. Those are the only two values in the
+ * repo whose palette provenance is written down, so they are the only two this
+ * can be checked against — and a decoder that silently drifts from Tailwind
+ * would understate every ratio it feeds.
+ */
+export const PALETTE_SELF_CHECK: ReadonlyArray<readonly [string, string]> = [
+  ["red-600", "#e7000b"],
+  ["amber-600", "#e17100"],
+];

@@ -80,6 +80,34 @@
   --warning-fill-fg: #0a0b10;
   --warning-fill-hover: #fe9a00; /* amber-500 */
 
+  /* Positive/success FILL, for the toast. The third member of this family and
+     the one that completes it: --accent-fill and --danger-fill already served
+     the primary button and the dialog, and the toast's `success` variant was the
+     last surface still painting a FOREGROUND token as a backdrop.
+
+     It failed the same way, for the same reason. `bg-[var(--color-success)]/90`
+     put --color-success — an alias of --positive, #047857 here but #34d399 in
+     .dark — behind --color-text-primary, which flips to near-white in .dark.
+     Near-white on a light green is 2.10:1, so in dark theme the success toast
+     was not merely a contrast failure; it was close to unreadable.
+
+     Same reasoning as --accent-fill above, so it is stated rather than
+     re-derived: the fill is theme-INDEPENDENT and the ink is theme-INDEPENDENT,
+     and the two are chosen as a pair. #007A55 is Tailwind v4's emerald-700 —
+     white on it is 5.36:1 (WCAG 1.4.3), and the fill holds 5.01:1 against the
+     light canvas and 3.66:1 against the dark one, so the toast body also stays
+     distinguishable from whatever it floats over (WCAG 1.4.11). Written as hex
+     rather than oklch for the same reason as --danger-fill: the contrast guard
+     cannot evaluate oklch().
+
+     Deliberately no -hover companion, unlike the two above: those back a
+     BUTTON, which has a hover state. A toast is `role="region"`, owns no
+     pointer interaction and dismisses itself after 4s, so a hover token would
+     have no consumer — which is exactly how --accent-fill shipped declared and
+     unused. */
+  --positive-fill: #007a55;
+  --positive-fill-fg: #ffffff;
+
   /* Tinted fills and borders.
      The HUES are pinned below, not derived from the semantic accents above:
      these tints are the app's pre-token hardcoded 600-step values, and the
@@ -333,6 +361,16 @@
   --warning-fill-fg: #0a0b10;
   --warning-fill-hover: #fe9a00; /* amber-500 */
 
+  /* The positive FILL, identical to :root and NOT derived from --positive
+     above, for the same reason --accent-fill is not: the background is
+     theme-independent, so only the INK is allowed to differ — and here the ink
+     is fixed as well, because a single flipping ink is what broke the toast.
+     Re-declared rather than inherited so a one-theme edit becomes a visible
+     test failure rather than a silent divergence.
+     #007A55 with #ffffff is 5.36:1; see the :root note for the full argument. */
+  --positive-fill: #007a55;
+  --positive-fill-fg: #ffffff;
+
   /* Same hues as :root, NOT the .dark accents above — the hardcoded rgba() these
      replace was theme-independent, so the washes must be too. Re-declared here
      explicitly (rather than inherited) so both themes are individually auditable
@@ -427,6 +465,8 @@
   --color-warning-fill: var(--warning-fill);
   --color-warning-fill-fg: var(--warning-fill-fg);
   --color-warning-fill-hover: var(--warning-fill-hover);
+  --color-positive-fill: var(--positive-fill);
+  --color-positive-fill-fg: var(--positive-fill-fg);
 
   --color-success: var(--positive);
   --color-warning: var(--warning);

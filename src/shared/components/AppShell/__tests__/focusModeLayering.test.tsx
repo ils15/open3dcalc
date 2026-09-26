@@ -220,6 +220,314 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
+/* ------------------------------------------------------------------ *
+ * Deriving the z-50 audit's own inputs, so the derivation is testable
+ * instead of being a regex buried in an assertion.
+ *
+ * Two defects, both LOWs from the PR #233 review, both in how this file
+ * works out what it is auditing:
+ *
+ * 1. The file list was derived with `/class(?:Name)?=[^\n]*\bz-50\b/`, which
+ *    requires `z-50` to sit on the SAME LINE as `className=`. A class string
+ *    written across several lines — which prettier produces without complaint
+ *    once it gets long, and which five of the covered files already do for the
+ *    part after `bg-black/60` — puts the token somewhere the heuristic cannot
+ *    see. Such a file is never discovered, so it never reaches the covered-set
+ *    assertion, so the audit silently stops auditing it. An unlisted file is
+ *    the one case this test exists to catch, and the derivation was the hole.
+ *
+ *    The fix is to scan the file TEXT for the token instead of for a
+ *    same-line shape. That is only sound with comments stripped, because a
+ *    comment is not a class string: this tree discusses `z-50` in prose in five
+ *    files that do not paint it (Toast, FocusModeExit, FieldCustomizer,
+ *    InventoryDeductionCard, MobileNav — all of them explaining why they are
+ *    NOT at z-50), and a raw text scan would list all five as unpinned and send
+ *    the audit chasing its own documentation.
+ *
+ * 2. The sheet panel was recognised by `z-50[^\n]*rounded-t-2xl` — a
+ *    COSMETIC proxy. Any unrelated floating box rounded at the top and filed in
+ *    the modal tier passes as a legitimate panel, and pairing was only checked
+ *    per FILE, so a panel in one file could be "answered" by a backdrop in the
+ *    same file that has nothing to do with it. Both real panels are
+ *    `fixed bottom-0 left-0 right-0 z-50 … rounded-t-2xl`: the load-bearing
+ *    token is `bottom-0`, which is what makes it a bottom SHEET rather than a
+ *    floating box, so that is what the pattern now requires. The pairing check
+ *    becomes `panels <= backdrops`, which bounds the count rather than merely
+ *    testing that a backdrop exists somewhere in the file.
+ *
+ * The classifier below reproduces the previous counts EXACTLY on all 14 covered
+ * files — verified before it was written in, because a narrowing that silently
+ * changed a number would be a weakening wearing a fix's clothes.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Remove `/* … *\/` and `// …`.
+ *
+ * `[^:]` before the `//` is load-bearing: ConsentModal and PrivacyPolicy both
+ * carry `href="https://github.com/…"` on a line the audit reads, and a naive
+ * strip truncates that line at `https:`. It happens to be harmless there today
+ * because those lines hold no z-50, which is exactly the kind of accident that
+ * stops being harmless.
+ */
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/([^:])\/\/[^\n]*/g, "$1");
+}
+
+/**
+ * `z-50` at a word boundary. Without the boundary this matches `z-500` and
+ * `z-50x`; the tree also contains `z-[50]`-style arbitrary values, which the
+ * literal token correctly does not match.
+ */
+const Z50_TOKEN = /\bz-50\b/;
+
+/** True when a file paints a z-50 in a class string, on any line. */
+function paintsZ50(source: string): boolean {
+  return Z50_TOKEN.test(stripComments(source));
+}
+
+interface Z50Census {
+  /** every z-50 token, comment-stripped */
+  all: number;
+  /** a dimming backdrop: a fixed, full-bleed layer */
+  backdrops: number;
+  /** a bottom-sheet panel: anchored to the bottom edge, rounded at the top */
+  panels: number;
+}
+
+/**
+ * The occurrence-scope rule, as a function, so it can be tested on fixtures.
+ *
+ * Kept inline in the audit loop until a mutation proved why that is wrong: the
+ * current tree has exactly one panel against one backdrop in each of the two
+ * files that have panels, so tightening the pairing check from "is there a
+ * backdrop somewhere in this file" to "panels <= backdrops" changed no
+ * assertion and no test went red. The rule was narrowed and nothing recorded
+ * that it now holds. Extracting it is what makes the narrowing testable at all.
+ *
+ * Returns null when the file is in scope, and a diagnostic when it is not.
+ */
+function scopeFault(file: string, census: Z50Census): string | null {
+  const { all, backdrops, panels } = census;
+  if (backdrops + panels !== all) {
+    return (
+      `${file}: every z-50 must be a dimming backdrop or the panel that answers ` +
+      `one (found ${all} z-50, ${backdrops} backdrop, ${panels} panel)`
+    );
+  }
+  // The pairing is a COUNT, not a presence. "If there is a panel, is there a
+  // backdrop in this file" is satisfied by two panels and one scrim, so a second
+  // sheet could mount against a single backdrop and pass.
+  if (panels > backdrops) {
+    return (
+      `${file}: ${panels} sheet panel(s) against ${backdrops} backdrop(s); each ` +
+      `panel answers one backdrop`
+    );
+  }
+  return null;
+}
+
+/**
+ * How a file's z-50 occurrences divide up.
+ *
+ * Classified per line, because that is the unit a class list is written in, and
+ * matched on semantic tokens rather than on adjacency so a reordering of the
+ * utilities in a class string does not turn a scrim into an unexplained z-50.
+ * A z-50 that matches neither shape is left over on purpose: the audit's
+ * assertion is `backdrops + panels === all`, so an unclassifiable z-50 fails
+ * loudly instead of being quietly absorbed.
+ */
+function censusZ50(source: string): Z50Census {
+  const code = stripComments(source);
+  let all = 0;
+  let backdrops = 0;
+  let panels = 0;
+  for (const line of code.split("\n")) {
+    const hits = line.match(/\bz-50\b/g)?.length ?? 0;
+    if (!hits) continue;
+    all += hits;
+    if (line.includes("fixed") && line.includes("inset-0")) backdrops += 1;
+    if (line.includes("bottom-0") && line.includes("rounded-t-2xl"))
+      panels += 1;
+  }
+  return { all, backdrops, panels };
+}
+
+describe("focus mode — the z-50 audit can derive its own inputs", () => {
+  it("finds a z-50 written across several lines", () => {
+    // The defect. `class(?:Name)?=[^\n]*\bz-50\b` cannot see this, so the file
+    // would never be discovered, never reach the covered-set assertion, and the
+    // audit would report green while leaving it unpinned.
+    const multiline = [
+      "      <div",
+      "        className={",
+      "          `fixed inset-0",
+      "            z-50",
+      "            bg-black/60`",
+      "        }",
+      "      />",
+    ].join("\n");
+    expect(
+      paintsZ50(multiline),
+      "a z-50 on its own line inside a multi-line class string must still be " +
+        "discovered — this is the case the same-line heuristic missed",
+    ).toBe(true);
+  });
+
+  it("finds a z-50 on the same line too, so nothing that used to be seen is lost", () => {
+    expect(
+      paintsZ50('<div className="fixed inset-0 z-50 bg-black/60" />'),
+    ).toBe(true);
+  });
+
+  it("ignores a z-50 that only appears in a comment", () => {
+    // A comment is not a class string. Five files in this tree explain in prose
+    // why they are NOT at z-50, and a raw text scan would list all five.
+    const commented = [
+      "export function X() {",
+      "  // It used to be z-50, which painted over the only exit.",
+      '  return <div className="fixed bottom-4" />;',
+      "}",
+    ].join("\n");
+    expect(
+      paintsZ50(commented),
+      "a z-50 mentioned in a `//` comment must not count as a painted layer",
+    ).toBe(false);
+
+    const blockCommented = [
+      "/*",
+      " * Filed at z-50 it painted over the exit for four seconds.",
+      " */",
+      'export const y = <div className="fixed bottom-4" />;',
+    ].join("\n");
+    expect(paintsZ50(blockCommented)).toBe(false);
+  });
+
+  it("names every file in the tree that only discusses z-50 in prose", () => {
+    // The real instances, not a fixture. If one of these ever gains a painted
+    // z-50 the audit SHOULD list it — so this asserts they are still comment-only
+    // and is the thing that fails when the strip regresses.
+    for (const file of [
+      "src/shared/components/ui/Toast.tsx",
+      "src/shared/components/AppShell/FocusModeExit.tsx",
+      "src/shared/components/Calculator/FieldCustomizer.tsx",
+      "src/shared/components/Results/InventoryDeductionCard.tsx",
+      "src/platform/web/components/MobileNav.tsx",
+    ]) {
+      const source = fs.readFileSync(resolve(process.cwd(), file), "utf8");
+      expect(
+        Z50_TOKEN.test(source),
+        `${file} is expected to mention z-50 in a comment; if it no longer does, ` +
+          `this fixture has stopped testing anything and should be replaced`,
+      ).toBe(true);
+      expect(
+        paintsZ50(source),
+        `${file} mentions z-50 but does not paint one. If the comment strip has ` +
+          `regressed, the audit will list a file that has no layer at all.`,
+      ).toBe(false);
+    }
+  });
+
+  it("does not read `https://` as the start of a line comment", () => {
+    // ConsentModal and PrivacyPolicy both carry a github link on a line this
+    // audit reads. A naive `//` strip truncates it at `https:`.
+    for (const file of [
+      "src/shared/components/ui/ConsentModal.tsx",
+      "src/shared/components/ui/PrivacyPolicy.tsx",
+    ]) {
+      const source = fs.readFileSync(resolve(process.cwd(), file), "utf8");
+      expect(
+        stripComments(source).includes("https://github.com/ils15/open3dcalc"),
+        `${file} has its href truncated by the comment strip, so any z-50 later ` +
+          `on that line would be discarded`,
+      ).toBe(true);
+    }
+  });
+
+  it.each([
+    ["z-500", false],
+    ["z-5", false],
+    ["z-[50]", false],
+    ["z-50x", false],
+    ["z-50", true],
+  ])("matches %s -> %s at a word boundary", (token, expected) => {
+    expect(Z50_TOKEN.test(token)).toBe(expected);
+  });
+
+  it("calls a bottom sheet a panel and a floating box not a panel", () => {
+    // The narrowed pattern keys on `bottom-0`, which is what makes a panel a
+    // SHEET. `rounded-t-2xl` alone was a cosmetic proxy: an unrelated floating
+    // box rounded at the top and filed at z-50 passed as a legitimate panel,
+    // which is the false pass the review flagged.
+    const sheet = censusZ50(
+      '<div className="fixed bottom-0 left-0 right-0 z-50 sm:hidden rounded-t-2xl" />',
+    );
+    expect(sheet).toEqual({ all: 1, backdrops: 0, panels: 1 });
+
+    const floatingBox = censusZ50(
+      '<div className="fixed right-4 top-24 z-50 rounded-t-2xl w-64" />',
+    );
+    expect(
+      floatingBox,
+      "a floating box is not a bottom sheet, so it must not be counted as a " +
+        "panel that answers a backdrop",
+    ).toEqual({ all: 1, backdrops: 0, panels: 0 });
+  });
+
+  it("tolerates utilities being reordered within a class string", () => {
+    // Matched on semantic tokens, not adjacency, so a scrim does not become an
+    // unexplained z-50 the day someone moves `z-50` to the end of the list.
+    const reordered = censusZ50(
+      '<div className="z-50 bg-black/60 flex items-center justify-center fixed inset-0" />',
+    );
+    expect(reordered).toEqual({ all: 1, backdrops: 1, panels: 0 });
+  });
+
+  it("rejects a second sheet panel against a single backdrop", () => {
+    // The mutation that forced this rule out of the audit loop and into a
+    // function. Both panel files in the tree hold exactly one panel and one
+    // backdrop, so the tightened pairing is satisfied everywhere by
+    // coincidence, and a rule that only holds by coincidence is not a rule.
+    expect(
+      scopeFault("src/Thing.tsx", { all: 3, backdrops: 1, panels: 2 }),
+      "two sheet panels cannot both be answered by one backdrop — the " +
+        "presence-only check this replaces was satisfied by exactly this case",
+    ).toMatch(/each panel answers one backdrop/);
+  });
+
+  it("accepts one panel per backdrop, which is the rule", () => {
+    expect(
+      scopeFault("src/Thing.tsx", { all: 2, backdrops: 1, panels: 1 }),
+    ).toBeNull();
+    expect(
+      scopeFault("src/Thing.tsx", { all: 4, backdrops: 2, panels: 2 }),
+    ).toBeNull();
+    expect(
+      scopeFault("src/Thing.tsx", { all: 1, backdrops: 1, panels: 0 }),
+      "a plain scrim modal is in scope",
+    ).toBeNull();
+  });
+
+  it("rejects a z-50 that is neither a backdrop nor a panel", () => {
+    expect(
+      scopeFault("src/Thing.tsx", { all: 2, backdrops: 1, panels: 0 }),
+    ).toMatch(/every z-50 must be a dimming backdrop/);
+  });
+
+  it("leaves a multi-line z-50 unclassified rather than absorbing it", () => {
+    // The consequence of classifying per line, stated rather than hidden: a
+    // class string that wraps puts the z-50 away from `inset-0`. It shows up as
+    // a leftover, and the audit's `backdrops + panels === all` assertion then
+    // fails and says so. That is the intended direction — an unrecognised layer
+    // must be loud, not absorbed.
+    const wrapped = censusZ50(
+      ["<div className={`fixed inset-0", "  z-50 bg-black/60`} />"].join("\n"),
+    );
+    expect(wrapped).toEqual({ all: 1, backdrops: 0, panels: 0 });
+  });
+});
+
 describe("focus mode — the exit is layered, not merely present", () => {
   it("sits BELOW the modal tier, so chrome never paints over a scrim", () => {
     renderHarness();
@@ -472,10 +780,15 @@ describe("focus mode — a passive surface never buries the exit", () => {
     // So the rule is stated as what it actually is — the dimming backdrop plus
     // the panel that answers it — and this counts OCCURRENCES in every file in
     // the tree, with the covered set derived rather than trusted.
-    const SCRIM = /fixed inset-0 z-50/;
-    const SHEET_PANEL = /z-50[^\n]*rounded-t-2xl/;
-
-    // 1. Derive the set: every file in src that puts a z-50 in a className.
+    // The derivation and the classifier are the documented, fixture-tested
+    // helpers at the top of this file, NOT inline regexes. They were inline
+    // here, which is why two of their properties were never tested: that a
+    // multi-line class string is still found, and that a z-50 in a comment is
+    // not. Both are asserted above, where a change to either is visible.
+    //
+    // 1. Derive the set: every file in src that paints a z-50, comments
+    //    excluded. Token scan rather than a `className=` adjacency heuristic, so
+    //    a class string that wraps cannot hide a layer from the audit.
     const found: string[] = [];
     const walk = (dir: string): void => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -487,8 +800,7 @@ describe("focus mode — a passive surface never buries the exit", () => {
           continue;
         }
         if (!/\.(tsx|ts)$/.test(entry.name)) continue;
-        const src = fs.readFileSync(full, "utf8");
-        if (/class(?:Name)?=[^\n]*\bz-50\b/.test(src)) {
+        if (paintsZ50(fs.readFileSync(full, "utf8"))) {
           found.push(full.replace(`${process.cwd()}/`, ""));
         }
       }
@@ -523,22 +835,18 @@ describe("focus mode — a passive surface never buries the exit", () => {
     //    second z-50 of any other kind cannot ride along inside a file that
     //    already has a scrim.
     for (const file of covered) {
-      const src = fs.readFileSync(resolve(process.cwd(), file), "utf8");
-      const all = (src.match(/\bz-50\b/g) ?? []).length;
-      const backdrops = (src.match(new RegExp(SCRIM, "g")) ?? []).length;
-      const panels = (src.match(new RegExp(SHEET_PANEL, "g")) ?? []).length;
+      // Still file-scoped, and that is a known limit rather than a solved
+      // problem: a panel in one file paired with a backdrop in ANOTHER is not
+      // detectable from source, because the two are never in the same string
+      // and the render tree is what relates them. What the count closes is the
+      // half that is decidable — more panels than backdrops inside one file.
       expect(
-        backdrops + panels,
-        `${file}: every z-50 must be a dimming backdrop or the panel that answers one (found ${all} z-50, ${backdrops} backdrop, ${panels} panel)`,
-      ).toBe(all);
-      // A panel that answers a backdrop is not a layer on its own: it has to
-      // have one, in the same file, or it is floating with nothing behind it.
-      if (panels > 0) {
-        expect(
-          backdrops,
-          `${file}: a sheet panel must have its backdrop in the same file`,
-        ).toBeGreaterThan(0);
-      }
+        scopeFault(
+          file,
+          censusZ50(fs.readFileSync(resolve(process.cwd(), file), "utf8")),
+        ),
+        `${file} is outside the rule this audit claims to enforce`,
+      ).toBeNull();
     }
   });
 });
