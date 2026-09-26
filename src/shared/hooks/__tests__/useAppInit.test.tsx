@@ -63,6 +63,7 @@ import { useAppInit } from "../useAppInit";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
+import type { HistoryEntry } from "@/shared/types";
 
 describe("useAppInit tutorial auto-start", () => {
   beforeEach(() => {
@@ -376,5 +377,196 @@ describe("useAppInit tutorial auto-start", () => {
 
     renderHook(() => useAppInit(vi.fn()));
     expect(useHistoryStore.getState().entries).toEqual(migrated);
+  });
+
+  it("recovers the complete legacy history after the second persistence write fails", () => {
+    const historyKey = "open3dcalc_history_v2";
+    const recoveryKey = "open3dcalc_migration_done_v2";
+    const resultOne = {
+      materialCost: 8,
+      energyCost: 1,
+      machineCost: 2,
+      hardwareCost: 0.5,
+      consumablesCost: 0.25,
+      laborCost: 1.5,
+      softwareCost: 0.75,
+      failureCost: 0.1,
+      extrasCost: 0.2,
+      postProcessingCost: 0.3,
+      subtotal: 14.6,
+      totalCost: 14.6,
+      sellPrice: 29.2,
+      profit: 14.6,
+      marketplaceFee: 0,
+      taxAmount: 0,
+      costPerGram: 0.2,
+      costPerUnit: 14.6,
+      unitWeight: 40,
+      estimatedPrintTime: 2,
+      targetMarginPercent: 50,
+      breakEvenPrice: 14.6,
+      actualMargin: 50,
+      carbonFootprintGrams: 2,
+    };
+    const resultTwo = {
+      ...resultOne,
+      materialCost: 12,
+      subtotal: 23,
+      totalCost: 23,
+      sellPrice: 46,
+      profit: 23,
+      costPerGram: 0.46,
+      costPerUnit: 23,
+      unitWeight: 50,
+      estimatedPrintTime: 3.5,
+      carbonFootprintGrams: 5,
+    };
+    const snapshotOne = {
+      type: "resin" as const,
+      summary: "Resina • azul 🧪",
+      selectedPrinterId: "printer-resina",
+      resinMaterial: { type: "Resina UV", color: "azul" },
+    };
+    const snapshotTwo = {
+      type: "fdm" as const,
+      summary: "PETG café 🫘",
+      selectedPrinterId: "printer-fdm",
+      fdmMaterial: { type: "PETG", color: "café" },
+    };
+    const legacyHistory = [
+      {
+        id: "legacy-history-resin-01",
+        timestamp: 1_700_000_000_101,
+        type: "resin" as const,
+        summary: "Resina • azul 🧪",
+        totalCost: 14.6,
+        sellPrice: 29.2,
+        profit: 14.6,
+        result: resultOne,
+        snapshot: snapshotOne,
+      },
+      {
+        id: "legacy-history-fdm-02",
+        timestamp: 1_700_000_000_202,
+        type: "fdm" as const,
+        summary: "PETG café 🫘",
+        totalCost: 23,
+        sellPrice: 46,
+        profit: 23,
+        result: resultTwo,
+        snapshot: snapshotTwo,
+      },
+    ];
+    const expectedOne = {
+      id: "legacy-history-resin-01",
+      timestamp: 1_700_000_000_101,
+      type: "resin",
+      name: "Resina • azul 🧪",
+      summary: "Resina • azul 🧪",
+      totalCost: 14.6,
+      sellPrice: 29.2,
+      profit: 14.6,
+      result: resultOne,
+      snapshot: snapshotOne,
+    };
+    const expectedTwo = {
+      id: "legacy-history-fdm-02",
+      timestamp: 1_700_000_000_202,
+      type: "fdm",
+      name: "PETG café 🫘",
+      summary: "PETG café 🫘",
+      totalCost: 23,
+      sellPrice: 46,
+      profit: 23,
+      result: resultTwo,
+      snapshot: snapshotTwo,
+    };
+    const expectedEntries = [expectedTwo, expectedOne];
+    const originalSource = JSON.stringify(legacyHistory);
+    storageValues.set(historyKey, originalSource);
+    expect(storageValues.get(historyKey)).toBe(originalSource);
+    expect(storageValues.has(recoveryKey)).toBe(false);
+
+    let historyWriteCount = 0;
+    storageSetItem.mockClear();
+    storageSetItem.mockImplementation((key: string, value: string) => {
+      if (key === historyKey) {
+        historyWriteCount += 1;
+        if (historyWriteCount === 2) {
+          throw new Error("simulated second history persistence failure");
+        }
+      }
+      storageValues.set(key, value);
+    });
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    const failedSource = storageValues.get(historyKey);
+    expect(historyWriteCount).toBe(2);
+    expect(failedSource).toBeDefined();
+    const persistedPrefix = JSON.parse(failedSource!) as {
+      state: { entries: Array<Record<string, unknown>> };
+    };
+    expect(persistedPrefix.state.entries).toHaveLength(1);
+    expect(persistedPrefix.state.entries[0]).toEqual(expectedOne);
+    expect(JSON.parse(storageValues.get(recoveryKey)!)).toEqual({
+      type: "open3dcalc-history-v2-backup",
+      source: originalSource,
+      baseEntries: [],
+    });
+    const failureBackup = storageValues.get(recoveryKey);
+    expect(storageValues.get(historyKey)).toBe(failedSource);
+    expect(storageRemoveItem).not.toHaveBeenCalledWith(recoveryKey);
+    expect(failedSource).not.toBe(originalSource);
+
+    // Rehydrate the prefix as a fresh app process would, retaining exactly the
+    // same localStorage values captured after the interrupted startup.
+    useHistoryStore.setState({
+      entries: persistedPrefix.state.entries as unknown as HistoryEntry[],
+    });
+    storageValues.set(historyKey, failedSource!);
+    storageSetItem.mockImplementation((key: string, value: string) => {
+      storageValues.set(key, value);
+    });
+
+    let backupRemovedAfterVerification = false;
+    storageRemoveItem.mockImplementation((key: string) => {
+      if (key === recoveryKey) {
+        const persisted = JSON.parse(storageValues.get(historyKey)!) as {
+          state: { entries: Array<Record<string, unknown>> };
+        };
+        backupRemovedAfterVerification =
+          storageValues.get(recoveryKey) === failureBackup &&
+          JSON.stringify(persisted.state.entries) ===
+            JSON.stringify(expectedEntries) &&
+          JSON.stringify(useHistoryStore.getState().entries) ===
+            JSON.stringify(expectedEntries);
+      }
+      storageValues.delete(key);
+    });
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    const recovered = useHistoryStore.getState().entries;
+    expect(recovered).toHaveLength(2);
+    expect(new Set(recovered.map((entry) => entry.id)).size).toBe(2);
+    expect(recovered).toEqual(expectedEntries);
+    expect(recovered.find((entry) => entry.id === expectedOne.id)).toEqual(
+      expectedOne,
+    );
+    expect(recovered.find((entry) => entry.id === expectedTwo.id)).toEqual(
+      expectedTwo,
+    );
+    expect(JSON.parse(storageValues.get(historyKey)!).state.entries).toEqual(
+      expectedEntries,
+    );
+    expect(backupRemovedAfterVerification).toBe(true);
+    expect(storageValues.has(recoveryKey)).toBe(false);
+
+    const recoveredSource = storageValues.get(historyKey);
+    renderHook(() => useAppInit(vi.fn()));
+    expect(useHistoryStore.getState().entries).toEqual(expectedEntries);
+    expect(storageValues.get(historyKey)).toBe(recoveredSource);
+    expect(useHistoryStore.getState().entries).toHaveLength(2);
   });
 });
