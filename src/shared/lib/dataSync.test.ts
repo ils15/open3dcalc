@@ -766,6 +766,53 @@ describe("dataSync user import compatibility and no-write gate", () => {
     });
   });
 
+  it("rejects an authenticated current envelope missing products before any writes", async () => {
+    const missingProductsPayload: Record<string, unknown> = {
+      ...fullRoundTripFixture(),
+    };
+    delete missingProductsPayload.products;
+    const authenticatedEnvelope = await createExportEnvelope(
+      missingProductsPayload as unknown as SyncData,
+      "synthetic-password",
+    );
+
+    seedFullStorage();
+    const destinationProducts = JSON.stringify({
+      state: {
+        products: [
+          { id: "destination-product-keep", name: "Synthetic inventory" },
+        ],
+      },
+      version: 1,
+    });
+    localStorage.setItem("open3dcalc_products", destinationProducts);
+    const before = localStorageSnapshot();
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    const removeItem = vi.spyOn(Storage.prototype, "removeItem");
+    const clear = vi.spyOn(Storage.prototype, "clear");
+
+    try {
+      await expect(
+        importData(importFile(authenticatedEnvelope), {
+          password: "synthetic-password",
+          mode: "replace",
+        }),
+      ).rejects.toThrow();
+
+      expect(setItem).not.toHaveBeenCalled();
+      expect(removeItem).not.toHaveBeenCalled();
+      expect(clear).not.toHaveBeenCalled();
+      expect(localStorageSnapshot()).toEqual(before);
+      expect(localStorage.getItem("open3dcalc_products")).toBe(
+        destinationProducts,
+      );
+    } finally {
+      setItem.mockRestore();
+      removeItem.mockRestore();
+      clear.mockRestore();
+    }
+  });
+
   it("rejects invalid files without any Storage mutation or raw-key changes", async () => {
     const validData = fullRoundTripFixture();
     const goodEnvelope = JSON.parse(

@@ -427,6 +427,7 @@ function isSyncData(value: unknown): value is SyncData {
 function isCurrentEnvelopeSyncData(value: unknown): value is SyncData {
   return (
     isSyncData(value) &&
+    Array.isArray(value.products) &&
     Array.isArray(value.colorPalette) &&
     Array.isArray(value.modelComparison)
   );
