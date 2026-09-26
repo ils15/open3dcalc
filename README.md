@@ -294,7 +294,17 @@ O `data-testid` dinâmico do `ChangelogPage` (``data-testid={`latest-badge-${ent
 
 O censo reporta, por site, a **identidade do elemento** e as **formas** que ele tem hoje, e o pin é `identidade -> formas[]`. São **duas** formas por site em quatro elementos, que emparelham `bg-emerald-600` e o seu `hover:bg-emerald-500` com a mesma tinta. Identidade e forma são separadas de propósito: a identidade sobrevive a reformatação, deslocamento de linha e reordenação, porque nada disso move um comentário preso ao seu elemento; a forma é justamente o que o pin guarda como **valor** e o que pode mudar.
 
-**A posse de uma identidade é exclusiva.** Um marcador — ou um `data-testid` estático — nomeia **exatamente um** elemento, e três condições reprovam: um marcador reivindicado por dois elementos, um marcador que não possui nada (órfão: protege nada parecendo proteger), e uma identidade alcançada por dois elementos. Isso não é teórico: um único valor por marcador, como estava antes, deixava um segundo elemento sobrescrever o primeiro em silêncio, e quando os dois elementos tinham a **mesma** forma a população ficava indistinguível do caso saudável — nenhuma contagem e nenhum multiconjunto denunciava nada. Por isso a verificação é sobre posse, e não sobre totais.
+**A posse de uma identidade é exclusiva, e é posicional.** Um marcador — ou um `data-testid` estático — nomeia **exatamente um** elemento, e um marcador nomeia **apenas o próximo elemento JSX real**, lido através do `>` que fecha a tag de abertura, sendo consumido uma única vez. Se esse elemento não tiver pareamento adiado, o marcador fica **órfão** e um elemento posterior **não** pode herdá-lo.
+
+Isso fecha um vazamento real. A versão anterior escolhia o marcador mais próximo _antes_ de um literal de classe, o que não é a mesma coisa: um marcador cujo elemento não tinha pareamento adiado entregava sua identidade ao elemento seguinte, de modo que um sítio podia acabar nomeado por um comentário que estava acima de um irmão. O vínculo agora é calculado adiante e não é herdável.
+
+Três condições reprovam, e **nenhuma delas é visível comparando totais** — com dois elementos de mesma forma, contagens e multiconjuntos são idênticos ao caso saudável, o que é exatamente por que a verificação é sobre posse e não sobre somas:
+
+| condição             | o que significa                                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| órfão                | o marcador não tem elemento depois dele, ou o elemento que ele nomeia não tem pareamento adiado: protege nada parecendo proteger |
+| identidade duplicada | uma identidade alcançada por dois elementos, por marcador ou por atributo                                                        |
+| marcador ambíguo     | dois marcadores reivindicando o mesmo elemento, que então não tem nome inequívoco                                                |
 
 **Inventário, como asserção e não como descrição.** 22 elementos proprietários carregam 26 pareamentos de forma: 21 identificados por comentário mais 1 pelo `data-testid` reutilizado, com 0 sem identidade e 0 ids duplicados. Um teste afirma esse total, que nenhum id cobre duas formas distintas além das quatro documentadas, e que a posse acima vale em cada arquivo da árvore.
 

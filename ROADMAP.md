@@ -1290,28 +1290,50 @@ O pin é `identidade -> formas[]`, com **duas** formas em **quatro** elementos, 
 
 **Inventário, como asserção e não como descrição.** **22 elementos proprietários** carregam **26 pareamentos de forma**: 0 sem identidade, 0 ids duplicados. Um teste afirma esse total e afirma ainda que nenhuma entrada do pin cita uma forma ausente da árvore — que é como uma substituição lavada no pin à mão seria pego.
 
-**Prova por mutação, com o número medido.** As duas occurrences do `SectionNav` —mesma declaração, elementos irmãos, ids distintos — foram migradas para uma forma já pinada no `Select.tsx`. A troca foi reprovada nomeando **os dois** sites, e o pin acusou a entrada agora sem correspondência. A prova anterior só movia uma forma para uma forma inédita; esta move para uma forma **já permitida em outro arquivo**, que é justamente o caso que o pin por arquivo não via.
+**Prova por mutação, com o número medido.** As duas occurrences do `SectionNav` — mesma declaração, elementos irmãos, ids distintos — foram migradas para uma forma já pinada no `Select.tsx`. A troca foi reprovada nomeando **os dois** sites, e o pin acusou a entrada agora sem correspondência. A prova anterior só movia uma forma para uma forma inédita; esta move para uma forma **já permitida em outro arquivo**, que é justamente o caso que o pin por arquivo não via.
 
-**Regressão pelo scanner real.** As provas anteriores passavam identificadores fabricados direto para a comparação e nunca exercitavam o parsing. As de agora dirigem `scanWashesInSource` sobre texto de verdade: a troca que deixa o multiconjunto de formas **e** a contagem do arquivo idênticos, elemento novo sem pin, elemento sem identidade, dois elementos com um id só, o formato em posição de expressão, e a identidade sobrevivendo a linhas acrescentadas e a reindentação. As três condições de posse têm prova por mutação própria: colapsar a posse do marcador para último-escritor-vence reprova o teste de marcador reutilizado, colapsar a posse do atributo reprova o de `data-testid` reutilizado, e suprimir o ramo de órfão reprova o de marcador órfão.
+**Regressão pelo scanner de produção.** Tudo que segue está commitado e dirige `scanWashesInSource` mais as funções reais de identidade, com fixtures de fonte malformada, e afirma sobre as falhas que o código de produção produziu:
+
+- um marcador antes de um elemento pareado e depois um **segundo** elemento pareado: o primeiro consome o marcador, o segundo é reprovado como **sem identidade** — sem herança;
+- marcador antes de um elemento **sem** pareamento adiado, seguido de um elemento pareado: o marcador é **órfão** e o par posterior continua sem identidade;
+- dois marcadores reivindicando um elemento: `ambiguousMarker`, nomeando os dois marcadores e o elemento;
+- id de marcador duplicado em dois elementos, e `data-testid` estático duplicado: `duplicateIdentity` nos dois casos;
+- marcador sem nenhum elemento depois: `orphanMarker`;
+- a troca A/B na mesma declaração, preservada, com multiconjunto e contagem idênticos e os dois sites nomeados;
+- o inventário da árvore real: 22 elementos, 26 pareamentos, 21 marcadores, 0 sem identidade, 0 falha de posse.
+
+Estas provas duram porque **reprovam** quando a posse volta a ser último-escritor-vence (2 testes), quando o cheque de órfão some (1) e quando a detecção de duplicado some (2) — medido, não afirmado.
 
 **Duas correções de parsing vieram junto.** O `stripComments` passou a preservar **tamanho**, não só quebras de linha: o branch de `//` apagava texto, então um offset no fonte removido não era offset no original, e a identidade resolvia elementos centenas de linhas longe — bug latente em código já mergeado. E a tag proprietária agora é lida até o `>` correspondente, com ciência de string e de chave, para que `onClick={() => …}` não trunque a varredura.
 
-**A posse de uma identidade é exclusiva.** Um marcador — ou um `data-testid` estático — nomeia **exatamente um** elemento. O resolvedor mantinha antes um único valor por marcador, então um segundo elemento tomar o mesmo marcador simplesmente sobrescrevia o primeiro e nada via: um comentário podia nomear dois elementos e, se as formas fossem iguais, a população ficava indistinguível do caso saudável. Agora o registro é um **conjunto de elementos distintos** por identidade, e três condições reprovam — `markerClaimedByTwoElements` (um comentário nomeando dois elementos), `orphanMarker` (um comentário que não possui nada, que protege nada parecendo proteger) e `duplicateIdentity` (uma identidade alcançada por dois elementos). Nenhuma das três é visível comparando totais, e é por isso que o guard as exige.
+**A posse de uma identidade é exclusiva, e é posicional.** Um marcador — ou um `data-testid` estático — nomeia **exatamente um** elemento, e um marcador nomeia **apenas o próximo elemento JSX real**, lido através do `>` que fecha a tag de abertura, e é consumido uma única vez. Se esse elemento não tiver pareamento adiado, o marcador fica **órfão** e um elemento posterior **não** pode herdá-lo.
+
+Essa definição é o conserto de um vazamento real: o resolvedor anterior escolhia o marcador mais próximo _antes_ de um literal de classe, o que não é a mesma coisa. Um marcador cujo elemento não tinha pareamento adiado entregava sua identidade ao elemento seguinte, de modo que um sítio podia ser nomeado por um comentário que estava acima de um irmão. O vínculo agora é calculado adiante, e não é herdável.
+
+Três condições reprovam, e nenhuma delas é visível comparando totais — com dois elementos de mesma forma, contagens e multiconjuntos são idênticos ao caso saudável:
+
+| condição            | o que significa                                                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `orphanMarker`      | o marcador não tem elemento depois dele, ou o elemento que ele nomeia não tem pareamento adiado: protege nada parecendo proteger |
+| `duplicateIdentity` | uma identidade alcançada por dois elementos distintos, por marcador ou por atributo                                              |
+| `ambiguousMarker`   | dois marcadores reivindicando o mesmo elemento, que então não tem nome inequívoco                                                |
 
 **O pin é de uma direção só, e isso é o contrato.** Um site corrigido deixa entrada obsoleta e **não** gera falha, porque corrigir um site nunca pode reprovar a suíte. Uma asserção que exigisse o contrário — que toda forma pinada ainda aparecesse _em algum lugar_ da árvore — falharia exatamente quando a política estaria funcionando: resolver o último sítio de uma forma tira a forma da população, o que é progresso. O que é verificado é a outra direção: todo sítio **atual** existe, tem exatamente uma identidade e casa com o **seu próprio** valor pinado; identidade nova ou forma alterada reprova. Há regressão para o sítio resolvido cujo dono era o único de uma forma — escolhida no censo, porque a wash de acento tem cinco donos e passaria pelo motivo errado.
 
-O pin continua **allowlist de uma direção só**: um site corrigido deixa entrada obsoleta e não gera falha, porque corrigir um site nunca pode reprovar a suíte. O custo segue declarado — o mapa passa a descrever mais do que existe até ser podado à mão. O outro custo é de volume: 21 comentários em 14 arquivos sem relação com acessibilidade, preço de ancorar a identidade em algo que existe em vez de em uma posição.
+**Censo re-derivado, e as chaves que foram reprovadas.** Os números que o cabeçalho do arquivo citava estavam **errados por ~2,5x**, e errados na direção que faz um piso parecer _menos_ trabalho do que existe. Quatro chaves foram tentadas como identidade de sítio e três reprovaram:
 
-**Censo re-derivado — os números citados estavam errados por ~2,5x, e errados na direção que faz um piso parecer _menos_ trabalho do que existe:**
+| chave                         | o que não enxerga                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| contagem de arquivos          | um sítio corrigido e um sítio que mudou de forma dão o mesmo número                                                      |
+| conjunto **global** de formas | um sítio que migra de uma forma já permitida para outra forma já permitida: contagem igual, conjunto igual, guarda verde |
+| `arquivo#declaração#ordinal`  | a **substituição na mesma declaração**: dois elementos trocam de pareamento e todo ordinal continua no lugar             |
+| forma (ou hash da forma)      | dois sítios da mesma forma são indiscerníveis — a mesma falha com passos a mais                                          |
 
-| família | citado (cabeçalho anterior)  | real em `def8080`                   | pinado agora                           |
-| ------- | ---------------------------- | ----------------------------------- | -------------------------------------- |
-| washes  | 48 pareamentos / 13 arquivos | 18 sítios / 10 formas / 11 arquivos | **15 sítios / 8 formas / 10 arquivos** |
-| paleta  | 27 pareamentos / 8 arquivos  | 11 sítios / 4 formas / 7 arquivos   | **11 sítios / 4 formas / 7 arquivos**  |
+O inventário **por elemento** é o que a guarda fixa hoje: **22 elementos proprietários**, **26 pareamentos de forma**, **21 comentários** mais **1** `data-testid` reutilizado, **0** sem identidade, **0** ids duplicados, **4** elementos com duas formas.
 
 O regex antigo casava **só o token accent**, então nunca contou as washes de status: `--color-danger/90` e `--color-success/90` eram invisíveis para ele, e são os dois piores pares do app. A queda de 18 para 15 é o toast, cujas três variantes `/90` saíram da população ao virarem preenchimentos sólidos.
 
-**O pin por arquivo continua sendo allowlist de uma direção só, e o custo é declarado:** um sítio que aparece e não está pinado no seu arquivo reprova; uma entrada pinada que deixou de ser descoberta **não** reprova, porque a regra do arquivo é que corrigir um sítio nunca pode reprovar a suíte — só baixar o número. **Um sítio resolvido deixa uma entrada obsoleta**, e o mapa passa a descrever mais do que existe depois de uma onda de correções, o que exige podar à mão. A pinagem bidirecional seria mais apertada e foi rejeitada porque pune exatamente o comportamento que a guarda existe para encorajar, e uma guarda que grita lobo acaba desativada. A contagem de sítios fica pinada ao lado do mapa para que as duas possam ser lidas juntas.
+**O pin é de uma direção só, e o custo é declarado:** um sítio que aparece e não está pinado no seu elemento reprova; uma entrada pinada que deixou de ser descoberta **não** reprova. Corrigir um sítio nunca pode reprovar a suíte — só baixar a contagem. O custo é uma entrada obsoleta por sítio resolvido, e o mapa passa a descrever mais do que existe até ser podado à mão.
 
 **3. Botão de fechar e indicador de foco do Toast — achado HIGH da Themis, corrigido.** A correção do texto mediu só o texto da mensagem, e duas coisas ficaram sem medir — as duas reprovando. Um botão de fechar é um **controle**, e o indicador visual de um controle é contraste **não textual**: WCAG 1.4.11 pede 3:1, não os 4,5:1 do 1.4.3. O texto passar em 1.4.3 não dizia nada sobre o botão.
 

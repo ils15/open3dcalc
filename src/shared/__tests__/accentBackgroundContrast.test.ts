@@ -18,12 +18,12 @@ import {
   identityContext,
   identityFaults,
   resolveSiteId,
+  siteMarkers,
   walkComponents,
   censusPaletteBackgrounds,
   censusWashes,
   scanPaletteInSource,
   scanWashesInSource,
-  siteMarkers,
 } from "./helpers/deferredCensus";
 
 /**
@@ -1164,48 +1164,6 @@ describe("the deferred population is floored in SITES, with its forms pinned", (
     },
   );
 
-  it("binds every identity to exactly one element, across the whole tree", () => {
-    // The ownership rules over the real tree rather than a fixture. Each is a way
-    // the population looks healthy while being wrong: a reused marker, or a
-    // reused static id, leaves every count and every multiset intact when the
-    // two elements happen to share a shape — which is why the guard cannot be
-    // satisfied by comparing totals.
-    const paletteMap = tailwindPaletteMap(
-      readFileSync(
-        resolve(projectRoot, "node_modules/tailwindcss/theme.css"),
-        "utf-8",
-      ),
-    );
-    const faults: string[] = [];
-    for (const file of walkComponents(srcRoot)) {
-      const source = readFileSync(file, "utf-8");
-      const ctx = identityContext(source);
-      for (const site of [
-        ...scanWashesInSource({ tokensCss, file, source }).failing,
-        ...scanPaletteInSource({
-          tokensCss,
-          file,
-          source,
-          palette: paletteMap,
-        }).failing,
-      ]) {
-        resolveSiteId(ctx, site.offset);
-      }
-      for (const fault of identityFaults(ctx)) {
-        faults.push(
-          `  ${relative(projectRoot, file)}
-${describeIdentityFaults([fault])}`,
-        );
-      }
-    }
-    expect(
-      faults.join("\n"),
-      `${faults.length} identity ownership fault(s) in the tree. A marker or a ` +
-        `static id must name exactly one element, and a marker owning nothing is ` +
-        `an orphan rather than protection.`,
-    ).toBe("");
-  });
-
   it("gives every deferred wash element exactly one identity, and no marker two elements", () => {
     // The inventory, asserted rather than described: 22 owning elements, 26
     // paired occurrences, every one identified, no id used twice, and every
@@ -1671,4 +1629,274 @@ describe("the site pin, through the real scanner", () => {
       "a per-render test id names no single source site, so it is not identity",
     ).toEqual([null]);
   });
+});
+
+/**
+ * Ownership, proven by DURABLE tests through the production identity path.
+ *
+ * The previous pass reported mutation proof for these cases, and the committed
+ * tests did not support that claim: they asserted that a FIXTURE contained two
+ * identical strings, and that the clean tree held a certain number of sites.
+ * Neither says anything about whether the guard rejects the malformed source.
+ * Every test below therefore drives `scanWashesInSource` plus the real
+ * `identityFaults`, and asserts on the faults the production code produces.
+ *
+ * They are written to fail if ownership ever becomes last-writer-wins, or if
+ * orphan checking is removed — which is checked by mutation in the commit that
+ * introduced them, and re-checkable at any time.
+ */
+describe("marker ownership, through the production identity path", () => {
+  const projectRoot = resolve(__dirname, "../..", "..");
+  const tokensCss = readFileSync(
+    resolve(projectRoot, "src/styles/tokens.css"),
+    "utf-8",
+  );
+
+  const X = "bg-[var(--color-accent)]/20 + text-[var(--color-accent)]";
+  const Y = "bg-[var(--accent)]/20 + text-[var(--accent)]";
+
+  /**
+   * The production path: scan, then read the faults the scan actually produced.
+   * `ctxFor` replays the scan's own resolutions so the recorded claims are the
+   * ones a real scan made, rather than a separate guess.
+   */
+  function inspect(source: string) {
+    const scan = () =>
+      scanWashesInSource({ tokensCss, file: "src/Widget.tsx", source });
+    const result = scan();
+    const ctx = identityContext(source);
+    for (const site of result.failing) resolveSiteId(ctx, site.offset);
+    return {
+      sites: result.failing.map((s) => ({ siteId: s.siteId, shape: s.shape })),
+      unresolved: result.unresolved,
+      faults: identityFaults(ctx),
+    };
+  }
+
+  const kinds = (f: { kind: string }[]): string[] =>
+    f.map((x) => x.kind).sort();
+
+  it("a marker names only the element immediately after it, and is consumed once", () => {
+    // THE leak this replaces. Under nearest-preceding-marker resolution the
+    // second element inherited the first's identity and both looked healthy.
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: first */}",
+      `      <span className="${X}">A</span>`,
+      `      <span className="${X}">B has no marker of its own</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const found = inspect(source);
+    expect(
+      found.faults,
+      "both elements hold a deferred pairing, so the marker is consumed and " +
+        "the second element simply has no identity — which the guard reports",
+    ).toEqual([]);
+    expect(
+      found.sites.map((s) => s.siteId),
+      "the second element must NOT inherit the first's identity",
+    ).toEqual(["first", null]);
+    expect(
+      kinds(siteFaults(found.sites, { first: [X] })),
+      "and an un-named deferred element is a finding, not a silent merge",
+    ).toEqual(["unidentified"]);
+  });
+
+  it("orphans a marker whose element has no deferred pairing", () => {
+    // The other half of the leak: the marked element is not deferred, and a
+    // LATER element must not inherit the marker.
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: stale */}",
+      '      <span className="px-2 py-1 rounded-full">plain</span>',
+      `      <span className="${X}">deferred</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const found = inspect(source);
+    expect(kinds(found.faults)).toEqual(["orphanMarker"]);
+    expect(found.faults[0].identity).toBe("stale");
+    expect(
+      found.faults[0].detail,
+      "the message must say the marker cannot be inherited",
+    ).toMatch(/cannot be inherited/);
+    expect(
+      found.sites.map((s) => s.siteId),
+      "the later deferred element has no identity of its own",
+    ).toEqual([null]);
+  });
+
+  it("rejects two markers claiming one element as ambiguous", () => {
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: one */}",
+      "      {/* contrast-site: two */}",
+      `      <span className="${X}">A</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const found = inspect(source);
+    expect(kinds(found.faults)).toEqual(["ambiguousMarker"]);
+    expect(
+      found.faults[0].detail,
+      "and it must name BOTH markers and the element they fight over",
+    ).toMatch(/both claim the element/);
+  });
+
+  it("rejects a duplicate marker id on two different elements", () => {
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: same */}",
+      `      <span className="${X}">A</span>`,
+      "      {/* contrast-site: same */}",
+      `      <span className="${X}">B</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const found = inspect(source);
+    expect(
+      kinds(found.faults),
+      "one id, one element — and the shapes here are identical, so nothing " +
+        "downstream could tell this from the healthy case",
+    ).toEqual(["duplicateIdentity"]);
+    expect(found.faults[0].identity).toBe("same");
+  });
+
+  it("rejects a static attribute reused on two elements", () => {
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <div className="flex">',
+      `      <span data-testid="dup" className="${X}">A</span>`,
+      `      <span data-testid="dup" className="${Y}">B</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const found = inspect(source);
+    expect(kinds(found.faults)).toEqual(["duplicateIdentity"]);
+    expect(found.faults[0].identity).toBe("data-testid=dup");
+  });
+
+  it("rejects a marker followed by no element at all", () => {
+    const source = [
+      "export function W() {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: dangling */}",
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const found = inspect(source);
+    expect(kinds(found.faults)).toEqual(["orphanMarker"]);
+    expect(found.faults[0].detail).toMatch(/no JSX\s+element at all/);
+  });
+
+  it("keeps the marked A/B same-declaration swap failing on both sites", () => {
+    // Preserved from the accepted work: two marked siblings in one declaration,
+    // swapped. The file's shape multiset and pairing count are unchanged, so
+    // only a per-site key can see it.
+    const before = [
+      "export function W({ a, b }: { a: string; b: string }) {",
+      "  return (",
+      '    <div className="flex">',
+      "      {/* contrast-site: site-a */}",
+      `      <span className="${X}">A</span>`,
+      "      {/* contrast-site: site-b */}",
+      `      <span className="${Y}">B</span>`,
+      "    </div>",
+      "  );",
+      "}",
+    ].join("\n");
+    const pin = { "site-a": [X], "site-b": [Y] };
+    expect(inspect(before).faults).toEqual([]);
+    expect(siteFaults(inspect(before).sites, pin)).toEqual([]);
+
+    const after = before
+      .replace(
+        `<span className="${X}">A</span>`,
+        `<span className="${Y}">A</span>`,
+      )
+      .replace(
+        `<span className="${Y}">B</span>`,
+        `<span className="${X}">B</span>`,
+      );
+    const moved = inspect(after);
+    expect(
+      moved.sites.map((s) => s.shape).sort(),
+      "the shape multiset is unchanged by the swap",
+    ).toEqual(
+      inspect(before)
+        .sites.map((s) => s.shape)
+        .sort(),
+    );
+    expect(
+      moved.faults,
+      "and the swap produces no identity fault at all",
+    ).toEqual([]);
+    expect(
+      siteFaults(moved.sites, pin)
+        .map((f) => `${f.siteId}:${f.kind}`)
+        .sort(),
+      "so the PIN is what catches it, naming both sites",
+    ).toEqual(["site-a:changedForm", "site-b:changedForm"]);
+  });
+
+  it("holds across the real tree: 22 elements, no ownership fault", () => {
+    // The real static inventory, so the durable tests above are anchored to a
+    // population that actually exists rather than only to fixtures.
+    const found = inspectRealTree();
+    expect(found.faults, describeIdentityFaults(found.faults)).toEqual([]);
+    expect(found.elements).toBe(22);
+    expect(found.occurrences).toBe(26);
+    expect(found.markers).toBe(21);
+    expect(found.missingIdentity).toBe(0);
+  });
+
+  function inspectRealTree() {
+    const palette = tailwindPaletteMap(
+      readFileSync(
+        resolve(projectRoot, "node_modules/tailwindcss/theme.css"),
+        "utf-8",
+      ),
+    );
+    let elements = 0;
+    let occurrences = 0;
+    let markers = 0;
+    let missingIdentity = 0;
+    const faults: ReturnType<typeof identityFaults> = [];
+    for (const file of walkComponents(srcRoot)) {
+      const source = readFileSync(file, "utf-8");
+      markers += siteMarkers(source).length;
+      const sites = [
+        ...scanWashesInSource({ tokensCss, file, source }).failing,
+        ...scanPaletteInSource({ tokensCss, file, source, palette }).failing,
+      ];
+      const ctx = identityContext(source);
+      const ids = new Set<string | null>();
+      for (const site of sites) {
+        const id = resolveSiteId(ctx, site.offset);
+        ids.add(id);
+        if (!id) missingIdentity++;
+      }
+      elements += ids.size;
+      occurrences += sites.length;
+      faults.push(...identityFaults(ctx));
+    }
+    return { elements, occurrences, markers, missingIdentity, faults };
+  }
 });

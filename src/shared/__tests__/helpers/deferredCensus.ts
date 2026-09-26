@@ -282,43 +282,76 @@ export function staticAttrIdentity(tagText: string): string | null {
 export interface IdentityContext {
   original: string;
   markers: SiteMarker[];
+  /**
+   * marker end -> the ONE element that marker may name.
+   *
+   * Precomputed, and that is the fix. The previous resolver picked the nearest
+   * marker BEFORE a class literal, which is not the same thing: a marker whose
+   * element has no deferred pairing handed its identity to whatever element came
+   * next, so a site could be named by a comment sitting above a sibling. Binding
+   * is instead positional and forward-only — the next JSX opening element after
+   * the marker, and no other.
+   */
+  markerOwnerTag: Map<number, number | null>;
   /** owning-tag start -> resolved identity, so an element resolves once */
   tagIdentity: Map<number, string | null>;
-  /**
-   * marker end -> the DISTINCT owning elements that claimed it.
-   *
-   * A set, not a single value, and that is the whole fix. The previous version
-   * stored one id per marker, so a second element taking the same marker
-   * overwrote the first and nothing could see it: one marker could name two
-   * elements, and if their shapes were identical the population looked
-   * untouched. Ownership here is EXCLUSIVE — a marker may own exactly one
-   * element, and claiming it twice is a finding, not a merge.
-   */
-  markerOwners: Map<number, Set<number>>;
-  /** tag start -> the marker end that named it, for orphan reporting */
-  tagMarker: Map<number, number>;
   /** identity -> the distinct elements using it, for duplicate reporting */
   idOwners: Map<string, Set<number>>;
+  /** owning-tag starts that turned out to hold a deferred pairing */
+  deferredTags: Set<number>;
+  /** marker end -> the marker that also claims the same element, if any */
+  markerRival: Map<number, number>;
+}
+
+/** The `<` of the next JSX opening element at or after `from`. */
+function nextTagStartAfter(source: string, from: number): number | null {
+  const m = /<(?=[A-Za-z][A-Za-z0-9.]*)/g;
+  m.lastIndex = from;
+  const hit = m.exec(source);
+  return hit ? hit.index : null;
 }
 
 export function identityContext(original: string): IdentityContext {
+  const markers = siteMarkers(original);
+  const markerOwnerTag = new Map<number, number | null>();
+  // Each marker owns the next element after it. Two markers can land on the
+  // same element, which is recorded rather than resolved silently.
+  const markerRival = new Map<number, number>();
+  const byTag = new Map<number, number>();
+  for (const marker of markers) {
+    const tag = nextTagStartAfter(original, marker.end);
+    markerOwnerTag.set(marker.end, tag);
+    if (tag === null) continue;
+    const prior = byTag.get(tag);
+    if (prior !== undefined) {
+      markerRival.set(marker.end, prior);
+      markerRival.set(prior, marker.end);
+    } else {
+      byTag.set(tag, marker.end);
+    }
+  }
   return {
     original,
-    markers: siteMarkers(original),
+    markers,
+    markerOwnerTag,
+    markerRival,
     tagIdentity: new Map(),
-    markerOwners: new Map(),
-    tagMarker: new Map(),
     idOwners: new Map(),
+    deferredTags: new Set(),
   };
 }
 
 /**
- * The identity of the element owning the literal at `offset`, or null when it
- * has none.
+ * The identity of the element owning the literal at `offset`, or null.
  *
- * Two sources, in order. A static `data-testid`/`id` the element already carries
- * wins, because adding nothing beats adding something. Otherwise the marker
- * immediately preceding it, and only that element may hold it.
+ * Two sources. A static `data-testid`/`id` the element ALREADY carries wins,
+ * because adding nothing beats adding something. Otherwise the marker whose
+ * BOUND element is this one — which is not "the nearest marker before the
+ * literal", because that let a marker above a non-deferred element name whatever
+ * came next.
+ *
+ * Records the element as holding a deferred pairing, which is what makes a
+ * marker whose element is not deferred detectable as an orphan afterwards.
  */
 export function resolveSiteId(
   ctx: IdentityContext,
@@ -330,33 +363,26 @@ export function resolveSiteId(
   if (cached !== undefined) return cached;
 
   let id = staticAttrIdentity(owningTagText(ctx.original, tagStart));
+  if (!id) {
+    for (const marker of ctx.markers) {
+      if (ctx.markerOwnerTag.get(marker.end) === tagStart) {
+        id = marker.id;
+        break;
+      }
+    }
+  }
   if (id) {
     const owners = ctx.idOwners.get(id) ?? new Set<number>();
     owners.add(tagStart);
     ctx.idOwners.set(id, owners);
-  } else {
-    let owner: SiteMarker | null = null;
-    for (const marker of ctx.markers) {
-      if (marker.end > offset) break;
-      owner = marker;
-    }
-    id = owner?.id ?? null;
-    if (owner) {
-      const owners = ctx.markerOwners.get(owner.end) ?? new Set<number>();
-      owners.add(tagStart);
-      ctx.markerOwners.set(owner.end, owners);
-      ctx.tagMarker.set(tagStart, owner.end);
-      const ids = ctx.idOwners.get(owner.id) ?? new Set<number>();
-      ids.add(tagStart);
-      ctx.idOwners.set(owner.id, ids);
-    }
   }
   ctx.tagIdentity.set(tagStart, id);
+  ctx.deferredTags.add(tagStart);
   return id;
 }
 
 export type IdentityFaultKind =
-  "markerClaimedByTwoElements" | "orphanMarker" | "duplicateIdentity";
+  "orphanMarker" | "duplicateIdentity" | "ambiguousMarker";
 
 export interface IdentityFault {
   kind: IdentityFaultKind;
@@ -393,39 +419,55 @@ export function identityFaults(ctx: IdentityContext): IdentityFault[] {
     ctx.original.slice(0, offset).split("\n").length;
 
   for (const marker of ctx.markers) {
-    const owners = ctx.markerOwners.get(marker.end) ?? new Set<number>();
-    if (owners.size === 0) {
+    const owner = ctx.markerOwnerTag.get(marker.end) ?? null;
+    const rival = ctx.markerRival.get(marker.end);
+
+    // One fault per contested PAIR, reported by the earlier marker, so a
+    // two-marker collision is not counted twice with the same message.
+    if (rival !== undefined && marker.end < rival) {
+      faults.push({
+        kind: "ambiguousMarker",
+        identity: marker.id,
+        detail:
+          `  the markers at lines ${lineOf(marker.end)} and ${lineOf(rival)} ` +
+          `both claim the element at line ${lineOf(owner ?? 0)}. Ownership is ` +
+          `exclusive, so this element has no unambiguous name.`,
+      });
+      continue;
+    }
+    if (owner === null) {
       faults.push({
         kind: "orphanMarker",
         identity: marker.id,
         detail:
-          `  the marker at line ${lineOf(marker.end)} owns no element. It sits ` +
-          `next to nothing deferred, so the pin entry it backs protects nothing.`,
+          `  the marker at line ${lineOf(marker.end)} is followed by no JSX ` +
+          `element at all, so it names nothing.`,
       });
-    } else if (owners.size > 1) {
-      const lines = [...owners].sort((a, b) => a - b).map((o) => lineOf(o));
+      continue;
+    }
+    if (!ctx.deferredTags.has(owner)) {
       faults.push({
-        kind: "markerClaimedByTwoElements",
+        kind: "orphanMarker",
         identity: marker.id,
         detail:
-          `  the marker at line ${lineOf(marker.end)} is claimed by ` +
-          `${owners.size} elements (lines ${lines.join(", ")}). Ownership is ` +
-          `exclusive: a marker names one element, or the identity cannot say ` +
-          `which site a shape belongs to.`,
+          `  the marker at line ${lineOf(marker.end)} names the element at line ` +
+          `${lineOf(owner)}, which holds no deferred pairing. The marker is ` +
+          `consumed by that element and cannot be inherited by a later one, so ` +
+          `it protects nothing.`,
       });
     }
   }
 
   for (const [id, owners] of [...ctx.idOwners].sort()) {
     if (owners.size > 1) {
-      const lines = [...owners].sort((a, b) => a - b).map((o) => lineOf(o));
+      const lines = [...owners].sort((x, y) => x - y).map((o) => lineOf(o));
       faults.push({
         kind: "duplicateIdentity",
         identity: id,
         detail:
           `  "${id}" names ${owners.size} distinct elements (lines ` +
-          `${lines.join(", ")}). If their shapes happen to match, the population ` +
-          `is indistinguishable from the healthy case.`,
+          `${lines.join(", ")}). One identity, one element. If their shapes ` +
+          `happen to match, the population is indistinguishable from healthy.`,
       });
     }
   }
