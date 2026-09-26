@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
+import { FocusModeButton } from "@/shared/components/AppShell/FocusModeButton";
 
 /**
  * Desktop sidebar footer — brand links pinned at the bottom of the desktop
@@ -48,6 +49,8 @@ export function SidebarFooter(): React.ReactElement {
       </a>
       {/* Destination visibility (Phase 7o s3) */}
       <ManageVisibilityButton />
+      {/* Focus Mode (Phase 7o s4) — transient, never persisted */}
+      <FocusModeButton />
     </div>
   );
 }

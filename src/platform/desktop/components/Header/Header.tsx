@@ -17,6 +17,7 @@ import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
+import { FocusModeButton } from "@/shared/components/AppShell/FocusModeButton";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -127,6 +128,9 @@ export function Header() {
           {/* Destination visibility (Phase 7o s3) — reachable at every width,
               including the <lg range where the desktop sidebar is hidden. */}
           <ManageVisibilityButton variant="icon" />
+
+          {/* Focus Mode (Phase 7o s4) — same reachability, transient */}
+          <FocusModeButton variant="icon" />
 
           {/* Currency selector */}
           <div className="flex items-center">

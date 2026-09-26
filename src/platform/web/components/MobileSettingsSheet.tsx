@@ -14,6 +14,7 @@ import { APP_VERSION } from "@/shared/version";
 import { SecondaryNavigation } from "@/platform/web/SecondaryNavigation";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
+import { FocusModeButton } from "@/shared/components/AppShell/FocusModeButton";
 
 /**
  * Mobile settings bottom sheet (web only — settings only, never tabs).
@@ -204,6 +205,9 @@ export function MobileSettingsSheet({
 
               {/* Destination visibility (Phase 7o s3) */}
               <ManageVisibilityButton />
+
+              {/* Focus Mode (Phase 7o s4) — transient, never persisted */}
+              <FocusModeButton />
 
               <SecondaryNavigation
                 onInternalNavigate={onInternalNavigate}
