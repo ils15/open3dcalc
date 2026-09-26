@@ -138,6 +138,9 @@ afterEach(() => {
   resetManifestForTests(null);
   vi.restoreAllMocks();
   window.localStorage.clear();
+  // Net for the fake timers the Escape-ownership block installs, so a future
+  // test here that forgets to restore cannot leak them into the rest of the file.
+  vi.useRealTimers();
 });
 
 describe("focus mode — entering", () => {
@@ -356,6 +359,36 @@ describe("focus mode — the exit is always available", () => {
 });
 
 describe("focus mode — Escape belongs to the topmost layer", () => {
+  // The two tutorial tests below drive the REAL store actions, because the
+  // whole point is that the store's own `isActive` / `sessionDismissed` decide
+  // who owns the key. `finishTutorial` debounces its write by 800ms, and on
+  // real timers that callback outlives this file: the afterEach above calls
+  // `resetManifestForTests(null)`, which sets the gate's `loadFailed` flag and
+  // so short-circuits `ensureLoaded()` before it can re-read the shipped
+  // manifest. A late `checkKey` then finds no index and THROWS — from a bare
+  // timer callback, with no test asserting anything, so the run fails without
+  // a single red test. That is load-dependent (it only surfaced under
+  // `--coverage`, where jsdom is re-created once per file), so it is closed
+  // deterministically here instead of being left to timing.
+  //
+  // Fake timers keep the write INSIDE the test. The flush below is the actual
+  // guarantee, and the file-level `vi.useRealTimers()` is the net.
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    // Vitest's default `sequence.hooks: "stack"` runs afterEach hooks in
+    // reverse registration order, so this inner hook fires BEFORE the
+    // file-level one that invalidates the manifest — the debounce is flushed
+    // while the manifest injected in beforeEach is still valid. The
+    // `finishTutorial` test additionally flushes in its own body and asserts
+    // the write landed, so correctness does not rest on that ordering alone.
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+  });
+
   it("exits when nothing else owns the key", () => {
     renderHarness();
     enterFocusMode();
@@ -470,6 +503,22 @@ describe("focus mode — Escape belongs to the topmost layer", () => {
     act(() => {
       useTutorialStore.getState().finishTutorial();
     });
+
+    // The 800ms debounce is flushed HERE, on purpose, and the write is
+    // asserted rather than merely allowed to happen: the point is that the
+    // persistence path really runs, against the SPEC-01 registered key, while
+    // the manifest this file injected is still valid. Leaving it on real
+    // timers is what let the callback escape the test and fail CI.
+    expect(window.localStorage.getItem("open3dcalc_tutorial_v1")).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("open3dcalc_tutorial_v1") as string,
+      ).isCompleted,
+    ).toBe(true);
+
     fireEvent.keyDown(window, { key: "Escape" });
     expect(useNavigationPrefsStore.getState().focusMode).toBe(false);
   });
