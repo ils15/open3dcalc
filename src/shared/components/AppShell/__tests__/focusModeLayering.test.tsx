@@ -457,33 +457,88 @@ describe("focus mode — a passive surface never buries the exit", () => {
     }
   });
 
-  it("leaves no undeclared layer above the exit", () => {
-    // The audit, as a test. Every remaining `z-50` in the tree is a real scrim,
-    // so the rule in tokens.css ("z-50 means a surface that owns the screen") is
-    // true rather than aspirational. A menu left at z-50 is how the last two
-    // holes got in, so the tier is pinned here.
-    const scrims = [
+  it("pins every z-50 in the tree, by occurrence and not by file", () => {
+    // The audit, done so it can fail.
+    //
+    // The previous version of this test was a per-file boolean: "does this file
+    // contain a scrim?" A file with one scrim therefore passed even with a
+    // second, unrelated z-50 sitting in it, and the covered list held 12 files
+    // while 14 files carry a scrim-shaped z-50 — so the two it omitted were
+    // entirely unpinned. That is false assurance from a test whose name claims
+    // more than it checks, and it shipped on top of a rule that was itself false:
+    // Header.tsx and MobileSettingsSheet.tsx each put a mobile-sheet PANEL in
+    // the scrim tier alongside its own backdrop.
+    //
+    // So the rule is stated as what it actually is — the dimming backdrop plus
+    // the panel that answers it — and this counts OCCURRENCES in every file in
+    // the tree, with the covered set derived rather than trusted.
+    const SCRIM = /fixed inset-0 z-50/;
+    const SHEET_PANEL = /z-50[^\n]*rounded-t-2xl/;
+
+    // 1. Derive the set: every file in src that puts a z-50 in a className.
+    const found: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = `${dir}/${entry.name}`;
+        if (entry.isDirectory()) {
+          if (entry.name !== "__tests__" && entry.name !== "node_modules") {
+            walk(full);
+          }
+          continue;
+        }
+        if (!/\.(tsx|ts)$/.test(entry.name)) continue;
+        const src = fs.readFileSync(full, "utf8");
+        if (/class(?:Name)?=[^\n]*\bz-50\b/.test(src)) {
+          found.push(full.replace(`${process.cwd()}/`, ""));
+        }
+      }
+    };
+    walk(resolve(process.cwd(), "src"));
+
+    // 2. The covered set may not fall behind the tree, or a new z-50 is
+    //    silently unpinned. This is what catches a file nobody thought to list.
+    const covered = [
+      "src/shared/components/ui/ComparisonModal.tsx",
       "src/shared/components/ui/ConfirmDialog.tsx",
       "src/shared/components/ui/ConsentModal.tsx",
-      "src/shared/components/ui/PrivacyPolicy.tsx",
       "src/shared/components/ui/DataSyncModal.tsx",
-      "src/shared/components/ui/ComparisonModal.tsx",
-      "src/shared/components/Calculator/QuoteSection.tsx",
+      "src/shared/components/ui/PrivacyPolicy.tsx",
       "src/shared/components/Calculator/HistoryTab/HistoryTab.tsx",
-      "src/shared/components/Catalog/CustomerTab.tsx",
-      "src/shared/components/Catalog/ProductInventory.tsx",
-      "src/shared/components/Catalog/FilamentInventory.tsx",
+      "src/shared/components/Calculator/QuoteSection.tsx",
       "src/shared/components/Catalog/CatalogTab.tsx",
+      "src/shared/components/Catalog/CustomerTab.tsx",
+      "src/shared/components/Catalog/FilamentInventory.tsx",
+      "src/shared/components/Catalog/ProductInventory.tsx",
+      "src/shared/components/Header/Header.tsx",
+      "src/platform/web/components/MobileSettingsSheet.tsx",
       "src/shared/components/SpoolShelf/SpoolForm.tsx",
-    ];
-    for (const file of scrims) {
+    ].sort();
+    expect(
+      found.sort(),
+      "every file with a class-level z-50 must be covered here; list one that is missing",
+    ).toEqual(covered);
+
+    // 3. Occurrence scope. In every covered file, the number of z-50s must be
+    //    exactly the number of backdrops plus the number of sheet panels, so a
+    //    second z-50 of any other kind cannot ride along inside a file that
+    //    already has a scrim.
+    for (const file of covered) {
       const src = fs.readFileSync(resolve(process.cwd(), file), "utf8");
-      // Each of these is `fixed inset-0 z-50` plus a backdrop colour: the shape
-      // of a surface that dims the page and closes on a click.
+      const all = (src.match(/\bz-50\b/g) ?? []).length;
+      const backdrops = (src.match(new RegExp(SCRIM, "g")) ?? []).length;
+      const panels = (src.match(new RegExp(SHEET_PANEL, "g")) ?? []).length;
       expect(
-        /fixed inset-0 z-50[^\n]*bg-/.test(src),
-        `${file} must be a scrim if it sits in the scrim tier`,
-      ).toBe(true);
+        backdrops + panels,
+        `${file}: every z-50 must be a dimming backdrop or the panel that answers one (found ${all} z-50, ${backdrops} backdrop, ${panels} panel)`,
+      ).toBe(all);
+      // A panel that answers a backdrop is not a layer on its own: it has to
+      // have one, in the same file, or it is floating with nothing behind it.
+      if (panels > 0) {
+        expect(
+          backdrops,
+          `${file}: a sheet panel must have its backdrop in the same file`,
+        ).toBeGreaterThan(0);
+      }
     }
   });
 });

@@ -193,14 +193,32 @@
                          up — today only the Focus Mode exit. Everything that
                          owns nothing is under it; everything that owns the
                          screen is over it.
-       z-50 (Tailwind)  the SCRIM-MODAL tier: a `fixed inset-0` backdrop with
-                         a dim colour, nothing else. Every remaining z-50 in
-                         the tree is one of these, and a test says so — a menu
-                         left at z-50 is how this scale was breached twice.
-       --z-dropdown     menus, popovers and combobox lists: surfaces the user
-                         is actively operating, which own Escape for as long
-                         as they are open.
-       --z-panel        side panels and their own dialogs (z-70/71 today).
+       z-50 (Tailwind)  the SCRIM tier: a dimming backdrop (`fixed inset-0`
+                         plus a dim colour) TOGETHER WITH the panel that
+                         answers it. Two shapes, and only two, and a test
+                         counts every z-50 in the tree to prove it: a centred
+                         dialog, which is backdrop and card in one element, or
+                         a mobile bottom sheet, which is a `rounded-t-2xl`
+                         panel in the same file as its own backdrop. The panel
+                         has to share the backdrop's band because it must sit
+                         above it — that is one owning layer, not two.
+
+                         Why the panel is not filed under --z-dropdown instead,
+                         since that would also be consistent: because a settings
+                         sheet is not a menu. --z-dropdown means a list the user
+                         picks an item from; moving the sheet there would have
+                         traded a false claim for a different false claim, and
+                         the honest model is the one that describes the two
+                         things the file actually renders.
+
+                         Stated plainly rather than glossed: the two sheets are
+                         the only members of this tier with no Escape handler
+                         (both close on a backdrop click). They are chrome —
+                         `MobileSettingsSheet` hangs off `MobileNav`, and the
+                         Header holds the other — and chrome is unmounted in
+                         Focus Mode, so rule 2 cannot be reached through them
+                         today. That is a recorded gap, not a claim that they
+                         conform.
        --z-tour         the guided tour's scrim, and --z-tour-card the card
                          above it. An owning surface by rule 2 — the scrim
                          dims the page, a click on it dismisses, and Escape
@@ -208,6 +226,10 @@
                          the exit is one Escape away while it is up. The
                          values are unchanged from the old z-[55]/56; naming
                          them is what makes rule 2 checkable.
+       --z-dropdown     menus, popovers and combobox lists: surfaces the user
+                         is actively operating, which own Escape for as long
+                         as they are open.
+       --z-panel        side panels and their own dialogs (z-70/71 today).
        --z-tooltip      the one INERT surface allowed above shell chrome, per
                          rule 3. The bubble is `pointer-events-none` and
                          `visibility: hidden` when closed, so it can overlap
@@ -239,10 +261,10 @@
   --z-viewer: 30;
   --z-passive: 40;
   --z-shell-chrome: 45;
-  --z-dropdown: 60;
-  --z-panel: 70;
   --z-tour: 55;
   --z-tour-card: 56;
+  --z-dropdown: 60;
+  --z-panel: 70;
   --z-tooltip: 80;
 
   /* Radius — single source of truth for web, desktop and Tailwind's

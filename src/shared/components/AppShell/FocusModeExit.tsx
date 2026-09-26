@@ -47,6 +47,20 @@ export function FocusModeExit({
   // The tutorial's own handler bails out once it is dismissed for the session,
   // so this must bail on the same flag: a key owned by nobody is a key Focus
   // Mode may take.
+  //
+  // Worth recording so the next reader does not re-derive it: this selector
+  // mirrors TWO of the three gates the tour's own Escape handler applies
+  // (`Tutorial.tsx`: layoutMode must be "classic", the tour must be active, and
+  // the session must not be dismissed). It deliberately does NOT mirror the
+  // third as a DOM query — it reads the same store flags the tour reads, which
+  // is strictly earlier than waiting for its card to paint. Dropping the
+  // `sessionDismissed` half here is what lets this component take the key the
+  // moment the tour stands down, without a render round-trip.
+  //
+  // A missing `layoutMode` gate is currently unreachable rather than harmful:
+  // the Apps skip the tutorial entirely when the layout is not "classic"
+  // (`App.tsx`), so there is no tour to be shadowed. The flag is mirrored anyway
+  // so the two cannot drift if that gate ever moves.
   const isTutorialRunning = useTutorialStore(
     (state) => state.isActive && !state.sessionDismissed,
   );
