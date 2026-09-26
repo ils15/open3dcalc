@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { TutorialLauncher } from "../TutorialLauncher";
 import { MobileSettingsSheet } from "@/platform/web/components/MobileSettingsSheet";
+import { NavigationProvider } from "@/shared/components/AppShell/NavigationProvider";
 import {
   TOUR_IDS,
   isTourAvailable,
@@ -44,7 +45,12 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("lucide-react", () => ({
+// Partial mock: the stubs below keep this suite's icon assertions stable, while
+// the spread lets every other icon through. The settings sheet now reaches the
+// shared tab contract (Phase 7o s3 Manage Visibility), which renders a dozen
+// icons — a closed mock broke on the first one that changed.
+vi.mock("lucide-react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("lucide-react")>()),
   BookOpen: () => <span data-testid="icon-book">B</span>,
   ChevronDown: () => <span data-testid="icon-chevron">v</span>,
   Check: () => <span data-testid="icon-check">✓</span>,
@@ -98,9 +104,7 @@ describe("TutorialLauncher", () => {
       expect(trigger).toHaveAccessibleDescription(
         "Disponível apenas no layout Clássico",
       );
-      expect(trigger).toHaveTextContent(
-        "Disponível apenas no layout Clássico",
-      );
+      expect(trigger).toHaveTextContent("Disponível apenas no layout Clássico");
       trigger.focus();
       expect(document.activeElement).toBe(trigger);
 
@@ -199,12 +203,18 @@ describe("TutorialLauncher", () => {
     (layoutMode) => {
       useLayoutStore.setState({ layoutMode });
       const onClose = vi.fn();
+      // The sheet hosts Manage Visibility (Phase 7o s3), which reads the
+      // navigation visibility context. Both real shells always render the
+      // sheet inside NavigationProvider, so the wrapper is the app's real
+      // condition rather than a test-only accommodation.
       render(
-        <MobileSettingsSheet
-          open
-          onClose={onClose}
-          onInternalNavigate={vi.fn()}
-        />,
+        <NavigationProvider>
+          <MobileSettingsSheet
+            open
+            onClose={onClose}
+            onInternalNavigate={vi.fn()}
+          />
+        </NavigationProvider>,
       );
 
       const trigger = screen.getByRole("button", { name: "Tutorial" });
@@ -213,9 +223,7 @@ describe("TutorialLauncher", () => {
       expect(trigger).toHaveAccessibleDescription(
         "Disponível apenas no layout Clássico",
       );
-      expect(trigger).toHaveTextContent(
-        "Disponível apenas no layout Clássico",
-      );
+      expect(trigger).toHaveTextContent("Disponível apenas no layout Clássico");
 
       fireEvent.click(trigger);
       expect(useTutorialStore.getState().isActive).toBe(false);
@@ -226,11 +234,13 @@ describe("TutorialLauncher", () => {
   it("starts the tutorial from mobile settings in Classic", () => {
     const onClose = vi.fn();
     render(
-      <MobileSettingsSheet
-        open
-        onClose={onClose}
-        onInternalNavigate={vi.fn()}
-      />,
+      <NavigationProvider>
+        <MobileSettingsSheet
+          open
+          onClose={onClose}
+          onInternalNavigate={vi.fn()}
+        />
+      </NavigationProvider>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Tutorial" }));

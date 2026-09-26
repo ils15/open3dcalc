@@ -91,6 +91,7 @@ vi.mock("@/shared/stores/calculatorStore", () => ({
 // ─── Import after mocks ───
 import App from "../App";
 import { TABS } from "@/platform/web/App";
+import { PRIMARY_TABS } from "@/shared/components/AppShell/tabs";
 
 // Mock i18next
 vi.mock("react-i18next", () => ({
@@ -148,7 +149,7 @@ describe("Phase 2 — Tablet Optimization", () => {
       expect(tabletSidebar!.className).toContain("px-2");
     });
 
-    it("tablet sidebar renders a button for each tab", () => {
+    it("tablet sidebar renders a button for each primary destination plus More", () => {
       const { container } = render(<App />);
 
       const allAsides = container.querySelectorAll("aside");
@@ -160,9 +161,12 @@ describe("Phase 2 — Tablet Optimization", () => {
 
       expect(tabletSidebar).toBeDefined();
       const buttons = tabletSidebar!.querySelectorAll("button");
-      // TABS has 10 primary items — Wiki and Novidades live in the footer hub;
-      // tabsParity.test locks the web and desktop sets together.
-      expect(buttons.length).toBe(10);
+      // Phase 7o s3: five always-available primary destinations + the More
+      // disclosure that holds the five demoted ones (the icons-only tablet strip
+      // carries no text, so it shows no label for either). Wiki and Novidades
+      // still live in the footer hub; tabsParity.test locks the web and desktop
+      // sets together.
+      expect(buttons.length).toBe(PRIMARY_TABS.length + 1);
     });
 
     it("tablet sidebar buttons have title attribute for accessibility", () => {
@@ -215,9 +219,9 @@ describe("Phase 2 — Tablet Optimization", () => {
   describe("2.3 Secondary navigation links", () => {
     it("keeps all secondary links together at the bottom of the desktop sidebar", () => {
       const { container } = render(<App />);
-      const desktopSidebar = Array.from(container.querySelectorAll("aside")).find(
-        (aside) => aside.className.includes("hidden lg:flex"),
-      );
+      const desktopSidebar = Array.from(
+        container.querySelectorAll("aside"),
+      ).find((aside) => aside.className.includes("hidden lg:flex"));
 
       expect(desktopSidebar).toBeDefined();
       expect(desktopSidebar).toHaveTextContent("nav.wiki");
@@ -234,7 +238,9 @@ describe("Phase 2 — Tablet Optimization", () => {
 
     it("keeps the same secondary links available from the mobile menu", () => {
       const { container } = render(<App />);
-      fireEvent.click(container.querySelector('button[aria-haspopup="dialog"]')!);
+      fireEvent.click(
+        container.querySelector('button[aria-haspopup="dialog"]')!,
+      );
 
       const menu = container.querySelector('[role="dialog"]');
       expect(menu).toHaveTextContent("nav.wiki");

@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Settings } from "lucide-react";
-import { TABS, type Tab } from "@/shared/components/AppShell/tabs";
+import { type Tab } from "@/shared/components/AppShell/tabs";
+import { MoreMenu } from "@/shared/components/AppShell/MoreMenu";
+import { PRIMARY_TABS } from "@/shared/components/AppShell/tabs";
+import { useVisiblePrimaryTabs } from "@/shared/components/AppShell/useVisibleNavigation";
 import { MobileSettingsSheet } from "./MobileSettingsSheet";
 
 /**
- * Mobile bottom navigation (web) — scrollable tab strip plus a pinned
+ * Mobile bottom navigation (web) — the five always-available primary
+ * destinations, a More disclosure for the demoted surfaces, and a pinned
  * settings gear that opens the settings-only bottom sheet.
  *
- * Extracted verbatim from the web App.tsx body. Desktop has a different bar
- * (no gear, lg breakpoint), so each platform keeps its own.
+ * The primary/More split and the visibility filter are the shared ones, so the
+ * web and desktop bars cannot drift. Desktop has a different bar (no gear, lg
+ * breakpoint), so each platform keeps its own.
  */
 interface MobileNavProps {
   activeTab: Tab;
@@ -22,6 +27,7 @@ export function MobileNav({
 }: MobileNavProps): React.ReactElement {
   const { t } = useTranslation();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const visiblePrimary = useVisiblePrimaryTabs();
 
   return (
     <>
@@ -35,20 +41,23 @@ export function MobileNav({
         aria-label={t("nav.mainNavigation")}
       >
         <div className="flex items-stretch h-[56px]">
-          {/* Scrollable tab strip — parity with the desktop Electron nav */}
+          {/* Primary destinations + More — parity with the desktop Electron nav */}
           <div className="flex overflow-x-auto flex-1 min-w-0 px-1">
-            {TABS.map((tab) => {
+            {visiblePrimary.map((id) => {
+              const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
               const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => onTabChange(tab.id)}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-selected={isActive}
                   className={`relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[56px] py-1 px-1 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[44px] ${
                     isActive
                       ? "text-[var(--color-accent)]"
                       : "text-[var(--color-text-muted)]"
                   }`}
-                  aria-selected={isActive}
                 >
                   {isActive && (
                     <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-[var(--color-accent)]" />
@@ -64,6 +73,17 @@ export function MobileNav({
                 </button>
               );
             })}
+
+            <MoreMenu
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+              triggerClassName="relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-[56px] py-1 px-1 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none min-h-[44px] text-[var(--color-text-muted)]"
+              itemClassName="nav-item"
+            >
+              <span className="text-[9px] font-semibold leading-tight tracking-wide">
+                {t("nav.more")}
+              </span>
+            </MoreMenu>
           </div>
 
           {/* Settings gear — pinned outside the scroll area, always reachable */}

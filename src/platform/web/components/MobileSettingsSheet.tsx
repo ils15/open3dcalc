@@ -13,6 +13,7 @@ import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { APP_VERSION } from "@/shared/version";
 import { SecondaryNavigation } from "@/platform/web/SecondaryNavigation";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
+import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
 
 /**
  * Mobile settings bottom sheet (web only — settings only, never tabs).
@@ -200,6 +201,9 @@ export function MobileSettingsSheet({
                   {i18n.language === "pt-BR" ? "PT-BR" : "EN-US"}
                 </span>
               </button>
+
+              {/* Destination visibility (Phase 7o s3) */}
+              <ManageVisibilityButton />
 
               <SecondaryNavigation
                 onInternalNavigate={onInternalNavigate}

@@ -6,6 +6,7 @@ import {
   TOUR_IDS,
   isTourAvailable,
 } from "@/shared/components/ui/tutorialTours";
+import { TABS } from "@/shared/components/AppShell/tabs";
 
 /**
  * Keys the comparison panel emits via `t(...)`. When a key is missing from a
@@ -411,6 +412,82 @@ describe("i18n locales (wizard.*) — W4 guided wizard", () => {
   });
 });
 
+const SETTINGS_VISIBILITY_KEYS = [
+  "title",
+  "description",
+  "alwaysVisible",
+  "hidden",
+  "show",
+  "hide",
+  "close",
+  "showAll",
+] as const;
+
+/**
+ * Phase 7o s3 — primary navigation + Manage Visibility. Every label the nav bar
+ * and the visibility dialog emit goes through `t(...)`; a missing key renders
+ * the raw key in the bar, or leaves a toggle button with no accessible name,
+ * which is a visible regression in both locales.
+ *
+ * The per-destination list is derived from the tab contract so a new
+ * destination cannot be added without also being translated.
+ */
+describe("i18n locales (nav.* + settings.visibility.*) — Phase 7o s3", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every navigation key in %s", (_locale, dict) => {
+    for (const tab of TABS) {
+      const leaf = tab.labelKey.split(".")[1];
+      const value = resolve(dict, ["nav", leaf]);
+      expect(typeof value, `${tab.labelKey} (${tab.id})`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+    const more = resolve(dict, ["nav", "more"]);
+    expect(typeof more, "nav.more").toBe("string");
+    expect((more as string).length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every visibility dialog key in %s", (_locale, dict) => {
+    const trigger = resolve(dict, ["settings", "manageVisibility"]);
+    expect(typeof trigger, "settings.manageVisibility").toBe("string");
+    expect((trigger as string).length).toBeGreaterThan(0);
+
+    for (const key of SETTINGS_VISIBILITY_KEYS) {
+      const value = resolve(dict, ["settings", "visibility", key]);
+      expect(typeof value, `settings.visibility.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps the pre-existing nav keys the phase did not rename", () => {
+    // calculator/catalog/inventory still label the calculator's own heading and
+    // the catalog surface; the phase ADDED nav.pricing/printers rather than
+    // repointing the old ones.
+    for (const key of ["calculator", "catalog", "inventory"] as const) {
+      expect(typeof resolve(enUS, ["nav", key]), `en nav.${key}`).toBe(
+        "string",
+      );
+      expect(typeof resolve(ptBR, ["nav", key]), `pt nav.${key}`).toBe(
+        "string",
+      );
+    }
+  });
+
+  it("gives the More label and the dialog title distinct strings", () => {
+    // A copy-paste of the More label into the dialog would read as gibberish.
+    expect(resolve(enUS, ["nav", "more"])).not.toBe(
+      resolve(enUS, ["settings", "visibility", "title"]),
+    );
+    expect(resolve(ptBR, ["nav", "more"])).not.toBe(
+      resolve(ptBR, ["settings", "visibility", "title"]),
+    );
+  });
+});
+
 describe("i18n locales (results stock errors)", () => {
   it.each([
     ["pt-BR", ptBR],
@@ -473,9 +550,10 @@ describe("i18n locales — multi-material disabled explanation", () => {
     ],
   ])("has the same explanation key in %s", (locale, dict, expected) => {
     const value = resolve(dict, ["calc", "multiMaterialDisabledDescription"]);
-    expect(typeof value, `calc.multiMaterialDisabledDescription (${locale})`).toBe(
-      "string",
-    );
+    expect(
+      typeof value,
+      `calc.multiMaterialDisabledDescription (${locale})`,
+    ).toBe("string");
     expect(value).toBe(expected);
   });
 });
