@@ -273,3 +273,180 @@ describe("navigationPrefsStore — navigation-only, never data", () => {
     expect(useNavigationPrefsStore.getState().hiddenTabs).toEqual(["history"]);
   });
 });
+
+/**
+ * Phase 7o s4 — Focus Mode.
+ *
+ * Focus Mode lives in THIS store, next to the active destination it switches
+ * to, but it is TRANSIENT. That is the whole point of the stage: entering and
+ * leaving must be invisible to a reload, so unlike stage 3 — which added
+ * `open3dcalc_nav_v1` to SPEC-01 — this stage adds NO key and NO second
+ * persistence path. The serializer is unchanged and still writes exactly two
+ * fields, so a fresh mount cannot possibly resurrect the mode.
+ */
+describe("navigationPrefsStore — focus mode is transient", () => {
+  // The two transient fields are deliberately NOT part of `NavigationPrefs`
+  // (that type IS the persisted shape), so the shared `defaultNavigationPrefs`
+  // reset above cannot clear them. Reset them here or one test's mode leaks
+  // into the next.
+  beforeEach(() => {
+    useNavigationPrefsStore.setState({
+      focusMode: false,
+      focusModeReturnTab: null,
+    });
+  });
+
+  it("remembers the screen it was entered from and switches to the calculator", () => {
+    useNavigationPrefsStore.getState().setActiveTab("history");
+
+    useNavigationPrefsStore.getState().enterFocusMode();
+
+    const state = useNavigationPrefsStore.getState();
+    expect(state.focusMode).toBe(true);
+    expect(state.focusModeReturnTab).toBe("history");
+    expect(state.activeTab).toBe("calculator");
+  });
+
+  it("restores the remembered screen on exit", () => {
+    useNavigationPrefsStore.getState().setActiveTab("dashboard");
+    useNavigationPrefsStore.getState().enterFocusMode();
+
+    useNavigationPrefsStore.getState().exitFocusMode();
+
+    const state = useNavigationPrefsStore.getState();
+    expect(state.focusMode).toBe(false);
+    expect(state.focusModeReturnTab).toBeNull();
+    expect(state.activeTab).toBe("dashboard");
+  });
+
+  it("stays on the calculator when the remembered screen is hidden", () => {
+    useNavigationPrefsStore.getState().setActiveTab("history");
+    useNavigationPrefsStore.getState().enterFocusMode();
+    // The user hides History while the mode is on (reachable from the store,
+    // and the only honest way to test the intersection of the two features).
+    useNavigationPrefsStore.getState().setTabVisibility("history", false);
+
+    useNavigationPrefsStore.getState().exitFocusMode();
+
+    expect(useNavigationPrefsStore.getState().activeTab).toBe("calculator");
+  });
+
+  it("cannot overwrite the remembered screen by entering twice", () => {
+    // Entering while already on would otherwise capture the calculator and
+    // throw the real context away.
+    useNavigationPrefsStore.getState().setActiveTab("history");
+    useNavigationPrefsStore.getState().enterFocusMode();
+    useNavigationPrefsStore.getState().enterFocusMode();
+
+    expect(useNavigationPrefsStore.getState().focusModeReturnTab).toBe(
+      "history",
+    );
+
+    useNavigationPrefsStore.getState().exitFocusMode();
+    expect(useNavigationPrefsStore.getState().activeTab).toBe("history");
+  });
+
+  it("is a no-op to exit when the mode was never entered", () => {
+    useNavigationPrefsStore.getState().setActiveTab("dashboard");
+
+    useNavigationPrefsStore.getState().exitFocusMode();
+
+    expect(useNavigationPrefsStore.getState().activeTab).toBe("dashboard");
+  });
+
+  it("does not change the hidden-destination list", () => {
+    useNavigationPrefsStore.getState().setTabVisibility("infill", false);
+    useNavigationPrefsStore.getState().enterFocusMode();
+    useNavigationPrefsStore.getState().exitFocusMode();
+
+    expect(useNavigationPrefsStore.getState().hiddenTabs).toEqual(["infill"]);
+  });
+
+  it("never hides the always-visible home destination", () => {
+    useNavigationPrefsStore.getState().enterFocusMode();
+    useNavigationPrefsStore.getState().exitFocusMode();
+
+    expect(useNavigationPrefsStore.getState().hiddenTabs).toEqual([]);
+    expect(useNavigationPrefsStore.getState().isTabVisible("calculator")).toBe(
+      true,
+    );
+  });
+
+  it("writes neither the mode nor the remembered screen to storage", () => {
+    useNavigationPrefsStore.getState().setActiveTab("history");
+    useNavigationPrefsStore.getState().enterFocusMode();
+
+    const raw = window.localStorage.getItem(NAV_PREFS_STORAGE_KEY);
+    expect(raw).not.toBeNull();
+    expect(Object.keys(JSON.parse(raw as string)).sort()).toEqual([
+      "activeTab",
+      "hiddenTabs",
+    ]);
+  });
+
+  it("introduces no storage key of its own", () => {
+    window.localStorage.clear();
+    useNavigationPrefsStore.getState().setActiveTab("dashboard");
+    useNavigationPrefsStore.getState().enterFocusMode();
+    useNavigationPrefsStore.getState().exitFocusMode();
+
+    const keys = Object.keys(window.localStorage);
+    expect(keys).toEqual([NAV_PREFS_STORAGE_KEY]);
+    // Belt and braces: even if a future build renamed the preference, no key
+    // may ever carry the mode, because the mode is meant to die on reload.
+    for (const key of keys) {
+      expect(key.toLowerCase(), key).not.toContain("focus");
+    }
+  });
+
+  it("does not touch any user-data key", () => {
+    const saved = {
+      open3dcalc_settings_v2: JSON.stringify({ activeTab: "fdm", quantity: 4 }),
+      open3dcalc_history_v2: JSON.stringify([{ id: "h1", summary: "Vaso" }]),
+      open3dcalc_spool_v1: JSON.stringify([{ id: "s1", brand: "Polymaker" }]),
+    };
+    for (const [key, value] of Object.entries(saved)) {
+      window.localStorage.setItem(key, value);
+    }
+
+    useNavigationPrefsStore.getState().enterFocusMode();
+    useNavigationPrefsStore.getState().exitFocusMode();
+
+    for (const [key, value] of Object.entries(saved)) {
+      expect(window.localStorage.getItem(key), key).toBe(value);
+    }
+  });
+
+  it("keeps the mode out of the calculator undo snapshot", () => {
+    useCalculatorStore.setState({ history: [], quantity: 1 });
+    useNavigationPrefsStore.getState().enterFocusMode();
+    useCalculatorStore.getState().setQuantity(6);
+
+    const { history } = useCalculatorStore.getState();
+    const snapshot = JSON.parse(history[history.length - 1]) as Record<
+      string,
+      unknown
+    >;
+    expect(snapshot).not.toHaveProperty("focusMode");
+    expect(snapshot).not.toHaveProperty("focusModeReturnTab");
+  });
+
+  it("is off after a reload, even with the preference on disk", async () => {
+    useNavigationPrefsStore.getState().setActiveTab("history");
+    useNavigationPrefsStore.getState().enterFocusMode();
+    expect(window.localStorage.getItem(NAV_PREFS_STORAGE_KEY)).not.toBeNull();
+
+    // A reload re-evaluates the store from the persisted preference.
+    vi.resetModules();
+    const { useNavigationPrefsStore: fresh } =
+      await import("../navigationPrefsStore");
+
+    const state = fresh.getState();
+    expect(state.focusMode).toBe(false);
+    expect(state.focusModeReturnTab).toBeNull();
+    // The destination the mode switched to IS remembered — that is stage 3's
+    // existing behaviour, not a new one, and it is why a reload lands on the
+    // calculator instead of on a screen the user cannot see any more.
+    expect(state.activeTab).toBe("calculator");
+  });
+});

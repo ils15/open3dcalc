@@ -1264,6 +1264,12 @@
       "showAll": "Mostrar tudo"
     }
   },
+  "focusMode": {
+    "enter": "Modo Foco",
+    "exit": "Sair do modo foco",
+    "active": "Modo Foco ativo",
+    "hint": "Apenas a calculadora é exibida. Pressione Esc para sair."
+  },
   "update": {
     "checkForUpdates": "Verificar Atualizações",
     "checking": "Verificando atualizações…",

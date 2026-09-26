@@ -488,6 +488,46 @@ describe("i18n locales (nav.* + settings.visibility.*) — Phase 7o s3", () => {
   });
 });
 
+/**
+ * Phase 7o s4 — Focus Mode. Four strings, all of them user-visible: the entry
+ * control's name, the exit control's name (the single way out of the mode), the
+ * status line and the hint that tells the user how to leave. A missing key
+ * would render a raw "focusMode.exit" on the one control that must never be
+ * missing a name.
+ */
+describe("i18n locales (focusMode.*) — Phase 7o s4", () => {
+  const FOCUS_MODE_KEYS = ["enter", "exit", "active", "hint"] as const;
+
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every focus mode key in %s", (_locale, dict) => {
+    for (const key of FOCUS_MODE_KEYS) {
+      const value = resolve(dict, ["focusMode", key]);
+      expect(typeof value, `focusMode.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("gives entering and leaving two different labels", () => {
+    // One string for both would leave the exit reading as an invitation to
+    // switch the mode on, at the exact moment the user wants out of it.
+    for (const dict of [enUS, ptBR]) {
+      expect(resolve(dict, ["focusMode", "enter"])).not.toBe(
+        resolve(dict, ["focusMode", "exit"]),
+      );
+    }
+  });
+
+  it("tells the user how to leave in the hint, not only in the button", () => {
+    // The hint is the `role="status"` text read out when the mode turns on, so
+    // it has to stand on its own.
+    for (const dict of [enUS, ptBR]) {
+      expect(resolve(dict, ["focusMode", "hint"])).toMatch(/Esc/i);
+    }
+  });
+});
+
 describe("i18n locales (results stock errors)", () => {
   it.each([
     ["pt-BR", ptBR],

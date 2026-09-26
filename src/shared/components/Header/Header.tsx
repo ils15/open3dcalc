@@ -27,6 +27,7 @@ import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 import { DemoModeButton } from "@/shared/components/DemoMode/DemoModeButton";
 import { LayoutSwitcher } from "./LayoutSwitcher";
 import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
+import { FocusModeButton } from "@/shared/components/AppShell/FocusModeButton";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -303,6 +304,9 @@ export function Header() {
 
                 {/* Destination visibility (Phase 7o s3) */}
                 <ManageVisibilityButton />
+
+                {/* Focus Mode (Phase 7o s4) — transient, never persisted */}
+                <FocusModeButton />
 
                 {/* Currency — desktop selector handles changes; close the sheet here */}
                 <button

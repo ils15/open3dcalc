@@ -10,6 +10,7 @@ import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import {
   useActiveTab,
+  useFocusMode,
   useNavigateToTab,
 } from "@/shared/components/AppShell/NavigationContext";
 import { NavigationProvider } from "@/shared/components/AppShell/NavigationProvider";
@@ -35,6 +36,7 @@ function App(): React.ReactElement {
 function AppContent(): React.ReactElement {
   const activeTab = useActiveTab();
   const navigateToTab = useNavigateToTab();
+  const { active: focusMode } = useFocusMode();
 
   useAppInit(navigateToTab);
   const layoutMode = useLayoutStore((state) => state.layoutMode);
@@ -49,7 +51,12 @@ function AppContent(): React.ReactElement {
 
   return (
     <div className="min-h-dvh flex flex-col overflow-x-clip">
-      <Header />
+      {/* Focus Mode (Phase 7o s4) takes the header, the mobile bar and the
+          footer away — they are the chrome, and the stage's own exit bar takes
+          their place. The indicators, banners and the tutorial are NOT chrome:
+          a consent or a download must never be hidden by a focus state, so
+          they stay mounted and the mode simply draws over them. */}
+      {!focusMode && <Header />}
       <DemoModeIndicator />
       <DemoExportBlockedToast />
       <PrivacyBanner />
@@ -72,11 +79,16 @@ function AppContent(): React.ReactElement {
           }
           mainId="main"
           mainClassName="flex-1 min-w-0 px-6 sm:px-8 lg:px-10 xl:px-14 py-8 sm:py-10 pb-32 lg:pb-10"
+          // Same rhythm without the fixed bottom bar's reserve, and wider
+          // gutters now that there is no sidebar to sit beside.
+          mainFocusClassName="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-10"
         />
       </div>
 
-      <MobileNav activeTab={activeTab} onTabChange={navigateToTab} />
-      <Footer onInternalNavigate={navigateToTab} />
+      {!focusMode && (
+        <MobileNav activeTab={activeTab} onTabChange={navigateToTab} />
+      )}
+      {!focusMode && <Footer onInternalNavigate={navigateToTab} />}
 
       {layoutMode === "classic" && <Tutorial />}
     </div>

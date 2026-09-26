@@ -1264,6 +1264,12 @@
       "showAll": "Show all"
     }
   },
+  "focusMode": {
+    "enter": "Focus Mode",
+    "exit": "Exit focus mode",
+    "active": "Focus Mode is on",
+    "hint": "Only the calculator is shown. Press Esc to leave."
+  },
   "update": {
     "checkForUpdates": "Check for Updates",
     "checking": "Checking for updates…",
