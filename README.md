@@ -262,6 +262,8 @@ A correção do texto deixou duas coisas sem medir, e as duas reprovavam. Um bot
 
 O anel antigo media **1,00:1** porque em light `--color-accent` e `--color-accent-fill` são o mesmo valor (`#4f46e5`): o anel a 50% compunha exatamente o próprio fill._some e `focus-visible:outline-none` desligava o contorno do navegador que teria servido de reserva — foco chegava e nada era desenhado.
 
+A opacidade fica **só no glifo** (`<X>`), nunca no botão: `opacity` no elemento compõe junto o `box-shadow` do anel, que é como o anel é pintado, e o indicador saía 4,01:1 em vez dos 4,77:1 que o token entrega. O glifo mantém os seus 4,01:1 em descanso e 4,77:1 no hover, e a hierarquia dele contra a mensagem não muda. Duas regressões garantem que isso não decai: uma falha se qualquer `opacity` voltar ao botão ou a até quatro ancestrais, outra falha se o glifo parar de estar desênfatizado — assim "mover" não vira "apagar".
+
 A troca é por **duas tonalidades**, porque uma cor não dá conta disso: o anel claro senta no fill saturado e passa de 4,77:1 a 6,29:1 em todas as variantes, e o offset escuro é a única parte que encontra uma superfície de página, passando de 17:1 a 20:1 contra as claras. Os tokens são `--focus-ring-light` e `--focus-ring-dark`, declarados em `:root` e em `.dark` com valores idênticos — um anel de foco que troca de tema é um anel que some em um deles. Nenhum dos dois é uma cor de foco geral: o claro é 1,00:1 sobre `--surface-raised` e o escuro é 1,00:1 sobre o canvas escuro, e é por isso que o componente escolhe o par pelo próprio fundo.
 
 `Toast.test.tsx` **renderiza** o componente e mede as classes que o DOM realmente tem. Isso importa: `expect(button.className).toContain("ring-white")` passaria para uma classe que nunca renderiza, num tamanho que não desenha nada, ou com um alpha que cancela o fill. O teste afirma as razões reais.
@@ -272,17 +274,35 @@ O guard conta uma população que ele **mede mas não fiscaliza**: as washes tra
 
 A contagem por **arquivo** é a unidade errada porque **não enxerga um site mudando de forma**: migrar `bg-[var(--color-accent)]/20 text-[var(--color-accent)]` para um pareamento quebrado _diferente_ deixa a contagem de arquivos intacta, e o piso reporta verde sobre uma população tão quebrada quanto antes.
 
-Duas unidades intermediárias também foram rejeitadas, ambas pela revisão, e os motivos são a razão de o pin ser por **ocorrência**:
+Quatro chaves já foram tentadas e três foram reprovadas, com razão — e são elas que explicam por que um **site** hoje é o elemento:
 
-| unidade                                 | o que não enxerga                                                                                                                                                     |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| contagem de arquivos                    | um site corrigido e um site que mudou de forma dão o mesmo número                                                                                                     |
-| conjunto **global** de formas           | um site que migra de uma forma já permitida para **outra** forma já permitida: contagem igual, conjunto igual, guarda verde                                           |
-| multiconjunto de formas **por arquivo** | o caso na mesma arquivo: resolver a ocorrência em `PrinterManager` e criar a mesma forma em `MaterialManager` deixa as três formas idênticas do `CatalogTab` intactas |
+| chave                         | o que não enxerga                                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| contagem de arquivos          | um site corrigido e um site que mudou de forma dão o mesmo número                                                    |
+| conjunto **global** de formas | um site que migra de uma forma já permitida para **outra** forma já permitida: contagem igual, conjunto igual, verde |
+| `arquivo#declaração#ordinal`  | a **substituição na mesma declaração**: dois elementos trocam de pareamento e todo ordinal continua no lugar         |
+| forma (ou hash da forma)      | dois sites da mesma forma são indiscerníveis — a mesma falha com passos a mais                                       |
 
-Então o censo reporta, por site, a **identidade da ocorrência** (`arquivo#declaração#ordinal`) e a **forma** que ela tem hoje, e o pin é `identidade -> forma`: o pin diz _qual_ site e _o que_ ele é. Identidade e forma são separadas de propósito — a identidade sobrevive a reformatação, a forma é justamente o que pode mudar.
+**A identidade de um site é o elemento JSX que o possui**, resolvida por um esquema híbrido:
 
-**A identidade é estável, e o custo é real.** A chave é a declaração de coluna zero mais um ordinal dentro dela. Sobrevive a deslocamento de linha, edições acima, reformatação e literais que não são pareamentos de wash. Muda quando um pareamento é adicionado, removido, reordenado ou passa a outra forma. O custo: inserir um pareamento no topo de uma declaração renumera os seguintes, e eles são reportados como alterados — é deliberado, porque rebaselinear em silêncio uma lista de sites quebrados é pior do que uma falha alta e mecânica de consertar.
+1. **Um atributo estático que o elemento já tem** — `SpoolThumb` já carrega `data-testid="spool-thumb"`, e ele é reutilizado. Não acrescentar nada é melhor do que acrescentar algo, e um `data-testid` existente já promete que o elemento é endereçável isoladamente.
+2. **Um comentário source-only ao lado do elemento** — `{/* contrast-site: <id> */}` quando o elemento está entre irmãos, e `/* contrast-site: <id> */` quando ele é a primeira coisa dentro de uma expressão parenthesada (`return (`, `{x ? (`, `{x && (`). Lá as chaves seriam um **literal de objeto** numa expressão, não um comentário, e o arquivo não compilaria. A forma é **derivada** da linha acima do elemento, e não assumida — foi essa derivação que pegou três sites que a lista manual dava como forma JSX.
+
+O `data-testid` dinâmico do `ChangelogPage` (``data-testid={`latest-badge-${entry.version}`}``) **não** é identidade: um valor por render nomeia um source site só quando acerta. E `aria-label` nunca é consultado — em 20 destes sites ele é localizado, o que tornaria a chave uma string de tradução.
+
+**Nenhum atributo de runtime é adicionado.** Os dois formatos de comentário são source-only: o formato JSX não renderiza nó nenhum, e o formato simples nem sequer é uma expressão JSX.
+
+O censo reporta, por site, a **identidade do elemento** e as **formas** que ele tem hoje, e o pin é `identidade -> formas[]`. São **duas** formas por site em quatro elementos, que emparelham `bg-emerald-600` e o seu `hover:bg-emerald-500` com a mesma tinta. Identidade e forma são separadas de propósito: a identidade sobrevive a reformatação, deslocamento de linha e reordenação, porque nada disso move um comentário preso ao seu elemento; a forma é justamente o que o pin guarda como **valor** e o que pode mudar.
+
+**Inventário, como asserção e não como descrição.** 22 elementos proprietários carregam 26 pareamentos de forma: 21 identificados por comentário mais 1 pelo `data-testid` reutilizado. Um teste afirma esse total, que **nenhum** pareamento fica sem identidade, que nenhum id cobre duas formas distintas além das quatro documentadas, e que nenhuma entrada do pin cita uma forma que não existe na árvore — que é como uma substituição lavada no pin à mão seria pego.
+
+**A identidade é estável, e o custo é real.** Sobrevive a deslocamento de linha, edições acima do site, reformatação, reordenação e mudança de forma. O custo assumido é de **volume**: 21 comentários source-only em 14 arquivos de produto, em arquivos que não têm relação com acessibilidade. A alternativa era uma anotação estável dentro do fonte, que seria mais forte e exigiria ainda mais churn; e ancorar em linha, ordinal ou forma foi reprovado porque não vê a substituição. O outro custo é o de manutenção: um site corrigido deixa entrada obsoleta no pin, porque a política é deliberadamente **de uma direção só** — corrigir um site nunca pode reprovar a suíte, só baixar a contagem.
+
+**O censo falha fechado.** Um pareamento que ele não consegue decidir — um passo de paleta fora do mapa do Tailwind, uma tinta com token não declarado — vai para `unresolved` e **não** conta como site em nenhuma direção. A alternativa é o defeito corrigido aqui: um site descartado é invisível para um piso de contagem, e `worst` deixado em `Infinity` classificava um pareamento não medido como **aprovado** — uma medição ilegível registrada como limpa, e a ausência dela lida como progresso.
+
+**A regressão passa pelo scanner real.** As provas anteriores passavam identificadores fabricados direto para a função de comparação, e nunca exercitavam o parsing que decide de qual elemento um pareamento é. As de agora dirigem `scanWashesInSource` sobre texto de verdade: a troca de forma entre dois elementos de uma mesma declaração, a troca que deixa o multiconjunto de formas **e** a contagem do arquivo idênticos, elemento novo sem pin, elemento sem identidade, dois elementos reivindicando um id, o formato de comentário em posição de expressão, e a identidade sobrevivendo a linhas acrescentadas e a reindentação.
+
+Duas correções de parsing vieram junto: o `stripComments` passou a preservar **tamanho**, não só quebras de linha — o branch de `//` apagava texto, então um offset no fonte removido não era um offset no original, e a resolução de identidade encontrava elementos centenas de linhas longe; e a tag proprietária é lida até o `>` correspondente, com-awareness de string e de chave, para que `onClick={() => …}` não trunque a varredura.
 
 **O censo falha fechado.** Um pareamento que ele não consegue decidir — um passo de paleta fora do mapa do Tailwind, uma tinta com token não declarado — vai para `unresolved` e **não** conta como site em nenhuma direção. A alternativa é o defeito corrigido aqui: um site descartado é invisível para um piso de contagem, e `worst` deixado em `Infinity` classificava um pareamento não medido como **aprovado** — uma medição ilegível registrada como limpa, e a ausência dela lida como progresso.
 
