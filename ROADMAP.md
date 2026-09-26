@@ -1261,7 +1261,7 @@ Os quatro PRs empilhados #222, #224, #225 e #226 foram consolidados sobre `main`
 
 ### 🔧 Toast AA + censo de contraste adiado por sítio
 
-**Status:** implementação e os seis gates de código completos no branch `fix/toast-contrast-and-guard-floor`, sobre `main` em `def8080`. **Revisão e merge pendentes** — não mesclado em `main` e não liberado. Onda independente: não substitui, não reordena nem absorve nenhuma fatia da Phase 7o, da Phase 7n ou do port visual da Beta 5, e não fecha o gate transversal de compatibilidade v2.0.
+**Status:** implementação completa no branch `fix/toast-contrast-and-guard-floor`; os seis gates de código foram executados no commit `def8080` desse branch, e o branch foi criado a partir de `main` em `e682f09`. **Revisão e merge pendentes** — não mesclado em `main` e não liberado. Onda independente: não substitui, não reordena nem absorve nenhuma fatia da Phase 7o, da Phase 7n ou do port visual da Beta 5, e não fecha o gate transversal de compatibilidade v2.0.
 
 **1. Falha WCAG AA viva no Toast — corrigida.** Os três variantes pintavam um token de primeira plana como fundo, com tinta que troca no `.dark` (`bg-[var(--color-danger)]/90`, `bg-[var(--color-success)]/90`, `bg-[var(--color-accent)]/90` + `text-[var(--color-text-primary)]`). Reprovaram WCAG 1.4.3 nos **dois** temas; o pior caso medido foi **2,07:1** no escuro (a cifra de 2,83/3,26 registrada no follow-up abaixo era do par de acento e subestimava o problema — o toast de erro renderizava como um pílula rosa-claro com texto quase branco, ou seja, ilegível, e não apenas abaixo do limite).
 
