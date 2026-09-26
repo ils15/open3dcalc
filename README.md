@@ -314,7 +314,17 @@ Três condições reprovam, e **nenhuma delas é visível comparando totais** �
 
 **O censo falha fechado.** Um pareamento que ele não consegue decidir — um passo de paleta fora do mapa do Tailwind, uma tinta com token não declarado — vai para `unresolved` e **não** conta como site em nenhuma direção. A alternativa é o defeito corrigido aqui: um site descartado é invisível para um piso de contagem, e `worst` deixado em `Infinity` classificava um pareamento não medido como **aprovado** — uma medição ilegível registrada como limpa, e a ausência dela lida como progresso.
 
-**A regressão passa pelo scanner real.** As provas anteriores passavam identificadores fabricados direto para a função de comparação, e nunca exercitavam o parsing que decide de qual elemento um pareamento é. As de agora dirigem `scanWashesInSource` sobre texto de verdade: a troca de forma entre dois elementos de uma mesma declaração, a troca que deixa o multiconjunto de formas **e** a contagem do arquivo idênticos, elemento novo sem pin, elemento sem identidade, dois elementos reivindicando um id, o formato de comentário em posição de expressão, e a identidade sobrevivendo a linhas acrescentadas e a reindentação.
+**A regressão passa pelo scanner de produção, e está commitada.** As provas anteriores passavam identificadores fabricados direto para a comparação, e nunca exercitavam o parsing; uma delas chegou a afirmar prova por mutação sem que os testes correspondentes tivessem entrado no commit. As de agora dirigem `scanWashesInSource` e as funções reais de identidade sobre fonte malformada, e afirmam sobre as falhas que o código produziu:
+
+- um marcador antes de um elemento pareado e depois um **segundo** elemento pareado: o primeiro consome o marcador e o segundo é reprovado como **sem identidade** — sem herança;
+- marcador antes de um elemento **sem** pareamento adiado, seguido de um elemento pareado: o marcador é **órfão** e o par posterior continua sem identidade;
+- dois marcadores num elemento só: **marcador ambíguo**;
+- id de marcador duplicado em dois elementos, e `data-testid` estático duplicado: **identidade duplicada**;
+- marcador sem nenhum elemento depois: **órfão**;
+- a troca A/B na mesma declaração, com multiconjunto e contagem do arquivo idênticos e os dois sítios nomeados;
+- o inventário da árvore real: 22 elementos, 26 pareamentos, 21 marcadores, 0 sem identidade, 0 falha de posse.
+
+Não há teste de mutação commitado; a garantia é de que estas sete **reprovam** quando a posse volta a ser último-escritor-vence, quando o cheque de órfão some, ou quando a detecção de duplicado some.
 
 Duas correções de parsing vieram junto: o `stripComments` passou a preservar **tamanho**, não só quebras de linha — o branch de `//` apagava texto, então um offset no fonte removido não era um offset no original, e a resolução de identidade encontrava elementos centenas de linhas longe; e a tag proprietária é lida até o `>` correspondente, com-awareness de string e de chave, para que `onClick={() => …}` não trunque a varredura.
 
