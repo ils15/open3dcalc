@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 
 // ─── Mock heavy/desktop-only dependencies (parity with the web app tests) ───
 vi.mock("@/platform/desktop/components/Header/Header", () => ({
@@ -81,7 +81,11 @@ vi.mock("react-i18next", () => ({
 
 // ─── Import after mocks ───
 import App from "@/platform/desktop/App";
-import { TABS } from "@/shared/components/AppShell/tabs";
+import {
+  MORE_TABS,
+  PRIMARY_TABS,
+  TABS,
+} from "@/shared/components/AppShell/tabs";
 
 /**
  * Wave 1 — desktop App extraction smoke test.
@@ -99,7 +103,7 @@ describe("desktop App shell (post-extraction)", () => {
     expect(screen.getByTestId("update-notification")).toBeInTheDocument();
   });
 
-  it("tablet sidebar renders one button per primary tab", () => {
+  it("tablet sidebar renders one button per primary destination plus More", () => {
     const { container } = render(<App />);
 
     const tabletSidebar = Array.from(container.querySelectorAll("aside")).find(
@@ -109,7 +113,10 @@ describe("desktop App shell (post-extraction)", () => {
     );
 
     expect(tabletSidebar).toBeDefined();
-    expect(tabletSidebar!.querySelectorAll("button")).toHaveLength(TABS.length);
+    // Phase 7o s3: the five primary destinations + the More disclosure.
+    expect(tabletSidebar!.querySelectorAll("button")).toHaveLength(
+      PRIMARY_TABS.length + 1,
+    );
   });
 
   it("desktop sidebar footer keeps the brand links (no SecondaryNavigation)", () => {
@@ -141,29 +148,141 @@ describe("desktop App shell (post-extraction)", () => {
     const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
     expect(nav.className).toContain("lg:hidden");
 
+    // The five primary destinations carry aria-selected; the More disclosure
+    // and (web-only) the gear do not.
     expect(nav.querySelectorAll("button[aria-selected]")).toHaveLength(
-      TABS.length,
+      PRIMARY_TABS.length,
     );
-    // The gear (aria-haspopup="dialog") is web-only.
-    expect(
-      container.querySelector('button[aria-haspopup="dialog"]'),
-    ).toBeNull();
+    // The settings GEAR — the button that opens the settings sheet — is
+    // web-only, so the bar must not own one.
+    expect(nav.querySelector('button[aria-haspopup="dialog"]')).toBeNull();
+
+    // The desktop DOES ship dialog-opening controls (Phase 7o s3 added Manage
+    // Visibility to the sidebar footer). Asserted explicitly so this test keeps
+    // guarding the gear's absence without silently depending on "no control
+    // anywhere owns a dialog" — which was the old, now-false premise.
+    const dialogTriggers = Array.from(
+      container.querySelectorAll('button[aria-haspopup="dialog"]'),
+    );
+    expect(dialogTriggers.length).toBeGreaterThan(0);
+    for (const trigger of dialogTriggers) {
+      expect(trigger).toHaveAttribute(
+        "aria-label",
+        "settings.manageVisibility",
+      );
+    }
   });
 
-  it("switches surfaces when a tab is selected", () => {
+  it("switches surfaces when a destination is selected", () => {
     const { container } = render(<App />);
 
-    // Calculator surface renders first (default tab).
+    // Calculator surface renders first (default destination).
     expect(screen.getByTestId("calculator-mock")).toBeInTheDocument();
 
     const desktopSidebar = Array.from(container.querySelectorAll("aside")).find(
       (aside) => aside.className.includes("hidden lg:flex"),
     )!;
     fireEvent.click(
-      desktopSidebar.querySelectorAll("button")[1], // dashboard
+      desktopSidebar.querySelectorAll("button")[
+        PRIMARY_TABS.findIndex(({ id }) => id === "dashboard")
+      ],
     );
 
     expect(screen.getByTestId("dashboard-mock")).toBeInTheDocument();
     expect(screen.queryByTestId("calculator-mock")).toBeNull();
+  });
+
+  it("returns from History to Calculator without changing persisted settings", () => {
+    const key = "open3dcalc_settings_v2";
+    const persistedSettings = JSON.stringify({
+      activeTab: "history",
+      quantity: 3,
+    });
+    const previousSettings = localStorage.getItem(key);
+    localStorage.setItem(key, persistedSettings);
+
+    try {
+      const { container } = render(<App />);
+      const desktopSidebar = Array.from(
+        container.querySelectorAll("aside"),
+      ).find((aside) => aside.className.includes("hidden lg:flex"))!;
+      const buttons = desktopSidebar.querySelectorAll("button");
+
+      fireEvent.click(
+        buttons[PRIMARY_TABS.findIndex(({ id }) => id === "history")],
+      );
+      expect(screen.getByText("HistoryTab")).toBeInTheDocument();
+
+      fireEvent.click(
+        buttons[PRIMARY_TABS.findIndex(({ id }) => id === "calculator")],
+      );
+      expect(screen.getByTestId("calculator-mock")).toBeInTheDocument();
+      // The calculator's own settings key is untouched by navigation.
+      expect(localStorage.getItem(key)).toBe(persistedSettings);
+    } finally {
+      if (previousSettings === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, previousSettings);
+    }
+  });
+
+  it("keeps the go-products event connected to the shared navigation state", () => {
+    render(<App />);
+    const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
+    const moreButton = within(nav).getByRole("button", { name: /nav\.more/ });
+
+    // Products is a demoted destination: the event must still reach it even
+    // though it is not one of the buttons in the bar.
+    act(() => {
+      window.dispatchEvent(new Event("open3dcalc:go-products"));
+    });
+
+    // The surface mounted…
+    expect(screen.getByText("ProductInventory")).toBeInTheDocument();
+    // …and the More disclosure, which owns demoted surfaces, reflects it.
+    expect(moreButton).toHaveAttribute("aria-current", "page");
+  });
+
+  it("keeps every demoted destination reachable through More", () => {
+    render(<App />);
+    const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
+
+    fireEvent.click(within(nav).getByRole("button", { name: /nav\.more/ }));
+
+    const moreMenu = screen.getByTestId("more-menu");
+    for (const tab of MORE_TABS) {
+      expect(
+        within(moreMenu).getByRole("button", { name: tab.labelKey }),
+        tab.id,
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("still surfaces the standalone Infill screen from More", () => {
+    render(<App />);
+    const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
+
+    fireEvent.click(within(nav).getByRole("button", { name: /nav\.more/ }));
+    fireEvent.click(
+      within(screen.getByTestId("more-menu")).getByRole("button", {
+        name: "nav.infill",
+      }),
+    );
+
+    expect(screen.getByText("InfillCalculator")).toBeInTheDocument();
+  });
+
+  it("keeps every TABS id in the primary or demoted set (none orphaned)", () => {
+    // The Phase 7o s3 split only changes presentation, so no surface may fall
+    // out of both groups. (Reachability itself is covered by the More-menu and
+    // Infill tests above, which drive the real nav.)
+    const grouped = new Set([
+      ...PRIMARY_TABS.map((tab) => tab.id),
+      ...MORE_TABS.map((tab) => tab.id),
+    ]);
+
+    for (const tab of TABS) {
+      expect(grouped.has(tab.id), `${tab.id} is in no nav group`).toBe(true);
+    }
+    expect(grouped.size).toBe(TABS.length);
   });
 });

@@ -172,7 +172,7 @@ export function EstimationModeSection({
                 key={opt.value}
                 className={`min-h-[44px] flex flex-col items-center justify-center rounded-lg px-3 py-2 text-center cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-[var(--color-accent)] focus-within:outline-none ${
                   active
-                    ? "bg-[var(--color-accent)] text-white"
+                    ? "bg-[var(--accent-fill)] text-white"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]"
                 }`}
               >

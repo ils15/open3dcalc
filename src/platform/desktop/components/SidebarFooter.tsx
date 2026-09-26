@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 
+import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
+
 /**
  * Desktop sidebar footer — brand links pinned at the bottom of the desktop
  * sidebar (the web platform renders its SecondaryNavigation there instead).
@@ -44,6 +46,8 @@ export function SidebarFooter(): React.ReactElement {
         </svg>
         <span>{t("nav.telegram")}</span>
       </a>
+      {/* Destination visibility (Phase 7o s3) */}
+      <ManageVisibilityButton />
     </div>
   );
 }

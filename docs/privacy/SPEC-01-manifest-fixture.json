@@ -647,6 +647,25 @@
       "legal_basis": "not_personal_data",
       "owner": "aphrodite",
       "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_nav_v1",
+      "surface": "localStorage",
+      "platforms": ["electron", "web", "pwa"],
+      "class": "ui_preference",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "erase_on_delete_all",
+      "retention": {
+        "policy": "user_controlled",
+        "max_days": 0
+      },
+      "purpose": "Active destination id and the list of destinations the user hid from navigation. Additive key: absence means all destinations visible. Hiding a destination never deletes the data behind it.",
+      "legal_basis": "not_personal_data",
+      "owner": "aphrodite",
+      "version": "1.0"
     }
   ]
 }

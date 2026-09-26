@@ -1,18 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
-import {
-  Box,
-  Check,
-  Code2,
-  Globe,
-  ChevronDown,
-  RefreshCw,
-} from "lucide-react";
+import { Box, Check, Code2, Globe, ChevronDown, RefreshCw } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
-import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { TutorialLauncher } from "@/shared/components/ui/TutorialLauncher";
 import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
+import {
+  useCurrencyPreference,
+  useSetCurrency,
+} from "@/shared/contexts/CurrencyContext";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
 import { ThemeToggle } from "@/shared/components/Header/ThemeToggle";
@@ -20,12 +16,12 @@ import { useUpdaterStore } from "../UpdateNotification/UpdaterStore";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
+import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
 
 export function Header() {
   const { t, i18n } = useTranslation();
-  const { currency: currencySetting, setCurrency } = useCalculatorStore(
-    useShallow((s) => ({ currency: s.currency, setCurrency: s.setCurrency })),
-  );
+  const { currencySetting } = useCurrencyPreference();
+  const setCurrency = useSetCurrency();
   const { symbol } = useCurrency();
   const {
     open: currencyMenuOpen,
@@ -127,6 +123,10 @@ export function Header() {
 
           {/* Tours launcher */}
           <TutorialLauncher />
+
+          {/* Destination visibility (Phase 7o s3) — reachable at every width,
+              including the <lg range where the desktop sidebar is hidden. */}
+          <ManageVisibilityButton variant="icon" />
 
           {/* Currency selector */}
           <div className="flex items-center">

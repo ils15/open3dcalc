@@ -26,6 +26,7 @@ import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 import { DemoModeButton } from "@/shared/components/DemoMode/DemoModeButton";
 import { LayoutSwitcher } from "./LayoutSwitcher";
+import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -79,11 +80,15 @@ export function Header() {
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
             style={{
-              background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)",
+              background:
+                "linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)",
               boxShadow: "var(--shadow-md)",
             }}
           >
-            <Box className="w-[22px] h-[22px] text-[var(--text-inverse)]" strokeWidth={2} />
+            <Box
+              className="w-[22px] h-[22px] text-[var(--text-inverse)]"
+              strokeWidth={2}
+            />
           </div>
 
           <div className="min-w-0 leading-none">
@@ -273,7 +278,10 @@ export function Header() {
 
               <div className="px-3 pb-4 space-y-0.5">
                 <div className="px-1 py-2">
-                  <LayoutSwitcher showLabels className="w-full justify-between" />
+                  <LayoutSwitcher
+                    showLabels
+                    className="w-full justify-between"
+                  />
                 </div>
 
                 {/* Tutorial */}
@@ -292,6 +300,9 @@ export function Header() {
 
                 {/* Guide drawer — same surface as the desktop Header button */}
                 <GuideDrawer align="inline" />
+
+                {/* Destination visibility (Phase 7o s3) */}
+                <ManageVisibilityButton />
 
                 {/* Currency — desktop selector handles changes; close the sheet here */}
                 <button

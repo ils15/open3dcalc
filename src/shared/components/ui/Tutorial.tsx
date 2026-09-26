@@ -325,7 +325,7 @@ function TooltipCard({
             {isLast ? (
               <button
                 onClick={onFinish}
-                className="min-h-[44px] inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+                className="min-h-[44px] inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
               >
                 {t("tutorial.finish")}
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -333,7 +333,7 @@ function TooltipCard({
             ) : (
               <button
                 onClick={onNext}
-                className="min-h-[44px] inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+                className="min-h-[44px] inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
               >
                 {t("tutorial.next")}
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -393,12 +393,7 @@ export function Tutorial() {
   // would freeze the pre-scroll rect, and a synthetic `resize` event has no
   // listener (Floating UI was removed), so nothing would ever re-measure it.
   useLayoutEffect(() => {
-    if (
-      layoutMode !== "classic" ||
-      !isActive ||
-      sessionDismissed ||
-      !step
-    )
+    if (layoutMode !== "classic" || !isActive || sessionDismissed || !step)
       return;
     if (!step.target) return; // centered card with full overlay (welcome/complete)
     const selector = step.target;

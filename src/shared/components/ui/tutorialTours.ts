@@ -33,7 +33,9 @@ export const TOUR_IDS: TourId[] = [
 /**
  * Top-level surface a step lives on. The list below is the primary tab
  * contract; secondary surfaces remain valid tutorial destinations without
- * appearing in the bottom tab bar.
+ * appearing in the bottom tab bar. Order matches the shared `TABS` array
+ * (Phase 7o s3 reordered it: the five primary destinations first, then the
+ * demoted ones) so the parity lock web ≡ desktop ≡ tutorial still holds.
  */
 export type TutorialTab =
   | "calculator"
@@ -52,10 +54,10 @@ export type TutorialTab =
 export const TUTORIAL_TABS: readonly TutorialTab[] = [
   "calculator",
   "dashboard",
-  "infill",
-  "inventory",
-  "catalog",
   "history",
+  "catalog",
+  "inventory",
+  "infill",
   "quotes",
   "customers",
   "products",
@@ -89,7 +91,11 @@ export interface StepConfig {
 export const TOURS: Record<TourId, StepConfig[]> = {
   "calc-basico": [
     { key: "welcome", target: null, tab: "calculator" },
-    { key: "material", target: '[data-tutorial="material"]', tab: "calculator" },
+    {
+      key: "material",
+      target: '[data-tutorial="material"]',
+      tab: "calculator",
+    },
     { key: "print", target: '[data-tutorial="print"]', tab: "calculator" },
     { key: "sales", target: '[data-tutorial="sales"]', tab: "calculator" },
     {

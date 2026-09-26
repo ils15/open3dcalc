@@ -46,6 +46,8 @@ import {
   debouncedAutoSave,
   loadStr,
   migrateQuickMode,
+  persistCalculatorSettings,
+  persistCurrencyPreference,
 } from "./calculatorStore.helpers";
 import { computeValidatedStoreResults } from "./calculatorStore.validation";
 
@@ -99,7 +101,6 @@ function captureSnapshot(s: CalculatorState): string {
     infillPercent: s.infillPercent,
     targetMarginMode: s.targetMarginMode,
     enabledSections: s.enabledSections,
-    currency: s.currency,
   });
 }
 
@@ -261,8 +262,9 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         typeof resinMaterial.type === "string"
           ? resinMaterial.type
           : state.resinMaterial.type;
-      const isWaterWashable =
-        materialType.toLowerCase().includes("water washable");
+      const isWaterWashable = materialType
+        .toLowerCase()
+        .includes("water washable");
       const washType: PostProcessingResin["washType"] = isWaterWashable
         ? "water"
         : "alcohol";
@@ -345,7 +347,11 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       setWithCompute({ fdmAmsSlots: slots });
     },
 
-    setCurrency: (currency) => set({ currency }),
+    setCurrency: (currency) => {
+      set({ currency });
+      persistCurrencyPreference(currency);
+      debouncedAutoSave(get);
+    },
     setSelectedSpoolId: (id) => setWithCompute({ selectedSpoolId: id }),
     setLastDeductedInfo: (info) => set({ lastDeductedInfo: info }),
 
@@ -360,6 +366,9 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           const merged = {
             ...state,
             ...data,
+            // Currency is a global preference, not an undoable calculation
+            // field. Old persisted snapshots may still contain it.
+            currency: state.currency,
             fdmAmsEnabled: false,
             lastDeductedInfo: null,
           };
@@ -633,14 +642,14 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         snapshot,
       });
       set({ lastHistoryKey: historyKey });
-
     },
 
     loadHistoryItem: (snapshot: CalculationSnapshot) => {
       setWithCompute((state) => {
         const selectedPrinter =
-          printers.find((printer) => printer.id === snapshot.selectedPrinterId) ??
-          state.selectedPrinter;
+          printers.find(
+            (printer) => printer.id === snapshot.selectedPrinterId,
+          ) ?? state.selectedPrinter;
         const selectedMarketplace =
           marketplaces.find(
             (marketplace) => marketplace.id === snapshot.selectedMarketplaceId,
@@ -668,7 +677,9 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
           lastDeductedInfo: null,
           fdmAmsEnabled: false,
           fdmAmsSlots:
-            snapshot.fdmAmsSlots ?? state.fdmAmsSlots ?? DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
+            snapshot.fdmAmsSlots ??
+            state.fdmAmsSlots ??
+            DEFAULT_AMS_SLOTS.map((s) => ({ ...s })),
           fixedCosts: snapshot.fixedCosts ?? { ...DEFAULT_FIXED_COSTS },
           fdmMaterial: snapshot.fdmMaterial,
           fdmPrintParams: snapshot.fdmPrintParams,
@@ -741,7 +752,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         calcLevel: s.calcLevel,
         hiddenFields: s.hiddenFields,
       };
-      guardedStorage.setItem("open3dcalc_settings_v2", JSON.stringify(data));
+      persistCalculatorSettings(data);
     },
   };
 });

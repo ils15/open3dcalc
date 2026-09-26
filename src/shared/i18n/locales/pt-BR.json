@@ -56,7 +56,10 @@
     "mainNavigation": "Navegação principal",
     "settings": "Configurações",
     "privacy": "Privacidade",
-    "spools": "Carretéis"
+    "spools": "Carretéis",
+    "pricing": "Precificação",
+    "printers": "Impressoras",
+    "more": "Mais"
   },
   "dashboard": {
     "totalCost": "Custo Total",
@@ -1248,7 +1251,18 @@
   },
   "settings": {
     "currency": "Moeda",
-    "currencyAuto": "Automático"
+    "currencyAuto": "Automático",
+    "manageVisibility": "Gerenciar visibilidade",
+    "visibility": {
+      "title": "Destinos visíveis",
+      "description": "Ocultar um destino apenas o remove da barra de navegação. Seus dados nunca são apagados e outras partes do app continuam capazes de acessá-los.",
+      "alwaysVisible": "Sempre visível",
+      "hidden": "Oculto",
+      "show": "Mostrar",
+      "hide": "Ocultar",
+      "close": "Fechar",
+      "showAll": "Mostrar tudo"
+    }
   },
   "update": {
     "checkForUpdates": "Verificar Atualizações",

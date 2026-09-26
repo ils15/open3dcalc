@@ -2,14 +2,18 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Check, DollarSign, Globe, Info } from "lucide-react";
+import {
+  useCurrencyPreference,
+  useSetCurrency,
+} from "@/shared/contexts/CurrencyContext";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
-import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { APP_VERSION } from "@/shared/version";
 import { SecondaryNavigation } from "@/platform/web/SecondaryNavigation";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
+import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
 
 /**
  * Mobile settings bottom sheet (web only — settings only, never tabs).
@@ -32,8 +36,8 @@ export function MobileSettingsSheet({
   const { t, i18n } = useTranslation();
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const { symbol } = useCurrency();
-  const currencySetting = useCalculatorStore((s) => s.currency);
-  const setCurrency = useCalculatorStore((s) => s.setCurrency);
+  const { currencySetting } = useCurrencyPreference();
+  const setCurrency = useSetCurrency();
   const layoutMode = useLayoutStore((state) => state.layoutMode);
   const isClassicLayout = layoutMode === "classic";
   const classicOnlyDescriptionId = useId();
@@ -197,6 +201,9 @@ export function MobileSettingsSheet({
                   {i18n.language === "pt-BR" ? "PT-BR" : "EN-US"}
                 </span>
               </button>
+
+              {/* Destination visibility (Phase 7o s3) */}
+              <ManageVisibilityButton />
 
               <SecondaryNavigation
                 onInternalNavigate={onInternalNavigate}

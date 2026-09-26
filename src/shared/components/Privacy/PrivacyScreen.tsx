@@ -348,7 +348,7 @@ export function PrivacyScreen() {
                   type="button"
                   onClick={() => void handleMigrate(entry.key)}
                   disabled={busyKey === entry.key}
-                  className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
+                  className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
                 >
                   {busyKey === entry.key
                     ? t("privacy.quarantine.working")
@@ -429,7 +429,7 @@ export function PrivacyScreen() {
               type="button"
               onClick={() => void handleGrant()}
               disabled={consentBusy}
-              className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
+              className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
             >
               {t("privacy.consent.grant")}
             </button>

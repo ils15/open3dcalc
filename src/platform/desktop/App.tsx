@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Header } from "@/platform/desktop/components/Header/Header";
 import { DemoModeIndicator } from "@/shared/components/DemoMode/DemoModeIndicator";
 import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportBlockedToast";
@@ -9,7 +9,12 @@ import { AppShell } from "@/shared/components/AppShell/AppShell";
 import { useAppInit } from "@/shared/hooks/useAppInit";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
-import type { Tab } from "@/shared/components/AppShell/tabs";
+import {
+  useActiveTab,
+  useNavigateToTab,
+} from "@/shared/components/AppShell/NavigationContext";
+import { NavigationProvider } from "@/shared/components/AppShell/NavigationProvider";
+import { PreferenceProvider } from "@/shared/contexts/PreferenceProvider";
 import { useUpdaterAutoCheck } from "./hooks/useUpdaterAutoCheck";
 import { MobileNav } from "./components/MobileNav";
 import { SidebarFooter } from "./components/SidebarFooter";
@@ -19,10 +24,21 @@ import { Footer } from "./components/Footer";
 // web/desktop/tutorial sets together after the array moved into AppShell.
 export { TABS } from "@/shared/components/AppShell/tabs";
 
-function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("calculator");
+function App(): React.ReactElement {
+  return (
+    <PreferenceProvider>
+      <NavigationProvider>
+        <AppContent />
+      </NavigationProvider>
+    </PreferenceProvider>
+  );
+}
 
-  useAppInit(setActiveTab);
+function AppContent(): React.ReactElement {
+  const activeTab = useActiveTab();
+  const navigateToTab = useNavigateToTab();
+
+  useAppInit(navigateToTab);
   const layoutMode = useLayoutStore((state) => state.layoutMode);
 
   // Classic is the only surface with these tour anchors. A tour pointing to a
@@ -47,14 +63,14 @@ function App() {
       <div className="flex flex-1 w-full max-w-[1600px] 2xl:max-w-[1920px] mx-auto overflow-x-clip">
         <AppShell
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={navigateToTab}
           sidebarFooter={<SidebarFooter />}
           mainClassName="flex-1 min-w-0 px-8 sm:px-10 lg:px-12 xl:px-16 py-10 pb-32 lg:pb-12"
           tabletInactiveHoverClassName="hover:text-[var(--color-text-secondary)]"
         />
       </div>
 
-      <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <MobileNav activeTab={activeTab} onTabChange={navigateToTab} />
       <Footer />
 
       {layoutMode === "classic" && <Tutorial />}

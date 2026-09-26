@@ -84,7 +84,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-printers"
           onClick={() => setSection("printers")}
           onKeyDown={(e) => handleTabKeyDown(e, "printers")}
-          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "printers" ? "bg-[var(--color-accent)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "printers" ? "bg-[var(--accent-fill)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.printers")}
         </button>
@@ -94,7 +94,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-materials"
           onClick={() => setSection("materials")}
           onKeyDown={(e) => handleTabKeyDown(e, "materials")}
-          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "materials" ? "bg-[var(--color-accent)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "materials" ? "bg-[var(--accent-fill)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.materials")}
         </button>
@@ -104,7 +104,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-marketplaces"
           onClick={() => setSection("marketplaces")}
           onKeyDown={(e) => handleTabKeyDown(e, "marketplaces")}
-          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "marketplaces" ? "bg-[var(--color-accent)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "marketplaces" ? "bg-[var(--accent-fill)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.marketplaces")}
         </button>
@@ -312,7 +312,7 @@ function PrinterManager() {
   }, [store.printers, store.selectedPrinterTag]);
 
   const chipClass = (active: boolean) =>
-    `px-3 py-1 rounded-full text-xs border transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${active ? "bg-[var(--color-accent)] text-white border-[var(--color-accent)]" : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]"}`;
+    `px-3 py-1 rounded-full text-xs border transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${active ? "bg-[var(--accent-fill)] text-white border-[var(--color-accent)]" : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]"}`;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
@@ -400,7 +400,7 @@ function PrinterManager() {
         </div>
         <button
           onClick={add}
-          className="w-full py-3 rounded-xl bg-[var(--color-accent)] text-white font-semibold hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           {t("catalog.save")}
         </button>
@@ -690,7 +690,7 @@ function MaterialManager() {
         </div>
         <button
           onClick={add}
-          className="w-full py-3 rounded-xl bg-[var(--color-accent)] text-white font-semibold hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           {t("catalog.save")}
         </button>
@@ -829,7 +829,7 @@ function MarketplaceManager() {
         </label>
         <button
           onClick={add}
-          className="w-full py-3 rounded-xl bg-[var(--color-accent)] text-white font-semibold hover:bg-[var(--color-accent-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           {t("catalog.save")}
         </button>

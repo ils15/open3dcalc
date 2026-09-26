@@ -51,7 +51,7 @@ export function QuickStartBanner() {
           </button>
           <button
             onClick={setQuickStart}
-            className="min-h-[44px] px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] transition-colors shadow-md shadow-[var(--color-accent)]/20 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1"
+            className="min-h-[44px] px-3 sm:px-5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors shadow-md shadow-[var(--color-accent)]/20 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1"
             aria-label={t("quickStart.fillExample")}
           >
             <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5" />

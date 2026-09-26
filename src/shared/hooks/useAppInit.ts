@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { isPersistableCalculationState } from "@/shared/lib/calculationState";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
+import { persistCalculatorSettings } from "@/shared/stores/calculatorStore.helpers";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
@@ -173,8 +174,9 @@ function saveSettingsBeforeUnload(): void {
     infillPercent: calc.infillPercent,
     targetMarginMode: calc.targetMarginMode,
     enabledSections: calc.enabledSections,
+    currency: calc.currency,
   };
-  guardedStorage.setItem("open3dcalc_settings_v2", JSON.stringify(data));
+  persistCalculatorSettings(data);
 }
 
 function loadSharedCalculation(): void {

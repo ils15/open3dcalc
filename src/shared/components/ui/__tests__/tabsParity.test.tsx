@@ -72,6 +72,12 @@ import { TABS as WEB_TABS } from "@/platform/web/App";
 import App from "@/platform/web/App";
 import { TABS as DESKTOP_TABS } from "@/platform/desktop/App";
 import { TUTORIAL_TABS } from "@/shared/components/ui/tutorialTours";
+import {
+  MORE_TABS,
+  PRIMARY_TABS,
+  holdsDemotedSurface,
+} from "@/shared/components/AppShell/tabs";
+import { MORE_TAB_IDS, PRIMARY_TAB_IDS } from "@/shared/lib/navigationPrefs";
 
 type TabEntry = {
   id: string;
@@ -97,14 +103,14 @@ function tabShape(tab: TabEntry) {
 }
 
 describe("tabs parity", () => {
-  it("keeps only the ten primary sections in the tab contract", () => {
+  it("keeps all ten navigation surfaces in the tab contract", () => {
     expect(WEB_TABS.map((tab) => tab.id)).toEqual([
       "calculator",
       "dashboard",
-      "infill",
-      "inventory",
-      "catalog",
       "history",
+      "catalog",
+      "inventory",
+      "infill",
       "quotes",
       "customers",
       "products",
@@ -124,19 +130,89 @@ describe("tabs parity", () => {
   });
 });
 
+/**
+ * Phase 7o s3 — the primary/demoted split is part of the same contract, so it
+ * is locked here too: both platforms must agree on WHICH surfaces are primary,
+ * not merely on the full set. A drift here would give the two shells different
+ * navigation bars, which is the regression the whole lock exists to prevent.
+ */
+describe("primary vs demoted parity", () => {
+  it("splits into exactly the five primary destinations and five demoted", () => {
+    expect(PRIMARY_TABS.map((tab) => tab.id)).toEqual([...PRIMARY_TAB_IDS]);
+    expect(MORE_TABS.map((tab) => tab.id)).toEqual([...MORE_TAB_IDS]);
+  });
+
+  it("primary and demoted together reconstruct TABS exactly", () => {
+    expect([...PRIMARY_TABS, ...MORE_TABS].map((tab) => tab.id)).toEqual(
+      WEB_TABS.map((tab) => tab.id),
+    );
+  });
+
+  it("agrees between web and desktop (the split is derived from shared TABS)", () => {
+    const webIds = new Set(WEB_TABS.map((tab) => tab.id));
+    const desktopIds = new Set(DESKTOP_TABS.map((tab) => tab.id));
+
+    for (const id of PRIMARY_TAB_IDS) {
+      expect(webIds.has(id), `primary ${id} on web`).toBe(true);
+      expect(desktopIds.has(id), `primary ${id} on desktop`).toBe(true);
+    }
+    for (const id of MORE_TAB_IDS) {
+      expect(webIds.has(id), `demoted ${id} on web`).toBe(true);
+      expect(desktopIds.has(id), `demoted ${id} on desktop`).toBe(true);
+    }
+  });
+
+  it("demotes Infill while keeping it in the surface set", () => {
+    expect(holdsDemotedSurface("infill")).toBe(true);
+    expect(MORE_TABS.some((tab) => tab.id === "infill")).toBe(true);
+  });
+
+  it("keeps every primary destination out of the demoted set", () => {
+    for (const id of PRIMARY_TAB_IDS) {
+      expect(holdsDemotedSurface(id), id).toBe(false);
+    }
+  });
+});
+
 describe("mobile bottom navigation", () => {
-  it("renders every tab by horizontal scroll — none buried behind a More menu", () => {
+  it("renders the five primary destinations plus a More trigger", () => {
     render(<App />);
 
     const nav = screen.getByRole("navigation", {
       name: "nav.mainNavigation",
     });
-    // Tab buttons carry aria-selected; the settings gear does not.
-    const tabButtons = nav.querySelectorAll("button[aria-selected]");
+    // Destination buttons carry aria-selected; the settings gear and the More
+    // disclosure do not.
+    const destinationButtons = nav.querySelectorAll("button[aria-selected]");
 
-    expect(tabButtons).toHaveLength(WEB_TABS.length);
-    for (const tab of WEB_TABS) {
+    expect(destinationButtons).toHaveLength(PRIMARY_TABS.length);
+    for (const tab of PRIMARY_TABS) {
       expect(nav.textContent).toContain(tab.labelKey);
+    }
+
+    const more = within(nav).getByRole("button", { name: /nav\.more/ });
+    expect(more).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("keeps every demoted destination — including Infill — behind More", () => {
+    render(<App />);
+
+    const nav = screen.getByRole("navigation", {
+      name: "nav.mainNavigation",
+    });
+    for (const tab of MORE_TABS) {
+      expect(nav.textContent, tab.id).not.toContain(tab.labelKey);
+    }
+
+    fireEvent.click(within(nav).getByRole("button", { name: /nav\.more/ }));
+
+    for (const tab of MORE_TABS) {
+      expect(
+        within(screen.getByTestId("more-menu")).getByRole("button", {
+          name: tab.labelKey,
+        }),
+        tab.id,
+      ).toBeInTheDocument();
     }
   });
 
@@ -188,9 +264,12 @@ describe("mobile bottom navigation", () => {
     expect(within(sheet).getByText("settings.currency")).toBeInTheDocument();
     expect(within(sheet).getByText("nav.language")).toBeInTheDocument();
 
-    // …and no tab does.
+    // …and no destination does. Checked across the FULL surface set, not just
+    // the primary five: the sheet is a settings surface, so the demoted
+    // destinations must be absent from it too (the Manage Visibility dialog
+    // lists them, but it is closed by default and must not leak into the sheet).
     for (const tab of WEB_TABS) {
-      expect(within(sheet).queryByText(tab.labelKey)).toBeNull();
+      expect(within(sheet).queryByText(tab.labelKey), tab.id).toBeNull();
     }
   });
 });

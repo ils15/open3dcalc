@@ -6,50 +6,130 @@
 
 :root {
   /* Surfaces */
-  --surface-canvas: #F6F7FB;
-  --surface-raised: #FFFFFF;
-  --surface-overlay: #FCFCFF;
-  --surface-sunken: #EDF0F7;
-  --surface-input: #FFFFFF;
+  --surface-canvas: #f6f7fb;
+  --surface-raised: #ffffff;
+  --surface-overlay: #fcfcff;
+  --surface-sunken: #edf0f7;
+  --surface-input: #ffffff;
 
   /* Borders */
-  --border-subtle: #E2E8F0;
-  --border-default: #CBD5E1;
-  --border-strong: #64748B;
-  --border-accent: #4F46E5;
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #64748b;
+  --border-accent: #4f46e5;
 
   /* Text */
   --text-primary: #111827;
   --text-secondary: #475569;
   --text-muted: #596579;
-  --text-disabled: #94A3B8;
-  --text-inverse: #FFFFFF;
+  --text-disabled: #94a3b8;
+  --text-inverse: #ffffff;
 
   /* State and accent */
-  --accent: #4F46E5;
-  --accent-hover: #4338CA;
-  --accent-subtle: #EEF2FF;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-subtle: #eef2ff;
+  /* Solid accent BACKGROUND (primary buttons, filled active segments).
+     Kept separate from --accent because --accent is a FOREGROUND/border
+     colour and would not survive as a fill.
+     #4F46E5: #ffffff 6.29:1 text (WCAG AA normal text) and 5.87:1 vs the light
+     canvas (WCAG 1.4.11 non-text). */
+  --accent-fill: #4f46e5;
+  /* Foreground ON TOP of --accent-fill. This is NOT --text-inverse: that token
+     flips per theme, so reusing it put .dark's near-black ink (#0a0b10) on this
+     dark fill — 3.13:1, a WCAG AA failure. An explicit token that does not flip
+     is what makes the invariant testable. The prototype's solid buttons are a
+     dark blue with white text in BOTH themes. */
+  --accent-fill-fg: #ffffff;
+  /* Hover/active companion. Its own token, not --accent-hover: #a5b4fc in .dark
+     is a foreground-weight colour and would wash the fill out.
+     #4338CA: #ffffff 7.90:1 text. */
+  --accent-fill-hover: #4338ca;
   --positive: #047857;
-  --positive-subtle: #ECFDF5;
-  --warning: #92400E;
-  --warning-subtle: #FFFBEB;
-  --critical: #B91C1C;
-  --critical-subtle: #FFF1F2;
-  --info: #1D4ED8;
-  --info-subtle: #EFF6FF;
+  --positive-subtle: #ecfdf5;
+  --warning: #92400e;
+  --warning-subtle: #fffbeb;
+  --critical: #b91c1c;
+  --critical-subtle: #fff1f2;
+  --info: #1d4ed8;
+  --info-subtle: #eff6ff;
+
+  /* Solid variant FILLS for the confirm dialog (danger / warning).
+     Same reasoning as --accent-fill above: these are BACKGROUNDS. What broke
+     the dialog is that its backgrounds were raw Tailwind palette utilities
+     (bg-red-600, bg-amber-600) which are theme-INDEPENDENT, while the ink came
+     from --color-text-primary, a FOREGROUND token that flips to near-white in
+     .dark. The pairing that works in light therefore breaks in dark, and no
+     single text token fixes both: white on amber-600 is 3.20:1 while
+     --color-text-primary on red-600 is 3.72:1. Each variant carries its own
+     -fg instead, exactly as --accent-fill-fg does for the accent fill, and
+     both are declared here AND in .dark with identical values so that each
+     theme is individually auditable.
+
+     Values are the sRGB rendering of Tailwind v4's oklch palette:
+     red-600 = oklch(0.577 0.245 27.325) -> #e7000b,
+     amber-600 = oklch(0.666 0.179 58.318) -> #e17100.
+     Written as hex rather than oklch so the contrast guard, which cannot
+     evaluate oklch(), can resolve them; the rendered sRGB is identical.
+     Measured: danger #ffffff 4.77:1 on rest / 6.42:1 on hover;
+     warning #0a0b10 6.14:1 on rest / 9.21:1 on hover. Both in BOTH themes. */
+  --danger-fill: #e7000b;
+  --danger-fill-fg: #ffffff;
+  --danger-fill-hover: #c10007; /* red-700 */
+  --warning-fill: #e17100;
+  --warning-fill-fg: #0a0b10;
+  --warning-fill-hover: #fe9a00; /* amber-500 */
+
+  /* Tinted fills and borders.
+     The HUES are pinned below, not derived from the semantic accents above:
+     these tints are the app's pre-token hardcoded 600-step values, and the
+     semantic accents are 700/800/light-400 steps, so deriving from them moved
+     every rendered wash (worst case .segmented-btn.active-fdm in dark:
+     #0a1226 -> #141f28, Δ13 per channel). The hue tokens restore the exact
+     original output while keeping the wash derivation. Same four values in
+     :root and .dark because the hardcoded rgba() they replace was
+     theme-independent. -wash = 12% surface tint, -wash-strong = 30% border. */
+  --accent-wash-hue: #4f46e5;
+  --info-wash-hue: #2563eb;
+  --positive-wash-hue: #059669;
+  --warning-wash-hue: #d97706;
+  --accent-wash: color-mix(in srgb, var(--accent-wash-hue) 12%, transparent);
+  --accent-wash-strong: color-mix(
+    in srgb,
+    var(--accent-wash-hue) 30%,
+    transparent
+  );
+  --positive-wash: color-mix(
+    in srgb,
+    var(--positive-wash-hue) 12%,
+    transparent
+  );
+  --positive-wash-strong: color-mix(
+    in srgb,
+    var(--positive-wash-hue) 30%,
+    transparent
+  );
+  --warning-wash: color-mix(in srgb, var(--warning-wash-hue) 12%, transparent);
+  --warning-wash-strong: color-mix(
+    in srgb,
+    var(--warning-wash-hue) 30%,
+    transparent
+  );
+  --info-wash: color-mix(in srgb, var(--info-wash-hue) 12%, transparent);
+  --info-wash-strong: color-mix(in srgb, var(--info-wash-hue) 30%, transparent);
 
   /* Financial semantics */
-  --cost: #C2410C;
+  --cost: #c2410c;
   --revenue: #047857;
-  --margin: #1D4ED8;
-  --margin-negative: #B91C1C;
+  --margin: #1d4ed8;
+  --margin-negative: #b91c1c;
 
   /* Cost distribution categories */
-  --cost-filament: #6D28D9;
-  --cost-energy: #B45309;
-  --cost-machine: #1D4ED8;
+  --cost-filament: #6d28d9;
+  --cost-energy: #b45309;
+  --cost-machine: #1d4ed8;
   --cost-labor: #047857;
-  --cost-failure: #BE123C;
+  --cost-failure: #be123c;
   --cost-other: #475569;
 
   /* Theme-aware elevation and layering */
@@ -58,49 +138,117 @@
   --shadow-md: 0 2px 8px rgb(0 0 0 / 8%);
   --shadow-lg: 0 4px 16px rgb(0 0 0 / 10%);
   --z-dropdown: 60;
+
+  /* Radius — single source of truth for web, desktop and Tailwind's
+     rounded-* utilities. --radius-2xl is 16px to match Tailwind's default
+     scale (1rem); 14px used to drift from `rounded-2xl` (3 call sites). */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
 }
 
 .dark {
-  --surface-canvas: #0A0B10;
-  --surface-raised: #11131C;
-  --surface-overlay: #181B27;
-  --surface-sunken: #06070B;
-  --surface-input: #0E1018;
+  --surface-canvas: #0a0b10;
+  --surface-raised: #11131c;
+  --surface-overlay: #181b27;
+  --surface-sunken: #06070b;
+  --surface-input: #0e1018;
 
-  --border-subtle: #272B3B;
+  --border-subtle: #272b3b;
   --border-default: #394057;
-  --border-strong: #94A3B8;
-  --border-accent: #818CF8;
+  --border-strong: #94a3b8;
+  --border-accent: #818cf8;
 
-  --text-primary: #F1F5F9;
-  --text-secondary: #B7C2D2;
-  --text-muted: #94A3B8;
+  --text-primary: #f1f5f9;
+  --text-secondary: #b7c2d2;
+  --text-muted: #94a3b8;
   --text-disabled: #526179;
-  --text-inverse: #0A0B10;
+  --text-inverse: #0a0b10;
 
-  --accent: #818CF8;
-  --accent-hover: #A5B4FC;
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
   --accent-subtle: #242746;
-  --positive: #34D399;
-  --positive-subtle: #102B25;
-  --warning: #FBBF24;
+  /* Solid accent BACKGROUND. --accent (#818CF8) is a foreground/border colour
+     on dark and only reaches 2.98:1 with white, so the fill needs its own
+     value and its own foreground: --accent-fill-fg, not --text-inverse
+     (which is #0a0b10 here and would land 3.13:1 on this fill).
+     #4F46E5: #ffffff 6.29:1 text (AA normal) and 3.13:1 vs the dark canvas
+     (WCAG 1.4.11 non-text). */
+  --accent-fill: #4f46e5;
+  --accent-fill-fg: #ffffff;
+  /* #4338CA: #ffffff 7.90:1 text. Deliberately NOT --accent-hover. */
+  --accent-fill-hover: #4338ca;
+  --positive: #34d399;
+  --positive-subtle: #102b25;
+  --warning: #fbbf24;
   --warning-subtle: #302711;
-  --critical: #FDA4AF;
+  --critical: #fda4af;
   --critical-subtle: #351820;
-  --info: #7DD3FC;
-  --info-subtle: #102B3B;
+  --info: #7dd3fc;
+  --info-subtle: #102b3b;
 
-  --cost: #FDBA74;
-  --revenue: #34D399;
-  --margin: #7DD3FC;
-  --margin-negative: #FDA4AF;
+  /* Solid variant FILLS. Identical to :root, NOT derived from the .dark
+     semantics above, for the same reason --accent-fill is: the background is
+     theme-independent, so only the INK is allowed to differ — and here the ink
+     is fixed per variant as well, because a single flipping ink is what broke
+     the dialog in the first place. Re-declared rather than inherited so that a
+     one-theme edit becomes a visible test failure.
+     Note the hover direction differs per variant and must: white on red has
+     to DARKEN to stay legible, near-black on amber has to LIGHTEN. One shared
+     direction cannot satisfy both. */
+  --danger-fill: #e7000b;
+  --danger-fill-fg: #ffffff;
+  --danger-fill-hover: #c10007; /* red-700 */
+  --warning-fill: #e17100;
+  --warning-fill-fg: #0a0b10;
+  --warning-fill-hover: #fe9a00; /* amber-500 */
 
-  --cost-filament: #C4B5FD;
-  --cost-energy: #FDE68A;
-  --cost-machine: #93C5FD;
-  --cost-labor: #6EE7B7;
-  --cost-failure: #FDA4AF;
-  --cost-other: #CBD5E1;
+  /* Same hues as :root, NOT the .dark accents above — the hardcoded rgba() these
+     replace was theme-independent, so the washes must be too. Re-declared here
+     explicitly (rather than inherited) so both themes are individually auditable
+     and a future one-theme edit is a visible test failure. */
+  --accent-wash-hue: #4f46e5;
+  --info-wash-hue: #2563eb;
+  --positive-wash-hue: #059669;
+  --warning-wash-hue: #d97706;
+  --accent-wash: color-mix(in srgb, var(--accent-wash-hue) 12%, transparent);
+  --accent-wash-strong: color-mix(
+    in srgb,
+    var(--accent-wash-hue) 30%,
+    transparent
+  );
+  --positive-wash: color-mix(
+    in srgb,
+    var(--positive-wash-hue) 12%,
+    transparent
+  );
+  --positive-wash-strong: color-mix(
+    in srgb,
+    var(--positive-wash-hue) 30%,
+    transparent
+  );
+  --warning-wash: color-mix(in srgb, var(--warning-wash-hue) 12%, transparent);
+  --warning-wash-strong: color-mix(
+    in srgb,
+    var(--warning-wash-hue) 30%,
+    transparent
+  );
+  --info-wash: color-mix(in srgb, var(--info-wash-hue) 12%, transparent);
+  --info-wash-strong: color-mix(in srgb, var(--info-wash-hue) 30%, transparent);
+
+  --cost: #fdba74;
+  --revenue: #34d399;
+  --margin: #7dd3fc;
+  --margin-negative: #fda4af;
+
+  --cost-filament: #c4b5fd;
+  --cost-energy: #fde68a;
+  --cost-machine: #93c5fd;
+  --cost-labor: #6ee7b7;
+  --cost-failure: #fda4af;
+  --cost-other: #cbd5e1;
 
   --shadow-xs: 0 1px 2px rgb(0 0 0 / 30%);
   --shadow-sm: 0 1px 3px rgb(0 0 0 / 35%);
@@ -135,6 +283,22 @@
   --color-accent-light: var(--accent);
   --color-accent-muted: var(--accent-subtle);
   --color-accent-text: var(--text-inverse);
+  /* Fill and wash families. Aliases exist so a component can stay entirely in
+     the --color-* namespace; mixing the bare --accent/--surface/--text names
+     into the same component is a documented violation. The accent fill/wash
+     call sites are in the same components as the ones still on the bare
+     names, so both spellings are kept until B.2/B.3 migrate them. */
+  --color-accent-fill: var(--accent-fill);
+  --color-accent-fill-fg: var(--accent-fill-fg);
+  --color-accent-fill-hover: var(--accent-fill-hover);
+  --color-accent-wash: var(--accent-wash);
+  --color-accent-wash-strong: var(--accent-wash-strong);
+  --color-danger-fill: var(--danger-fill);
+  --color-danger-fill-fg: var(--danger-fill-fg);
+  --color-danger-fill-hover: var(--danger-fill-hover);
+  --color-warning-fill: var(--warning-fill);
+  --color-warning-fill-fg: var(--warning-fill-fg);
+  --color-warning-fill-hover: var(--warning-fill-hover);
 
   --color-success: var(--positive);
   --color-warning: var(--warning);

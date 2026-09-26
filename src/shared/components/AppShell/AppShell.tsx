@@ -13,8 +13,8 @@ import type { Tab } from "./tabs";
  * composed around this shell — only identical chrome lives here, so the
  * extraction cannot change behavior.
  *
- * `activeTab` remains local state in each App (passed by props); no router,
- * no persisted UI store in this wave.
+ * `activeTab` is passed from the shared in-memory NavigationProvider; no
+ * router or persisted UI store is involved in this phase.
  */
 export interface AppShellProps {
   activeTab: Tab;
