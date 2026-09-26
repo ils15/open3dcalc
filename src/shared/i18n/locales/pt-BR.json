@@ -587,7 +587,7 @@
     "compare": "Comparar",
     "compareTitle": "Comparativo",
     "compareSelect": "Selecione 2 registros para comparar",
-    "compareSelectEntry": "Selecionar {{name}} para comparação",
+    "compareSelectEntry": "Selecionar {{name}}, registro {{position}} do histórico para comparar",
     "compareField": "Campo",
     "valueA": "Registro A",
     "valueB": "Registro B",
