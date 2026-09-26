@@ -1254,9 +1254,41 @@ Os quatro PRs empilhados #222, #224, #225 e #226 foram consolidados sobre `main`
 
 #### Próxima onda de acessibilidade — follow-ups registrados
 
-- [ ] `src/shared/components/ui/Toast.tsx:18` — falha WCAG AA viva: **2,83:1 no claro e 3,26:1 no escuro**. Fundo de acento independente de tema em 90% (`bg-[var(--color-accent)]/90`) com tinta de texto que troca junto com o tema (`text-[var(--color-text-primary)]`). Falha pré-existente, deliberadamente deixada no piso do censo em vez de ser corrigida durante a onda de contraste. **Primeiro ticket da próxima onda de acessibilidade, antes do release da Beta 5.**
-- [ ] O piso de população adiada do guard de contraste prende **contagem de arquivos**, não de sítios. Em `src/shared/__tests__/accentBackgroundContrast.test.ts`, `keeps the deferred translucent-accent population shrinking` assere `files.length <= 16`, e o piso de sítios descobertos assere `files.size > 5`. Um sítio que migra de uma forma quebrada para **outra** forma quebrada mantém as duas contagens iguais, e a falha se esconde. O piso deve prender sítios, não arquivos.
+- [x] `src/shared/components/ui/Toast.tsx:18` — falha WCAG AA viva. ~~**2,83:1 no claro e 3,26:1 no escuro**~~ — reprovado nos **dois** temas, e o pior caso real é **2,07:1 no escuro**; a cifra original media só o par de acento e subestimava o defeito. Corrigido com tinta pareada por variante sobre preenchimento sólido, em `fix/toast-contrast-and-guard-floor` (SHA de origem `def8080`). **Revisão e merge pendentes.**
+- [x] O piso de população adiada do guard de contraste prendia **contagem de arquivos**, não de sítios. `keeps the deferred translucent-accent population shrinking` asseria `files.length <= 16`, e o pino de sítios descobertos asseria `files.size > 5`. Um sítio que migrava de uma forma quebrada para **outra** forma quebrada mantinha as duas contagens iguais, e a falha se escondia. O piso agora prende **sítios**, com o conjunto de **formas** pinado ao lado; `files.size > 5` foi trocado por um pino de formas. Ao re-derivar o censo, os números do cabeçalho se revelaram errados por ~2,5x (48/13 e 27/8 → 18 sítios/10 formas/11 arquivos e 11/4/7). Em `fix/toast-contrast-and-guard-floor` (SHA de origem `def8080`). **Revisão e merge pendentes.**
 
+---
+
+### 🔧 Toast AA + censo de contraste adiado por sítio
+
+**Status:** implementação e os seis gates de código completos no branch `fix/toast-contrast-and-guard-floor`, sobre `main` em `def8080`. **Revisão e merge pendentes** — não mesclado em `main` e não liberado. Onda independente: não substitui, não reordena nem absorve nenhuma fatia da Phase 7o, da Phase 7n ou do port visual da Beta 5, e não fecha o gate transversal de compatibilidade v2.0.
+
+**1. Falha WCAG AA viva no Toast — corrigida.** Os três variantes pintavam um token de primeira plana como fundo, com tinta que troca no `.dark` (`bg-[var(--color-danger)]/90`, `bg-[var(--color-success)]/90`, `bg-[var(--color-accent)]/90` + `text-[var(--color-text-primary)]`). Reprovaram WCAG 1.4.3 nos **dois** temas; o pior caso medido foi **2,07:1** no escuro (a cifra de 2,83/3,26 registrada no follow-up abaixo era do par de acento e subestimava o problema — o toast de erro renderizava como um pílula rosa-claro com texto quase branco, ou seja, ilegível, e não apenas abaixo do limite).
+
+| variante  | claro (antes → depois) | escuro (antes → depois) |
+| --------- | ---------------------- | ----------------------- |
+| `error`   | 3,10:1 → 4,77:1        | **2,07:1** → 4,77:1     |
+| `success` | 3,84:1 → 5,36:1        | **2,10:1** → 5,36:1     |
+| `info`    | 3,38:1 → 6,29:1        | 3,18:1 → 6,29:1         |
+
+**Decisão:** tinta pareada sobre preenchimento **sólido**, seguindo o padrão que `--danger-fill`/`--warning-fill` já tinham resolvido — e não uma mudança de alpha. O `90` é o amplificador, não a causa: diminuí-lo move a cor efetiva _mais_ perto do que está atrás, e o toast é `fixed` sobre conteúdo arbitrário, então o par deixa de ser decidível a partir da class string. Um fundo sólido não supõe backdrop nenhum e, de quebra, traz o toast para dentro do scan existente, que mede fundos sólidos e pula translúcidos por desenho. Novo token `--positive-fill: #007a55` + `--positive-fill-fg: #ffffff`, declarados em `:root`, em `.dark` e na camada de aliases com valores idênticos, para que uma edição de um tema só vire falha de teste. Sem `-hover` de propósito: os outros dois respondem a um botão, e um toast é `role="region"`.
+
+**2. Piso da população adiada — de arquivos para sítios.** O piso prendia **contagem de arquivos**, que não enxerga um sítio mudando de _forma_: migrar um pareamento quebrado para outro pareamento quebrado diferente deixa todas as contagens de arquivos intactas, e o piso reportava verde sobre uma população igualmente quebrada. O piso passa a ser contado em **sítios**, com o conjunto de **formas** pinado ao lado. As duas unidades são necessárias: uma contagem sozinha não distingue dois sítios da mesma forma, e um conjunto de formas sozinho não vê um sítio do mesmo tipo ser removido.
+
+**Censo re-derivado — os números citados estavam errados por ~2,5x, e errados na direção que faz um piso parecer _menos_ trabalho do que existe:**
+
+| família | citado (cabeçalho anterior)  | real em `def8080`                   | pinado agora                           |
+| ------- | ---------------------------- | ----------------------------------- | -------------------------------------- |
+| washes  | 48 pareamentos / 13 arquivos | 18 sítios / 10 formas / 11 arquivos | **15 sítios / 8 formas / 10 arquivos** |
+| paleta  | 27 pareamentos / 8 arquivos  | 11 sítios / 4 formas / 7 arquivos   | **11 sítios / 4 formas / 7 arquivos**  |
+
+O regex antigo casava **só o token accent**, então nunca contou as washes de status: `--color-danger/90` e `--color-success/90` eram invisíveis para ele, e são os dois piores pares do app. A queda de 18 para 15 é o toast, cujas três variantes `/90` saíram da população ao virarem preenchimentos sólidos.
+
+**A lista de formas é uma allowlist de uma direção só, e o custo é declarado:** uma forma que aparece e não está listada reprova; uma forma listada que deixou de ocorrer **não** reprova, porque a regra do arquivo é que corrigir um sítio nunca pode reprovar a suíte — só baixar o número. **Um sítio migrado deixa uma linha obsoleta.** A pinagem bidirecional seria mais apertada e foi rejeitada porque pune exatamente o comportamento que a guarda existe para encourregar, e uma guarda que grita lobo acaba desativada. A contagem de sítios fica pinada ao lado da lista para que as duas possam ser lidas juntas.
+
+**3. Dois LOWs contra a auditoria de `z-50`, ambos com mutação provada.** A lista de arquivos era derivada com `/class(Name)?=[^\n]*\bz-50\b/`, que exige o token na mesma linha do `className` — um class string quebrado em várias linhas escondia uma camada da auditoria. A derivação agora varre o texto do arquivo em busca do token, com **comentários removidos** (cinco arquivos discutem `z-50` em prosa justamente para explicar por que **não** estão nele) e com `https://` preservado pelo guarda `[^:]`. Um painel de bottom sheet deixou de ser reconhecido pelo proxy cosmético `rounded-t-2xl` e passou a exigir `bottom-0`, e o pareamento passou de "existe um backdrop neste arquivo" para **`panels <= backdrops`**. A regra de pareamento precisou antes ser extraída para uma função: com um painel e um backdrop em cada arquivo real, o estreitamento não alterava nenhuma asserção e nenhum teste ficava vermelho — o estreitamento era real, mas estava sem registro até uma mutação expô-lo.
+
+**Gates no SHA de origem `def8080`:** `test:run` 0 (236 arquivos / 3236 testes), `test:run -- --coverage` 0, `typecheck` 0, `typecheck:electron` 0, `lint` 0, `build:all` 0. O commit que registra esta entrada é somente de documentação e **não** reexecuta os gates de código.
 ---
 
 ### 🔎 Investigação — uso atual de lojas e clientes
