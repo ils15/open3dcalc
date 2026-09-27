@@ -48,7 +48,7 @@ Baixe a versão desktop para Windows, Linux ou macOS na [página de releases](ht
 | macOS Apple Silicon (M1 ou superior) | DMG            | `Open3DCalc-{version}-arm64.dmg` |
 | macOS Intel                          | DMG            | `Open3DCalc-{version}-x64.dmg`   |
 
-> ⚠️ **macOS:** o app ainda não é assinado com um certificado Apple Developer (assinatura ad-hoc). Na primeira abertura, o macOS vai bloqueá-lo: vá em **Ajustes do Sistema → Privacidade e Segurança** e clique em **Abrir Mesmo Assim**. Se aparecer a mensagem "o app está danificado", rode `xattr -cr /Applications/Open3DCalc.app` no Terminal. A atualização automática não funciona no macOS enquanto o app não for assinado e notarizado.
+> ⚠️ **macOS:** o app ainda não é assinado com um certificado Apple Developer (assinatura ad-hoc). Na primeira abertura, o macOS vai bloqueá-lo: vá em **Ajustes do Sistema → Privacidade e Segurança** e clique em **Abrir Mesmo Assim**. Se aparecer a mensagem "o app está danificado", rode `xattr -cr /Applications/Open3DCalc.app` no Terminal. Enquanto o app não for assinado e notarizado, a instalação automática de atualizações fica desativada no macOS: o app continua avisando quando há versão nova e o botão abre a página de download da release para você baixar o novo DMG.
 
 ---
 
