@@ -55,7 +55,7 @@ class FakeObjectStore {
       // An injected failure models a storage backend that refuses this write
       // (a quota error, an aborted transaction). It must surface as a request
       // error so the vault's `commit_failed` path is exercised for real.
-      const fail = this.tx.shouldFailPut();
+      const fail = this.tx.shouldFailPut(key, value);
       if (fail !== null) throw fail;
       this.tx.data(this.name).set(key, value);
       return key;
@@ -90,7 +90,10 @@ class FakeTransaction {
     readonly mode: IDBTransactionMode,
     storeNames: string[],
     private readonly tally: (delta: number) => void,
-    readonly shouldFailPut: () => unknown | null = () => null,
+    readonly shouldFailPut: (
+      key: string,
+      value: unknown,
+    ) => unknown | null = () => null,
   ) {
     for (const name of storeNames) {
       if (!db.stores.has(name)) {
@@ -166,7 +169,10 @@ class FakeDatabase {
     readonly name: string,
     readonly version: number,
     /** Injected per-`put` failure, or null. Set at creation by the factory. */
-    readonly shouldFailPut: () => unknown | null = () => null,
+    readonly shouldFailPut: (
+      key: string,
+      value: unknown,
+    ) => unknown | null = () => null,
   ) {}
 
   get objectStoreNames(): { contains: (n: string) => boolean } {
@@ -242,6 +248,20 @@ export interface FakeIndexedDb {
    * can arm it, observe the interruption, then disarm for the resume.
    */
   failPutsOnCall(n: number | null): void;
+  /**
+   * Make every `put` whose (key, sealed value) matches the predicate fail,
+   * until disarmed with `null`.
+   *
+   * Unlike `failPutsOnCall`, this is anchored on the WRITE rather than on a
+   * global call ordinal, so unrelated same-key writes cannot shift the
+   * failure off the write a spec means to interrupt. The double only ever
+   * sees the SEALED record, so the predicate is handed the storage key and
+   * the opaque serialised value: use it for key- or size-level predicates
+   * that exercise the vault's `commit_failed` path, never to read plaintext.
+   */
+  failPutsMatching(
+    matcher: ((key: string, value: unknown) => boolean) | null,
+  ): void;
   /** How many `put` calls have been observed. */
   putCalls(): number;
 }
@@ -254,11 +274,18 @@ export function createFakeIndexedDb(): FakeIndexedDb {
   const databases = new Map<string, FakeDatabase>();
   // Set by `failPutsOnCall`; read on every put so a test can arm it mid-run.
   let failPutOnCall: number | null = null;
+  // Set by `failPutsMatching`; read on every put. Anchored on the write's own
+  // (key, value) so a stray same-key write cannot consume the armed slot.
+  let failPutMatcher: ((key: string, value: unknown) => boolean) | null = null;
   let putCalls = 0;
-  const shouldFailPut = (): unknown | null => {
-    if (failPutOnCall === null) return null;
-    putCalls += 1;
-    if (putCalls === failPutOnCall) {
+  const shouldFailPut = (key: string, value: unknown): unknown | null => {
+    // Count only while a fault is armed, so `putCalls()` keeps its meaning as
+    // "puts observed since the injection was armed" for the ordinal mode.
+    if (failPutMatcher !== null || failPutOnCall !== null) putCalls += 1;
+    if (failPutMatcher !== null && failPutMatcher(key, value)) {
+      return new DOMException("simulated put failure", "UnknownError");
+    }
+    if (failPutOnCall !== null && putCalls === failPutOnCall) {
       return new DOMException("simulated put failure", "UnknownError");
     }
     return null;
@@ -331,6 +358,11 @@ export function createFakeIndexedDb(): FakeIndexedDb {
     failPutsOnCall(n: number | null): void {
       failPutOnCall = n;
       putCalls = 0;
+    },
+    failPutsMatching(
+      matcher: ((key: string, value: unknown) => boolean) | null,
+    ): void {
+      failPutMatcher = matcher;
     },
     putCalls(): number {
       return putCalls;

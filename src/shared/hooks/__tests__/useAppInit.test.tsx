@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const storageGetItem = vi.hoisted(() => vi.fn());
@@ -73,6 +73,7 @@ import {
 import {
   createPiiStore,
   lockAllPiiStores,
+  PII_VAULT_STORE,
   resetPiiStoreRuntimeForTests,
 } from "@/shared/lib/crypto/piiStore";
 import { setPiiStoreEnvironment } from "@/shared/lib/crypto/piiStoreCapability";
@@ -254,6 +255,46 @@ describe("useAppInit tutorial auto-start", () => {
     };
   }
 
+  /**
+   * Interrupt the vault write that would COMMIT THE COMPLETE SET.
+   *
+   * `installVaultFailureOnNthWrite` counts puts GLOBALLY, so a stray same-key
+   * write (a leaked empty-state persist) can consume the armed slot: the
+   * failure then lands on the FIRST migration write, the SECOND commits the
+   * full set, verification passes legitimately and the recovery marker is
+   * removed — which is exactly the interruption model the spec exists to
+   * defend. The fix anchors on the WRITE rather than on an ordinal.
+   *
+   * The double sees only the SEALED record, so the anchor is the migration's
+   * deterministic payload-size progression: it persists the legacy history one
+   * entry per write, so each successive record is strictly larger than the one
+   * already stored. Failing the put that (a) has already grown past the
+   * pre-migration record and (b) is itself larger than what is stored now
+   * always targets the committing write, whatever same-key write came first.
+   */
+  function installVaultFailureOnCommittingWrite(): {
+    interrupted: number;
+  } {
+    const baseline = vaultIdb.raw(PII_VAULT_STORE, HISTORY_VAULT_KEY);
+    const baselineLength = typeof baseline === "string" ? baseline.length : 0;
+    const state = { interrupted: 0 };
+    vaultIdb.failPutsMatching((key, value) => {
+      if (key !== HISTORY_VAULT_KEY) return false;
+      const stored = vaultIdb.raw(PII_VAULT_STORE, key);
+      const storedLength = typeof stored === "string" ? stored.length : 0;
+      const valueLength = typeof value === "string" ? value.length : 0;
+      const commitsPastPrefix =
+        storedLength > baselineLength && valueLength > storedLength;
+      if (commitsPastPrefix) state.interrupted += 1;
+      return commitsPastPrefix;
+    });
+    return {
+      get interrupted() {
+        return state.interrupted;
+      },
+    };
+  }
+
   beforeEach(() => {
     vaultIdb = createFakeIndexedDb();
     setPiiStoreEnvironment(PII_STORE_ENVIRONMENT);
@@ -293,9 +334,17 @@ describe("useAppInit tutorial auto-start", () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Unmount first: an effect still mounted here can issue a fire-and-forget
+    // vault write that would otherwise land inside the NEXT spec's armed
+    // window and shift its injected failure. Drain those writes before the
+    // runtime is reset, or "settled" would only mean "abandoned".
+    cleanup();
     vi.clearAllTimers();
     vi.useRealTimers();
+    await whenPiiWritesSettled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await whenPiiWritesSettled();
     lockAllPiiStores();
     resetPiiStoreRuntimeForTests();
     resetPiiStoreHydrationForTests();
@@ -717,14 +766,19 @@ describe("useAppInit tutorial auto-start", () => {
 
     // A capable, unlocked vault: the migration's destination.
     await unlockVault();
-    // Fail the SECOND vault write the migration issues (the second addEntry).
-    const counter = installVaultFailureOnNthWrite(2);
+    // Interrupt the write that would COMMIT THE COMPLETE SET, anchored on the
+    // payload the migration persists rather than on a global put ordinal.
+    const interruption = installVaultFailureOnCommittingWrite();
 
     renderHook(() => useAppInit(vi.fn()));
 
-    // The interruption happened: two writes were attempted, the second failed.
-    await vi.waitFor(() => expect(counter.writes).toBe(2));
+    // The interruption settled on the committing write: the first migration
+    // write is durable and the second (the complete set) never landed.
+    await vi.waitFor(async () => {
+      expect(await vaultHistoryEntries()).toHaveLength(1);
+    });
     await settleWrites();
+    expect(interruption.interrupted).toBe(1);
 
     // The durable recovery marker SURVIVED so the next startup can resume from
     // the intact source — but it is VALUE-FREE (W4.4): it carries no record.
@@ -757,9 +811,8 @@ describe("useAppInit tutorial auto-start", () => {
     // already real (unlockVault switched them); the next write succeeds.
     storageSetItem.mockClear();
     useHistoryStore.setState({ entries: prefix as unknown as HistoryEntry[] });
-    const resumeStorage = installVaultFailureOnNthWrite(
-      Number.POSITIVE_INFINITY,
-    );
+    // Disarm the content-anchored interruption so the resume can commit.
+    vaultIdb.failPutsMatching(null);
 
     let markerRemovedAfterVerification = false;
     storageRemoveItem.mockImplementation((key: string) => {
@@ -775,7 +828,6 @@ describe("useAppInit tutorial auto-start", () => {
 
     await vi.waitFor(() => expect(storageValues.has(recoveryKey)).toBe(false));
     await settleWrites();
-    void resumeStorage;
 
     // Every entry recovered, including the one written before the failure.
     const recovered = useHistoryStore.getState().entries;
