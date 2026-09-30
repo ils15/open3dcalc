@@ -44,7 +44,7 @@ export function PrintSection({
         t("calc.printParams"),
         t("calc.sectionDesc.print"),
       )}
-      <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 gap-3">
         <InputGroup
           label={t("calc.printTime")}
           value={
@@ -119,7 +119,7 @@ export function PrintSection({
           tooltip={t("tooltip.energyCostPerKwh")}
         />
         {isFDM && isFieldVisible("print", "selectedPrinter") && (
-          <div className="@form:col-span-2">
+          <div className="@form:col-span-2 @form3:col-span-3">
             <Select
               label={t("calc.printer")}
               value={store.selectedPrinter.id}

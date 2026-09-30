@@ -77,6 +77,36 @@ describe("PrintSection", () => {
     );
   });
 
+  it("goes three-up on wide containers via the @form3 token", () => {
+    // Print is one of the four field groups widened to three columns. @form3
+    // is ADDITIVE on the grid: below it the grid is still @form:grid-cols-2.
+    const store = createMockStore();
+    const { container } = render(
+      <PrintSection {...defaultProps} store={store} />,
+    );
+    const grid = container.querySelector("div.grid");
+    expect(grid?.className).toContain("grid grid-cols-1");
+    expect(grid?.className).toContain("@form:grid-cols-2");
+    expect(grid?.className).toContain("@form3:grid-cols-3");
+  });
+
+  it("re-spans the printer select to the full three columns", () => {
+    // The printer select is the only wide child. Its @form:col-span-2 MUST be
+    // kept — dropping it would leave the select one cell wide at 2-up — and
+    // @form3:col-span-3 added, or it would span 2 of 3 tracks at 3-up.
+    const store = createMockStore();
+    const { container } = render(
+      <PrintSection {...defaultProps} store={store} />,
+    );
+    const grid = container.querySelector("div.grid")!;
+    const wrapper = Array.from(grid.children).find(
+      (c) => c.querySelector('[role="combobox"]') !== null,
+    )!;
+    expect(wrapper).toBeDefined();
+    expect((wrapper as HTMLElement).className).toContain("@form:col-span-2");
+    expect((wrapper as HTMLElement).className).toContain("@form3:col-span-3");
+  });
+
   it("shows three input fields (print time, power, energy cost)", () => {
     const store = createMockStore();
     render(<PrintSection {...defaultProps} store={store} />);

@@ -323,7 +323,9 @@ describe("MaterialSection", () => {
       />,
     );
 
-    const toggle = screen.getByRole("button", { name: "calc.multiMaterialLabel" });
+    const toggle = screen.getByRole("button", {
+      name: "calc.multiMaterialLabel",
+    });
     const descriptionId = toggle.getAttribute("aria-describedby");
     expect(toggle).toHaveAttribute("aria-disabled", "true");
     expect(toggle).toHaveAttribute("tabindex", "0");
@@ -521,6 +523,37 @@ describe("MaterialSection", () => {
     const grid = wrapper.parentElement!;
     expect(grid.className).toContain("grid grid-cols-1");
     expect(grid.className).toContain("@form:grid-cols-2");
+  });
+
+  it("goes three-up on wide containers via the @form3 token", () => {
+    // Material's filament grid is one of the four field groups widened to three
+    // columns. @form3 is ADDITIVE: below 56.25rem the grid is still 2-up.
+    const store = createMockStore();
+    const { container } = render(
+      <MaterialSection {...defaultProps} store={store} isFDM={true} />,
+    );
+    const grid = container.querySelector('[data-testid="mock-stl-preview"]')!
+      .parentElement!.parentElement!;
+    expect(grid.className).toContain("grid grid-cols-1");
+    expect(grid.className).toContain("@form:grid-cols-2");
+    expect(grid.className).toContain("@form3:grid-cols-3");
+    expect(container).toBeTruthy();
+  });
+
+  it("re-spans the STL preview wrapper to the full three columns", () => {
+    // @form:col-span-2 is kept (full width at 2-up) and @form3:col-span-3
+    // added (full width at 3-up). Dropping the old span would leave the preview
+    // one cell wide below the new breakpoint.
+    const store = createMockStore();
+    const { container } = render(
+      <MaterialSection {...defaultProps} store={store} isFDM={true} />,
+    );
+    const wrapper = container.querySelector(
+      '[data-testid="mock-stl-preview"]',
+    )!.parentElement!;
+    expect(wrapper.className).toContain("w-full min-w-0");
+    expect(wrapper.className).toContain("@form:col-span-2");
+    expect(wrapper.className).toContain("@form3:col-span-3");
   });
 
   it("keeps a full-width STL preview in AMS mode (no grid context)", () => {

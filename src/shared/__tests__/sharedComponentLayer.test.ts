@@ -130,7 +130,12 @@ const desktopRules = effectiveRules(desktopCss);
 /* -------------------------------------------------------------------------- */
 
 const PINNED_SHARED_LAYER: ReadonlyArray<readonly [string, string]> = [
-  ["@theme inline", "--container-form: 38rem"],
+  // Re-baselined once for the three-column field groups: --container-form3 was
+  // ADDED next to the existing token. The pin was extended, not relaxed — it
+  // still lists the @theme body in full and still demands an exact match, so a
+  // change to --container-form itself still fails here. That half is load-
+  // bearing: it is what protects the 1<->2 transition of every section grid.
+  ["@theme inline", "--container-form: 38rem; --container-form3: 56.25rem"],
   [
     "body",
     "font-family: var(--font-sans); font-size: var(--type-body-size); line-height: var(--type-body-line-height); background-color: var(--color-bg-primary); color: var(--color-text-primary); min-height: 100dvh; overflow-x: clip; transition: background-color 0.2s ease, color 0.2s ease",

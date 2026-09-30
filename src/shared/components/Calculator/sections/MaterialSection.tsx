@@ -306,7 +306,7 @@ export function MaterialSection({
               </div>
             </>
           ) : (
-            <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 gap-3">
               <Select
                 label={t("calc.filamentType")}
                 value={store.fdmMaterial.type}
@@ -462,7 +462,7 @@ export function MaterialSection({
                   tooltip={t("tooltip.density")}
                 />
               )}
-              <div className="w-full min-w-0 @form:col-span-2">
+              <div className="w-full min-w-0 @form:col-span-2 @form3:col-span-3">
                 <StlPreview
                   onFileParsed={handleStlParsed}
                   onClear={handleStlClear}

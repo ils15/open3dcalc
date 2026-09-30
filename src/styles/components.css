@@ -30,6 +30,18 @@
 @theme inline {
   /* Calculator form grids only go 2-up when the container has room (~608px). */
   --container-form: 38rem;
+  /* WIDER variant: four field groups go 3-up only when the container can still
+     give each control a usable width. Derived, not guessed:
+       container - 42   (.surface inset p-4 sm:p-5, 2 x 21px)  = grid
+       grid - 2 x 12 (gap-3)  / 3                              = cell
+       cell - 38   (unit rail w-8 + gap-1.5)                   = control
+       control >= 240  =>  cell >= 278
+                       =>  grid  >= 3 x 278 + 24  = 858
+                       =>  container >= 858 + 42   = 900px = 56.25rem
+     Do NOT widen --container-form to reach this: it drives the 1<->2
+     transition of ALL section grids, so raising it would drop the whole
+     608..864px band to a single column (a regression at 1280 and 1366). */
+  --container-form3: 56.25rem;
 }
 
 body {

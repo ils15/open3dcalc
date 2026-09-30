@@ -168,6 +168,28 @@ describe("Ultrawide shell & overflow containment", () => {
     }
   });
 
+  it("keeps --container-form3 beside --container-form for wide field groups", () => {
+    // The three-column breakpoint is a SECOND, wider token. It must not be
+    // implemented by raising --container-form: that value drives the 1<->2
+    // transition of every section grid, so widening it would collapse the
+    // 608..864px band to one column. Hence both assertions below: the new
+    // token exists AND the old one is untouched.
+    const componentsPath = resolve(projectRoot, "styles/components.css");
+    const componentsCss = existsSync(componentsPath)
+      ? readFileSync(componentsPath, "utf-8")
+      : "";
+    expect(componentsCss).toMatch(/--container-form3:\s*56\.25rem/);
+    expect(componentsCss).toMatch(/--container-form:\s*38rem/);
+    // Both tokens live in the SAME @theme block — a second @theme inline
+    // would make sharedComponentLayer.test.ts report "declared 2x".
+    const themeBlocks = componentsCss.match(/@theme\s+inline\s*\{/g) ?? [];
+    expect(themeBlocks).toHaveLength(1);
+    // Drift guard, same as for --container-form.
+    for (const css of [webCss, desktopCss]) {
+      expect(css).not.toMatch(/--container-form3:/);
+    }
+  });
+
   it("primary form labels are at least 12px and use text-secondary", () => {
     expect(inputGroup).toMatch(
       /text-\[12px\][^"]*text-\[var\(--text-secondary\)\]/,
