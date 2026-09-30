@@ -20,6 +20,7 @@ import { ContextBreadcrumb } from "./ContextBreadcrumb";
 import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
 import { UtilityBar } from "@/shared/components/UtilityBar/UtilityBar";
 import { CurrencySelect } from "@/shared/components/UtilityBar/CurrencySelect";
+import { LanguageToggle } from "@/shared/components/UtilityBar/LanguageToggle";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -99,27 +100,11 @@ export function Header() {
 
               {/* Tours launcher */}
               <TutorialLauncher />
-
-              {/* Language toggle */}
-              <button
-                onClick={toggleLanguage}
-                className="flex min-w-[64px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap text-[13px] font-semibold px-3.5 py-2.5 min-h-[44px] rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
-                title={t("nav.language")}
-                aria-label={t("nav.language")}
-              >
-                <Globe className="w-4 h-4" />
-                <span className="hidden sm:inline">
-                  {i18n.language === "pt-BR" ? "EN" : "PT"}
-                </span>
-              </button>
             </div>
 
             {/* Demo mode entry — visible on all sizes (indicator replaces it
                 while active) */}
             <DemoModeButton />
-
-            {/* Theme toggle — visible on all sizes */}
-            <ThemeToggle />
 
             {/* Data sync — visible on all sizes */}
             <DataSyncButton variant="icon" />
@@ -254,6 +239,8 @@ export function Header() {
           widest, so it anchors the band's left edge on both shells. */}
       <UtilityBar>
         <CurrencySelect setting={currencySetting} onChange={setCurrency} />
+        <LanguageToggle />
+        <ThemeToggle />
       </UtilityBar>
     </>
   );

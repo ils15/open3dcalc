@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Box, Code2, Globe, RefreshCw } from "lucide-react";
+import { Box, Code2, RefreshCw } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { TutorialLauncher } from "@/shared/components/ui/TutorialLauncher";
 import {
@@ -17,9 +17,10 @@ import { ContextBreadcrumb } from "@/shared/components/Header/ContextBreadcrumb"
 import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
 import { UtilityBar } from "@/shared/components/UtilityBar/UtilityBar";
 import { CurrencySelect } from "@/shared/components/UtilityBar/CurrencySelect";
+import { LanguageToggle } from "@/shared/components/UtilityBar/LanguageToggle";
 
 export function Header() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { currencySetting } = useCurrencyPreference();
   const setCurrency = useSetCurrency();
   // Single source of truth for the destination: NavigationProvider reads this
@@ -31,11 +32,6 @@ export function Header() {
   const isChecking = useUpdaterStore(
     useShallow((s) => s.status === "checking"),
   );
-
-  const toggleLanguage = () => {
-    const next = i18n.language === "pt-BR" ? "en-US" : "pt-BR";
-    i18n.changeLanguage(next);
-  };
 
   return (
     <>
@@ -119,9 +115,6 @@ export function Header() {
             {/* Focus Mode (Phase 7o s4) — same reachability, transient */}
             <FocusModeButton variant="icon" />
 
-            {/* Theme toggle */}
-            <ThemeToggle />
-
             {/* Check for Updates (desktop only) */}
             {hasUpdater && (
               <button
@@ -149,18 +142,6 @@ export function Header() {
               </button>
             )}
 
-            <button
-              onClick={toggleLanguage}
-              className="flex min-w-[64px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap text-[13px] font-semibold px-3.5 py-2.5 min-h-[44px] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-              title={t("nav.language")}
-              aria-label={t("nav.language")}
-            >
-              <Globe className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                {i18n.language === "pt-BR" ? "EN" : "PT"}
-              </span>
-            </button>
-
             {/* Data Sync */}
             <DataSyncButton variant="icon" />
           </div>
@@ -172,6 +153,8 @@ export function Header() {
           widest, so it anchors the band's left edge on both shells. */}
       <UtilityBar>
         <CurrencySelect setting={currencySetting} onChange={setCurrency} />
+        <LanguageToggle />
+        <ThemeToggle />
       </UtilityBar>
     </>
   );

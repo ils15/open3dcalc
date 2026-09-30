@@ -59,4 +59,17 @@ describe("ThemeToggle", () => {
     const button = screen.getByRole("button");
     expect(button.getAttribute("aria-label")).toContain("claro");
   });
+
+  it("never shrinks, and keeps a 44px target", () => {
+    // The toggle moved into the utility band, whose row is `flex-1` with a
+    // definite width. In the header it was a child of a `shrink-0` cluster, so
+    // nothing inside it could be compressed; in the band that protection is
+    // gone unless the control carries it itself. Asserted on the real
+    // component here, because the chrome suites stub this one out.
+    renderToggle();
+    const button = screen.getByRole("button");
+    expect(button.className).toContain("shrink-0");
+    expect(button.className).toContain("min-h-[44px]");
+    expect(button.className).toContain("min-w-[44px]");
+  });
 });

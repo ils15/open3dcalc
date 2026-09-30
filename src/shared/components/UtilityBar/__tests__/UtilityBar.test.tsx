@@ -156,6 +156,22 @@ const band = () =>
  */
 const currencyLabel = () => translate("settings.currency", locale);
 
+/** The language control's accessible name, resolved. */
+const languageLabel = () => translate("nav.language", locale);
+
+/**
+ * NOTED, NOT FIXED HERE. `ThemeToggle.tsx:12-15` still labels itself with two
+ * hardcoded pt-BR literals — "Alternar para modo claro" / "…escuro", naming the
+ * mode it switches TO — instead of an i18n key. They were already wrong in
+ * English before this commit; the band only changed where the button lives.
+ * Fixing them means adding keys to both locales and re-baselining
+ * `platform/desktop/overrides/__tests__/persistence-bridge.preferences.test.ts:100-101`,
+ * which pins the literal on purpose, to assert the label names the TARGET mode.
+ * That is its own commit — folding a copy change into a layout commit would
+ * hide it. This suite is also why it is harmless here: the toggle is stubbed,
+ * so no test in it depends on the string.
+ */
+
 /** The 68px header row. The band must be a SIBLING of the header, not inside. */
 function headerRow(container: HTMLElement): HTMLElement {
   const row = Array.from(
@@ -365,6 +381,93 @@ describe("utility band migrations", () => {
           "header-currency-menu",
         );
         expect(container.ownerDocument).toBe(document);
+      },
+    );
+  });
+
+  /**
+   * Theme and language, together, because they are the two halves of the
+   * remaining ~200px and neither alone clears the breadcrumb: currency gave
+   * 90.6px measured, and the breadcrumb's own sub-2xl width is ~166px. See the
+   * numbers in the commit message.
+   */
+  describe("language and theme", () => {
+    // The theme toggle is STUBBED in this suite (`data-testid="theme-toggle"`,
+    // the same stub `Header.test.tsx:101` and `ContextBreadcrumb.test.tsx:57`
+    // use), so it is reached by testid here, not by role. Its own rendered
+    // classNames are asserted where the real component is rendered —
+    // `Header/__tests__/ThemeToggle.test.tsx`.
+    it.each(SHELLS)("the band carries both (%s)", (_n, Header) => {
+      renderShell(Header);
+      const inBand = within(band());
+
+      const lang = inBand.getByRole("button", { name: languageLabel() });
+      // Same two properties the header copy had, asserted at the new home:
+      // never squashed, never below a 44px target.
+      expect(lang.className).toContain("shrink-0");
+      expect(lang.className).toContain("min-h-[44px]");
+      // An icon-only-looking control still needs its name; the visible "EN"/"PT"
+      // is a bonus, not the label.
+      expect(lang).toHaveAttribute("aria-label", languageLabel());
+
+      expect(inBand.getByTestId("theme-toggle")).toBeInTheDocument();
+    });
+
+    it.each(SHELLS)(
+      "the header row no longer carries them (%s)",
+      (_n, Header) => {
+        const { container } = renderShell(Header);
+        const row = headerRow(container);
+        const cluster = actionCluster(container);
+        expect(
+          cluster,
+          "the header lost its action cluster entirely",
+        ).toBeDefined();
+
+        // The language button by its real accessible name, and the theme toggle
+        // by its stub id — one of each, so the assertion does not depend on the
+        // toggle's hardcoded label pair (`ThemeToggle.tsx:12-15`).
+        expect(
+          row.querySelector(`[aria-label="${languageLabel()}"]`),
+        ).toBeNull();
+        expect(
+          cluster!.querySelector(`[aria-label="${languageLabel()}"]`),
+        ).toBeNull();
+        expect(row.querySelector('[data-testid="theme-toggle"]')).toBeNull();
+        expect(
+          cluster!.querySelector('[data-testid="theme-toggle"]'),
+        ).toBeNull();
+      },
+    );
+
+    it.each(SHELLS)(
+      "the band order is currency, language, theme (%s)",
+      (_n, Header) => {
+        renderShell(Header);
+        // Order here IS the tab order, and the band is now the only place these
+        // three live — so a reordering would be a silent keyboard change, with
+        // no second copy in the header left to fall back on. Currency leads
+        // because it is the widest; see the commit messages for the numbers.
+        const el = band();
+        // The band is <section> > row > scroll row > controls, so the controls
+        // are the grandchildren of the first div. Navigating by STRUCTURE
+        // rather than by a utility class keeps this from breaking when the
+        // band is restyled.
+        const kids = Array.from(el.querySelector("div")!.children).flatMap(
+          (row) => Array.from(row.children),
+        );
+        // One control per slot, in tab order. A slot names itself by its own
+        // `aria-label`, or by the labelled control it wraps — currency ships a
+        // wrapper `<div>` because the portal needs an anchor, language and
+        // theme are the control itself or a stub.
+        expect(
+          kids.map(
+            (k) =>
+              k.getAttribute("aria-label") ??
+              k.querySelector("[aria-label]")?.getAttribute("aria-label") ??
+              k.getAttribute("data-testid"),
+          ),
+        ).toEqual([currencyLabel(), languageLabel(), "theme-toggle"]);
       },
     );
   });
