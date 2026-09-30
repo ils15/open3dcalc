@@ -640,7 +640,16 @@
     "noResults": "No results found",
     "dateFrom": "Start date",
     "dateTo": "End date",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "aggregates": {
+      "weight": {
+        "light": "Light (up to 50 g)",
+        "medium": "Medium (50-150 g)",
+        "heavy": "Heavy (150-300 g)",
+        "bulk": "Bulk (over 300 g)"
+      },
+      "printerUnknown": "Unknown printer"
+    }
   },
   "breakdown": {
     "title": "Cost Breakdown",

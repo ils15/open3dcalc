@@ -640,7 +640,16 @@
     "noResults": "Nenhum resultado encontrado",
     "dateFrom": "Data inicial",
     "dateTo": "Data final",
-    "clearFilters": "Limpar filtros"
+    "clearFilters": "Limpar filtros",
+    "aggregates": {
+      "weight": {
+        "light": "Leve (até 50 g)",
+        "medium": "Médio (50-150 g)",
+        "heavy": "Intermediário (150-300 g)",
+        "bulk": "Pesado / Lote (acima de 300 g)"
+      },
+      "printerUnknown": "Impressora desconhecida"
+    }
   },
   "breakdown": {
     "title": "Detalhamento de Custos",
