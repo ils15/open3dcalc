@@ -147,12 +147,6 @@
 
 - Ils15 ([@ils15](https://github.com/ils15))
 
-## Unreleased
-
-### 🐛 Bug Fixes
-
-- **gcode:** no longer ignores gcode without a TIME header and supports the Prusa/Orca format (closes #32) — removes the silent `if(printTimeMinutes>0)` gate in `StlPreview.tsx:242`, `d/h/m/s` parser (`1h 23m 45s`/`2d 5h`/`45m 30s`) in `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` on the GCODE branch, drop zone stays visible (`!modelInfo?.geometry`), 🗑️ `stl.clear` button for GCODE, 13 new tests (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolved
-
 ## v1.11.0
 
 [compare changes](https://github.com/ils15/open3dcalc/compare/v1.10.0...v1.11.0)
