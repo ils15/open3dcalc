@@ -746,13 +746,25 @@ describe("focus mode — a passive surface never buries the exit", () => {
     // `focusMode.ts` calls out by name — it needs no marker because it is
     // navigation chrome and so does not exist while Focus Mode is on. The other
     // three are `role="menu"`.
+    //
+    // THE TWO HEADER ENTRIES BECAME ONE, AND THE ASSERTION DID NOT. Both
+    // Headers carried the currency menu as ninety duplicated lines that were
+    // byte-identical modulo token name; the control moved into the utility band
+    // as one shared `CurrencySelect`, so there is now one file that renders a
+    // menu where there were two. The row below is repointed at that file — the
+    // same two assertions (this file really does render a menu, and its ONLY
+    // z-layer source is `z-dropdown`, exactly one) now run against the file
+    // that owns the menu. Fewer rows because there is less duplicated code to
+    // cover, not because anything stopped being pinned: a bare literal or a
+    // second layer in `CurrencySelect.tsx` still fails here, and the
+    // "pins every z-50 in the tree" test below derives its own covered set
+    // across every file, so a literal there fails twice over.
     const menus: Array<[string, string]> = [
       [
         "src/shared/components/AppShell/MoreMenu.tsx",
         'data-testid="more-menu"',
       ],
-      ["src/shared/components/Header/Header.tsx", 'role="menu"'],
-      ["src/platform/desktop/components/Header/Header.tsx", 'role="menu"'],
+      ["src/shared/components/UtilityBar/CurrencySelect.tsx", 'role="menu"'],
       ["src/shared/components/ui/TutorialLauncher.tsx", 'role="menu"'],
     ];
     for (const [file, marker] of menus) {

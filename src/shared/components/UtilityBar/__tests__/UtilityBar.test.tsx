@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import enUS from "@/shared/i18n/locales/en-US.json";
@@ -149,6 +149,30 @@ const band = () =>
   screen.getByRole("region", { name: translate("utilityBar.label", locale) });
 
 /**
+ * The currency control's accessible name, RESOLVED. This suite mocks i18next
+ * with a real resolver (see the note at the top of the file), so the name in
+ * the DOM is the real pt-BR copy — querying by the key would find nothing and
+ * quietly assert nothing.
+ */
+const currencyLabel = () => translate("settings.currency", locale);
+
+/** The 68px header row. The band must be a SIBLING of the header, not inside. */
+function headerRow(container: HTMLElement): HTMLElement {
+  const row = Array.from(
+    container.querySelector("header")!.querySelectorAll("div"),
+  ).find((el) => (el.className || "").includes("h-[68px]"));
+  if (!row) throw new Error("the 68px header row is gone");
+  return row;
+}
+
+/** The header's own `shrink-0` action cluster, if it still has one. */
+function actionCluster(container: HTMLElement): Element | undefined {
+  return Array.from(headerRow(container).children).find((el) =>
+    (el.className || "").includes("shrink-0"),
+  );
+}
+
+/**
  * The five names the band must not collide with, taken from the real surfaces
  * rather than from a hand-written list of strings:
  *
@@ -268,5 +292,80 @@ describe("utility band", () => {
       return `${shape}||${rowShape}`;
     };
     expect(read(WebHeader)).toBe(read(DesktopHeader));
+  });
+});
+
+/**
+ * What the band is FOR. The header's action cluster is `shrink-0`, so it never
+ * gives ground and the band exists to take weight off it. That only works if
+ * the controls actually leave — so each migration commit adds its control here
+ * and asserts both halves: the band carries it, and the 68px row no longer
+ * does.
+ */
+describe("utility band migrations", () => {
+  beforeEach(() => {
+    locale = ptBR;
+    useNavigationPrefsStore.setState({ activeTab: "calculator" });
+  });
+
+  describe("currency", () => {
+    it.each(SHELLS)(
+      "the band carries the currency trigger (%s)",
+      (_n, Header) => {
+        renderShell(Header);
+        const trigger = within(band()).getByRole("button", {
+          name: currencyLabel(),
+        });
+        // Kept `shrink-0` deliberately: the band's row is `overflow-x-auto`, and
+        // a control that shrank here would be the same defect the header had,
+        // one band lower. It is the assertion Header.test.tsx:292-301 makes,
+        // re-pointed at the control's new home rather than dropped.
+        expect(trigger.className).toContain("shrink-0");
+        // 44px target, WCAG 2.5.5.
+        expect(trigger.className).toContain("min-h-[44px]");
+      },
+    );
+
+    it.each(SHELLS)(
+      "the header row no longer carries it (%s)",
+      (_n, Header) => {
+        const { container } = renderShell(Header);
+        const row = headerRow(container);
+        // Not merely "not in the cluster" — not anywhere in the 68px row, which
+        // is what "it left the header" has to mean.
+        expect(
+          row.querySelector(`[aria-label="${currencyLabel()}"]`),
+        ).toBeNull();
+        // And named explicitly for the one container that was `shrink-0` — the
+        // cluster is what refused to give ground, so "the trigger is not in it"
+        // is the assertion that actually describes the fix.
+        const cluster = actionCluster(container);
+        expect(
+          cluster,
+          "the header lost its action cluster entirely",
+        ).toBeDefined();
+        expect(
+          cluster!.querySelector(`[aria-label="${currencyLabel()}"]`),
+        ).toBeNull();
+      },
+    );
+
+    it.each(SHELLS)(
+      "keeps the trigger/menu aria pairing (%s)",
+      (_n, Header) => {
+        const { container } = renderShell(Header);
+        const trigger = within(band()).getByRole("button", {
+          name: currencyLabel(),
+        });
+        expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+        // The id is asserted verbatim by Header.test.tsx:133,237,244, so the
+        // move could not rename it — only relocate it.
+        expect(trigger).toHaveAttribute(
+          "aria-controls",
+          "header-currency-menu",
+        );
+        expect(container.ownerDocument).toBe(document);
+      },
+    );
   });
 });

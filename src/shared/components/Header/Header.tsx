@@ -1,25 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { createPortal } from "react-dom";
-import {
-  Box,
-  Check,
-  Globe,
-  ChevronDown,
-  BookOpen,
-  DollarSign,
-  Info,
-  X,
-} from "lucide-react";
+import { Box, Globe, BookOpen, DollarSign, Info, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { TutorialLauncher } from "@/shared/components/ui/TutorialLauncher";
 import { GuideDrawer } from "@/shared/components/GuideDrawer/GuideDrawer";
-import { CURRENCIES, type CurrencyCode } from "@/shared/lib/currency";
 import { useCurrency } from "@/shared/hooks/useCurrency";
-import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
 import { ThemeToggle } from "./ThemeToggle";
 import { APP_VERSION } from "@/shared/version";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
@@ -31,6 +19,7 @@ import { FocusModeButton } from "@/shared/components/AppShell/FocusModeButton";
 import { ContextBreadcrumb } from "./ContextBreadcrumb";
 import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
 import { UtilityBar } from "@/shared/components/UtilityBar/UtilityBar";
+import { CurrencySelect } from "@/shared/components/UtilityBar/CurrencySelect";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -43,31 +32,9 @@ export function Header() {
   // disagree about where the user is.
   const activeTab = useNavigationPrefsStore((state) => state.activeTab);
   const [showSettings, setShowSettings] = useState(false);
-  const {
-    open: currencyMenuOpen,
-    toggle: toggleCurrencyMenu,
-    triggerRef: currencyTriggerRef,
-    contentRef: currencyMenuContentRef,
-  } = useDismissablePopover<HTMLButtonElement>();
-  const [currencyMenuPos, setCurrencyMenuPos] = useState<{
-    top: number;
-    right: number;
-  } | null>(null);
-
   const toggleLanguage = () => {
     const next = i18n.language === "pt-BR" ? "en-US" : "pt-BR";
     i18n.changeLanguage(next);
-  };
-
-  const handleCurrencyToggle = () => {
-    if (!currencyMenuOpen && currencyTriggerRef.current) {
-      const rect = currencyTriggerRef.current.getBoundingClientRect();
-      setCurrencyMenuPos({
-        top: rect.bottom + 6,
-        right: Math.max(12, window.innerWidth - rect.right),
-      });
-    }
-    toggleCurrencyMenu();
   };
 
   return (
@@ -132,103 +99,6 @@ export function Header() {
 
               {/* Tours launcher */}
               <TutorialLauncher />
-
-              {/* Currency selector */}
-              <div className="flex items-center">
-                <button
-                  ref={currencyTriggerRef}
-                  onClick={handleCurrencyToggle}
-                  aria-haspopup="menu"
-                  aria-expanded={currencyMenuOpen}
-                  aria-controls="header-currency-menu"
-                  className="flex min-w-[80px] shrink-0 items-center justify-center gap-1 whitespace-nowrap text-[13px] font-semibold px-3 py-2.5 rounded-lg min-h-[44px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
-                  title={t("settings.currency")}
-                  aria-label={t("settings.currency")}
-                >
-                  <span className="font-mono">{symbol}</span>
-                  {currencySetting === "auto" && (
-                    <span className="hidden sm:inline text-[10px] text-[var(--text-muted)] font-normal">
-                      auto
-                    </span>
-                  )}
-                  <ChevronDown className="w-3 h-3 opacity-40" />
-                </button>
-
-                {currencyMenuOpen &&
-                  currencyMenuPos &&
-                  typeof document !== "undefined" &&
-                  createPortal(
-                    <div
-                      ref={currencyMenuContentRef}
-                      id="header-currency-menu"
-                      role="menu"
-                      aria-label={t("settings.currency")}
-                      className="fixed w-44 rounded-xl shadow-2xl overflow-hidden surface border border-[var(--border-subtle)]"
-                      style={{
-                        position: "fixed",
-                        top: currencyMenuPos.top,
-                        right: currencyMenuPos.right,
-                        // --z-dropdown, where every other menu lives. This was a
-                        // bare z-[60] — a magic literal that merely happened to
-                        // equal a declared step, which is how two surfaces ended
-                        // up filed as modals. Unreachable in Focus Mode (the
-                        // Header unmounts there), so it was never an occlusion
-                        // bug, but it was drift waiting to become one.
-                        zIndex: "var(--z-dropdown)",
-                      }}
-                    >
-                      <button
-                        role="menuitem"
-                        onClick={() => {
-                          setCurrency("auto");
-                          toggleCurrencyMenu();
-                        }}
-                        className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--surface-sunken)] transition-colors ${currencySetting === "auto" ? "text-[var(--accent)]" : "text-[var(--text-primary)]"}`}
-                      >
-                        <span className="font-mono font-bold w-6">
-                          {symbol}
-                        </span>
-                        <span>{t("settings.currencyAuto")}</span>
-                        {currencySetting === "auto" && (
-                          <span className="ml-auto text-[var(--accent)]">
-                            <Check className="h-4 w-4" aria-hidden="true" />
-                          </span>
-                        )}
-                      </button>
-                      <div className="border-t border-[var(--border-subtle)]" />
-                      {(
-                        Object.entries(CURRENCIES) as [
-                          CurrencyCode,
-                          (typeof CURRENCIES)[CurrencyCode],
-                        ][]
-                      ).map(([code, info]) => (
-                        <button
-                          key={code}
-                          role="menuitem"
-                          onClick={() => {
-                            setCurrency(code);
-                            toggleCurrencyMenu();
-                          }}
-                          className={`w-full px-3.5 py-2.5 text-left text-[12px] flex items-center gap-2 hover:bg-[var(--surface-sunken)] transition-colors ${currencySetting === code ? "text-[var(--accent)]" : "text-[var(--text-primary)]"}`}
-                        >
-                          <span className="font-mono font-bold w-6">
-                            {info.symbol}
-                          </span>
-                          <span>{code}</span>
-                          <span className="text-[10px] text-[var(--text-muted)] ml-auto">
-                            {info.name}
-                          </span>
-                          {currencySetting === code && (
-                            <span className="text-[var(--accent)] ml-1">
-                              <Check className="h-4 w-4" aria-hidden="true" />
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>,
-                    document.body,
-                  )}
-              </div>
 
               {/* Language toggle */}
               <button
@@ -379,8 +249,12 @@ export function Header() {
         </AnimatePresence>
       </header>
 
-      {/* In the flow, below the header — see UtilityBar.tsx. */}
-      <UtilityBar />
+      {/* In the flow, below the header — see UtilityBar.tsx. Currency first:
+          it is the widest of the three and the one whose `auto` marker is
+          widest, so it anchors the band's left edge on both shells. */}
+      <UtilityBar>
+        <CurrencySelect setting={currencySetting} onChange={setCurrency} />
+      </UtilityBar>
     </>
   );
 }
