@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, fireEvent } from "@testing-library/react";
 
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import enUS from "@/shared/i18n/locales/en-US.json";
@@ -34,13 +34,29 @@ function translate(key: string, locale: Record<string, unknown>): string {
 
 let locale: Record<string, unknown> = ptBR;
 
+/**
+ * The language is a VARIABLE for the same reason `locale` is: `LanguageToggle`
+ * has two halves that both read it — the label it renders (`"EN"` in pt-BR,
+ * `"PT"` in en-US) and the locale it asks for next — and pinning the mock to
+ * `pt-BR` makes the second half unreachable. The toggle is a two-way control, so
+ * a suite that only ever mounts it in one language tests one direction of it.
+ *
+ * `vi.hoisted` because the `vi.mock` factory below is lifted above the file's
+ * own `const`s, so a spy declared here would be in TDZ when the factory ran.
+ * The repo already does this for the same reason — `ChangelogPage.test.tsx:17`.
+ */
+const i18nState = vi.hoisted(() => ({
+  language: "pt-BR",
+  changeLanguage: vi.fn(),
+}));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => translate(key, locale),
     i18n: {
-      language: "pt-BR",
-      resolvedLanguage: "pt-BR",
-      changeLanguage: vi.fn(),
+      language: i18nState.language,
+      resolvedLanguage: i18nState.language,
+      changeLanguage: i18nState.changeLanguage,
     },
   }),
 }));
@@ -213,6 +229,17 @@ const TAKEN_LANDMARK_KEYS = [
   "nav.mainNavigation",
   "breadcrumb.label",
 ] as const;
+
+/**
+ * The language defaults, for EVERY test, once rather than per `describe`. The
+ * toggle tests below leave it on `en-US` on purpose, and a leaked language
+ * would make whichever suite ran next depend on test order — the failure mode
+ * that makes a suite untrustworthy rather than merely fragile.
+ */
+beforeEach(() => {
+  i18nState.language = "pt-BR";
+  i18nState.changeLanguage.mockClear();
+});
 
 describe("utility band", () => {
   beforeEach(() => {
@@ -437,6 +464,64 @@ describe("utility band migrations", () => {
         expect(
           cluster!.querySelector('[data-testid="theme-toggle"]'),
         ).toBeNull();
+      },
+    );
+
+    /**
+     * The toggle is TWO-WAY, and this is where that stops being assumed.
+     *
+     * Everything above proves the control is in the band, is named, is never
+     * squashed, and sits above the header row. None of it proves what the
+     * button SAYS or where it sends you — because the suite's i18n mock pinned
+     * `language: "pt-BR"`, which left both halves of the flip as dead branches
+     * in `LanguageToggle.tsx:27,40`: the `"PT"` label and the `en-US → pt-BR`
+     * half of the next-locale computation. The component sat at 50% branch
+     * coverage as a result. Mounting it in each language is what closes them,
+     * and asserting the ARGUMENT is what makes it a test of the flip rather
+     * than of a click.
+     *
+     * `en-US` is a LEGITIMATE state, not an impossible one: i18next's own
+     * language detector resolves to it for any browser set to English outside
+     * Brazil, which is precisely the user the pt-BR-only mock was hiding.
+     */
+    it.each(SHELLS)(
+      "offers EN and asks for en-US while the locale is pt-BR (%s)",
+      (_n, Header) => {
+        renderShell(Header);
+        const lang = within(band()).getByRole("button", {
+          name: languageLabel(),
+        });
+
+        // The code shown is the language it switches TO, never the one in use.
+        // Getting this backwards is the classic defect of a two-state toggle,
+        // and it is invisible while only one of the two states is mounted.
+        expect(lang).toHaveTextContent("EN");
+        expect(lang).not.toHaveTextContent("PT");
+
+        fireEvent.click(lang);
+        expect(i18nState.changeLanguage).toHaveBeenCalledTimes(1);
+        expect(i18nState.changeLanguage).toHaveBeenCalledWith("en-US");
+      },
+    );
+
+    it.each(SHELLS)(
+      "offers PT and asks for pt-BR while the locale is en-US (%s)",
+      (_n, Header) => {
+        i18nState.language = "en-US";
+        renderShell(Header);
+        const lang = within(band()).getByRole("button", {
+          name: languageLabel(),
+        });
+
+        // The label flips with the locale, and the locale the control asks for
+        // is its mirror — so an English user is offered Portuguese, not a
+        // second click on English.
+        expect(lang).toHaveTextContent("PT");
+        expect(lang).not.toHaveTextContent("EN");
+
+        fireEvent.click(lang);
+        expect(i18nState.changeLanguage).toHaveBeenCalledTimes(1);
+        expect(i18nState.changeLanguage).toHaveBeenCalledWith("pt-BR");
       },
     );
 
