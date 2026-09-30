@@ -496,3 +496,30 @@ describe("Dashboard KPIs and monthly projection (Fase 3)", () => {
     expect(projected).toHaveClass("text-[var(--color-danger)]");
   });
 });
+
+// ---------------------------------------------------------------------------
+// ProfitAnalyticsModule mount point
+// ---------------------------------------------------------------------------
+describe("Dashboard profit analytics section", () => {
+  beforeEach(() => {
+    mockEntries = [...sampleEntries];
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it("mounts the section only while there is history to aggregate", () => {
+    const { rerender } = render(<Dashboard />);
+
+    // Sits between the KPI row and the monthly projection. Entries carrying
+    // `snapshot: null` still count here — the section's visibility is decided
+    // by the history being non-empty, not by how many rows are aggregatable.
+    expect(screen.getByTestId("profit-analytics")).toBeInTheDocument();
+
+    // Empty history is not a chart of zeroes, so the module returns null
+    // rather than rendering an empty section under the KPI row.
+    mockEntries = [];
+    rerender(<Dashboard />);
+
+    expect(screen.queryByTestId("profit-analytics")).toBeNull();
+  });
+});

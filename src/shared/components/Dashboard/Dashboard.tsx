@@ -30,6 +30,7 @@ import {
 } from "./RechartsLazy";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
+import { ProfitAnalyticsModule } from "./ProfitAnalyticsModule";
 
 const DASHBOARD_KEY = "open3dcalc_dashboard_v1";
 
@@ -732,6 +733,14 @@ export function Dashboard() {
           </div>
         </section>
       )}
+
+      {/*
+        Below the KPI row and above the monthly projection: it answers
+        "which materials/printers actually paid", the projection above it
+        answers "what next month looks like". Reading the filtered entries keeps
+        it on the same date range as the cards beside it.
+      */}
+      <ProfitAnalyticsModule entries={filteredEntries} />
 
       {/* Fase 3: history-based monthly profit projection */}
       {monthlyProfitProjection != null && (

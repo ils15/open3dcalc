@@ -112,8 +112,10 @@ function ratio(numerator: number, denominator: number): number {
  * Bar width as a share of the best row in this view, clamped to `[0, 100]`.
  *
  * Relative in BOTH modes. The prototype mixed the two: the material bar drew
- * absolute margin as a percentage of its own width (`Example/…/ProfitAnalyticsModule.tsx:410`)
- * while the printer bar drew `profitPerHour / max` (`:482`), then labelled both
+ * absolute margin as a percentage of its own width
+ * (`Example/src/components/ProfitAnalyticsModule.tsx:410`), while the printer bar
+ * drew `profitPerHour / max`
+ * (`Example/src/components/ProfitAnalyticsModule.tsx:482`), then labelled both
  * "relativa" / "Eficiência". Two bar scales sharing one screen is the bug;
  * picking the relative rule removes it.
  *
