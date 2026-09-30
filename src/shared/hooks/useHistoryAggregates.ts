@@ -148,6 +148,13 @@ export interface MaterialAggregate {
   readonly cells: readonly MaterialCell[];
   /** Highest `profitPerGram` among non-empty cells, or `null`. */
   readonly bestCell: MaterialCell | null;
+  /**
+   * Billable hours, summed with the same {@link billableHoursFor} that
+   * `byPrinter` already used — one definition of "billable hour" in this file.
+   */
+  readonly hours: number;
+  /** `profit / hours`, `0` when hours is not positive. */
+  readonly profitPerHour: number;
 }
 
 /** One printer's totals. */
@@ -387,6 +394,7 @@ export function byMaterial(
     label: string;
     process: "fdm" | "resin" | "unknown";
     count: number;
+    hours: number;
     cells: Map<WeightBracketId, MaterialCell>;
   }
 
@@ -427,6 +435,7 @@ export function byMaterial(
         label: catalog?.name ?? key,
         process: catalog?.type ?? entry.type,
         count: 0,
+        hours: 0,
         cells: new Map(),
       };
       for (const b of brackets) {
@@ -456,6 +465,7 @@ export function byMaterial(
       profit: cell.profit + entry.profit,
     });
     row.count += 1;
+    row.hours += billableHoursFor(entry);
   }
 
   if (rows.size === 0) return null;
@@ -496,6 +506,14 @@ export function byMaterial(
       count: row.count,
       cells: withRatios,
       bestCell,
+      hours: row.hours,
+      // Row-level profit is the sum of the cells' profit: the cells already
+      // excluded every entry without a snapshot, so this is exactly the
+      // profit of the entries this row represents.
+      profitPerHour: ratio(
+        withRatios.reduce((sum, cell) => sum + cell.profit, 0),
+        row.hours,
+      ),
     };
   });
 }

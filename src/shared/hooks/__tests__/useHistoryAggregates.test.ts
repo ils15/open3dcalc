@@ -492,6 +492,53 @@ describe("useHistoryAggregates — byMaterial", () => {
     expect(Number.isNaN(light.profitPerGram)).toBe(false);
     expect(result![0].bestCell?.bracketId).toBe("light");
   });
+
+  // `hours` e `profitPerHour` chegaram depois do merge de `MaterialAggregate`
+  // porque o painel de material do protótipo exibe "Taxa Lucro/Hora". Eles
+  // somam exatamente o mesmo `billableHoursFor` que `byPrinter` já usava: uma
+  // segunda definição de "hora faturável" no mesmo arquivo faria as duas
+  // metades do painel reportarem taxas por hora diferentes para os mesmos jobs.
+  it("soma hours por material com o mesmo billableHoursFor que byPrinter usa", () => {
+    const result = byMaterial([
+      makeEntry({ result: makeResult({ totalHoursForProfit: 2 }) }),
+      makeEntry({ result: makeResult({ totalHoursForProfit: 3 }) }),
+      // Sem totalHoursForProfit: cai para estimatedPrintTime, como byPrinter.
+      makeEntry({ result: makeResult({ totalHoursForProfit: undefined }) }),
+    ]);
+
+    expect(result).toHaveLength(1);
+    // 2 + 3 + estimatedPrintTime 7 (default de makeResult).
+    expect(result![0].hours).toBe(12);
+  });
+
+  it("profitPerHour = profit / hours na linha, e 0 — nunca NaN — sem hora faturável", () => {
+    const withHours = byMaterial([
+      makeEntry({
+        profit: 40,
+        result: makeResult({ totalHoursForProfit: 4 }),
+      }),
+      makeEntry({
+        profit: 80,
+        result: makeResult({ totalHoursForProfit: 4 }),
+      }),
+    ]);
+    expect(withHours![0].profitPerHour).toBeCloseTo(120 / 8, 6);
+
+    // estimatedPrintTime 0 e totalHoursForProfit ausente -> billableHoursFor
+    // devolve 0 pelo mesmo guard (`hours > 0 ? hours : 0`).
+    const noHours = byMaterial([
+      makeEntry({
+        result: makeResult({
+          totalHoursForProfit: undefined,
+          estimatedPrintTime: 0,
+        }),
+      }),
+    ]);
+    expect(noHours![0].hours).toBe(0);
+    expect(noHours![0].profitPerHour).toBe(0);
+    expect(Number.isNaN(noHours![0].profitPerHour)).toBe(false);
+    expect(Number.isFinite(noHours![0].profitPerHour)).toBe(true);
+  });
 });
 
 describe("useHistoryAggregates — byPrinter", () => {
