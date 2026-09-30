@@ -59,7 +59,8 @@
     "spools": "Spools",
     "pricing": "Pricing",
     "printers": "Printers",
-    "more": "More"
+    "more": "More",
+    "resources": "Resources"
   },
   "dashboard": {
     "totalCost": "Total Cost",

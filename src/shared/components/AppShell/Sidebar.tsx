@@ -34,40 +34,43 @@ export function TabletSidebar({
 
   return (
     <aside className="hidden md:flex lg:hidden flex-col gap-1 w-16 shrink-0 px-2 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--border-subtle)]">
-      {/* The w-16 strip cannot fit a visible group label, so it is kept for
-          assistive technology only. This also replaces the hardcoded "Nav". */}
-      <span className="sr-only">{t("nav.navigation")}</span>
-      {visiblePrimary.map((id) => {
-        const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => onTabChange(tab.id)}
-            aria-current={activeTab === tab.id ? "page" : undefined}
-            className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
-              activeTab === tab.id
-                ? "bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-subtle)]"
-                : `text-[var(--text-muted)] ${tabletInactiveHoverClassName ?? "hover:text-[var(--text-primary)]"} hover:bg-[var(--surface-sunken)] border border-transparent`
-            }`}
-            title={t(tab.labelKey)}
-            aria-label={t(tab.labelKey)}
-          >
-            {tab.icon}
-          </button>
-        );
-      })}
-      <MoreMenu
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        showLabel={false}
-        triggerClassName={`w-full flex items-center justify-center p-2.5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
-          holdsDemotedSurface(activeTab)
-            ? "bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-subtle)]"
-            : `text-[var(--text-muted)] ${tabletInactiveHoverClassName ?? "hover:text-[var(--text-primary)]"} hover:bg-[var(--surface-sunken)] border border-transparent`
-        }`}
-        itemClassName="nav-item"
-      />
+      {/* The w-16 strip has ~47px of usable width, which cannot hold
+          "Navegação" without truncating to noise, so the group label is exposed
+          to assistive technology only and the strip stays icon-only. That also
+          replaces the hardcoded, untranslated "Nav" literal. */}
+      <SidebarGroup label={t("nav.navigation")} labelVisible={false}>
+        {visiblePrimary.map((id) => {
+          const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onTabChange(tab.id)}
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              className={`w-full flex items-center justify-center p-2.5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
+                activeTab === tab.id
+                  ? "bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-subtle)]"
+                  : `text-[var(--text-muted)] ${tabletInactiveHoverClassName ?? "hover:text-[var(--text-primary)]"} hover:bg-[var(--surface-sunken)] border border-transparent`
+              }`}
+              title={t(tab.labelKey)}
+              aria-label={t(tab.labelKey)}
+            >
+              {tab.icon}
+            </button>
+          );
+        })}
+        <MoreMenu
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          showLabel={false}
+          triggerClassName={`w-full flex items-center justify-center p-2.5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
+            holdsDemotedSurface(activeTab)
+              ? "bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-subtle)]"
+              : `text-[var(--text-muted)] ${tabletInactiveHoverClassName ?? "hover:text-[var(--text-primary)]"} hover:bg-[var(--surface-sunken)] border border-transparent`
+          }`}
+          itemClassName="nav-item"
+        />
+      </SidebarGroup>
     </aside>
   );
 }

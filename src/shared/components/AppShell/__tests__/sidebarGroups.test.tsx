@@ -85,7 +85,25 @@ describe("sidebar groups", () => {
     // Width is pinned by layout; the label cannot become visible text here.
     expect(aside.className).toContain("w-16");
     expect(aside.textContent).not.toContain("Nav");
-    expect(within(aside).getByText("nav.navigation")).toHaveClass("sr-only");
+
+    // A-2: the tablet now goes through SidebarGroup with labelVisible={false},
+    // so this is the real group region and it is still a labelled landmark.
+    const group = within(aside).getByRole("region", { name: "nav.navigation" });
+    expect(within(group).getByText("nav.navigation")).toHaveClass("sr-only");
+    expect(
+      within(group).getByRole("button", { name: "nav.pricing" }),
+    ).toBeInTheDocument();
+  });
+
+  it("exercises the labelVisible=false path without leaking a wrapper box", () => {
+    const { container } = render(
+      <TabletSidebar activeTab="calculator" onTabChange={noop} />,
+    );
+
+    // "contents" keeps the strip a flat flex column: an extra block wrapper
+    // would insert a gap between the buttons.
+    const group = container.querySelector("section")!;
+    expect(group.className).toBe("contents");
   });
 
   it("keeps the visible label on the desktop group", () => {

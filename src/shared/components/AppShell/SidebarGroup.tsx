@@ -27,7 +27,10 @@ export function SidebarGroup({
   return (
     <section
       aria-label={label}
-      className={labelVisible ? "flex flex-col gap-1" : undefined}
+      // The label is always the accessible name, so the region is a landmark
+      // whether or not the text is painted. A landmark and a visible heading
+      // that disagree is worse than either alone.
+      className={labelVisible ? "flex flex-col gap-1" : "contents"}
     >
       {labelVisible ? (
         <p className="label-xs px-3 mb-2">{label}</p>

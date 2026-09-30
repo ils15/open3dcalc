@@ -20,35 +20,85 @@ export function SecondaryNavigation({
 
   return (
     <nav
-      aria-label={t("nav.navigation")}
+      // MUST differ from the modules region label ("nav.navigation"): two
+      // landmarks in one <aside> sharing an accessible name are
+      // indistinguishable in the landmark list (WCAG 2.4.6). It can NOT be
+      // "footer.navigation" either, which the page-level Footer already owns.
+      aria-label={t("nav.resources")}
       data-testid="secondary-navigation"
-      className={desktop ? "mt-auto pt-4 border-t border-[var(--color-border)]" : "pt-3 mt-2 border-t border-[var(--color-border)]"}
+      className={
+        desktop
+          ? "mt-auto pt-4 border-t border-[var(--color-border)]"
+          : "pt-3 mt-2 border-t border-[var(--color-border)]"
+      }
     >
-      <p className={desktop ? "label-xs px-3 mb-2" : "px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]"}>
+      <p
+        className={
+          desktop
+            ? "label-xs px-3 mb-2"
+            : "px-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]"
+        }
+      >
         {t("footer.navigation")}
       </p>
       <ul className="space-y-1">
         <li>
-          <button type="button" onClick={() => { onInternalNavigate("wiki"); onNavigate?.(); }} className={itemClass} aria-label={t("nav.wiki")}>
-            <BookOpen className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={() => {
+              onInternalNavigate("wiki");
+              onNavigate?.();
+            }}
+            className={itemClass}
+            aria-label={t("nav.wiki")}
+          >
+            <BookOpen
+              className="w-[18px] h-[18px] shrink-0"
+              aria-hidden="true"
+            />
             <span>{t("nav.wiki")}</span>
           </button>
         </li>
         <li>
-          <button type="button" onClick={() => { onInternalNavigate("changelog"); onNavigate?.(); }} className={itemClass} aria-label={t("nav.changelog")}>
+          <button
+            type="button"
+            onClick={() => {
+              onInternalNavigate("changelog");
+              onNavigate?.();
+            }}
+            className={itemClass}
+            aria-label={t("nav.changelog")}
+          >
             <Info className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
             <span>{t("nav.changelog")}</span>
           </button>
         </li>
         <li>
-          <a href="https://github.com/ils15/open3dcalc" target="_blank" rel="noopener noreferrer" onClick={onNavigate} className={itemClass} aria-label={t("footer.github")}>
+          <a
+            href="https://github.com/ils15/open3dcalc"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onNavigate}
+            className={itemClass}
+            aria-label={t("footer.github")}
+          >
             <BrandIcon brand="github" className="w-[18px] h-[18px] shrink-0" />
             <span>{t("footer.github")}</span>
           </a>
         </li>
         <li>
-          <a href="https://t.me/Impressao3DBR" target="_blank" rel="noopener noreferrer" onClick={onNavigate} className={itemClass} aria-label={t("footer.telegram")}>
-            <BrandIcon brand="telegram" className="w-[18px] h-[18px] shrink-0" />
+          <a
+            href="https://t.me/Impressao3DBR"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onNavigate}
+            className={itemClass}
+            aria-label={t("footer.telegram")}
+          >
+            <BrandIcon
+              brand="telegram"
+              className="w-[18px] h-[18px] shrink-0"
+            />
             <span>{t("footer.telegram")}</span>
           </a>
         </li>
