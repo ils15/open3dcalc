@@ -124,7 +124,7 @@ describe("useHistoryAggregates — a regra do null", () => {
   });
 
   it("2. byQuarter, byMaterial e byPrinter também devolvem null com []", () => {
-    expect(byQuarter([], "pt-BR")).toBeNull();
+    expect(byQuarter([])).toBeNull();
     expect(byMaterial([])).toBeNull();
     expect(byPrinter([], t)).toBeNull();
   });
@@ -304,7 +304,6 @@ describe("useHistoryAggregates — byQuarter", () => {
           sellPrice: 50,
         }),
       ],
-      "pt-BR",
       8,
     );
 

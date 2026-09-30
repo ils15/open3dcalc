@@ -305,7 +305,6 @@ export function byMonth(
  */
 export function byQuarter(
   entries: readonly HistoryEntry[],
-  locale: string,
   quarters = 8,
 ): QuarterlyAggregate[] | null {
   if (entries.length === 0) return null;
@@ -594,7 +593,7 @@ export function useHistoryAggregates(): HistoryAggregates {
   return useMemo<HistoryAggregates>(
     () => ({
       monthly: byMonth(entries, locale),
-      quarterly: byQuarter(entries, locale),
+      quarterly: byQuarter(entries),
       material: byMaterial(entries),
       printer: byPrinter(entries, t),
     }),

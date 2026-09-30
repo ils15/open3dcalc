@@ -167,7 +167,7 @@ describe("useHistoryAggregates — o envelope expõe as quatro agregações", ()
     // E cada uma bate, valor a valor, com a função pura alimentada com os
     // MESMOS argumentos que o hook usa (entries, locale, t).
     expect(envelope.monthly).toEqual(byMonth(entries, "en-US"));
-    expect(envelope.quarterly).toEqual(byQuarter(entries, "en-US"));
+    expect(envelope.quarterly).toEqual(byQuarter(entries));
     expect(envelope.material).toEqual(byMaterial(entries));
     expect(envelope.printer).toEqual(byPrinter(entries, realT));
   });
