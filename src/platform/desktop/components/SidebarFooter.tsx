@@ -13,6 +13,9 @@ export function SidebarFooter(): React.ReactElement {
 
   return (
     <div className="mt-auto pt-4 border-t border-[var(--color-border)]">
+      {/* Resources group. The web platform labels the same block with the same
+          key, so both sidebars read as MODULES then RESOURCES. */}
+      <p className="label-xs px-3 mb-2">{t("footer.navigation")}</p>
       <a
         href="https://github.com/ils15/open3dcalc"
         target="_blank"

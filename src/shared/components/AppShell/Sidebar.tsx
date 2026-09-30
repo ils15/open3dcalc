@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { PRIMARY_TABS, holdsDemotedSurface, type Tab } from "./tabs";
 import { MoreMenu } from "./MoreMenu";
+import { SidebarGroup } from "./SidebarGroup";
 import { useVisiblePrimaryTabs } from "./useVisibleNavigation";
 
 /**
@@ -33,9 +34,9 @@ export function TabletSidebar({
 
   return (
     <aside className="hidden md:flex lg:hidden flex-col gap-1 w-16 shrink-0 px-2 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--border-subtle)]">
-      <p className="text-[9px] font-semibold text-[var(--text-muted)] px-2 mb-2 uppercase tracking-wider">
-        Nav
-      </p>
+      {/* The w-16 strip cannot fit a visible group label, so it is kept for
+          assistive technology only. This also replaces the hardcoded "Nav". */}
+      <span className="sr-only">{t("nav.navigation")}</span>
       {visiblePrimary.map((id) => {
         const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
         return (
@@ -81,30 +82,33 @@ export function DesktopSidebar({
 
   return (
     <aside className="hidden lg:flex flex-col gap-1 w-60 xl:w-68 shrink-0 px-4 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--border-subtle)]">
-      <p className="label-xs px-3 mb-2">{t("nav.navigation")}</p>
-      {visiblePrimary.map((id) => {
-        const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => onTabChange(tab.id)}
-            aria-current={activeTab === tab.id ? "page" : undefined}
-            className={`nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${activeTab === tab.id ? "active" : ""}`}
-          >
-            {tab.icon}
-            <span>{t(tab.labelKey)}</span>
-          </button>
-        );
-      })}
+      <SidebarGroup label={t("nav.navigation")}>
+        {visiblePrimary.map((id) => {
+          const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onTabChange(tab.id)}
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              className={`nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${activeTab === tab.id ? "active" : ""}`}
+            >
+              {tab.icon}
+              <span>{t(tab.labelKey)}</span>
+            </button>
+          );
+        })}
 
-      <MoreMenu
-        activeTab={activeTab}
-        onTabChange={onTabChange}
-        triggerClassName="nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
-        itemClassName="nav-item"
-      />
+        <MoreMenu
+          activeTab={activeTab}
+          onTabChange={onTabChange}
+          triggerClassName="nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
+          itemClassName="nav-item"
+        />
+      </SidebarGroup>
 
+      {/* Resources (wiki, changelog, GitHub, Telegram) are grouped by the
+          platform footers, which already own those items — not repeated here. */}
       {footer}
     </aside>
   );
