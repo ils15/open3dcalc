@@ -1462,6 +1462,152 @@ O `Example/` traz **números inventados que produziriam gráficos mentirosos**. 
 
 ---
 
+### 🧭 Phase 7q: Decisões de domínio pendentes do dono
+
+> **O que é esta fase.** Não é trabalho; é a lista do que **ninguém pode fechar sem o dono**. Cada item abaixo muda tipo de dado, revoga decisão vigente ou redefine o que é métrica — as três coisas que nenhum agente pode decidir sozinho. Estão aqui porque o pedido de "tudo do `Example/`" colidiu com cada uma delas, e uma colisão silenciosa é o pior jeito de falhar.
+
+**Status:** cinco decisões abertas. Duas foram superdimensionadas pela verificação; uma continua exatamente com o bloqueio descrito; duas têm consequência já medida.
+
+#### 1. Cliente Maker — o gap é menor do que se supunha
+
+- [x] **Verificado em 30/09/2026: já existe seletor de cliente na calculadora.** `QuoteSection.tsx:159` lê `useCustomerStore`, `:165` mantém `customerId` em estado, e `:321-329` renderizam o seletor com a lista de clientes. A tela de orçamento já sabe a quem está orçando.
+- [x] **O vínculo cliente↔job vive no orçamento, não no cálculo.** `Quote.customerId` guarda o cliente e `Quote.items[].historyEntryId` (`quoteStore.ts:68`) liga o item ao registro de histórico. Essa é a relação que os gráficos da Phase 7p precisam.
+- **O que realmente falta:** `HistoryEntry` (`types/index.ts:310-321`) **não tem campo de cliente**. Para o Dashboard e a Phase 7p falarem de receita "da Maker", o histórico precisa saber de quem é — hoje essa informação existe só no orçamento, e um job adicionado manualmente ao histórico nunca a teve.
+- [ ] Decisão do dono: adicionar `customerId` ao `HistoryEntry` com retrocompatibilidade de snapshot (campo ausente = sem cliente), ou manter o histórico agnóstico e cruzar por `historyEntryId` na leitura. A primeira muda o tipo e o snapshot; a segunda mantém o domínio intacto e faz a junção na borda. **A segunda é mais barata e a primeira é mais completa.**
+
+#### 2. Camada de IA — contradição sem registro em disco
+
+- [x] **O `Example/` tem `AIAssistantModal` e 3 endpoints Gemini** server-side (analyze-piece, generate-pitch, estimate-photo multimodal).
+- [x] **Existe decisão vigente `v2-no-ai` (22/09/2026) que exclui a camada de IA do escopo imediato da V2.0** — BYOK, Councils #1/#2, ADR-004 e estimate-photo foram adiados.
+- **A contradição:** o escopo foi expandido para "tudo do `Example/`", o que inclui a IA, e a decisão `v2-no-ai` continua valendo e **não foi revogada**. Alguém vai ler o pedido de "tudo" e abrir um modal de IA contra uma decisão registrada.
+- [ ] Decisão do dono: revogar `v2-no-ai` explicitamente (e reavaliar a estimativa por foto, que tem implicação de LGPD), **ou** declarar a IA fora do port e manter a decisão. O que não pode é a situação atual: duas decisões vigentes que se contradizem, sem que nenhuma tenha sido apagada.
+- **Nota de histórico que não pode ser ignorada:** o `AIAssistantModal` do protótipo tem um bug de release: `analysisError` é declarado (`:53`) e renderizado (`:327`) mas **nunca setado no `catch`** (`:105-111`) — a simulação mock #1 é entregue silenciosamente como se fosse análise de IA real. Se a IA entrar, esse caminho não pode portar.
+
+#### 3. Modelo de frota — bloqueia três telas, e a falha é silenciosa
+
+- [x] **`printers.ts:10` é catálogo estático.** ~80 perfis de catálogo, com preço de aquisição (`value`), vida útil (`usefulLife`) e custo de manutenção por hora — os três números que o `Example/` usa.
+- [x] **`PrinterProfile` (`types/index.ts:36-58`) não tem:** preço de aquisição como dado próprio, data de aquisição, status, capacidade, utilização nem log de horas. O que tem é especificação de fábrica.
+- **Bloqueia:** `PrinterRoiBreakEvenCard` (falta `acquisitionDate` e `status`) e `PrinterHealthScoreCard` (falta `loadMaintenanceCycles()` e `Record<printerId, hoursAccumulated>`). Manutenção e ROI precisam ser **juntos** — construir um sem o outro é retrabalho certo.
+- **🔴 Consequência medida, e é a mais grave das cinco:** adicionar ou reprecificar uma impressora na tela de frota **faz ROI, projeção, analytics e preço sugerido ignorarem a máquina em silêncio**. O preço novo entra no catálogo, e as quatro telas que deveriam consumi-lo continuam lendo o valor antigo — sem erro, sem aviso, sem estado inválido. Não é uma tela que falta; é uma divergência silenciosa que já existe.
+- [ ] Decisão do dono: (a) separar `catalog_printers` (especificação) de `printer_instances` (operação concreta — nome, preço pago, data, status, capacidade, horas, notas) e dar migração retrocompatível; ou (b) declarar o modelo de frota fora da V2.0 e adiar as telas que dependem dele. **A opção (b) é a única que não cria a divergência silenciosa acima** — sem instância, não há preço próprio para divergir.
+
+#### 4. Contradição de unidade em `usefulLife` — antes de virar dinheiro
+
+- [x] **O campo vale 3000 / 4000 / 5000** (`printers.ts:17,32,47,62,77,90`) e a interface o apresenta com a unidade: `CatalogTab.tsx:483` renderiza `{p.usefulLife}h` — **horas**.
+- [x] **O consumo é em horas.** `calculatorStore.ts:311-314` calcula `depreciationMonths = Math.max(1, Math.round(selectedPrinter.usefulLife / hpm))`, dividindo por `hoursPerMonth`. A unidade está coerente no código.
+- [x] **A Phase 7d (linha 449) descreve o mesmo campo como `defaultUsefulLifeYears`.** Anos. O documento e o código discordam sobre a mesma constante, e a Phase 7d é a fonte do modelo de frota do item 3 acima.
+- **Por que é sério e não pedante:** 3000 horas são ~14 meses de uso contínuo; 3000 anos são absurdo. O número é o mesmo, então o erro de leitura não aparece no número — aparece quando alguém implementa a Phase 7d pela documentação e converte 3000 anos em meses. **Horas e anos precisam ser a mesma unidade antes de virar dinheiro.**
+- [ ] Decisão do dono: (a) a Phase 7d passa a declarar `defaultUsefulLifeHours` e o problema fecha; ou (b) o modelo novo passa a trabalhar em anos e `usefulLife` é convertido explicitamente na migração, com a conversão testada. A opção (a) é a mais barata e não mexe no código existente.
+
+#### 5. Autoridade fora do disco — a decisão de 25/09 não existe em arquivo
+
+- [x] **A decisão de 25/09/2026 que revogou a regra "nunca copiar estrutura do `Example/`" só existe nesta conversa e na nota de supersessão da Phase 7i.** Não há ADR, decisão registrada, ou arquivo que a contenha.
+- **Consequência:** o próximo agente, ou a próxima sessão, vai ler a nota e não terá como confirmar se ela ainda vale. A autoridade de uma decisão que só existe no chat expira com o chat.
+- [ ] O dono precisa fechá-la em arquivo. Até lá, a nota na Phase 7i é a única fonte, e qualquer agente que trabalhar por ela deve dizer que está lendo uma fonte sem lastro.
+
+**Acceptance criteria desta fase:**
+
+- [ ] As cinco decisões têm resposta do dono, registrada em arquivo — não em conversa.
+- [ ] A `v2-no-ai` está explicitamente revogada **ou** a IA está declarada fora do port; não existem duas decisões vigentes e contraditórias.
+- [ ] A Phase 7d descreve `usefulLife` na mesma unidade em que o código a consome, e a conversão, se houver, é testada.
+- [ ] A divergência silenciosa da frota — preço novo ignorado por quatro telas — está fechada ou as quatro telas estão explicitamente fora do escopo até existir instância.
+- [ ] Nenhum agente implementa decisão de domínio com base em premissa não registrada.
+
+---
+
+### 📐 Phase 7r: Defeitos de layout medidos e abertos
+
+> **O que esta fase é.** Quatro defeitos de layout **medidos no browser**, não deduzidos do código, e nenhum deles corrigido. Todos são pré-existentes. Estão registrados porque o padrão de medição que os produziu é o que este documento passa a exigir de qualquer correção de layout — e porque um defeito medido e não registrado é um defeito que a próxima pessoa vai "consertar" de novo.
+
+**Status:** quatro defeitos abertos, nenhum corrigido, todas as medições feitas em 30/09/2026.
+
+#### 🔴 D1 — A 1024px a marca colapsa para 0,0px
+
+| Medida                                         | Valor                         |
+| ---------------------------------------------- | ----------------------------- |
+| Largura da marca (lockup logo + nome) a 1024px | **0,0px**                     |
+| Botões `shrink-0` na linha do header           | 11                            |
+| Elementos que cedem                            | 1 — o logo, o único `min-w-0` |
+
+**Causa:** a linha do header (`Header.tsx:50`) é um `flex justify-between` com onze botões `shrink-0` no cluster de ações (`:93`). `shrink-0` significa "não cedo" — e nenhum deles cede. O único elemento com `min-w-0` é o lockup do logo (`:54`), e `min-w-0` é justamente a permissão para ceder até zero. Com onze botões que não cedem e um logo que cede sem limite, o logo é o único que paga a conta, e paga a conta inteira.
+
+**Por que o teto de 248px não corrige:** `max-w-[248px]` (`:54`, `459593e`) limita o **crescimento**. O defeito é **colapso**. Um teto contra crescimento não impede uma largura de zero — pior, ele torna o defeito invisível na revisão de código, porque o número que se vê é razoável e o número que se sente é zero. **Um teto de largura não é uma defesa contra colapso; um piso é.**
+
+**Pre-existente, não corrigido.**
+
+- [ ] O logo recebe largura mínima de verdade, ou o cluster de ações cede. Decisão de produto: as duasmudam o que cabe a 1024px.
+- [ ] Teste de layout que **mede** a largura renderizada do lockup a 1024px. Não um teste que confere a string de classe — ver a regra transversal no fim desta fase.
+
+#### 🔴 D2 — A 1024px o form central mede 554px contra um lock de 560px
+
+| Medida                                       | Valor                                      |
+| -------------------------------------------- | ------------------------------------------ |
+| Largura do form central renderizado a 1024px | **554px**                                  |
+| Lock declarado                               | `2xl:min-w-[560px]` (`Calculator.tsx:115`) |
+| Diferença                                    | **−6px**                                   |
+
+**O guard não prova nada.** `Calculator.test.tsx:42-44` verifica o lock por **regex sobre a string de classe**:
+
+```
+/flex-1 min-w-0 2xl:min-w-\[560px\] @container/
+```
+
+Esse teste passa se o texto `2xl:min-w-[560px]` existir na fonte. Ele **não renderiza a caixa, não mede nada e não falha** quando o layout real mede 554px. Um guard que confirma a presença de uma classe não é um guard de layout — é uma asserção de que a intenção foi digitada.
+
+**E há um problema de segundo grau:** `2xl` é 1536px. A 1024px esse `min-w` **não se aplica**. O lock de 560px é uma condição de `1536px`, e o defeito está a 1024px — abaixo do próprio breakpoint do lock. A pergunta "por que 554px a 1024px" tem uma resposta anterior à medição: a 1024px não existe lock nenhum para violar.
+
+- [ ] Decidir se 560px é o piso certo e em qual breakpoint. Um `min-w` de 560px abaixo de 1536px pode não caber no conteúdo disponível; um `min-w` de 560px só a 1536px não protege nada a 1024px.
+- [ ] Substituir o guard por regex por um que **renderize e meça** a largura real no breakpoint relevante.
+
+#### 🔴 D3 — A 1280px o breadcrumb não cabe, por aritmética
+
+| Parcela                             | Medida                                       |
+| ----------------------------------- | -------------------------------------------- |
+| Piso do logo (lockup com subtítulo) | 240,5px                                      |
+| Breadcrumb                          | 156px                                        |
+| **Soma**                            | **396,5px**                                  |
+| Disponível na linha                 | 250px                                        |
+| **Déficit**                         | **23,3px, antes de desenhar um único ícone** |
+
+A conta fecha antes de qualquer decisão de conteúdo: 396,5px contra 250px. **O breadcrumb não cabe a 1280px.** O `ContextBreadcrumb` (`Header.tsx:90`) foi introduzido na leva atual (`7722b95`) e o lockup do logo ganhou o teto de 248px depois (`459593e`) — as duas medidas são pós-`beta.6` e nenhuma delas mexe no outro lado da soma.
+
+**Duas saídas, ambas de produto — nenhuma é de CSS:**
+
+- [ ] **Migrar um utilitário para a barra.** A `UtilityBar` (`0db0c93`) existe e está quase vazia. `TutorialLauncher` ocupa ~131px e `DataSyncButton` ~206px na linha do header. Mover um dos dois para a barra resolve o déficit e usa espaço que já foi criado para isso.
+- [ ] **Retirar o subtítulo do lockup do logo.** Reduz o piso e deixa o breadcrumb respirar, ao custo de perder a descrição da seção.
+
+Escolher entre as duas é decisão do dono: a primeira move função, a segunda move identidade.
+
+#### 🔴 D4 — A causa raiz do rail não aparecer antes de 1536px é o gutter, não o breakpoint
+
+| Parcela                      | Web                                        | Desktop                                    |
+| ---------------------------- | ------------------------------------------ | ------------------------------------------ |
+| Padding horizontal do `main` | `xl:px-14` = 56px de cada lado = **112px** | `xl:px-16` = 64px de cada lado = **128px** |
+| Origem                       | `platform/web/App.tsx:85`                  | `platform/desktop/App.tsx:79`              |
+
+**A leitura:** o rail de resultados não aparece antes de 1536px, e a tentação é mudar o breakpoint para ele aparecer mais cedo. **Isso moveria o número sem resolver a causa.** O gutter consome 112px (web) e 128px (desktop) de largura horizontal antes de o conteúdo existir; a margem para o rail é o que sobra, e o que sobra é insuficiente. Mudar `2xl` para `xl` faria o rail aparecer espremido contra o gutter, e a medição seguinte seria "o rail aparece mas está errado" — a mesma classe de defeito com um número diferente.
+
+- [ ] Reduzir o gutter horizontal do `main` nos breakpoints em que o rail deve coexistir com o conteúdo, **e então** reavaliar o breakpoint. Nessa ordem.
+- [ ] Web e desktop medidos **juntos**: os dois têm gutters diferentes (112px e 128px) e um breakpoint que serve a um não serve ao outro.
+
+#### 📏 Regra transversal desta fase: guard de layout que faz string-match não é prova de layout
+
+Esta regra não é uma preferência de estilo. Ela nasce de D2, onde um teste verde coexistia com um defeito de 6px em produção: **o guard confirmou a intenção, não o resultado.** A mesma armadilha já apareceu em código de dinheiro — o `roundCurrency` fail-high da Phase 7m é uma política que ninguém implementou e que nenhum teste prova.
+
+- [ ] **Toda medição de layout é feita no browser, no shell alvo.** Web e desktop, medidos **juntos** — não em um e extrapolados para o outro.
+- [ ] **Em build beta**, sempre que a superfície depender do `BetaBadge`. Ele retorna `null` em build estável (`BetaBadge.tsx:13-14`), então qualquer asserção de legibilidade, largura ou contraste feita em build estável **passa trivialmente** sem ter nada verificado. Um guard que passa em build estável e nunca foi rodado em build beta não foi testado.
+- [ ] **Nenhum guard de layout nova baseado em regex sobre a string de classe.** Se a asserção é sobre texto na fonte, ela prova que alguém digitou a intenção. Para provar layout é preciso renderizar e medir a caixa.
+- [ ] A medição entra no commit com o número, como os quatro acima. Correção de layout sem número medido é opinião.
+
+**Acceptance criteria:**
+
+- [ ] Os quatro defeitos estão corrigidos **ou** explicitamente aceitos como dívida, com o número medido de antes e de depois.
+- [ ] Nenhum dos quatro é corrigido mudando o número do sintoma em vez da causa — em especial D4, onde mudar o breakpoint sem mexer no gutter é a correção que não corrige.
+- [ ] O guard de 560px em `Calculator.test.tsx` mede caixa em vez de conferir classe, ou está removido em favor de um que mede.
+- [ ] Qualquer superfície que dependa do `BetaBadge` tem sua verificação de legibilidade executada em build beta, com o resultado registrado.
+
+---
+
 ### 🎨 Onda de contraste WCAG AA — cadeia consolidada
 
 **Status:** entregue e mesclada em `main`. Onda independente: não substitui, não reordena nem absorve nenhuma fatia da Phase 7o, da Phase 7n ou do port visual da Beta 5, e não fecha o gate transversal de compatibilidade v2.0.
@@ -1665,4 +1811,6 @@ IA foi explicitamente confirmada como fora da V2.0. A única área deferred é I
 
 ---
 
-_Atualizado em 25 de setembro de 2026 — planejamento aprovado da Phase 7o e gate transversal de compatibilidade v2.0 adicionados. As phases 7/7b/7c, 7f e 7g registram a entrega real da `2.0.0-beta.2`; as correções C1–C5, o Bento editável, a navegação do Guided, a reformulação da Phase 7d, lojas/canais/locais, snapshot de precificação e a decisão margem vs. markup foram incorporadas. A ausência de IA foi mantida explícita; PRs #191 e #192 e seus efeitos de pipeline também estão registrados. A Stage 3 da Phase 7o passa a constar como entregue (`048211e`, PR #229), a cadeia consolidada de contraste WCAG como entregue (`3761a76`, PR #230) com os dois follow-ups de acessibilidade que ela deixou abertos, e o PR #223 deste roadmap foi mesclado como `67b43f3`. O gate transversal de compatibilidade v2.0 continua aberto; nenhuma das entregas acima o fecha._
+_Atualizado em 30 de setembro de 2026 — o documento passa a descrever o estado real em `2.0.0-beta.6` (`main` = `2cd273f`) e a leva da branch atual. Onze correções e seis blocos novos, cada afirmação verificada no código antes de ser escrita. As phases 7, 7b, 7c, 7f e 7g registram a `2.0.0-beta.2`; as entregas das `2.0.0-beta.5` (segurança e privacidade, ondas W0–W7, PRs #236 e #241–#246) e `2.0.0-beta.6` (layout, PR #247, `2126865`) passam a ter bloco próprio. A Phase 7 vai a `beta.6`; a Phase 7i é reformulada — a restrição "Bento read-only" está superada e a pendência virou paridade de cobertura de campos; a C4 da Phase 7h está resolvida com a medição 497px → 280px, e a C4b (controles duplicados) continua aberta e subiu de prioridade porque a superfície ficou editável. A Phase 6 P2 (Hole Tolerance e Press-Fit) passa a constar como tabela pronta e testada aguardando port, com o consumidor por fazer. A Phase 7e registra a decisão de Farm como o quarto modo com zero código implementado — `LayoutMode` tem três valores. O M1 da Phase 7m está entregue em `d5b0624`, com a pendência real do `roundCurrency` fail-high, que não foi implementado. Entram a Higiene do repositório (19 tags `archive/*`, 1 extraída; branches órfãs; 4 componentes órfãos no `Example/`), a Phase 7p (camada de gráficos, substrato zero), a Phase 7q (cinco decisões de domínio pendentes do dono) e a Phase 7r (quatro defeitos de layout medidos, com a regra de que guard por string-match não é prova de layout). A cobertura em Quality Metrics é de `1b846719`, **anterior à `beta.6`**, e fica escrita como pendente de re-medição; a contagem de testes é atual (4.036 em 289 arquivos, medida em `7511904`).
+
+**O gate transversal de compatibilidade v2.0 continua aberto, e nada nesta atualização o fecha.** As correções acima são de estado e de texto; nenhuma delas testa v1→v2, nenhuma toca em migração, fixture ou chave de persistência existente, e nenhuma adiciona chave nova. A Phase 7p é a única que introduz persistência — o `useHistoryAggregates` — e ela nasce **read-only sobre o `historyStore` que já existe**, sem escrita e sem formato novo; mas ela não está entregue, e enquanto não estiver, o gate segue integralmente em aberto. A pendência mais próxima de tocá-lo é a decisão 4 da Phase 7q (`usefulLife` em horas ou em anos), que é uma decisão de dono, não uma migração.~
