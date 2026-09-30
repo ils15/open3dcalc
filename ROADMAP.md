@@ -1520,6 +1520,40 @@ O `Example/` traz **números inventados que produziriam gráficos mentirosos**. 
 - [ ] **O terceiro eixo do protótipo ("jobs lucrativos")** fica de fora: introduz ordenação por 3 critérios e uma barra que se reescala ao trocar o critério, o que muda o modelo de interação do componente. Não é incremento, é redesenho.
 - [ ] **Os outros seis gráficos** continuam sob a regra da fase: `lastKnownRevenue = 14500`, `getBaselineEstimates()` e a curva de crescimento orgânico desenhada como reta são números inventados que produziriam gráficos mentirosos se portados literais. A tabela de invenções acima continua valendo, e o porquê de cada descarte está lá.
 
+#### 7p.2 — Entrega de `MaterialEfficiencyHeatmap` — em 30/09/2026
+
+**🔒 Correção desta própria fase: a prescrição de `role="grid"` da linha de "estilo alheio ao app" está SUPERADA.** Aquela linha pedia, para células de heatmap carregadas só com `title`, `role="grid"` + `aria-pressed`. O componente entregue **não** usa nenhum dos dois, e a linha original **fica registrada como escrita** — esta seção é a que vale. A entrega é a correção do roadmap, não a concordância com ele.
+
+**A prescrição original estava certa no diagnóstico e errada na remédio.** O defeito que ela enxergava é real: `title=` não é nome acessível, não é alcançável por teclado e não sobrevive a leitor de tela — o mesmo defeito que `ProfitAnalyticsModule` já tinha eliminado. O que não se sustenta é a conclusão de que o conserto fosse transformar a célula em botão e a tabela em `role="grid"`.
+
+**Motivo prático: a célula não precisa ser botão quando o valor é texto.** Com `profitPerGram` impresso como texto visível dentro da célula, a informação já está no fluxo de leitura — não depende de `aria-pressed`, não depende de nome acessível, não depende de cor. A tabela fica acessível **sem** `role="grid"`, **sem** navegação por setas e **sem** `aria-pressed`, e a cor deixa de ser o portador do dado e vira **reforço redundante** de um número que já está ali. Um `aria-pressed` sobre um valor numérico também seria semântico: o estado pressionado pertence a algo que se alterna, e uma célula de dado não alterna.
+
+**Precedente interno, e é o que decide.** `MaterialComparison.tsx:170-221` é exatamente este caso: `<table>` semântica com `<caption className="sr-only">`, `<th scope="col">` nos cabeçalhos, e o **botão no `<th>`** da coluna de ação — as células de dados são **texto puro**. A grade do heatmap segue esse mesmo desenho. O botão, quando existe, fica no cabeçalho, onde há uma ação de verdade ainar.
+
+**As cinco tabelas do app são semânticas**, nenhuma usa `role="grid"`: `MaterialComparison.tsx:170`, `ProductInventory.tsx:360`, `InfillCalculator.tsx:186`, `QuoteSection.tsx:736`, `StlPreview.tsx:1225`. E as setas que o `role="grid"` exigiria já têm dono e outro padrão no app: o padrão **de tablist** de `CatalogTab.tsx:41-44`.
+
+**A régua de acessibilidade não recua um milímetro — só muda de onde ela é paga.** WCAG AA mede contraste, e contraste foi medido, não estimado: `src/shared/__tests__/helpers/contrast.ts` contra `themeTokenMap`, nos dois temas. A **fase clara** é a referência porque, nas cinco rungs, a razão clara é sempre a menor das duas — passar na clara garante passar na escura.
+
+| rung     | clara | escura                          |
+| -------- | ----- | ------------------------------- |
+| `loss`   | 5,89  | 8,52                            |
+| `empty`  | 5,17  | 7,85 — a mais próxima de falhar |
+| `weak`   | 6,84  | 8,83                            |
+| `strong` | 5,21  | 7,83                            |
+| `best`   | 5,48  | 10,23                           |
+
+Todos os cinco pares passam AA. O nome do token de tinta (`--color-text-inverse`) foi **medido**, não adivinhado: o palpite óbvio, `--color-text-primary`, **falha nos dois temas** (3,23 claro, 1,75 escuro), porque o quase-branco do tema escuro cai sobre uma amostra verde-clara. E os dois tokens que a nota de design nomeava **não existem em runtime**: `--color-positive` só existe dentro de `@theme inline` (`tokens.css:557`), que é mapeamento de build do Tailwind, não custom property — `bg-[var(--color-positive)]` não pintaria nada —, e `--color-positive-muted` não existe em lugar nenhum do repositório. A camada de alias de runtime (`tokens.css:510-516`) expõe os dois papéis como `--color-success` / `--color-success-muted`.
+
+**A escala é divergente porque os dados obrigam.** `profitPerGram` pode ser negativo: `HistoryEntry.profit` é `number` sem limite inferior (`types/index.ts:318`), e vender abaixo do custo é justamente o caso que este app existe para evitar. A escala do protótipo era unidirecional, com cortes em 0,25/0,40/0,60/0,80 — um valor negativo caía no balde frio e renderizava **idêntico a uma célula quase zero**, enquanto a legenda nomeava aquele degrau de "Baixo", uma afirmação falsa. O app já tem a convenção bilateral em `Dashboard.tsx:704` e `:780`. Mede-se a partir do zero, com o sinal decide o lado.
+
+**Uma métrica só, `profitPerGram`, sem seletor de modo.** `bestCell` já é definido como o maior `profitPerGram` (`useHistoryAggregates.ts:149-150, 495-500`), então colorir por outra métrica faria o hook e a cor discordarem. E `roiPercent` divide por `cost`, que é zero para uma faixa sem custo — custo zero e ROI zero ficariam indistinguíveis.
+
+**Recebe `entries` como prop, não o envelope de `useHistoryAggregates`:** o envelope lê o store sem filtro (`useHistoryAggregates.ts:608`), ignorando o filtro de data do próprio `Dashboard` (`Dashboard.tsx:94-104`).
+
+**O que não foi portado, e por quê** — nenhuma das 32 fictitious de `getBaselineEstimates()`, os tetos de máximo inventados, o denominador fixo `/1.8`, a linha editorial fixa "Insight da Oficina" que renderiza mesmo com histórico vazio, a lista `MATERIALS_ORDER` que não casa com nenhum `MaterialType`, o `onNavigateToCalculator` morto, `title=` usado como rótulo acessível, e `text-emerald-400` sobre ROI negativo — que pintaria **verde** uma perda.
+
+**As quatro chaves `history.aggregates.weight.*` não tinham nenhum consumidor até esta entrega.**
+
 ---
 
 ### 🧭 Phase 7q: Decisões de domínio pendentes do dono
