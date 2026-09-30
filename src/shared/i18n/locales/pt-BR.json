@@ -62,6 +62,9 @@
     "more": "Mais",
     "resources": "Recursos"
   },
+  "utilityBar": {
+    "label": "Preferências de exibição"
+  },
   "breadcrumb": {
     "label": "Trilha de navegação",
     "root": "Oficina 3D",

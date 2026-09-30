@@ -62,6 +62,9 @@
     "more": "More",
     "resources": "Resources"
   },
+  "utilityBar": {
+    "label": "Display preferences"
+  },
   "breadcrumb": {
     "label": "Breadcrumb",
     "root": "3D Workshop",
