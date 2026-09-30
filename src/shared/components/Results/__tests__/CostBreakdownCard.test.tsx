@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import { CostBreakdownCard } from "../CostBreakdownCard";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
@@ -106,5 +106,47 @@ describe("CostBreakdownCard", () => {
     const wrapper = document.querySelector(".mt-4.w-full");
     expect(wrapper?.className).toContain("hidden");
     expect(screen.getByText("Material")).toBeInTheDocument();
+  });
+
+  it("shows every cost category in the sidebar without opening the disclosure", () => {
+    render(
+      <CostBreakdownCard
+        chartData={segments}
+        totalCost={30}
+        isSidebar={true}
+      />,
+    );
+
+    // The sidebar has room for the full list but not for the donut, so every
+    // category must be legible up front instead of behind the disclosure.
+    const bars = screen.getByTestId("compact-cost-bars");
+    expect(
+      within(bars).getByTestId("compact-cost-bar-filament"),
+    ).toHaveTextContent("Material");
+    expect(
+      within(bars).getByTestId("compact-cost-bar-energy"),
+    ).toHaveTextContent("Energia");
+
+    // Each bar carries its share for assistive technology.
+    expect(
+      within(bars).getByRole("img", { name: /Material: 33\.3%/ }),
+    ).toBeInTheDocument();
+
+    // The hidden disclosure must not repeat the category names.
+    expect(screen.getAllByText("Material")).toHaveLength(1);
+  });
+
+  it("leaves the non-sidebar variant on the compact summary and the donut", () => {
+    render(
+      <CostBreakdownCard
+        chartData={segments}
+        totalCost={30}
+        isSidebar={false}
+      />,
+    );
+
+    expect(screen.queryByTestId("compact-cost-bars")).not.toBeInTheDocument();
+    expect(screen.getByTestId("cost-distribution-details")).toBeInTheDocument();
+    expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
   });
 });

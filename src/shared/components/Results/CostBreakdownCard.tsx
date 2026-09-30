@@ -11,7 +11,11 @@ import {
 } from "@/shared/components/Dashboard/RechartsLazy";
 
 import { useCurrency } from "@/shared/hooks/useCurrency";
-import type { CostCategory, CostSegment } from "@/shared/hooks/useFinancialBreakdown";
+import type {
+  CostCategory,
+  CostSegment,
+} from "@/shared/hooks/useFinancialBreakdown";
+import { CostDistributionBars } from "./CostDistributionBars";
 
 export interface CostBreakdownCardProps {
   /** Pre-filtered, translated cost segments (empty ⇒ the card is not rendered). */
@@ -122,9 +126,13 @@ export function CostBreakdownCard({
           )}
         </div>
 
+        {isSidebar && (
+          <CostDistributionBars chartData={chartData} totalCost={totalCost} />
+        )}
+
         <details
           data-testid="cost-distribution-details"
-          className="group rounded-xl border border-[var(--border-default)] bg-[var(--surface-sunken)]"
+          className={`group rounded-xl border border-[var(--border-default)] bg-[var(--surface-sunken)] ${isSidebar ? "hidden" : ""}`}
         >
           <summary
             aria-describedby={detailsDescriptionId}
@@ -143,31 +151,35 @@ export function CostBreakdownCard({
             />
           </summary>
           <div className="border-t border-[var(--border-default)] p-3">
-            <div className="space-y-1.5 sm:space-y-3">
-              {chartData.map((item) => (
-                <div key={item.name}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs sm:text-sm text-[var(--text-secondary)]">
-                      {item.name}
-                    </span>
-                    <span className="text-xs sm:text-sm font-mono font-bold text-[var(--text-primary)]">
-                      {fmtCurrency(item.value)}
-                    </span>
+            {/* The sidebar shows every category up front in the bar list, so the
+                disclosure only carries the donut there and stays hidden. */}
+            {!isSidebar && (
+              <div className="space-y-1.5 sm:space-y-3">
+                {chartData.map((item) => (
+                  <div key={item.name}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs sm:text-sm text-[var(--text-secondary)]">
+                        {item.name}
+                      </span>
+                      <span className="text-xs sm:text-sm font-mono font-bold text-[var(--text-primary)]">
+                        {fmtCurrency(item.value)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-[var(--surface-sunken)] rounded-full overflow-hidden">
+                      <div
+                        role="img"
+                        aria-label={`${item.name}: ${fmtCurrency(item.value)}`}
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${totalCost > 0 ? item.pct : 0}%`,
+                          backgroundColor: CATEGORY_COLOR_TOKEN[item.category],
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-1.5 bg-[var(--surface-sunken)] rounded-full overflow-hidden">
-                    <div
-                      role="img"
-                      aria-label={`${item.name}: ${fmtCurrency(item.value)}`}
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${totalCost > 0 ? item.pct : 0}%`,
-                        backgroundColor: CATEGORY_COLOR_TOKEN[item.category],
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             <div
               className={`mt-4 w-full ${isSidebar ? "hidden" : "h-48 sm:h-56"}`}
             >
