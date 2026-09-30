@@ -218,6 +218,52 @@ describe("useAppInit tutorial auto-start", () => {
     await settleWrites();
   }
 
+  /**
+   * Wait until the migration stops touching storage — a CONDITION, not a drain.
+   *
+   * ## Why the vault drain alone is not a barrier
+   *
+   * `whenPiiWritesSettled()` only sees writes the gate recorded in
+   * `observedWriteTails` (`src/shared/lib/crypto/piiStoreHydration.ts:300`),
+   * and it keeps just the LAST promise per persist key (`:302`). The migration's
+   * own tail past its final put is in none of that: `didPiiWritesCommit()`
+   * (`useAppInit.ts:309`) is followed by `readPiiPersistedRecord()`
+   * (`:310`) — an IndexedDB READ, never registered as a write tail
+   * (`piiStoreHydration.ts:334-343`) — and only then by
+   * `guardedStorage.removeItem(MIGRATION_PROGRESS_KEY)` (`useAppInit.ts:355`).
+   *
+   * Each fake-IDB request costs at least one macrotask
+   * (`src/shared/test/fakeIndexedDb.ts:146,299`), so the fixed
+   * `setTimeout(resolve, 0)` hops this helper used to interleave do NOT
+   * reliably cover `open → get → decrypt` on a loaded event loop. The tail
+   * therefore outlived the spec that started it and landed on the NEXT spec's
+   * `storageRemoveItem` mock — `vi.clearAllMocks()` resets the recorder but
+   * cannot stop an already-scheduled chain. That is why
+   * "recovers the complete legacy history after the second persistence write
+   * fails" failed in CI with
+   * `expected "vi.fn()" to not be called with
+   * ['open3dcalc_migration_progress_v2']` while `storageValues` still held the
+   * marker (the fresh migration had already re-written it at
+   * `useAppInit.ts:495`).
+   *
+   * Waiting for storage to go QUIET covers a chain of any length: each new
+   * `setItem`/`removeItem` resets the idle counter, so a tail that is still
+   * working keeps pushing the window forward. It terminates because a
+   * migration performs finitely many writes.
+   */
+  async function waitForStorageQuiet(): Promise<void> {
+    const writeCount = (): number =>
+      storageSetItem.mock.calls.length + storageRemoveItem.mock.calls.length;
+    let previous = writeCount();
+    let idle = 0;
+    while (idle < 5) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const current = writeCount();
+      idle = current === previous ? idle + 1 : 0;
+      previous = current;
+    }
+  }
+
   /** Drain the vault write queue through a macrotask the fake IDB commits on. */
   async function settleWrites(): Promise<void> {
     await whenPiiWritesSettled();
@@ -225,6 +271,8 @@ describe("useAppInit tutorial auto-start", () => {
     await whenPiiWritesSettled();
     await new Promise((resolve) => setTimeout(resolve, 0));
     await whenPiiWritesSettled();
+    // The vault queue is drained; the migration's own untracked tail may not be.
+    await waitForStorageQuiet();
   }
 
   /** The migrated history entries as they now live, read from the vault. */
@@ -345,6 +393,13 @@ describe("useAppInit tutorial auto-start", () => {
     await whenPiiWritesSettled();
     await new Promise((resolve) => setTimeout(resolve, 0));
     await whenPiiWritesSettled();
+    // …and then wait for the migration's UNTRACKED tail (`readPiiPersistedRecord`
+    // → `removeItem`, `useAppInit.ts:310,355`) to finish touching storage. The
+    // two drains above are not a barrier for it: that read is never registered
+    // as a write tail (`piiStoreHydration.ts:334`), so on a loaded event loop it
+    // can outlive this spec and record a `removeItem` on the NEXT spec's mock —
+    // which is what failed CI here. See `waitForStorageQuiet`.
+    await waitForStorageQuiet();
     lockAllPiiStores();
     resetPiiStoreRuntimeForTests();
     resetPiiStoreHydrationForTests();
@@ -777,8 +832,13 @@ describe("useAppInit tutorial auto-start", () => {
     await vi.waitFor(async () => {
       expect(await vaultHistoryEntries()).toHaveLength(1);
     });
+    // Wait for the CONDITION, not for a fixed drain: `vaultHistoryEntries()`
+    // only proves the FIRST put committed, and the refused second put issues no
+    // storage write, so `waitForStorageQuiet()` cannot observe it. Reading
+    // `interruption.interrupted` before the refusing put had run was the other
+    // way this spec could flake.
+    await vi.waitFor(() => expect(interruption.interrupted).toBe(1));
     await settleWrites();
-    expect(interruption.interrupted).toBe(1);
 
     // The durable recovery marker SURVIVED so the next startup can resume from
     // the intact source — but it is VALUE-FREE (W4.4): it carries no record.
