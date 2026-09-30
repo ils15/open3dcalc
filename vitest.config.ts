@@ -35,20 +35,6 @@ export default defineConfig(
       // about them; this block is the single place for this repo.
       testTimeout: 10_000,
 
-      // ── Worker pool ─────────────────────────────────────────────────────
-      // `maxWorkers` defaults to ALL of os.availableParallelism() whenever
-      // `watch` is disabled — which is exactly how the pre-push hook invokes
-      // the suite (`vitest run`). On a 24-core box that is 24 concurrent
-      // forks, and vitest itself reports jsdom construction as the single
-      // largest cost in this suite (198s across 293 files), so an unbounded
-      // pool is the most plausible cause of the machine locking up.
-      //
-      // "50%" pins run-mode and watch-mode to the same width, so the suite
-      // behaves identically however it is invoked. `fileParallelism` stays
-      // true: setting it false would force maxWorkers to 1 and serialise the
-      // whole suite, which is a much larger cost than the data justifies.
-      maxWorkers: "50%",
-
       exclude: [
         "node_modules",
         "web",
