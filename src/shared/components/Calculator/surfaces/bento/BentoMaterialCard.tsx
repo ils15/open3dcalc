@@ -77,7 +77,10 @@ export function BentoMaterialCard({
   const materialOptions = materials
     .filter((item) => item.type === (isFDM ? "fdm" : "resin"))
     .map((item) => ({ label: item.name, value: item.name }));
-  if (currentType && !materialOptions.some((option) => option.value === currentType)) {
+  if (
+    currentType &&
+    !materialOptions.some((option) => option.value === currentType)
+  ) {
     materialOptions.unshift({ label: currentType, value: currentType });
   }
 
@@ -91,7 +94,10 @@ export function BentoMaterialCard({
     value: item.id,
   }));
   const selectedSpool = spools.find((item) => item.id === activeSpoolId);
-  if (selectedSpool && !spoolOptions.some((option) => option.value === selectedSpool.id)) {
+  if (
+    selectedSpool &&
+    !spoolOptions.some((option) => option.value === selectedSpool.id)
+  ) {
     spoolOptions.unshift({
       label: `${selectedSpool.brand} · ${selectedSpool.material} · ${selectedSpool.color}`,
       value: selectedSpool.id,
@@ -108,7 +114,11 @@ export function BentoMaterialCard({
     null;
 
   return (
-    <BentoCard title={t("bento.cards.material")} icon={Boxes}>
+    <BentoCard
+      title={t("bento.cards.material")}
+      icon={Boxes}
+      className="lg:col-span-2"
+    >
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {isVisible("type") && (
           <BentoField
@@ -120,7 +130,9 @@ export function BentoMaterialCard({
                 : setResinMaterial({ ...resinMaterial, type: value })
             }
             options={materialOptions}
-            helper={t(isFDM ? "tooltip.filamentType" : "bento.helpers.resinType")}
+            helper={t(
+              isFDM ? "tooltip.filamentType" : "bento.helpers.resinType",
+            )}
             className="sm:col-span-2"
           />
         )}
@@ -131,7 +143,10 @@ export function BentoMaterialCard({
                 label={t("calc.weight")}
                 value={currentWeight}
                 onChange={(value) =>
-                  setFdmMaterial({ ...fdmMaterial, weightUsed: parseNumber(value) })
+                  setFdmMaterial({
+                    ...fdmMaterial,
+                    weightUsed: parseNumber(value),
+                  })
                 }
                 type="number"
                 unit="g"
@@ -145,7 +160,10 @@ export function BentoMaterialCard({
                 label={t("calc.costPerKg")}
                 value={currentCostPerKg}
                 onChange={(value) =>
-                  setFdmMaterial({ ...fdmMaterial, costPerKg: parseNumber(value) })
+                  setFdmMaterial({
+                    ...fdmMaterial,
+                    costPerKg: parseNumber(value),
+                  })
                 }
                 type="number"
                 prefix={symbol}
@@ -160,7 +178,10 @@ export function BentoMaterialCard({
                 label={t("calc.purge")}
                 value={fdmMaterial.purgeWeight}
                 onChange={(value) =>
-                  setFdmMaterial({ ...fdmMaterial, purgeWeight: parseNumber(value) })
+                  setFdmMaterial({
+                    ...fdmMaterial,
+                    purgeWeight: parseNumber(value),
+                  })
                 }
                 type="number"
                 unit="g"
@@ -174,7 +195,10 @@ export function BentoMaterialCard({
                 label={t("calc.density")}
                 value={fdmMaterial.density}
                 onChange={(value) =>
-                  setFdmMaterial({ ...fdmMaterial, density: parseNumber(value) })
+                  setFdmMaterial({
+                    ...fdmMaterial,
+                    density: parseNumber(value),
+                  })
                 }
                 type="number"
                 unit="g/cm³"
@@ -188,7 +212,10 @@ export function BentoMaterialCard({
                 label={t("calc.spoolEfficiency")}
                 value={fdmMaterial.spoolEfficiency}
                 onChange={(value) =>
-                  setFdmMaterial({ ...fdmMaterial, spoolEfficiency: parseNumber(value) })
+                  setFdmMaterial({
+                    ...fdmMaterial,
+                    spoolEfficiency: parseNumber(value),
+                  })
                 }
                 type="number"
                 unit="%"
@@ -205,7 +232,10 @@ export function BentoMaterialCard({
                 label={t("calc.costPerLiter")}
                 value={resinMaterial.costPerLiter}
                 onChange={(value) =>
-                  setResinMaterial({ ...resinMaterial, costPerLiter: parseNumber(value) })
+                  setResinMaterial({
+                    ...resinMaterial,
+                    costPerLiter: parseNumber(value),
+                  })
                 }
                 type="number"
                 prefix={symbol}
@@ -220,7 +250,10 @@ export function BentoMaterialCard({
                 label={t("calc.volumeMl")}
                 value={resinMaterial.volumeUsedMl}
                 onChange={(value) =>
-                  setResinMaterial({ ...resinMaterial, volumeUsedMl: parseNumber(value) })
+                  setResinMaterial({
+                    ...resinMaterial,
+                    volumeUsedMl: parseNumber(value),
+                  })
                 }
                 type="number"
                 unit="ml"
@@ -253,7 +286,10 @@ export function BentoMaterialCard({
             label={t("bento.fields.spool")}
             value={activeSpoolId ?? ""}
             onChange={(value) => setSelectedSpoolId(value || null)}
-            options={[{ label: t("bento.noSpoolSelected"), value: "" }, ...spoolOptions]}
+            options={[
+              { label: t("bento.noSpoolSelected"), value: "" },
+              ...spoolOptions,
+            ]}
             helper={t("bento.helpers.spool")}
             className="sm:col-span-2"
           />

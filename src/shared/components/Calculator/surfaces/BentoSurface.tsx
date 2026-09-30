@@ -148,7 +148,7 @@ export function BentoSurface(): React.ReactElement {
             historyActionLabel={t("results.addHistorySeparate")}
           />
         </section>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
           <BentoMaterialCard
             materialType={materialType}
             unitWeight={result.unitWeight}

@@ -128,16 +128,28 @@ describe("BentoSurface", () => {
       "Resumo financeiro",
     ];
     for (const heading of headings) {
-      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: heading }),
+      ).toBeInTheDocument();
     }
 
-    expect(screen.getByLabelText("Projeto / cliente: Suporte de câmera")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Projeto / cliente: Suporte de câmera"),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("price-hero")).toHaveTextContent(/R\$\s*105,88/);
-    expect(screen.getAllByLabelText(/Preço final: R\$ 105,88/).length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText(/Custo total: R\$ 58,34/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByLabelText(/Lucro líquido: R\$ 30,00/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByLabelText(/Preço final: R\$ 105,88/).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByLabelText(/Custo total: R\$ 58,34/i).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByLabelText(/Lucro líquido: R\$ 30,00/i).length,
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("2,5 h").length).toBeGreaterThan(0);
-    expect(screen.getByRole("spinbutton", { name: "Quantidade" })).toHaveValue(3);
+    expect(screen.getByRole("spinbutton", { name: "Quantidade" })).toHaveValue(
+      3,
+    );
   });
 
   it("does not render an orphan summary link without a result", () => {
@@ -167,7 +179,9 @@ describe("BentoSurface", () => {
       "aria-valuetext",
       "500 g de 800 g disponíveis (63%)",
     );
-    expect(within(materialCard).getByText("500 g restantes")).toBeInTheDocument();
+    expect(
+      within(materialCard).getByText("500 g restantes"),
+    ).toBeInTheDocument();
   });
 
   it("switches from the layout selector to BentoSurface", async () => {
@@ -182,7 +196,9 @@ describe("BentoSurface", () => {
 
     await user.click(screen.getByRole("button", { name: "Bento Grid" }));
 
-    expect(screen.getByRole("region", { name: "Calculadora em Bento Grid" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Calculadora em Bento Grid" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(4);
     expect(
       screen.queryByRole("article", { name: "Resumo financeiro" }),
@@ -200,9 +216,13 @@ describe("BentoSurface", () => {
     expect(firstCard).toHaveFocus();
 
     await user.tab();
-    expect(screen.getByRole("combobox", { name: "Tipo de Filamento" })).toHaveFocus();
+    expect(
+      screen.getByRole("combobox", { name: "Tipo de Filamento" }),
+    ).toHaveFocus();
 
-    const machineCard = screen.getByRole("article", { name: "Máquina e energia" });
+    const machineCard = screen.getByRole("article", {
+      name: "Máquina e energia",
+    });
     machineCard.focus();
     expect(machineCard).toHaveFocus();
   });
@@ -215,18 +235,36 @@ describe("BentoSurface", () => {
 
     render(<CalculatorSurface />);
 
-     await user.click(
-       screen.getByRole("button", {
-         name: "Adicionar ao histórico sem deduzir estoque",
-       }),
-     );
+    await user.click(
+      screen.getByRole("button", {
+        name: "Adicionar ao histórico sem deduzir estoque",
+      }),
+    );
 
     expect(addToHistory).toHaveBeenCalledOnce();
   });
 
   it.each([
-    ["pt-BR", ["Material", "Máquina e energia", "Mão de obra e extras", "Precificação", "Resumo financeiro"]],
-    ["en-US", ["Material", "Machine & energy", "Labor & extras", "Pricing", "Financial summary"]],
+    [
+      "pt-BR",
+      [
+        "Material",
+        "Máquina e energia",
+        "Mão de obra e extras",
+        "Precificação",
+        "Resumo financeiro",
+      ],
+    ],
+    [
+      "en-US",
+      [
+        "Material",
+        "Machine & energy",
+        "Labor & extras",
+        "Pricing",
+        "Financial summary",
+      ],
+    ],
   ] as const)("renders every card label in %s", async (language, headings) => {
     await i18n.changeLanguage(language);
     useLayoutStore.setState({ layoutMode: "bento" });
@@ -234,7 +272,9 @@ describe("BentoSurface", () => {
     render(<CalculatorSurface />);
 
     for (const heading of headings) {
-      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: heading }),
+      ).toBeInTheDocument();
     }
     expect(screen.queryByText(/bento\./i)).not.toBeInTheDocument();
   });
@@ -378,5 +418,77 @@ describe("BentoSurface", () => {
     await user.keyboard("{Enter}");
     expect(useCalculatorStore.getState().calcLevel).toBe("intermediate");
     expect(detailed).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("stops the cards from stretching to the tallest card in their row", () => {
+    useLayoutStore.setState({ layoutMode: "bento" });
+
+    render(<CalculatorSurface />);
+
+    const grid = screen.getByRole("article", {
+      name: "Material",
+    }).parentElement;
+    expect(grid).not.toBeNull();
+    // Without items-start the grid default (align-items: stretch) forces every
+    // card in a row to the height of the tallest one.
+    expect(grid).toHaveClass("items-start");
+    for (const name of [
+      "Material",
+      "Máquina e energia",
+      "Mão de obra e extras",
+      "Precificação",
+    ]) {
+      const card = screen.getByRole("article", { name });
+      expect(card).not.toHaveClass("h-full");
+      expect(card).not.toHaveClass("self-stretch");
+    }
+  });
+
+  it("gives the grid a two-wide hierarchy that tiles without empty cells", () => {
+    useLayoutStore.setState({ layoutMode: "bento" });
+
+    render(<CalculatorSurface />);
+
+    const grid = screen.getByRole("article", {
+      name: "Material",
+    }).parentElement;
+    expect(grid).toHaveClass("grid-cols-1");
+    expect(grid).toHaveClass("md:grid-cols-2");
+    expect(grid).toHaveClass("lg:grid-cols-3");
+
+    // Material (2) + Machine (1) / Labor (1) + Pricing (2) fills every cell at
+    // md (2 cols) and lg (3 cols) without leaving a hole in the last row.
+    expect(screen.getByRole("article", { name: "Material" })).toHaveClass(
+      "lg:col-span-2",
+    );
+    expect(screen.getByRole("article", { name: "Precificação" })).toHaveClass(
+      "lg:col-span-2",
+    );
+    expect(
+      screen.getByRole("article", { name: "Máquina e energia" }),
+    ).not.toHaveClass("lg:col-span-2");
+    expect(
+      screen.getByRole("article", { name: "Mão de obra e extras" }),
+    ).not.toHaveClass("lg:col-span-2");
+  });
+
+  it("keeps the visual card order as the DOM focus order", () => {
+    useLayoutStore.setState({ layoutMode: "bento" });
+
+    render(<CalculatorSurface />);
+
+    const grid = screen.getByRole("article", {
+      name: "Material",
+    }).parentElement;
+    expect(
+      Array.from(grid?.children ?? []).map(
+        (child) => child.querySelector("h2")?.textContent,
+      ),
+    ).toEqual([
+      "Material",
+      "Máquina e energia",
+      "Mão de obra e extras",
+      "Precificação",
+    ]);
   });
 });
