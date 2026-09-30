@@ -572,9 +572,15 @@ export function Dashboard() {
     results.totalCost > 0 ? (results.profit / results.totalCost) * 100 : 0;
 
   return (
-    <div className="space-y-5">
+    // Bento outer wrapper. `space-y-5` (20px between siblings) became
+    // `gap-5` so the rhythm is identical, but the axis changed from a single
+    // stacked column to a 3-column grid at `lg` (1024px) — the same breakpoint
+    // and the same `lg:col-span-2` idiom the prototype uses. `items-start`
+    // keeps each block at its natural height instead of stretching a short
+    // card to match the chart beside it (matches BentoSurface).
+    <div className="grid grid-cols-1 gap-5 items-start lg:grid-cols-3">
       {/* Header with Export PDF */}
-      <div className="flex items-center justify-between">
+      <div className="lg:col-span-3 flex items-center justify-between">
         <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
           {t("nav.dashboard")}
         </h2>
@@ -590,7 +596,7 @@ export function Dashboard() {
       {/* KPI Cards */}
       <div
         data-tutorial="dashboard-summary"
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        className="lg:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-3"
       >
         <div className="surface rounded-xl p-4 text-center hover:-translate-y-0.5 transition-transform">
           <p className="text-xs text-[var(--color-text-secondary)] mb-1">
@@ -633,7 +639,7 @@ export function Dashboard() {
       {/* Date Range Filter */}
       <div
         data-tutorial="dashboard-date-range"
-        className="surface rounded-xl p-4"
+        className="lg:col-span-3 surface rounded-xl p-4"
       >
         <p className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
           {t("dashboard.dateFrom")} / {t("dashboard.dateTo")}
@@ -688,6 +694,7 @@ export function Dashboard() {
         <section
           data-tutorial="dashboard-kpis"
           aria-label={t("dashboard.kpis.title")}
+          className="lg:col-span-3"
         >
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-3">
             {t("dashboard.kpis.title")}
@@ -740,14 +747,16 @@ export function Dashboard() {
         answers "what next month looks like". Reading the filtered entries keeps
         it on the same date range as the cards beside it.
       */}
-      <ProfitAnalyticsModule entries={filteredEntries} />
+      <div className="lg:col-span-2">
+        <ProfitAnalyticsModule entries={filteredEntries} />
+      </div>
 
       {/* Fase 3: history-based monthly profit projection */}
       {monthlyProfitProjection != null && (
         <div
           data-tutorial="dashboard-projection"
           data-testid="dashboard-projection"
-          className="surface rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-[var(--color-accent)]/20"
+          className="lg:col-span-1 surface rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-[var(--color-accent)]/20"
         >
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -796,7 +805,7 @@ export function Dashboard() {
         }
       >
         {chartData.length > 1 && (
-          <div className="surface rounded-xl p-4">
+          <div className="lg:col-span-3 surface rounded-xl p-4">
             <p className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
               {t("breakdown.title")}
             </p>
@@ -849,7 +858,9 @@ export function Dashboard() {
       </Suspense>
 
       {/* Monthly Projection */}
-      <div className="surface rounded-xl p-5">
+      {/* span 3, not 1: the InputGroup + 2x2 stat grid overflows a 1-col
+          track (measured 243->292px of content in a 285px track at 1280). */}
+      <div className="lg:col-span-3 surface rounded-xl p-5">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
           {t("calc.monthlyProjection")}
         </h3>
@@ -913,7 +924,7 @@ export function Dashboard() {
       </div>
 
       {/* Break-Even Card */}
-      <div className="surface rounded-xl p-5">
+      <div className="lg:col-span-3 surface rounded-xl p-5">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
           {t("dashboard.breakEven")}
         </h3>
@@ -966,7 +977,7 @@ export function Dashboard() {
       </div>
 
       {/* Average Margin Card */}
-      <div className="surface rounded-xl p-5">
+      <div className="lg:col-span-1 surface rounded-xl p-5">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
           {t("dashboard.avgMargin")}
         </h3>
@@ -1000,7 +1011,7 @@ export function Dashboard() {
           </div>
         }
       >
-        <div className="surface rounded-xl p-5">
+        <div className="lg:col-span-2 surface rounded-xl p-5">
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
             {t("dashboard.trend")}
           </h3>
@@ -1081,7 +1092,7 @@ export function Dashboard() {
       </Suspense>
 
       {/* Target Margin Mode */}
-      <div className="surface rounded-xl p-5">
+      <div className="lg:col-span-2 surface rounded-xl p-5">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
           {t("calc.targetMarginMode")}
         </h3>
@@ -1124,7 +1135,7 @@ export function Dashboard() {
       </div>
 
       {/* Print vs Buy */}
-      <div className="surface rounded-xl p-5">
+      <div className="lg:col-span-1 surface rounded-xl p-5">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
           {t("calc.printVsBuy")}
         </h3>
@@ -1172,7 +1183,7 @@ export function Dashboard() {
           </div>
         }
       >
-        <div className="surface rounded-xl p-5">
+        <div className="lg:col-span-3 surface rounded-xl p-5">
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
             {t("dashboard.topPrinters")}
           </h3>
@@ -1237,7 +1248,7 @@ export function Dashboard() {
           </div>
         }
       >
-        <div className="surface rounded-xl p-5">
+        <div className="lg:col-span-3 surface rounded-xl p-5">
           <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
             {t("dashboard.topMaterials")}
           </h3>
@@ -1294,7 +1305,7 @@ export function Dashboard() {
       </Suspense>
 
       {/* Period Comparison */}
-      <div className="surface rounded-xl p-5">
+      <div className="lg:col-span-2 surface rounded-xl p-5">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
           {t("dashboard.periodComparison")}
         </h3>
@@ -1342,7 +1353,7 @@ export function Dashboard() {
       </div>
 
       {/* Custom Goal */}
-      <div className="surface rounded-xl p-5">
+      <div className="lg:col-span-1 surface rounded-xl p-5">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-4">
           {t("dashboard.customGoal")}
         </h3>
@@ -1384,7 +1395,7 @@ export function Dashboard() {
 
       {/* Low-Margin Alerts */}
       {lowMarginEntries.length > 0 && (
-        <div className="surface rounded-xl p-5 border border-amber-500/30">
+        <div className="lg:col-span-3 surface rounded-xl p-5 border border-amber-500/30">
           <h3 className="text-sm font-bold text-amber-400 mb-2">
             {t("dashboard.lowMarginAlerts")}
           </h3>
