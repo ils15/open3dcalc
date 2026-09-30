@@ -649,6 +649,32 @@
         "bulk": "Pesado / Lote (acima de 300 g)"
       },
       "printerUnknown": "Impressora desconhecida"
+    },
+    "analytics": {
+      "title": "Análise de Rentabilidade",
+      "subtitle": "Margem por material e por máquina",
+      "scopeFiltered": "{{count}} {{label}} do período selecionado",
+      "tabsLabel": "Agrupamento da rentabilidade",
+      "tabMaterial": "Por material",
+      "tabPrinter": "Por impressora",
+      "kpiTopMaterial": "Material mais lucrativo",
+      "kpiTopPrinter": "Impressora mais rentável",
+      "kpiWeightedMargin": "Margem ponderada por receita",
+      "kpiWeightedMarginNote": "Soma do lucro dividida pela soma da receita",
+      "kpiAvgPerHour": "Retorno médio por hora",
+      "groupMaterial": "Rentabilidade por material",
+      "groupPrinter": "Rentabilidade por impressora",
+      "rowRevenue": "Receita",
+      "rowProfit": "Lucro",
+      "rowMargin": "Margem",
+      "rowPerHour": "Lucro/h",
+      "rowHours": "Horas",
+      "jobCount_one": "{{count}} trabalho",
+      "jobCount_other": "{{count}} trabalhos",
+      "orphanCount_one": "{{count}} entrada sem material não aparece nesta visão",
+      "orphanCount_other": "{{count}} entradas sem material não aparecem nesta visão",
+      "barLegendMaterial": "Barra: margem de cada material em relação à melhor do grupo",
+      "barLegendPrinter": "Barra: lucro por hora de cada impressora em relação à melhor do grupo"
     }
   },
   "breakdown": {
