@@ -44,7 +44,7 @@ export function Header() {
       >
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto min-w-0 px-6 sm:px-8 lg:px-12 h-[68px] flex items-center justify-between gap-4">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 max-w-[248px] items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
               style={{
@@ -55,14 +55,14 @@ export function Header() {
               <Box className="w-[22px] h-[22px] text-white" strokeWidth={2} />
             </div>
 
-            <div className="leading-none">
+            <div className="min-w-0 leading-none">
               <div className="flex items-center gap-2">
-                <span className="text-[17px] sm:text-[19px] font-black tracking-tight gradient-text">
+                <span className="truncate text-[17px] sm:text-[19px] font-black tracking-tight gradient-text">
                   {t("app.title")}
                 </span>
                 <BetaBadge />
               </div>
-              <p className="text-[11px] sm:text-[12px] text-[var(--color-text-muted)] uppercase tracking-widest mt-0.5 hidden sm:block">
+              <p className="truncate text-[11px] sm:text-[12px] text-[var(--color-text-muted)] uppercase tracking-widest mt-0.5 hidden sm:block">
                 {t("app.subtitle")}
               </p>
             </div>
