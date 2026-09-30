@@ -8,6 +8,47 @@ export default defineConfig(
       environment: "jsdom",
       setupFiles: ["./src/shared/test/setup.ts"],
       css: true,
+
+      // ── Timeouts ────────────────────────────────────────────────────────
+      // Vitest's own default for this pool is `testTimeout: 5000`; it was
+      // previously left unconfigured here, so the budget was implicit.
+      //
+      // Why this number: the slowest measured test in the Electron/secret
+      // family (electron/__tests__/{cryptoCapability,legacyRecovery,
+      // legacyScan,osKeyring,persistGate,piiDomainTables,piiStage,
+      // piiStageResidue}.test.ts) runs 2564-3331ms, i.e. 51-67% of that 5000ms
+      // budget. 10s is ~3x the worst observation and above the 2x margin floor
+      // (6662ms), which leaves room for a loaded CI runner.
+      //
+      // Scope, deliberately: `hookTimeout` and `teardownTimeout` are NOT set
+      // here. The Electron family registers no beforeAll/afterAll, so the slow
+      // work is test bodies, and teardown is not a hot spot — configuring a
+      // knob with no consumer is noise. The 6781ms crypto self-test already
+      // declares its own 180_000ms budget at the call site
+      // (crypto.selftest.test.ts), so it needs no global margin.
+      //
+      // This is honest margin, NOT a flake fix: the reported flake did not
+      // reproduce in 5 runs under load 2.99. Upstream vitest-dev/vitest#9751
+      // ("Unify and simplify timeout configuration") documents how these knobs
+      // are scattered across `testTimeout` / `expect.poll.timeout` /
+      // `browser.providerOptions.actionTimeout` with no single place to reason
+      // about them; this block is the single place for this repo.
+      testTimeout: 10_000,
+
+      // ── Worker pool ─────────────────────────────────────────────────────
+      // `maxWorkers` defaults to ALL of os.availableParallelism() whenever
+      // `watch` is disabled — which is exactly how the pre-push hook invokes
+      // the suite (`vitest run`). On a 24-core box that is 24 concurrent
+      // forks, and vitest itself reports jsdom construction as the single
+      // largest cost in this suite (198s across 293 files), so an unbounded
+      // pool is the most plausible cause of the machine locking up.
+      //
+      // "50%" pins run-mode and watch-mode to the same width, so the suite
+      // behaves identically however it is invoked. `fileParallelism` stays
+      // true: setting it false would force maxWorkers to 1 and serialise the
+      // whole suite, which is a much larger cost than the data justifies.
+      maxWorkers: "50%",
+
       exclude: [
         "node_modules",
         "web",
