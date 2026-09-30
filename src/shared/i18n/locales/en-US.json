@@ -675,6 +675,19 @@
       "orphanCount_other": "{{count}} entries without material are not in this view",
       "barLegendMaterial": "Bar: each material's margin relative to the best in the group",
       "barLegendPrinter": "Bar: each printer's profit per hour relative to the best in the group"
+    },
+    "heatmap": {
+      "title": "Material efficiency",
+      "subtitle": "Profit per gram in each weight band",
+      "tableLabel": "Profit per gram by material and weight band",
+      "metricLabel": "Profit per gram",
+      "legendLabel": "Color scale",
+      "legendLoss": "Loss per gram",
+      "legendWeak": "Low profit",
+      "legendStrong": "High profit",
+      "legendBest": "Row best",
+      "cellLabel": "{{material}}, {{band}}: {{value}} per gram, {{count}}",
+      "cellEmpty": "No jobs in this band"
     }
   },
   "breakdown": {

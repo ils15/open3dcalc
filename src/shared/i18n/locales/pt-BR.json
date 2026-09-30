@@ -675,6 +675,19 @@
       "orphanCount_other": "{{count}} entradas sem material não aparecem nesta visão",
       "barLegendMaterial": "Barra: margem de cada material em relação à melhor do grupo",
       "barLegendPrinter": "Barra: lucro por hora de cada impressora em relação à melhor do grupo"
+    },
+    "heatmap": {
+      "title": "Eficiência de material",
+      "subtitle": "Lucro por grama em cada faixa de peso",
+      "tableLabel": "Lucro por grama por material e faixa de peso",
+      "metricLabel": "Lucro por grama",
+      "legendLabel": "Escala de cor",
+      "legendLoss": "Prejuízo por grama",
+      "legendWeak": "Lucro baixo",
+      "legendStrong": "Lucro alto",
+      "legendBest": "Melhor da linha",
+      "cellLabel": "{{material}}, {{band}}: {{value}} por grama, {{count}}",
+      "cellEmpty": "Sem peças nesta faixa"
     }
   },
   "breakdown": {
