@@ -1,6 +1,6 @@
 # 🗺️ Open3DCalc — Roadmap
 
-> **Date:** 18/09/2026
+> **Date:** 30/09/2026 (documento original: 18/09/2026)
 > **Purpose:** Priority guide for the evolution of Open3DCalc.
 > **Flow:** Every feature follows → branch → PR → review → merge (`BRANCH-POLICY.md`)
 
@@ -17,6 +17,61 @@
 ---
 
 ## Priorities (Execution Order)
+
+### 🧹 Higiene do repositório — o que está preservado, o que está órfão e o que não volta
+
+> **Por que fica no topo e não no rodapé.** É a única informação deste documento que não descreve uma fase. É estado do repositório, não plano de produto: enquanto morar no fim do arquivo, ninguém a lê antes de decidir o que apagar.
+
+**Tags `archive/*` — 19 preservadas, 1 extraída até agora.**
+
+| Métrica                                                   | Número |
+| --------------------------------------------------------- | ------ |
+| Tags `archive/*` no repositório                           | 19     |
+| Já extraídas e portadas                                   | 1      |
+| Ainda apenas preservadas pela tag                         | 18     |
+| Tags no total (38 `v*` + 2 `pre-split*` + 19 `archive/*`) | 59     |
+
+- [x] **`archive/modern-layout-ee5ab13` → extraída.** Os 4 modos de apresentação do painel de resultados (`compact` / `tabs` / `dock` / `expanded`), o `SidebarMode` e o `ResultsSidebar` chegaram em `2ee1332`, no PR #248, junto de 3 suites de teste. A zona foi verificada arquivo por arquivo antes de aplicar: `CostDistributionBars.tsx` foi deliberadamente **não** portado porque já existe em `main` como superconjunto (90 linhas contra 79 da tag, com o guard `Number.isFinite(segment.pct)` que a tag não tem) — aplicar o blob da tag seria regressão silenciosa.
+
+**Regra vigente: nenhuma tag é apagada antes de auditoria granular por arquivo.**
+
+- [x] A armadilha já foi demonstrada uma vez. Uma classificação por `git cherry` classificou `eng-calcs-7d9b09d` como "órfã" e quase a descartou — e era exatamente ela que guardava `printToleranceData.ts` (164 linhas) e o teste (176), código implementado, testado e drop-in, que alimenta a **Phase 6 P2** ainda desmarcada. Classificação por conjunto não é auditoria. Auditoria é abrir o conteúdo.
+- [ ] Nenhuma das 18 tags restantes é apagada antes de ser aberta arquivo por arquivo, com o mesmo rigor da extração de `modern-layout-ee5ab13`.
+
+**Branches órfãs ainda não abertas arquivo por arquivo**, pela mesma armadilha.
+
+| Medida (30/09/2026, em `7511904`)                                       | Comando                                       | Resultado                                     |
+| ----------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------- |
+| Branches locais não mescladas em `main`                                 | `git branch --no-merged main`                 | 38 (inclui a branch de trabalho atual)        |
+| Idem, excluindo a branch de trabalho                                    | idem, menos `feat/layout-chrome-layer`        | **37**                                        |
+| Branches remotas não mescladas em `main`                                | `git branch -r --no-merged main`              | 18 (inclui `origin/feat/layout-chrome-layer`) |
+| Idem, excluindo a branch de trabalho                                    | idem, menos `origin/feat/layout-chrome-layer` | **17**                                        |
+| Nomes distintos na união local ∪ remoto, excluindo a branch de trabalho | união das duas listas, `sort -u`              | **46**                                        |
+
+- [x] A contagem registrada anteriormente como "39 branches órfãs" **não se reproduz** em nenhuma das medidas acima. O número honesto é o da tabela, com o comando ao lado para que qualquer pessoa refaça a conta em vez de confiar no algarismo. Nenhuma limpeza depende do número: dependem de cada uma das 46 ser aberta.
+- [ ] Nenhuma branch é apagada ou podada antes de ser aberta arquivo por arquivo. As branches sobrevivem a merges por squash: `git branch --no-merged main` lista trabalho que **já está** em `main` — 8 dos 37 nomes locais existem também no remoto — e, ao mesmo tempo, pode esconder trabalho que não está. As duas respostas exigem abrir o arquivo, não confiar no grafo.
+- [ ] A lista é triada por arquivo em três grupos: conteúdo já em `main` via squash, conteúdo exclusivo e ainda não portado, e conteúdo sem valor. Só o primeiro grupo é descartável com consciência.
+
+**4 componentes órfãos dentro do próprio `Example/` que não serão portados.**
+
+| Componente                        | Importadores                            | Veredito                                                                        |
+| --------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------- |
+| `MonthlyRevenueProjectionSection` | 0                                       | Não portar — e ver a duplicação abaixo                                          |
+| `HeaderNav`                       | 0                                       | Não portar                                                                      |
+| `LayoutComparisonModal`           | 0                                       | Não portar                                                                      |
+| `StudioLayout`                    | 1 (`App.tsx:18`), **nunca renderizado** | Não portar — importado, não usado; `"studio"` não está no union de `LayoutMode` |
+
+- [x] `StudioLayout` **não** tem zero importadores: tem exatamente um, `Example/src/App.tsx:18`, e o componente nunca é renderizado. A afirmação "importado por todos, renderizado por nenhum" era a correta; a contagem de zero importadores, não.
+- [ ] `MonthlyRevenueProjectionSection` **duplica** `MonthlyRevenueProjectionCard` com defaults contraditórios. Não é refatoração pendente: são duas respostas diferentes para a mesma pergunta, e as duas estão no mesmo protótipo.
+
+| Default               | `MonthlyRevenueProjectionCard` | `MonthlyRevenueProjectionSection` |
+| --------------------- | ------------------------------ | --------------------------------- |
+| Dias por mês          | 26 (`:40`)                     | 30 (`:41`, `daysInMonth = 30`)    |
+| Ocupação alvo         | 65% (`:41`)                    | 70% (`:38`)                       |
+| Valor/hora de receita | R$ 18,50 (`:90`)               | R$ 36,50 (`:62`)                  |
+| Margem média          | 52% (`:92`)                    | 63,5% (`:70`)                     |
+
+Nenhuma das duas é medida; as duas são fallback de um dataset fictício. Escolher uma é decisão de produto do dono, não refactor.
 
 ### 🔐 Cross-cutting: LGPD & Privacy-by-design
 
@@ -262,7 +317,11 @@ Every phase and change must complete this checklist:
 **P2 — engineering calculators (new domain, pure math, fully local)**
 
 - [ ] 🧭 **Hole Tolerance Calculator** — exact CAD diameter for heat-set inserts (M2–M8), bolts, bearings and magnets; material- and nozzle-aware compensation (PLA 0.10–0.30mm, PETG 0.15–0.30mm, ABS 0.20–0.35mm; size-dependent: +0.27mm at 3mm, +0.24mm at 5mm, +0.18mm at 10mm).
+  - **Status real: a tabela de dados está pronta, testada e aguardando port. Falta o consumidor — a calculadora em si.** `archive/eng-calcs-7d9b09d` contém `src/shared/lib/printToleranceData.ts` (164 linhas) + `printToleranceData.test.ts` (176 linhas): drop-in absoluto, zero imports, dados puros, cobrindo compensação de furo por material e por diâmetro, insertos rosqueados M2–M8, furos ISO 273, catálogo de 14 rolamentos e offsets de encaixe. O que falta é a interface, a integração com a store e a validação com quemFabrica.
+  - [ ] Portar `printToleranceData.ts` + teste em branch própria, **antes** de qualquer trabalho de layout: é código de toolbox da Phase 6 P2, e misturá-lo com a leva da beta 7 seria exatamente a mistura que a higiene do repositório está tentando desfazer.
+  - [ ] Construir o consumidor por cima da tabela portada.
 - [ ] 🧭 **Press-Fit Calculator** — press / snug / slide / free fits between printed and metal parts (press −0.1mm, snug +0.05mm, sliding +0.15mm, never-bind +0.35mm), bearing pocket numbers, and the teardrop self-supporting hole alternative for vertical holes.
+  - **Status real: a mesma tabela de `printToleranceData` cobre os offsets de encaixe e o catálogo de rolamentos.** Não é uma segunda tabela a fazer: é o mesmo port, seguido de um consumidor próprio. Validação de quem fabrica é decisão do dono.
 
 **P3 — mesh utilities (extends `stlParser` from read-only to read/write)**
 
@@ -334,7 +393,7 @@ Every phase and change must complete this checklist:
 
 ### 🌈 Phase 7: Adaptive Layouts & Progressive Onboarding
 
-**Status em `2.0.0-beta.2`:** entregue para `classic`, `guided` e `bento`, com uma limitação conhecida: o Bento é uma superfície financeira read-only e ainda não substitui os campos editáveis do Clássico.
+**Status em `2.0.0-beta.6`** (`main` = `2cd273f`): entregue para `classic`, `guided` e `bento`. A limitação "Bento read-only" registrada na `2.0.0-beta.2` está **superada**: a superfície é editável. O que resta é **paridade de cobertura** — os mesmos campos do Clássico — e não "tornar editável". Ver a reformulação na Phase 7i.
 
 **Entregue:**
 
@@ -343,24 +402,25 @@ Every phase and change must complete this checklist:
 - [x] `LayoutSwitcher` no header. O Guided já existia, mas era inalcançável porque nenhum componente chamava `setLayoutMode`; o seletor corrigiu esse ponto de entrada.
 - [x] Inspetor Financeiro como refactor behavior-preserving do `ResultsPanel`: cálculos mantidos no hook e apresentação em cards.
 - [x] Wizard progressivo de 4 passos (`GuidedWizard`).
-- [x] `BentoSurface` com cinco cards financeiros e grid responsivo `1 / md:2 / lg:3`.
+- [x] `BentoSurface` com **quatro** cards financeiros no grid (`BentoMaterialCard`, `BentoMachineCard`, `BentoLaborCard`, `BentoPricingCard`) e o `ResultsPanel` em `variant="bento"` **acima** do grid, num landmark próprio (`#bento-results`). Grid responsivo `1 / md:2 / lg:3`. A contagem anterior neste documento dizia "cinco cards" e estava errada: o quinto elemento é o `ResultsPanel`, que não mora no grid. Hierarquia de duas colunas em `lg` entregue na beta 6 (`lg:col-span-2` no card Material, fechando 2+1 sobre 1+2).
 - [x] Gauge do Bento ligado ao inventário real, sem dados fictícios ou contagem local.
 - [x] SPEC-01 na versão 1.4, com três chaves de dados `ui_preference`, incluindo a chave de layout.
 
 **Limitação conhecida:**
 
-- [ ] O Bento foi entregue deliberadamente como read-only. A cobertura editável está especificada na Phase 7i; não deve ser tratada como bug do layout atual.
+- [x] ~~O Bento foi entregue deliberadamente como read-only.~~ **SUPERADA.** A superfície é editável hoje, com cerca de 32 controles `BentoField` e 2 `BentoToggleField` distribuídos pelos cards, e o `calcLevel` do Clássico já é reusado via `isFieldVisibleForLevel`. A Phase 7i foi reformulada em consequência.
 - [ ] O Guide de Perfis para associar persona a layout e `calcLevel` continua pendente.
 - [ ] Estados vazios e feedback visual completos para as novas superfícies continuam em aberto.
 
 **Acceptance criteria:**
 
 - [x] Os três layouts estão acessíveis pelo header e o Guided deixou de ser um modo órfão.
-- [ ] Os três layouts renderizam os mesmos resultados e oferecem a mesma cobertura de edição; hoje isso é bloqueado pela limitação read-only do Bento.
+- [ ] Os três layouts renderizam os mesmos resultados e oferecem a mesma cobertura de edição. **A causa bloqueante mudou:** não é mais a ausência de edição, é a cobertura de campos desigual entre Clássico e Bento (ver Phase 7i).
 - [ ] Trocas de layout nunca entram no undo stack nem tornam o cálculo pendente.
 - [ ] O wizard pode ser pulado ou dispensado em qualquer etapa; a calculadora permanece utilizável sem ele.
 - [x] A chave de layout aparece no manifesto SPEC-01.
-- [ ] A chave de layout está incluída na limpeza de dados e nos testes de regressão de privacidade.
+- [x] **A chave de layout está incluída na limpeza de dados.** Verificado: `rendererSweep.ts:14-18` faz um _default-deny_ por prefixo — `isAppKey()` aceita qualquer chave que comece com `open3dcalc_` **ou** que esteja no manifesto. `open3dcalc_layout_v1` satisfaz as duas regras, e a entrada do SPEC-01 declara `erasure: "erase_on_delete_all"`. A varredura não é uma lista de chaves: apagar a lista não a quebraria.
+- [ ] **A chave de layout não tem teste de regressão de privacidade próprio.** Verificado: existe `navigationPrefsErasure.test.ts`, que prova as duas ramas da varredura para `open3dcalc_nav_v1` (inclusive a que só a regra de prefixo limpa, com o manifesto simulado sem a chave). Nenhum teste equivalente existe para `open3dcalc_layout_v1` — as únicas ocorrências da chave em testes são de registro de manifesto (`manifestGate.test.ts:106`, `dataManifest.test.ts:137-146`) e de store (`layoutStore.test.ts:13`). O critério original não separava as duas metades; separadas, uma está feita e a outra não.
 - [ ] Os testes existentes continuam passando e as novas superfícies têm testes RTL.
 
 ---
@@ -395,6 +455,33 @@ Every phase and change must complete this checklist:
 - [ ] A checklist de LGPD e os testes de regressão de privacidade passam para cada nova chave.
 
 ---
+
+### 📦 Entregas entre a `2.0.0-beta.2` e a `2.0.0-beta.6`
+
+> **Por que este bloco existe.** As fases 7, 7b, 7c, 7f e 7g registram o estado da `2.0.0-beta.2`. Duas betas completas foram publicadas depois, e o trabalho delas não pertencia a nenhuma fase — era transversal. Sem este bloco, o documento descreve um produto que já foi entregue duas vezes.
+
+#### 🔐 `v2.0.0-beta.5` — segurança e privacidade
+
+**PRs #236 e #241–#246.** Ondas W0–W7 da remediação de privacidade. Entregas:
+
+- [x] Marcador de migração que parou de guardar conteúdo. `useAppInit` escrevia um objeto de recuperação durável — com histórico bruto, `baseEntries` e inventário de produtos — na chave `open3dcalc_migration_done_v2`, que o manifesto declarava `pii: false` / `non_personal_data`. O objeto removido é o que corrigiu a divergência entre a chave e a política.
+- [x] Disclosure do resíduo plaintext legado. A cópia sem apagar é **divulgada**, não escondida: o que a beta 5 não faz é alegar apagamento seguro. A limitação está em `docs/privacy/BETA5-RELEASE-EVIDENCE.md` e é uma limitação, não um item aberto.
+- [x] Resume idempotente. Repetir a operação não muda o resultado, inclusive após interrupção.
+- [x] Re-home de PII do desktop via IPC somente-leitura. O renderer deixa de reescrever PII em plaintext; o main é o único escritor.
+- [x] Harness de browser real (Chromium/Playwright), com `test:browser` rodando antes do publish.
+- [x] Probe **packaged** dentro de `app.asar`, com matriz CI de 4 distros (`host`, `ubuntu24.04`, `debian12`, `rockylinux9`).
+
+**Limitações registradas, deliberadamente não convertidas em item aberto:** o caminho _keyring disponível_ não foi exercitado — todos os probes retornaram `denied` / `encryption_unavailable` — e macOS/Windows e os backends reais `libsecret`/`kwallet` não foram cobertos.
+
+#### 🎨 `v2.0.0-beta.6` — layout
+
+**PR #247** (`2126865`). Quatro gaps:
+
+- [x] **Hierarquia do bento.** O grid não declarava `items-start` e todos os cards de uma linha esticavam até a altura do mais alto. Medido a 1440px: Material e Mão de obra renderizavam a 497px, a altura do card de Máquina; passaram a 415px e 280px. `lg:col-span-2` no card Material fecha o retângulo 2+1 sobre 1+2 e elimina a célula vazia. Só classes de layout: nenhuma cor nova, nenhuma chave i18n nova, ordem do DOM — e portanto ordem de foco — inalterada.
+- [x] **Composição de custo visível no Clássico**, de 3/5 para 5/5 categorias. A variante sidebar do card de custo escondia o donut e mostrava só as três maiores categorias; medido no sidebar a 1920px, Hardware (3,5%) e Falha (7,7%) só apareciam abrindo o disclosure. As barras passaram a ser o padrão do sidebar, com a lista completa visível de imediato; fora do sidebar nada muda.
+- [x] **Seções numeradas.** StepBadge + numeração nas seções do Clássico.
+- [x] **Sidebar agrupada**, com `SidebarGroup` e os grupos de módulos/recursos.
+- [x] **Revisão de acessibilidade** que pegou dois landmarks com o mesmo nome acessível: uma região de módulos e uma navegação de recursos ambos se chamavam `nav.navigation`, e a lista de landmarks oferecia duas entradas idênticas que ninguém conseguia distinguir (WCAG 2.4.6). Coberto por `sidebarLandmarks.test.tsx`.
 
 ### 🎨 Phase 7c: Visual Catalogs (Printers & Marketplaces)
 
@@ -500,7 +587,7 @@ Every phase and change must complete this checklist:
 
 ### 🏗️ Phase 7e: Modo Farm (par. print farms)
 
-**Status:** escopo definido; Farm é o quarto modo do seletor. **Depende da Phase 7d — Gestão de Impressoras:** o modo só pode existir depois dessa fase, pois exibe dados da frota.
+**Status:** decisão de produto **tomada**; implementação em **zero código**. Verificado em 30/09/2026: `LayoutMode` em `src/shared/stores/layoutStore.ts:31` tem **três** valores — `"classic" | "guided" | "bento"` — e `farm` **não existe** em nenhum lugar do código, nem no tipo, nem no `layoutStore`, nem no `LayoutSwitcher`. **Depende da Phase 7d — Gestão de Impressoras:** o modo só pode existir depois dessa fase, pois exibe dados da frota.
 
 **Contexto:** o modo Clássico se rotula “Desktop Pro / alta densidade para fazendas 3D”, mas não existe um modo de verdade para operar múltiplas impressoras.
 
@@ -580,13 +667,44 @@ Every phase and change must complete this checklist:
 
 #### C4 — Bento: espaço vazio e controles duplicados
 
-**Causa raiz do espaço vazio:** o grid não declara `items-start` (`BentoSurface.tsx:134`) e `BentoCard.tsx:23-27` não define `self-start`/`h-fit`; os cards esticam até a altura do mais alto.
+C4 tem duas metades independentes. **A do espaço vazio está resolvida; a da duplicação continua aberta.** Mantê-las separadas é o que impede que a meia-solução feche o item inteiro.
 
-**Causa raiz da duplicação:** o mesmo controle foi observado repetido duas, três ou quatro vezes entre os cards. A decisão é unificar cada controle em uma única instância, mantendo contexto e rótulo suficiente para evitar ambiguidade.
+##### C4a — Espaço vazio e cards esticados: ✅ RESOLVIDO em `2126865` (PR #247, `2.0.0-beta.6`)
+
+**Causa raiz:** o grid não declarava `items-start`, então `align-items` caía no padrão `stretch` e todo card de uma linha era preenchido até a altura do mais alto da linha.
+
+**Correção aplicada — apenas duas classes, em dois lugares:**
+
+| Onde                                          | O que foi adicionado | Por quê                                                                      |
+| --------------------------------------------- | -------------------- | ---------------------------------------------------------------------------- |
+| `BentoSurface.tsx:151` — o container do grid  | `items-start`        | mata o `stretch` herdado; resolve o esticamento de todos os cards de uma vez |
+| `BentoMaterialCard.tsx:120` — o card Material | `lg:col-span-2`      | fecha o retângulo 2+1 sobre 1+2 e elimina a célula vazia na última linha     |
+
+`BentoCard.tsx` **não foi alterado** e não precisava ser: o defeito era do container, não do card. Registrar `self-start`/`h-fit` no `BentoCard` como se tivessem sido a correção seria uma descrição falsa do que está no código.
+
+**Medição, não impressão:**
+
+| Card        | Antes (1440px)           | Depois         |
+| ----------- | ------------------------ | -------------- |
+| Material    | 497px                    | 415px          |
+| Mão de obra | 497px                    | **280px**      |
+| Máquina     | 497px (era a referência) | altura natural |
+
+Os três cards da primeira linha mediam 497px — a altura do card de Máquina, o mais alto da linha. Mão de obra desceu a 280px.
+
+**Verificação:** 375 / 768 / 1024 / 1440 / 1920px, sem sobreposição e sem overflow. Só classes de layout: nenhuma cor nova, nenhuma chave de i18n nova. A ordem dos cards no DOM não mudou — **a ordem de foco não mudou**. O span é `lg` de propósito: no breakpoint `md` o grid tem duas colunas e um 2×2 já preenche.
+
+> **Rastreabilidade.** O commit aparece em alguns registros de trabalho como `08af050`. Esse SHA **não é alcançável a partir de `main`**: ele existe apenas em `feat/beta6-layout` e foi squash-merged dentro de `2126865`. `08af050` é a origem, `2126865` é o commit que está no `main` e é o único que este roadmap deve citar.
+
+##### C4b — Controles duplicados: ❌ ABERTO
+
+**Causa raiz:** o mesmo controle foi observado repetido duas, três ou quatro vezes entre os cards. A decisão é unificar cada controle em uma única instância, mantendo contexto e rótulo suficiente para evitar ambiguidade.
 
 **Anti-padrão:** resolver a repetição escondendo controles por breakpoint sem identificar um owner único. A correção deve tratar a origem da duplicação, não apenas a aparência em um tamanho de tela.
 
-**Acceptance criteria:** os cards ocupam apenas sua altura natural; cada controle aparece uma vez; navegação por teclado e ordem de foco permanecem previsíveis conforme [W3C WCAG 2.2](https://www.w3.org/WAI/WCAG22/).
+> **Nota de estado.** A superfície do Bento passou a ser editável depois desta entrada ser escrita (ver Phase 7i). A duplicação de controle, se ainda existe, hoje aparece entre ~32 `BentoField` e 2 `BentoToggleField` distribuídos pelos quatro cards — e não mais em uma superfície read-only, onde repetir um valor era inofensivo. **C4b ganhou prioridade relativa:** em uma superfície read-only um controle duplicado é ruído; em uma superfície editável, dois inputs ligados ao mesmo campo são um conflito de estado esperando alguém escrever no errado. Esta meia entra na reavaliação da Phase 7i, com o owner de cada campo identificado antes de qualquer mudança de aparência.
+
+**Acceptance criteria (C4b):** cada controle aparece uma vez, com um owner único identificado por campo; navegação por teclado e ordem de foco permanecem previsíveis conforme [W3C WCAG 2.2](https://www.w3.org/WAI/WCAG22/).
 
 #### C5 — Estante: ação destrutiva sem rótulo visível
 
@@ -600,28 +718,70 @@ Every phase and change must complete this checklist:
 
 ---
 
-### 🧩 Phase 7i: Bento como calculadora editável
+### 🧩 Phase 7i: Paridade de cobertura de campos entre Clássico e Bento
 
-**Status:** direção aprovada, implementação planejada. O objetivo é oferecer os mesmos campos do Clássico com templates de complexidade, não criar um terceiro contrato de cálculo.
+> **O que mudou no nome desta fase.** A fase se chamava "Bento como calculadora editável" porque essa era a pendência: o Bento não tinha inputs. Ele passou a ter. A pendência real hoje não é mais _tornar editável_ — é **paridade de cobertura**: os mesmos campos do Clássico, com o mesmo dono por campo, sem criar um terceiro contrato de cálculo.
 
-**Estado atual, por design:** o Bento é read-only. Os comentários “read-only five-card financial grid” (`BentoSurface.tsx:57`) e “no calculation is performed here” (`BentoPricingCard.tsx:17-18`) são intencionais; não existe um único `<input>` nessa superfície. Tratar isso como bug seria incorreto.
+**Status:** direção aprovada. A metas **"tornar editável" está cumprida**; a fase continua aberta pela paridade.
 
-**Cobertura que falta:**
+#### ~~Estado anterior: read-only por design~~ — SUPERADO
 
-| Domínio                                                                  | Cobertura no Clássico                                                                                      | Cobertura atual no Bento             |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| Material                                                                 | Tipo, peso, custo, densidade, purga, eficiência do carretel, seleção de carretel, volume e custo por litro | Apenas resumo                        |
-| Falhas                                                                   | Modo, valor e multiplicador                                                                                | Apenas custo                         |
-| Vendas                                                                   | Quantidade, infill, extras, embalagem, frete, marketplace, imposto, margem/markup e presets                | Apenas exibição                      |
-| Custos fixos, mão de obra, hardware/acabamento, operações/PPE e software | Campos no Clássico                                                                                         | Resumo parcial; o restante é omitido |
+~~**Estado atual, por design:** o Bento é read-only. Os comentários “read-only five-card financial grid” (`BentoSurface.tsx:57`) e “no calculation is performed here” (`BentoPricingCard.tsx:17-18`) são intencionais; não existe um único `<input>` nessa superfície. Tratar isso como bug seria incorreto.~~
+
+**Verificado em 30/09/2026: essa restrição não existe mais no código.** Os dois comentários citados foram removidos e a afirmação de que "não existe um único `<input>`" é falsa hoje. A superfície é **editável**, com cerca de **32 `BentoField`** e **2 `BentoToggleField`** distribuídos pelos quatro cards:
+
+| Card         | `BentoField` | `BentoToggleField` | `BentoMetric` |
+| ------------ | ------------ | ------------------ | ------------- |
+| Material     | 10           | 0                  | 1             |
+| Máquina      | 8            | 2                  | 4             |
+| Mão de obra  | 5            | 0                  | 1             |
+| Precificação | 7            | 0                  | 4             |
+| **Total**    | **30**       | **2**              | **10**        |
+
+Os campos escreve direto na `calculatorStore` pelo mesmo caminho do Clássico, e o `calcLevel` do Clássico **já é reusado**: os cards chamam `isFieldVisibleForLevel(calcLevel, hiddenFields, "<domínio>", fieldId)` de `Calculator.constants.ts`, exatamente como as seções do Clássico.
+
+**Consequência para esta fase:** as duas primeiras linhas de "Direção de implementação" abaixo (reaproveitar `calcLevel`, e o risco de duplicar inputs) descrevem um estado que não é mais o atual. Elas não foram apagadas — a evidência de como o item foi fechado importa mais que a lista do que falta. O que resta é a **tabela de cobertura** e a **decisão de dono por campo**.
+
+#### Cobertura que falta
+
+A tabela abaixo é a pergunta que sobreviveu. A coluna do Bento precisa ser re-lida contra o código: o que era "apenas resumo" já tem input, e o que era "apenas custo" também. **A auditoria de cobertura campo a campo ainda não foi feita** — e é o primeiro trabalho desta fase, anterior a qualquer linha de código.
+
+| Domínio                                                                  | Cobertura no Clássico                                                                                      | Cobertura no Bento (verificar campo a campo)     |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Material                                                                 | Tipo, peso, custo, densidade, purga, eficiência do carretel, seleção de carretel, volume e custo por litro | 10 campos — lista exata a auditar                |
+| Falhas                                                                   | Modo, valor e multiplicador                                                                                | Cobertura parcial; dono a identificar            |
+| Vendas                                                                   | Quantidade, infill, extras, embalagem, frete, marketplace, imposto, margem/markup e presets                | 7 campos em Precificação — lista exata a auditar |
+| Custos fixos, mão de obra, hardware/acabamento, operações/PPE e software | Campos no Clássico                                                                                         | 5 + 8 campos; o restante é omitido               |
+
+- [ ] Auditar cobertura **campo a campo** entre Clássico e Bento e publicar a tabela final. Sem isso, "paridade" é uma intenção, não um estado verificável.
+- [ ] Atribuir um **owner único por campo** no Bento. Isto é C4b: a duplicação de controle deixou de ser cosmética quando a superfície ficou editável.
 
 **Direção de implementação:**
 
-- [ ] Reaproveitar o `calcLevel` que já existe em `Calculator.constants.ts:99-117` (básico, intermediário e completo), hoje ignorado pelo Bento.
-- [ ] Usar `Example/src/components/BentoLayout.tsx` como inspiração visual, nunca como cópia de estrutura, estado ou cálculo.
+- [x] Reaproveitar o `calcLevel` que já existe em `Calculator.constants.ts:99-117` (básico, intermediário e completo). **Feito** — os cards chamam `isFieldVisibleForLevel`; o mesmo nível esconde o mesmo campo nas duas superfícies.
+- [x] Tornar a superfície editável. **Feito** — cerca de 32 controles escrevendo na `calculatorStore` pelo mesmo caminho do Clássico.
 - [ ] Criar três templates de inicialização, não três formulários: **Básico** com defaults seguros, **Avançado** com disclosure progressivo e **Completo** com organização por processo.
 - [ ] Exibir rótulo textual e valor em todos os cards; cor e ícone não substituem o significado.
 - [ ] Compartilhar setters e condicionamento FDM/resina com o Clássico em vez de reproduzir regras em componentes locais.
+
+#### ⚠️ Nota de supersessão — 25/09/2026 (revoga a regra deinspiração do `Example/`)
+
+> **A regra abaixo foi revertida pelo dono em 25/09/2026.** A linha que a segue — "nunca como cópia de estrutura, estado ou cálculo" — **não está mais em vigor** e não deve ser lida como restrição vigente.
+>
+> **O que a decisão de 25/09/2026 diz, na leitura vigente:**
+>
+> | Categoria                                                                                    | Tratamento no port                                                                                                                                                                                                                                                                    |
+> | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | **Frontend e estrutura visual** — layout, componentes, organização, grid, composição de tela | **Portam-se.** O `Example/` é referência de implementação, não de inspiração vaga. Reimplementar do zero o que já existe e foi decidido é retrabalho, não craft.                                                                                                                      |
+> | **Backend, cálculo, i18n, acessibilidade e testes**                                          | **Permanecem intocáveis.** `calculator.ts`, `types.ts`, `presets.ts` e `server.ts` do protótipo já foram descartados em 22/09 e continuam descartados. A camada de cálculo, as traduções, a semântica de acessibilidade e a suíte de testes do app real não se portam: reescrevem-se. |
+>
+> **A linha de separação é o comportamento, não a pasta.** "Portar" a estrutura visual significa que a tela fica com a forma, a hierarquia e a composição do `Example/`. "Portar" o cálculo significaria que `Example/src/calculator.ts` passaria a decidir o preço — e isso continua proibido, exatamente como estava. A revogação afrouxa a **fonte** (o `Example/` pode ser copiado) e **não** afrouxa o **alvo** (a camada de cálculo do app real continua intocável).
+>
+> **O que não mudou com esta revogação:** dado inventado do protótipo continua não entrando sem verificação contra o tipo real (ver Phase 7p), `Example/` continua sem testes, i18n e a11y próprios, e a cobertura >80% continua exigida. Portar a estrutura não herda as lacunas dela.
+>
+> **Pendência de autoridade:** esta decisão **não existe em arquivo** — ela vive apenas nesta conversa e neste documento. O dono precisa transformá-la em registro; até lá, esta nota é a única fonte. Ver Phase 7q.
+
+- [ ] Usar `Example/src/components/BentoLayout.tsx` como referência de estrutura visual a portar. **~~nunca como cópia de estrutura, estado ou cálculo~~ — regra revertida em 25/09/2026; ver a nota de supersessão acima.** A estrutura visual porta-se; estado e cálculo continuam não portando.
 
 **Risco principal:** tornar a superfície editável duplica inputs, condicionamento FDM/resina e setters. Um campo que atualiza o estado mas não recalcula é o pior resultado possível; paridade de estado e resultado precisa ser testada como um único contrato.
 
@@ -702,18 +862,22 @@ Every phase and change must complete this checklist:
 
 ### 🧵 Phase 7m: Multi-material (AMS/CFS/ACE 2)
 
-**Status:** decisão de produto registrada. **M1 — Honestidade imediata entra na beta 3**; M2–M7 ficam para depois da beta 3. A beta 3 não deve apresentar o cálculo multi-material como correto enquanto o custo multi-material ainda não chegar ao preço.
+**Status:** decisão de produto registrada. **M1 — Honestidade imediata: entregue** em `d5b0624`, que está em `main` (publicado na `2.0.0-beta.3` e em todas as betas seguintes). **3 dos 4 itens de M1 estão fechados; o quarto — o arredondamento _fail-high_ — continua aberto.** M2–M7 ficam para depois.
 
 **Objetivo:** suportar a mesma forma de dados para AMS, CFS e ACE 2, sem criar um modelo por hardware. O fatiador é a fonte autoritativa; o app não deve inventar uma taxonomia de máquinas diferente da relatada pelo fatiador.
 
-#### M1 — Honestidade imediata _(entra na beta 3)_
+#### M1 — Honestidade imediata — ✅ entregue em `d5b0624` (com uma pendência real)
 
-- [ ] Exibir aviso de que o custo de material multi-material não entra no total, no preço nem no lucro.
-- [ ] Corrigir o furo que transforma um array de materiais vazio em custo zero; o caso inválido precisa ser explícito, não um total silenciosamente incorreto.
-- [ ] Usar o rótulo neutro **Multi-material**, em vez de “AMS”, em qualquer aviso ou cálculo que apresente esse recurso como suporte a um único sistema.
-- [ ] Fazer `roundCurrency` usar arredondamento _fail-high_ (para cima), sem subestimar o preço ao arredondar valores monetários.
+A entrega teve uma forma específica que vale registrar: **o recurso foi desligado, não corrigido.** O custo multi-material foi removido do caminho de cálculo (`calculatorStore.compute.ts`) e `setFdmAmsEnabled` passou a forçar `false`. A configuração de slots persistida é preservada, mas não entra em nada. Isso é honestidade imediata: o app deixa de apresentar um cálculo incompleto como correto, e o custo de construir o modelo certo fica para M2.
 
-**Aceite da beta 3:** o aviso é visível antes de a pessoa confiar no resultado; array vazio não produz custo zero sem sinal explícito; o rótulo é neutro; e o arredondamento monetário não reduz o valor cobrado.
+- [x] **Aviso de que o custo multi-material não entra no total, no preço nem no lucro.** A chave `calc.multiMaterialDisabledDescription` diz exatamente isso — _"o custo dos materiais múltiplos ainda não entra no subtotal, custo total, preço de venda ou lucro"_. O interruptor aparece com `aria-disabled="true"`, `aria-pressed="false"` e `aria-describedby` apontando para o aviso: não é um controle morto sem explicação, é um recurso declarado indisponível.
+- [x] **O furo do array vazio que virava custo zero.** Corrigido pela via mais forte: o bloco que somava o custo dos slots foi removido de `computeStoreResults`, então `materialCost` voltou a ser `es.material ? result.materialCost : 0` — o valor real do cálculo, sem a ramo condicional que multiplicava slots. O array vazio deixou de ser um caminho de código. Coberto por `multimaterialDisabled.test.ts`, que prova que um payload persistido com `fdmAmsEnabled: true` é reidratado com o recurso **desligado** e os slots **preservados**.
+- [x] **Rótulo neutro "Multi-material".** `calc.multiMaterialLabel` = `"Multi-material"`, em pt-BR e en-US.
+- [ ] **Arredondamento _fail-high_ — ❌ NÃO IMPLEMENTADO. Pendência real e não registrada em lugar nenhum até esta atualização.** `roundCurrency` (`src/shared/lib/currency.ts:37-40`) continua sendo `Math.round(val * 100) / 100`. `Math.round` é _half-up_: `10,005` arredonda para `10,01`, mas `10,004` arredonda para `10,00`. Isso **não** é _fail-high_ no sentido desta fase, que é _nunca underestimate o preço_. A correção feita em `d5b0624` no mesmo arquivo foi outra — trocar `if (!Number.isFinite(val)) return 0` por `return val`, para que um valor inválido não virasse um zero crível. Era o item certo, e continua sendo um item diferente.
+  - [ ] Fixar a política de arredondamento explicitamente: `roundCurrency` deve Tender para cima no centavo ambíguo, e o comportamento precisa de **teste que o prove**. Hoje `currency.test.ts` só cobre entrada não-finita; não há asserção sobre a direção do arredondamento. Um teste que não existe não é garantia de nada — é a mesma armadilha do guard de layout por string-match, em código de dinheiro.
+  - [ ] Conferir se _fail-high_ é a política correta para todo uso de `roundCurrency`, e não só para preço: o helper é compartilhado entre store, painéis e exportação de PDF, e _fail-high_ em um contexto de lucro arredondado para cima superestima o ganho.
+
+**Aceite da beta 3:** ✅ quanto ao aviso, ao furo do array vazio e ao rótulo neutro. ❌ **o critério de arredondamento não é cumprido** — o aceite pede que "o arredondamento monetário não reduza o valor cobrado", e `Math.round` reduz. M1 permanece aberta por esse item.
 
 #### M2 — Modelo de dados por material
 
@@ -781,7 +945,7 @@ Every phase and change must complete this checklist:
 
 #### Estado de referência no protótipo
 
-O protótipo em `Example/` **não é mais um rascunho visual**: seis componentes novos são implementações de referência de itens que esta fase declarava não implementados. Isso muda o custo estimado de N1–N6, **não** o escopo nem a ordem. O protótipo é **material de referência apenas**: tem zero testes, zero i18n e zero acessibilidade, e os tipos e o cálculo dele são incompatíveis com o app real. Portar é reescrever com TDD, nunca copiar.
+O protótipo em `Example/` **não é mais um rascunho visual**: seis componentes novos são implementações de referência de itens que esta fase declarava não implementados. Isso muda o custo estimado de N1–N6, **não** o escopo nem a ordem. O protótipo é **material de referência apenas**: tem zero testes, zero i18n e zero acessibilidade, e os tipos e o cálculo dele são incompatíveis com o app real. A estrutura visual **porta-se** (decisão de 25/09/2026, ver a nota de supersessão na Phase 7i); a camada de cálculo, o estado, o i18n, a acessibilidade e os testes **não se portam** — reescrevem-se com TDD. O que o protótipo não traz — testes, traduções, semântica de acessibilidade — continua a ser trabalho nosso, e porta-lo não o adquire.
 
 - **N1 — seleção em lote:** referência **existe**, e é a mais forte das seis. `Example/src/components/HistoryView.tsx` (1.132 linhas) já implementa o escopo inteiro.
 - **N2 — projeção de faturamento:** referência **existe**. `Example/src/components/MonthlyRevenueProjectionCard.tsx` (644 linhas) tem as fórmulas corretas e defaults descartáveis.
@@ -868,7 +1032,7 @@ A forma do protótipo, porém, **não é portátil como está**, por três motiv
 
 **Normalização de import (obrigatória):** o import de histórico precisa normalizar `status` ausente ou desconhecido para `'orcamento'` na entrada, e a entrada precisa carregar o status no CSV exportado, senão a seleção em lote sobrevive à tela e morre no arquivo.
 
-**Referência no protótipo — a mais forte das seis.** `Example/src/components/HistoryView.tsx` (1.132 linhas) já implementa o escopo inteiro: tri-state do checkbox mestre (`:143-150`, `:735-742`), selecionar-somente-os-filtrados (`:189-199`), barra de ação em lote (`:588-708`), aplicação de status (`:632-672`), CSV apenas dos selecionados (`:688-695`), exclusão em lote (`:698-705`), comparação com exatamente 2 (`:676-685`) e contador (`:592-600`). Portar é reescrever com TDD; copiar, não.
+**Referência no protótipo — a mais forte das seis.** `Example/src/components/HistoryView.tsx` (1.132 linhas) já implementa o escopo inteiro: tri-state do checkbox mestre (`:143-150`, `:735-742`), selecionar-somente-os-filtrados (`:189-199`), barra de ação em lote (`:588-708`), aplicação de status (`:632-672`), CSV apenas dos selecionados (`:688-695`), exclusão em lote (`:698-705`), comparação com exatamente 2 (`:676-685`) e contador (`:592-600`). A estrutura visual e a máquina de estados de seleção **portam-se** (decisão de 25/09/2026, ver a nota de supersessão na Phase 7i): o comportamento do tri-state e da barra em lote é layout de tabela mais máquina de estados, não cálculo. O que não se porta: o `HistoryEntry` do protótipo — o app real não tem campo `status`, e `historyStore` não tem `updateEntry` (ver N0/N1). Portar a tela não contorna o bloqueio de domínio.
 
 **Defeito conhecido a não portar:** `onBatchUpdateStatus` e `onBatchDelete` são props opcionais (`HistoryView.tsx:37-38`) e caem num `selectedIds.forEach(...)` que atualiza o estado uma vez por id (`:213`, `:230`). Uma seleção de 500 linhas vira 500 atualizações de estado. O store precisa de uma ação em lote única.
 
@@ -1227,7 +1391,7 @@ A entrega cobre apenas esta fatia. Nenhum dado persistido central mudou e nada a
 
 #### 7o.8 — Quatro espaços de trabalho no Dashboard
 
-**Status:** aprovada; não iniciada. Organizar o Dashboard em quatro espaços: **Overview/Finances**, **Profitability/Pricing**, **Operations/Quality** e **Engineering/Slicer**. `Example/` é referência de UI, não fonte de modelos ou métricas.
+**Status:** aprovada; não iniciada. Organizar o Dashboard em quatro espaços: **Overview/Finances**, **Profitability/Pricing**, **Operations/Quality** e **Engineering/Slicer**. `Example/` é **referência de UI que se porta** — a organização em quatro espaços é exatamente a forma de tela que se aproveita (decisão de 25/09/2026, ver a nota de supersessão na Phase 7i) — e **não** é fonte de modelos, métricas ou dados. A distinção que importa aqui: a **estrutura** dos quatro espaços é do protótipo; os **números** dentro deles são do app real, e nenhum número do protótipo entra sem verificação contra o tipo real (ver Phase 7p).
 
 **Acceptance criteria:**
 
@@ -1237,6 +1401,64 @@ A entrega cobre apenas esta fatia. Nenhum dado persistido central mudou e nada a
 - [ ] Os espaços funcionam em desktop e mobile, são acessíveis por teclado/leitor de tela e mantêm paridade pt-BR/en-US.
 
 **Dependências entre fatias:** 7o.2 depende das façades de navegação de 7o.1; 7o.4 depende da navegação/sidebar de 7o.2; 7o.5 depende da navegação de 7o.2; 7o.7 deve validar a coexistência com o Mini-Dash de 7o.5; 7o.8 usa a navegação de 7o.2. 7o.3 e 7o.6 podem ser planejadas separadamente, mas continuam sujeitas ao gate e à entrega em PRs próprios. Os componentes de Dashboard que dependem de frota real continuam bloqueados por N0 na Phase 7n, sem bloquear a estrutura dos quatro espaços.
+
+---
+
+### 📈 Phase 7p: Camada de gráficos — substrato zero
+
+> **Esta fase não é um port. É construção.** Os sete gráficos do `Example/` **não existem em nenhum lugar do repositório**. Verificado em 30/09/2026: `RevenueTrendsChart`, `ProfitAnalyticsModule`, `MonthlyRevenueProjectionCard`, `QuarterlyRevenueProjectionCard`, `MaterialEfficiencyHeatmap`, `MiniDashOverlay` e `CostBreakdownPieChart` têm **zero ocorrências** em `src/` — nem como componente, nem como constante, nem como string. A única ocorrência em `main` de vários desses nomes é a **menção neste próprio roadmap**. Isso muda a natureza do trabalho: não há linha para trazer, há superfície para erguer, e o custo é de engenharia, não de extração.
+
+**Status:** escopo mapeado, pré-requisito definido, nenhuma linha implementada.
+
+#### 🚧 O pré-requisito que desbloqueia quatro componentes de uma vez
+
+- [ ] **`src/shared/hooks/useHistoryAggregates.ts`** — funções **puras**, somente leitura, sem store e sem JSX: `byMonth`, `byQuarter`, `byMaterial`, `byPrinter`. **Sem dados, retornam `null` — nunca `0`.** Esta é a decisão mais importante do design: um gráfico que desenha uma linha em `0` quando não há histórico está **assertando** que a pessoa fez receita zero. `null` desenha um estado vazio. O hook espelha `Dashboard.tsx:170`, que já trata esse caso.
+- [ ] O hook deve **substituir** as cópias inline que já existem em `historyStore.ts:34-39` (`getTopPrinters` / `getTopMaterials`) e `Dashboard.tsx:248-286`, e não se somar a elas. Duas fontes de agregação é a forma mais rápida de divergirem.
+- [ ] Cobertura de teste, cerca de 120 linhas: histórico vazio; histórico com entrada única; entradas sem snapshot (`entry.snapshot` é `| null` em `types/index.ts:320`); entradas antigas sem `profitPerHour` e sem `totalHoursForProfit` (ambos opcionais em `:300,302` — precisam de `?? estimatedPrintTime`, e apesar do nome o valor é **horas**, `calculator.ts:228`).
+
+**Bloqueio técnico a resolver antes do quinto componente:** `RechartsLazy.tsx:17-31` exporta `PieChart`, `Pie`, `Cell`, `ResponsiveContainer`, `Tooltip`, `Legend`, `AreaChart`, `Area`, `CartesianGrid`, `XAxis`, `YAxis`, `BarChart` e `Bar`. **Faltam `ComposedChart`, `Line`, `LineChart` e `ReferenceLine`**, exigidos por `RevenueTrendsChart` e `QuarterlyRevenueProjectionCard`. Os dois primeiros itens da ordem abaixo não dependem disso — e é por isso que estão primeiro.
+
+#### Ordem de implementação
+
+| #   | Componente                                 | Recharts | Risco    | Nota                                                                                                                                                                                                                                                                                                           |
+| --- | ------------------------------------------ | -------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `useHistoryAggregates`                     | —        | Baixo    | Desbloqueia 1, 2, 3, 4 e 5 de uma vez                                                                                                                                                                                                                                                                          |
+| 2   | `ProfitAnalyticsModule`                    | **Zero** | Baixo    | ~280 linhas, só barras CSS. Dados já existem. A ação de recarga já existe: `loadHistoryItem(snapshot)` em `calculatorStore.ts:659`, usada em `HistoryTab.tsx:268`                                                                                                                                              |
+| 3   | `MaterialEfficiencyHeatmap`                | **Zero** | Baixo    | ~230 linhas. O risco é de **correção**, não de arquitetura: apagar `getBaselineEstimates()`, mapear os 23 materiais reais em vez dos 8 do protótipo, e corrigir o bug de `quantity`                                                                                                                            |
+| 4   | `MiniDashOverlay` parcial                  | Zero     | Médio    | Seções A (financeiro, `historyStore`), C (estoque, `spoolStore` — `remainingPct()` e `isLowStockSpool()` já existem) e D (cálculo, `calculatorStore`). **Dropar a seção B (frota):** `PrinterProfile` não tem `status`. Overlay exige a11y que o protótipo não tem: portal, focus-trap, `Escape`, `aria-modal` |
+| 5   | `RevenueTrendsChart`                       | **Sim**  | Médio    | Primeiro uso real de `ComposedChart`/`Line`. Exige ampliar `RechartsLazy`                                                                                                                                                                                                                                      |
+| 6   | `MonthlyRevenueProjectionCard` reduzida    | Sim      | Médio    | ~280 linhas, matemática trivial. O problema é **semântico**: `printersCount` não tem fonte no app. Basear em `printersCount = 1`. Só depois do 5 — é a mesma superfície                                                                                                                                        |
+| 7   | `QuarterlyRevenueProjectionCard` reescrito | Sim      | **Alto** | ~300 linhas, das quais ~40% é modelo preditivo fabricado. Se entrar, entra como **realizado por trimestre + QoQ real**                                                                                                                                                                                         |
+
+#### 🛑 Regra da fase: dado do protótipo não entra sem verificação contra o tipo real
+
+O `Example/` traz **números inventados que produziriam gráficos mentirosos**. Não é questão de estilo ou de preferência estética: é dado falso com confiança visual. Um gráfico desenhado a partir de um fallback inventado não fica "aproximado" — ele **afirma** uma verdade que ninguém mediu.
+
+| Número inventado                 | Onde                                                                                                            | O que viraria                                                                                                                                                                                           |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `let lastKnownRevenue = 14500`   | `QuarterlyRevenueProjectionCard.tsx:180`                                                                        | Uma linha de base de receita que é uma constante em código, apresentada como histórico                                                                                                                  |
+| `getBaselineEstimates()`         | `MaterialEfficiencyHeatmap.tsx:170-192`                                                                         | Uma tabela **100% fabricada** de ROI e preço por material. Pior: ela **vaza nos "sweet spots"** (`:167`) enquanto a interface continua escrevendo "est." (`:352`). A UI admite a estimativa; o dado não |
+| `rampFactor = 0.55 + 0.45 * (x)` | `RevenueTrendsChart.tsx:116-118`                                                                                | Uma reta desenhada com o nome de **curva de crescimento orgânico**. O nome é a mentira                                                                                                                  |
+| `benchmarkRate = 95.0`           | `PrintSuccessAnalytics.tsx:150`                                                                                 | Uma taxa de referência sem fonte, com o comentário _"95% target industry standard"_                                                                                                                     |
+| Timeline de 7 trimestres         | `QuarterlyRevenueProjectionCard.tsx:170-178`, com preenchimento do trimestre vazio pelo valor anterior (`:190`) | Sete trimestres de histórico que nunca existiram                                                                                                                                                        |
+
+**Três armadilhas de porting, verificáveis antes de escrever a primeira linha:**
+
+- **A1 — `result.sellPrice` é por unidade quando `qty > 1`.** `calculatorStore.compute.ts:114-124` reescreve `totalCost`, `sellPrice`, `profit` e `costPerUnit` para o lote. O `Example/` multiplica por `item.data.quantity` (`MaterialEfficiencyHeatmap.tsx:99`, `ProfitAnalyticsModule.tsx:68,125`, `RevenueTrendsChart.tsx:107-110`) → **super-conta em 10×** no lote de 10 unidades do dataset de demonstração. O peso correto é `result.unitWeight` (`calculator.ts:200`), sem multiplicar.
+- **A2 — a taxonomia de materiais do `Example/` não existe no app.** `MATERIALS_ORDER` do protótipo fixa 8 nomes (`'PLA Silk'`, `'Resina Tough'`, `'Nylon (PA)'`). O `MaterialType` real (`types/index.ts:3-26`) tem **23 membros em snake_case** (`pla`, `pla_silk`, `tpu_95a`, `nylon_pa12`, `peek_cf`). **Nenhuma string casa.**
+- **A3 — o `Example/` lê campos que o app não tem.** Ele espera `item.data.printerId`, `totalHours`, `printWeightGrams`, `quantity`, `projectName`, `clientName`, `materialType` e `status`. Equivalentes reais: `entry.snapshot.selectedPrinterId` (`:359`), `entry.result.totalHoursForProfit` (`:302`), `entry.result.unitWeight` (`:293`), `entry.snapshot.quantity` (`:362`), `entry.snapshot.productName` (`:361`), `entry.snapshot.fdmMaterial.type` (`:86`). E `HistoryEntry` **não tem cliente nenhum** (`:310-321`) — o vínculo cliente↔job existe apenas via `Quote.items[].historyEntryId` → `Quote.customerId`. Ver Phase 7q.
+
+**Fora desta fase, por bloqueio de domínio:** `PrintSuccessAnalytics` (falta o tipo `PrintJobRecord` inteiro, ~900 linhas e domínio novo); `PrinterRoiBreakEvenCard` e `PrinterHealthScoreCard` **juntos** (dependem de `loadMaintenanceCycles()` e `Record<printerId, hoursAccumulated>`, que não existem — construir um sem o outro é retrabalho); `SmartPricingRecommender` (`Product.sold:8` é `boolean`, sem `soldAt`, `quantity` ou histórico). Ver Phase 7q para o modelo de frota.
+
+**Estilo alheio ao app, a corrigir no port:** cores hardcoded (`bg-[#151722]`, `border-[#262b3c]`, `text-slate-*`) → `var(--surface-sunken)`, `var(--border-default)`, `var(--text-primary)`, `var(--cost-*)`; `animate-in`/`fadeIn` e `rounded-xs` não existem na superfície Tailwind do app; emoji como ícone → `lucide-react`; `<input type="checkbox">` com `onChange={() => {}}` e o pai fazendo o toggle (`MonthlyRevenueProjectionCard.tsx:395-401`) é **quebrado para teclado e leitor de tela**; switchers de modo sem semântica de aba → `role="tablist"`; células de heatmap só com `title` → `role="grid"` + `aria-pressed`; sliders sem `aria-label`.
+
+**Acceptance criteria:**
+
+- [ ] `useHistoryAggregates` existe, é puro, e **retorna `null` — não `0` — sem dados**, com teste que prova os dois.
+- [ ] Cada gráfico entregue usa agregação real sobre `historyStore`; nenhum número do protótipo sobreviveu sem verificação contra o tipo real, e cada um que foi descartado está anotado com o motivo.
+- [ ] Nenhuma tela apresenta valor inventado como métrica real, e nenhuma estimativa aparece sem o rótulo que a declara estimativa.
+- [ ] Os componentes têm testes RTL, cobertura ≥80%, i18n pt-BR/en-US e WCAG AA — inclusive o overlay, que exige portal, focus-trap, `Escape` e `aria-modal` que o protótipo não tem.
+- [ ] `RechartsLazy` exporta `ComposedChart` e `Line` antes do primeiro gráfico que os usa, e o bundle não carrega a biblioteca de gráficos para quem não vê nenhum.
 
 ---
 
@@ -1396,13 +1618,22 @@ IA foi explicitamente confirmada como fora da V2.0. A única área deferred é I
 
 ## 📊 Quality Metrics
 
-| Metric                  | Current                     | Target                                  |
-| ----------------------- | --------------------------- | --------------------------------------- |
-| Test coverage (overall) | 84,04% lines / 82,97% stmts | ≥60% (Beta 5, aprovado pelo utilizador) |
-| Coverage (calculation)  | 100%                        | ≥90%                                    |
-| Tests                   | 3,294 (236 files)           | 500+                                    |
-| Components with tests   | Partial                     | 100%                                    |
-| Accessibility (a11y)    | —                           | WCAG A                                  |
+| Metric                  | Current                                        | Target                                  |
+| ----------------------- | ---------------------------------------------- | --------------------------------------- |
+| Test coverage (overall) | ⚠️ **Precisa ser re-medida** — ver nota abaixo | ≥60% (Beta 5, aprovado pelo utilizador) |
+| Coverage (calculation)  | 100%                                           | ≥90%                                    |
+| Tests                   | 4.036 (289 files) — medido em `7511904`        | 500+                                    |
+| Components with tests   | Partial                                        | 100%                                    |
+| Accessibility (a11y)    | —                                              | WCAG A                                  |
+
+#### ⚠️ A cobertura desta tabela é anterior à `2.0.0-beta.6` e não é re-medida
+
+**Os números de cobertura foram medidos em `1b846719` e valem para aquela árvore.** Entre ela e `main` hoje (`2cd273f`, `2.0.0-beta.6`) foram entregues 2 betas: a `beta.5` (segurança e privacidade, ondas W0–W7, PRs #236 e #241–#246) e a `beta.6` (layout, PR #247), mais a leva da branch atual. Nada aqui justifica reaproveitar os agregados antigos como se descrevessem o código de hoje: eles medem um repositório com menos código de produto, menos suites e menos arquivos.
+
+- [ ] **Re-medir os quatro agregados em `main` e substituir os valores desta tabela.** Até lá, a linha de cobertura overall fica explicitamente sem número, em vez de carregar um número antigo com aparência de atual.
+- A coluna "Current" de cobertura não deve ser preenchida com o número de `1b846719` justamente para não parecer medida. Um número velho honesto vale mais que um número velho fingindo ser de hoje.
+- **A contagem de testes desta tabela já é atual e foi medida nesta atualização:** 4.036 testes em 289 arquivos, em `7511904` (`npm run test:run`, 289 passed / 4.036 passed). O número anterior neste documento, 3.294 em 236 arquivos, era da árvore de `1b846719`.
+- Contexto histórico preservado: em `1b846719` a medição foi de 82,97% statements, 77,01% branches, 78,58% functions e 84,04% lines, com 262 ficheiros na tabela — 38 abaixo de 60% de linhas, 70 abaixo de 80% e 12 a 0%. Esses são os números da **medição antiga**, registrados para comparação quando a nova medição existir. A porta de 60% aprovada pelo utilizador para a Beta 5 continua sendo o alvo; o que mudou foi a árvore, não a meta.
 
 ## 🔒 Not in scope (for now)
 
