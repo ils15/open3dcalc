@@ -24,6 +24,14 @@ export interface CostBreakdownCardProps {
   readonly totalCost: number;
   /** Sidebar variant hides the pie (space constraint) — matches the legacy panel. */
   readonly isSidebar: boolean;
+  /**
+   * Whether the surface hosting this card is on screen right now (the sidebar
+   * and the inline results are CSS-siblings across the 2xl breakpoint). The
+   * chart is not mounted when false: a ResponsiveContainer inside a
+   * display:none host measures 0×0 and Recharts warns on every pass.
+   * Defaults to true so direct renders keep the chart.
+   */
+  readonly panelVisible?: boolean;
 }
 
 const CATEGORY_COLOR_TOKEN: Record<CostCategory, string> = {
@@ -47,6 +55,7 @@ export function CostBreakdownCard({
   chartData,
   totalCost,
   isSidebar,
+  panelVisible = true,
 }: CostBreakdownCardProps) {
   const { t } = useTranslation();
   const { format: fmtCurrency } = useCurrency();
@@ -180,49 +189,55 @@ export function CostBreakdownCard({
                 ))}
               </div>
             )}
+            {/* The host stays in the DOM with its classes; only the chart is
+                skipped, because Recharts mounts a 0×0 container (and warns)
+                whenever the host or an ancestor is display:none — the sidebar
+                discloses `hidden`, and the panel itself flips at 2xl. */}
             <div
               className={`mt-4 w-full ${isSidebar ? "hidden" : "h-48 sm:h-56"}`}
             >
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="40%"
-                    cy="50%"
-                    innerRadius={52}
-                    outerRadius={72}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {chartData.map((entry, i) => (
-                      <Cell
-                        key={i}
-                        fill={CATEGORY_COLOR_TOKEN[entry.category]}
-                        stroke="var(--border-subtle)"
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: unknown) => fmtCurrency(Number(value))}
-                    contentStyle={{
-                      backgroundColor: "var(--surface-overlay)",
-                      borderColor: "var(--border-subtle)",
-                      color: "var(--text-primary)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                    itemStyle={{ color: "var(--text-primary)" }}
-                  />
-                  <Legend
-                    aria-label={t("calc.costDistribution")}
-                    layout="vertical"
-                    verticalAlign="middle"
-                    align="right"
-                    iconType="circle"
-                    wrapperStyle={{ fontSize: "11px", maxWidth: "42%" }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {!isSidebar && panelVisible && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="40%"
+                      cy="50%"
+                      innerRadius={52}
+                      outerRadius={72}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {chartData.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={CATEGORY_COLOR_TOKEN[entry.category]}
+                          stroke="var(--border-subtle)"
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: unknown) => fmtCurrency(Number(value))}
+                      contentStyle={{
+                        backgroundColor: "var(--surface-overlay)",
+                        borderColor: "var(--border-subtle)",
+                        color: "var(--text-primary)",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                      }}
+                      itemStyle={{ color: "var(--text-primary)" }}
+                    />
+                    <Legend
+                      aria-label={t("calc.costDistribution")}
+                      layout="vertical"
+                      verticalAlign="middle"
+                      align="right"
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: "11px", maxWidth: "42%" }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </details>

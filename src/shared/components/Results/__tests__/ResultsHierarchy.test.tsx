@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 
 import i18n from "@/shared/i18n/i18n";
 import { ResultsPanel } from "../ResultsPanel";
+import { BREAKPOINT_2XL } from "@/shared/hooks/useMediaQuery";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import type { CalculationResult } from "@/shared/types";
@@ -55,7 +56,32 @@ const result: CalculationResult = {
   totalHoursForProfit: 5,
 };
 
+// The global setup (src/shared/test/setup.ts) pins every media query to
+// `false`. ResultsPanel now mirrors the `2xl` CSS with useMediaQuery, so this
+// suite answers `(min-width: 1536px)` explicitly — defaulting to `true`, which
+// is the width the sidebar chart-view assertions below were written against.
+// Individual tests flip `at2xl` before rendering; the stub reads it lazily.
+let at2xl = true;
+
+function stubMatchMedia(): void {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: query === BREAKPOINT_2XL ? at2xl : false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
 beforeEach(async () => {
+  at2xl = true;
+  stubMatchMedia();
   await i18n.changeLanguage("pt-BR");
   localStorage.clear();
   useCalculatorStore.setState({
@@ -141,7 +167,13 @@ describe("ResultsPanel hierarchy", () => {
     const summary = details.querySelector("summary");
 
     expect(details.contains(compact)).toBe(false);
-    expect(details.querySelector("[data-testid='pie-chart']")).not.toBeNull();
+    // Without an explicit sidebarMode the card is in its bars presentation, so
+    // this disclosure carries the `hidden` class — a display:none host. The
+    // donut therefore must not be mounted at all here: a ResponsiveContainer
+    // inside it measures 0×0 (measured as cause C: bars view at 1920 went from
+    // 4 to 6 Recharts warnings). jsdom cannot observe that warning, so the
+    // structural invariant is what the assertion pins.
+    expect(details.querySelector("[data-testid='pie-chart']")).toBeNull();
     expect(summary).not.toHaveAttribute("role");
     expect(summary).not.toHaveAttribute("tabindex");
     expect(summary).not.toHaveAttribute("aria-expanded");
@@ -225,6 +257,49 @@ describe("ResultsPanel hierarchy", () => {
         .getByTestId("cost-distribution-details")
         .querySelector("[data-testid='pie-chart']"),
     ).not.toBeNull();
+  });
+
+  // ── The donut must never mount into a host the CSS hides (causes A, B, C) ──
+  // jsdom cannot observe the Recharts warning itself: getBoundingClientRect()
+  // returns 0×0 for a visible element and for a display:none one alike, so the
+  // console warning is untestable here. These three guard the structural
+  // invariant that produces it instead — while a surface is CSS-hidden, its
+  // ResponsiveContainer must not exist at all.
+  it("keeps the donut out of the mobile panel once the 2xl wrapper hides it", () => {
+    at2xl = true;
+    render(<ResultsPanel variant="mobile" />);
+
+    expect(screen.getByTestId("cost-distribution-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("pie-chart")).toBeNull();
+  });
+
+  it("keeps the donut out of the sidebar panel below 2xl", () => {
+    at2xl = false;
+    render(
+      <ResultsPanel
+        variant="sidebar"
+        sidebarMode="compact"
+        compactView="chart"
+      />,
+    );
+
+    expect(screen.getByTestId("cost-distribution-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("pie-chart")).toBeNull();
+  });
+
+  it("keeps the donut out of the bars view, whose host is display:none", () => {
+    render(
+      <ResultsPanel
+        variant="sidebar"
+        sidebarMode="compact"
+        compactView="bars"
+      />,
+    );
+
+    expect(screen.getByTestId("cost-distribution-details")).toHaveClass(
+      "hidden",
+    );
+    expect(screen.queryByTestId("pie-chart")).toBeNull();
   });
 
   it("sticks the actions to the bottom in dock mode", () => {

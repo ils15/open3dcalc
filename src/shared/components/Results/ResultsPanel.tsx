@@ -3,6 +3,7 @@ import { useShallow } from "zustand/react/shallow";
 
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFinancialBreakdown } from "@/shared/hooks/useFinancialBreakdown";
+import { BREAKPOINT_2XL, useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import type { SidebarMode } from "@/shared/stores/layoutStore";
 import type { PrintParameters } from "@/shared/types";
 
@@ -94,6 +95,12 @@ export function ResultsPanel({
     />
   );
 
+  // Mirrors the `hidden 2xl:flex` / `2xl:hidden` wrappers in CSS so the donut
+  // is never mounted into a surface that is currently display:none (Recharts
+  // only warns about a 0×0 container after the fact; not mounting is the fix).
+  // Must run before the early return below — hooks are unconditional.
+  const at2xl = useMediaQuery(BREAKPOINT_2XL);
+
   if (!results) {
     const emptyContent = (
       <div data-testid="results-hierarchy" className="min-w-0 space-y-4">
@@ -116,6 +123,11 @@ export function ResultsPanel({
     isSidebar &&
     ((sidebarMode === "compact" && compactView === "chart") ||
       (sidebarMode === "tabs" && activeTabView === "chart"));
+  // Which panel the CSS is actually showing: the sidebar exists only at ≥2xl
+  // (`hidden 2xl:flex`), the inline results only below it (`2xl:hidden`), and
+  // the bento surface has no breakpoint at all.
+  const panelVisible =
+    variant === "sidebar" ? at2xl : variant === "mobile" ? !at2xl : true;
   // When the sidebar is not presenting the donut, the bars carry the
   // composition alone. CostBreakdownCard already renders CostDistributionBars
   // itself when `isSidebar` is set, so this component must not add a second
@@ -127,6 +139,7 @@ export function ResultsPanel({
       chartData={breakdown.chartData}
       totalCost={results.totalCost}
       isSidebar={isSidebar && !showChart}
+      panelVisible={panelVisible}
     />
   );
   const actions = (
