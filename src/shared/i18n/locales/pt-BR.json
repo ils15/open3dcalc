@@ -362,6 +362,10 @@
       "ops": "EPI, slicer e licença de modelo",
       "sales": "Embalagem, frete, marketplace e margem"
     },
+    "sectionMetric": {
+      "totalTime": "Tempo Total",
+      "totalExtras": "Total Extras"
+    },
     "printVsBuy": "Imprimir vs Comprar",
     "buyPrice": "Preço de Compra",
     "savings": "Economia",

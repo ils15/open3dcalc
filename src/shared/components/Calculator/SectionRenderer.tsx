@@ -75,16 +75,28 @@ export function SectionRenderer(props: SectionRendererProps) {
 
   const stepById = sectionStepNumbers(calcLevel);
 
+  // The print-time total feeds the "Tempo & Máquina" slot of the Example.
+  // `estimatedPrintTime` is in HOURS (calculator.ts sets it from
+  // `print.printTimeHours`, the same field the energy math multiplies as
+  // hours); `useFinancialBreakdown.time.estimatedHours` divides it by 60, so
+  // it is deliberately not used here. Hidden until a result exists: a dash
+  // would claim a total that was never computed.
+  const timeMetric =
+    store.results && Number.isFinite(store.results.estimatedPrintTime)
+      ? `${t("calc.sectionMetric.totalTime")}: ${store.results.estimatedPrintTime.toFixed(1)} ${t("common.hours")}`
+      : undefined;
+
   // Bound per section so the numeral reaches the heading without every
   // section having to thread a step prop through its own signature.
   const headerFor = useCallback(
-    (step: number | undefined) =>
+    (step: number | undefined, metric?: React.ReactNode) =>
       (Icon: LucideIcon, title: string, subtitle?: string) => (
         <SectionHeader
           Icon={Icon}
           title={title}
           subtitle={subtitle}
           step={step}
+          metric={metric}
         />
       ),
     [],
@@ -135,7 +147,10 @@ export function SectionRenderer(props: SectionRendererProps) {
                 className="scroll-mt-24"
               >
                 <PrintSection
-                  renderSectionHeader={headerFor(stepById.get("print"))}
+                  renderSectionHeader={headerFor(
+                    stepById.get("print"),
+                    timeMetric,
+                  )}
                   t={t}
                   currencySymbol={currencySymbol}
                   handleInput={handleInput}

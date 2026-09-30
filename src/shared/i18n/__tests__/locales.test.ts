@@ -813,6 +813,37 @@ describe("i18n locales (privacy.vault.*) — T3.3 locked shell", () => {
   });
 });
 
+/**
+ * Section-header totals (Example parity). The metric beside a section title is
+ * a live number, so a missing key renders the raw key ("calc.sectionMetric…")
+ * right next to the value — a regression both locales must catch.
+ */
+const SECTION_METRIC_KEYS = ["totalTime", "totalExtras"] as const;
+
+describe("i18n locales (calc.sectionMetric.*) — section header totals", () => {
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ])("resolves every section metric label in %s", (_locale, dict) => {
+    for (const key of SECTION_METRIC_KEYS) {
+      const value = resolve(dict, ["calc", "sectionMetric", key]);
+      expect(typeof value, `calc.sectionMetric.${key}`).toBe("string");
+      expect((value as string).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps exact key parity between pt-BR and en-US", () => {
+    const ptKeys = Object.keys(
+      resolve(ptBR, ["calc", "sectionMetric"]) as Record<string, unknown>,
+    ).sort();
+    const enKeys = Object.keys(
+      resolve(enUS, ["calc", "sectionMetric"]) as Record<string, unknown>,
+    ).sort();
+    expect(ptKeys).toEqual(enKeys);
+    expect(ptKeys).toEqual([...SECTION_METRIC_KEYS].sort());
+  });
+});
+
 describe("i18n locales — no hardcoded currency symbol (R$) in en-US", () => {
   it("en-US labels never hardcode R$; the symbol comes from useCurrency()", () => {
     const all: { key: string; value: string }[] = [];

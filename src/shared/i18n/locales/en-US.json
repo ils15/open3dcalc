@@ -362,6 +362,10 @@
       "ops": "PPE, slicer and model license",
       "sales": "Packaging, shipping, marketplace and margin"
     },
+    "sectionMetric": {
+      "totalTime": "Total Time",
+      "totalExtras": "Total Extras"
+    },
     "printVsBuy": "Print vs Buy",
     "buyPrice": "Buy Price",
     "savings": "Savings",

@@ -16,7 +16,7 @@ export function SalesSection({ step }: { step?: number }) {
   const { t, i18n } = useTranslation();
   const store = useCalculatorStore();
   const catalogMarketplaces = useCatalogStore((s) => s.marketplaces);
-  const { symbol: currencySymbol } = useCurrency();
+  const { symbol: currencySymbol, format: formatAmount } = useCurrency();
   const isFDM = store.activeTab === "fdm";
   const locale = i18n.language?.startsWith("en") ? "en-US" : "pt-BR";
 
@@ -48,6 +48,16 @@ export function SalesSection({ step }: { step?: number }) {
     }
   };
 
+  // The extras total ("Custos Extras" slot of the Example) is this section's
+  // own result field: `result.extrasCost` (calculator.ts), charted as
+  // `results.extrasCost` by useFinancialBreakdown. It is omitted until a
+  // result exists rather than rendered as a dash.
+  const extrasTotal = store.results?.extrasCost;
+  const metric =
+    extrasTotal !== undefined && Number.isFinite(extrasTotal)
+      ? `${t("calc.sectionMetric.totalExtras")}: ${formatAmount(extrasTotal)}`
+      : undefined;
+
   return (
     <div className="surface rounded-xl p-4 sm:p-5">
       <SectionHeader
@@ -55,6 +65,7 @@ export function SalesSection({ step }: { step?: number }) {
         title={t("calc.sales")}
         step={step}
         subtitle={t("calc.sectionDesc.sales")}
+        metric={metric}
       />
       <div className="space-y-4">
         <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
