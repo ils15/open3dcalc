@@ -28,6 +28,8 @@ import { DemoModeButton } from "@/shared/components/DemoMode/DemoModeButton";
 import { LayoutSwitcher } from "./LayoutSwitcher";
 import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
 import { FocusModeButton } from "@/shared/components/AppShell/FocusModeButton";
+import { ContextBreadcrumb } from "./ContextBreadcrumb";
+import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
 
 export function Header() {
   const { t, i18n } = useTranslation();
@@ -35,6 +37,10 @@ export function Header() {
     useShallow((s) => ({ currency: s.currency, setCurrency: s.setCurrency })),
   );
   const { symbol } = useCurrency();
+  // Single source of truth for the destination: NavigationProvider reads this
+  // same field into ActiveTabContext, so the breadcrumb and the nav can never
+  // disagree about where the user is.
+  const activeTab = useNavigationPrefsStore((state) => state.activeTab);
   const [showSettings, setShowSettings] = useState(false);
   const {
     open: currencyMenuOpen,
@@ -104,6 +110,14 @@ export function Header() {
             </p>
           </div>
         </button>
+
+        {/* Contextual breadcrumb — intermediate sibling, NOT inside the logo
+            button above: that button opens the settings sheet on mobile, so
+            nesting navigation inside it would make the trail a settings
+            control. Reads the active destination from the store that
+            NavigationProvider itself reads, so the value is the same one the
+            nav renders. */}
+        <ContextBreadcrumb tab={activeTab} />
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-2">

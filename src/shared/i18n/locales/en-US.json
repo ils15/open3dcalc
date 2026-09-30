@@ -62,6 +62,46 @@
     "more": "More",
     "resources": "Resources"
   },
+  "breadcrumb": {
+    "label": "Breadcrumb",
+    "root": "3D Workshop",
+    "calculator": {
+      "description": "Piece cost, price and profit"
+    },
+    "dashboard": {
+      "description": "Output, costs and profit"
+    },
+    "history": {
+      "description": "Every print saved and comparable"
+    },
+    "catalog": {
+      "description": "Machines, materials and marketplaces"
+    },
+    "inventory": {
+      "description": "Filament stock"
+    },
+    "infill": {
+      "description": "Weight, cost and time per infill"
+    },
+    "quotes": {
+      "description": "Quotes for customers"
+    },
+    "customers": {
+      "description": "Your customers and contacts"
+    },
+    "products": {
+      "description": "Products for sale"
+    },
+    "privacy": {
+      "description": "Your data, in your browser"
+    },
+    "wiki": {
+      "description": "Guide and documentation"
+    },
+    "changelog": {
+      "description": "What changed in each release"
+    }
+  },
   "dashboard": {
     "totalCost": "Total Cost",
     "salePrice": "Sale Price",

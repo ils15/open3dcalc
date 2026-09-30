@@ -18,12 +18,18 @@ import { BetaBadge } from "@/shared/components/BetaBadge/BetaBadge";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
 import { FocusModeButton } from "@/shared/components/AppShell/FocusModeButton";
+import { ContextBreadcrumb } from "@/shared/components/Header/ContextBreadcrumb";
+import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
 
 export function Header() {
   const { t, i18n } = useTranslation();
   const { currencySetting } = useCurrencyPreference();
   const setCurrency = useSetCurrency();
   const { symbol } = useCurrency();
+  // Single source of truth for the destination: NavigationProvider reads this
+  // same field into ActiveTabContext, so the breadcrumb and the nav can never
+  // disagree about where the user is.
+  const activeTab = useNavigationPrefsStore((state) => state.activeTab);
   const {
     open: currencyMenuOpen,
     toggle: toggleCurrencyMenu,
@@ -90,6 +96,12 @@ export function Header() {
             </p>
           </div>
         </div>
+
+        {/* Contextual breadcrumb — same intermediate sibling as the web shell,
+            so the two bands stay symmetric. Its zone is `flex-1 min-w-0`: the
+            eleven action buttons to the right are all `shrink-0`, so the
+            breadcrumb is the only thing that can absorb slack. */}
+        <ContextBreadcrumb tab={activeTab} />
 
         {/* Actions */}
         <div className="flex shrink-0 items-center gap-2">
