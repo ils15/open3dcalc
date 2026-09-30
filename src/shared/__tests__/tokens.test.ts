@@ -769,3 +769,71 @@ describe("stylesheets the build cannot reject are well-formed", () => {
     }
   });
 });
+
+/**
+ * MONEY IS GREEN, and in BOTH themes.
+ *
+ * The prototype paints every money figure with its emerald family, and the
+ * app's four money tokens followed it. This is a value pin rather than a
+ * floor for the same reason the wash-hue pin above is one: a rendered colour
+ * that drifts silently is invisible to every behavioural test in the suite,
+ * and the failure this catches specifically is ONE block being copied into
+ * the other — the app has two themes and each needs its own step (#047857
+ * clears 4.5:1 on the light canvas, #34d399 on the dark one; neither does
+ * both jobs).
+ *
+ * `--margin-negative` is deliberately absent: direction is what stays
+ * colour-coded, so a loss must not follow the money green.
+ */
+describe("money tokens use the prototype's money green in both themes", () => {
+  const MONEY = ["cost", "revenue", "margin", "positive"] as const;
+
+  it.each([
+    [":root", "#047857"],
+    [".dark", "#34d399"],
+  ])(
+    "pins every money token in %s to the prototype emerald, %s",
+    (block, expected) => {
+      for (const token of MONEY) {
+        expect(
+          tokenInBlock(tokensCss, block, token),
+          `--${token} in ${block} must be ${expected} — the prototype's ` +
+            `money green for that theme`,
+        ).toBe(expected);
+      }
+    },
+  );
+});
+
+/**
+ * The pairing the call-site guard CANNOT see.
+ *
+ * `SaveSettingsAction.tsx:25`, `ExportActionsCard.tsx:149` and `:218` and
+ * `PriceHeroCard.tsx:132` all paint `bg-[var(--positive)]` behind
+ * `text-[var(--text-inverse)]` — and none of them is measured by
+ * accentBackgroundContrast.test.ts, because `positive` is not in its
+ * BG_TOKEN list and, in that file's own words, "an unlisted token is skipped
+ * SILENTLY". Measured with ./helpers/contrast rather than estimated, the
+ * pairing is 5.48:1 on :root and 10.23:1 on .dark, both above AA_NORMAL_TEXT.
+ *
+ * Keeping the measurement here is not belt-and-braces: without it those four
+ * buttons have NO coverage anywhere, and the only token they depend on that
+ * a future edit could move is `--positive` itself.
+ */
+describe("--positive behind --text-inverse, which the call-site guard skips", () => {
+  it.each([
+    [":root", "light"],
+    [".dark", "dark"],
+  ])("clears 4.5:1 with --text-inverse in %s", (block, theme) => {
+    const ratio = contrastRatio(
+      tokenInBlock(tokensCss, block, "text-inverse"),
+      tokenInBlock(tokensCss, block, "positive"),
+    );
+    expect(
+      ratio,
+      `--text-inverse on --positive in ${block} (${theme}) is ` +
+        `${ratio.toFixed(2)}:1 and needs >= ${AA_NORMAL_TEXT}:1 — this is the ` +
+        `pair the four save/share/confirm buttons paint`,
+    ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+  });
+});

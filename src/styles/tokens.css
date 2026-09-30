@@ -177,10 +177,28 @@
   --info-wash: color-mix(in srgb, var(--info-wash-hue) 12%, transparent);
   --info-wash-strong: color-mix(in srgb, var(--info-wash-hue) 30%, transparent);
 
-  /* Financial semantics */
-  --cost: #c2410c;
+  /* Financial semantics — MONEY IS GREEN, the way the prototype paints it.
+     The Example renders every money figure in its emerald family
+     (`text-emerald-400`), and that step does not survive both themes on its
+     own: #34d399 is right on the dark canvas and needs darkening to #047857
+     (emerald-700) on the light one to clear 4.5:1. So the value below is the
+     light-theme money green and `.dark` carries its own — one value per
+     theme, never one copied into both, which is what the value pin in
+     tokens.test.ts enforces.
+
+     Direction is NOT encoded by hue any more: `--cost`, `--revenue` and
+     `--margin` share one hue per theme, and sign is carried by
+     `--margin-negative`, which stays red. The prototype's solid button green
+     (#15803d / #16a34a hover) is a BACKGROUND colour and lands nowhere here
+     — of these four only `--positive` is ever painted as a fill, and it was
+     already at the emerald text value in both themes.
+
+     `--positive-wash-hue` therefore stays #059669 (emerald-600): no hue in
+     this family moved, so the wash is still the same emerald and the pin at
+     tokens.test.ts remains correct rather than merely tolerated. */
+  --cost: #047857;
   --revenue: #047857;
-  --margin: #1d4ed8;
+  --margin: #047857;
   --margin-negative: #b91c1c;
 
   /* Cost distribution categories */
@@ -441,9 +459,14 @@
   --info-wash: color-mix(in srgb, var(--info-wash-hue) 12%, transparent);
   --info-wash-strong: color-mix(in srgb, var(--info-wash-hue) 30%, transparent);
 
-  --cost: #fdba74;
+  /* Money is green here too, one step LIGHTER than :root because the dark
+     canvas inverts which side of 4.5:1 the ink has to sit on. Same rule as
+     :root — see the note above the financial semantics there — and the two
+     blocks must stay different: a copied value is exactly what the pin in
+     tokens.test.ts fails on. */
+  --cost: #34d399;
   --revenue: #34d399;
-  --margin: #7dd3fc;
+  --margin: #34d399;
   --margin-negative: #fda4af;
 
   --cost-filament: #c4b5fd;
