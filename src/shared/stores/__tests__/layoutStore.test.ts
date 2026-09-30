@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   useLayoutStore,
   LAYOUT_STORAGE_KEY,
+  DEFAULT_SIDEBAR_MODE,
   type LayoutMode,
 } from "../layoutStore";
 import { useCalculatorStore } from "../calculatorStore";
@@ -20,7 +21,13 @@ import { useCalculatorStore } from "../calculatorStore";
 
 beforeEach(() => {
   localStorage.clear();
-  useLayoutStore.setState({ layoutMode: "classic" });
+  // sidebarMode lives in the same store: without this reset the sidebar
+  // preference chosen by a previous test leaks into the next one, even though
+  // no assertion here reads it.
+  useLayoutStore.setState({
+    layoutMode: "classic",
+    sidebarMode: DEFAULT_SIDEBAR_MODE,
+  });
 });
 
 describe("layoutStore — defaults and transitions", () => {

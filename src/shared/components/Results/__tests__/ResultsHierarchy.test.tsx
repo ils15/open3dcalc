@@ -115,7 +115,11 @@ describe("ResultsPanel hierarchy", () => {
     useCalculatorStore.setState({
       results: null,
       calculationIssues: [
-        { path: "fdmMaterial.density", reason: "non_finite", received: Number.NaN },
+        {
+          path: "fdmMaterial.density",
+          reason: "non_finite",
+          received: Number.NaN,
+        },
       ],
     });
 
@@ -152,13 +156,135 @@ describe("ResultsPanel hierarchy", () => {
     expect(summary).toHaveFocus();
   });
 
+  it("keeps compact distribution visible in the sidebar actions tab", () => {
+    render(
+      <ResultsPanel
+        variant="sidebar"
+        sidebarMode="tabs"
+        sidebarTab="actions"
+      />,
+    );
+
+    expect(screen.getByTestId("cost-distribution-compact")).toBeInTheDocument();
+    expect(screen.getByTestId("results-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("action-group-inventory")).toBeInTheDocument();
+  });
+
+  it("includes material in the compact bars view", () => {
+    render(
+      <ResultsPanel
+        variant="sidebar"
+        sidebarMode="compact"
+        compactView="bars"
+      />,
+    );
+
+    expect(screen.getByTestId("compact-cost-bars")).toBeInTheDocument();
+    expect(screen.getByTestId("compact-cost-bar-filament")).toHaveTextContent(
+      "Material",
+    );
+  });
+
+  // ── isSidebar={!showChart}: the donut and the bars are mutually exclusive ──
+  // The tag shipped this semantic untested. CostBreakdownCard renders
+  // CostDistributionBars itself whenever isSidebar is set, so the sidebar must
+  // not also render a second bar list; getByTestId (singular) is the guard.
+  it("suppresses the donut and renders exactly one bar list in the bars view", () => {
+    render(
+      <ResultsPanel
+        variant="sidebar"
+        sidebarMode="compact"
+        compactView="bars"
+      />,
+    );
+
+    // Single bar list, not one per composition.
+    expect(screen.getAllByTestId("compact-cost-bars")).toHaveLength(1);
+    // The donut lives inside the disclosure that isSidebar hides.
+    expect(screen.getByTestId("cost-distribution-details")).toHaveClass(
+      "hidden",
+    );
+  });
+
+  it("shows the donut disclosure and no bar list in the chart view", () => {
+    render(
+      <ResultsPanel
+        variant="sidebar"
+        sidebarMode="compact"
+        compactView="chart"
+      />,
+    );
+
+    expect(screen.queryByTestId("compact-cost-bars")).not.toBeInTheDocument();
+    expect(screen.getByTestId("cost-distribution-details")).not.toHaveClass(
+      "hidden",
+    );
+    // The donut is still mounted, just inside the disclosure.
+    expect(
+      screen
+        .getByTestId("cost-distribution-details")
+        .querySelector("[data-testid='pie-chart']"),
+    ).not.toBeNull();
+  });
+
+  it("sticks the actions to the bottom in dock mode", () => {
+    render(<ResultsPanel variant="sidebar" sidebarMode="dock" />);
+
+    // Dock is the only mode that wraps the actions so they stay reachable
+    // while the panel scrolls.
+    const wrapper = screen.getByTestId("results-actions").parentElement;
+    expect(wrapper).not.toBeNull();
+    expect(wrapper?.className).toContain("sticky");
+    expect(wrapper?.className).toContain("bottom-0");
+  });
+
+  it("gives compact and expanded modes their own vertical rhythm", () => {
+    const { unmount } = render(
+      <ResultsPanel variant="sidebar" sidebarMode="compact" />,
+    );
+    expect(screen.getByTestId("results-hierarchy")).toHaveClass("space-y-3");
+    unmount();
+
+    const expanded = render(
+      <ResultsPanel variant="sidebar" sidebarMode="expanded" />,
+    );
+    expect(screen.getByTestId("results-hierarchy")).toHaveClass("space-y-6");
+    expanded.unmount();
+
+    render(<ResultsPanel variant="sidebar" sidebarMode="tabs" />);
+    expect(screen.getByTestId("results-hierarchy")).toHaveClass("space-y-4");
+  });
+
+  it("keeps non-sidebar surfaces on the donut regardless of the sidebar view", () => {
+    render(
+      <ResultsPanel
+        variant="mobile"
+        sidebarMode="compact"
+        compactView="bars"
+      />,
+    );
+
+    expect(screen.queryByTestId("compact-cost-bars")).not.toBeInTheDocument();
+    expect(screen.getByTestId("cost-distribution-details")).not.toHaveClass(
+      "hidden",
+    );
+  });
+
   it("groups actions and describes the isolated stock mutation", () => {
     render(<ResultsPanel variant="sidebar" />);
 
-    expect(screen.getByRole("heading", { name: "Salvar e cadastrar" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Exportar e compartilhar" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Estoque" })).toBeInTheDocument();
-    expect(screen.getByTestId("action-group-inventory")).toHaveClass("border-t-4");
+    expect(
+      screen.getByRole("heading", { name: "Salvar e cadastrar" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Exportar e compartilhar" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Estoque" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("action-group-inventory")).toHaveClass(
+      "border-t-4",
+    );
 
     const stockButton = screen.getByRole("button", {
       name: "Deduzir do Estoque",

@@ -8,7 +8,7 @@ import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { useShallow } from "zustand/react/shallow";
 import { useKeyboardShortcuts } from "@/shared/hooks/useKeyboardShortcuts";
 import { QuickStartBanner } from "@/shared/components/ui/QuickStartBanner";
-import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
+import { ResultsSidebar } from "@/shared/components/Results/ResultsSidebar";
 import { TechToggle } from "./TechToggle";
 import { LevelToggle } from "./LevelToggle";
 import { ProductName } from "./ProductName";
@@ -94,7 +94,10 @@ export function Calculator() {
         data-testid="calculator-layout"
         className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 pb-[72px] lg:pb-0 xl:gap-6 2xl:grid-cols-[auto_minmax(0,1fr)_360px] 2xl:gap-8"
       >
-        <div data-testid="calculator-section-nav" className="col-start-1 row-start-1 min-w-0">
+        <div
+          data-testid="calculator-section-nav"
+          className="col-start-1 row-start-1 min-w-0"
+        >
           <SectionNav
             activeSection={activeSection}
             onSectionClick={setActiveSection}
@@ -103,12 +106,9 @@ export function Calculator() {
         <div
           data-tutorial="results-sidebar"
           data-testid="results-sidebar"
-          className="col-start-2 row-start-1 hidden 2xl:flex 2xl:col-start-3 flex-col gap-5 w-[360px] shrink-0 sticky top-[92px] self-start max-h-[calc(100vh-120px)] overflow-y-auto"
+          className="col-start-2 row-start-1 hidden 2xl:flex 2xl:col-start-3 flex-col gap-5 w-[360px] shrink-0 sticky top-[92px] self-start h-[calc(100vh-120px)] max-h-[calc(100vh-120px)] overflow-hidden"
         >
-          <ResultsPanel
-            variant="sidebar"
-            onExportBlocked={notifyBlockedExport}
-          />
+          <ResultsSidebar onExportBlocked={notifyBlockedExport} />
         </div>
         <div
           data-testid="calculator-inputs"
