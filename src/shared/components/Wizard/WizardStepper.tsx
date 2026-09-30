@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+
+import { StepBadge } from "@/shared/components/ui/StepBadge";
 import {
   WIZARD_STEPS,
   WIZARD_TOTAL_STEPS,
@@ -40,16 +42,7 @@ export function WizardStepper({
                     : "border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-secondary)]"
                 }`}
               >
-                <span
-                  aria-hidden="true"
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] ${
-                    isCurrent
-                      ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]"
-                      : "bg-[var(--color-bg-elevated)]"
-                  }`}
-                >
-                  {step}
-                </span>
+                <StepBadge step={step} current={isCurrent} size="lg" />
                 <span className="hidden min-w-0 truncate sm:inline">
                   {t(`wizard.steps.${step}.title`)}
                 </span>

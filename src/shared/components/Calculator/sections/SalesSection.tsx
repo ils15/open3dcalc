@@ -12,7 +12,7 @@ import { isFieldVisibleForLevel } from "../Calculator.constants";
 
 const MARKUP_PRESETS = [100, 150, 200, 250, 300, 500];
 
-export function SalesSection() {
+export function SalesSection({ step }: { step?: number }) {
   const { t, i18n } = useTranslation();
   const store = useCalculatorStore();
   const catalogMarketplaces = useCatalogStore((s) => s.marketplaces);
@@ -53,6 +53,7 @@ export function SalesSection() {
       <SectionHeader
         Icon={DollarSign}
         title={t("calc.sales")}
+        step={step}
         subtitle={t("calc.sectionDesc.sales")}
       />
       <div className="space-y-4">

@@ -7,7 +7,7 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { SectionHeader } from "./SectionHeader";
 
-export function HardwareSection() {
+export function HardwareSection({ step }: { step?: number }) {
   const { t } = useTranslation();
   const store = useCalculatorStore();
   const { symbol: currencySymbol } = useCurrency();
@@ -30,6 +30,7 @@ export function HardwareSection() {
       <SectionHeader
         Icon={Wrench}
         title={t("calc.fdmHardware")}
+        step={step}
         subtitle={t(
           isFDM
             ? "calc.sectionDesc.fdmHardware"

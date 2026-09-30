@@ -1,10 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useShallow } from "zustand/react/shallow";
+import { StepBadge } from "@/shared/components/ui/StepBadge";
 import {
   SECTIONS,
   LEVEL_SECTIONS,
   SECTION_ENABLES,
+  sectionStepNumbers,
 } from "./Calculator.constants";
 
 interface SectionNavProps {
@@ -24,6 +26,10 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
   const visibleSections = SECTIONS.filter((s) =>
     LEVEL_SECTIONS[calcLevel].includes(s.id),
   );
+  // Output sections (results) are not steps, so they carry no number. The rail
+  // reads the same helper the section headings use, so a rail item and its
+  // heading can never disagree about which step they are.
+  const stepById = sectionStepNumbers(calcLevel);
 
   return (
     <>
@@ -33,6 +39,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
           const keys = SECTION_ENABLES[s.id] || [];
           const anyEnabled =
             keys.length === 0 || keys.some((k) => enabledSections[k]);
+          const step = stepById.get(s.id);
           return (
             /* contrast-site: section-nav-desktop-item */
             <button
@@ -51,6 +58,9 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
               }`}
               title={t(s.label)}
             >
+              {/* w-14 rail: the sm badge keeps icon + numeral inside the 44px
+                  target without widening the rail, which is pinned by test. */}
+              {step !== undefined && <StepBadge step={step} size="sm" />}
               <s.Icon
                 className={`w-4 h-4 ${activeSection === s.id ? "text-[var(--color-accent)]" : ""}`}
               />
@@ -68,6 +78,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
           const keys = SECTION_ENABLES[s.id] || [];
           const anyEnabled =
             keys.length === 0 || keys.some((k) => enabledSections[k]);
+          const step = stepById.get(s.id);
           return (
             <div key={s.id}>
               {/* contrast-site: section-nav-compact-item */}
@@ -87,6 +98,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
                 }`}
                 title={t(s.label)}
               >
+                {step !== undefined && <StepBadge step={step} size="sm" />}
                 <s.Icon
                   className={`w-4 h-4 shrink-0 ${activeSection === s.id ? "text-[var(--color-accent)]" : ""}`}
                 />
