@@ -28,8 +28,8 @@ describe("Calculator — Complete-mode layout breakpoints", () => {
       expect(calculatorSource).not.toMatch(/hidden xl:flex/);
     });
 
-    it("renders the results sidebar at the 2xl width (360px) without xl widths", () => {
-      expect(calculatorSource).toMatch(/2xl:flex[^"]*w-\[360px\]/);
+    it("renders the results sidebar at the 2xl width (336px) without xl widths", () => {
+      expect(calculatorSource).toMatch(/2xl:flex[^"]*w-\[336px\]/);
       expect(calculatorSource).not.toMatch(/xl:w-\[320px\]/);
       expect(calculatorSource).not.toMatch(/w-\[280px\]/);
     });

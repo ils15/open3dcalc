@@ -91,7 +91,7 @@ describe("Calculator layout order", () => {
     expect(sidebar.className).toContain("2xl:col-start-3");
     expect(inputs.className).toContain("col-start-2");
     expect(layout.className).toContain(
-      "2xl:grid-cols-[auto_minmax(0,1fr)_360px]",
+      "2xl:grid-cols-[auto_minmax(0,1fr)_336px]",
     );
     expect(sidebar.className).not.toContain("order-");
     expect(inputs.className).not.toContain("order-");

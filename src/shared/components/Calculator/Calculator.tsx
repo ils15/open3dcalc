@@ -92,7 +92,7 @@ export function Calculator() {
       <h1 className="sr-only">{t("nav.calculator")}</h1>
       <div
         data-testid="calculator-layout"
-        className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 pb-[72px] lg:pb-0 xl:gap-6 2xl:grid-cols-[auto_minmax(0,1fr)_360px] 2xl:gap-8"
+        className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 pb-[72px] lg:pb-0 xl:gap-6 2xl:grid-cols-[auto_minmax(0,1fr)_336px] 2xl:gap-8"
       >
         <div
           data-testid="calculator-section-nav"
@@ -106,7 +106,7 @@ export function Calculator() {
         <div
           data-tutorial="results-sidebar"
           data-testid="results-sidebar"
-          className="col-start-2 row-start-1 hidden 2xl:flex 2xl:col-start-3 flex-col gap-5 w-[360px] shrink-0 sticky top-[92px] self-start h-[calc(100vh-120px)] max-h-[calc(100vh-120px)] overflow-hidden"
+          className="col-start-2 row-start-1 hidden 2xl:flex 2xl:col-start-3 flex-col gap-5 w-[336px] shrink-0 sticky top-[92px] self-start h-[calc(100vh-120px)] max-h-[calc(100vh-120px)] overflow-hidden"
         >
           <ResultsSidebar onExportBlocked={notifyBlockedExport} />
         </div>
