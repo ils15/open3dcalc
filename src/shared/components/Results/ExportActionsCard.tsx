@@ -127,11 +127,22 @@ export function ExportActionsCard({
   return (
     <>
       {/*
-       * The prototype's rhythm here is a 2-column grid, and so is this one.
-       * Stacking every export on its own full-width row was tried and
-       * measured: it costs 36px more of section height (225 -> 189px in the
-       * results sidebar) and buys no density, because the density comes from
-       * radius/padding/type rather than from side-by-side buttons.
+       * Two primaries over a tertiary pair — the prototype's hierarchy, not a
+       * flat 2-column grid.
+       *
+       * The flat version was tried and measured: it costs 36px more of section
+       * height (225 -> 189px in the results sidebar) and buys no density,
+       * because the density comes from radius/padding/type rather than from
+       * side-by-side buttons. That stayed. What was wrong was the SHAPE: three
+       * buttons in two columns left "Exportar Cotação" alone on row 2 with an
+       * empty half-cell beside it. Measured orphan: a 162px-wide empty cell at
+       * the sidebar width, 441px in the wide layout.
+       *
+       * So the primaries keep the top row — the PDF spanning both columns when
+       * it is the only primary, or sharing the row with "Salvar Configurações"
+       * when that one is shown — and the tertiary pair nests in its own
+       * `grid-cols-2` below. Same two rows, same two 32px rows of buttons,
+       * same 8px gap: the group still measures 189px.
        *
        * `w-full` on each button is load-bearing, not cosmetic. Grid items get
        * their column width from the implicit `justify-items: stretch`; drop
@@ -187,39 +198,51 @@ export function ExportActionsCard({
             const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
             exportPdf(results, locale, currency);
           }}
-          className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--surface-sunken)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-overlay)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          className={`w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--surface-sunken)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-overlay)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate${
+            showSaveSettings ? "" : " col-span-2"
+          }`}
         >
           <FileText className="w-3.5 h-3.5 shrink-0" />{" "}
           <span className="truncate">{t("calc.exportPdf")}</span>
         </button>
-        {/* contrast-site: export-actions-csv-button */}
-        <button
-          type="button"
-          onClick={async () => {
-            if (guard()) return;
-            const state = useCalculatorStore.getState();
-            const results = state.results;
-            if (!results) return;
-            const { exportResultToCsv, downloadCsv } =
-              await import("@/shared/lib/csvExport");
-            const csv = exportResultToCsv(
-              results,
-              state.productName || "open3dcalc",
-            );
-            downloadCsv(csv, "open3dcalc_resultado.csv");
-          }}
-          className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--info)] text-[var(--text-inverse)] hover:bg-[var(--info)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--info)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+        {/*
+         * The tertiary pair nests its own 2-column grid rather than sitting as
+         * two more cells of the outer one: three cells in two columns is
+         * exactly what orphaned the quote action on row 2.
+         */}
+        <div
+          data-testid="export-tertiary"
+          className="col-span-2 min-w-0 grid grid-cols-2 gap-2"
         >
-          <BarChart2 className="w-3.5 h-3.5 shrink-0" /> CSV
-        </button>
-        <button
-          type="button"
-          onClick={handleExportQuote}
-          className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--warning)] text-[var(--text-inverse)] hover:bg-[var(--warning)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--warning)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
-        >
-          <ScrollText className="w-3.5 h-3.5 shrink-0" />{" "}
-          <span className="truncate">{t("results.exportQuote")}</span>
-        </button>
+          {/* contrast-site: export-actions-csv-button */}
+          <button
+            type="button"
+            onClick={async () => {
+              if (guard()) return;
+              const state = useCalculatorStore.getState();
+              const results = state.results;
+              if (!results) return;
+              const { exportResultToCsv, downloadCsv } =
+                await import("@/shared/lib/csvExport");
+              const csv = exportResultToCsv(
+                results,
+                state.productName || "open3dcalc",
+              );
+              downloadCsv(csv, "open3dcalc_resultado.csv");
+            }}
+            className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--info)] text-[var(--text-inverse)] hover:bg-[var(--info)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--info)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          >
+            <BarChart2 className="w-3.5 h-3.5 shrink-0" /> CSV
+          </button>
+          <button
+            type="button"
+            onClick={handleExportQuote}
+            className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--warning)] text-[var(--text-inverse)] hover:bg-[var(--warning)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--warning)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          >
+            <ScrollText className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="truncate">{t("results.exportQuote")}</span>
+          </button>
+        </div>
       </div>
 
       {/* Share Link */}
