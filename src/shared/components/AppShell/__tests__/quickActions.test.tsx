@@ -612,3 +612,185 @@ describe("QuickStatusPill", () => {
     expect(screen.getByTestId("quick-status-pill")).toHaveAccessibleName();
   });
 });
+
+// ─── the dial / pill horizontal clearance ────────────────────────────────
+
+/**
+ * **Arithmetic on purpose, NOT geometry.**
+ *
+ * `jsdom` has no layout engine: in this project `getBoundingClientRect` returns
+ * all zeroes and `offsetHeight` returns 0, so an intersection test written here
+ * would compute `0 > 0`, go green, and prove nothing at all — the exact
+ * vacuous green a layout assertion invites. What decides the horizontal
+ * invariant instead are two numbers that are exact WITHOUT a layout engine: the
+ * `right` offsets the wrappers encode as Tailwind utilities, and the menu-item
+ * widths measured in a real browser.
+ *
+ * The identity, reading each box off the viewport's right edge (both wrappers
+ * are `fixed`, the menu is `items-end` inside the dial's wrapper, so item
+ * `right` IS the dial's `right`):
+ *
+ *     item.right = viewport - dialRight
+ *     item.left  = viewport - dialRight - itemWidth
+ *     pill.right = viewport - pillRight
+ *     overlapX   = item.left - pill.right = pillRight - dialRight - itemWidth
+ *
+ * so the two boxes share x-range exactly when `itemWidth > pillRight - dialRight`.
+ *
+ * With `pillRight` 176 and `dialRight` 24 that threshold is 152px. Measured in
+ * Chromium at 1440 and 1920, dial open: `Atalhos de Teclado` (pt-BR) is 150px
+ * and cleared it by 2px — arithmetically on the edge — while `Keyboard
+ * Shortcuts` (en-US) is 158px and crossed it by 6px, kept from an actual
+ * collision only by the 4px of vertical clearance both wrappers get from
+ * `bottom-4`. The pill moves left; the dial does not, because the FAB's
+ * template (44px trigger, `rightGap` 24, 36px items) is already validated.
+ */
+describe("dial / pill horizontal clearance", () => {
+  /**
+   * Tailwind v4 resolves every spacing step against `--spacing: 0.25rem`, so a
+   * `right-N` utility is exactly `N/4` rem — 4px per step at the 16px root the
+   * app ships. DERIVED rather than tabulated, so editing either `sm:right-*`
+   * moves this number and the assertions below stop holding instead of quietly
+   * testing a stale literal.
+   */
+  const ROOT_FONT_PX = 16;
+  const smRightPx = (el: Element): number => {
+    const token = /(?:^|\s)sm:right-([\d.]+)(?:\s|$)/.exec(el.className);
+    if (!token) {
+      throw new Error(`no sm:right-* utility on "${el.className}"`);
+    }
+    return (Number(token[1]) / 4) * ROOT_FONT_PX;
+  };
+
+  /**
+   * The `sm:` (≥640px) right offsets of the two fixed wrappers, in px.
+   *
+   * Queries are scoped to THIS render's container rather than to `screen`: the
+   * file renders the pill in several earlier blocks, and a document-wide
+   * `getByTestId` then matches every one of them.
+   */
+  const rightOffsetsPx = (): { pillRight: number; dialRight: number } => {
+    const { container } = render(
+      <NavigationProvider>
+        <QuickActionsSpeedDial />
+        <QuickStatusPill />
+      </NavigationProvider>,
+    );
+    // The only `aria-haspopup="menu"` in this tree; the dial wrapper is its parent.
+    const trigger = container.querySelector<HTMLButtonElement>(
+      'button[aria-haspopup="menu"]',
+    );
+    const pill = container.querySelector('[data-testid="quick-status-pill"]');
+    if (!trigger?.parentElement) throw new Error("dial trigger not found");
+    if (!pill) throw new Error("pill not found");
+    return {
+      pillRight: smRightPx(pill),
+      dialRight: smRightPx(trigger.parentElement),
+    };
+  };
+
+  /** Menu labels, in render order — the dial's four `labelKey`s. */
+  const MENU_LABEL_KEYS = [
+    "newProject",
+    "quote",
+    "inventory",
+    "shortcuts",
+  ] as const;
+
+  /**
+   * Menu-item widths MEASURED in Chromium via Playwright on this branch, dial
+   * open, at 1440 and 1920 in both themes — identical in all four, because the
+   * label, the `text-xs font-semibold` run and the item padding are fixed.
+   */
+  const MEASURED_ITEM_WIDTH_PX: Readonly<Record<string, number>> = {
+    "pt-BR/quickActions.newProject": 119,
+    "pt-BR/quickActions.quote": 143,
+    "pt-BR/quickActions.inventory": 110,
+    "pt-BR/quickActions.shortcuts": 150,
+    "en-US/quickActions.newProject": 112,
+    "en-US/quickActions.quote": 117,
+    "en-US/quickActions.inventory": 107,
+    "en-US/quickActions.shortcuts": 158,
+  };
+
+  const LONGEST_LABEL_PX = 158; // en-US `Keyboard Shortcuts`
+
+  /** `pillRight - dialRight`: the widest label that can sit clear of the pill. */
+  const clearancePx = (): number => {
+    const { pillRight, dialRight } = rightOffsetsPx();
+    return pillRight - dialRight;
+  };
+
+  it("keeps the pill clear of every menu label shipped in either locale", () => {
+    const clearance = clearancePx();
+    const crossings = Object.entries(MEASURED_ITEM_WIDTH_PX)
+      .filter(([, width]) => width >= clearance)
+      .map(([label, width]) => `${label} (${width}px)`);
+
+    expect(crossings).toEqual([]);
+    expect(clearance).toBeGreaterThan(LONGEST_LABEL_PX);
+  });
+
+  /**
+   * The symmetric rule the numbers are chosen against: the clearance is at
+   * least the dial's own gutter, so no menu item can end up closer to the pill
+   * than the pill itself sits from the viewport edge.
+   *
+   * In px: 158 (label) + 24 (dial gutter) + 24 (clearance floor) = 206. The next
+   * named Tailwind step at or above 206 is 208 (`right-52`), which is what the
+   * pill uses rather than an arbitrary value — so the floor buys 26px of slack,
+   * 2px more than it asks for.
+   */
+  it("leaves the documented 26px of slack past the longest label", () => {
+    const { pillRight, dialRight } = rightOffsetsPx();
+
+    expect(clearancePx()).toBeGreaterThanOrEqual(dialRight);
+    expect(pillRight - dialRight - LONGEST_LABEL_PX).toBeGreaterThanOrEqual(26);
+  });
+
+  /**
+   * The failure this whole block exists to prevent: a LONGER label, or a `right`
+   * moved the wrong way, silently turning a floating pill into an overlap.
+   * A label added to a locale without a measured width fails here rather than
+   * in a browser.
+   */
+  it("has a measured width for every menu label in both shipped locales", () => {
+    const locales = [
+      ["pt-BR", ptBR],
+      ["en-US", enUS],
+    ] as const;
+
+    const unmeasured: string[] = [];
+    for (const [lng, dict] of locales) {
+      for (const key of MENU_LABEL_KEYS) {
+        expect(typeof dict.quickActions[key]).toBe("string");
+        if (!(lng + "/quickActions." + key in MEASURED_ITEM_WIDTH_PX)) {
+          unmeasured.push(lng + "/quickActions." + key);
+        }
+      }
+    }
+
+    expect(unmeasured).toEqual([]);
+  });
+
+  /**
+   * Records WHY the clearance has to be geometric. Both wrappers are `z-30`, so
+   * neither can be stacked above the other: a `z-index` change would only
+   * decide which box paints on top, not whether they overlap.
+   */
+  it("resolves the overlap in geometry, not in paint order", () => {
+    const { container } = render(
+      <NavigationProvider>
+        <QuickActionsSpeedDial />
+        <QuickStatusPill />
+      </NavigationProvider>,
+    );
+    const trigger = container.querySelector<HTMLButtonElement>(
+      'button[aria-haspopup="menu"]',
+    );
+    const pill = container.querySelector('[data-testid="quick-status-pill"]');
+
+    expect(trigger?.parentElement?.className).toContain("z-30");
+    expect(pill?.className).toContain("z-30");
+  });
+});

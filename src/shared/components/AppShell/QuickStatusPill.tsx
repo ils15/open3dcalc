@@ -53,6 +53,29 @@ import { useFocusMode } from "./NavigationContext";
  * **Low stock and Focus stay.** `0` low spools is a real measurement, not an
  * empty value, and Focus is actionable with or without history. Only revenue
  * depends on history, so only revenue is conditional.
+ *
+ * **`sm:right-52`, not `sm:right-44` — clearance for the widest menu label.**
+ * The dial opens as a column of items right-aligned to its own wrapper, so an
+ * item's left edge is `viewport - dialRight - itemWidth` and the pill's right
+ * edge is `viewport - pillRight`. The two share x-range exactly when
+ * `itemWidth > pillRight - dialRight`. At `right-44` (176px) minus the dial's
+ * `right-6` (24px) that threshold was 152px, and the longest shipped label is
+ * `Keyboard Shortcuts` at 158px (en-US) — so the menu crossed the pill's edge
+ * by 6px and was held apart only by the 4px of vertical clearance both wrappers
+ * get from `bottom-4`. Any change to that `mb-2.5`, to the trigger's height or
+ * to the pill's `py` would have turned it into a real collision.
+ *
+ * 208px (`right-52`) puts the threshold at 184px: 158px of label plus **26px**
+ * of slack, and at least the dial's own 24px gutter, so the pill sits further
+ * from the widest item than the dial sits from the viewport edge. The DIAL is
+ * what stays put — its 44px trigger, `rightGap` 24 and 36px items are the
+ * validated FAB template. `z-index` was rejected for this: both wrappers are
+ * already `z-30`, and stacking decides only which box paints on top, not
+ * whether the two overlap at all.
+ *
+ * Measured in Chromium (Playwright) at 1440 and 1920, both themes, before and
+ * after: `overlapX` for the longest label goes from **−6px to +26px** (en-US)
+ * and from **+2px to +34px** (pt-BR, `Atalhos de Teclado` at 150px).
  */
 export function QuickStatusPill(): React.ReactElement | null {
   const { t } = useTranslation();
@@ -73,7 +96,7 @@ export function QuickStatusPill(): React.ReactElement | null {
       role="group"
       data-testid="quick-status-pill"
       aria-label={t("quickActions.pillLabel")}
-      className="fixed bottom-4 right-40 sm:right-44 z-30 flex items-center gap-2 px-3 py-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-xl select-none"
+      className="fixed bottom-4 right-40 sm:right-52 z-30 flex items-center gap-2 px-3 py-2 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-xl select-none"
     >
       {hasHistory && (
         <>
