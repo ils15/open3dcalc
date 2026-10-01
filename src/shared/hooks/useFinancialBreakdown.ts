@@ -37,7 +37,11 @@ export interface FeeBreakdown {
 
 /** Billable-time view of the result. */
 export interface TimeMetrics {
-  /** `estimatedPrintTime` converted from minutes to hours. */
+  /**
+   * Estimated print time in hours. `estimatedPrintTime` is already hours
+   * (`calculator.ts` copies it from `print.printTimeHours`), so this is a
+   * pass-through: dividing it by 60 again would be a 60x error.
+   */
   readonly estimatedHours: number;
   /** `totalHoursForProfit`: print + post + setup hours. */
   readonly billableHours: number;
@@ -82,7 +86,10 @@ const SEGMENT_MIN_VALUE = 0.01;
 function buildChartSegments(
   result: CalculationResult,
   t: (key: string) => string,
-): { readonly segments: CostSegment[]; readonly invalidSegmentPaths: string[] } {
+): {
+  readonly segments: CostSegment[];
+  readonly invalidSegmentPaths: string[];
+} {
   const total = result.totalCost;
   const invalidSegmentPaths: string[] = [];
   const raw: ReadonlyArray<
@@ -120,9 +127,24 @@ function buildChartSegments(
       result.softwareCost,
       "other",
     ],
-    ["results.laborCost", t("calc.chartLabels.labor"), result.laborCost, "labor"],
-    ["results.failureCost", t("calc.chartLabels.failure"), result.failureCost, "failure"],
-    ["results.extrasCost", t("calc.chartLabels.extras"), result.extrasCost, "other"],
+    [
+      "results.laborCost",
+      t("calc.chartLabels.labor"),
+      result.laborCost,
+      "labor",
+    ],
+    [
+      "results.failureCost",
+      t("calc.chartLabels.failure"),
+      result.failureCost,
+      "failure",
+    ],
+    [
+      "results.extrasCost",
+      t("calc.chartLabels.extras"),
+      result.extrasCost,
+      "other",
+    ],
   ];
 
   if (!Number.isFinite(total) || total < 0) {
@@ -221,7 +243,7 @@ export function useFinancialBreakdown(
         hasFees: taxAmount > 0,
       },
       time: {
-        estimatedHours: result.estimatedPrintTime / 60,
+        estimatedHours: result.estimatedPrintTime,
         billableHours: result.totalHoursForProfit ?? 0,
         profitPerHour: result.profitPerHour ?? 0,
       },

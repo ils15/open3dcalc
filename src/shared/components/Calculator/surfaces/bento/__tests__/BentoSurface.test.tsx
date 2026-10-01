@@ -30,7 +30,8 @@ const result: CalculationResult = {
   costPerGram: 0.12,
   costPerUnit: 58.34,
   unitWeight: 102.8,
-  estimatedPrintTime: 150,
+  /** HOURS: `calculator.ts` copies `printTimeHours` (2.5 below) into this. */
+  estimatedPrintTime: 2.5,
   targetMarginPercent: 30,
   breakEvenPrice: 70,
   actualMargin: 28.33,

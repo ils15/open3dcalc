@@ -6,10 +6,7 @@ import {
   type FinancialBreakdown,
   type FinancialBreakdownInput,
 } from "../useFinancialBreakdown";
-import type {
-  CalculationResult,
-  SalesParameters,
-} from "@/shared/types";
+import type { CalculationResult, SalesParameters } from "@/shared/types";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -53,7 +50,8 @@ const result: CalculationResult = {
   costPerGram: 0.71,
   costPerUnit: 60,
   unitWeight: 85,
-  estimatedPrintTime: 150,
+  /** HOURS, same as `PrintParameters.printTimeHours` (2.5 h job). */
+  estimatedPrintTime: 2.5,
   targetMarginPercent: 30,
   breakEvenPrice: 70,
   actualMargin: 28.3,
@@ -214,9 +212,12 @@ describe("useFinancialBreakdown — fees and time", () => {
     expect(breakdown.fees.taxAmount).toBe(0);
   });
 
-  it("converts the estimated print time from minutes to hours", () => {
+  it("reports the estimated print time in hours, without dividing again", () => {
     const breakdown = render({});
 
+    // `estimatedPrintTime` is already hours, so this passes the value
+    // through untouched. Dividing by 60 here would yield 0.04 and also
+    // break the print <= billable invariant (2.5 <= 2.6).
     expect(breakdown.time.estimatedHours).toBe(2.5);
     expect(breakdown.time.billableHours).toBe(2.6);
     expect(breakdown.time.profitPerHour).toBe(11.5);
@@ -238,7 +239,9 @@ describe("useFinancialBreakdown — fees and time", () => {
     });
 
     expect(breakdown.invalidSegmentPaths).toContain("results.materialCost");
-    expect(breakdown.chartData.some((segment) => segment.name === "Material")).toBe(false);
+    expect(
+      breakdown.chartData.some((segment) => segment.name === "Material"),
+    ).toBe(false);
   });
 
   it("has no invalid segment signal when the result is absent", () => {
