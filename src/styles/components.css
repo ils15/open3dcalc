@@ -150,8 +150,8 @@ body {
   background: var(--accent-fill);
   color: var(--accent-fill-fg);
   border: 1px solid transparent;
-  /* --radius-sm (4px), not --radius-md: the prototype's action buttons are a
-   * 4px radius and this rule is the app's stand-in for them. */
+  /* --radius-sm (4px): the prototype's action buttons carry a 4px radius and
+   * this rule is the app's stand-in for them. */
   border-radius: var(--radius-sm);
   /* The prototype's primary is `py-2`, which at the compact type scale is
    * ~42px — under the 44px target. min-height is the guard that keeps this a
