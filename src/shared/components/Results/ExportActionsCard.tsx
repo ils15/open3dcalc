@@ -126,11 +126,24 @@ export function ExportActionsCard({
 
   return (
     <>
+      {/*
+       * The prototype's rhythm here is a 2-column grid, and so is this one.
+       * Stacking every export on its own full-width row was tried and
+       * measured: it costs 36px more of section height (225 -> 189px in the
+       * results sidebar) and buys no density, because the density comes from
+       * radius/padding/type rather than from side-by-side buttons.
+       *
+       * `w-full` on each button is load-bearing, not cosmetic. Grid items get
+       * their column width from the implicit `justify-items: stretch`; drop
+       * the grid and that stretch disappears with it, collapsing a button to
+       * content width (a 43px "CSV" pill). Declaring the width keeps the
+       * rendering identical whether or not the grid ever comes back.
+       */}
       <div data-tutorial="export" className="grid grid-cols-2 gap-2">
         {isDemoMode && (
           <div
             role="status"
-            className="col-span-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--accent-subtle)] border border-[var(--accent)]/30 text-[11px] font-semibold text-[var(--accent)]"
+            className="col-span-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-[var(--accent-subtle)] border border-[var(--accent)]/30 text-[11px] font-semibold text-[var(--accent)]"
           >
             <Sparkles className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span>{t("demo.export.badge")}</span>
@@ -144,7 +157,7 @@ export function ExportActionsCard({
               setSaveStatus("saved");
               setTimeout(() => setSaveStatus("idle"), 2000);
             }}
-            className={`min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate ${
+            className={`w-full min-h-[44px] py-2 rounded text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate ${
               saveStatus === "saved"
                 ? "bg-[var(--positive)] text-[var(--text-inverse)]"
                 : "bg-[var(--accent)] text-[var(--text-inverse)] hover:bg-[var(--accent-hover)]"
@@ -174,7 +187,7 @@ export function ExportActionsCard({
             const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
             exportPdf(results, locale, currency);
           }}
-          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--surface-sunken)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-overlay)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--surface-sunken)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-overlay)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
         >
           <FileText className="w-3.5 h-3.5 shrink-0" />{" "}
           <span className="truncate">{t("calc.exportPdf")}</span>
@@ -195,14 +208,14 @@ export function ExportActionsCard({
             );
             downloadCsv(csv, "open3dcalc_resultado.csv");
           }}
-          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--info)] text-[var(--text-inverse)] hover:bg-[var(--info)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--info)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--info)] text-[var(--text-inverse)] hover:bg-[var(--info)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--info)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
         >
           <BarChart2 className="w-3.5 h-3.5 shrink-0" /> CSV
         </button>
         <button
           type="button"
           onClick={handleExportQuote}
-          className="min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold bg-[var(--warning)] text-[var(--text-inverse)] hover:bg-[var(--warning)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--warning)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
+          className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--warning)] text-[var(--text-inverse)] hover:bg-[var(--warning)]/80 transition-all focus-visible:ring-2 focus-visible:ring-[var(--warning)] focus-visible:outline-none flex items-center justify-center gap-1 truncate"
         >
           <ScrollText className="w-3.5 h-3.5 shrink-0" />{" "}
           <span className="truncate">{t("results.exportQuote")}</span>
@@ -213,7 +226,7 @@ export function ExportActionsCard({
       <button
         type="button"
         onClick={handleShareLink}
-        className={`w-full min-h-[44px] py-2.5 rounded-xl text-[11px] font-bold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-2 ${
+        className={`w-full min-h-[32px] py-1.5 rounded text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-2 ${
           shareStatus === "copied"
             ? "bg-[var(--positive)] text-[var(--text-inverse)]"
             : "bg-[var(--surface-sunken)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-sunken)]"

@@ -174,8 +174,14 @@ const PINNED_SHARED_LAYER: ReadonlyArray<readonly [string, string]> = [
     "font-size: var(--type-micro-label-size); line-height: var(--type-micro-label-line-height); font-weight: var(--type-micro-label-weight); letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-muted)",
   ],
   [
+    // Deliberately re-pinned (not extraction drift): the prototype's compact
+    // button rhythm. Radius --radius-md(6px) -> --radius-sm(4px), type scale
+    // 0.875rem -> 0.75rem, and the padding loosened so `min-height: 44px`
+    // becomes the binding constraint. That last one is load-bearing — at
+    // 8px/16px padding the content box is ~42px, so without the explicit
+    // min-height this primary control would drop under the 44px tap target.
     ".btn-primary",
-    "background: var(--accent-fill); color: var(--accent-fill-fg); border: 1px solid transparent; border-radius: var(--radius-md); padding: 10px 20px; font-weight: 600; font-size: 0.875rem; transition: background 0.15s ease, transform 0.1s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px",
+    "background: var(--accent-fill); color: var(--accent-fill-fg); border: 1px solid transparent; border-radius: var(--radius-sm); min-height: 44px; padding: 8px 16px; font-weight: 600; font-size: 0.75rem; transition: background 0.15s ease, transform 0.1s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px",
   ],
   [".btn-primary:hover", "background: var(--accent-fill-hover)"],
   [".btn-primary:active", "transform: scale(0.98)"],

@@ -20,16 +20,22 @@ export function SaveSettingsAction(): React.ReactElement {
     <button
       type="button"
       onClick={handleSave}
-      className={`min-h-[44px] w-full rounded-xl py-2.5 text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
+      className={`min-h-[44px] w-full rounded py-2 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
         status === "saved"
           ? "bg-[var(--positive)] text-[var(--text-inverse)]"
           : "bg-[var(--accent)] text-[var(--text-inverse)] hover:bg-[var(--accent-hover)]"
       }`}
     >
       {status === "saved" ? (
-        <CheckCircle2 aria-hidden="true" className="mr-1 inline size-4 align-text-bottom" />
+        <CheckCircle2
+          aria-hidden="true"
+          className="mr-1 inline size-4 align-text-bottom"
+        />
       ) : (
-        <Save aria-hidden="true" className="mr-1 inline size-4 align-text-bottom" />
+        <Save
+          aria-hidden="true"
+          className="mr-1 inline size-4 align-text-bottom"
+        />
       )}
       {status === "saved" ? t("calc.saved") : t("calc.saveSettings")}
     </button>

@@ -80,7 +80,8 @@ export function ProductActionsCard({
         setProductMsg({
           kind: "error",
           text: t("results.insufficientStock", {
-            required: error.required?.toFixed(2) ?? results.unitWeight.toFixed(2),
+            required:
+              error.required?.toFixed(2) ?? results.unitWeight.toFixed(2),
             available: error.available?.toFixed(2) ?? "0",
           }),
         });
@@ -149,7 +150,7 @@ export function ProductActionsCard({
       <button
         type="button"
         onClick={handleAddToHistory}
-        className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[var(--surface-sunken)] border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)]"
+        className="w-full min-h-[32px] py-1.5 rounded text-xs font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[var(--surface-sunken)] border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-sunken)]"
       >
         <FolderOpen className="w-4 h-4" />
         {historyActionLabel ?? t("calc.addHistory")}
@@ -158,7 +159,7 @@ export function ProductActionsCard({
       <button
         type="button"
         onClick={handleRegisterProduct}
-        className="w-full min-h-[44px] py-2 sm:py-3 rounded-xl text-sm sm:text-[15px] font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[var(--accent)] text-[var(--text-inverse)] hover:bg-[var(--accent-hover)]"
+        className="w-full min-h-[44px] py-2 rounded text-xs font-semibold transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none bg-[var(--accent)] text-[var(--text-inverse)] hover:bg-[var(--accent-hover)]"
       >
         <PackagePlus className="w-4 h-4" />
         {t("results.registerProduct")}

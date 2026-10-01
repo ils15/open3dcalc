@@ -150,10 +150,17 @@ body {
   background: var(--accent-fill);
   color: var(--accent-fill-fg);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 10px 20px;
+  /* --radius-sm (4px), not --radius-md: the prototype's action buttons are a
+   * 4px radius and this rule is the app's stand-in for them. */
+  border-radius: var(--radius-sm);
+  /* The prototype's primary is `py-2`, which at the compact type scale is
+   * ~42px — under the 44px target. min-height is the guard that keeps this a
+   * WCAG 2.5.8-compliant target after the density change; the padding alone
+   * is not. Primary actions are the one tier that may not compress. */
+  min-height: 44px;
+  padding: 8px 16px;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   transition:
     background 0.15s ease,
     transform 0.1s ease;

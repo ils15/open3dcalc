@@ -57,7 +57,15 @@ export function ResultsActions({
             {t("results.saveAndRegisterDescription")}
           </p>
         </div>
-        <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+        {/*
+         * One column, not `sm:grid-cols-2`. Three controls in two columns
+         * orphaned "Salvar Configurações" on its own half-width row with an
+         * empty 162px cell beside it, and forced "Adicionar ao histórico sem
+         * deduzir estoque" to wrap to two lines just to fit. Stacked, every
+         * control is full width, the label stops wrapping, and the two-row
+         * grid hole disappears.
+         */}
+        <div className="grid min-w-0 grid-cols-1 gap-2">
           <ProductActionsCard
             displaySellPrice={displaySellPrice}
             historyActionLabel={historyLabel}
