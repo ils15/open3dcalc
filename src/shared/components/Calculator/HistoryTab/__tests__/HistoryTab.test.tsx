@@ -33,6 +33,15 @@ let mockDateFrom: number | null;
 let mockDateTo: number | null;
 let mockSearch: string;
 
+type MockHistoryState = {
+  entries: typeof sampleEntries;
+  filterType: string;
+  sortBy: string;
+  dateFrom: number | null;
+  dateTo: number | null;
+  search: string;
+} & typeof mockStoreActions;
+
 const mockStoreActions = {
   setFilterType: vi.fn(),
   setSortBy: vi.fn(),
@@ -71,16 +80,22 @@ const mockStoreActions = {
   }),
 };
 
+// Applies the selector: `useHistoryStore(s => s.entries)` must resolve to the
+// entries array, not the store object. The state is rebuilt on each call so the
+// mutable mockEntries/mockDateFrom/mockDateTo set in beforeEach are picked up.
 vi.mock("@/shared/stores/historyStore", () => ({
-  useHistoryStore: vi.fn(() => ({
-    entries: mockEntries,
-    filterType: "all",
-    sortBy: "date",
-    dateFrom: mockDateFrom,
-    dateTo: mockDateTo,
-    search: mockSearch,
-    ...mockStoreActions,
-  })),
+  useHistoryStore: vi.fn(<T,>(selector?: (state: MockHistoryState) => T) => {
+    const state: MockHistoryState = {
+      entries: mockEntries,
+      filterType: "all",
+      sortBy: "date",
+      dateFrom: mockDateFrom,
+      dateTo: mockDateTo,
+      search: mockSearch,
+      ...mockStoreActions,
+    };
+    return selector ? selector(state) : state;
+  }),
 }));
 
 vi.mock("@/shared/stores/calculatorStore", () => ({

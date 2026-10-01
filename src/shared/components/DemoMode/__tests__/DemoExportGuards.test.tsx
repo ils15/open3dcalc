@@ -68,9 +68,13 @@ const { pdf } = vi.hoisted(() => ({
 }));
 vi.mock("@react-pdf/renderer", () => ({
   pdf,
-  Document: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  Document: ({ children }: { children?: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   Page: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  Text: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+  Text: ({ children }: { children?: React.ReactNode }) => (
+    <span>{children}</span>
+  ),
   View: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   StyleSheet: { create: (s: Record<string, unknown>) => s },
   Image: ({ src }: { src: string }) => <img src={src} alt="" />,
@@ -78,6 +82,15 @@ vi.mock("@react-pdf/renderer", () => ({
 }));
 
 // History store (padrão do HistoryTab.test.tsx)
+type MockHistoryState = {
+  entries: unknown[];
+  filterType: string;
+  sortBy: string;
+  dateFrom: number | null;
+  dateTo: number | null;
+  search: string;
+} & typeof mockStoreActions;
+
 const mockStoreActions = {
   exportJson: vi.fn(() => "[]"),
   importJson: vi.fn(() => ({ imported: 0, skipped: 0 })),
@@ -91,16 +104,22 @@ const mockStoreActions = {
   setDateTo: vi.fn(),
 };
 
+// Applies the selector: QuoteSection.tsx:160 reads `useHistoryStore(s =>
+// s.entries)`. Returning the bare store object made that resolve to the store,
+// which silently read as `.length === undefined` instead of an empty history.
 vi.mock("@/shared/stores/historyStore", () => ({
-  useHistoryStore: vi.fn(() => ({
-    entries: [],
-    filterType: "all",
-    sortBy: "date",
-    dateFrom: null,
-    dateTo: null,
-    search: "",
-    ...mockStoreActions,
-  })),
+  useHistoryStore: vi.fn(<T,>(selector?: (state: MockHistoryState) => T) => {
+    const state: MockHistoryState = {
+      entries: [],
+      filterType: "all",
+      sortBy: "date",
+      dateFrom: null,
+      dateTo: null,
+      search: "",
+      ...mockStoreActions,
+    };
+    return selector ? selector(state) : state;
+  }),
 }));
 
 vi.mock("@/shared/stores/calculatorStore", () => ({
@@ -135,7 +154,12 @@ describe("demo export guards — choke points B1..B5", () => {
       .spyOn(URL, "createObjectURL")
       .mockReturnValue("blob:mock");
     useProductInventory.setState({ products: [] });
-    useQuoteStore.setState({ quotes: [], nextNumber: 1, searchQuery: "", statusFilter: "all" });
+    useQuoteStore.setState({
+      quotes: [],
+      nextNumber: 1,
+      searchQuery: "",
+      statusFilter: "all",
+    });
   });
 
   afterEach(() => {
