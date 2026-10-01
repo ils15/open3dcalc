@@ -8,6 +8,10 @@ import { QuickStatusPill } from "@/shared/components/AppShell/QuickStatusPill";
 import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useHistoryStore } from "@/shared/stores/historyStore";
+import {
+  computeValidatedStoreResults,
+  createDefaultComputeInput,
+} from "@/shared/stores/calculatorStore.validation";
 // `FilamentSpool` is owned by the spool store (`spoolStore.ts:25`), not by
 // `@/shared/types` — it is imported from where it is actually declared rather
 // than re-exported into `types/` to satisfy a test.
@@ -49,6 +53,30 @@ vi.mock("react-i18next", () => ({
 const resetCalculator = vi.fn();
 const exportPdfSpy = vi.fn();
 
+/**
+ * **The state the real app is actually in on load.**
+ *
+ * This suite used to reset the calculator with `results: null`, which is the
+ * second time a mock has described a state the app cannot produce (after the
+ * `undefined.length` and the doubled `useHistoryStore`). `calculatorStore.ts:217`
+ * runs `computeValidatedStoreResults(initialValues)` while BUILDING the store, and
+ * `calculatorStore.validation.result.ts:71` returns
+ * `results: resultValidation.valid ? calculated : null` — so `results` is a fully
+ * populated `CalculationResult` from the first render. It is `null` only when a
+ * numeric field is non-finite, i.e. a broken calculation, not an untouched one.
+ *
+ * Rather than hand-roll a plausible object (a third invented shape), this asks
+ * the app's own default input what it computes. If the default ever stops
+ * producing a result, `REAL_DEFAULT_RESULTS_IS_NULL` below fails loudly instead
+ * of the suite quietly testing a fiction.
+ */
+const REAL_DEFAULT_RESULTS = computeValidatedStoreResults(
+  createDefaultComputeInput(),
+).results;
+
+/** The load-time invariant the dead guard rested on. */
+const REAL_DEFAULT_RESULTS_IS_NULL = REAL_DEFAULT_RESULTS === null;
+
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
@@ -58,8 +86,9 @@ beforeEach(() => {
     focusModeReturnTab: null,
     hiddenTabs: [],
   } as never);
+  // The real load state, not `null`.
   useCalculatorStore.setState({
-    results: null,
+    results: REAL_DEFAULT_RESULTS,
     resetCalculator,
   } as never);
   useHistoryStore.setState({ entries: [] } as never);
@@ -474,55 +503,66 @@ describe("quickActions.* locale parity", () => {
 describe("QuickStatusPill", () => {
   const segments = (): HTMLElement[] => screen.getAllByTestId(/^pill-segment-/);
 
-  it("shows three segments once there is something to report", () => {
-    useCalculatorStore.setState({ results: {} } as never);
-    renderPill();
-
-    expect(segments()).toHaveLength(3);
+  /**
+   * The load-time invariant the dead guard rested on. `calculatorStore.ts:217`
+   * computes results while BUILDING the store, so `results` is a populated
+   * `CalculationResult` from the first render and `!results` is never true.
+   * Asserted so the suite fails loudly if the store ever starts loading with
+   * `null` and the old "hide the whole pill" branch becomes reachable again.
+   */
+  it("loads with a populated result, so `!results` is never true", () => {
+    expect(REAL_DEFAULT_RESULTS_IS_NULL).toBe(false);
   });
 
-  it("hides itself with no result and no history", () => {
-    renderPill();
-
-    expect(screen.queryByTestId("quick-status-pill")).toBeNull();
-  });
-
-  it("appears for a calculated result even with empty history", () => {
-    useCalculatorStore.setState({ results: {} } as never);
+  /**
+   * **The regression, in the state the app is ACTUALLY in on load.**
+   *
+   * Fresh profile, empty history, never touched "Preencher com exemplo": the
+   * store already holds a populated result (the invariant above), so
+   * `if (!results && entries.length === 0) return null` short-circuited on a
+   * branch that could never be false. The pill rendered three segments with
+   * `R$ 0,00` — a formatted zero standing in for a value that does not exist,
+   * which is the exact thing the old docstring said it was avoiding.
+   *
+   * The fix belongs at the SEGMENT, not the pill: revenue is absent when there
+   * is no history, while low stock and Focus stay — `0` low spools is a real
+   * measurement rather than an empty value, and Focus is always actionable.
+   */
+  it("drops the revenue segment when there is no history, keeping the other two", () => {
     renderPill();
 
     expect(screen.getByTestId("quick-status-pill")).toBeInTheDocument();
+    expect(screen.queryByTestId("pill-segment-revenue")).toBeNull();
+    expect(screen.getByTestId("pill-segment-lowstock")).toBeInTheDocument();
+    expect(screen.getByTestId("pill-segment-focus")).toBeInTheDocument();
+    expect(segments()).toHaveLength(2);
   });
 
-  it("appears for history alone, with no calculated result", () => {
-    useHistoryStore.setState({
-      entries: [historyEntry("a", 100)],
-    } as never);
-    renderPill();
-
-    expect(screen.getByTestId("quick-status-pill")).toBeInTheDocument();
-  });
-
-  it("sums sellPrice across history for the revenue segment", () => {
-    useCalculatorStore.setState({ results: {} } as never);
+  it("sums sellPrice across history and then shows all three segments", () => {
     useHistoryStore.setState({
       entries: [historyEntry("a", 100), historyEntry("b", 250.5)],
     } as never);
     renderPill();
 
+    expect(segments()).toHaveLength(3);
     const revenue = screen.getByTestId("pill-segment-revenue");
     // 350.50 in the app's resolved currency, never the INVALID_CURRENCY_MARKER.
     expect(revenue.textContent).not.toContain("—");
     expect(revenue.textContent).toMatch(/350/);
   });
 
-  it("never renders the empty-value marker in the revenue segment", () => {
-    useCalculatorStore.setState({ results: {} } as never);
+  /**
+   * The old docstring's promise, now actually true. `entries.reduce` always
+   * returns a number and `formatCurrency(0)` answers `R$ 0,00`, so the em dash
+   * that comment described could never render. Asserted over the WHOLE pill:
+   * a dash was never the right answer either — absence is.
+   */
+  it("never renders the empty-value marker anywhere in the pill", () => {
     renderPill();
 
-    expect(
-      screen.getByTestId("pill-segment-revenue").textContent,
-    ).not.toContain("—");
+    expect(screen.getByTestId("quick-status-pill").textContent).not.toContain(
+      "—",
+    );
   });
 
   /**
@@ -531,7 +571,6 @@ describe("QuickStatusPill", () => {
    * on one screen is worse than either, so the app's 100g wins here.
    */
   it("counts low spools at the app's 100g threshold, not the prototype's 250g", () => {
-    useCalculatorStore.setState({ results: {} } as never);
     useSpoolStore.setState({
       spools: [
         spool("low-99", 99),
@@ -549,7 +588,6 @@ describe("QuickStatusPill", () => {
   });
 
   it("reports no low spools when the shelf is healthy", () => {
-    useCalculatorStore.setState({ results: {} } as never);
     useSpoolStore.setState({
       spools: [spool("full-1000", 1000), spool("mid-200", 200)],
     } as never);
@@ -561,7 +599,6 @@ describe("QuickStatusPill", () => {
   });
 
   it("enters Focus Mode from its segment", () => {
-    useCalculatorStore.setState({ results: {} } as never);
     renderPill();
 
     fireEvent.click(screen.getByTestId("pill-segment-focus"));
@@ -570,7 +607,6 @@ describe("QuickStatusPill", () => {
   });
 
   it("labels itself as a status region", () => {
-    useCalculatorStore.setState({ results: {} } as never);
     renderPill();
 
     expect(screen.getByTestId("quick-status-pill")).toHaveAccessibleName();
