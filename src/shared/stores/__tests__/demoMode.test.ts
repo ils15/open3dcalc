@@ -59,7 +59,9 @@ describe("demoModeStore (demo-data mode)", () => {
     // inventory: 6 reels added through addSpool (ids assigned by the store)
     const { spools } = useFilamentInventory.getState();
     expect(spools).toHaveLength(DEMO_SPOOLS.length);
-    expect(spools.every((s) => typeof s.id === "string" && s.dateAdded > 0)).toBe(true);
+    expect(
+      spools.every((s) => typeof s.id === "string" && s.dateAdded > 0),
+    ).toBe(true);
 
     // history: one entry per seed, added through addEntry
     expect(useHistoryStore.getState().entries).toHaveLength(
@@ -67,17 +69,25 @@ describe("demoModeStore (demo-data mode)", () => {
     );
 
     // CRM
-    expect(useCustomerStore.getState().customers).toHaveLength(DEMO_CUSTOMERS.length);
+    expect(useCustomerStore.getState().customers).toHaveLength(
+      DEMO_CUSTOMERS.length,
+    );
     expect(useQuoteStore.getState().quotes).toHaveLength(DEMO_QUOTES.length);
-    expect(useProductInventory.getState().products).toHaveLength(DEMO_PRODUCTS.length);
+    expect(useProductInventory.getState().products).toHaveLength(
+      DEMO_PRODUCTS.length,
+    );
 
     // calculator: preloaded FDM calc + water-washable resin slices
     const calc = useCalculatorStore.getState();
     expect(calc.activeTab).toBe("fdm");
     expect(calc.selectedPrinter.id).toBe(DEMO_CALCULATOR.selectedPrinterId);
-    expect(calc.selectedMarketplace.id).toBe(DEMO_CALCULATOR.selectedMarketplaceId);
+    expect(calc.selectedMarketplace.id).toBe(
+      DEMO_CALCULATOR.selectedMarketplaceId,
+    );
     expect(calc.productName).toBe(DEMO_CALCULATOR.productName);
-    expect(calc.fdmMaterial.weightUsed).toBe(DEMO_CALCULATOR.fdmMaterial.weightUsed);
+    expect(calc.fdmMaterial.weightUsed).toBe(
+      DEMO_CALCULATOR.fdmMaterial.weightUsed,
+    );
     expect(calc.resinPostProcess.washType).toBe("water");
     expect(calc.results).not.toBeNull();
   });
@@ -100,7 +110,9 @@ describe("demoModeStore (demo-data mode)", () => {
     expect(useHistoryStore.getState().entries.length).toBe(counts.entries);
     expect(useCustomerStore.getState().customers.length).toBe(counts.customers);
     expect(useQuoteStore.getState().quotes.length).toBe(counts.quotes);
-    expect(useProductInventory.getState().products.length).toBe(counts.products);
+    expect(useProductInventory.getState().products.length).toBe(
+      counts.products,
+    );
   });
 
   // ── exit(): byte-for-byte restore ───────────────────────────────
@@ -223,7 +235,9 @@ describe("demoModeStore (demo-data mode)", () => {
       status: "in_stock",
       purchaseStore: "Local",
     });
-    expect(localStorage.getItem("open3dcalc_filaments")).toContain("ExitFailBrand");
+    expect(localStorage.getItem("open3dcalc_filaments")).toContain(
+      "ExitFailBrand",
+    );
   });
 
   it("exit() releases the persistence suppression so normal writes resume", () => {
@@ -286,9 +300,10 @@ describe("demoModeStore (demo-data mode)", () => {
     expect(keys.filter((k) => k.includes("demo"))).toEqual([]);
   });
 
-  it("survives a reload: re-created stores hold no demo data after enter()", async () => {
+  it("survives a reload: restores starter spools but not demo mode data", async () => {
     useDemoModeStore.getState().enter();
-    // demo data lives in memory only — simulate a fresh module load
+    // Demo-mode writes are in-memory only. A fresh module load intentionally
+    // restores the product's starter inventory when the persisted key is empty.
     vi.resetModules();
     const filamentModule: typeof import("../filamentInventory") =
       await import("../filamentInventory");
@@ -297,7 +312,18 @@ describe("demoModeStore (demo-data mode)", () => {
 
     await new Promise((r) => setTimeout(r, 10));
 
-    expect(filamentModule.useFilamentInventory.getState().spools).toEqual([]);
+    expect(
+      filamentModule.useFilamentInventory
+        .getState()
+        .spools.map(({ id, brand }) => ({ id, brand })),
+    ).toEqual([
+      { id: "spool-1", brand: "Anycubic" },
+      { id: "spool-2", brand: "Anycubic" },
+      { id: "spool-3", brand: "Prusa" },
+      { id: "spool-4", brand: "Polymaker" },
+      { id: "spool-5", brand: "Bambu Lab" },
+      { id: "spool-6", brand: "eSun" },
+    ]);
     expect(historyModule.useHistoryStore.getState().entries).toEqual([]);
   });
 });

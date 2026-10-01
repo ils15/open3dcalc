@@ -22,21 +22,15 @@ export function seedDefaultStudioDataIfEmpty(): void {
     const historyStore = useHistoryStore.getState();
     const filamentStore = useFilamentInventory.getState();
 
-    if (historyStore.entries.length === 0 && filamentStore.spools.length === 0) {
+    if (
+      historyStore.entries.length === 0 &&
+      filamentStore.spools.length === 0
+    ) {
       // 1. Spools
       for (const spool of DEMO_SPOOLS) {
-        filamentStore.addSpool({
-          brand: spool.brand,
-          material: spool.material,
-          color: spool.color,
-          colorHex: spool.colorHex,
-          weightGrams: spool.weightGrams,
-          originalWeightGrams: spool.originalWeightGrams,
-          costPerKg: spool.costPerKg,
-          diameterMm: spool.diameterMm,
-          status: spool.status,
-          purchaseStore: spool.purchaseStore,
-        });
+        // The seed is already the store's input shape (id/dateAdded are
+        // generated inside addSpool), so it is forwarded as-is.
+        filamentStore.addSpool(spool);
       }
 
       // 2. History entries
@@ -61,11 +55,14 @@ export function seedDefaultStudioDataIfEmpty(): void {
 
       // 5. Quotes
       const quoteStore = useQuoteStore.getState();
-      DEMO_QUOTES.forEach((quote, i) => {
+      // `customerSnapshot` belongs to the stored Quote, not to QuoteFormData, so
+      // the link is written through updateQuote — the same two-step the demo
+      // dataset loader uses.
+      DEMO_QUOTES.forEach((seed, i) => {
         const custId = customerIds[i % customerIds.length];
         const cust = DEMO_CUSTOMERS[i % DEMO_CUSTOMERS.length];
-        quoteStore.addQuote({
-          ...quote,
+        const quoteId = quoteStore.addQuote(seed.form);
+        quoteStore.updateQuote(quoteId, {
           customerId: custId,
           customerSnapshot: {
             name: cust.name,
@@ -78,22 +75,26 @@ export function seedDefaultStudioDataIfEmpty(): void {
 
       // 6. Set initial calculator preset: "Suporte Articulado Dobrável" (TPU 95A Laranja, 55g, 54m)
       const calcStore = useCalculatorStore.getState();
-      calcStore.setField("productName", "Suporte Articulado Dobrável");
-      calcStore.setField("activeTab", "fdm");
-      calcStore.setFdmMaterial("type", "tpu_95a");
-      calcStore.setFdmMaterial("costPerKg", 90);
-      calcStore.setFdmMaterial("printWeightGrams", 55);
-      calcStore.setFdmMaterial("spoolWeightGrams", 1000);
-      calcStore.setFdmPrintParams("printTimeHours", 0);
-      calcStore.setFdmPrintParams("printTimeMinutes", 54);
-      calcStore.setFdmMachine("powerWatts", 250);
-      calcStore.setFdmMachine("kwhCost", 0.95);
-      calcStore.setFdmExtras("packagingCost", 2.2);
-      calcStore.setFdmExtras("hardwareCost", 0);
-      calcStore.setFdmFinishing("paintingCost", 0);
-      calcStore.setFdmLabor("hourlyRate", 25);
-      calcStore.setFdmSales("targetMarginPercent", 100);
-      calcStore.recomputeResults();
+      calcStore.setProductName("Suporte Articulado Dobrável");
+      calcStore.setActiveTab("fdm");
+      calcStore.setFdmMaterial({
+        ...calcStore.fdmMaterial,
+        type: "tpu_95a",
+        costPerKg: 90,
+        weightUsed: 55,
+      });
+      calcStore.setFdmPrintParams({
+        ...calcStore.fdmPrintParams,
+        printTimeHours: 54 / 60,
+        printerPowerWatts: 250,
+        energyCostPerKwh: 0.95,
+      });
+      calcStore.setFdmSales({
+        ...calcStore.fdmSales,
+        packagingCost: 2.2,
+        profitMarginPercent: 100,
+      });
+      calcStore.setFdmLabor({ ...calcStore.fdmLabor, hourlyRate: 25 });
 
       // 7. Set default layout mode to Bento (Modern Studio Dashboard)
       const layoutStore = useLayoutStore.getState();

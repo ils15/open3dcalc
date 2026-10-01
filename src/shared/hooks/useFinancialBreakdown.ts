@@ -59,6 +59,10 @@ export interface FinancialBreakdown {
   readonly targetMarkupPercent?: number;
   readonly displayProfit: number;
   readonly breakEvenPrice: number;
+  /** Production cost before fees and profit (0 when there is no result). */
+  readonly totalCost: number;
+  /** Material cost normalized per gram, for the per-gram sub-label. */
+  readonly costPerGram: number;
   readonly fees: FeeBreakdown;
   readonly time: TimeMetrics;
   readonly isFDM: boolean;
@@ -201,6 +205,8 @@ export function useFinancialBreakdown(
         targetMarkupPercent: 0,
         displayProfit: 0,
         breakEvenPrice: 0,
+        totalCost: 0,
+        costPerGram: 0,
         fees: {
           taxAmount: 0,
           marketplaceFee: 0,
@@ -236,6 +242,8 @@ export function useFinancialBreakdown(
       targetMarkupPercent: result.targetMarginPercent,
       displayProfit: overrideCalc?.profit ?? result.profit,
       breakEvenPrice: result.breakEvenPrice,
+      totalCost: result.totalCost,
+      costPerGram: result.costPerGram,
       fees: {
         taxAmount,
         marketplaceFee,

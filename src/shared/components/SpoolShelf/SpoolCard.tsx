@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Pencil, Trash2, AlertTriangle, Play, Sparkles } from "lucide-react";
+import { Pencil, Trash2, AlertTriangle, Play } from "lucide-react";
 import type { FilamentSpool, SpoolStatus } from "@/shared/stores/spoolStore";
 import { isLowStockSpool, remainingPct } from "@/shared/stores/spoolStore";
 import { SpoolRemainingBlock } from "@/shared/components/Catalog/SpoolRemainingBlock";
@@ -15,9 +15,9 @@ export const LOW_STOCK_GRAMS = 100;
 const STATUS_CLASS: Record<SpoolStatus, string> = {
   in_stock:
     "bg-emerald-600/20 text-emerald-400 border-emerald-600/30 dark:text-emerald-300",
-  on_the_way: "bg-amber-600/20 text-amber-400 border-amber-600/30 dark:text-amber-300",
-  empty:
-    "bg-gray-600/20 text-[var(--color-text-secondary)] border-gray-600/30",
+  on_the_way:
+    "bg-amber-600/20 text-amber-400 border-amber-600/30 dark:text-amber-300",
+  empty: "bg-gray-600/20 text-[var(--color-text-secondary)] border-gray-600/30",
 };
 
 const STATUS_I18N_KEY: Record<SpoolStatus, string> = {
@@ -30,14 +30,21 @@ const STATUS_I18N_KEY: Record<SpoolStatus, string> = {
 function readableTextColor(hex: string): "#111827" | "#ffffff" {
   const match = hex.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);
   if (!match) return "#ffffff";
-  const raw = match[1].length === 3
-    ? match[1].split("").map((part) => `${part}${part}`).join("")
-    : match[1];
-  const channels = [0, 2, 4].map((offset) => parseInt(raw.slice(offset, offset + 2), 16) / 255);
+  const raw =
+    match[1].length === 3
+      ? match[1]
+          .split("")
+          .map((part) => `${part}${part}`)
+          .join("")
+      : match[1];
+  const channels = [0, 2, 4].map(
+    (offset) => parseInt(raw.slice(offset, offset + 2), 16) / 255,
+  );
   const linear = channels.map((channel) =>
     channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
   );
-  const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  const luminance =
+    0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
   const darkContrast = (luminance + 0.05) / 0.05;
   const lightContrast = 1.05 / (luminance + 0.05);
   return darkContrast >= lightContrast ? "#111827" : "#ffffff";
@@ -70,12 +77,18 @@ export const SpoolCard = memo(function SpoolCard({
   const handleUseInCalculation = () => {
     calcStore.setSelectedSpoolId(spool.id);
     if (spool.costPerKg > 0) {
-      if (spool.material.toLowerCase().includes("resina") || spool.material.toLowerCase().includes("resin")) {
-        calcStore.setField("activeTab", "resin");
-        calcStore.setResinMaterial("type", spool.material);
-        calcStore.setResinMaterial("costPerLiter", spool.costPerKg);
+      if (
+        spool.material.toLowerCase().includes("resina") ||
+        spool.material.toLowerCase().includes("resin")
+      ) {
+        calcStore.setActiveTab("resin");
+        calcStore.setResinMaterial({
+          ...calcStore.resinMaterial,
+          type: spool.material,
+          costPerLiter: spool.costPerKg,
+        });
       } else {
-        calcStore.setField("activeTab", "fdm");
+        calcStore.setActiveTab("fdm");
         const mat = spool.material.toLowerCase();
         const matType = mat.includes("petg")
           ? "petg"
@@ -86,10 +99,12 @@ export const SpoolCard = memo(function SpoolCard({
               : mat.includes("silk")
                 ? "pla_silk"
                 : "pla";
-        calcStore.setFdmMaterial("type", matType);
-        calcStore.setFdmMaterial("costPerKg", spool.costPerKg);
+        calcStore.setFdmMaterial({
+          ...calcStore.fdmMaterial,
+          type: matType,
+          costPerKg: spool.costPerKg,
+        });
       }
-      calcStore.recomputeResults();
     }
     setActiveTab("calculator");
   };
@@ -181,13 +196,17 @@ export const SpoolCard = memo(function SpoolCard({
       {/* Price & Tare Info */}
       <div className="flex items-center justify-between text-xs py-1 px-2.5 rounded-lg bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
         <div>
-          <span className="text-[10px] text-[var(--color-text-muted)] block">Preço / kg</span>
+          <span className="text-[10px] text-[var(--color-text-muted)] block">
+            Preço / kg
+          </span>
           <span className="font-bold font-mono text-[var(--color-text-primary)]">
             {format(spool.costPerKg)}
           </span>
         </div>
         <div className="text-right">
-          <span className="text-[10px] text-[var(--color-text-muted)] block">Custo por grama</span>
+          <span className="text-[10px] text-[var(--color-text-muted)] block">
+            Custo por grama
+          </span>
           <span className="font-mono text-emerald-400 font-semibold">
             {format(spool.costPerKg / 1000)}/g
           </span>
@@ -206,7 +225,7 @@ export const SpoolCard = memo(function SpoolCard({
         <button
           type="button"
           onClick={handleUseInCalculation}
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 min-h-[36px] rounded-lg bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 min-h-[36px] rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
         >
           <Play className="w-3.5 h-3.5 fill-current" />
           Usar no Cálculo
@@ -215,6 +234,7 @@ export const SpoolCard = memo(function SpoolCard({
           type="button"
           onClick={() => onEdit(spool)}
           className="flex items-center justify-center gap-1.5 px-3 py-2 min-h-[36px] rounded-lg bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] transition-colors"
+          aria-label={t("spools.editSpool")}
           title={t("spools.editSpool")}
         >
           <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
@@ -222,11 +242,12 @@ export const SpoolCard = memo(function SpoolCard({
         <button
           type="button"
           onClick={() => onRemove(spool)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 min-h-[36px] rounded-lg bg-red-600/10 text-red-400 hover:bg-red-600/30 transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 min-h-[44px] min-w-[44px] rounded-lg bg-red-600/10 text-red-400 hover:bg-red-600/30 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           title={t("spools.removeSpool")}
           aria-label={t("spools.removeSpool")}
         >
           <Trash2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          <span className="hidden sm:inline">{t("spools.removeSpool")}</span>
         </button>
       </div>
     </article>

@@ -1,6 +1,12 @@
-import { PrintCalculationData, CalculationResult, CurrencyCode } from '../types';
+import {
+  PrintCalculationData,
+  CalculationResult,
+  CurrencyCode,
+} from "../types";
 
-export function calculatePrintCost(data: PrintCalculationData): CalculationResult {
+export function calculatePrintCost(
+  data: PrintCalculationData,
+): CalculationResult {
   const qty = Math.max(1, data.quantity || 1);
   const singleItemWeight = Math.max(0, data.printWeightGrams || 0);
   const totalWeight = singleItemWeight * qty;
@@ -11,7 +17,8 @@ export function calculatePrintCost(data: PrintCalculationData): CalculationResul
   const materialCost = totalWeight * costPerGram;
 
   // Print time in hours
-  const itemHours = (data.printTimeHours || 0) + (data.printTimeMinutes || 0) / 60;
+  const itemHours =
+    (data.printTimeHours || 0) + (data.printTimeMinutes || 0) / 60;
   const totalHours = Math.max(0.01, itemHours * qty);
 
   // Energy cost
@@ -26,15 +33,25 @@ export function calculatePrintCost(data: PrintCalculationData): CalculationResul
   const maintenanceCost = (data.printerMaintenancePerHour || 0) * totalHours;
 
   // Labor
-  const totalLaborMinutes = ((data.laborPrepMinutes || 0) + (data.laborPostMinutes || 0)) * qty;
+  const totalLaborMinutes =
+    ((data.laborPrepMinutes || 0) + (data.laborPostMinutes || 0)) * qty;
   const laborCost = (totalLaborMinutes / 60) * (data.laborHourlyRate || 0);
 
   // Extra costs
-  const extraCostsSingle = (data.extraCosts || []).reduce((acc, item) => acc + (item.cost || 0), 0);
+  const extraCostsSingle = (data.extraCosts || []).reduce(
+    (acc, item) => acc + (item.cost || 0),
+    0,
+  );
   const extraCostsTotal = extraCostsSingle * qty;
 
   // Subtotal & failure risk
-  const baseCost = materialCost + energyCost + depreciationCost + maintenanceCost + laborCost + extraCostsTotal;
+  const baseCost =
+    materialCost +
+    energyCost +
+    depreciationCost +
+    maintenanceCost +
+    laborCost +
+    extraCostsTotal;
   const failureRiskCost = baseCost * ((data.failureRatePercent || 0) / 100);
   const totalProductionCost = baseCost + failureRiskCost;
 
@@ -50,7 +67,7 @@ export function calculatePrintCost(data: PrintCalculationData): CalculationResul
   // Gross sale price before discount, factoring in marketplace and taxes
   const combinedFeeRate = (feePercent + taxPercent) / 100;
   const safeDivisor = Math.max(0.1, 1 - combinedFeeRate);
-  let rawSalePrice = costWithProfit / safeDivisor;
+  const rawSalePrice = costWithProfit / safeDivisor;
 
   // Apply discount if any
   const discountAmount = rawSalePrice * (discountPercent / 100);
@@ -59,8 +76,10 @@ export function calculatePrintCost(data: PrintCalculationData): CalculationResul
   // Actual deductions
   const marketplaceFeeAmount = finalSalePrice * (feePercent / 100);
   const taxAmount = finalSalePrice * (taxPercent / 100);
-  const netProfit = finalSalePrice - totalProductionCost - marketplaceFeeAmount - taxAmount;
-  const profitMarginActual = finalSalePrice > 0 ? (netProfit / finalSalePrice) * 100 : 0;
+  const netProfit =
+    finalSalePrice - totalProductionCost - marketplaceFeeAmount - taxAmount;
+  const profitMarginActual =
+    finalSalePrice > 0 ? (netProfit / finalSalePrice) * 100 : 0;
 
   // Break even (0% profit)
   const breakEvenPrice = totalProductionCost / safeDivisor;
@@ -87,20 +106,32 @@ export function calculatePrintCost(data: PrintCalculationData): CalculationResul
     breakEvenPrice,
     unitProductionCost: totalProductionCost / qty,
     unitSalePrice: finalSalePrice / qty,
-    unitProfit: netProfit / qty
+    unitProfit: netProfit / qty,
   };
 }
 
-export function formatCurrency(amount: number, currency: CurrencyCode = 'BRL'): string {
+export function formatCurrency(
+  amount: number,
+  currency: CurrencyCode = "BRL",
+): string {
   const safe = Number.isFinite(amount) ? amount : 0;
   switch (currency) {
-    case 'USD':
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(safe);
-    case 'EUR':
-      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(safe);
-    case 'BRL':
+    case "USD":
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      }).format(safe);
+    case "EUR":
+      return new Intl.NumberFormat("de-DE", {
+        style: "currency",
+        currency: "EUR",
+      }).format(safe);
+    case "BRL":
     default:
-      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(safe);
+      return new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(safe);
   }
 }
 

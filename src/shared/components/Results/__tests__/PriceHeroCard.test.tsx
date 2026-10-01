@@ -24,7 +24,14 @@ function makeBreakdown(
     displaySellPrice: 105.88,
     displayProfit: 30,
     breakEvenPrice: 70,
-    fees: { taxAmount: 10.59, marketplaceFee: 5.29, total: 15.88, hasFees: true },
+    totalCost: 42.36,
+    costPerGram: 0.09,
+    fees: {
+      taxAmount: 10.59,
+      marketplaceFee: 5.29,
+      total: 15.88,
+      hasFees: true,
+    },
     time: { estimatedHours: 2.5, billableHours: 2.6, profitPerHour: 11.5 },
     isFDM: true,
     ...overrides,
@@ -96,7 +103,9 @@ describe("PriceHeroCard — display", () => {
       }),
     );
 
-    expect(screen.queryByText("calc.taxesAndFeesIncluded")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("calc.taxesAndFeesIncluded"),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -112,7 +121,9 @@ describe("PriceHeroCard — override editor", () => {
     expect(input).toHaveValue(105.88);
     await user.clear(input);
     await user.type(input, "120");
-    await user.click(screen.getByRole("button", { name: "calc.sellPriceConfirm" }));
+    await user.click(
+      screen.getByRole("button", { name: "calc.sellPriceConfirm" }),
+    );
 
     expect(onSellOverrideChange).toHaveBeenCalledTimes(1);
     expect(onSellOverrideChange).toHaveBeenCalledWith(120);
@@ -128,7 +139,9 @@ describe("PriceHeroCard — override editor", () => {
     const input = screen.getByLabelText("calc.sellPriceInputLabel");
     await user.clear(input);
     await user.type(input, "0");
-    await user.click(screen.getByRole("button", { name: "calc.sellPriceConfirm" }));
+    await user.click(
+      screen.getByRole("button", { name: "calc.sellPriceConfirm" }),
+    );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
       "calc.sellPriceInvalid",
@@ -143,14 +156,15 @@ describe("PriceHeroCard — override editor", () => {
     await user.click(
       screen.getByRole("button", { name: "calc.sellPriceEdit" }),
     );
-    await user.click(screen.getByRole("button", { name: "calc.sellPriceCancel" }));
+    await user.click(
+      screen.getByRole("button", { name: "calc.sellPriceCancel" }),
+    );
 
     expect(
       screen.queryByLabelText("calc.sellPriceInputLabel"),
     ).not.toBeInTheDocument();
     expect(onSellOverrideChange).not.toHaveBeenCalled();
   });
-
 });
 
 describe("PriceHeroCard — active override", () => {
@@ -175,7 +189,9 @@ describe("PriceHeroCard — active override", () => {
   it("hides the fee footnote while an override is active", () => {
     renderCard(makeOverride(120));
 
-    expect(screen.queryByText("calc.taxesAndFeesIncluded")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("calc.taxesAndFeesIncluded"),
+    ).not.toBeInTheDocument();
   });
 
   it("warns when the override is below break-even", () => {

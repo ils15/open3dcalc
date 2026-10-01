@@ -62,7 +62,8 @@ export const SPOOL_MATERIALS = [
   "Outro",
 ] as const;
 
-export type SpoolSortKey = "name" | "material" | "remaining" | "weight" | "dateAdded";
+export type SpoolSortKey =
+  "name" | "material" | "remaining" | "weight" | "dateAdded";
 export type SpoolSortDir = "asc" | "desc";
 
 export interface SpoolFilters {
@@ -111,7 +112,8 @@ export function filterSpools(
     if (status && s.status !== status) return false;
     if (material && s.material.toLowerCase() !== material) return false;
     if (q) {
-      const haystack = `${s.color} ${s.brand} ${s.material} ${s.notes}`.toLowerCase();
+      const haystack =
+        `${s.color} ${s.brand} ${s.material} ${s.notes}`.toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     return true;
@@ -190,6 +192,9 @@ const migrateSpool = (s: Record<string, unknown>): FilamentSpool => ({
   tareGrams: typeof s.tareGrams === "number" ? s.tareGrams : undefined,
 });
 
+// Intentional starter inventory: new users see a working shelf immediately.
+// Missing, empty, or invalid storage returns these samples on reload as well;
+// changing that behavior would require an explicit product decision.
 const DEFAULT_SPOOLS: FilamentSpool[] = [
   {
     id: "spool-1",

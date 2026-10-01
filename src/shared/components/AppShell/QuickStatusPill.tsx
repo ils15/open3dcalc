@@ -1,12 +1,8 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   Focus,
-  Activity,
-  Plus,
   HelpCircle,
-  X,
   XCircle,
   AlertCircle,
   ChevronUp,
@@ -65,8 +61,12 @@ export function QuickStatusPill(): React.ReactElement | null {
           data-testid="pill-segment-lowstock"
           className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-400 border border-amber-800/60"
         >
-          <AlertTriangle className="w-3 h-3 text-amber-400" aria-hidden="true" />
-          {lowStockCount} {t("quickActions.lowStock", { defaultValue: "baixos" })}
+          <AlertTriangle
+            className="w-3 h-3 text-amber-400"
+            aria-hidden="true"
+          />
+          {lowStockCount}{" "}
+          {t("quickActions.lowStock", { defaultValue: "baixos" })}
         </span>
 
         {/* Focus Mode */}
@@ -86,6 +86,9 @@ export function QuickStatusPill(): React.ReactElement | null {
         <button
           type="button"
           onClick={() => useTutorialStore.getState().startTutorial()}
+          aria-label={t("quickActions.pillHelp", {
+            defaultValue: "Ajuda / Tutorial",
+          })}
           className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-white rounded-full transition-colors"
           title="Ajuda / Tutorial"
         >

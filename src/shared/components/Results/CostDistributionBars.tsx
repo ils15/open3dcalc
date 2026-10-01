@@ -12,14 +12,13 @@ export interface CostDistributionBarsProps {
   readonly profit?: number;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  filament: "#3b82f6", // blue
-  energy: "#f59e0b", // amber/yellow
-  machine: "#06b6d4", // cyan/teal
-  failure: "#ef4444", // red
-  labor: "#a855f7", // purple
-  other: "#10b981", // green/cyan
-  maintenance: "#ec4899", // pink
+const CATEGORY_COLOR_TOKEN: Record<CostCategory, string> = {
+  filament: "var(--cost-filament)",
+  energy: "var(--cost-energy)",
+  machine: "var(--cost-machine)",
+  failure: "var(--cost-failure)",
+  labor: "var(--cost-labor)",
+  other: "var(--cost-other)",
 };
 
 export function CostDistributionBars({
@@ -52,28 +51,46 @@ export function CostDistributionBars({
 
       {/* Segments List with Dots */}
       <div className="space-y-2 text-xs">
-        {chartData.map((segment, index) => {
-          const color = CATEGORY_COLORS[segment.category] || "#94a3b8";
+        {chartData.map((segment) => {
           const formattedValue = formatCurrency(segment.value);
           const pct = Math.round(segment.pct);
+          const width =
+            totalCost > 0 && Number.isFinite(segment.pct)
+              ? Math.min(100, Math.max(0, segment.pct))
+              : 0;
 
           return (
             <div
-              key={`${segment.category}-${segment.name}-${index}`}
+              key={`${segment.category}-${segment.name}`}
               data-testid={`compact-cost-bar-${segment.category}`}
               className="flex items-center justify-between gap-2 py-0.5 text-slate-300"
             >
               <div className="flex items-center gap-2 truncate">
                 <span
                   className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: color }}
+                  style={{
+                    backgroundColor: CATEGORY_COLOR_TOKEN[segment.category],
+                  }}
                 />
                 <span className="truncate text-slate-300">{segment.name}</span>
               </div>
 
               <div className="flex items-center gap-2.5 shrink-0 font-mono text-[11px]">
                 <span className="text-slate-400">{pct}%</span>
-                <span className="font-semibold text-white">{formattedValue}</span>
+                <span className="font-semibold text-white">
+                  {formattedValue}
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+                <div
+                  role="img"
+                  aria-label={`${segment.name}: ${segment.pct.toFixed(1)}%`}
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${width}%`,
+                    backgroundColor: CATEGORY_COLOR_TOKEN[segment.category],
+                  }}
+                />
               </div>
             </div>
           );
@@ -84,7 +101,15 @@ export function CostDistributionBars({
       <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-900/50 flex items-start gap-2.5 text-[11px] leading-relaxed text-blue-200">
         <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
         <p>
-          Lucro projetado de <strong className="text-emerald-400 font-bold">{formatCurrency(profit)}</strong> sobre o custo total de fabricação de <strong className="text-white font-bold">{formatCurrency(totalCost)}</strong>.
+          Lucro projetado de{" "}
+          <strong className="text-emerald-400 font-bold">
+            {formatCurrency(profit)}
+          </strong>{" "}
+          sobre o custo total de fabricação de{" "}
+          <strong className="text-white font-bold">
+            {formatCurrency(totalCost)}
+          </strong>
+          .
         </p>
       </div>
 
@@ -100,7 +125,9 @@ export function CostDistributionBars({
           </span>
         </div>
         <p className="text-[11px] text-slate-400 leading-normal">
-          Vendendo <strong className="text-white">{breakEvenUnits} unidades</strong> deste projeto você quita o valor da máquina ({formatCurrency(3200)}).
+          Vendendo{" "}
+          <strong className="text-white">{breakEvenUnits} unidades</strong>{" "}
+          deste projeto você quita o valor da máquina ({formatCurrency(3200)}).
         </p>
       </div>
     </div>

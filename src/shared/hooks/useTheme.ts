@@ -7,9 +7,9 @@ const STORAGE_KEY = "open3dcalc_theme";
 
 function getSystemPreference(): Theme {
   if (typeof window === "undefined") return "dark";
-  const stored = getStoredTheme();
-  if (stored) return stored;
-  return "dark";
+  return window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
 }
 
 function getStoredTheme(): Theme | null {
@@ -49,7 +49,7 @@ function persistTheme(theme: Theme) {
  */
 export function initTheme(): Theme {
   const stored = getStoredTheme();
-  const theme = stored ?? "dark";
+  const theme = stored ?? getSystemPreference();
   applyTheme(theme);
   return theme;
 }
@@ -61,7 +61,7 @@ export function initTheme(): Theme {
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => {
     const stored = getStoredTheme();
-    return stored ?? "dark";
+    return stored ?? getSystemPreference();
   });
 
   // Desktop may hydrate a newer preference from SQLite after initTheme() but

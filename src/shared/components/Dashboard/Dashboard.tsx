@@ -34,12 +34,7 @@ import {
   Clock,
   CheckCircle2,
   ArrowUpRight,
-  Activity,
   Download,
-  FileText,
-  Printer,
-  ChevronRight,
-  Filter,
 } from "lucide-react";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
@@ -558,19 +553,36 @@ export function Dashboard() {
     {
       name: t("breakdown.packaging"),
       value:
-        activeResults.totalCost - activeResults.subtotal - activeResults.failureCost > 0
-          ? activeResults.totalCost - activeResults.subtotal - activeResults.failureCost
+        activeResults.totalCost -
+          activeResults.subtotal -
+          activeResults.failureCost >
+        0
+          ? activeResults.totalCost -
+            activeResults.subtotal -
+            activeResults.failureCost
           : 0,
     },
     { name: t("breakdown.finishing"), value: activeResults.postProcessingCost },
   ].filter((d) => d.value > 0);
 
-  const roi =
-    activeResults.totalCost > 0 ? (activeResults.profit / activeResults.totalCost) * 100 : 0;
-
-  const totalRevenue = filteredEntries.length > 0 ? filteredEntries.reduce((s, e) => s + e.sellPrice, 0) : 8420;
-  const totalProfit = filteredEntries.length > 0 ? filteredEntries.reduce((s, e) => s + e.profit, 0) : 4810;
-  const totalHours = filteredEntries.length > 0 ? Math.round(filteredEntries.reduce((s, e) => s + (e.snapshot?.print?.printTimeHours || 2), 0)) : 420;
+  const totalRevenue =
+    filteredEntries.length > 0
+      ? filteredEntries.reduce((s, e) => s + e.sellPrice, 0)
+      : 8420;
+  const totalProfit =
+    filteredEntries.length > 0
+      ? filteredEntries.reduce((s, e) => s + e.profit, 0)
+      : 4810;
+  // Snapshots keep the print-time slice per process type, not under `print`.
+  const totalHours =
+    filteredEntries.length > 0
+      ? Math.round(
+          filteredEntries.reduce(
+            (s, e) => s + (e.snapshot?.fdmPrintParams?.printTimeHours || 2),
+            0,
+          ),
+        )
+      : 420;
   const totalPieces = filteredEntries.length > 0 ? filteredEntries.length : 154;
 
   return (
@@ -588,7 +600,8 @@ export function Dashboard() {
             </span>
           </div>
           <p className="text-xs text-[var(--color-text-muted)] mt-1">
-            Métricas consolidadas de faturamento, margens operacionais e taxa de utilização
+            Métricas consolidadas de faturamento, margens operacionais e taxa de
+            utilização
           </p>
         </div>
 
@@ -614,7 +627,7 @@ export function Dashboard() {
             type="button"
             onClick={handleExportPdf}
             disabled={exportingPdf}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-colors disabled:opacity-50"
           >
             <Download className="w-3.5 h-3.5" />
             {exportingPdf ? "Exportando..." : "Exportar Relatório"}

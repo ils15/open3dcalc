@@ -1,6 +1,17 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, X, Plus, ArrowDownAZ, ArrowUpZA, Spool, AlertTriangle, Scale, DollarSign, Package } from "lucide-react";
+import {
+  Search,
+  X,
+  Plus,
+  ArrowDownAZ,
+  ArrowUpZA,
+  Spool,
+  AlertTriangle,
+  Scale,
+  DollarSign,
+  Package,
+} from "lucide-react";
 import { useSpoolStore } from "@/shared/stores/spoolStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
@@ -139,7 +150,7 @@ export function SpoolShelf(): React.ReactElement {
         <button
           type="button"
           onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
           {t("spools.newSpool")}
@@ -192,8 +203,11 @@ export function SpoolShelf(): React.ReactElement {
             <span>Alerta de Estoque</span>
             <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
-          <div className={`text-xl font-black font-mono ${lowCount > 0 ? "text-amber-400" : "text-slate-400"}`}>
-            {lowCount} {lowCount === 1 ? "carretel baixo" : "carretéis acabando"}
+          <div
+            className={`text-xl font-black font-mono ${lowCount > 0 ? "text-amber-400" : "text-slate-400"}`}
+          >
+            {lowCount}{" "}
+            {lowCount === 1 ? "carretel baixo" : "carretéis acabando"}
           </div>
           <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
             Abaixo de 100g de filamento

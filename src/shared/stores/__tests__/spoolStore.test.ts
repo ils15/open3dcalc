@@ -101,9 +101,7 @@ describe("useSpoolStore (integration)", () => {
           class: string;
           pii: boolean;
         }>
-      ).find(
-        (e) => e.key === SPOOLS_KEY,
-      );
+      ).find((e) => e.key === SPOOLS_KEY);
 
       expect(entry).toBeDefined();
       // Inventário é dado de usuário (user_content), nunca ui_preference.
@@ -159,19 +157,30 @@ describe("useSpoolStore (integration)", () => {
       });
     });
 
-    it("blob corrompido degrada para lista vazia sem lançar", () => {
+    it("blob corrompido volta ao inventário inicial de exemplo sem lançar", () => {
       localStorage.setItem(SPOOLS_KEY, "{not json");
 
       vi.resetModules();
       return import("../spoolStore").then(({ useSpoolStore: fresh }) => {
-        expect(fresh.getState().spools).toEqual([]);
+        expect(
+          fresh.getState().spools.map(({ id, brand }) => ({ id, brand })),
+        ).toEqual([
+          { id: "spool-1", brand: "Anycubic" },
+          { id: "spool-2", brand: "Anycubic" },
+          { id: "spool-3", brand: "Prusa" },
+          { id: "spool-4", brand: "Polymaker" },
+          { id: "spool-5", brand: "Bambu Lab" },
+          { id: "spool-6", brand: "eSun" },
+        ]);
       });
     });
   });
 
   // ── CRUD ─────────────────────────────────────────────────────
   it("addSpool() → aparece na lista com id e dateAdded", () => {
-    useSpoolStore.getState().addSpool(makeSpool({ brand: "eSun", weightGrams: 800 }));
+    useSpoolStore
+      .getState()
+      .addSpool(makeSpool({ brand: "eSun", weightGrams: 800 }));
 
     const { spools } = useSpoolStore.getState();
     expect(spools).toHaveLength(1);
@@ -190,16 +199,18 @@ describe("useSpoolStore (integration)", () => {
 
     expect(useSpoolStore.getState().spools).toHaveLength(1);
     expect(useSpoolStore.getState().spools[0].brand).toBe("Prusament");
-    expect(
-      JSON.parse(localStorage.getItem(SPOOLS_KEY) || "[]"),
-    ).toHaveLength(1);
+    expect(JSON.parse(localStorage.getItem(SPOOLS_KEY) || "[]")).toHaveLength(
+      1,
+    );
   });
 
   it("updateSpool() faz merge parcial e persiste", () => {
     useSpoolStore.getState().addSpool(makeSpool({ brand: "eSun" }));
     const id = useSpoolStore.getState().spools[0].id;
 
-    useSpoolStore.getState().updateSpool(id, { weightGrams: 500, notes: "metade" });
+    useSpoolStore
+      .getState()
+      .updateSpool(id, { weightGrams: 500, notes: "metade" });
 
     const spool = useSpoolStore.getState().spools[0];
     expect(spool.weightGrams).toBe(500);
@@ -222,14 +233,10 @@ describe("useSpoolStore (integration)", () => {
     useSpoolStore.getState().addSpool(makeSpool({ weightGrams: 100 }));
     const id = useSpoolStore.getState().spools[0].id;
 
-    useSpoolStore
-      .getState()
-      .deductWeight(id, 40, VALID_CALCULATION_CONTEXT);
+    useSpoolStore.getState().deductWeight(id, 40, VALID_CALCULATION_CONTEXT);
     expect(useSpoolStore.getState().spools[0].weightGrams).toBe(60);
 
-    useSpoolStore
-      .getState()
-      .deductWeight(id, 9999, VALID_CALCULATION_CONTEXT);
+    useSpoolStore.getState().deductWeight(id, 9999, VALID_CALCULATION_CONTEXT);
     expect(useSpoolStore.getState().spools[0].weightGrams).toBe(0);
   });
 
@@ -295,7 +302,9 @@ describe("useSpoolStore (integration)", () => {
     useSpoolStore.getState().addSpool(makeSpool({ material: "petg" }));
     useSpoolStore.getState().addSpool(makeSpool({ material: "PLA" }));
 
-    expect(useSpoolStore.getState().getSpoolsByMaterial("Petg")).toHaveLength(2);
+    expect(useSpoolStore.getState().getSpoolsByMaterial("Petg")).toHaveLength(
+      2,
+    );
   });
 
   it("getLowStockSpools() retorna carretéis abaixo do limiar", () => {
@@ -320,7 +329,11 @@ describe("useSpoolStore (integration)", () => {
 // ── filterSpools / sortSpools (pure) ───────────────────────────
 describe("filterSpools", () => {
   const spools = sampleSpools();
-  const noFilters: SpoolFilters = { search: "", material: "Todos", status: "all" };
+  const noFilters: SpoolFilters = {
+    search: "",
+    material: "Todos",
+    status: "all",
+  };
 
   it("sem filtros devolve todos", () => {
     expect(filterSpools(spools, noFilters)).toHaveLength(3);
@@ -330,12 +343,12 @@ describe("filterSpools", () => {
     expect(
       filterSpools(spools, { ...noFilters, search: "velvet" }),
     ).toHaveLength(1);
-    expect(
-      filterSpools(spools, { ...noFilters, search: "ESUN" }),
-    ).toHaveLength(1);
-    expect(
-      filterSpools(spools, { ...noFilters, search: "petg" }),
-    ).toHaveLength(1);
+    expect(filterSpools(spools, { ...noFilters, search: "ESUN" })).toHaveLength(
+      1,
+    );
+    expect(filterSpools(spools, { ...noFilters, search: "petg" })).toHaveLength(
+      1,
+    );
     expect(
       filterSpools(spools, { ...noFilters, search: "guardar" }),
     ).toHaveLength(1);
@@ -435,20 +448,24 @@ describe("useSpoolStore.getVisibleSpools", () => {
   });
 
   it("compõe filtro + ordenação", () => {
-    const visible = useSpoolStore.getState().getVisibleSpools(
-      { search: "", material: "Todos", status: "all" },
-      "remaining",
-      "desc",
-    );
+    const visible = useSpoolStore
+      .getState()
+      .getVisibleSpools(
+        { search: "", material: "Todos", status: "all" },
+        "remaining",
+        "desc",
+      );
     expect(visible.map((s) => s.id)).toEqual(["b", "a", "c"]);
   });
 
   it("respeita o filtro de material antes de ordenar", () => {
-    const visible = useSpoolStore.getState().getVisibleSpools(
-      { search: "", material: "PLA", status: "all" },
-      "name",
-      "asc",
-    );
+    const visible = useSpoolStore
+      .getState()
+      .getVisibleSpools(
+        { search: "", material: "PLA", status: "all" },
+        "name",
+        "asc",
+      );
     expect(visible.map((s) => s.id)).toEqual(["a", "c"]);
   });
 });

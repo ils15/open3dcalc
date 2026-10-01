@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { useTranslation } from "react-i18next";
+import { useState, useMemo } from "react";
 import {
   Sparkles,
   X,
@@ -9,18 +8,16 @@ import {
   Copy,
   ExternalLink,
   Sliders,
-  DollarSign,
   TrendingUp,
   MessageCircle,
   Eye,
   EyeOff,
   Flame,
   Activity,
-  Layers,
   RefreshCw,
   Info,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 
@@ -32,20 +29,27 @@ interface AIAssistantModalProps {
 }
 
 export function AIAssistantModal({ open, onClose }: AIAssistantModalProps) {
-  const { t } = useTranslation();
   const { format } = useCurrency();
   const calcStore = useCalculatorStore();
   const results = calcStore.results;
 
-  // Stored API key
-  const [apiKey, setApiKey] = useState<string>("");
-  const [keyInput, setKeyInput] = useState<string>("");
+  // Stored API key. Read lazily at mount instead of in an effect: the modal
+  // returns null while closed, so the stored value is already current by the
+  // time anything renders, and this keeps setState out of the effect body.
+  const readStoredKey = (): string =>
+    typeof window === "undefined"
+      ? ""
+      : localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
+  const [apiKey, setApiKey] = useState<string>(readStoredKey);
+  const [keyInput, setKeyInput] = useState<string>(readStoredKey);
   const [showKey, setShowKey] = useState<boolean>(false);
   const [keySavedToast, setKeySavedToast] = useState<boolean>(false);
   const [copiedPitch, setCopiedPitch] = useState<boolean>(false);
 
   // Active tab inside modal
-  const [activeTab, setActiveTab] = useState<"tech" | "pitch" | "finance" | "config">("tech");
+  const [activeTab, setActiveTab] = useState<
+    "tech" | "pitch" | "finance" | "config"
+  >("tech");
 
   // Gemini loading and generated state
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -54,31 +58,28 @@ export function AIAssistantModal({ open, onClose }: AIAssistantModalProps) {
 
   // Key testing state
   const [isTestingKey, setIsTestingKey] = useState<boolean>(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-
-  // Load key from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(GEMINI_API_KEY_STORAGE) || "";
-      setApiKey(saved);
-      setKeyInput(saved);
-    }
-  }, [open]);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   const hasApiKey = Boolean(apiKey && apiKey.trim().length > 10);
 
   // Financial values
-  const suggestedPriceFormatted = results ? format(results.sellPrice) : "R$ 42,27";
+  const suggestedPriceFormatted = results
+    ? format(results.sellPrice)
+    : "R$ 42,27";
   const costFormatted = results ? format(results.totalCost) : "R$ 18,18";
   const profitFormatted = results ? format(results.profit) : "R$ 24,09";
   const materialType =
     (calcStore?.activeTab === "fdm"
       ? calcStore?.fdmMaterial?.type
       : calcStore?.resinMaterial?.type) || "pla";
+  // The store keeps print time as decimal hours and weight as `weightUsed`.
   const printHours = calcStore?.fdmPrintParams?.printTimeHours ?? 0;
-  const printMinutes = calcStore?.fdmPrintParams?.printTimeMinutes ?? 45;
-  const printWeight = calcStore?.fdmMaterial?.printWeightGrams ?? 50;
-  const targetMargin = calcStore?.fdmSales?.targetMarginPercent ?? 100;
+  const printMinutes = Math.round(printHours * 60) % 60;
+  const printWeight = calcStore?.fdmMaterial?.weightUsed ?? 50;
+  const targetMargin = calcStore?.fdmSales?.profitMarginPercent ?? 100;
   const productName = calcStore?.productName || "Peça 3D";
 
   // Material thermal profiles (heuristic)
@@ -153,8 +154,10 @@ export function AIAssistantModal({ open, onClose }: AIAssistantModalProps) {
 
   // Hourly profit & Break-Even calculation
   const totalHours = printHours + printMinutes / 60;
-  const hourlyProfit = totalHours > 0 && results ? (results.profit / totalHours) : 0;
-  const breakEvenUnits = results && results.profit > 0 ? Math.ceil(2500 / results.profit) : 0;
+  const hourlyProfit =
+    totalHours > 0 && results ? results.profit / totalHours : 0;
+  const breakEvenUnits =
+    results && results.profit > 0 ? Math.ceil(2500 / results.profit) : 0;
 
   // Commercial Pitch Text
   const commercialPitch = useMemo(() => {
@@ -168,7 +171,14 @@ export function AIAssistantModal({ open, onClose }: AIAssistantModalProps) {
       `✓ Inclui acabamento técnico, remoção de suportes e garantia de tolerância dimensional.\n` +
       `Podemos aprovar o início da produção agora?`
     );
-  }, [productName, materialProfile.name, printWeight, printHours, printMinutes, suggestedPriceFormatted]);
+  }, [
+    productName,
+    materialProfile.name,
+    printWeight,
+    printHours,
+    printMinutes,
+    suggestedPriceFormatted,
+  ]);
 
   // Save / Clear Key Handlers
   const handleSaveKey = () => {
@@ -194,7 +204,10 @@ export function AIAssistantModal({ open, onClose }: AIAssistantModalProps) {
   const handleTestKey = async () => {
     const keyToTest = keyInput.trim() || apiKey.trim();
     if (!keyToTest) {
-      setTestResult({ success: false, message: "Insira uma chave antes de testar." });
+      setTestResult({
+        success: false,
+        message: "Insira uma chave antes de testar.",
+      });
       return;
     }
 
@@ -208,7 +221,9 @@ export function AIAssistantModal({ open, onClose }: AIAssistantModalProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: "Teste de conexão. Responda apenas: OK" }] }],
+            contents: [
+              { parts: [{ text: "Teste de conexão. Responda apenas: OK" }] },
+            ],
             generationConfig: { maxOutputTokens: 10 },
           }),
         },
@@ -221,13 +236,15 @@ export function AIAssistantModal({ open, onClose }: AIAssistantModalProps) {
 
       setTestResult({
         success: true,
-        message: "Chave válida! Conexão com o Google Gemini 2.5 Flash estabelecida com sucesso.",
+        message:
+          "Chave válida! Conexão com o Google Gemini 2.5 Flash estabelecida com sucesso.",
       });
       // Auto-save if working
       localStorage.setItem(GEMINI_API_KEY_STORAGE, keyToTest);
       setApiKey(keyToTest);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Falha ao validar chave.";
+      const msg =
+        err instanceof Error ? err.message : "Falha ao validar chave.";
       setTestResult({
         success: false,
         message: `Falha na conexão: ${msg}`,
@@ -293,7 +310,10 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
         throw new Error("Resposta da IA vazia.");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Falha ao conectar à API do Gemini.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Falha ao conectar à API do Gemini.";
       setGeminiError(msg);
     } finally {
       setIsGenerating(false);
@@ -338,7 +358,10 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                 )}
               </div>
               <p className="text-[11px] text-slate-400 truncate">
-                Projeto: <span className="text-slate-200 font-semibold">{productName}</span>
+                Projeto:{" "}
+                <span className="text-slate-200 font-semibold">
+                  {productName}
+                </span>
               </p>
             </div>
           </div>
@@ -429,9 +452,11 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                     type="button"
                     disabled={isGenerating}
                     onClick={handleGenerateGemini}
-                    className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-md active:scale-95 disabled:opacity-50"
+                    className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md active:scale-95 disabled:opacity-50"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`}
+                    />
                     {isGenerating ? "Analisando..." : "Gerar com IA"}
                   </button>
                 ) : (
@@ -470,31 +495,54 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
               <div className="space-y-3">
                 <h4 className="font-bold text-slate-200 text-xs flex items-center gap-1.5 uppercase tracking-wider text-[11px] text-slate-400">
                   <Flame className="w-4 h-4 text-orange-400" />
-                  Parâmetros Térmicos & Fatiamento Recomendados ({materialProfile.name})
+                  Parâmetros Térmicos & Fatiamento Recomendados (
+                  {materialProfile.name})
                 </h4>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <div className="p-3 rounded-xl bg-[#080d19] border border-[#1e293b]">
-                    <span className="text-slate-500 text-[10px] block uppercase font-mono">Bico / Nozzle</span>
-                    <strong className="text-white font-bold text-xs">{materialProfile.nozzleTemp}</strong>
+                    <span className="text-slate-500 text-[10px] block uppercase font-mono">
+                      Bico / Nozzle
+                    </span>
+                    <strong className="text-white font-bold text-xs">
+                      {materialProfile.nozzleTemp}
+                    </strong>
                   </div>
                   <div className="p-3 rounded-xl bg-[#080d19] border border-[#1e293b]">
-                    <span className="text-slate-500 text-[10px] block uppercase font-mono">Mesa / Bed</span>
-                    <strong className="text-white font-bold text-xs">{materialProfile.bedTemp}</strong>
+                    <span className="text-slate-500 text-[10px] block uppercase font-mono">
+                      Mesa / Bed
+                    </span>
+                    <strong className="text-white font-bold text-xs">
+                      {materialProfile.bedTemp}
+                    </strong>
                   </div>
                   <div className="p-3 rounded-xl bg-[#080d19] border border-[#1e293b]">
-                    <span className="text-slate-500 text-[10px] block uppercase font-mono">Preenchimento</span>
-                    <strong className="text-emerald-400 font-bold text-xs">{materialProfile.infillOptimal}</strong>
+                    <span className="text-slate-500 text-[10px] block uppercase font-mono">
+                      Preenchimento
+                    </span>
+                    <strong className="text-emerald-400 font-bold text-xs">
+                      {materialProfile.infillOptimal}
+                    </strong>
                   </div>
                   <div className="p-3 rounded-xl bg-[#080d19] border border-[#1e293b]">
-                    <span className="text-slate-500 text-[10px] block uppercase font-mono">Risco de Warping</span>
-                    <strong className={`font-bold text-xs ${materialProfile.warpingColor}`}>{materialProfile.warpingRisk}</strong>
+                    <span className="text-slate-500 text-[10px] block uppercase font-mono">
+                      Risco de Warping
+                    </span>
+                    <strong
+                      className={`font-bold text-xs ${materialProfile.warpingColor}`}
+                    >
+                      {materialProfile.warpingRisk}
+                    </strong>
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#080d19] border border-[#1e293b] space-y-1">
-                  <strong className="text-slate-300 font-semibold block text-[11px]">Dica de Processo:</strong>
-                  <p className="text-slate-400 text-xs">{materialProfile.tips}</p>
+                  <strong className="text-slate-300 font-semibold block text-[11px]">
+                    Dica de Processo:
+                  </strong>
+                  <p className="text-slate-400 text-xs">
+                    {materialProfile.tips}
+                  </p>
                 </div>
               </div>
             </div>
@@ -509,7 +557,8 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                   Proposta Pronta para WhatsApp & Negociação
                 </h4>
                 <p className="text-slate-400 text-[11px]">
-                  Texto estratégico formatado com argumentos de valor, tempo de máquina e garantia:
+                  Texto estratégico formatado com argumentos de valor, tempo de
+                  máquina e garantia:
                 </p>
               </div>
 
@@ -522,20 +571,27 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                   onClick={handleCopyPitch}
                   className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold flex items-center gap-1 shadow"
                 >
-                  {copiedPitch ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedPitch ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
                   {copiedPitch ? "Copiado!" : "Copiar"}
                 </button>
               </div>
 
               <div className="flex items-center justify-between pt-1">
                 <span className="text-[11px] text-slate-500">
-                  Valor orçado: <strong className="text-white">{suggestedPriceFormatted}</strong>
+                  Valor orçado:{" "}
+                  <strong className="text-white">
+                    {suggestedPriceFormatted}
+                  </strong>
                 </span>
                 <a
                   href={`https://wa.me/?text=${encodeURIComponent(commercialPitch)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
                 >
                   <MessageCircle className="w-4 h-4" />
                   Abrir no WhatsApp
@@ -553,30 +609,43 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                   Diagnóstico de Viabilidade Econômica
                 </strong>
                 <p className="text-slate-300 text-xs">
-                  Para cobrir o custo de produção de <strong className="text-white">{costFormatted}</strong> com margem de{" "}
-                  <strong className="text-emerald-400">{targetMargin}%</strong>, o preço sugerido é{" "}
-                  <strong className="text-white">{suggestedPriceFormatted}</strong>.
+                  Para cobrir o custo de produção de{" "}
+                  <strong className="text-white">{costFormatted}</strong> com
+                  margem de{" "}
+                  <strong className="text-emerald-400">{targetMargin}%</strong>,
+                  o preço sugerido é{" "}
+                  <strong className="text-white">
+                    {suggestedPriceFormatted}
+                  </strong>
+                  .
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3.5 rounded-xl bg-[#080d19] border border-[#1e293b] space-y-1">
-                  <span className="text-slate-400 text-[11px]">Retorno por Hora de Máquina:</span>
+                  <span className="text-slate-400 text-[11px]">
+                    Retorno por Hora de Máquina:
+                  </span>
                   <div className="text-lg font-bold text-emerald-400">
                     {format(hourlyProfit)}/h
                   </div>
                   <p className="text-slate-500 text-[10px]">
-                    {hourlyProfit >= 15 ? "✓ Margem horária saudável acima da média de mercado (R$ 15/h)." : "Atenção: Margem horária apertada para peças longas."}
+                    {hourlyProfit >= 15
+                      ? "✓ Margem horária saudável acima da média de mercado (R$ 15/h)."
+                      : "Atenção: Margem horária apertada para peças longas."}
                   </p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#080d19] border border-[#1e293b] space-y-1">
-                  <span className="text-slate-400 text-[11px]">Break-Even da Impressora:</span>
+                  <span className="text-slate-400 text-[11px]">
+                    Break-Even da Impressora:
+                  </span>
                   <div className="text-lg font-bold text-blue-400">
                     {breakEvenUnits > 0 ? `${breakEvenUnits} peças` : "N/A"}
                   </div>
                   <p className="text-slate-500 text-[10px]">
-                    Quantidade deste projeto necessária para pagar o valor de aquisição da máquina.
+                    Quantidade deste projeto necessária para pagar o valor de
+                    aquisição da máquina.
                   </p>
                 </div>
               </div>
@@ -592,10 +661,15 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                   Configuração da Chave Google Gemini (Opcional)
                 </div>
                 <p className="text-slate-300 text-xs leading-relaxed">
-                  A chave de API é <strong>100% opcional</strong>. O Open3DCalc funciona perfeitamente sem ela, calculando custos, fatiamento e propostas com o motor local.
+                  A chave de API é <strong>100% opcional</strong>. O Open3DCalc
+                  funciona perfeitamente sem ela, calculando custos, fatiamento
+                  e propostas com o motor local.
                 </p>
                 <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Ao inserir sua chave do Google AI Studio, a análise ganha inteligência generativa profunda, adaptada ao seu nicho. Sua chave fica salva exclusivamente no seu próprio navegador (localStorage).
+                  Ao inserir sua chave do Google AI Studio, a análise ganha
+                  inteligência generativa profunda, adaptada ao seu nicho. Sua
+                  chave fica salva exclusivamente no seu próprio navegador
+                  (localStorage).
                 </p>
               </div>
 
@@ -642,7 +716,11 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                       className="p-1 text-slate-400 hover:text-white"
                       title={showKey ? "Ocultar" : "Mostrar"}
                     >
-                      {showKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {showKey ? (
+                        <EyeOff className="w-3.5 h-3.5" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -662,11 +740,15 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={isTestingKey || (!keyInput.trim() && !apiKey.trim())}
+                    disabled={
+                      isTestingKey || (!keyInput.trim() && !apiKey.trim())
+                    }
                     onClick={handleTestKey}
                     className="px-3 py-2 rounded-xl text-xs font-semibold text-indigo-300 hover:bg-indigo-950/40 border border-indigo-700/50 disabled:opacity-40 flex items-center gap-1"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isTestingKey ? "animate-spin" : ""}`} />
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${isTestingKey ? "animate-spin" : ""}`}
+                    />
                     {isTestingKey ? "Testando..." : "Testar Conexão"}
                   </button>
 
@@ -682,7 +764,7 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
                   <button
                     type="button"
                     onClick={handleSaveKey}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow"
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow"
                   >
                     Salvar Chave
                   </button>
@@ -696,7 +778,9 @@ Forneça uma análise prática dividida estritamente nestes 3 pontos:
         <div className="px-5 py-3 border-t border-[#1e293b] bg-[#080d19] flex items-center justify-between text-xs text-slate-400">
           <div className="flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 text-slate-500" />
-            <span>Chave opcional • Dados mantidos em segurança no seu dispositivo</span>
+            <span>
+              Chave opcional • Dados mantidos em segurança no seu dispositivo
+            </span>
           </div>
           <button
             type="button"
