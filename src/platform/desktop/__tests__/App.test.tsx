@@ -63,12 +63,21 @@ vi.mock("@/shared/components/Calculator/QuoteSection", () => ({
 vi.mock("@/shared/stores/storeBridge", () => ({
   restoreAutoSnapshot: vi.fn(),
 }));
-vi.mock("@/shared/stores/historyStore", () => ({
-  useHistoryStore: Object.assign(
-    vi.fn(() => ({ entries: [], addEntry: vi.fn() })),
-    { getState: vi.fn(() => ({ entries: [], addEntry: vi.fn() })) },
-  ),
-}));
+// The historyStore mock applies the selector, exactly as calculatorStore below
+// does. Returning the whole store object made `useHistoryStore(s => s.entries)`
+// hand back the store instead of the array, so consumers calling
+// `entries.reduce(...)` blew up with "entries.reduce is not a function".
+vi.mock("@/shared/stores/historyStore", () => {
+  const state = { entries: [], addEntry: vi.fn() };
+  return {
+    useHistoryStore: Object.assign(
+      vi.fn((selector?: (s: typeof state) => unknown) =>
+        selector ? selector(state) : state,
+      ),
+      { getState: vi.fn(() => state) },
+    ),
+  };
+});
 vi.mock("@/shared/stores/calculatorStore", () => ({
   useCalculatorStore: vi.fn(
     (selector?: (state: Record<string, unknown>) => unknown) => {
@@ -169,15 +178,20 @@ describe("desktop App shell (post-extraction)", () => {
     // Visibility to the sidebar footer). Asserted explicitly so this test keeps
     // guarding the gear's absence without silently depending on "no control
     // anywhere owns a dialog" — which was the old, now-false premise.
+    //
+    // The invariant is NAMING, not IDENTITY. It used to assert that every
+    // dialog trigger is literally Manage Visibility, which held only because it
+    // was the ONLY one: a second dialog trigger (the quick-actions dial's
+    // "Atalhos" item) makes that assertion false without anything regressing.
+    // What a screen reader actually needs is that no dialog trigger is
+    // anonymous, so that is what is asserted — and `ManageVisibilityButton`
+    // keeps its own suite (manageVisibility.test.tsx:63) pinning its own value.
     const dialogTriggers = Array.from(
       container.querySelectorAll('button[aria-haspopup="dialog"]'),
     );
     expect(dialogTriggers.length).toBeGreaterThan(0);
     for (const trigger of dialogTriggers) {
-      expect(trigger).toHaveAttribute(
-        "aria-label",
-        "settings.manageVisibility",
-      );
+      expect(trigger).toHaveAccessibleName();
     }
   });
 

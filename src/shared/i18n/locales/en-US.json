@@ -1457,6 +1457,23 @@
     "active": "Focus Mode is on",
     "hint": "Only the calculator is shown. Press Esc to leave."
   },
+  "quickActions": {
+    "open": "Quick Actions",
+    "close": "Close",
+    "menu": "Quick actions",
+    "newProject": "New Project",
+    "quote": "Quick Quote",
+    "inventory": "View Stock",
+    "shortcuts": "Keyboard Shortcuts",
+    "shortcutsTitle": "Keyboard shortcuts",
+    "closeShortcuts": "Close keyboard shortcuts",
+    "shortcutUndo": "Undo",
+    "shortcutExport": "Export",
+    "shortcutPrint": "Print",
+    "pillLabel": "Workshop summary",
+    "pillFocus": "Enter Focus Mode",
+    "pillFocusShort": "Focus"
+  },
   "update": {
     "checkForUpdates": "Check for Updates",
     "checking": "Checking for updates…",

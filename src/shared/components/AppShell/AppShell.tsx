@@ -2,6 +2,8 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { TabletSidebar, DesktopSidebar } from "./Sidebar";
 import { FocusModeExit } from "./FocusModeExit";
 import { MainContent } from "./MainContent";
+import { QuickActionsSpeedDial } from "./QuickActionsSpeedDial";
+import { QuickStatusPill } from "./QuickStatusPill";
 import { useFocusMode } from "./NavigationContext";
 import type { Tab } from "./tabs";
 
@@ -23,6 +25,13 @@ import type { Tab } from "./tabs";
  * be able to disagree about whether they are showing. What it does NOT hide is
  * the skip link: that is an accessibility affordance, not navigation, and
  * taking it away would make the mode less navigable, not more focused.
+ *
+ * The quick-actions dial and the status pill sit in the same `{!focusMode}`
+ * branch as the sidebars, for the same reason: both are floating chrome, and a
+ * "only the calculator is shown" mode that keeps two floating overlays on top
+ * of it is not the mode the name promises. The pill also carries its own Focus
+ * Mode entry, so hiding it removes the only way back INTO the mode from it —
+ * which is correct, because `FocusModeExit` is the single way out while on.
  */
 export interface AppShellProps {
   activeTab: Tab;
@@ -97,6 +106,9 @@ export function AppShell({
             onTabChange={onTabChange}
             footer={sidebarFooter}
           />
+
+          <QuickActionsSpeedDial />
+          <QuickStatusPill />
         </>
       )}
 

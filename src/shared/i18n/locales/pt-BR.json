@@ -1457,6 +1457,23 @@
     "active": "Modo Foco ativo",
     "hint": "Apenas a calculadora é exibida. Pressione Esc para sair."
   },
+  "quickActions": {
+    "open": "Ações Rápidas",
+    "close": "Fechar",
+    "menu": "Ações rápidas",
+    "newProject": "Novo Projeto",
+    "quote": "Gerar Orçamento",
+    "inventory": "Ver Estoque",
+    "shortcuts": "Atalhos de Teclado",
+    "shortcutsTitle": "Atalhos de teclado",
+    "closeShortcuts": "Fechar atalhos de teclado",
+    "shortcutUndo": "Desfazer",
+    "shortcutExport": "Exportar",
+    "shortcutPrint": "Imprimir",
+    "pillLabel": "Resumo rápido da oficina",
+    "pillFocus": "Entrar no Modo Foco",
+    "pillFocusShort": "Foco"
+  },
   "update": {
     "checkForUpdates": "Verificar Atualizações",
     "checking": "Verificando atualizações…",

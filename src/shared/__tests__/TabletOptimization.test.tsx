@@ -42,20 +42,20 @@ vi.mock("@/shared/components/ui/ConsentModal", () => ({
 vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({
   LegacyMigrationPrompt: () => null,
 }));
-vi.mock("@/shared/stores/historyStore", () => ({
-  useHistoryStore: Object.assign(
-    vi.fn(() => ({
-      entries: [],
-      addEntry: vi.fn(),
-    })),
-    {
-      getState: vi.fn(() => ({
-        entries: [],
-        addEntry: vi.fn(),
-      })),
-    },
-  ),
-}));
+// Applies the selector, like the calculatorStore mock below. Returning the bare
+// store object made `useHistoryStore(s => s.entries)` yield the store rather than
+// the array, so consumers calling `entries.reduce(...)` threw.
+vi.mock("@/shared/stores/historyStore", () => {
+  const state = { entries: [], addEntry: vi.fn() };
+  return {
+    useHistoryStore: Object.assign(
+      vi.fn((selector?: (s: typeof state) => unknown) =>
+        selector ? selector(state) : state,
+      ),
+      { getState: vi.fn(() => state) },
+    ),
+  };
+});
 vi.mock("@/shared/stores/calculatorStore", () => ({
   useCalculatorStore: vi.fn(
     (selector?: (state: Record<string, unknown>) => unknown) => {
