@@ -5,9 +5,10 @@ import userEvent from "@testing-library/user-event";
 
 import i18n from "@/shared/i18n/i18n";
 import { ResultsPanel } from "../ResultsPanel";
-import { BREAKPOINT_2XL } from "@/shared/hooks/useMediaQuery";
+import { ResultsSidebar } from "../ResultsSidebar";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 import type { CalculationResult } from "@/shared/types";
 
 vi.mock("@/shared/components/Calculator/MaterialComparison", () => ({
@@ -56,34 +57,10 @@ const result: CalculationResult = {
   totalHoursForProfit: 5,
 };
 
-// The global setup (src/shared/test/setup.ts) pins every media query to
-// `false`. ResultsPanel now mirrors the `2xl` CSS with useMediaQuery, so this
-// suite answers `(min-width: 1536px)` explicitly — defaulting to `true`, which
-// is the width the sidebar chart-view assertions below were written against.
-// Individual tests flip `at2xl` before rendering; the stub reads it lazily.
-let at2xl = true;
-
-function stubMatchMedia(): void {
-  Object.defineProperty(window, "matchMedia", {
-    writable: true,
-    value: vi.fn().mockImplementation((query: string) => ({
-      matches: query === BREAKPOINT_2XL ? at2xl : false,
-      media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })),
-  });
-}
-
 beforeEach(async () => {
-  at2xl = true;
-  stubMatchMedia();
   await i18n.changeLanguage("pt-BR");
   localStorage.clear();
+  useLayoutStore.setState({ layoutMode: "classic", sidebarMode: "compact" });
   useCalculatorStore.setState({
     activeTab: "fdm",
     productName: "Peça",
@@ -120,6 +97,63 @@ beforeEach(async () => {
 });
 
 describe("ResultsPanel hierarchy", () => {
+  it("retains real price override, edit draft, focus and sidebar tab through presentation changes", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ResultsSidebar presentation="inline" />);
+
+    await user.click(
+      screen.getByRole("button", { name: i18n.t("calc.sellPriceEdit") }),
+    );
+    const getDraftInput = () =>
+      screen.getByLabelText(i18n.t("calc.sellPriceInputLabel"));
+    let draft = getDraftInput();
+    await user.clear(draft);
+    await user.type(draft, "72.34");
+    await user.click(
+      screen.getByRole("button", { name: i18n.t("calc.sellPriceConfirm") }),
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: i18n.t("calc.sellPriceEdit") }),
+    );
+    draft = getDraftInput();
+    expect(draft).toHaveValue(72.34);
+    await user.clear(draft);
+    await user.type(draft, "88.40");
+    expect(draft).toHaveValue(88.4);
+    expect(draft).toHaveFocus();
+
+    rerender(<ResultsSidebar presentation="sidebar" />);
+    draft = getDraftInput();
+    expect(draft).toHaveValue(88.4);
+    expect(draft).toHaveFocus();
+    expect(
+      screen.getByText(i18n.t("calc.sellPriceCustom")),
+    ).toBeInTheDocument();
+
+    const userMode = screen.getByTestId("sidebar-mode-tabs");
+    await user.click(userMode);
+    const barsTab = screen.getByTestId("sidebar-tab-bars");
+    await user.click(barsTab);
+    expect(barsTab).toHaveAttribute("aria-selected", "true");
+    draft.focus();
+
+    rerender(<ResultsSidebar presentation="inline" />);
+    draft = getDraftInput();
+    expect(draft).toHaveValue(88.4);
+    expect(draft).toHaveFocus();
+    expect(screen.getByTestId("sidebar-tab-bars")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    rerender(<ResultsSidebar presentation="sidebar" />);
+    expect(screen.getByTestId("sidebar-tab-bars")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
   it("keeps response, cost, diagnostics and actions in semantic order", () => {
     render(<ResultsPanel variant="sidebar" />);
 
@@ -259,22 +293,16 @@ describe("ResultsPanel hierarchy", () => {
     ).not.toBeNull();
   });
 
-  // ── The donut must never mount into a host the CSS hides (causes A, B, C) ──
-  // jsdom cannot observe the Recharts warning itself: getBoundingClientRect()
-  // returns 0×0 for a visible element and for a display:none one alike, so the
-  // console warning is untestable here. These three guard the structural
-  // invariant that produces it instead — while a surface is CSS-hidden, its
-  // ResponsiveContainer must not exist at all.
-  it("keeps the donut out of the mobile panel once the 2xl wrapper hides it", () => {
-    at2xl = true;
+  // The calculator mounts exactly one active results location. The chart is
+  // therefore governed by that location, not by a viewport media query.
+  it("mounts the donut in the active inline results panel", () => {
     render(<ResultsPanel variant="mobile" />);
 
     expect(screen.getByTestId("cost-distribution-details")).toBeInTheDocument();
-    expect(screen.queryByTestId("pie-chart")).toBeNull();
+    expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
   });
 
-  it("keeps the donut out of the sidebar panel below 2xl", () => {
-    at2xl = false;
+  it("mounts the donut in the active sidebar chart view", () => {
     render(
       <ResultsPanel
         variant="sidebar"
@@ -284,7 +312,7 @@ describe("ResultsPanel hierarchy", () => {
     );
 
     expect(screen.getByTestId("cost-distribution-details")).toBeInTheDocument();
-    expect(screen.queryByTestId("pie-chart")).toBeNull();
+    expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
   });
 
   it("keeps the donut out of the bars view, whose host is display:none", () => {

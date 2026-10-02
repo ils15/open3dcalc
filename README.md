@@ -33,6 +33,10 @@ Todas as superfícies dão acesso às **12 abas** — Calculadora, Dashboard, Ca
 | 📲 Tablet (768–1024px) | Sidebar compacta, somente ícones.                                                                                                                                                              |
 | 🖥️ Desktop (≥ 1024px)  | Sidebar completa com rótulos.                                                                                                                                                                  |
 
+### Interface em evolução (PR em draft)
+
+A atualização visual está em andamento, usando o Example como referência para um shell compacto e alinhado — sem declarar paridade concluída. O catálogo de impressoras usa cards em grid responsivo com busca, chips, dados reais e CRUD. Na Calculator Classic, o results rail é responsivo e dá lugar a um fallback em telas estreitas; o cálculo existente é mantido.
+
 ## 📦 Desktop App
 
 Baixe a versão desktop para Windows ou Linux na [página de releases](https://github.com/ils15/open3dcalc/releases).
@@ -48,7 +52,9 @@ Baixe a versão desktop para Windows ou Linux na [página de releases](https://g
 
 ## 🔒 Privacidade e seus dados
 
-O Open3DCalc é **local-first**: seus dados vivem no seu dispositivo e nada é enviado a servidores. A partir da v1.12, a política de privacidade (LGPD) é executada pelo próprio aplicativo:
+O Open3DCalc é **local-first** para os dados de cálculo salvos no dispositivo, mas não é correto afirmar que o aplicativo nunca acessa a rede: a versão web/PWA busca recursos e atualizações no serviço de hospedagem, o desktop verifica atualizações publicadas no GitHub Releases e o link do WhatsApp só abre quando acionado pelo usuário — nesse caso, o texto da proposta é enviado ao serviço do WhatsApp. Esses fluxos são separados do assistente local descrito abaixo. A partir da v1.12, a política de privacidade (LGPD) é executada pelo próprio aplicativo:
+
+- **Assistente local (Copilot)** — as dicas por material usam heurísticas locais, a proposta de venda é um template local e os números vêm da calculadora. Não há geração por IA, chamada a provedor de IA, leitura/armazenamento de chave de API nem transferência de dados do projeto ou chaves para serviços de IA. Uma chave eventualmente salva por uma versão beta antiga é ignorada pelo assistente atual. Ao abrir a proposta pelo link do WhatsApp, o texto é compartilhado com o WhatsApp por escolha do usuário.
 
 - **Aba 🔒 Privacidade** — um só lugar para ver e agir sobre seus dados:
   - **Quarentena de dados legados**: dados antigos gravados em texto puro ficam legíveis, porém bloqueados para novas gravações, até você escolher **migrar** (criptografar e verificar) ou **eliminar**;

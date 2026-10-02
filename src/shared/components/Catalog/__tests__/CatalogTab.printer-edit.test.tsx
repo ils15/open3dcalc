@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { CatalogTab } from "../CatalogTab";
 
@@ -87,9 +87,11 @@ describe("CatalogTab — Printer Editing", () => {
     expect(badges.length).toBe(1);
   });
 
-  it("shows Custom badge for custom printers", () => {
+  it("shows the translated custom badge on custom printer profiles", () => {
     render(<CatalogTab />);
-    const badges = screen.getAllByText("Custom");
+    const customPrinter = screen.getByRole("article", { name: /Minha Custom/ });
+    // Mock t() returns the key; the custom-profile marker remains asserted.
+    const badges = within(customPrinter).getAllByText("catalog.customPrinter");
     expect(badges.length).toBe(1);
   });
 });

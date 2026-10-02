@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -131,6 +132,35 @@ describe("numbered sections in the DOM", () => {
     clicked.click();
 
     expect(onSectionClick).toHaveBeenCalledWith("sales");
+  });
+
+  it("keyboard-activates the results anchor at start with a sticky-header offset", async () => {
+    const target = document.createElement("div");
+    target.id = "section-results";
+    target.className = "scroll-mt-24";
+    const scrollIntoView = vi.fn();
+    target.scrollIntoView = scrollIntoView;
+    document.body.append(target);
+
+    const onSectionClick = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <SectionNav activeSection="material" onSectionClick={onSectionClick} />,
+    );
+
+    const resultsButton = screen.getAllByRole("button", {
+      name: "calc.sectionShort.results",
+    })[0];
+    resultsButton.focus();
+    await user.keyboard("{Enter}");
+
+    expect(onSectionClick).toHaveBeenCalledWith("results");
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "start",
+    });
+    expect(target.className).toContain("scroll-mt-24");
+    target.remove();
   });
 
   it("keeps the tablet rail at its tested width and target size", () => {

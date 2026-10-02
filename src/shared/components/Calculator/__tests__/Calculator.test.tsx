@@ -1,138 +1,86 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import {
+  CALCULATOR_THREE_REGION_MIN_REM,
+  hasCalculatorRailSpace,
+} from "../Calculator.layout";
 
 const readRelative = (p: string) =>
   readFileSync(resolve(__dirname, p), "utf-8");
 
 const calculatorSource = readRelative("../Calculator.tsx");
+const calculatorCssSource = readRelative("../Calculator.css");
 const rendererSource = readRelative("../SectionRenderer.tsx");
 const resultsPanelSource = readRelative("../../Results/ResultsPanel.tsx");
+const resultsSidebarSource = readRelative("../../Results/ResultsSidebar.tsx");
 
-/**
- * Tailwind v4 default breakpoints (min-width, px):
- * md 768 · lg 1024 · xl 1280 · 2xl 1536
- */
-const tailwindBreakpoint = (width: number): string | null => {
-  if (width >= 1536) return "2xl";
-  if (width >= 1280) return "xl";
-  if (width >= 1024) return "lg";
-  if (width >= 768) return "md";
-  return null;
-};
-
-describe("Calculator — Complete-mode layout breakpoints", () => {
-  describe("results sidebar only appears when there is enough space (2xl / ≥1536px)", () => {
-    it("hides the sidebar below 2xl (hidden 2xl:flex) instead of xl", () => {
-      expect(calculatorSource).toMatch(/hidden 2xl:flex/);
-      expect(calculatorSource).not.toMatch(/hidden xl:flex/);
-    });
-
-    it("renders the results sidebar at the 2xl width (336px) without xl widths", () => {
-      expect(calculatorSource).toMatch(/2xl:flex[^"]*w-\[336px\]/);
-      expect(calculatorSource).not.toMatch(/xl:w-\[320px\]/);
-      expect(calculatorSource).not.toMatch(/w-\[280px\]/);
-    });
-
-    it("keeps the sidebar bounded and normally scrollable", () => {
-      expect(calculatorSource).toMatch(/h-\[calc\(100vh-120px\)\]/);
-      expect(calculatorSource).toMatch(/max-h-\[calc\(100vh-120px\)\]/);
-    });
-
-    it("guarantees the central form never shrinks below 560px in Complete mode", () => {
-      expect(calculatorSource).toMatch(
-        /flex-1 min-w-0 2xl:min-w-\[560px\] @container/,
-      );
-    });
-
-    it("keeps the results section (mobile/tablet panel) visible up to 2xl", () => {
-      // SectionRenderer wrapper
-      expect(rendererSource).toMatch(/id="section-results"[^>]*2xl:hidden/);
-      expect(rendererSource).not.toMatch(/scroll-mt-24 xl:hidden/);
-      // ResultsPanel mobile variant wrapper
-      expect(resultsPanelSource).toMatch(/space-y-4 2xl:hidden/);
-      expect(resultsPanelSource).not.toMatch(/space-y-4 lg:hidden/);
-    });
+describe("Calculator — effective-width results layout", () => {
+  it("uses content minima rather than a viewport breakpoint", () => {
+    expect(CALCULATOR_THREE_REGION_MIN_REM).toBe(63);
+    expect(calculatorSource).toContain("new ResizeObserver");
+    expect(calculatorSource).toContain("entry.contentRect.width");
+    expect(calculatorCssSource).toContain("minmax(32rem, 3.8fr)");
+    expect(calculatorCssSource).toContain("minmax(18rem, 1.9fr)");
+    expect(calculatorSource).not.toMatch(/2xl:grid-cols|w-\[336px\]/);
   });
 
-  describe("breakpoint matrix (390 → 2000px)", () => {
-    const matrix = [
-      {
-        width: 390,
-        breakpoint: null,
-        sidebar: "hidden",
-        resultsSection: "visible",
-      },
-      {
-        width: 768,
-        breakpoint: "md",
-        sidebar: "hidden",
-        resultsSection: "visible",
-      },
-      {
-        width: 1024,
-        breakpoint: "lg",
-        sidebar: "hidden",
-        resultsSection: "visible",
-      },
-      {
-        width: 1280,
-        breakpoint: "xl",
-        sidebar: "hidden",
-        resultsSection: "visible",
-      },
-      {
-        width: 1440,
-        breakpoint: "xl",
-        sidebar: "hidden",
-        resultsSection: "visible",
-      },
-      {
-        width: 1536,
-        breakpoint: "2xl",
-        sidebar: "visible",
-        resultsSection: "hidden",
-      },
-      {
-        width: 2000,
-        breakpoint: "2xl",
-        sidebar: "visible",
-        resultsSection: "hidden",
-      },
-    ];
-
-    it.each(matrix)("$width px → $breakpoint", ({ width, breakpoint }) => {
-      expect(tailwindBreakpoint(width)).toBe(breakpoint);
-    });
-
-    it.each(matrix)(
-      "at $width px the sidebar visibility matches the class contract",
-      ({ width, sidebar, resultsSection }) => {
-        const is2xl = tailwindBreakpoint(width) === "2xl";
-        // Sidebar: `hidden` base + `2xl:flex` → visible only ≥1536
-        expect(sidebar).toBe(is2xl ? "visible" : "hidden");
-        // Inline results section: `2xl:hidden` → hidden only ≥1536
-        expect(resultsSection).toBe(is2xl ? "hidden" : "visible");
-        // Class-level contract
-        expect(calculatorSource).toMatch(/hidden 2xl:flex/);
-        expect(rendererSource).toMatch(/section-results[^>]*2xl:hidden/);
-        expect(resultsPanelSource).toMatch(/space-y-4 2xl:hidden/);
-      },
+  it("expands only the Calculator measurement area into free desktop width", () => {
+    expect(calculatorSource).toContain('import "./Calculator.css"');
+    expect(calculatorSource).toContain("calculator-viewport-measure");
+    expect(calculatorCssSource).toContain("@media (min-width: 90rem)");
+    expect(calculatorCssSource).toContain(
+      "width: min(65.5rem, calc(100vw - 24.5rem))",
+    );
+    expect(calculatorCssSource).toContain("margin-inline-start: -4.375rem");
+    expect(calculatorCssSource).toContain(
+      "grid-template-columns: 8.125rem 33.8125rem 20.5625rem",
     );
   });
 
-  // ── Wave B (B4): printer selection is a single store action ─────────────
-  // O double-set (setFdmPrintParams + setFdmMachine) foi removido do
-  // componente: setSelectedPrinter deriva power e custos da máquina ativa.
-  describe("printer selection wiring (Wave B)", () => {
-    it("handlePrinterSelect delegates only to setSelectedPrinter (no double-set)", () => {
-      // Extrai o corpo do handler para inspecionar suas chamadas de store.
-      const handlerStart = calculatorSource.indexOf("handlePrinterSelect");
-      const handlerEnd = calculatorSource.indexOf("handleInput", handlerStart);
-      const handler = calculatorSource.slice(handlerStart, handlerEnd);
-      expect(handler).toContain("setSelectedPrinter");
-      expect(handler).not.toMatch(/setFdmPrintParams/);
-      expect(handler).not.toMatch(/setFdmMachine/);
-    });
+  it.each([
+    { width: 1007, rootFontSize: 16, expected: false },
+    { width: 1008, rootFontSize: 16, expected: true },
+    { width: 1133, rootFontSize: 18, expected: false },
+    { width: 1134, rootFontSize: 18, expected: true },
+    { width: Number.NaN, rootFontSize: 16, expected: false },
+  ])(
+    "requires the region minimum for $width CSS px at $rootFontSize px/rem",
+    ({ width, rootFontSize, expected }) => {
+      expect(hasCalculatorRailSpace(width, rootFontSize)).toBe(expected);
+    },
+  );
+
+  it("renders one results location and drops the hidden-chart media gate", () => {
+    expect(calculatorSource.match(/<ResultsSidebar\b/g)).toHaveLength(1);
+    expect(calculatorSource).toContain('id="section-results"');
+    expect(resultsSidebarSource).toContain('presentation === "inline"');
+    expect(rendererSource).not.toContain("ResultsPanel");
+    expect(rendererSource).not.toContain("2xl:hidden");
+    expect(resultsPanelSource).not.toContain("useMediaQuery");
+    expect(resultsPanelSource).not.toContain("2xl:hidden");
+  });
+
+  it("preserves section anchors and printer selection wiring", () => {
+    for (const id of [
+      "section-material",
+      "section-print",
+      "section-failure",
+      "section-machine",
+      "section-fixedCost",
+      "section-labor",
+      "section-hardware",
+      "section-ops",
+      "section-sales",
+    ]) {
+      expect(rendererSource).toContain(`id="${id}"`);
+    }
+    expect(calculatorSource).toContain('id="section-results"');
+
+    const handlerStart = calculatorSource.indexOf("handlePrinterSelect");
+    const handlerEnd = calculatorSource.indexOf("handleInput", handlerStart);
+    const handler = calculatorSource.slice(handlerStart, handlerEnd);
+    expect(handler).toContain("setSelectedPrinter");
+    expect(handler).not.toMatch(/setFdmPrintParams|setFdmMachine/);
   });
 });

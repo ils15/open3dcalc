@@ -2444,7 +2444,7 @@
         "errors": "{{count}} errors found"
       }
     },
-    "lgpd_notice": "All data stays in your browser. No data is sent to external servers. See our Privacy Policy.",
+    "lgpd_notice": "Export and import are processed locally in an encrypted file. The app may access the network for updates; external links share content when you open them. See our Privacy Policy.",
     "privacy_link": "Privacy Policy"
   },
   "gcodePreview": {
@@ -2674,6 +2674,26 @@
     }
   },
 
+  "copilot": {
+    "title": "Local assistant",
+    "localBadge": "Local suggestions",
+    "localDisclosure": "Local suggestions; nothing is sent to AI services",
+    "localDescription": "Tips use local heuristics based on the selected material. Prices, margins, and other values are calculated in the app.",
+    "project": "Project:",
+    "tabsLabel": "Local assistant sections",
+    "technicalTab": "Technical recommendations",
+    "pitchTab": "Sales pitch & WhatsApp",
+    "financeTab": "Margin analysis",
+    "close": "Close assistant",
+    "closeButton": "Close",
+    "copyPitch": "Copy proposal",
+    "copiedPitch": "Proposal copied",
+    "copyShort": "Copy",
+    "copiedShort": "Copied!",
+    "openWhatsApp": "Open in WhatsApp",
+    "openLocalButton": "Local copilot",
+    "openLocalTitle": "Open local 3D printing suggestions"
+  },
   "footer": {
     "navigation": "Useful links",
     "version": "Open3DCalc v{{version}}",

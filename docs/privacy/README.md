@@ -33,6 +33,22 @@ Out of scope (explicitly **blocked** until this deliverable is approved — see 
 The only files added by D1.0 live under `docs/privacy/`. This is enforced by the diff-check
 gate in §4 (finding R15).
 
+## Current beta runtime disclosure
+
+This section describes the current application behavior; it does not change the
+historical scope or normative status of D1.0. The in-app Copilot uses
+material-based local heuristics, locally assembled proposal templates, and
+numbers calculated by the app. It does not perform generative AI, call an AI
+provider, read or store an API key, or transfer project/calculator data or keys
+to an AI service. Any Copilot API key left in browser storage by an older beta
+is ignored by the current feature.
+
+This is not a claim that the entire application never uses the network. The
+web/PWA fetches application assets and updates from its hosting service; the
+desktop app checks GitHub Releases for updates; and opening a generated
+WhatsApp proposal link intentionally shares the proposal text with WhatsApp.
+Those operations are separate from the Copilot's local suggestions.
+
 ## 2. Document index
 
 | File                            | Purpose                                                                                  | Addresses   |

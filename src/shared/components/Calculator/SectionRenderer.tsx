@@ -12,7 +12,6 @@ import { LaborSection } from "./sections/LaborSection";
 import { HardwareSection } from "./sections/HardwareSection";
 import { OpsSection } from "./sections/OpsSection";
 import { SalesSection } from "./sections/SalesSection";
-import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { SectionHeader } from "./sections/SectionHeader";
 import { FieldCustomizer } from "./FieldCustomizer";
 import {
@@ -40,8 +39,6 @@ interface SectionRendererProps {
     image?: string;
   }>;
   handlePrinterSelect: (id: string) => void;
-  /** Forwards demo-mode export feedback down to the mobile ResultsPanel. */
-  onExportBlocked?: (message: string) => void;
 }
 
 export function SectionRenderer(props: SectionRendererProps) {
@@ -56,7 +53,6 @@ export function SectionRenderer(props: SectionRendererProps) {
     catalogMaterials,
     catalogPrinters,
     handlePrinterSelect,
-    onExportBlocked,
   } = props;
 
   const { calcLevel, hiddenFields } = useCalculatorStore(
@@ -101,18 +97,15 @@ export function SectionRenderer(props: SectionRendererProps) {
     [],
   );
 
-  const visibleSections = SECTIONS.filter((s) =>
-    LEVEL_SECTIONS[calcLevel].includes(s.id),
+  const visibleSections = SECTIONS.filter(
+    (section) =>
+      section.id !== "results" &&
+      LEVEL_SECTIONS[calcLevel].includes(section.id),
   );
-  const orderedSections = [...visibleSections].sort((a, b) => {
-    if (a.id === "results") return -1;
-    if (b.id === "results") return 1;
-    return 0;
-  });
 
   return (
     <div className="space-y-4">
-      {orderedSections.map((s) => {
+      {visibleSections.map((s) => {
         switch (s.id) {
           case "material":
             return (
@@ -263,20 +256,6 @@ export function SectionRenderer(props: SectionRendererProps) {
                 className="scroll-mt-24"
               >
                 <SalesSection step={stepById.get("sales")} />
-              </div>
-            );
-          case "results":
-            return (
-              <div
-                key="results"
-                id="section-results"
-                data-tutorial="results"
-                className="scroll-mt-24 2xl:hidden"
-              >
-                <ResultsPanel
-                  variant="mobile"
-                  onExportBlocked={onExportBlocked}
-                />
               </div>
             );
           default:

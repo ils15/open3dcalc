@@ -36,7 +36,6 @@
     "@chestnutlabs/gcode-preview-react": "0.20.1",
     "@chestnutlabs/toolpath-core": "0.20.1",
     "@floating-ui/react": "^0.27.20",
-    "@google/genai": "^2.25.0",
     "@react-pdf/renderer": "^4.9.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",

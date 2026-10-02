@@ -17,6 +17,8 @@ import {
 
 export interface ResultsSidebarProps {
   readonly onExportBlocked?: (message: string) => void;
+  /** Keep one mounted result tree while the calculator relocates its grid cell. */
+  readonly presentation?: "inline" | "sidebar";
 }
 
 interface SidebarModeOption {
@@ -62,6 +64,7 @@ function controlClass(active: boolean): string {
  */
 export function ResultsSidebar({
   onExportBlocked,
+  presentation = "sidebar",
 }: ResultsSidebarProps): ReactElement {
   const { t } = useTranslation();
   const sidebarMode = useLayoutStore((state) => state.sidebarMode);
@@ -75,6 +78,7 @@ export function ResultsSidebar({
       aria-label={t("results.sidebar.modeLabel")}
       data-testid="results-sidebar-shell"
       data-sidebar-mode={sidebarMode}
+      data-presentation={presentation}
       className="flex min-h-0 h-full flex-col gap-3"
     >
       <div className="min-w-0 space-y-2">
@@ -180,7 +184,7 @@ export function ResultsSidebar({
           : {})}
       >
         <ResultsPanel
-          variant="sidebar"
+          variant={presentation === "inline" ? "mobile" : "sidebar"}
           onExportBlocked={onExportBlocked}
           sidebarMode={sidebarMode}
           sidebarTab={activeTab}

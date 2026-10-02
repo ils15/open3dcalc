@@ -1,0 +1,32 @@
+/*
+ * The web app's main column is capped narrower than the 3-region calculator
+ * tracks. At desktop widths, let only the calculator use the free space to its
+ * right while retaining the shell's 40px content gutters.
+ */
+/*
+ * These tracks reproduce the Example's 1440px Classic composition. The shell
+ * main starts at x=240 with 56px inline padding; a 70px local breakout puts the
+ * section rail at x≈234, while the fixed content lane ends at x=1274.
+ */
+.calculator-layout--three-region {
+  grid-template-columns: minmax(8rem, 0.85fr) minmax(32rem, 3.8fr) minmax(
+      18rem,
+      1.9fr
+    );
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 90rem) {
+  .calculator-viewport-measure {
+    width: min(65.5rem, calc(100vw - 24.5rem));
+    margin-inline-start: -4.375rem;
+  }
+
+  .calculator-layout--three-region {
+    grid-template-columns: 8.125rem 33.8125rem 20.5625rem;
+  }
+
+  .calculator-results-sidebar {
+    margin-inline-start: 0.5625rem;
+  }
+}

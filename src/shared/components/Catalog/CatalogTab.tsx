@@ -8,8 +8,18 @@ import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { printers } from "@/shared/lib/printers";
 import { materials } from "@/shared/lib/materials";
 import { marketplaces } from "@/shared/lib/marketplace";
-import { Pencil, X } from "lucide-react";
+import {
+  Check,
+  Pencil,
+  Plus,
+  Printer as PrinterIcon,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import type { PrinterProfile } from "@/shared/types";
+import type { CatalogPrinter } from "@/shared/stores/catalogStore";
 
 type Section = "printers" | "materials" | "marketplaces";
 
@@ -151,66 +161,99 @@ function PrinterManager() {
   const store = useCatalogStore();
   const { t } = useTranslation();
   const { symbol: currencySymbol } = useCurrency();
-  const [name, setName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [power, setPower] = useState("");
-  const [value, setValue] = useState("");
-  const [usefulLife, setUsefulLife] = useState("3000");
-  const [maintPerHour, setMaintPerHour] = useState("0.25");
-
-  // Edit modal state
+  const [search, setSearch] = useState("");
+  const [technology, setTechnology] = useState<"all" | "fdm" | "resin">("all");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(
+    null,
+  );
   const [editingPrinterId, setEditingPrinterId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<PrinterEditForm>(emptyPrinterForm());
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const editFormRef = useRef<PrinterEditForm>(emptyPrinterForm());
   const modalRef = useRef<HTMLDivElement>(null);
+  const editTriggerRef = useRef<HTMLElement | null>(null);
 
-  const updEdit = (k: keyof PrinterEditForm, v: string) => {
-    setEditForm((f) => {
-      const next = { ...f, [k]: v };
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    store.printers.forEach((printer) =>
+      (printer.tags ?? []).forEach((tag) => tags.add(tag)),
+    );
+    return [...tags].sort((a, b) => a.localeCompare(b));
+  }, [store.printers]);
+
+  const filteredPrinters = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase();
+    return store.printers.filter((printer) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        `${printer.name} ${printer.brand}`
+          .toLocaleLowerCase()
+          .includes(normalizedSearch);
+      const matchesTechnology =
+        technology === "all" || printer.technology === technology;
+      const matchesTag =
+        !store.selectedPrinterTag ||
+        (printer.tags ?? []).includes(store.selectedPrinterTag);
+      return matchesSearch && matchesTechnology && matchesTag;
+    });
+  }, [search, store.printers, store.selectedPrinterTag, technology]);
+
+  const tagChipClass = (active: boolean) =>
+    `whitespace-nowrap rounded border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+      active
+        ? "border-transparent bg-[#2563eb] text-white"
+        : "border-[#262a3c] bg-[#161824] text-slate-300 hover:text-white"
+    }`;
+
+  const selectPrinterForCalculation = useCallback(
+    async (printer: CatalogPrinter) => {
+      setSelectedPrinterId(printer.id);
+      const { useCalculatorStore } =
+        await import("@/shared/stores/calculatorStore");
+      useCalculatorStore.getState().setSelectedPrinter(printer);
+    },
+    [],
+  );
+
+  const updEdit = (key: keyof PrinterEditForm, value: string) => {
+    setEditForm((form) => {
+      const next = { ...form, [key]: value };
       editFormRef.current = next;
       return next;
     });
   };
 
-  const openEditPrinter = useCallback(
-    (p: {
-      id: string;
-      name: string;
-      brand: string;
-      power: number;
-      value: number;
-      usefulLife: number;
-      maintenancePerHour: number;
-    }) => {
-      const form: PrinterEditForm = {
-        name: p.name,
-        brand: p.brand,
-        power: String(p.power),
-        value: String(p.value),
-        usefulLife: String(p.usefulLife),
-        maintenancePerHour: String(p.maintenancePerHour),
-      };
-      setEditingPrinterId(p.id);
-      setEditForm(form);
-      editFormRef.current = form;
-      setShowEditModal(true);
-    },
-    [],
-  );
+  const openEditPrinter = useCallback((printer: CatalogPrinter) => {
+    editTriggerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    const form: PrinterEditForm = {
+      name: printer.name,
+      brand: printer.brand,
+      power: String(printer.power),
+      value: String(printer.value),
+      usefulLife: String(printer.usefulLife),
+      maintenancePerHour: String(printer.maintenancePerHour),
+    };
+    setEditingPrinterId(printer.id);
+    setEditForm(form);
+    editFormRef.current = form;
+  }, []);
 
   const closeEditPrinter = useCallback(() => {
     setEditingPrinterId(null);
     setEditForm(emptyPrinterForm());
     editFormRef.current = emptyPrinterForm();
-    setShowEditModal(false);
     setShowUnsavedConfirm(false);
   }, []);
 
   const hasUnsavedChanges = useMemo(() => {
     if (!editingPrinterId) return false;
-    const original = store.printers.find((p) => p.id === editingPrinterId);
+    const original = store.printers.find(
+      (printer) => printer.id === editingPrinterId,
+    );
     if (!original) return false;
     return (
       editForm.name !== original.name ||
@@ -223,284 +266,196 @@ function PrinterManager() {
   }, [editingPrinterId, editForm, store.printers]);
 
   const requestClose = useCallback(() => {
-    if (hasUnsavedChanges) {
-      setShowUnsavedConfirm(true);
-    } else {
-      closeEditPrinter();
-    }
-  }, [hasUnsavedChanges, closeEditPrinter]);
+    if (hasUnsavedChanges) setShowUnsavedConfirm(true);
+    else closeEditPrinter();
+  }, [closeEditPrinter, hasUnsavedChanges]);
 
   const savePrinter = useCallback(() => {
     if (!editingPrinterId) return;
     store.updatePrinter(editingPrinterId, {
       name: editForm.name || "Impressora",
-      brand: editForm.brand || "Custom",
+      brand: editForm.brand || t("catalog.customPrinter"),
       power: Number(editForm.power) || 0,
       value: Number(editForm.value) || 0,
       usefulLife: Number(editForm.usefulLife) || 3000,
       maintenancePerHour: Number(editForm.maintenancePerHour) || 0.25,
     });
     closeEditPrinter();
-  }, [editingPrinterId, editForm, store, closeEditPrinter]);
+  }, [closeEditPrinter, editForm, editingPrinterId, store, t]);
 
-  // Focus trap for edit modal
   useEffect(() => {
-    if (!showEditModal) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+    if (!editingPrinterId) {
+      const trigger = editTriggerRef.current;
+      editTriggerRef.current = null;
+      if (trigger?.isConnected) trigger.focus();
+      return;
+    }
+
+    const dialog = modalRef.current;
+    const initialFocus =
+      dialog?.querySelector<HTMLElement>("input:not(:disabled)") ??
+      dialog?.querySelector<HTMLElement>(
+        'button:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      );
+    initialFocus?.focus();
+  }, [editingPrinterId]);
+
+  useEffect(() => {
+    if (!editingPrinterId) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
         requestClose();
         return;
       }
-      if (e.key !== "Tab") return;
-      const dialog = modalRef.current;
-      if (!dialog) return;
-      const focusable = dialog.querySelectorAll<HTMLElement>(
-        "input, button, [tabindex]",
+      if (event.key !== "Tab") return;
+      const activeDialog = modalRef.current;
+      if (!activeDialog) return;
+      const focusable = activeDialog.querySelectorAll<HTMLElement>(
+        'input:not(:disabled), button:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])',
       );
       if (focusable.length === 0) return;
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
+      if (!activeDialog.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [showEditModal, requestClose]);
+  }, [editingPrinterId, requestClose]);
 
-  const add = () => {
-    if (!name.trim()) return;
-    store.addPrinter({
-      id: uid(),
-      name,
-      brand: brand || "Custom",
-      power: Number(power) || 0,
-      value: Number(value) || 0,
-      usefulLife: Number(usefulLife) || 3000,
-      maintenancePerHour: Number(maintPerHour) || 0.25,
-      custom: true,
-    });
-    setName("");
-    setBrand("");
-    setPower("");
-    setValue("");
-    setUsefulLife("3000");
-    setMaintPerHour("0.25");
-  };
-
-  const allTags = useMemo(() => {
-    const set = new Set<string>();
-    store.printers.forEach((p) =>
-      (p.tags ?? []).forEach((tag) => set.add(tag)),
-    );
-    return [...set].sort((a, b) => a.localeCompare(b));
-  }, [store.printers]);
-
-  const filteredPrinters = useMemo(() => {
-    if (!store.selectedPrinterTag) return store.printers;
-    return store.printers.filter((p) =>
-      (p.tags ?? []).includes(store.selectedPrinterTag as string),
-    );
-  }, [store.printers, store.selectedPrinterTag]);
-
-  const chipClass = (active: boolean) =>
-    `px-3 py-1 rounded-full text-xs border transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${active ? "bg-[var(--accent-fill)] text-white border-[var(--color-accent)]" : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]"}`;
+  const editingPrinter = store.printers.find(
+    (printer) => printer.id === editingPrinterId,
+  );
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-      <div className="surface rounded-xl p-5 space-y-3">
-        <div className="text-sm font-semibold text-[var(--color-text-primary)]">
-          {t("catalog.addPrinter")}
-        </div>
-        <Select
-          label={t("catalog.selectPrinter")}
-          value=""
-          onChange={(id) => {
-            const p = printers.find((pr) => pr.id === id);
-            if (p) {
-              setName(p.name);
-              setBrand(p.brand);
-              setPower(String(p.power));
-              setValue(String(p.value));
-            }
-          }}
-          options={[
-            { label: t("catalog.customPrinter"), value: "" },
-            ...printers.map((p) => ({
-              label: p.name,
-              value: p.id,
-              subtitle: `${p.power}W · ${currencySymbol} ${p.value}`,
-              group: p.brand,
-            })),
-          ]}
-          groups
-          search
-        />
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[var(--color-border)]" />
-          </div>
-          <div className="relative flex justify-center text-xs text-[var(--color-text-muted)]">
-            <span className="bg-[var(--color-bg-primary)] px-2">
-              {t("catalog.orManual")}
-            </span>
-          </div>
-        </div>
-        <InputGroup
-          label={t("catalog.printerName")}
-          value={name}
-          onChange={setName}
-        />
-        <InputGroup
-          label={t("catalog.printerBrand")}
-          value={brand}
-          onChange={setBrand}
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <InputGroup
-            label={t("catalog.power")}
-            value={power}
-            onChange={setPower}
-            type="number"
-            unit="W"
+    <div className="space-y-4">
+      <div
+        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+        role="search"
+      >
+        <label className="relative min-w-0 flex-1 sm:min-w-[220px]">
+          <Search
+            aria-hidden="true"
+            className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"
           />
-          <InputGroup
-            label={t("catalog.value")}
-            value={value}
-            onChange={setValue}
-            type="number"
-            prefix={currencySymbol}
+          <input
+            type="search"
+            aria-label={t("catalog.printerName")}
+            placeholder={t("catalog.printerName")}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="h-[30px] w-full rounded border border-[#292e42] bg-[#161824] pl-8 pr-3 text-xs text-slate-100 placeholder:text-slate-500 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <InputGroup
-            label={t("catalog.usefulLife")}
-            value={usefulLife}
-            onChange={setUsefulLife}
-            type="number"
-            unit="h"
-            placeholder="3000"
-          />
-          <InputGroup
-            label={t("catalog.maintenancePerHour")}
-            value={maintPerHour}
-            onChange={setMaintPerHour}
-            type="number"
-            prefix={currencySymbol}
-            placeholder="0.25"
-          />
-        </div>
-        <button
-          onClick={add}
-          className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-        >
-          {t("catalog.save")}
-        </button>
-      </div>
-      {allTags.length > 0 && (
+        </label>
         <div
-          className="flex flex-wrap items-center gap-2"
+          className="flex flex-wrap items-center gap-1.5"
           role="group"
-          aria-label={t("catalog.filterByTag")}
+          aria-label={t("catalog.materialType")}
         >
-          <span className="text-xs text-[var(--color-text-muted)]">
-            {t("catalog.filterByTag")}
+          <span className="mr-1 text-xs text-slate-400">
+            {t("catalog.materialType")}
           </span>
-          <button
-            type="button"
-            aria-pressed={store.selectedPrinterTag === null}
-            onClick={() => store.setPrinterTagFilter(null)}
-            className={chipClass(store.selectedPrinterTag === null)}
-          >
-            {t("catalog.allTags")}
-          </button>
-          {allTags.map((tag) => (
+          {(
+            [
+              ["all", t("spools.filterAll")],
+              ["fdm", t("catalog.fdm")],
+              ["resin", t("catalog.resin")],
+            ] as const
+          ).map(([value, label]) => (
             <button
-              key={tag}
+              key={value}
               type="button"
-              aria-pressed={store.selectedPrinterTag === tag}
-              onClick={() =>
-                store.setPrinterTagFilter(
-                  store.selectedPrinterTag === tag ? null : tag,
-                )
-              }
-              className={chipClass(store.selectedPrinterTag === tag)}
+              aria-pressed={technology === value}
+              onClick={() => setTechnology(value)}
+              className={tagChipClass(technology === value)}
             >
-              {tag}
+              {label}
             </button>
           ))}
         </div>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-        {filteredPrinters.map((p) => (
-          <div key={p.id} className="surface rounded-xl p-4 space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="min-w-0">
-                  <div className="font-semibold text-[var(--color-text-primary)] truncate">
-                    {p.name}
-                  </div>
-                  <div className="text-xs text-[var(--color-text-muted)]">
-                    {p.brand}
-                  </div>
-                </div>
-                <button
-                  onClick={() => openEditPrinter(p)}
-                  className="shrink-0 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-                  aria-label={t("catalog.editPrinter")}
-                  title={t("catalog.editPrinter")}
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              {p.custom ? (
-                /* contrast-site: catalog-tab-printer-custom-badge */
-                <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)] shrink-0">
-                  Custom
-                </span>
-              ) : (
-                <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-600/20 text-emerald-300 shrink-0">
-                  {t("catalog.defaultPrinter")}
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {t("catalog.power")}: {p.power}W
-            </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {t("catalog.value")}: {currencySymbol} {p.value}
-            </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {t("catalog.usefulLife")}: {p.usefulLife}h
-            </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {t("catalog.maintenancePerHour")}: {currencySymbol}{" "}
-              {p.maintenancePerHour}/h
-            </div>
-            {p.custom && <PrinterTagEditor printer={p} />}
-            {p.custom && (
+        {allTags.length > 0 && (
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            role="group"
+            aria-label={t("catalog.filterByTag")}
+          >
+            <span className="mr-1 text-xs text-[var(--color-text-muted)]">
+              {t("catalog.filterByTag")}
+            </span>
+            <button
+              type="button"
+              aria-pressed={store.selectedPrinterTag === null}
+              onClick={() => store.setPrinterTagFilter(null)}
+              className={tagChipClass(store.selectedPrinterTag === null)}
+            >
+              {t("catalog.allTags")}
+            </button>
+            {allTags.map((tag) => (
               <button
-                onClick={() => store.removePrinter(p.id)}
-                className="text-xs text-[var(--color-danger)] hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded"
+                key={tag}
+                type="button"
+                aria-pressed={store.selectedPrinterTag === tag}
+                onClick={() =>
+                  store.setPrinterTagFilter(
+                    store.selectedPrinterTag === tag ? null : tag,
+                  )
+                }
+                className={tagChipClass(store.selectedPrinterTag === tag)}
               >
-                {t("catalog.remove")}
+                {tag}
               </button>
-            )}
+            ))}
           </div>
-        ))}
+        )}
+        <button
+          type="button"
+          aria-expanded={showCreateForm}
+          onClick={() => setShowCreateForm((visible) => !visible)}
+          className="flex h-[30px] shrink-0 items-center justify-center gap-1.5 rounded bg-[#2563eb] px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#1d4ed8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+          {t("catalog.addPrinter")}
+        </button>
       </div>
 
-      {/* Edit Printer Modal */}
-      {showEditModal && (
+      {showCreateForm && (
+        <PrinterCreateForm
+          onCancel={() => setShowCreateForm(false)}
+          onCreated={() => setShowCreateForm(false)}
+        />
+      )}
+
+      <div
+        className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+        role="group"
+        aria-label={t("catalog.printers")}
+      >
+        {filteredPrinters.map((printer) => (
+          <PrinterProfileCard
+            key={printer.id}
+            printer={printer}
+            selected={selectedPrinterId === printer.id}
+            onSelect={() => void selectPrinterForCalculation(printer)}
+            onEdit={() => openEditPrinter(printer)}
+            onRemove={() => store.removePrinter(printer.id)}
+          />
+        ))}
+        {filteredPrinters.length === 0 && (
+          <p className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)]">
+            {t("history.noResults")}
+          </p>
+        )}
+      </div>
+
+      {editingPrinter && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
           onClick={requestClose}
@@ -510,22 +465,23 @@ function PrinterManager() {
         >
           <div
             ref={modalRef}
-            className="surface rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            className="surface max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl p-6"
+            onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-5">
+            <div className="mb-5 flex items-center justify-between">
               <h3 className="text-base font-bold text-[var(--color-text-primary)]">
                 {t("catalog.editPrinter")}
               </h3>
               <button
+                type="button"
                 onClick={requestClose}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)] transition-colors"
+                aria-label={t("catalog.cancel")}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
               >
-                <X className="w-4 h-4" />
+                <X aria-hidden="true" className="h-4 w-4" />
               </button>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <InputGroup
                 label={t("catalog.printerName")}
                 value={editForm.name}
@@ -565,12 +521,11 @@ function PrinterManager() {
                 prefix={currencySymbol}
               />
             </div>
-
-            {/* contrast-site: catalog-tab-save-printer-button */}
             <button
+              type="button"
               onClick={savePrinter}
               disabled={!editForm.name.trim()}
-              className="mt-5 w-full py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none"
+              className="mt-5 w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               {t("catalog.saveChanges")}
             </button>
@@ -578,7 +533,6 @@ function PrinterManager() {
         </div>
       )}
 
-      {/* Unsaved changes confirmation */}
       <ConfirmDialog
         open={showUnsavedConfirm}
         title={t("common.confirm")}
@@ -587,11 +541,267 @@ function PrinterManager() {
         cancelLabel={t("catalog.saveChanges")}
         variant="warning"
         onConfirm={closeEditPrinter}
-        onCancel={() => {
-          setShowUnsavedConfirm(false);
-        }}
+        onCancel={() => setShowUnsavedConfirm(false)}
       />
     </div>
+  );
+}
+
+interface PrinterCreateFormProps {
+  onCancel: () => void;
+  onCreated: () => void;
+}
+
+function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
+  const store = useCatalogStore();
+  const { t } = useTranslation();
+  const { symbol: currencySymbol } = useCurrency();
+  const [name, setName] = useState("");
+  const [brand, setBrand] = useState("");
+  const [power, setPower] = useState("");
+  const [value, setValue] = useState("");
+  const [usefulLife, setUsefulLife] = useState("3000");
+  const [maintenancePerHour, setMaintenancePerHour] = useState("0.25");
+  const [technology, setTechnology] = useState<PrinterProfile["technology"]>();
+  const [buildVolumeMm, setBuildVolumeMm] =
+    useState<PrinterProfile["buildVolumeMm"]>();
+
+  const add = () => {
+    if (!name.trim()) return;
+    store.addPrinter({
+      id: uid(),
+      name,
+      brand: brand || t("catalog.customPrinter"),
+      power: Number(power) || 0,
+      value: Number(value) || 0,
+      usefulLife: Number(usefulLife) || 3000,
+      maintenancePerHour: Number(maintenancePerHour) || 0.25,
+      custom: true,
+      ...(technology ? { technology } : {}),
+      ...(buildVolumeMm ? { buildVolumeMm } : {}),
+    });
+    onCreated();
+  };
+
+  return (
+    <section
+      className="surface rounded-xl border border-[var(--color-border)] p-4"
+      aria-label={t("catalog.addPrinter")}
+    >
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Select
+          label={t("catalog.selectPrinter")}
+          value=""
+          onChange={(id) => {
+            const profile = printers.find((item) => item.id === id);
+            if (!profile) {
+              setTechnology(undefined);
+              setBuildVolumeMm(undefined);
+              return;
+            }
+            setName(profile.name);
+            setBrand(profile.brand);
+            setPower(String(profile.power));
+            setValue(String(profile.value));
+            setUsefulLife(String(profile.usefulLife));
+            setMaintenancePerHour(String(profile.maintenancePerHour));
+            setTechnology(profile.technology);
+            setBuildVolumeMm(profile.buildVolumeMm);
+          }}
+          options={[
+            { label: t("catalog.customPrinter"), value: "" },
+            ...printers.map((profile) => ({
+              label: profile.name,
+              value: profile.id,
+              subtitle: `${profile.power}W · ${currencySymbol} ${profile.value}`,
+              group: profile.brand,
+            })),
+          ]}
+          groups
+          search
+        />
+        <InputGroup
+          label={t("catalog.printerName")}
+          value={name}
+          onChange={setName}
+        />
+        <InputGroup
+          label={t("catalog.printerBrand")}
+          value={brand}
+          onChange={setBrand}
+        />
+        <InputGroup
+          label={t("catalog.power")}
+          value={power}
+          onChange={setPower}
+          type="number"
+          unit="W"
+        />
+        <InputGroup
+          label={t("catalog.value")}
+          value={value}
+          onChange={setValue}
+          type="number"
+          prefix={currencySymbol}
+        />
+        <InputGroup
+          label={t("catalog.usefulLife")}
+          value={usefulLife}
+          onChange={setUsefulLife}
+          type="number"
+          unit="h"
+        />
+        <InputGroup
+          label={t("catalog.maintenancePerHour")}
+          value={maintenancePerHour}
+          onChange={setMaintenancePerHour}
+          type="number"
+          prefix={currencySymbol}
+        />
+        <div className="flex items-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-10 flex-1 rounded-lg border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          >
+            {t("catalog.cancel")}
+          </button>
+          <button
+            type="button"
+            onClick={add}
+            disabled={!name.trim()}
+            className="h-10 flex-1 rounded-lg bg-[var(--accent-fill)] px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          >
+            {t("catalog.save")}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+interface PrinterProfileCardProps {
+  printer: CatalogPrinter;
+  selected: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onRemove: () => void;
+}
+
+function PrinterProfileCard({
+  printer,
+  selected,
+  onSelect,
+  onEdit,
+  onRemove,
+}: PrinterProfileCardProps) {
+  const { t } = useTranslation();
+  const { symbol: currencySymbol } = useCurrency();
+  const technologyLabel = printer.technology
+    ? t(`catalog.${printer.technology}`)
+    : "—";
+  const volumeLabel = printer.buildVolumeMm
+    ? `${printer.buildVolumeMm.x} × ${printer.buildVolumeMm.y} × ${printer.buildVolumeMm.z} mm`
+    : "—";
+  const specs = [
+    { label: t("catalog.materialType"), value: technologyLabel },
+    { label: t("stl.volume"), value: volumeLabel },
+    { label: t("catalog.power"), value: `${printer.power} W` },
+    { label: t("catalog.value"), value: `${currencySymbol} ${printer.value}` },
+    { label: t("catalog.usefulLife"), value: `${printer.usefulLife} h` },
+    {
+      label: t("catalog.maintenancePerHour"),
+      value: `${currencySymbol} ${printer.maintenancePerHour}/h`,
+    },
+  ];
+
+  return (
+    <article
+      aria-label={`${printer.name} ${printer.brand}`}
+      className={`min-w-0 flex flex-col justify-between gap-2.5 rounded-md border p-3 transition-colors ${
+        selected
+          ? "border-blue-500 bg-[#161927]"
+          : "border-[#262b3c] bg-[#151722] hover:border-[#383e57]"
+      }`}
+    >
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[#2d3348] bg-[#1c1f2e] text-slate-300">
+            <PrinterIcon aria-hidden="true" className="h-3.5 w-3.5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate text-xs font-semibold text-slate-100">
+              {printer.name}
+            </h3>
+            <p className="truncate font-mono text-[10px] text-slate-400">
+              {printer.brand} · {technologyLabel}
+            </p>
+          </div>
+        </div>
+        {printer.custom ? (
+          <span className="shrink-0 rounded border border-[#2d3348] bg-[#11131c] px-1.5 py-0.5 font-mono text-[10px] text-slate-300">
+            {t("catalog.customPrinter")}
+          </span>
+        ) : (
+          <span className="shrink-0 rounded border border-[#2d3348] bg-[#11131c] px-1.5 py-0.5 font-mono text-[10px] text-slate-300">
+            {t("catalog.defaultPrinter")}
+          </span>
+        )}
+      </div>
+
+      <dl className="grid grid-cols-2 gap-1.5 rounded border border-[#232738] bg-[#11131c] p-2 font-mono text-[11px]">
+        {specs.map((spec) => (
+          <div key={spec.label} className="min-w-0">
+            <dt className="truncate text-[10px] text-slate-400">
+              {spec.label}
+            </dt>
+            <dd className="truncate font-semibold text-[11px] text-slate-100">
+              {spec.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      {printer.custom && <PrinterTagEditor printer={printer} />}
+
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          aria-pressed={selected}
+          onClick={onSelect}
+          className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+            selected
+              ? "border-blue-500/80 bg-[#1b2234] text-blue-300"
+              : "border-[#262b3c] bg-transparent text-slate-300 hover:bg-[#1f2232]"
+          }`}
+        >
+          {selected ? <Check aria-hidden="true" className="h-3 w-3" /> : null}
+          {t("catalog.selectPrinter")}
+        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={t("catalog.editPrinter")}
+            title={t("catalog.editPrinter")}
+            className="flex h-7 w-7 items-center justify-center rounded text-slate-400 transition-colors hover:bg-[#1f2232] hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
+          </button>
+          {printer.custom && (
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label={t("catalog.remove")}
+              title={t("catalog.remove")}
+              className="flex h-7 w-7 items-center justify-center rounded text-slate-400 transition-colors hover:bg-[#1f2232] hover:text-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+            >
+              <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    </article>
   );
 }
 
