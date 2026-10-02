@@ -436,8 +436,14 @@ const WASH_SITE_PIN: Record<string, string[]> = {
   "gcode-preview-parse-error-banner": [
     "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
   ],
+  "header-whatsapp-proposal-link": [
+    "hover:bg-[var(--positive)]/15 + text-[var(--positive)]",
+  ],
   "price-hero-edit-price-button": [
     "hover:bg-[var(--revenue)]/10 + hover:text-[var(--revenue)]",
+  ],
+  "price-hero-confirm-price-button": [
+    "hover:bg-[var(--positive)]/85 + text-[var(--text-inverse)]",
   ],
   "price-hero-margin-label": ["bg-[var(--accent)]/15 + text-[var(--accent)]"],
   "quote-section-view-quote-button": [

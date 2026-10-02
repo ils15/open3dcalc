@@ -171,11 +171,12 @@ export function PriceHeroCard({
             }}
             className="w-36 px-3 py-1.5 rounded-xl text-center text-xl font-mono font-bold bg-[var(--surface-input)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           />
+          {/* contrast-site: price-hero-confirm-price-button */}
           <button
             type="button"
             onClick={handleConfirmPrice}
             aria-label={t("calc.sellPriceConfirm")}
-            className="p-2 rounded-xl bg-[var(--positive)] text-[var(--text-inverse)] hover:bg-[var(--positive)]/85"
+            className="p-2 rounded-xl bg-[var(--positive-fill)] text-[var(--positive-fill-fg)] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
           >
             <Check className="w-4 h-4" />
           </button>

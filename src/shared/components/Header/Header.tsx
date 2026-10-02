@@ -288,11 +288,12 @@ export function Header() {
             )}
 
             {/* Proposta WhatsApp button */}
+            {/* contrast-site: header-whatsapp-proposal-link */}
             <a
               href={`https://wa.me/?text=${generateWhatsAppMessage()}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--positive)]/60 text-[var(--positive)] bg-[var(--positive-subtle)] hover:bg-[var(--positive)]/15 text-xs font-semibold transition-colors shadow-sm min-h-[36px]"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--positive)]/60 text-[var(--positive)] bg-[var(--positive-subtle)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] text-xs font-semibold transition-colors shadow-sm min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-canvas)]"
               title="Gerar proposta rápida formatada para WhatsApp"
             >
               <MessageCircle className="w-3.5 h-3.5" />
