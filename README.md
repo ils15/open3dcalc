@@ -39,14 +39,16 @@ A atualização visual está em andamento, usando o Example como referência par
 
 ## 📦 Desktop App
 
-Baixe a versão desktop para Windows ou Linux na [página de releases](https://github.com/ils15/open3dcalc/releases).
+Baixe a versão desktop para Windows, Linux ou macOS na [página de releases](https://github.com/ils15/open3dcalc/releases).
 
-| Plataforma            | Formato        | Arquivo                          |
-| --------------------- | -------------- | -------------------------------- |
-| Windows (x64 / arm64) | NSIS Installer | `Open3DCalc-{version}-setup.exe` |
-| Linux (x64 / arm64)   | AppImage       | `Open3DCalc-{version}.AppImage`  |
+| Plataforma                           | Formato        | Arquivo                          |
+| ------------------------------------ | -------------- | -------------------------------- |
+| Windows (x64 / arm64)                | NSIS Installer | `Open3DCalc-{version}-setup.exe` |
+| Linux (x64 / arm64)                  | AppImage       | `Open3DCalc-{version}.AppImage`  |
+| macOS Apple Silicon (M1 ou superior) | DMG            | `Open3DCalc-{version}-arm64.dmg` |
+| macOS Intel                          | DMG            | `Open3DCalc-{version}-x64.dmg`   |
 
-> ⚠️ macOS build is configured but not actively published.
+> ⚠️ **macOS:** o app ainda não é assinado com um certificado Apple Developer (assinatura ad-hoc). Na primeira abertura, o macOS vai bloqueá-lo: vá em **Ajustes do Sistema → Privacidade e Segurança** e clique em **Abrir Mesmo Assim**. Se aparecer a mensagem "o app está danificado", rode `xattr -cr /Applications/Open3DCalc.app` no Terminal. Enquanto o app não for assinado e notarizado, a instalação automática de atualizações fica desativada no macOS: o app continua avisando quando há versão nova e o botão abre a página de download da release para você baixar o novo DMG.
 
 ---
 

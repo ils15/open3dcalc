@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useUpdaterStore, type UpdateStatus } from "./UpdaterStore";
@@ -71,6 +72,8 @@ interface AvailableBannerProps {
   downloadedBytes: number;
   totalBytes: number;
   status: UpdateStatus;
+  /** Download happens in the browser (unsigned macOS build). */
+  manual: boolean;
   onDownload: () => void;
   onSkip: () => void;
   onDismiss: () => void;
@@ -84,6 +87,7 @@ function AvailableBanner({
   downloadedBytes,
   totalBytes,
   status,
+  manual,
   onDownload,
   onSkip,
   onDismiss,
@@ -144,7 +148,7 @@ function AvailableBanner({
             </p>
             {!isDownloading && (
               <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                {t("update.availableDesc")}
+                {manual ? t("update.manualDesc") : t("update.availableDesc")}
               </p>
             )}
           </div>
@@ -217,8 +221,12 @@ function AvailableBanner({
               onClick={onDownload}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[var(--accent-fill)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none shadow-md"
             >
-              <Download className="w-3.5 h-3.5" />
-              {t("update.download")}
+              {manual ? (
+                <ExternalLink className="w-3.5 h-3.5" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              {manual ? t("update.openReleasePage") : t("update.download")}
             </button>
             <button
               onClick={onSkip}
@@ -349,6 +357,7 @@ export function UpdateNotification({
     downloadedBytes,
     totalBytes,
     errorMessage,
+    manual,
     checkForUpdates,
     startDownload,
     installUpdate,
@@ -364,6 +373,7 @@ export function UpdateNotification({
       downloadedBytes: s.downloadedBytes,
       totalBytes: s.totalBytes,
       errorMessage: s.errorMessage,
+      manual: s.manual,
       checkForUpdates: s.checkForUpdates,
       startDownload: s.startDownload,
       installUpdate: s.installUpdate,
@@ -412,6 +422,7 @@ export function UpdateNotification({
           downloadedBytes={downloadedBytes}
           totalBytes={totalBytes}
           status={status}
+          manual={manual}
           onDownload={startDownload}
           onSkip={skipVersion}
           onDismiss={dismiss}
@@ -428,6 +439,7 @@ export function UpdateNotification({
           downloadedBytes={downloadedBytes}
           totalBytes={totalBytes}
           status={status}
+          manual={manual}
           onDownload={startDownload}
           onSkip={skipVersion}
           onDismiss={dismiss}
