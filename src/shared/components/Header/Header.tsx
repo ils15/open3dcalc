@@ -2,12 +2,9 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Box,
-  Sparkles,
+  Lightbulb,
   Maximize2,
   Minimize2,
-  Layers,
-  LayoutGrid,
-  ListOrdered,
   MessageCircle,
 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
@@ -24,6 +21,10 @@ import { LanguageToggle } from "@/shared/components/UtilityBar/LanguageToggle";
 import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { AIAssistantModal } from "@/shared/components/AIAssistant/AIAssistantModal";
+import {
+  CalculatorModeControl,
+  ModelPresetControl,
+} from "./CalculatorHeaderControls";
 
 const PRESET_MODELS = [
   {
@@ -79,6 +80,8 @@ const PRESET_MODELS = [
     hourlyRate: 25,
   },
 ];
+
+const PRESET_MODEL_NAMES = PRESET_MODELS.map((model) => model.name);
 
 export function Header() {
   const { t } = useTranslation();
@@ -181,10 +184,10 @@ export function Header() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b select-none transition-colors border-[var(--border-default)] bg-[var(--surface-canvas)] text-[var(--text-primary)]">
-        {/* ── SINGLE MODERN HEADER BAR (h-[68px]) ── */}
-        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto min-w-0 px-4 sm:px-6 lg:px-12 h-[68px] min-h-[68px] flex items-center justify-between gap-2 sm:gap-4 text-xs">
-          {/* Left: Brand + Breadcrumb */}
+      <header className="sticky top-0 z-30 border-b select-none transition-colors border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-primary)]">
+        {/* Compact brand/action row; the context sits in the utility row below. */}
+        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto min-w-0 px-4 sm:px-6 lg:px-12 h-[56px] min-h-[56px] flex items-center justify-between gap-2 sm:gap-4 text-xs">
+          {/* Brand */}
           <div className="flex items-center gap-3 min-w-0">
             {/* Logo */}
             <button
@@ -203,90 +206,10 @@ export function Header() {
                 <BetaBadge />
               </span>
             </button>
-
-            <span className="hidden md:inline h-4 w-px bg-[var(--border-default)] shrink-0" />
-
-            {/* ContextBreadcrumb */}
-            <ContextBreadcrumb tab={activeTab} />
           </div>
 
-          {/* Center: Mode switcher (Clássico / Bento / Guiado) */}
-          <div className="hidden lg:flex items-center gap-2">
-            {activeTab === "calculator" ? (
-              <div className="flex items-center gap-1.5 bg-[var(--surface-sunken)] border border-[var(--border-default)] p-1 rounded-xl">
-                <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-muted)] px-2">
-                  MODO:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode("classic")}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                    layoutMode === "classic"
-                      ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-sm"
-                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  Clássico
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode("bento")}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                    layoutMode === "bento"
-                      ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-sm"
-                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  Bento
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLayoutMode("guided")}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                    layoutMode === "guided"
-                      ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-sm"
-                      : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
-                  }`}
-                >
-                  <ListOrdered className="w-3.5 h-3.5" />
-                  Guiado
-                </button>
-              </div>
-            ) : (
-              <span className="text-xs font-medium text-[var(--text-muted)] tracking-wide">
-                Open3DCalc Studio
-              </span>
-            )}
-          </div>
-
-          {/* Right: Model Selector + WhatsApp + Copilot + Utilities */}
+          {/* Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Model Preset Selector */}
-            {activeTab === "calculator" && (
-              <div className="hidden xl:flex items-center gap-1.5 bg-[var(--surface-sunken)] border border-[var(--border-default)] rounded-lg px-2.5 py-1 text-xs min-h-[36px]">
-                <span className="text-[var(--text-muted)] font-medium">
-                  Modelo:
-                </span>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => handleSelectModel(e.target.value)}
-                  className="bg-transparent text-[var(--text-primary)] font-medium focus:outline-none cursor-pointer pr-2"
-                >
-                  {PRESET_MODELS.map((m) => (
-                    <option
-                      key={m.name}
-                      value={m.name}
-                      className="bg-[var(--surface-raised)] text-[var(--text-primary)]"
-                    >
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {/* Proposta WhatsApp button */}
             {/* contrast-site: header-whatsapp-proposal-link */}
             <a
@@ -300,16 +223,19 @@ export function Header() {
               <span>Proposta WhatsApp</span>
             </a>
 
-            {/* Copilot IA button */}
+            {/* Local assistant button */}
             <button
               type="button"
               data-testid="copilot-btn"
               onClick={() => setShowCopilotModal(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-subtle)] hover:bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-semibold transition-colors min-h-[36px]"
-              title="Abrir Copilot de Inteligência Artificial para diagnóstico da peça"
+              title={t("copilot.openLocalTitle")}
             >
-              <Sparkles className="w-3.5 h-3.5 text-[var(--warning)]" />
-              <span>Copilot IA</span>
+              <Lightbulb
+                className="w-3.5 h-3.5 text-[var(--warning)]"
+                aria-hidden="true"
+              />
+              <span>{t("copilot.openLocalButton")}</span>
             </button>
 
             {/* Demo Mode Button */}
@@ -336,16 +262,29 @@ export function Header() {
         </div>
       </header>
 
-      {/* In the flow, below the header — see UtilityBar.tsx. Currency first:
-          it is the widest of the three and the one whose `auto` marker is
-          widest, so it anchors the band's left edge on both shells. */}
+      {/* In the flow, below the header — see UtilityBar.tsx. Context and
+          calculator controls lead; shared locale utilities stay at the end. */}
       <UtilityBar>
+        <ContextBreadcrumb tab={activeTab} />
+        {activeTab === "calculator" && (
+          <CalculatorModeControl
+            layoutMode={layoutMode}
+            onChange={setLayoutMode}
+          />
+        )}
+        {activeTab === "calculator" && (
+          <ModelPresetControl
+            selectedModel={selectedModel}
+            modelNames={PRESET_MODEL_NAMES}
+            onSelect={handleSelectModel}
+          />
+        )}
         <CurrencySelect setting={currencySetting} onChange={setCurrency} />
         <LanguageToggle />
         <ThemeToggle />
       </UtilityBar>
 
-      {/* ── COPILOT IA MODAL (WITH OPTIONAL GEMINI KEY BYOK) ── */}
+      {/* ── Local printing assistant modal ── */}
       <AIAssistantModal
         open={showCopilotModal}
         onClose={() => setShowCopilotModal(false)}

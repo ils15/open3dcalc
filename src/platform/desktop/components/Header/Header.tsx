@@ -42,17 +42,17 @@ export function Header() {
           borderColor: "var(--color-border)",
         }}
       >
-        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto min-w-0 px-6 sm:px-8 lg:px-12 h-[68px] flex items-center justify-between gap-4">
+        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto min-w-0 px-6 sm:px-8 lg:px-12 h-[56px] flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex min-w-0 max-w-[248px] items-center gap-3">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg"
               style={{
                 background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
                 boxShadow: "0 2px 12px rgba(79,70,229,0.4)",
               }}
             >
-              <Box className="w-[22px] h-[22px] text-white" strokeWidth={2} />
+              <Box className="w-4 h-4 text-white" strokeWidth={2} />
             </div>
 
             <div className="min-w-0 leading-none">
@@ -67,12 +67,6 @@ export function Header() {
               </p>
             </div>
           </div>
-
-          {/* Contextual breadcrumb — same intermediate sibling as the web shell,
-              so the two bands stay symmetric. Its zone is `flex-1 min-w-0`: the
-              eleven action buttons to the right are all `shrink-0`, so the
-              breadcrumb is the only thing that can absorb slack. */}
-          <ContextBreadcrumb tab={activeTab} />
 
           {/* Actions */}
           <div className="flex shrink-0 items-center gap-2">
@@ -152,6 +146,7 @@ export function Header() {
           it is the widest of the three and the one whose `auto` marker is
           widest, so it anchors the band's left edge on both shells. */}
       <UtilityBar>
+        <ContextBreadcrumb tab={activeTab} />
         <CurrencySelect setting={currencySetting} onChange={setCurrency} />
         <LanguageToggle />
         <ThemeToggle />

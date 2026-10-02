@@ -61,7 +61,7 @@ export function ContextBreadcrumb({
               than a full trail — so the description is withheld until the
               `2xl` step (the same one that widens the shell to 1920px) rather
               than appearing already truncated. */}
-          <span className="hidden shrink-0 border-l border-[var(--border-subtle)] pl-2.5 text-[11px] font-normal text-[var(--text-muted)] 2xl:inline">
+          <span className="hidden shrink-0 border-l border-[var(--border-subtle)] pl-2.5 text-[11px] font-normal text-[var(--text-muted)] lg:inline">
             {t(descKey)}
           </span>
         </li>

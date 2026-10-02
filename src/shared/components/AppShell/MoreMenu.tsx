@@ -1,4 +1,5 @@
 import { useId } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
@@ -30,7 +31,9 @@ interface MoreMenuProps {
   /** Rendered inside the trigger, before the icon (icons-only strips). */
   children?: React.ReactNode;
   /** Rendered under the items, inside the panel. */
-  footer?: React.ReactNode;
+  footer?: (onNavigate: (tab: Tab) => void) => ReactNode;
+  /** Additional route keys owned by a platform-specific footer group. */
+  currentTabs?: readonly Tab[];
 }
 
 export function MoreMenu({
@@ -41,6 +44,7 @@ export function MoreMenu({
   showLabel = true,
   children,
   footer,
+  currentTabs = [],
 }: MoreMenuProps): React.ReactElement | null {
   const { t } = useTranslation();
   const hiddenTabs = useNavigationPrefsStore((state) => state.hiddenTabs);
@@ -66,7 +70,13 @@ export function MoreMenu({
   // Ownership, not visibility: a demoted surface the user hid is filtered out
   // of the panel but is still "behind More", so More keeps the current marker
   // and the nav never shows an active destination as unselected.
-  const holdsActive = holdsDemotedSurface(activeTab);
+  const holdsActive =
+    holdsDemotedSurface(activeTab) || currentTabs.includes(activeTab);
+
+  const navigateAndClose = (tab: Tab): void => {
+    onTabChange(tab);
+    close();
+  };
 
   return (
     <div className="relative">
@@ -123,7 +133,7 @@ export function MoreMenu({
               );
             })}
           </ul>
-          {footer}
+          {footer?.(navigateAndClose)}
         </div>
       )}
     </div>

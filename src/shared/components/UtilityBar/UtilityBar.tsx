@@ -35,8 +35,8 @@ import { useTranslation } from "react-i18next";
  *
  * IN THE FLOW, NOT STICKY. It is ordinary flow content between the header and
  * the shell, so nothing in the shell has to move an offset for it: the sidebar
- * keeps `sticky top-[68px]` (`Sidebar.tsx:87`) because the header above it is
- * still the only 68px sticky band, and `main` keeps its `pb-32` reserve for the
+ * keeps `sticky top-[56px]` (`Sidebar.tsx:93`) because the header above it is
+ * still the only sticky band, and `main` keeps its `pb-32` reserve for the
  * fixed `MobileNav`, which this does not touch.
  *
  * `hidden lg:block`: below `lg` the band is not rendered at all. The
@@ -77,11 +77,11 @@ export function UtilityBar({ children }: UtilityBarProps): React.ReactElement {
     >
       {/* The inner row scrolls rather than squashing its items: every control
           in it is shrink-0, which is the whole point of the split — that is the
-          property that crushed the logo at 1280. `h-10` keeps the band to the
-          prototype's height. The max-width pair matches the header and the shell
-          (`layoutShell.test.ts` pins both), so the band's gutters line up with
-          theirs instead of starting a third column rhythm. */}
-      <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto min-w-0 px-4 sm:px-6 lg:px-12 h-10 flex items-center">
+          property that crushed the logo at 1280. `h-11` preserves the currency
+          control's 44px desktop target. The max-width pair matches the header
+          and the shell (`layoutShell.test.ts` pins both), so the band's gutters
+          line up with theirs instead of starting a third column rhythm. */}
+      <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto min-w-0 px-4 sm:px-6 lg:px-12 h-11 flex items-center">
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
           {children}
         </div>

@@ -38,6 +38,10 @@ export interface AppShellProps {
   onTabChange: (tab: Tab) => void;
   /** Desktop sidebar bottom content (web: SecondaryNavigation; desktop: brand links). */
   sidebarFooter?: ReactNode;
+  /** Platform-specific existing destinations appended to the desktop More panel. */
+  moreMenuFooter?: (onNavigate: (tab: Tab) => void) => ReactNode;
+  /** Route keys represented by `moreMenuFooter`. */
+  moreActiveTabs?: readonly Tab[];
   /** Skip link rendered before the main content (web only). */
   skipLink?: ReactNode;
   /** `id` on the main landmark (web: "main"; desktop: none). */
@@ -60,6 +64,8 @@ export function AppShell({
   activeTab,
   onTabChange,
   sidebarFooter,
+  moreMenuFooter,
+  moreActiveTabs,
   skipLink,
   mainId,
   mainClassName,
@@ -98,6 +104,8 @@ export function AppShell({
           <TabletSidebar
             activeTab={activeTab}
             onTabChange={onTabChange}
+            moreMenuFooter={moreMenuFooter}
+            moreActiveTabs={moreActiveTabs}
             tabletInactiveHoverClassName={tabletInactiveHoverClassName}
           />
 
@@ -105,6 +113,8 @@ export function AppShell({
             activeTab={activeTab}
             onTabChange={onTabChange}
             footer={sidebarFooter}
+            moreMenuFooter={moreMenuFooter}
+            moreActiveTabs={moreActiveTabs}
           />
 
           <QuickActionsSpeedDial />

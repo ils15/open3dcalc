@@ -188,12 +188,12 @@ const languageLabel = () => translate("nav.language", locale);
  * so no test in it depends on the string.
  */
 
-/** The 68px header row. The band must be a SIBLING of the header, not inside. */
+/** The compact 56px header row. The band must be a SIBLING, not inside it. */
 function headerRow(container: HTMLElement): HTMLElement {
   const row = Array.from(
     container.querySelector("header")!.querySelectorAll("div"),
-  ).find((el) => (el.className || "").includes("h-[68px]"));
-  if (!row) throw new Error("the 68px header row is gone");
+  ).find((el) => (el.className || "").includes("h-[56px]"));
+  if (!row) throw new Error("the 56px header row is gone");
   return row;
 }
 
@@ -261,7 +261,7 @@ describe("utility band", () => {
       );
 
       // In the flow, AFTER the sticky header — not inside it. Inside would make
-      // the band sticky too, which would break `Sidebar.tsx:87`'s `top-[68px]`.
+      // the band sticky too, which would break `Sidebar.tsx:93`'s `top-[56px]`.
       const header = container.querySelector("header.sticky");
       expect(header).not.toBeNull();
       expect(
@@ -342,7 +342,7 @@ describe("utility band", () => {
  * What the band is FOR. The header's action cluster is `shrink-0`, so it never
  * gives ground and the band exists to take weight off it. That only works if
  * the controls actually leave — so each migration commit adds its control here
- * and asserts both halves: the band carries it, and the 68px row no longer
+ * and asserts both halves: the band carries it, and the 56px row no longer
  * does.
  */
 describe("utility band migrations", () => {
@@ -374,7 +374,7 @@ describe("utility band migrations", () => {
       (_n, Header) => {
         const { container } = renderShell(Header);
         const row = headerRow(container);
-        // Not merely "not in the cluster" — not anywhere in the 68px row, which
+        // Not merely "not in the cluster" — not anywhere in the 56px row, which
         // is what "it left the header" has to mean.
         expect(
           row.querySelector(`[aria-label="${currencyLabel()}"]`),
@@ -526,13 +526,11 @@ describe("utility band migrations", () => {
     );
 
     it.each(SHELLS)(
-      "the band order is currency, language, theme (%s)",
+      "the band order preserves context and shell-specific controls (%s)",
       (_n, Header) => {
         renderShell(Header);
-        // Order here IS the tab order, and the band is now the only place these
-        // three live — so a reordering would be a silent keyboard change, with
-        // no second copy in the header left to fall back on. Currency leads
-        // because it is the widest; see the commit messages for the numbers.
+        // Order here IS the tab order. Web keeps the calculator controls beside
+        // context; desktop has only the shared context and utility actions.
         const el = band();
         // The band is <section> > row > scroll row > controls, so the controls
         // are the grandchildren of the first div. Navigating by STRUCTURE
@@ -541,18 +539,33 @@ describe("utility band migrations", () => {
         const kids = Array.from(el.querySelector("div")!.children).flatMap(
           (row) => Array.from(row.children),
         );
-        // One control per slot, in tab order. A slot names itself by its own
-        // `aria-label`, or by the labelled control it wraps — currency ships a
-        // wrapper `<div>` because the portal needs an anchor, language and
-        // theme are the control itself or a stub.
+        // Stable identifiers keep the expected visual/action order explicit
+        // without depending on Tailwind class order.
         expect(
           kids.map(
             (k) =>
+              k.getAttribute("data-testid") ??
               k.getAttribute("aria-label") ??
               k.querySelector("[aria-label]")?.getAttribute("aria-label") ??
               k.getAttribute("data-testid"),
           ),
-        ).toEqual([currencyLabel(), languageLabel(), "theme-toggle"]);
+        ).toEqual(
+          _n === "web"
+            ? [
+                translate("breadcrumb.label", locale),
+                "calculator-layout-control",
+                "model-preset-control",
+                currencyLabel(),
+                languageLabel(),
+                "theme-toggle",
+              ]
+            : [
+                translate("breadcrumb.label", locale),
+                currencyLabel(),
+                languageLabel(),
+                "theme-toggle",
+              ],
+        );
       },
     );
   });

@@ -22,10 +22,13 @@ import { useUpdaterAutoCheck } from "./hooks/useUpdaterAutoCheck";
 import { MobileNav } from "./components/MobileNav";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { Footer } from "./components/Footer";
+import { DesktopResourceLinks } from "./components/DesktopResourceLinks";
 
 // The TABS contract is re-exported here so tabsParity.test keeps locking the
 // web/desktop/tutorial sets together after the array moved into AppShell.
 export { TABS } from "@/shared/components/AppShell/tabs";
+
+const DESKTOP_RESOURCE_TABS = ["wiki", "changelog"] as const;
 
 function App(): React.ReactElement {
   return (
@@ -76,6 +79,13 @@ function AppContent(): React.ReactElement {
           activeTab={activeTab}
           onTabChange={navigateToTab}
           sidebarFooter={<SidebarFooter />}
+          moreMenuFooter={(onNavigate) => (
+            <DesktopResourceLinks
+              activeTab={activeTab}
+              onNavigate={onNavigate}
+            />
+          )}
+          moreActiveTabs={DESKTOP_RESOURCE_TABS}
           mainClassName="flex-1 min-w-0 px-8 sm:px-10 lg:px-12 xl:px-16 py-10 pb-32 lg:pb-12"
           // Same rhythm without the fixed bottom bar's reserve, and wider
           // gutters now that there is no sidebar to sit beside.
@@ -85,7 +95,17 @@ function AppContent(): React.ReactElement {
       </div>
 
       {!focusMode && (
-        <MobileNav activeTab={activeTab} onTabChange={navigateToTab} />
+        <MobileNav
+          activeTab={activeTab}
+          onTabChange={navigateToTab}
+          moreMenuFooter={(onNavigate) => (
+            <DesktopResourceLinks
+              activeTab={activeTab}
+              onNavigate={onNavigate}
+            />
+          )}
+          moreActiveTabs={DESKTOP_RESOURCE_TABS}
+        />
       )}
       {!focusMode && <Footer />}
 

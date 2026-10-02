@@ -170,11 +170,35 @@ describe("Header", () => {
     it("header container does not clip dropdowns (no overflow-hidden)", () => {
       const { container } = render(<Header />);
       const inner = Array.from(container.querySelectorAll("div")).find((el) =>
-        el.className.includes("h-[68px]"),
+        el.className.includes("h-[56px]"),
       );
       expect(inner).toBeDefined();
       expect(inner!.className).not.toContain("overflow-hidden");
     });
+  });
+
+  it("keeps the contextual breadcrumb in the compact utility row", () => {
+    const { container } = render(<Header />);
+
+    const breadcrumb = screen.getByRole("navigation", {
+      name: "breadcrumb.label",
+    });
+    const utilityRow = breadcrumb.closest("section");
+
+    expect(utilityRow).toHaveAttribute("aria-label", "utilityBar.label");
+    expect(container.querySelector("header > div")?.className).toContain(
+      "h-[56px]",
+    );
+  });
+
+  it("keeps calculator modes and model selection in the second action row", () => {
+    render(<Header />);
+
+    const utilityRow = screen.getByRole("region", {
+      name: "utilityBar.label",
+    });
+    expect(screen.getByText("MODO:").closest("section")).toBe(utilityRow);
+    expect(screen.getByText("Modelo:").closest("section")).toBe(utilityRow);
   });
 
   it("renders beta badge", () => {

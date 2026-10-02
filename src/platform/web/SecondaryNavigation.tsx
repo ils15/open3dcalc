@@ -1,17 +1,20 @@
 import { useTranslation } from "react-i18next";
 import { BookOpen, Info } from "lucide-react";
 import { BrandIcon } from "./BrandIcon";
+import type { Tab } from "@/shared/components/AppShell/tabs";
 
 type SecondaryNavigationProps = {
   onInternalNavigate: (tab: "wiki" | "changelog") => void;
   onNavigate?: () => void;
   desktop?: boolean;
+  activeTab?: Tab;
 };
 
 export function SecondaryNavigation({
   onInternalNavigate,
   onNavigate,
   desktop = false,
+  activeTab,
 }: SecondaryNavigationProps): React.ReactElement {
   const { t } = useTranslation();
   const itemClass = desktop
@@ -49,7 +52,8 @@ export function SecondaryNavigation({
               onInternalNavigate("wiki");
               onNavigate?.();
             }}
-            className={itemClass}
+            aria-current={activeTab === "wiki" ? "page" : undefined}
+            className={`${itemClass} ${activeTab === "wiki" ? "active text-[var(--color-accent)] bg-[var(--color-accent-muted)]" : ""}`}
             aria-label={t("nav.wiki")}
           >
             <BookOpen
@@ -66,7 +70,8 @@ export function SecondaryNavigation({
               onInternalNavigate("changelog");
               onNavigate?.();
             }}
-            className={itemClass}
+            aria-current={activeTab === "changelog" ? "page" : undefined}
+            className={`${itemClass} ${activeTab === "changelog" ? "active text-[var(--color-accent)] bg-[var(--color-accent-muted)]" : ""}`}
             aria-label={t("nav.changelog")}
           >
             <Info className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />

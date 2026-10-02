@@ -41,4 +41,23 @@ describe("SecondaryNavigation brand icons", () => {
     expect(github?.getAttribute("aria-hidden")).toBe("true");
     expect(telegram?.getAttribute("aria-hidden")).toBe("true");
   });
+
+  it.each(["wiki", "changelog"] as const)(
+    "marks the current %s resource destination semantically",
+    (activeTab) => {
+      const { container } = render(
+        <SecondaryNavigation
+          activeTab={activeTab}
+          onInternalNavigate={() => undefined}
+        />,
+      );
+
+      expect(
+        container.querySelectorAll('button[aria-current="page"]'),
+      ).toHaveLength(1);
+      expect(
+        container.querySelector('button[aria-current="page"]'),
+      ).toHaveClass("active");
+    },
+  );
 });

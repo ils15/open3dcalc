@@ -115,6 +115,7 @@ export function MobileNav({
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onInternalNavigate={onTabChange}
+        activeTab={activeTab}
       />
     </>
   );

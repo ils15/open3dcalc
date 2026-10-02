@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { ReactNode } from "react";
 import { MoreMenu } from "@/shared/components/AppShell/MoreMenu";
 import { PRIMARY_TABS, type Tab } from "@/shared/components/AppShell/tabs";
 import { useVisiblePrimaryTabs } from "@/shared/components/AppShell/useVisibleNavigation";
@@ -13,11 +14,15 @@ import { useVisiblePrimaryTabs } from "@/shared/components/AppShell/useVisibleNa
 interface MobileNavProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  moreMenuFooter?: (onNavigate: (tab: Tab) => void) => ReactNode;
+  moreActiveTabs?: readonly Tab[];
 }
 
 export function MobileNav({
   activeTab,
   onTabChange,
+  moreMenuFooter,
+  moreActiveTabs,
 }: MobileNavProps): React.ReactElement {
   const { t } = useTranslation();
   const visiblePrimary = useVisiblePrimaryTabs();
@@ -67,7 +72,9 @@ export function MobileNav({
         <MoreMenu
           activeTab={activeTab}
           onTabChange={onTabChange}
-          triggerClassName="flex flex-col items-center justify-center gap-1 flex-1 min-w-[56px] min-h-[48px] px-1.5 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+          footer={moreMenuFooter}
+          currentTabs={moreActiveTabs}
+          triggerClassName={`flex flex-col items-center justify-center gap-1 flex-1 min-w-[56px] min-h-[48px] px-1.5 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${moreActiveTabs?.includes(activeTab) ? "text-[var(--color-accent)] bg-[var(--color-accent-muted)]" : "text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"}`}
           itemClassName="nav-item"
         >
           <span className="text-[10px] font-semibold leading-none tracking-wide">

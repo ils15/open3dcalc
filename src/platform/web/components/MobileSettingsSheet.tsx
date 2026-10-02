@@ -15,6 +15,7 @@ import { SecondaryNavigation } from "@/platform/web/SecondaryNavigation";
 import { LayoutSwitcher } from "@/shared/components/Header/LayoutSwitcher";
 import { ManageVisibilityButton } from "@/shared/components/AppShell/ManageVisibilityButton";
 import { FocusModeButton } from "@/shared/components/AppShell/FocusModeButton";
+import type { Tab } from "@/shared/components/AppShell/tabs";
 
 /**
  * Mobile settings bottom sheet (web only — settings only, never tabs).
@@ -27,12 +28,14 @@ interface MobileSettingsSheetProps {
   onClose: () => void;
   /** Navigate to an internal surface from the sheet's secondary links. */
   onInternalNavigate: (tab: "wiki" | "changelog") => void;
+  activeTab?: Tab;
 }
 
 export function MobileSettingsSheet({
   open,
   onClose,
   onInternalNavigate,
+  activeTab,
 }: MobileSettingsSheetProps): React.ReactElement {
   const { t, i18n } = useTranslation();
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
@@ -210,6 +213,7 @@ export function MobileSettingsSheet({
               <FocusModeButton />
 
               <SecondaryNavigation
+                activeTab={activeTab}
                 onInternalNavigate={onInternalNavigate}
                 onNavigate={onClose}
               />

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { act, render, screen, fireEvent, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 // ─── Mock heavy/desktop-only dependencies (parity with the web app tests) ───
 vi.mock("@/platform/desktop/components/Header/Header", () => ({
@@ -278,6 +279,94 @@ describe("desktop App shell (post-extraction)", () => {
       ).toBeInTheDocument();
     }
   });
+
+  it("keeps Wiki and Novidades reachable from desktop navigation", () => {
+    const { container } = render(<App />);
+
+    const desktopSidebar = Array.from(container.querySelectorAll("aside")).find(
+      (aside) => aside.className.includes("hidden lg:flex"),
+    )!;
+    const sidebarMore = within(desktopSidebar).getByRole("button", {
+      name: "nav.more",
+    });
+    fireEvent.click(sidebarMore);
+
+    const sidebarMenu = within(desktopSidebar).getByTestId("more-menu");
+    expect(
+      within(sidebarMenu).getByRole("button", { name: "nav.wiki" }),
+    ).toBeInTheDocument();
+    expect(
+      within(sidebarMenu).getByRole("button", { name: "nav.changelog" }),
+    ).toBeInTheDocument();
+
+    const mobileNav = screen.getByRole("navigation", {
+      name: "nav.mainNavigation",
+    });
+    const mobileMore = within(mobileNav).getByRole("button", {
+      name: /nav\.more/,
+    });
+    fireEvent.click(mobileMore);
+    const mobileMenu = within(mobileNav).getByTestId("more-menu");
+    expect(
+      within(mobileMenu).getByRole("button", { name: "nav.wiki" }),
+    ).toBeInTheDocument();
+    expect(
+      within(mobileMenu).getByRole("button", { name: "nav.changelog" }),
+    ).toBeInTheDocument();
+  });
+
+  it("supports keyboard navigation to Wiki from the desktop More disclosure", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const mobileNav = screen.getByRole("navigation", {
+      name: "nav.mainNavigation",
+    });
+    const more = within(mobileNav).getByRole("button", { name: /nav\.more/ });
+    more.focus();
+    await user.keyboard("{Enter}");
+
+    const menu = within(mobileNav).getByTestId("more-menu");
+    const wiki = within(menu).getByRole("button", { name: "nav.wiki" });
+    for (let index = 0; index < MORE_TABS.length + 1; index += 1) {
+      await user.tab();
+    }
+
+    expect(wiki).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByText("WikiPage")).toBeInTheDocument();
+    expect(more).toHaveAttribute("aria-current", "page");
+
+    await user.click(more);
+    expect(
+      within(screen.getByTestId("more-menu")).getByRole("button", {
+        name: "nav.wiki",
+      }),
+    ).toHaveAttribute("aria-current", "page");
+  });
+
+  it.each([
+    ["wiki", "nav.wiki", "WikiPage"],
+    ["changelog", "nav.changelog", "ChangelogPage"],
+  ] as const)(
+    "routes desktop More action %s to its existing surface and closes the disclosure",
+    (_route, label, surface) => {
+      render(<App />);
+
+      const mobileNav = screen.getByRole("navigation", {
+        name: "nav.mainNavigation",
+      });
+      const more = within(mobileNav).getByRole("button", {
+        name: /nav\.more/,
+      });
+      fireEvent.click(more);
+      fireEvent.click(within(mobileNav).getByRole("button", { name: label }));
+
+      expect(screen.getByText(surface)).toBeInTheDocument();
+      expect(within(mobileNav).queryByTestId("more-menu")).toBeNull();
+      expect(more).toHaveAttribute("aria-current", "page");
+    },
+  );
 
   it("still surfaces the standalone Infill screen from More", () => {
     render(<App />);

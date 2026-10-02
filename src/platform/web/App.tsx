@@ -70,7 +70,11 @@ function AppContent(): React.ReactElement {
           activeTab={activeTab}
           onTabChange={navigateToTab}
           sidebarFooter={
-            <SecondaryNavigation desktop onInternalNavigate={navigateToTab} />
+            <SecondaryNavigation
+              desktop
+              activeTab={activeTab}
+              onInternalNavigate={navigateToTab}
+            />
           }
           skipLink={
             <a

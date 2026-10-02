@@ -20,6 +20,10 @@ interface SidebarProps {
   onTabChange: (tab: Tab) => void;
   /** Desktop sidebar bottom content (web: SecondaryNavigation; desktop: brand links). */
   footer?: ReactNode;
+  /** Additional destinations rendered at the end of the More disclosure. */
+  moreMenuFooter?: (onNavigate: (tab: Tab) => void) => ReactNode;
+  /** Route keys owned by `moreMenuFooter` for current-page semantics. */
+  moreActiveTabs?: readonly Tab[];
   /** Inactive-item hover token on the tablet strip — differs per platform. */
   tabletInactiveHoverClassName?: string;
 }
@@ -27,13 +31,15 @@ interface SidebarProps {
 export function TabletSidebar({
   activeTab,
   onTabChange,
+  moreMenuFooter,
+  moreActiveTabs,
   tabletInactiveHoverClassName,
 }: Omit<SidebarProps, "footer">): React.ReactElement {
   const { t } = useTranslation();
   const visiblePrimary = useVisiblePrimaryTabs();
 
   return (
-    <aside className="hidden md:flex lg:hidden flex-col gap-1 w-16 shrink-0 px-2 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--border-subtle)]">
+    <aside className="hidden md:flex lg:hidden flex-col gap-1 w-16 shrink-0 bg-[var(--surface-raised)] px-2 py-4 sticky top-[56px] h-[calc(100dvh-56px)] overflow-y-auto border-r border-[var(--border-subtle)]">
       {/* The w-16 strip has ~47px of usable width, which cannot hold
           "Navegação" without truncating to noise, so the group label is exposed
           to assistive technology only and the strip stays icon-only. That also
@@ -62,9 +68,12 @@ export function TabletSidebar({
         <MoreMenu
           activeTab={activeTab}
           onTabChange={onTabChange}
+          footer={moreMenuFooter}
+          currentTabs={moreActiveTabs}
           showLabel={false}
           triggerClassName={`w-full flex items-center justify-center p-2.5 rounded-xl transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
-            holdsDemotedSurface(activeTab)
+            holdsDemotedSurface(activeTab) ||
+            moreActiveTabs?.includes(activeTab)
               ? "bg-[var(--accent-subtle)] text-[var(--accent)] border border-[var(--accent-subtle)]"
               : `text-[var(--text-muted)] ${tabletInactiveHoverClassName ?? "hover:text-[var(--text-primary)]"} hover:bg-[var(--surface-sunken)] border border-transparent`
           }`}
@@ -79,12 +88,14 @@ export function DesktopSidebar({
   activeTab,
   onTabChange,
   footer,
+  moreMenuFooter,
+  moreActiveTabs,
 }: SidebarProps): React.ReactElement {
   const { t } = useTranslation();
   const visiblePrimary = useVisiblePrimaryTabs();
 
   return (
-    <aside className="hidden lg:flex flex-col gap-1 w-60 xl:w-68 shrink-0 px-4 py-6 sticky top-[68px] h-[calc(100dvh-68px)] overflow-y-auto border-r border-[var(--border-subtle)]">
+    <aside className="hidden lg:flex flex-col gap-1 w-60 shrink-0 bg-[var(--surface-raised)] px-4 py-4 sticky top-[56px] h-[calc(100dvh-56px)] overflow-y-auto border-r border-[var(--border-subtle)]">
       <SidebarGroup label={t("nav.navigation")}>
         {visiblePrimary.map((id) => {
           const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
@@ -105,7 +116,9 @@ export function DesktopSidebar({
         <MoreMenu
           activeTab={activeTab}
           onTabChange={onTabChange}
-          triggerClassName="nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none"
+          footer={moreMenuFooter}
+          currentTabs={moreActiveTabs}
+          triggerClassName={`nav-item w-full text-left focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${moreActiveTabs?.includes(activeTab) ? "active" : ""}`}
           itemClassName="nav-item"
         />
       </SidebarGroup>
