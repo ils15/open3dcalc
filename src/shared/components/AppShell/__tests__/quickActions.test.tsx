@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { NavigationProvider } from "@/shared/components/AppShell/NavigationProvider";
@@ -598,6 +598,34 @@ describe("QuickStatusPill", () => {
     );
   });
 
+  it("does not show printer uptime or diagnostics without real backing data", () => {
+    renderPill();
+
+    expect(screen.getByTestId("quick-status-pill").textContent).not.toContain(
+      "2/6",
+    );
+    expect(screen.queryByText("2", { exact: true })).toBeNull();
+    expect(screen.queryByText("5", { exact: true })).toBeNull();
+  });
+
+  it("updates revenue and low-stock values when their stores change", () => {
+    renderPill();
+    expect(screen.queryByTestId("pill-segment-revenue")).toBeNull();
+    expect(screen.getByTestId("pill-segment-lowstock")).toHaveTextContent("0");
+
+    act(() => {
+      useHistoryStore.setState({
+        entries: [historyEntry("new", 120)],
+      } as never);
+      useSpoolStore.setState({ spools: [spool("low", 50)] } as never);
+    });
+
+    expect(screen.getByTestId("pill-segment-revenue").textContent).toMatch(
+      /120/,
+    );
+    expect(screen.getByTestId("pill-segment-lowstock")).toHaveTextContent("1");
+  });
+
   it("enters Focus Mode from its segment", () => {
     renderPill();
 
@@ -609,6 +637,12 @@ describe("QuickStatusPill", () => {
   it("labels itself as a status region", () => {
     renderPill();
 
-    expect(screen.getByTestId("quick-status-pill")).toHaveAccessibleName();
+    expect(
+      screen.getByRole("group", { name: "quickActions.pillLabel" }),
+    ).toHaveAttribute("data-testid", "quick-status-pill");
+    expect(screen.getByTestId("pill-segment-lowstock")).toBeInTheDocument();
+    expect(screen.getByTestId("pill-segment-focus")).toHaveAccessibleName(
+      "quickActions.pillFocus",
+    );
   });
 });
