@@ -51,6 +51,10 @@ export default defineConfig(
         // future `*.browser.test.tsx` cannot fall into the jsdom suite.
         "src/**/*.browser.test.ts",
         "src/**/*.browser.test.tsx",
+        // This script uses node:test plus Playwright against the running preview;
+        // keep it out of Vitest's file discovery and run it separately with
+        // `node --test scripts/tests/calculator-classic-layout.playwright.test.mjs`.
+        "scripts/tests/calculator-classic-layout.playwright.test.mjs",
       ],
       coverage: {
         provider: "v8",

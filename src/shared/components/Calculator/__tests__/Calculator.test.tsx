@@ -21,7 +21,7 @@ describe("Calculator — effective-width results layout", () => {
     expect(calculatorSource).toContain("new ResizeObserver");
     expect(calculatorSource).toContain("entry.contentRect.width");
     expect(calculatorCssSource).toContain("minmax(32rem, 3.8fr)");
-    expect(calculatorCssSource).toContain("minmax(18rem, 1.9fr)");
+    expect(calculatorCssSource).toMatch(/minmax\(\s*18rem\s*,\s*1\.9fr\s*\)/);
     expect(calculatorSource).not.toMatch(/2xl:grid-cols|w-\[336px\]/);
   });
 

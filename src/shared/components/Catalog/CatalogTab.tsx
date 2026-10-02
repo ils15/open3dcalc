@@ -522,10 +522,11 @@ function PrinterManager() {
               />
             </div>
             <button
+              data-testid="catalog-tab-save-printer-button"
               type="button"
               onClick={savePrinter}
               disabled={!editForm.name.trim()}
-              className="mt-5 w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              className="mt-5 w-full rounded-xl bg-[var(--positive-fill)] py-3 font-semibold text-[var(--positive-fill-fg)] transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--positive-fill)]"
             >
               {t("catalog.saveChanges")}
             </button>
