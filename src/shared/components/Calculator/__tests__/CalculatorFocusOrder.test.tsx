@@ -5,6 +5,26 @@ import userEvent from "@testing-library/user-event";
 import { Calculator } from "../Calculator";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 
+const shortcutRegistry = vi.hoisted(
+  () =>
+    ({
+      current: [] as Array<{
+        key: string;
+        ctrl?: boolean;
+        handler: () => void;
+      }>,
+    }) as {
+      current: Array<{ key: string; ctrl?: boolean; handler: () => void }>;
+    },
+);
+const calculatorActions = vi.hoisted(() => ({
+  setSelectedPrinter: vi.fn(),
+}));
+const interactionHarness = vi.hoisted(() => ({
+  enabled: false,
+  undo: undefined as (() => void) | undefined,
+}));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -21,8 +41,8 @@ vi.mock("@/shared/stores/calculatorStore", () => ({
   ) => {
     const state = {
       activeTab: "fdm",
-      undo: () => undefined,
-      setSelectedPrinter: () => undefined,
+      undo: () => interactionHarness.undo?.(),
+      setSelectedPrinter: calculatorActions.setSelectedPrinter,
     };
     return selector ? selector(state) : state;
   },
@@ -30,7 +50,10 @@ vi.mock("@/shared/stores/calculatorStore", () => ({
 
 vi.mock("@/shared/stores/catalogStore", () => ({
   useCatalogStore: (selector?: (state: Record<string, unknown>) => unknown) => {
-    const state = { printers: [], materials: [] };
+    const state = {
+      printers: [{ id: "test-printer" }],
+      materials: [],
+    };
     return selector ? selector(state) : state;
   },
 }));
@@ -49,11 +72,34 @@ vi.mock("@/shared/hooks/useCurrency", () => ({
 }));
 
 vi.mock("@/shared/hooks/useKeyboardShortcuts", () => ({
-  useKeyboardShortcuts: () => undefined,
+  useKeyboardShortcuts: (
+    shortcuts: Array<{ key: string; ctrl?: boolean; handler: () => void }>,
+  ) => {
+    shortcutRegistry.current = shortcuts;
+  },
 }));
 
 vi.mock("@/shared/components/ui/Toast", () => ({
-  ToastContainer: () => null,
+  ToastContainer: ({
+    items,
+    onDismiss,
+  }: {
+    items: Array<{ id: number; message: string }>;
+    onDismiss: (id: number) => void;
+  }) => (
+    <>
+      {items.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          aria-label={`Dismiss ${item.message}`}
+          onClick={() => onDismiss(item.id)}
+        >
+          {item.message}
+        </button>
+      ))}
+    </>
+  ),
 }));
 
 vi.mock("@/shared/components/ui/QuickStartBanner", () => ({
@@ -66,9 +112,11 @@ vi.mock("@/shared/components/Results/ResultsPanel", async () => {
   function StatefulResultsPanel({
     variant,
     sidebarTab,
+    onExportBlocked,
   }: {
     variant: string;
     sidebarTab?: string;
+    onExportBlocked?: (message: string) => void;
   }) {
     const [sellOverride, setSellOverride] = React.useState("42.00");
     const [isEditingPrice, setIsEditingPrice] = React.useState(false);
@@ -80,6 +128,15 @@ vi.mock("@/shared/components/Results/ResultsPanel", async () => {
         data-variant={variant}
         data-sidebar-tab={sidebarTab}
       >
+        {interactionHarness.enabled && (
+          <button
+            type="button"
+            data-testid="results-blocked-export"
+            onClick={() => onExportBlocked?.("test.export.blocked")}
+          >
+            Blocked export
+          </button>
+        )}
         <button type="button" data-testid="sidebar-control">
           Panel action
         </button>
@@ -126,20 +183,66 @@ vi.mock("../SectionNav", () => ({
   SectionNav: () => <button type="button" data-testid="nav-control" />,
 }));
 vi.mock("../SectionRenderer", async () => {
+  const React = await import("react");
   const { ResultsPanel } =
     await import("@/shared/components/Results/ResultsPanel");
 
   return {
     SectionRenderer: ({
       showInlineResults,
+      handleInput,
+      handlePrinterSelect,
     }: {
       showInlineResults?: boolean;
-    }) => (
-      <>
-        {showInlineResults && <ResultsPanel variant="mobile" />}
-        <button type="button" data-testid="input-control" />
-      </>
-    ),
+      handleInput: (value: string, setter: (value: number) => void) => void;
+      handlePrinterSelect: (id: string) => void;
+    }) => {
+      const [fieldValue, setFieldValue] = React.useState(0);
+      const fieldHistory = React.useRef<number[]>([]);
+      const setUndoableFieldValue = (value: number): void => {
+        fieldHistory.current.push(fieldValue);
+        setFieldValue(value);
+      };
+      interactionHarness.undo = () => {
+        const previousValue = fieldHistory.current.pop();
+        if (previousValue !== undefined) setFieldValue(previousValue);
+      };
+
+      return (
+        <>
+          {showInlineResults && <ResultsPanel variant="mobile" />}
+          <button type="button" data-testid="input-control" />
+          {interactionHarness.enabled && (
+            <>
+              <button
+                type="button"
+                data-testid="calculator-field-change"
+                onClick={() => handleInput("8.25", setUndoableFieldValue)}
+              >
+                Set numeric value
+              </button>
+              <button
+                type="button"
+                data-testid="calculator-field-empty"
+                onClick={() => handleInput("", setUndoableFieldValue)}
+              >
+                Clear numeric value
+              </button>
+              <button
+                type="button"
+                data-testid="calculator-select-printer"
+                onClick={() => handlePrinterSelect("test-printer")}
+              >
+                Select printer
+              </button>
+              <output data-testid="calculator-field-result">
+                {fieldValue}
+              </output>
+            </>
+          )}
+        </>
+      );
+    },
   };
 });
 
@@ -207,10 +310,95 @@ afterEach(() => {
   });
   resizeObserverCallback = null;
   resizeObserverTarget = null;
+  shortcutRegistry.current = [];
+  calculatorActions.setSelectedPrinter.mockReset();
+  interactionHarness.enabled = false;
+  interactionHarness.undo = undefined;
   useLayoutStore.setState({ sidebarMode: "compact" });
 });
 
 describe("Calculator layout order and responsive results state", () => {
+  it("registers export and print shortcut handlers", () => {
+    availableWidth = 1100;
+    mockResizeObserver();
+    render(<Calculator />);
+
+    expect(
+      shortcutRegistry.current.map(({ key, ctrl }) => [key, ctrl]),
+    ).toEqual([
+      ["z", true],
+      ["e", true],
+      ["p", true],
+    ]);
+
+    const exportAction = vi.fn();
+    const exportButton = document.createElement("button");
+    exportButton.dataset.shortcut = "export";
+    exportButton.addEventListener("click", exportAction);
+    document.body.append(exportButton);
+    const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
+    const [, exportShortcut, printShortcut] = shortcutRegistry.current;
+
+    exportShortcut.handler();
+    printShortcut.handler();
+
+    expect(exportAction).toHaveBeenCalledOnce();
+    expect(print).toHaveBeenCalledOnce();
+    exportButton.remove();
+    print.mockRestore();
+  });
+
+  it("undoes the last numeric input with the undo shortcut", async () => {
+    availableWidth = 900;
+    interactionHarness.enabled = true;
+    mockResizeObserver();
+    const user = userEvent.setup();
+    render(<Calculator />);
+
+    await user.click(screen.getByTestId("calculator-field-change"));
+    expect(screen.getByTestId("calculator-field-result")).toHaveTextContent(
+      "8.25",
+    );
+
+    act(() => shortcutRegistry.current[0]?.handler());
+
+    expect(screen.getByTestId("calculator-field-result")).toHaveTextContent(
+      "0",
+    );
+  });
+
+  it("routes field, printer and blocked-export interactions through Calculator", async () => {
+    availableWidth = 900;
+    interactionHarness.enabled = true;
+    mockResizeObserver();
+    const user = userEvent.setup();
+    render(<Calculator />);
+
+    await user.click(screen.getByTestId("calculator-field-change"));
+    expect(screen.getByTestId("calculator-field-result")).toHaveTextContent(
+      "8.25",
+    );
+    await user.click(screen.getByTestId("calculator-field-empty"));
+    expect(screen.getByTestId("calculator-field-result")).toHaveTextContent(
+      "0",
+    );
+
+    await user.click(screen.getByTestId("calculator-select-printer"));
+    expect(calculatorActions.setSelectedPrinter).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "test-printer" }),
+    );
+
+    await user.click(screen.getByTestId("results-blocked-export"));
+    const toast = screen.getByRole("button", {
+      name: "Dismiss test.export.blocked",
+    });
+    expect(toast).toBeInTheDocument();
+    await user.click(toast);
+    expect(
+      screen.queryByRole("button", { name: "Dismiss test.export.blocked" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the one results tree and focus order aligned on desktop", async () => {
     availableWidth = 1100;
     mockResizeObserver();
