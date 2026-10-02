@@ -17,7 +17,7 @@
     "build:all": "npm run build:desktop && npm run build:web",
     "preview:web": "vite preview --config vite.web.config.ts",
     "test": "vitest",
-    "test:run": "vitest run",
+    "test:run": "vitest run --maxWorkers=4",
     "test:browser": "vitest run --config vitest.browser.config.ts",
     "test:packaged": "node scripts/packaged-probe.mjs",
     "release:notes:validate": "node scripts/validate-release-notes.mjs",
