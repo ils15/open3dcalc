@@ -1,34 +1,35 @@
-import React, { useState } from 'react';
-import { 
-  TrendingUp, 
-  DollarSign, 
-  Layers, 
-  Clock, 
-  Package, 
-  Percent, 
-  Plus, 
-  Printer, 
-  Sparkles, 
-  ShieldCheck, 
-  Sliders, 
+import React, { useState } from "react";
+import {
+  TrendingUp,
+  DollarSign,
+  Layers,
+  Clock,
+  Package,
+  Percent,
+  Plus,
+  Printer,
+  Sparkles,
+  ShieldCheck,
+  Sliders,
   ArrowUpRight,
-  Info
-} from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell 
-} from 'recharts';
-import { Tab } from '@/shared/components/AppShell/tabs';
-import { useHistoryStore } from '@/shared/stores/historyStore';
-import { useIsDemoMode } from '@/shared/hooks/useDemoMode';
-import { useDemoModeStore } from '@/shared/stores/demoModeStore';
+  Info,
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { Tab } from "@/shared/components/AppShell/tabs";
+import { useHistoryStore } from "@/shared/stores/historyStore";
+import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
+import { useDemoModeStore } from "@/shared/stores/demoModeStore";
+import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
 
 interface StudioDashboardViewProps {
   onTabChange: (tab: Tab) => void;
@@ -41,10 +42,19 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
 }) => {
   const isDemoMode = useIsDemoMode();
   const entries = useHistoryStore((s) => s.entries);
+  // recharts animates in JS, so the CSS backstop for reduced motion cannot
+  // reach it — the chart has to honour the preference itself.
+  const prefersReduced = useReducedMotion();
 
-  const [activeRange, setActiveRange] = useState<'7d' | '30d' | 'month' | 'all'>('30d');
-  const [activeWorkspace, setActiveWorkspace] = useState<'overview' | 'profit' | 'ops' | 'eng'>('overview');
-  const [activeProjectionTab, setActiveProjectionTab] = useState<'quarter' | 'trend' | 'cap'>('quarter');
+  const [activeRange, setActiveRange] = useState<
+    "7d" | "30d" | "month" | "all"
+  >("30d");
+  const [activeWorkspace, setActiveWorkspace] = useState<
+    "overview" | "profit" | "ops" | "eng"
+  >("overview");
+  const [activeProjectionTab, setActiveProjectionTab] = useState<
+    "quarter" | "trend" | "cap"
+  >("quarter");
 
   // Determine whether to use demo figures or real figures
   const hasRealData = entries.length > 0;
@@ -79,13 +89,19 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
     marginPct = cost > 0 ? (netProfit / cost) * 100 : 0;
 
     const totalMinutes = entries.reduce((acc, e) => {
-      const h = e.snapshot?.fdmPrintParams?.printTimeHours || e.snapshot?.resinPrintParams?.printTimeHours || 0;
+      const h =
+        e.snapshot?.fdmPrintParams?.printTimeHours ||
+        e.snapshot?.resinPrintParams?.printTimeHours ||
+        0;
       return acc + Math.round(h * 60);
     }, 0);
     machineHours = totalMinutes / 60;
 
     const totalGrams = entries.reduce((acc, e) => {
-      const g = e.snapshot?.fdmMaterial?.weightUsed || e.snapshot?.resinMaterial?.volumeUsedMl || 0;
+      const g =
+        e.snapshot?.fdmMaterial?.weightUsed ||
+        e.snapshot?.resinMaterial?.volumeUsedMl ||
+        0;
       return acc + g;
     }, 0);
     totalWeight = totalGrams / 1000;
@@ -94,42 +110,56 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
   // Performance chart data
   const revenueChartData = isUsingDemo
     ? [
-        { date: '07/09', venda: 450, lucro: 240, custo: 210 },
-        { date: '10/09', venda: 180, lucro: 95, custo: 85 },
-        { date: '16/09', venda: 620, lucro: 330, custo: 290 },
-        { date: '18/09', venda: 320, lucro: 170, custo: 150 },
-        { date: '21/09', venda: 480, lucro: 255, custo: 225 },
-        { date: '22/09', venda: 390, lucro: 205, custo: 185 },
-        { date: '24/09', venda: 1250, lucro: 670, custo: 580 },
-        { date: '25/09', venda: 210, lucro: 110, custo: 100 },
-        { date: '25/09', venda: 80, lucro: 42, custo: 38 },
+        { date: "07/09", venda: 450, lucro: 240, custo: 210 },
+        { date: "10/09", venda: 180, lucro: 95, custo: 85 },
+        { date: "16/09", venda: 620, lucro: 330, custo: 290 },
+        { date: "18/09", venda: 320, lucro: 170, custo: 150 },
+        { date: "21/09", venda: 480, lucro: 255, custo: 225 },
+        { date: "22/09", venda: 390, lucro: 205, custo: 185 },
+        { date: "24/09", venda: 1250, lucro: 670, custo: 580 },
+        { date: "25/09", venda: 210, lucro: 110, custo: 100 },
+        { date: "25/09", venda: 80, lucro: 42, custo: 38 },
       ]
     : hasRealData
-    ? entries.slice(0, 10).map((e) => ({
-        date: new Date(e.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-        venda: Math.round(e.sellPrice || 0),
-        lucro: Math.round(e.profit || 0),
-        custo: Math.round(e.totalCost || 0),
-      }))
-    : [{ date: 'Hoje', venda: 0, lucro: 0, custo: 0 }];
+      ? entries.slice(0, 10).map((e) => ({
+          date: new Date(e.timestamp).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+          }),
+          venda: Math.round(e.sellPrice || 0),
+          lucro: Math.round(e.profit || 0),
+          custo: Math.round(e.totalCost || 0),
+        }))
+      : [{ date: "Hoje", venda: 0, lucro: 0, custo: 0 }];
 
   // Material distribution donut data
   const materialData = isUsingDemo
     ? [
-        { name: 'PLA', value: 1235, color: '#3b82f6' },
-        { name: 'PETG', value: 280, color: '#10b981' },
-        { name: 'PLA Silk', value: 1470, color: '#06b6d4' },
-        { name: 'Resina Standard', value: 140, color: '#f97316' },
-        { name: 'Nylon (PA)', value: 310, color: '#8b5cf6' },
+        { name: "PLA", value: 1235, color: "#3b82f6" },
+        { name: "PETG", value: 280, color: "#10b981" },
+        { name: "PLA Silk", value: 1470, color: "#06b6d4" },
+        { name: "Resina Standard", value: 140, color: "#f97316" },
+        { name: "Nylon (PA)", value: 310, color: "#8b5cf6" },
       ]
     : hasRealData
-    ? [
-        { name: 'Filamento FDM', value: Math.max(1, Math.round(totalWeight * 700)), color: '#3b82f6' },
-        { name: 'Outros Materiais', value: Math.max(1, Math.round(totalWeight * 300)), color: '#10b981' },
-      ]
-    : [{ name: 'Sem Consumo', value: 1, color: '#334155' }];
+      ? [
+          {
+            name: "Filamento FDM",
+            value: Math.max(1, Math.round(totalWeight * 700)),
+            color: "#3b82f6",
+          },
+          {
+            name: "Outros Materiais",
+            value: Math.max(1, Math.round(totalWeight * 300)),
+            color: "#10b981",
+          },
+        ]
+      : [{ name: "Sem Consumo", value: 1, color: "#334155" }];
 
-  const totalMaterialWeight = materialData.reduce((acc, curr) => acc + curr.value, 0);
+  const totalMaterialWeight = materialData.reduce(
+    (acc, curr) => acc + curr.value,
+    0,
+  );
 
   return (
     <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-16">
@@ -145,13 +175,15 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 Dashboard em Tempo Real (Base Limpa)
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Os indicadores mostram os dados reais da sua oficina. Salve novos cálculos para acompanhar seu faturamento, ou ative o Modo Demo para simular uma oficina em produção.
+                Os indicadores mostram os dados reais da sua oficina. Salve
+                novos cálculos para acompanhar seu faturamento, ou ative o Modo
+                Demo para simular uma oficina em produção.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => onTabChange('calculator')}
+              onClick={() => onTabChange("calculator")}
               className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md"
             >
               Criar Primeiro Cálculo
@@ -175,11 +207,12 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               Painel de Gestão & Oficina 3D
             </h1>
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-              {ordersCount} {ordersCount === 1 ? 'orçamento' : 'orçamentos'}
+              {ordersCount} {ordersCount === 1 ? "orçamento" : "orçamentos"}
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Métricas organizadas por espaços de trabalho para acesso rápido e zero sobrecarga visual.
+            Métricas organizadas por espaços de trabalho para acesso rápido e
+            zero sobrecarga visual.
           </p>
         </div>
 
@@ -188,33 +221,41 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           {/* Time filters */}
           <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-lg p-0.5 text-xs font-medium">
             <button
-              onClick={() => setActiveRange('7d')}
+              onClick={() => setActiveRange("7d")}
               className={`px-2.5 py-1 rounded-md transition-colors ${
-                activeRange === '7d' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                activeRange === "7d"
+                  ? "bg-blue-600 text-white font-bold"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               7 Dias
             </button>
             <button
-              onClick={() => setActiveRange('30d')}
+              onClick={() => setActiveRange("30d")}
               className={`px-2.5 py-1 rounded-md transition-colors ${
-                activeRange === '30d' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                activeRange === "30d"
+                  ? "bg-blue-600 text-white font-bold"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               30 Dias
             </button>
             <button
-              onClick={() => setActiveRange('month')}
+              onClick={() => setActiveRange("month")}
               className={`px-2.5 py-1 rounded-md transition-colors ${
-                activeRange === 'month' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                activeRange === "month"
+                  ? "bg-blue-600 text-white font-bold"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               Este Mês
             </button>
             <button
-              onClick={() => setActiveRange('all')}
+              onClick={() => setActiveRange("all")}
               className={`px-2.5 py-1 rounded-md transition-colors ${
-                activeRange === 'all' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                activeRange === "all"
+                  ? "bg-blue-600 text-white font-bold"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               Tudo
@@ -222,7 +263,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           </div>
 
           <button
-            onClick={() => onTabChange('calculator')}
+            onClick={() => onTabChange("calculator")}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -230,7 +271,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           </button>
 
           <button
-            onClick={() => onTabChange('history')}
+            onClick={() => onTabChange("history")}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111728] hover:bg-[#18233c] border border-[#212c45] text-slate-300 text-xs font-semibold transition-colors"
           >
             <Clock className="w-3.5 h-3.5 text-blue-400" />
@@ -238,7 +279,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           </button>
 
           <button
-            onClick={() => onTabChange('catalog')}
+            onClick={() => onTabChange("catalog")}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111728] hover:bg-[#18233c] border border-[#212c45] text-slate-300 text-xs font-semibold transition-colors"
           >
             <Printer className="w-3.5 h-3.5 text-indigo-400" />
@@ -246,7 +287,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           </button>
 
           <button
-            onClick={() => onTabChange('inventory')}
+            onClick={() => onTabChange("inventory")}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111728] hover:bg-[#18233c] border border-[#212c45] text-slate-300 text-xs font-semibold transition-colors"
           >
             <Package className="w-3.5 h-3.5 text-amber-400" />
@@ -266,11 +307,11 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
       {/* 4 Workspace Tabs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         <button
-          onClick={() => setActiveWorkspace('overview')}
+          onClick={() => setActiveWorkspace("overview")}
           className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
-            activeWorkspace === 'overview'
-              ? 'bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30'
-              : 'bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400'
+            activeWorkspace === "overview"
+              ? "bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30"
+              : "bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -288,11 +329,11 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveWorkspace('profit')}
+          onClick={() => setActiveWorkspace("profit")}
           className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
-            activeWorkspace === 'profit'
-              ? 'bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30'
-              : 'bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400'
+            activeWorkspace === "profit"
+              ? "bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30"
+              : "bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -310,11 +351,11 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveWorkspace('ops')}
+          onClick={() => setActiveWorkspace("ops")}
           className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
-            activeWorkspace === 'ops'
-              ? 'bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30'
-              : 'bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400'
+            activeWorkspace === "ops"
+              ? "bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30"
+              : "bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -332,11 +373,11 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         </button>
 
         <button
-          onClick={() => setActiveWorkspace('eng')}
+          onClick={() => setActiveWorkspace("eng")}
           className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
-            activeWorkspace === 'eng'
-              ? 'bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30'
-              : 'bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400'
+            activeWorkspace === "eng"
+              ? "bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30"
+              : "bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -359,12 +400,14 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         {/* Faturamento */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">FATURAMENTO</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              FATURAMENTO
+            </span>
             <DollarSign className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="my-2">
             <span className="text-xl font-extrabold text-white">
-              R$ {revenue.toFixed(2).replace('.', ',')}
+              R$ {revenue.toFixed(2).replace(".", ",")}
             </span>
           </div>
           <div className="text-[10px] text-slate-500">
@@ -375,12 +418,14 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         {/* Lucro Líquido */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">LUCRO LÍQUIDO</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              LUCRO LÍQUIDO
+            </span>
             <Percent className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="my-2">
             <span className="text-xl font-extrabold text-emerald-400">
-              R$ {netProfit.toFixed(2).replace('.', ',')}
+              R$ {netProfit.toFixed(2).replace(".", ",")}
             </span>
           </div>
           <div className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
@@ -392,12 +437,14 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         {/* Custo Fabril */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">CUSTO FABRIL</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              CUSTO FABRIL
+            </span>
             <Layers className="w-4 h-4 text-slate-400" />
           </div>
           <div className="my-2">
             <span className="text-xl font-extrabold text-white">
-              R$ {cost.toFixed(2).replace('.', ',')}
+              R$ {cost.toFixed(2).replace(".", ",")}
             </span>
           </div>
           <div className="text-[10px] text-slate-500">
@@ -408,7 +455,9 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         {/* Horas Máquina */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">HORAS MÁQUINA</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              HORAS MÁQUINA
+            </span>
             <Clock className="w-4 h-4 text-amber-400" />
           </div>
           <div className="my-2">
@@ -424,7 +473,9 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         {/* Consumo Total */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">CONSUMO TOTAL</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              CONSUMO TOTAL
+            </span>
             <Package className="w-4 h-4 text-blue-400" />
           </div>
           <div className="my-2">
@@ -440,17 +491,17 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         {/* Ticket Médio */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">TICKET MÉDIO</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              TICKET MÉDIO
+            </span>
             <ArrowUpRight className="w-4 h-4 text-purple-400" />
           </div>
           <div className="my-2">
             <span className="text-xl font-extrabold text-white">
-              R$ {avgTicket.toFixed(2).replace('.', ',')}
+              R$ {avgTicket.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-slate-500">
-            Por peça produzida
-          </div>
+          <div className="text-[10px] text-slate-500">Por peça produzida</div>
         </div>
       </div>
 
@@ -460,16 +511,18 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           <div className="flex items-center gap-2">
             <span className="font-bold text-white">Meta Mensal de Vendas</span>
             <span className="text-slate-400">
-              R$ {revenue.toFixed(2).replace('.', ',')} / R$ 5.000,00
+              R$ {revenue.toFixed(2).replace(".", ",")} / R$ 5.000,00
             </span>
           </div>
           <span className="font-mono font-bold text-blue-400">
-            {revenue >= 5000 ? '100%' : `${Math.min(100, Math.round((revenue / 5000) * 100))}%`}
+            {revenue >= 5000
+              ? "100%"
+              : `${Math.min(100, Math.round((revenue / 5000) * 100))}%`}
           </span>
         </div>
         <div className="w-full bg-[#131b2e] h-2.5 rounded-full overflow-hidden border border-[#1d2740]">
-          <div 
-            className="bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500" 
+          <div
+            className="bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500"
             style={{ width: `${Math.min(100, (revenue / 5000) * 100)}%` }}
           />
         </div>
@@ -490,38 +543,90 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="flex items-center gap-1.5 text-blue-400 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Venda
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>{" "}
+                Venda
               </span>
               <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Lucro
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>{" "}
+                Lucro
               </span>
               <span className="flex items-center gap-1.5 text-slate-400 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span> Custo
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>{" "}
+                Custo
               </span>
             </div>
           </div>
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart
+                data={revenueChartData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                // recharts animates via JS requestAnimationFrame, so the
+                // global `animation-duration: 0.01ms !important` backstop in
+                // components.css cannot reach it. This grow-in is the only
+                // motion in the inventory that carries information — it is how
+                // the series reads as a trend — so it is gated on the user's
+                // own reduced-motion preference instead of being left on.
+              >
                 <defs>
                   <linearGradient id="colorVenda" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
                   </linearGradient>
                   <linearGradient id="colorLucro" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="date" stroke="#64748b" fontSize={11} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} tickFormatter={(v) => `R$${v}`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '12px' }}
-                  formatter={(val) => [`R$ ${Number(val).toFixed(2).replace('.', ',')}`, '']}
+                <XAxis
+                  dataKey="date"
+                  stroke="#64748b"
+                  fontSize={11}
+                  tickLine={false}
                 />
-                <Area type="monotone" dataKey="venda" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorVenda)" />
-                <Area type="monotone" dataKey="lucro" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorLucro)" />
+                <YAxis
+                  stroke="#64748b"
+                  fontSize={11}
+                  tickLine={false}
+                  tickFormatter={(v) => `R$${v}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#0f172a",
+                    borderColor: "#334155",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                  formatter={(val) => [
+                    `R$ ${Number(val).toFixed(2).replace(".", ",")}`,
+                    "",
+                  ]}
+                />
+                {/* recharts animates these grow-ins via JS requestAnimationFrame,
+                    so the global `animation-duration: 0.01ms !important`
+                    backstop in components.css cannot reach them. This is the
+                    only motion in the inventory that carries information — it
+                    is how the series reads as a trend — so it is gated on the
+                    user's own reduced-motion preference rather than dropped. */}
+                <Area
+                  type="monotone"
+                  dataKey="venda"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorVenda)"
+                  isAnimationActive={!prefersReduced}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="lucro"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#colorLucro)"
+                  isAnimationActive={!prefersReduced}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -531,11 +636,15 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h2 className="text-sm font-bold text-white">Consumo por Material</h2>
-              <span className="text-[11px] text-slate-400">Total: {totalMaterialWeight}g rastreados</span>
+              <h2 className="text-sm font-bold text-white">
+                Consumo por Material
+              </h2>
+              <span className="text-[11px] text-slate-400">
+                Total: {totalMaterialWeight}g rastreados
+              </span>
             </div>
-            <button 
-              onClick={() => onTabChange('inventory')}
+            <button
+              onClick={() => onTabChange("inventory")}
               className="text-xs text-blue-400 hover:text-blue-300 font-semibold"
             >
               Estoque →
@@ -553,29 +662,47 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   outerRadius={75}
                   paddingAngle={3}
                   dataKey="value"
+                  isAnimationActive={!prefersReduced}
                 >
                   {materialData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '12px' }}
-                  formatter={(val) => [`${val}g`, 'Consumo']}
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#0f172a",
+                    borderColor: "#334155",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                  formatter={(val) => [`${val}g`, "Consumo"]}
                 />
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-base font-extrabold text-white">{totalMaterialWeight}g</span>
-              <span className="text-[10px] text-slate-400 uppercase font-mono">Consumo</span>
+              <span className="text-base font-extrabold text-white">
+                {totalMaterialWeight}g
+              </span>
+              <span className="text-[10px] text-slate-400 uppercase font-mono">
+                Consumo
+              </span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-1.5 text-[11px] text-slate-300 mt-2">
             {materialData.map((mat) => (
-              <div key={mat.name} className="flex items-center gap-1.5 truncate">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: mat.color }}></span>
+              <div
+                key={mat.name}
+                className="flex items-center gap-1.5 truncate"
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: mat.color }}
+                ></span>
                 <span className="truncate">{mat.name}</span>
-                <span className="text-slate-500 font-mono ml-auto">{mat.value}g</span>
+                <span className="text-slate-500 font-mono ml-auto">
+                  {mat.value}g
+                </span>
               </div>
             ))}
           </div>
@@ -591,32 +718,39 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               Previsões Financeiras & Projeções (QoQ)
             </h2>
             <span className="text-[11px] text-slate-400">
-              Modelos preditivos baseados no histórico de horas de impressão e margem líquida média
+              Modelos preditivos baseados no histórico de horas de impressão e
+              margem líquida média
             </span>
           </div>
 
           {/* Sub-tabs */}
           <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-lg p-0.5 text-xs font-semibold">
             <button
-              onClick={() => setActiveProjectionTab('quarter')}
+              onClick={() => setActiveProjectionTab("quarter")}
               className={`px-3 py-1 rounded transition-colors ${
-                activeProjectionTab === 'quarter' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                activeProjectionTab === "quarter"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               Trimestral (Q4)
             </button>
             <button
-              onClick={() => setActiveProjectionTab('trend')}
+              onClick={() => setActiveProjectionTab("trend")}
               className={`px-3 py-1 rounded transition-colors ${
-                activeProjectionTab === 'trend' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                activeProjectionTab === "trend"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               Tendência Linear
             </button>
             <button
-              onClick={() => setActiveProjectionTab('cap')}
+              onClick={() => setActiveProjectionTab("cap")}
               className={`px-3 py-1 rounded transition-colors ${
-                activeProjectionTab === 'cap' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                activeProjectionTab === "cap"
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               Capacidade Máxima
@@ -630,7 +764,9 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               BACKLOG EM CARTEIRA
             </span>
             <div className="text-xl font-bold text-white mb-1">
-              {isUsingDemo ? 'R$ 486,19' : `R$ ${(revenue * 0.15).toFixed(2).replace('.', ',')}`}
+              {isUsingDemo
+                ? "R$ 486,19"
+                : `R$ ${(revenue * 0.15).toFixed(2).replace(".", ",")}`}
             </div>
             <p className="text-[11px] text-slate-500">
               Valor estimado de pedidos em fila de fatiamento e impressão
@@ -642,10 +778,13 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               PREVISÃO FECHAMENTO TRIMESTRE
             </span>
             <div className="text-xl font-bold text-emerald-400 mb-1">
-              {isUsingDemo ? 'R$ 4.719,00' : `R$ ${(revenue * 1.35).toFixed(2).replace('.', ',')}`}
+              {isUsingDemo
+                ? "R$ 4.719,00"
+                : `R$ ${(revenue * 1.35).toFixed(2).replace(".", ",")}`}
             </div>
             <p className="text-[11px] text-emerald-500/80 font-medium">
-              +{isUsingDemo ? '26.2%' : '15%'} de crescimento com taxa atual de ocupação
+              +{isUsingDemo ? "26.2%" : "15%"} de crescimento com taxa atual de
+              ocupação
             </p>
           </div>
 
@@ -654,7 +793,9 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               PROJEÇÃO ANUAL (RUN-RATE)
             </span>
             <div className="text-xl font-bold text-purple-400 mb-1">
-              {isUsingDemo ? 'R$ 37.457,00' : `R$ ${(revenue * 12).toFixed(2).replace('.', ',')}`}
+              {isUsingDemo
+                ? "R$ 37.457,00"
+                : `R$ ${(revenue * 12).toFixed(2).replace(".", ",")}`}
             </div>
             <p className="text-[11px] text-slate-500">
               Projeção mantendo a frota em 65% de capacidade útil
