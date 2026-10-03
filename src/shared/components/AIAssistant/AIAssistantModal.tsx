@@ -11,6 +11,7 @@ import {
 import { motion } from "framer-motion";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import { guardExport } from "@/shared/lib/demoExportGuard";
 import {
   LocalRecommendationsPanel,
   MarginPanel,
@@ -128,6 +129,7 @@ export function AIAssistantModal({ open, onClose }: AIAssistantModalProps) {
   );
 
   const handleCopyPitch = () => {
+    if (guardExport()) return;
     void navigator.clipboard.writeText(commercialPitch);
     setCopiedPitch(true);
     window.setTimeout(() => setCopiedPitch(false), 2500);

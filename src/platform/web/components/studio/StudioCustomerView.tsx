@@ -22,6 +22,12 @@ import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 import { Customer, CustomerFormData } from "@/shared/types";
+import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefusalNotice";
+import {
+  beginPiiSurfaceWrite,
+  PII_STORE_KEY,
+} from "@/shared/lib/crypto/piiStoreHydration";
+import { guardExport } from "@/shared/lib/demoExportGuard";
 
 interface StudioCustomerViewProps {
   onTabChange: (tab: Tab) => void;
@@ -75,7 +81,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     if (name.trim().length < 2) {
       setErrorMsg("O nome do cliente deve ter pelo menos 2 caracteres.");
@@ -91,6 +97,8 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
       notes: notes.trim(),
     };
 
+    if (beginPiiSurfaceWrite(PII_STORE_KEY.customers) !== null) return;
+
     try {
       if (editingCustomer) {
         updateCustomer(editingCustomer.id, payload);
@@ -103,6 +111,11 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
         err instanceof Error ? err.message : "Erro ao salvar cliente.";
       setErrorMsg(msg);
     }
+  };
+
+  const handleDeleteCustomer = (customerId: string): void => {
+    if (beginPiiSurfaceWrite(PII_STORE_KEY.customers) !== null) return;
+    removeCustomer(customerId);
   };
 
   // Filter
@@ -123,7 +136,8 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
   );
   const activeClients = customers.filter((c) => (c.quoteCount || 0) > 0).length;
 
-  const handleWhatsApp = (customer: Customer) => {
+  const handleWhatsApp = (customer: Customer): void => {
+    if (guardExport()) return;
     const cleanPhone = (customer.phone || "").replace(/\D/g, "");
     const text = encodeURIComponent(
       `Olá, ${customer.name}! Tudo bem?\n` +
@@ -134,6 +148,9 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
 
   return (
     <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-20">
+      {!isModalOpen && (
+        <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />
+      )}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5">
         <div>
@@ -369,8 +386,10 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                           <span>{customer.phone}</span>
                         </span>
                         <button
+                          type="button"
                           onClick={() => handleWhatsApp(customer)}
                           className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-0.5"
+                          aria-label={`Enviar mensagem para ${customer.name} no WhatsApp`}
                         >
                           <MessageCircle className="w-3 h-3" />
                           <span>WhatsApp</span>
@@ -381,12 +400,23 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     {customer.email && (
                       <div className="flex items-center gap-1.5 text-slate-400 text-[11px] truncate">
                         <Mail className="w-3 h-3 text-blue-400 shrink-0" />
-                        <a
-                          href={`mailto:${customer.email}`}
-                          className="hover:text-blue-300 truncate transition-colors"
-                        >
-                          {customer.email}
-                        </a>
+                        {isDemoMode ? (
+                          <button
+                            type="button"
+                            onClick={() => guardExport()}
+                            aria-label={`Enviar e-mail para ${customer.name}`}
+                            className="hover:text-blue-300 truncate transition-colors"
+                          >
+                            {customer.email}
+                          </button>
+                        ) : (
+                          <a
+                            href={`mailto:${customer.email}`}
+                            className="hover:text-blue-300 truncate transition-colors"
+                          >
+                            {customer.email}
+                          </a>
+                        )}
                       </div>
                     )}
 
@@ -418,14 +448,16 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                       onClick={() => openEditModal(customer)}
                       className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-[#151c2f] transition-colors"
                       title="Editar Cliente"
+                      aria-label={`Editar ${customer.name}`}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeCustomer(customer.id)}
+                      onClick={() => handleDeleteCustomer(customer.id)}
                       className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-950/20 transition-colors"
                       title="Excluir Cliente"
+                      aria-label={`Excluir ${customer.name}`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -440,26 +472,37 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
       {/* Modal: Create / Edit Customer */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#0c111e] border border-[#1f2c47] rounded-2xl w-full max-w-lg shadow-2xl p-6 relative flex flex-col gap-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="studio-customer-dialog-title"
+            className="bg-[#0c111e] border border-[#1f2c47] rounded-2xl w-full max-w-lg shadow-2xl p-6 relative flex flex-col gap-4"
+          >
+            <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />
             <div className="flex items-center justify-between border-b border-[#1b253b] pb-3">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-bold text-white">
+                <h2 id="studio-customer-dialog-title" className="text-sm font-bold text-white">
                   {editingCustomer
                     ? "Editar Dados do Cliente"
                     : "Cadastrar Novo Cliente"}
                 </h2>
               </div>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                aria-label="Fechar formulário de cliente"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {errorMsg && (
-              <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs">
+              <div
+                role="alert"
+                className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs"
+              >
                 {errorMsg}
               </div>
             )}

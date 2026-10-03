@@ -38,6 +38,10 @@ vi.mock("canvas-confetti", () => ({ default: () => {} }));
 import { useQuoteStore } from "@/shared/stores/quoteStore";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { StudioQuotesView } from "@/platform/web/components/studio/StudioQuotesView";
+import { StudioCustomerView } from "@/platform/web/components/studio/StudioCustomerView";
+import type { Customer } from "@/shared/types";
+import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportBlockedToast";
+import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 import {
   PII_STORE_KEY,
   configurePiiStoreRuntime,
@@ -60,6 +64,44 @@ import { PII_STORE_ENVIRONMENT } from "@/shared/lib/crypto/__tests__/piiStoreFix
 import { createFakeIndexedDb } from "@/shared/test/fakeIndexedDb";
 
 const PASS = "senha-sintetica-acesso-4242";
+const customer: Customer = {
+  id: "customer-1",
+  name: "Ana Cliente",
+  company: "Oficina",
+  email: "ana@example.test",
+  phone: "11999990000",
+  address: "Rua 1",
+  notes: "Preferência por PETG",
+  createdAt: 1,
+  updatedAt: 1,
+  quoteCount: 0,
+};
+
+const quote = {
+  id: "quote-1",
+  number: 1,
+  title: "Proposta de teste",
+  items: [
+    {
+      historyEntryId: "item-1",
+      name: "Suporte",
+      quantity: 1,
+      unitPrice: 65,
+      totalPrice: 65,
+      discountPercent: 0,
+    },
+  ],
+  globalDiscountPercent: 0,
+  subtotal: 65,
+  discountAmount: 0,
+  total: 65,
+  status: "draft" as const,
+  validUntil: "2026-12-01",
+  paymentTerms: "PIX",
+  deliveryEstimate: "3 dias",
+  createdAt: 1,
+  updatedAt: 1,
+};
 
 /**
  * The view's "new quote" form opens with one pre-filled line (65.00). We drive
@@ -95,6 +137,7 @@ describe("H-4 — StudioQuotesView PII write gate", () => {
     zeroizeSessionPassphrase();
     window.localStorage.clear();
     setDemoSuppressedForPiiGate(false);
+    useDemoModeStore.setState({ isActive: false, snapshot: null });
     useQuoteStore.setState({
       quotes: [],
       nextNumber: 1,
@@ -111,7 +154,9 @@ describe("H-4 — StudioQuotesView PII write gate", () => {
     resetPiiStoreRuntimeForTests();
     resetPiiStoreHydrationForTests();
     zeroizeSessionPassphrase();
+    useDemoModeStore.setState({ isActive: false, snapshot: null });
     window.localStorage.clear();
+    vi.restoreAllMocks();
   });
 
   it("locked: saving creates nothing and the refusal is VISIBLE, not silent", async () => {
@@ -192,5 +237,170 @@ describe("H-4 — StudioQuotesView PII write gate", () => {
     expect(
       screen.queryByText(/privacy\.vault\.writeRefusedTitle/),
     ).not.toBeInTheDocument();
+  });
+
+  it("locked: customer creation is refused before the Zustand store changes", async () => {
+    lockVault();
+    render(<StudioCustomerView onTabChange={() => {}} onOpenQuoteModal={() => {}} />);
+
+    await user.click(screen.getByRole("button", { name: "Cadastrar Cliente" }));
+    await user.type(screen.getByPlaceholderText("Ex: João da Silva"), "Nova Cliente");
+    await user.click(screen.getByRole("button", { name: /^Cadastrar$/ }));
+
+    expect(useCustomerStore.getState().customers).toHaveLength(0);
+    expect(getLastPiiWriteRefusal()).toEqual({
+      key: PII_STORE_KEY.customers,
+      reason: "profile_locked",
+    });
+    expect(await screen.findByText(/privacy\.vault\.writeRefusedTitle/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Ex: João da Silva")).toBeInTheDocument();
+  });
+
+  it("locked: customer edits and deletes are refused before mutation", async () => {
+    lockVault();
+    useCustomerStore.setState({ customers: [customer] });
+    render(<StudioCustomerView onTabChange={() => {}} onOpenQuoteModal={() => {}} />);
+
+    await user.click(screen.getByTitle("Editar Cliente"));
+    await user.clear(screen.getByPlaceholderText("Ex: João da Silva"));
+    await user.type(screen.getByPlaceholderText("Ex: João da Silva"), "Ana Alterada");
+    await user.click(screen.getByRole("button", { name: "Salvar Alterações" }));
+
+    expect(useCustomerStore.getState().customers[0].name).toBe(customer.name);
+    expect(await screen.findByText(/privacy\.vault\.writeRefusedTitle/)).toBeInTheDocument();
+
+    await user.click(screen.getByTitle("Excluir Cliente"));
+    expect(useCustomerStore.getState().customers).toHaveLength(1);
+    expect(getLastPiiWriteRefusal()).toEqual({
+      key: PII_STORE_KEY.customers,
+      reason: "profile_locked",
+    });
+  });
+
+  it("locked: quote status changes and deletes are refused before mutation", async () => {
+    lockVault();
+    useQuoteStore.setState({ quotes: [quote], nextNumber: 2 });
+    render(<StudioQuotesView />);
+
+    await user.click(screen.getByTitle("Visualizar Proposta"));
+    await user.click(screen.getByRole("button", { name: "Aprovado" }));
+
+    expect(useQuoteStore.getState().quotes[0].status).toBe("draft");
+    expect(await screen.findByText(/privacy\.vault\.writeRefusedTitle/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "✕" }));
+    await user.click(screen.getByTitle("Excluir Orçamento"));
+    await user.click(screen.getByRole("button", { name: /^Excluir$/ }));
+
+    expect(useQuoteStore.getState().quotes).toHaveLength(1);
+    expect(getLastPiiWriteRefusal()).toEqual({
+      key: PII_STORE_KEY.quotes,
+      reason: "profile_locked",
+    });
+  });
+
+  it("demo: customer and quote WhatsApp shares are blocked with visible feedback", async () => {
+    const open = vi.spyOn(window, "open").mockImplementation(() => null);
+    useDemoModeStore.setState({ isActive: true });
+    useCustomerStore.setState({ customers: [customer] });
+
+    const customerView = render(
+      <>
+        <DemoExportBlockedToast />
+        <StudioCustomerView onTabChange={() => {}} onOpenQuoteModal={() => {}} />
+      </>,
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: "Enviar mensagem para Ana Cliente no WhatsApp",
+      }),
+    );
+    expect(open).not.toHaveBeenCalled();
+    expect(await screen.findByText("demo.export.blockedTitle")).toBeInTheDocument();
+
+    customerView.unmount();
+    useQuoteStore.setState({ quotes: [quote], nextNumber: 2 });
+    render(
+      <>
+        <DemoExportBlockedToast />
+        <StudioQuotesView />
+      </>,
+    );
+    await user.click(screen.getByTitle("Enviar no WhatsApp"));
+
+    expect(open).not.toHaveBeenCalled();
+    expect(await screen.findByText("demo.export.blockedTitle")).toBeInTheDocument();
+  });
+
+  it("demo: customer email cannot hand off to a native mail client", async () => {
+    useDemoModeStore.setState({ isActive: true });
+    useCustomerStore.setState({ customers: [customer] });
+    render(
+      <>
+        <DemoExportBlockedToast />
+        <StudioCustomerView onTabChange={() => {}} onOpenQuoteModal={() => {}} />
+      </>,
+    );
+
+    expect(
+      screen.queryByRole("link", { name: customer.email }),
+    ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: /e-mail.*Ana Cliente/i }),
+    );
+    expect(await screen.findByText("demo.export.blockedTitle")).toBeInTheDocument();
+  });
+
+  it("quote action names identify the quote and customer in list and card views", async () => {
+    useCustomerStore.setState({ customers: [customer] });
+    useQuoteStore.setState({
+      quotes: [{ ...quote, customerId: customer.id }],
+      nextNumber: 2,
+    });
+    render(<StudioQuotesView />);
+
+    expect(
+      screen.getByRole("button", {
+        name: "Baixar orçamento #001 de Ana Cliente em PDF",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Enviar orçamento #001 de Ana Cliente no WhatsApp",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Editar orçamento #001 de Ana Cliente",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Excluir orçamento #001 de Ana Cliente",
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByTitle("Visualização em Grade de Cards"));
+
+    expect(
+      screen.getByRole("button", {
+        name: "Baixar orçamento #001 de Ana Cliente em PDF",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Enviar orçamento #001 de Ana Cliente no WhatsApp",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Editar orçamento #001 de Ana Cliente",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Excluir orçamento #001 de Ana Cliente",
+      }),
+    ).toBeInTheDocument();
   });
 });

@@ -7,14 +7,18 @@ interface CsvRow {
 }
 
 function escapeCsv(value: string | number): string {
-  const str = String(value)
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+  const raw = String(value)
+  const hasFormulaPrefix =
+    typeof value === 'string' &&
+    (/^[\s]*[=+\-@]/u.test(raw) || /^[\t\r]/u.test(raw))
+  const str = hasFormulaPrefix ? `'${raw}` : raw
+  if (/[,"\r\n\t]/u.test(str)) {
     return `"${str.replace(/"/g, '""')}"`
   }
   return str
 }
 
-function rowsToCsv(rows: CsvRow[]): string {
+export function serializeCsvRows(rows: CsvRow[]): string {
   if (rows.length === 0) return ''
   const headers = Object.keys(rows[0])
   const headerRow = headers.map(escapeCsv).join(',')
@@ -55,7 +59,7 @@ export function exportResultToCsv(
     { Campo: label('Custo por Grama'), Valor: result.costPerGram.toFixed(4) },
     { Campo: 'Peso (g)', Valor: result.unitWeight.toFixed(2) },
   ]
-  return rowsToCsv(rows)
+  return serializeCsvRows(rows)
 }
 
 export function downloadCsv(content: string, filename: string): void {

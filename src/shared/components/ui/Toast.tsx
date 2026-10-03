@@ -10,6 +10,7 @@ export interface ToastItem {
 interface ToastProps {
   items: ToastItem[];
   onDismiss: (id: number) => void;
+  placement?: "overlay" | "flow";
 }
 
 /**
@@ -48,7 +49,16 @@ const typeStyles: Record<ToastItem["type"], string> = {
   info: "bg-[var(--color-accent-fill)] border-[var(--color-accent-muted)] text-[var(--color-accent-fill-fg)]",
 };
 
-export function ToastContainer({ items, onDismiss }: ToastProps) {
+export function ToastContainer({
+  items,
+  onDismiss,
+  placement = "overlay",
+}: ToastProps) {
+  const containerClassName =
+    placement === "flow"
+      ? "relative self-end mx-4 mt-4 w-[calc(100%-2rem)] sm:max-w-sm flex flex-col gap-2"
+      : "fixed bottom-4 left-4 right-4 sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto flex flex-col gap-2 sm:max-w-sm";
+
   return (
     // --z-passive, not the modal tier it used to sit in. A toast owns no scrim,
     // no focus trap and no key — it is `role="region"` and dismisses itself
@@ -57,7 +67,7 @@ export function ToastContainer({ items, onDismiss }: ToastProps) {
     // over the only way out of Focus Mode for four seconds. See the ownership
     // rule in the layering scale in tokens.css.
     <div
-      className="fixed bottom-4 left-4 right-4 sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto flex flex-col gap-2 sm:max-w-sm"
+      className={containerClassName}
       style={{ zIndex: "var(--z-passive)" }}
       role="region"
       aria-label="Notificações"

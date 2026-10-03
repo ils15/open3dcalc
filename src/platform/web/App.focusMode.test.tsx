@@ -186,7 +186,7 @@ describe("web App — Focus Mode chrome", () => {
     expect(chrome(container).dock).not.toBeNull();
   });
 
-  it("takes the demo indicator and the privacy surfaces with the chrome block", () => {
+  it("keeps the demo export toast alive while taking the rest of the chrome block", () => {
     renderApp();
 
     enterFocusMode();
@@ -195,14 +195,17 @@ describe("web App — Focus Mode chrome", () => {
     // demo indicator and the three privacy surfaces are siblings of the header
     // in that block, not chrome that survives it.
     //
-    // `DemoExportBlockedToast` is deliberately NOT asserted here. It used to be,
-    // under the guarantee that a blocked export stays announced after the
-    // interface is stripped — but that guarantee belongs to PR #262, which is
-    // the change that lifts the toast out of the focus block. Until that lands
-    // on this tree the toast is chrome like its neighbours, so asserting either
-    // way here would be reaching into a change this branch deliberately does not
-    // carry. #262 covers it from the other side, in
-    // `StudioLayout.exportGuard.test.tsx`.
+    // `DemoExportBlockedToast` is the one deliberate exception, and the
+    // assertion below is the guarantee THIS PR (#262) delivers: the toast is
+    // mounted OUTSIDE the `{!focusMode && …}` block in `StudioLayout`, so a
+    // blocked export stays announced after the interface is stripped. Before
+    // #262 the toast was chrome like its neighbours and this row could not
+    // exist; #263 (the repair this branch is rebased onto) had to re-scope the
+    // row for a tree where #262 was absent, which is why the assertion was
+    // parked there. With #262 back on top it is valid again, so it is restored
+    // rather than left to `StudioLayout.exportGuard.test.tsx` alone — that spec
+    // covers it from the component side, this one from the chrome side.
+    expect(screen.getByTestId("demo-toast")).toBeInTheDocument();
     expect(screen.queryByTestId("demo-indicator")).toBeNull();
     expect(screen.queryByTestId("privacy-onboarding")).toBeNull();
     expect(screen.queryByTestId("legacy-migration-prompt")).toBeNull();
