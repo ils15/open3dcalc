@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open3dcalc.org/schemas/spec-01-manifest.schema.json",
+  "title": "SPEC-01 Data Manifest Schema",
+  "type": "object",
+  "required": ["manifest_version", "policy_version", "keys"],
+  "additionalProperties": false,
+  "properties": {
+    "manifest_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "policy_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "keys": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/manifestEntry" }
+    }
+  },
+  "$defs": {
+    "surface": {
+      "type": "string",
+      "enum": [
+        "localStorage",
+        "sqlite_storage_table",
+        "sqlite_domain_tables",
+        "indexeddb",
+        "opfs",
+        "cache_api",
+        "appdata_files",
+        "logs",
+        "temp_staging",
+        "snapshots",
+        "memory"
+      ]
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["electron", "web", "pwa"]
+    },
+    "persistenceMode": {
+      "type": "string",
+      "enum": ["none", "memory_only", "encrypted_at_rest", "plaintext_allowed"]
+    },
+    "syncMode": {
+      "type": "string",
+      "enum": ["never", "opt_in"]
+    },
+    "exportMode": {
+      "type": "string",
+      "enum": ["never", "user_export", "diagnostic_only"]
+    },
+    "erasureMode": {
+      "type": "string",
+      "enum": ["erase_on_delete_all", "retain_anonymized"]
+    },
+    "dataClass": {
+      "type": "string",
+      "enum": [
+        "user_content",
+        "user_preference",
+        "ui_state",
+        "ui_preference",
+        "onboarding_flag",
+        "consent_record",
+        "cache",
+        "diagnostic",
+        "snapshot",
+        "ephemeral_key",
+        "derived_analytics"
+      ]
+    },
+    "legalBasis": {
+      "type": "string",
+      "enum": [
+        "consent",
+        "contract_performance",
+        "legitimate_interest",
+        "not_personal_data"
+      ]
+    },
+    "retentionPolicy": {
+      "type": "string",
+      "enum": ["user_controlled", "session_only", "fixed"]
+    },
+    "manifestEntry": {
+      "type": "object",
+      "required": [
+        "key",
+        "surface",
+        "platforms",
+        "class",
+        "pii",
+        "persistence",
+        "sync",
+        "export",
+        "erasure",
+        "retention",
+        "purpose",
+        "legal_basis",
+        "owner",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "surface": { "$ref": "#/$defs/surface" },
+        "platforms": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/platform" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "class": { "$ref": "#/$defs/dataClass" },
+        "pii": { "type": "boolean" },
+        "persistence": { "$ref": "#/$defs/persistenceMode" },
+        "sync": { "$ref": "#/$defs/syncMode" },
+        "export": { "$ref": "#/$defs/exportMode" },
+        "erasure": { "$ref": "#/$defs/erasureMode" },
+        "retention": {
+          "type": "object",
+          "required": ["policy", "max_days"],
+          "additionalProperties": false,
+          "properties": {
+            "policy": { "$ref": "#/$defs/retentionPolicy" },
+            "max_days": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "purpose": { "type": "string", "minLength": 1 },
+        "legal_basis": { "$ref": "#/$defs/legalBasis" },
+        "owner": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" }
+      }
+    }
+  }
+}
