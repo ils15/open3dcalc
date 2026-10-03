@@ -76,7 +76,9 @@ describe("demoDataset — fictional 'Estúdio Maria Print'", () => {
       expect(spool.weightGrams).toBeLessThanOrEqual(spool.originalWeightGrams);
     }
     // at least one low-stock reel for the alert
-    expect(DEMO_SPOOLS.filter((s) => s.weightGrams < 200).length).toBeGreaterThanOrEqual(1);
+    expect(
+      DEMO_SPOOLS.filter((s) => s.weightGrams < 200).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   // ── CRM + catalog entities ─────────────────────────────────────
@@ -97,6 +99,33 @@ describe("demoDataset — fictional 'Estúdio Maria Print'", () => {
       expect(q.form.items.length).toBeGreaterThan(0);
       expect(q.form.items.every((i) => i.quantity > 0)).toBe(true);
       expect(q.customerIndex).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("quotes and the history they cite agree on the unit price", () => {
+    // A demo quote that says a piece costs R$ 89,90 while the history entry
+    // for the SAME piece says R$ 101,46 is a demo that contradicts itself, and
+    // the first thing anyone does with a demo is compare the two numbers.
+    // The comment on DEMO_QUOTES claims these mirror the derived `sellPrice`;
+    // this is the spec that holds that claim to account.
+    const sellPriceById = new Map(
+      buildDemoHistoryEntries().map((e) => [e.id, e.sellPrice]),
+    );
+
+    for (const quote of DEMO_QUOTES) {
+      for (const item of quote.form.items) {
+        const derived = sellPriceById.get(item.historyEntryId);
+        expect(
+          derived,
+          `demo quote "${quote.form.title}" cites ${item.historyEntryId}, which is not in the history seeds`,
+        ).toBeDefined();
+        // Money is compared to the cent: the history sellPrice is a derived
+        // float, so an exact match would be a coincidence, not a contract.
+        expect(
+          Math.round(item.unitPrice * 100),
+          `demo quote "${quote.form.title}" unit price for ${item.historyEntryId}`,
+        ).toBe(Math.round((derived as number) * 100));
+      }
     }
   });
 
@@ -131,7 +160,8 @@ describe("demoDataset — fictional 'Estúdio Maria Print'", () => {
     const entries = buildDemoHistoryEntries();
     const margins = entries.map((e) => {
       const snapshot = e.snapshot;
-      if (!snapshot) throw new Error("demo history entry must carry a snapshot");
+      if (!snapshot)
+        throw new Error("demo history entry must carry a snapshot");
       const sales = e.type === "fdm" ? snapshot.fdmSales : snapshot.resinSales;
       return sales.profitMarginPercent;
     });

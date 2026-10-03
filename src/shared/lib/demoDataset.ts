@@ -295,257 +295,9 @@ export const DEMO_PRODUCTS: ProductFormData[] = [
   },
 ];
 
-/** Semente de orçamento: `addQuote` não aceita cliente, então o store linka
- * depois via `updateQuote` (ação existente). */
-export interface DemoQuoteSeed {
-  form: QuoteFormData;
-  /** Índice em {@link DEMO_CUSTOMERS}; -1 = sem cliente. */
-  customerIndex: number;
-}
-
-export const DEMO_QUOTES: DemoQuoteSeed[] = [
-  {
-    form: {
-      title: "Encomenda — Loja Artes Analíticas",
-      items: [
-        // The caller owns the price (@athena W1): these mirror the `sellPrice`
-        // the matching DEMO_HISTORY_SEEDS entry derives, so a demo quote is
-        // worth what its history says it is instead of R$ 0,00.
-        {
-          historyEntryId: "demo_hist_01",
-          name: "Vaso Decorativo Geométrico",
-          quantity: 4,
-          unitPrice: 89.9,
-          discountPercent: 5,
-        },
-        {
-          historyEntryId: "demo_hist_03",
-          name: "Porta Canetas Helicoidal",
-          quantity: 2,
-          unitPrice: 74.5,
-          discountPercent: 0,
-        },
-      ],
-      globalDiscountPercent: 5,
-      validUntil: "2026-12-31",
-      paymentTerms: "50% na aprovação, 50% na entrega",
-      deliveryEstimate: "10 dias úteis",
-      footerNote: "Frete por conta do estúdio na cidade de São Paulo.",
-    },
-    customerIndex: 0,
-  },
-  {
-    form: {
-      title: "Brindes corporativos — BC Brindes",
-      items: [
-        {
-          historyEntryId: "demo_hist_04",
-          name: "Chaveiro Personalizado (lote 10)",
-          quantity: 10,
-          unitPrice: 12.9,
-          discountPercent: 10,
-        },
-      ],
-      globalDiscountPercent: 0,
-      validUntil: "2026-11-30",
-      paymentTerms: "Pagamento à vista (PIX)",
-      deliveryEstimate: "7 dias úteis",
-      footerNote: "",
-    },
-    customerIndex: 1,
-  },
-];
-
-// ── snapshots de cálculo ─────────────────────────────────────────────
-
-interface FdmCalcInput {
-  printerId: string;
-  productName: string;
-  materialType: string;
-  density: number;
-  costPerKg: number;
-  weightGrams: number;
-  hours: number;
-  margin: number;
-  quantity?: number;
-  packaging?: number;
-  marketplaceFeePercent?: number;
-}
-
-/** Monta um CalculationSnapshot FDM completo a partir de poucos parâmetros. */
-function buildFdmSnapshot(o: FdmCalcInput): DemoSnapshot {
-  const printer = getPrinter(o.printerId);
-  const labor: LaborCosts = {
-    ...DEFAULT_LABOR,
-    enabled: true,
-    setupTimeMinutes: 15,
-    postProcessingTimeMinutes: 20,
-    hourlyRate: 28,
-  };
-  const sales: SalesParameters = {
-    ...DEFAULT_SALES,
-    packagingCost: o.packaging ?? 4,
-    profitMarginPercent: o.margin,
-    marketplaceFeePercent: o.marketplaceFeePercent ?? 14,
-    volumeDiscounts: DEFAULT_VOLUME_DISCOUNTS.map((d) => ({ ...d })),
-  };
-  const material: MaterialStateFDM = {
-    type: o.materialType,
-    weightUsed: o.weightGrams,
-    purgeWeight: 8,
-    costPerKg: o.costPerKg,
-    density: o.density,
-    spoolEfficiency: 98,
-  };
-  const printParams: PrintParameters = {
-    ...DEFAULT_FDM_PARAMS,
-    printTimeHours: o.hours,
-    printerPowerWatts: printer.power,
-  };
-  const snapshot: CalculationSnapshot = {
-    id: "demo_calc",
-    timestamp: 0,
-    type: "fdm",
-    summary: o.productName,
-    fdmMaterial: material,
-    fdmPrintParams: printParams,
-    fdmSlicerProfile: { ...DEFAULT_FDM_SLICER_PROFILE },
-    fdmFilament: { ...DEFAULT_FDM_FILAMENT },
-    fdmMachine: { ...DEMO_PRINTER_MACHINES[o.printerId] },
-    fdmHardware: { ...DEFAULT_FDM_HARDWARE },
-    fdmFinishing: { ...DEFAULT_FDM_FINISHING },
-    fdmLabor: labor,
-    fdmExtras: { ...DEFAULT_EXTRAS },
-    fdmSales: sales,
-    fdmOps: { ...DEFAULT_OPS },
-    fdmSoft: { ...DEFAULT_SOFT },
-    resinMaterial: { ...DEFAULT_RESIN_MATERIAL },
-    resinPrintParams: { ...DEFAULT_RESIN_PARAMS },
-    resinPostProcess: { ...DEFAULT_RESIN_PP },
-    resinMachine: { ...DEMO_RESIN_MACHINE },
-    resinHardware: { ...DEFAULT_RESIN_HARDWARE },
-    resinLabor: { ...DEFAULT_RESIN_LABOR },
-    resinExtras: { ...DEFAULT_RESIN_EXTRAS },
-    resinSales: { ...DEFAULT_RESIN_SALES },
-    resinOps: { ...DEFAULT_RESIN_OPS },
-    resinSoft: { ...DEFAULT_RESIN_SOFT },
-    fixedCosts: { ...DEFAULT_FIXED_COSTS },
-    selectedPrinterId: o.printerId,
-    selectedMarketplaceId: DEMO_MARKETPLACE_ID,
-    productName: o.productName,
-    quantity: o.quantity ?? 1,
-    infillPercent: 20,
-    targetMarginMode: false,
-    enabledSections: { ...ALL_SECTIONS_ENABLED },
-    results: null,
-  };
-  const results = resultsOf(snapshot);
-  return { ...snapshot, results };
-}
-
-interface ResinCalcInput {
-  productName: string;
-  materialType: string;
-  volumeMl: number;
-  costPerLiter: number;
-  hours: number;
-  margin: number;
-  washType: "alcohol" | "water";
-  wasteMarginPercent?: number;
-}
-
-/** Monta um CalculationSnapshot resina completo (lado FDM fica no default). */
-function buildResinSnapshot(o: ResinCalcInput): DemoSnapshot {
-  const labor: LaborCosts = {
-    ...DEFAULT_RESIN_LABOR,
-    enabled: true,
-    setupTimeMinutes: 10,
-    postProcessingTimeMinutes: 15,
-    hourlyRate: 28,
-  };
-  const sales: SalesParameters = {
-    ...DEFAULT_RESIN_SALES,
-    packagingCost: 3,
-    profitMarginPercent: o.margin,
-    marketplaceFeePercent: 14,
-    volumeDiscounts: DEFAULT_VOLUME_DISCOUNTS.map((d) => ({ ...d })),
-  };
-  const material: MaterialStateResin = {
-    type: o.materialType,
-    volumeUsedMl: o.volumeMl,
-    costPerLiter: o.costPerLiter,
-    density: 1.1,
-    wasteMarginPercent: o.wasteMarginPercent ?? 15,
-  };
-  const postProcess: PostProcessingResin = {
-    ...DEFAULT_RESIN_PP,
-    washingEnabled: true,
-    washType: o.washType,
-    curingEnabled: true,
-    curingTimeMinutes: 10,
-  };
-  const snapshot: CalculationSnapshot = {
-    id: "demo_calc",
-    timestamp: 0,
-    type: "resin",
-    summary: o.productName,
-    fdmMaterial: { ...DEFAULT_FDM_MATERIAL },
-    fdmPrintParams: { ...DEFAULT_FDM_PARAMS },
-    fdmSlicerProfile: { ...DEFAULT_FDM_SLICER_PROFILE },
-    fdmFilament: { ...DEFAULT_FDM_FILAMENT },
-    fdmMachine: { ...DEMO_PRINTER_MACHINES.bambu_p1s },
-    fdmHardware: { ...DEFAULT_FDM_HARDWARE },
-    fdmFinishing: { ...DEFAULT_FDM_FINISHING },
-    fdmLabor: { ...DEFAULT_LABOR },
-    fdmExtras: { ...DEFAULT_EXTRAS },
-    fdmSales: { ...DEFAULT_SALES },
-    fdmOps: { ...DEFAULT_OPS },
-    fdmSoft: { ...DEFAULT_SOFT },
-    resinMaterial: material,
-    resinPrintParams: {
-      ...DEFAULT_RESIN_PARAMS,
-      printTimeHours: o.hours,
-      printerPowerWatts: 150,
-    },
-    resinPostProcess: postProcess,
-    resinMachine: { ...DEMO_RESIN_MACHINE },
-    resinHardware: { ...DEFAULT_RESIN_HARDWARE },
-    resinLabor: labor,
-    resinExtras: { ...DEFAULT_RESIN_EXTRAS },
-    resinSales: sales,
-    resinOps: { ...DEFAULT_RESIN_OPS },
-    resinSoft: { ...DEFAULT_RESIN_SOFT },
-    fixedCosts: { ...DEFAULT_FIXED_COSTS },
-    selectedPrinterId: DEMO_PRINTER_IDS[1],
-    selectedMarketplaceId: DEMO_MARKETPLACE_ID,
-    productName: o.productName,
-    quantity: 1,
-    infillPercent: 20,
-    targetMarginMode: false,
-    enabledSections: { ...ALL_SECTIONS_ENABLED },
-    results: null,
-  };
-  const results = resultsOf(snapshot);
-  return { ...snapshot, results };
-}
-
-/** Apenas as fatias resina de um snapshot (para compor o calculator demo). */
-function resinSlices(s: CalculationSnapshot): Partial<CalculationSnapshot> {
-  return {
-    resinMaterial: s.resinMaterial,
-    resinPrintParams: s.resinPrintParams,
-    resinPostProcess: s.resinPostProcess,
-    resinMachine: s.resinMachine,
-    resinHardware: s.resinHardware,
-    resinLabor: s.resinLabor,
-    resinExtras: s.resinExtras,
-    resinSales: s.resinSales,
-    resinOps: s.resinOps,
-    resinSoft: s.resinSoft,
-  };
-}
-
 // ── histórico (10–12 entradas, ~90 dias, margens variadas) ──────────
+// Declarado ANTES de DEMO_QUOTES porque os orçamentos citam estas entradas por
+// id e derivam o preço delas — a ordem aqui é o que torna a derivação possível.
 
 export interface DemoHistorySeed {
   id: string;
@@ -758,6 +510,73 @@ export function buildDemoHistoryEntries(): HistoryEntry[] {
   });
 }
 
+// ── orçamentos (após o histórico: o preço da linha é derivado) ─────────
+
+/** Semente de orçamento: `addQuote` não aceita cliente, então o store linka
+ * depois via `updateQuote` (ação existente). */
+export interface DemoQuoteSeed {
+  form: QuoteFormData;
+  /** Índice em {@link DEMO_CUSTOMERS}; -1 = sem cliente. */
+  customerIndex: number;
+}
+
+/**
+ * Preço de venda por entrada de histórico, ao centavo.
+ *
+ * É o preço que a MESMA peça tem no histórico do demo. Um orçamento que cita
+ * `demo_hist_01` e cobra outro valor mostra ao visitante dois números para a
+ * mesma peça na mesma tela — e a primeira coisa que se faz com um demo é
+ * comparar os dois números. Por isso o preço da linha é derivado daqui e não
+ * digitado: um único lugar decide quanto a peça custa.
+ */
+/**
+ * Preço de venda por entrada de histórico, ao centavo.
+ *
+ * É o preço que a MESMA peça tem no histórico do demo. Um orçamento que cita
+ * `demo_hist_01` e cobra outro valor mostra ao visitante dois números para a
+ * mesma peça na mesma tela — e a primeira coisa que se faz com um demo é
+ * comparar os dois números. Por isso o preço da linha é derivado daqui e não
+ * digitado: um único lugar decide quanto a peça custa.
+ *
+ * AVALIADO PREGUIÇOSAMENTE, e isso é deliberado: derivar na avaliação do módulo
+ * faria `buildDemoHistoryEntries()` rodar no import, e o `demoDataset` é
+ * importado por `initialWorkshopSeed` — que também roda no import. Num teste
+ * que mocka `printers` com lista vazia, os snapshots-seed não trazem `results`
+ * e a derivação explodiria no import, derrubando o arquivo inteiro de teste
+ * antes de qualquer `it()` rodar. A memoização mantém a derivação única sem
+ * trazer o custo para o import.
+ */
+let demoSellPriceCents: ReadonlyMap<string, number> | null = null;
+
+function demoSellPriceById(): ReadonlyMap<string, number> {
+  if (demoSellPriceCents === null) {
+    demoSellPriceCents = new Map(
+      buildDemoHistoryEntries().map((entry) => [
+        entry.id,
+        Math.round(entry.sellPrice * 100),
+      ]),
+    );
+  }
+  return demoSellPriceCents;
+}
+
+/**
+ * Preço unitário, em reais, da entrada de histórico citada.
+ *
+ * Lança se o id não existir: um orçamento citando uma peça que não está no
+ * histórico é um erro de dados, não um caso a ser silenciosamente zerado —
+ * `R$ 0,00` foi justamente o defeito que este conserto removeu.
+ */
+function demoUnitPrice(historyEntryId: string): number {
+  const cents = demoSellPriceById().get(historyEntryId);
+  if (cents === undefined) {
+    throw new Error(
+      `demoDataset: DEMO_QUOTES cita ${historyEntryId}, ausente de DEMO_HISTORY_SEEDS`,
+    );
+  }
+  return cents / 100;
+}
+
 // ── calculadora pré-carregada: 1 FDM + 1 resina water-washable ───────
 
 function composeDemoCalculator(): DemoSnapshot {
@@ -797,3 +616,252 @@ function composeDemoCalculator(): DemoSnapshot {
 }
 
 export const DEMO_CALCULATOR: DemoSnapshot = composeDemoCalculator();
+
+export const DEMO_QUOTES: DemoQuoteSeed[] = [
+  {
+    form: {
+      title: "Encomenda — Loja Artes Analíticas",
+      items: [
+        // `unitPrice` é um GETTER de propósito: o preço vem derivado da entrada
+        // citada (ver `demoUnitPrice`) para que o orçamento nunca mostre um
+        // número que a mesma peça não tem no histórico — mas a derivação só
+        // pode rodar quando alguém LÊ o preço, nunca no import do módulo.
+        {
+          historyEntryId: "demo_hist_01",
+          name: "Vaso Decorativo Geométrico",
+          quantity: 4,
+          get unitPrice() {
+            return demoUnitPrice("demo_hist_01");
+          },
+          discountPercent: 5,
+        },
+        {
+          historyEntryId: "demo_hist_03",
+          name: "Porta Canetas Helicoidal",
+          quantity: 2,
+          get unitPrice() {
+            return demoUnitPrice("demo_hist_03");
+          },
+          discountPercent: 0,
+        },
+      ],
+      globalDiscountPercent: 5,
+      validUntil: "2026-12-31",
+      paymentTerms: "50% na aprovação, 50% na entrega",
+      deliveryEstimate: "10 dias úteis",
+      footerNote: "Frete por conta do estúdio na cidade de São Paulo.",
+    },
+    customerIndex: 0,
+  },
+  {
+    form: {
+      title: "Brindes corporativos — BC Brindes",
+      items: [
+        {
+          historyEntryId: "demo_hist_04",
+          name: "Chaveiro Personalizado (lote 10)",
+          quantity: 10,
+          get unitPrice() {
+            return demoUnitPrice("demo_hist_04");
+          },
+          discountPercent: 10,
+        },
+      ],
+      globalDiscountPercent: 0,
+      validUntil: "2026-11-30",
+      paymentTerms: "Pagamento à vista (PIX)",
+      deliveryEstimate: "7 dias úteis",
+      footerNote: "",
+    },
+    customerIndex: 1,
+  },
+];
+
+// ── snapshots de cálculo ─────────────────────────────────────────────
+
+interface FdmCalcInput {
+  printerId: string;
+  productName: string;
+  materialType: string;
+  density: number;
+  costPerKg: number;
+  weightGrams: number;
+  hours: number;
+  margin: number;
+  quantity?: number;
+  packaging?: number;
+  marketplaceFeePercent?: number;
+}
+
+/** Monta um CalculationSnapshot FDM completo a partir de poucos parâmetros. */
+function buildFdmSnapshot(o: FdmCalcInput): DemoSnapshot {
+  const printer = getPrinter(o.printerId);
+  const labor: LaborCosts = {
+    ...DEFAULT_LABOR,
+    enabled: true,
+    setupTimeMinutes: 15,
+    postProcessingTimeMinutes: 20,
+    hourlyRate: 28,
+  };
+  const sales: SalesParameters = {
+    ...DEFAULT_SALES,
+    packagingCost: o.packaging ?? 4,
+    profitMarginPercent: o.margin,
+    marketplaceFeePercent: o.marketplaceFeePercent ?? 14,
+    volumeDiscounts: DEFAULT_VOLUME_DISCOUNTS.map((d) => ({ ...d })),
+  };
+  const material: MaterialStateFDM = {
+    type: o.materialType,
+    weightUsed: o.weightGrams,
+    purgeWeight: 8,
+    costPerKg: o.costPerKg,
+    density: o.density,
+    spoolEfficiency: 98,
+  };
+  const printParams: PrintParameters = {
+    ...DEFAULT_FDM_PARAMS,
+    printTimeHours: o.hours,
+    printerPowerWatts: printer.power,
+  };
+  const snapshot: CalculationSnapshot = {
+    id: "demo_calc",
+    timestamp: 0,
+    type: "fdm",
+    summary: o.productName,
+    fdmMaterial: material,
+    fdmPrintParams: printParams,
+    fdmSlicerProfile: { ...DEFAULT_FDM_SLICER_PROFILE },
+    fdmFilament: { ...DEFAULT_FDM_FILAMENT },
+    fdmMachine: { ...DEMO_PRINTER_MACHINES[o.printerId] },
+    fdmHardware: { ...DEFAULT_FDM_HARDWARE },
+    fdmFinishing: { ...DEFAULT_FDM_FINISHING },
+    fdmLabor: labor,
+    fdmExtras: { ...DEFAULT_EXTRAS },
+    fdmSales: sales,
+    fdmOps: { ...DEFAULT_OPS },
+    fdmSoft: { ...DEFAULT_SOFT },
+    resinMaterial: { ...DEFAULT_RESIN_MATERIAL },
+    resinPrintParams: { ...DEFAULT_RESIN_PARAMS },
+    resinPostProcess: { ...DEFAULT_RESIN_PP },
+    resinMachine: { ...DEMO_RESIN_MACHINE },
+    resinHardware: { ...DEFAULT_RESIN_HARDWARE },
+    resinLabor: { ...DEFAULT_RESIN_LABOR },
+    resinExtras: { ...DEFAULT_RESIN_EXTRAS },
+    resinSales: { ...DEFAULT_RESIN_SALES },
+    resinOps: { ...DEFAULT_RESIN_OPS },
+    resinSoft: { ...DEFAULT_RESIN_SOFT },
+    fixedCosts: { ...DEFAULT_FIXED_COSTS },
+    selectedPrinterId: o.printerId,
+    selectedMarketplaceId: DEMO_MARKETPLACE_ID,
+    productName: o.productName,
+    quantity: o.quantity ?? 1,
+    infillPercent: 20,
+    targetMarginMode: false,
+    enabledSections: { ...ALL_SECTIONS_ENABLED },
+    results: null,
+  };
+  const results = resultsOf(snapshot);
+  return { ...snapshot, results };
+}
+
+interface ResinCalcInput {
+  productName: string;
+  materialType: string;
+  volumeMl: number;
+  costPerLiter: number;
+  hours: number;
+  margin: number;
+  washType: "alcohol" | "water";
+  wasteMarginPercent?: number;
+}
+
+/** Monta um CalculationSnapshot resina completo (lado FDM fica no default). */
+function buildResinSnapshot(o: ResinCalcInput): DemoSnapshot {
+  const labor: LaborCosts = {
+    ...DEFAULT_RESIN_LABOR,
+    enabled: true,
+    setupTimeMinutes: 10,
+    postProcessingTimeMinutes: 15,
+    hourlyRate: 28,
+  };
+  const sales: SalesParameters = {
+    ...DEFAULT_RESIN_SALES,
+    packagingCost: 3,
+    profitMarginPercent: o.margin,
+    marketplaceFeePercent: 14,
+    volumeDiscounts: DEFAULT_VOLUME_DISCOUNTS.map((d) => ({ ...d })),
+  };
+  const material: MaterialStateResin = {
+    type: o.materialType,
+    volumeUsedMl: o.volumeMl,
+    costPerLiter: o.costPerLiter,
+    density: 1.1,
+    wasteMarginPercent: o.wasteMarginPercent ?? 15,
+  };
+  const postProcess: PostProcessingResin = {
+    ...DEFAULT_RESIN_PP,
+    washingEnabled: true,
+    washType: o.washType,
+    curingEnabled: true,
+    curingTimeMinutes: 10,
+  };
+  const snapshot: CalculationSnapshot = {
+    id: "demo_calc",
+    timestamp: 0,
+    type: "resin",
+    summary: o.productName,
+    fdmMaterial: { ...DEFAULT_FDM_MATERIAL },
+    fdmPrintParams: { ...DEFAULT_FDM_PARAMS },
+    fdmSlicerProfile: { ...DEFAULT_FDM_SLICER_PROFILE },
+    fdmFilament: { ...DEFAULT_FDM_FILAMENT },
+    fdmMachine: { ...DEMO_PRINTER_MACHINES.bambu_p1s },
+    fdmHardware: { ...DEFAULT_FDM_HARDWARE },
+    fdmFinishing: { ...DEFAULT_FDM_FINISHING },
+    fdmLabor: { ...DEFAULT_LABOR },
+    fdmExtras: { ...DEFAULT_EXTRAS },
+    fdmSales: { ...DEFAULT_SALES },
+    fdmOps: { ...DEFAULT_OPS },
+    fdmSoft: { ...DEFAULT_SOFT },
+    resinMaterial: material,
+    resinPrintParams: {
+      ...DEFAULT_RESIN_PARAMS,
+      printTimeHours: o.hours,
+      printerPowerWatts: 150,
+    },
+    resinPostProcess: postProcess,
+    resinMachine: { ...DEMO_RESIN_MACHINE },
+    resinHardware: { ...DEFAULT_RESIN_HARDWARE },
+    resinLabor: labor,
+    resinExtras: { ...DEFAULT_RESIN_EXTRAS },
+    resinSales: sales,
+    resinOps: { ...DEFAULT_RESIN_OPS },
+    resinSoft: { ...DEFAULT_RESIN_SOFT },
+    fixedCosts: { ...DEFAULT_FIXED_COSTS },
+    selectedPrinterId: DEMO_PRINTER_IDS[1],
+    selectedMarketplaceId: DEMO_MARKETPLACE_ID,
+    productName: o.productName,
+    quantity: 1,
+    infillPercent: 20,
+    targetMarginMode: false,
+    enabledSections: { ...ALL_SECTIONS_ENABLED },
+    results: null,
+  };
+  const results = resultsOf(snapshot);
+  return { ...snapshot, results };
+}
+
+/** Apenas as fatias resina de um snapshot (para compor o calculator demo). */
+function resinSlices(s: CalculationSnapshot): Partial<CalculationSnapshot> {
+  return {
+    resinMaterial: s.resinMaterial,
+    resinPrintParams: s.resinPrintParams,
+    resinPostProcess: s.resinPostProcess,
+    resinMachine: s.resinMachine,
+    resinHardware: s.resinHardware,
+    resinLabor: s.resinLabor,
+    resinExtras: s.resinExtras,
+    resinSales: s.resinSales,
+    resinOps: s.resinOps,
+    resinSoft: s.resinSoft,
+  };
+}
