@@ -61,14 +61,14 @@ git fetch upstream
 
 Each feature/fix = **one branch + one Pull Request**.
 
-| Prefixo     | When to Use          | Example                         |
-| ----------- | -------------------- | ------------------------------- |
-| `feature/`  | New feature          | `feature/comparativo-historico` |
-| `fix/`      | Bug fix              | `fix/auto-save-loop`            |
-| `docs/`     | Documentation        | `docs/contributing-guide`       |
-| `refactor/` | Refactoring          | `refactor/storebridge`          |
-| `test/`     | Tests                | `test/calculator-coverage`      |
-| `chore/`    | Config/infra         | `chore/update-deps`             |
+| Prefixo     | When to Use   | Example                         |
+| ----------- | ------------- | ------------------------------- |
+| `feature/`  | New feature   | `feature/comparativo-historico` |
+| `fix/`      | Bug fix       | `fix/auto-save-loop`            |
+| `docs/`     | Documentation | `docs/contributing-guide`       |
+| `refactor/` | Refactoring   | `refactor/storebridge`          |
+| `test/`     | Tests         | `test/calculator-coverage`      |
+| `chore/`    | Config/infra  | `chore/update-deps`             |
 
 ```bash
 # Create the branch from the updated main
@@ -90,6 +90,7 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 **Allowed types:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `style`, `perf`
 
 **Common scopes in the monorepo:**
+
 - React components: `(calculator)`, `(catalog)`, `(dashboard)`
 - Stores: `(stores)`, `(calculatorStore)`
 - Infra: `(electron)`, `(db)`, `(pwa)`, `(ci)`
@@ -118,6 +119,8 @@ npm run build:all    # Production build — success
 > 💡 **Tip:** If you installed Husky hooks (recommended), this runs automatically on commit.
 
 > **Note for Electron main process changes:** also run `npm run typecheck:electron` to check main process types.
+
+> **Note on the pre-push hook:** `lint`, `typecheck` and `build:all` are enforced at zero errors, but the test step runs in baseline mode — while `main` carries inherited red, the hook blocks only _new_ test regressions (a failing file not listed in `scripts/push-gate-baseline.json`, or a failing count above it). Green CI is still required to merge; see [BRANCH-POLICY.md](BRANCH-POLICY.md#6-local-pre-push-gate-is-did-not-get-worse-ci-is-the-authority).
 
 ### 5. Open the Pull Request
 
@@ -185,15 +188,15 @@ npm run build:all    # Production build — success
 
 ## Code Review — What We Evaluate
 
-| Criterion         | Description                                                |
-| ----------------- | ---------------------------------------------------------- |
+| Criterion         | Description                                                   |
+| ----------------- | ------------------------------------------------------------- |
 | **Functionality** | Does it solve the proposed problem? Does it cover edge cases? |
-| **Clean Code**    | Clear names, no duplication, no `any`, small functions     |
-| **Tests**         | Covers main flow + edge cases + error?                     |
-| **Performance**   | Avoids unnecessary re-renders? Lazy loading ok?            |
-| **i18n**          | Every visible string goes through `t()` from i18next?      |
-| **Accessibility** | ARIA labels, contrast, keyboard navigation?                |
-| **Security**      | No script injection, no sensitive data exposed?            |
+| **Clean Code**    | Clear names, no duplication, no `any`, small functions        |
+| **Tests**         | Covers main flow + edge cases + error?                        |
+| **Performance**   | Avoids unnecessary re-renders? Lazy loading ok?               |
+| **i18n**          | Every visible string goes through `t()` from i18next?         |
+| **Accessibility** | ARIA labels, contrast, keyboard navigation?                   |
+| **Security**      | No script injection, no sensitive data exposed?               |
 
 ---
 
@@ -225,35 +228,35 @@ open3dcalc/
 
 ### Where to put your code
 
-| Type of code                            | Target directory              |
-| --------------------------------------- | ----------------------------- |
-| React component used in web and desktop | `src/shared/components/`      |
-| Zustand store                           | `src/shared/stores/`          |
-| Calculation / parser logic              | `src/shared/lib/`             |
-| React hook                              | `src/shared/hooks/`           |
-| Type/i18n/test utilities                | `src/shared/types/i18n/test`  |
-| Electron-only code                      | `src/platform/desktop/`       |
-| PWA-only code                           | `src/platform/web/`           |
-| Electron main process                   | `electron/`                   |
-| Database migration                      | `db/`                         |
+| Type of code                            | Target directory             |
+| --------------------------------------- | ---------------------------- |
+| React component used in web and desktop | `src/shared/components/`     |
+| Zustand store                           | `src/shared/stores/`         |
+| Calculation / parser logic              | `src/shared/lib/`            |
+| React hook                              | `src/shared/hooks/`          |
+| Type/i18n/test utilities                | `src/shared/types/i18n/test` |
+| Electron-only code                      | `src/platform/desktop/`      |
+| PWA-only code                           | `src/platform/web/`          |
+| Electron main process                   | `electron/`                  |
+| Database migration                      | `db/`                        |
 
 ### Available Scripts (root)
 
-| Command               | Description                                      |
-| --------------------- | ------------------------------------------------ |
-| `npm run dev:web`     | Vite development server (web)                    |
-| `npm run dev:desktop` | Electron development + hot-reload                |
-| `npm run build:web`   | Production web build                             |
-| `npm run build:desktop`| Production desktop build (Vite)                 |
-| `npm run build:all`   | Web + desktop build                              |
-| `npm run build:electron`| Compile Electron main process (TypeScript)     |
-| `npm run test`        | Vitest tests (watch mode)                        |
-| `npm run test:run`    | Vitest tests (run mode)                          |
-| `npm run typecheck`   | TypeScript type checking (`tsc --noEmit`)        |
+| Command                      | Description                                |
+| ---------------------------- | ------------------------------------------ |
+| `npm run dev:web`            | Vite development server (web)              |
+| `npm run dev:desktop`        | Electron development + hot-reload          |
+| `npm run build:web`          | Production web build                       |
+| `npm run build:desktop`      | Production desktop build (Vite)            |
+| `npm run build:all`          | Web + desktop build                        |
+| `npm run build:electron`     | Compile Electron main process (TypeScript) |
+| `npm run test`               | Vitest tests (watch mode)                  |
+| `npm run test:run`           | Vitest tests (run mode)                    |
+| `npm run typecheck`          | TypeScript type checking (`tsc --noEmit`)  |
 | `npm run typecheck:electron` | TypeScript check for Electron main process |
-| `npm run lint`        | ESLint across the entire project                 |
-| `npm run db:generate` | Generate Drizzle ORM migrations                  |
-| `npm run db:migrate`  | Run SQLite migrations                            |
+| `npm run lint`               | ESLint across the entire project           |
+| `npm run db:generate`        | Generate Drizzle ORM migrations            |
+| `npm run db:migrate`         | Run SQLite migrations                      |
 
 ---
 

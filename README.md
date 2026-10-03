@@ -442,6 +442,26 @@ npm run test:packaged
 
 We use **Vitest** + **Testing Library** for unit and component tests. Minimum coverage for calculation logic: **80%**.
 
+### 🚦 Pre-push gate: "não piorou", não "zero vermelho"
+
+O `.husky/pre-push` exige **zero** falhas em `typecheck`, `lint` e `build:all`. A etapa
+de testes é a exceção: ela compara com o baseline em
+[`scripts/push-gate-baseline.json`](scripts/push-gate-baseline.json) e bloqueia
+**apenas regressão nova** — um arquivo de teste falhando que não está no baseline, ou
+uma contagem de testes estáveis acima da do baseline. Contagem menor passa e encolhe o
+baseline; um arquivo do baseline que começa a passar só gera aviso.
+
+Isso existe porque `main` carrega vermelho herdado (12 arquivos / 52 testes em
+`main@09d8947`, do refactor W6 do StudioLayout e de dois registros de pin adiados).
+Um gate que exige zero falhas nesse estado travou o repositório três vezes no mesmo dia
+— um push precisou de `--no-verify` e dois merges de bypass de administrador.
+
+**O CI continua sendo a autoridade:** o gate local é um filtro barato de "não piorou",
+e o merge exige lint/typecheck/test/build verdes no CI. `SKIP_PUSH_GATE=1` pula o hook
+inteiro e imprime um aviso alto — é exceção, não fluxo. Para regerar o baseline (nunca
+editar à mão) e a regra completa, veja
+[BRANCH-POLICY.md](BRANCH-POLICY.md#6-local-pre-push-gate-is-did-not-get-worse-ci-is-the-authority).
+
 `npm run test:browser` roda os specs `*.browser.test.ts` e `*.browser.test.tsx` num **Chromium real** (via Playwright) — o runtime que a web/PWA realmente usa, com `indexedDB` e Web Crypto verdadeiros. É **pré-requisito** instalar o browser uma vez: `npx playwright install chromium` (no CI o job instala com `npx playwright install --with-deps chromium`, que também puxa as libs de sistema do Chromium headless). Esse glob é **excluído** da suíte jsdom (`npm run test:run`), então as duas suítes não se sobrepõem.
 
 `npm run test:packaged` empacota um shell Electron mínimo (`electron-builder.probe.yml`) e roda o probe de keyring (`electron/selftest/packaged-probe.ts`) de dentro de um `app.asar` real, verificando que o gate §3.4 (ADR-001) se comporta como o ADR declara. Por padrão empacota e roda no host; `npm run test:packaged -- --no-build --image host` reusa o pacote e é o spelling explícito de "sem container", e `-- --image ubuntu:24.04` (ou outra imagem) roda dentro de um container. **Pré-requisitos:** `docker` para as linhas de container (o runner do CI já traz Docker) e `xvfb` como fallback headless quando a execução direta não produz relatório (no CI o job instala com `apt-get install -y xvfb`). O relatório é _value-free_ — sem PII, sem key material e sem paths — e o comando só sai com código 0 quando um relatório foi produzido e **todos** os invariantes se mantêm. Roda no job `test-packaged` do CI contra host + `ubuntu:24.04` / `debian:12` / `rockylinux:9`.
@@ -515,6 +535,7 @@ npm run db:migrate
 | `npm run typecheck:electron` | TypeScript check for Electron main process                                   |
 | `npm run db:generate`        | Generate Drizzle ORM migrations                                              |
 | `npm run db:migrate`         | Run pending SQLite migrations                                                |
+| `node scripts/push-gate.mjs` | Pre-push test gate in baseline mode ("não piorou"); `--write` regenerates    |
 | `npm run postinstall`        | Rebuild native modules (electron-rebuild)                                    |
 
 ---

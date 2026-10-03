@@ -1,0 +1,44 @@
+{
+  "recordedAt": "2026-10-03T12:27:31Z",
+  "recordedAgainst": "09d8947e686a6e13f89f6a744ec681db6f487aa7",
+  "failingTestCount": 52,
+  "failingTestFiles": [
+    "src/platform/web/App.focusMode.test.tsx",
+    "src/platform/web/App.navigation.test.tsx",
+    "src/shared/__tests__/TabletOptimization.test.tsx",
+    "src/shared/__tests__/accentBackgroundContrast.test.ts",
+    "src/shared/__tests__/layoutShell.test.ts",
+    "src/platform/desktop/__tests__/App.test.tsx",
+    "src/shared/lib/__tests__/downloadFunnelInvariant.test.ts",
+    "src/shared/components/AppShell/__tests__/focusMode.test.tsx",
+    "src/shared/components/AppShell/__tests__/focusModeLayering.test.tsx",
+    "src/shared/components/DemoMode/__tests__/DemoExportGuards.test.tsx",
+    "src/shared/components/Privacy/__tests__/PiiLockedShell.test.tsx",
+    "src/shared/components/ui/__tests__/tabsParity.test.tsx"
+  ],
+  "flakyTestFiles": [
+    "src/shared/components/Catalog/__tests__/ProductInventory.test.tsx"
+  ],
+  "notes": {
+    "method": "Medido, não copiado. `npx vitest run --maxWorkers=4 --reporter=json` executado 3x em origin/main@09d8947. 12 arquivos / 52 testes falham em todas as 3 execuções; um 13º arquivo é flaky (ver flakyTestFiles). Contagens por arquivo: App.focusMode 4, App.navigation 1, TabletOptimization 9, accentBackgroundContrast 4, layoutShell 11, desktop App.test 1, downloadFunnelInvariant 2, AppShell/focusMode 1, focusModeLayering 1, DemoExportGuards 6, PiiLockedShell 8, tabsParity 4.",
+    "invariant": "`failingTestCount` conta SOMENTE os arquivos de `failingTestFiles` (52). O arquivo flaky fica fora da contagem de propósito: se contasse, um dia ele passa e a contagem cai 1, abrindo um buraco de 1 teste para regressão nova. Ele é verificado só pela regra de conjunto de arquivos, onde passar é normal.",
+    "regenerate": "NUNCA edite à mão. `node scripts/push-gate.mjs <relatorio.json> scripts/push-gate-baseline.json --write` regrava medindo. Atualize `notes.slices` junto — é ele que impede o baseline de virar lixo acumulado.",
+    "slices": {
+      "src/shared/__tests__/layoutShell.test.ts": "W6/W6.2 — o App web virou StudioLayout e a marcação de layout (modo classic, max-w-[1600px]/2xl:max-w-[1920px]) saiu do arquivo que o teste faz grep de source. Fecha com a fatia de layer inversion shared/ -> platform/web/.",
+      "src/platform/web/App.focusMode.test.tsx": "W6 — [data-testid=\"web-header\"] não existe mais no shell web depois da troca por StudioLayout.",
+      "src/platform/web/App.navigation.test.tsx": "W6 — a label 'active tab' sumiu com a marcação de abas do StudioLayout.",
+      "src/shared/__tests__/TabletOptimization.test.tsx": "W6 — as classes/marcadores de layout responsivo que o teste sonda saíram do shell (9 de 13 asserts falham).",
+      "src/shared/components/ui/__tests__/tabsParity.test.tsx": "W6 — falta a role navigation com nome 'nav.mainNavigation' no shell de abas.",
+      "src/platform/desktop/__tests__/App.test.tsx": "W6 — o texto 'ProductInventory' sumiu da superfície de navegação do App web (ripple do mesmo refactor no shell desktop).",
+      "src/shared/components/AppShell/__tests__/focusMode.test.tsx": "W6.2 — [data-testid=\"surface-products\"] não é mais emitido pela superfície do AppShell.",
+      "src/shared/__tests__/accentBackgroundContrast.test.ts": "Registros de pin — 36 locais abaixo de AA não têm pin próprio e 36 ocorrências não têm identidade estática. Adiado explicitamente para a W6.",
+      "src/shared/components/AppShell/__tests__/focusModeLayering.test.tsx": "Registros de pin — 25 arquivos com z-50 de classe contra 15 cobertos pelo registro. Adiado explicitamente para a W6.",
+      "src/shared/lib/__tests__/downloadFunnelInvariant.test.ts": "Guarda de exportação demo — isDemoExportBlocked() (src/shared/lib/demoExportGuard.ts:34) retorna false incondicional, então o funil único de URL.createObjectURL não é respeitado. Fecha junto com DemoExportGuards.",
+      "src/shared/components/DemoMode/__tests__/DemoExportGuards.test.tsx": "Mesma causa de downloadFunnelInvariant: os choke points B1..B5 não abortam porque isDemoExportBlocked() é fail-open hardcoded.",
+      "src/shared/components/Privacy/__tests__/PiiLockedShell.test.tsx": "Vault de privacidade — PiiLockedShell.tsx só tem o caminho 'unavailable'; o formulário de criação/desbloqueio que o teste sonda (privacy.vault.*) não é renderizado. As chaves existem em pt-BR.json."
+    },
+    "flaky": {
+      "src/shared/components/Catalog/__tests__/ProductInventory.test.tsx": "1 teste ('warns without blocking when sale price is below cost'). Falhou em 1 de 3 execuções completas e em 1 de 3 execuções isoladas — flake real, não contaminação de ordem. Não é regressão de código; investigar à parte. Está em `flakyTestFiles` para não bloquear push por acaso e para não abrir buraco na contagem."
+    }
+  }
+}

@@ -1,6 +1,50 @@
 #!/usr/bin/env sh
+# ────────────────────────────────────────────────────────────────────────────
+#  POR QUE ESTE HOOK EXISTE (registro de fato, não opinião)
+#
+#  Este gate rodava `npm run test:run` exigindo ZERO falhas e, ao contrário do
+#  pre-commit, não tinha NENHUMA variável de escape. Com `main` vermelho por
+#  12 arquivos de teste, ele travou o repositório três vezes no mesmo dia: um
+#  push exigiu `--no-verify` e dois merges exigiram bypass de administrador de
+#  checks obrigatórios. Um gate que não pode ser quebrado e cujo vermelho é
+#  herança de outra fatia não protege nada — só ensina o time a usar
+#  `--no-verify`, que aí é silêncio de verdade.
+#
+#  O QUE MUDOU: só a etapa de testes. Ela passou a comparar com o baseline em
+#  scripts/push-gate-baseline.json e a bloquear apenas REGRESSÃO NOVA
+#  (arquivo novo falhando, ou contagem de testes estáveis acima da do baseline).
+#  Contagem menor passa e encolhe o baseline. Baseline velho avisa, não bloqueia.
+#
+#  typecheck, lint e build:all CONTINUAM EXIGINDO ZERO. São alcançáveis hoje e
+#  não há desculpa para relaxá-los — o vermelho de tipo/lint será zerado pela
+#  branch de reparo do StudioLayout, e até lá este hook segue travando nesses
+#  gates de propósito.
+#
+#  O CI continua sendo a autoridade. Este hook é "não piorou", o CI é "verde".
+#  Ver BRANCH-POLICY.md.
+#
+#  ESCAPE: SKIP_PUSH_GATE=1 pula este hook inteiro e imprime um aviso alto e
+#  visível. É exceção, não caminho. Para a etapa de testes isoladamente (e só
+#  ela), use o comparador direto — ele não pula nada:
+#      node scripts/push-gate.mjs node_modules/.cache/push-gate/vitest.json
+# ────────────────────────────────────────────────────────────────────────────
 
 echo "🔒 Running pre-push validation..."
+
+if [ "${SKIP_PUSH_GATE:-}" = "1" ]; then
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════════════════╗"
+  echo "║  ⚠️  SKIP_PUSH_GATE=1 — GATE DE PRE-PUSH PULADO                       ║"
+  echo "╠══════════════════════════════════════════════════════════════════════╣"
+  echo "║  typecheck, lint, build:all e testes NÃO foram verificados.          ║"
+  echo "║  Isto é uma EXCEÇÃO, não o fluxo normal. O CI segue obrigatório e    ║"
+  echo "║  é a autoridade: se ele estiver vermelho, este bypass só adia o       ║"
+  echo "║  bloqueio. Não repita.                                                ║"
+  echo "╚══════════════════════════════════════════════════════════════════════╝"
+  echo ""
+  exit 0
+fi
+
 echo "  • TypeScript type check..."
 npx tsc --noEmit -p tsconfig.app.json || exit 1
 echo "  • Lint..."
@@ -14,6 +58,18 @@ npm run lint || exit 1
 # gitignored, so the build leaves the working tree clean.
 echo "  • CSS build (web + desktop)..."
 npm run build:all || exit 1
-echo "  • Tests..."
-npm run test:run || exit 1
+
+# ── Testes: bloqueia só regressão nova (ver cabeçalho) ──────────────────────
+# `|| true` aqui é DELIBERADO e não é tolerância a falha escondida: com um
+# baseline vermelho, exit != 0 do vitest é a ENTRADA ESPERADA do comparador,
+# não o sinal de decisão. O sinal de decisão é o exit do push-gate.mjs, e ele
+# falha fechado: baseline ausente/ilegível/JSON inválido ou relatório do vitest
+# não interpretável ⇒ BLOQUEIA. O relatório é escrito dentro de node_modules
+# (gitignored) e fica no disco para investigação quando o gate falha.
+GATE_REPORT="node_modules/.cache/push-gate/vitest.json"
+mkdir -p "$(dirname "$GATE_REPORT")"
+echo "  • Tests (gate: não piorou)..."
+npm run test:run -- --reporter=default --reporter=json "--outputFile.json=$GATE_REPORT" || true
+node scripts/push-gate.mjs "$GATE_REPORT" || exit 1
+
 echo "✅ All pre-push checks passed"
