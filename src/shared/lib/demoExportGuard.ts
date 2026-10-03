@@ -11,6 +11,7 @@
  * automaticamente sem precisar de wiring manual handler-a-handler.
  */
 import i18n from "i18next";
+import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 
 const BLOCKED_MESSAGE_KEY = "demo.export.blockedTitle";
 
@@ -30,9 +31,9 @@ export function subscribeBlockedExport(sink: BlockedExportSink): () => void {
   };
 }
 
-/** Emite relatórios e exportações livremente em qualquer modo (demo ou produção). */
+/** Verdadeiro enquanto a sessão demo efêmera está ativa. */
 export function isDemoExportBlocked(): boolean {
-  return false;
+  return useDemoModeStore.getState().isActive;
 }
 
 /** Mensagem explicativa — a mesma chave usada pelo hook React (UX idêntica). */
