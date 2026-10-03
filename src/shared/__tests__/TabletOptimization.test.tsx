@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 import React from "react";
 
@@ -100,7 +100,6 @@ vi.mock("@/shared/stores/calculatorStore", () => ({
 // ─── Import after mocks ───
 import App from "../App";
 import { TABS } from "@/platform/web/App";
-import { PRIMARY_TABS } from "@/shared/components/AppShell/tabs";
 
 // Mock i18next
 vi.mock("react-i18next", () => ({
@@ -112,159 +111,151 @@ vi.mock("react-i18next", () => ({
   I18nextProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+/**
+ * The web App's sidebar, after the Studio layout refactor (#260).
+ *
+ * `App.tsx` now renders `StudioLayout` alone, so the `<aside hidden
+ * md:flex lg:hidden>` that this suite used to find no longer exists in the web
+ * tree: that breakpoint ladder is `AppShell`'s `TabletSidebar`, which #260 left
+ * on the desktop shell only and which is already covered where it lives —
+ * `AppShell/__tests__/sidebarGroups.test.tsx` (icon-only, `w-16`),
+ * `primaryNavigation.test.tsx` (button count, accessible names) and
+ * `sidebarLandmarks.test.tsx` (landmark names).
+ *
+ * The web App kept a compact icon rail under a new rule: `StudioSidebar`
+ * collapses below 1280px instead of swapping in a third sidebar at `md`. That
+ * is what 2.1 now verifies — an icon-only rail that stays nameable, and the
+ * resources hub that 2.3 used to assert against the removed
+ * `SecondaryNavigation`.
+ */
+
+const DEFAULT_WIDTH = 1024;
+
+function setViewportWidth(width: number): void {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
+afterEach(() => {
+  setViewportWidth(DEFAULT_WIDTH);
+});
+
+/** The rail, and its two navs: the module destinations, then the resources. */
+function rail(container: HTMLElement): {
+  aside: Element;
+  modules: HTMLElement;
+  resources: HTMLElement;
+} {
+  const aside = container.querySelector("aside");
+  if (!aside) throw new Error("the web App rendered no sidebar <aside>");
+  const [modules, resources] = Array.from(aside.querySelectorAll("nav"));
+  if (!modules || !resources) {
+    throw new Error("the rail is missing its modules or resources nav");
+  }
+  return { aside, modules, resources };
+}
+
 describe("Phase 2 — Tablet Optimization", () => {
-  describe("2.1 Tablet sidebar in App.tsx", () => {
-    it("renders a tablet sidebar (icons-only) visible at md breakpoint", () => {
+  describe("2.1 Compact icon rail in the web App", () => {
+    it("collapses the sidebar to an icon-only rail below 1280px", () => {
+      setViewportWidth(DEFAULT_WIDTH); // 1024 < 1280
       const { container } = render(<App />);
 
-      // Find the tablet sidebar: <aside> with class containing "hidden md:flex lg:hidden"
-      const allAsides = container.querySelectorAll("aside");
-      const tabletSidebar = Array.from(allAsides).find(
-        (aside) =>
-          aside.className.includes("hidden") &&
-          aside.className.includes("md:flex") &&
-          aside.className.includes("lg:hidden"),
-      );
-
-      expect(tabletSidebar).toBeDefined();
-      expect(tabletSidebar).not.toBeNull();
+      const { aside, modules } = rail(container);
+      // Width is pinned by layout, so the module labels cannot survive here.
+      expect(aside.className).toContain("w-16");
+      expect(modules.textContent).not.toContain("Calculadora");
     });
 
-    it("tablet sidebar has w-16 width class", () => {
+    it("keeps every rail destination reachable by its accessible name", () => {
+      setViewportWidth(DEFAULT_WIDTH);
       const { container } = render(<App />);
 
-      const allAsides = container.querySelectorAll("aside");
-      const tabletSidebar = Array.from(allAsides).find(
-        (aside) =>
-          aside.className.includes("md:flex") &&
-          aside.className.includes("lg:hidden"),
-      );
-
-      expect(tabletSidebar).toBeDefined();
-      expect(tabletSidebar!.className).toContain("w-16");
-    });
-
-    it("tablet sidebar has px-2 padding class", () => {
-      const { container } = render(<App />);
-
-      const allAsides = container.querySelectorAll("aside");
-      const tabletSidebar = Array.from(allAsides).find(
-        (aside) =>
-          aside.className.includes("md:flex") &&
-          aside.className.includes("lg:hidden"),
-      );
-
-      expect(tabletSidebar).toBeDefined();
-      expect(tabletSidebar!.className).toContain("px-2");
-    });
-
-    it("tablet sidebar renders a button for each primary destination plus More", () => {
-      const { container } = render(<App />);
-
-      const allAsides = container.querySelectorAll("aside");
-      const tabletSidebar = Array.from(allAsides).find(
-        (aside) =>
-          aside.className.includes("md:flex") &&
-          aside.className.includes("lg:hidden"),
-      );
-
-      expect(tabletSidebar).toBeDefined();
-      const buttons = tabletSidebar!.querySelectorAll("button");
-      // Phase 7o s3: five always-available primary destinations + the More
-      // disclosure that holds the five demoted ones (the icons-only tablet strip
-      // carries no text, so it shows no label for either). Wiki and Novidades
-      // still live in the footer hub; tabsParity.test locks the web and desktop
-      // sets together.
-      expect(buttons.length).toBe(PRIMARY_TABS.length + 1);
-    });
-
-    it("tablet sidebar buttons have title attribute for accessibility", () => {
-      const { container } = render(<App />);
-
-      const allAsides = container.querySelectorAll("aside");
-      const tabletSidebar = Array.from(allAsides).find(
-        (aside) =>
-          aside.className.includes("md:flex") &&
-          aside.className.includes("lg:hidden"),
-      );
-
-      expect(tabletSidebar).toBeDefined();
-      const buttons = tabletSidebar!.querySelectorAll("button");
+      // The icon-only rail carries no text, so `title` is what names each
+      // button for a screen reader and for a pointer user.
+      const { modules } = rail(container);
+      const buttons = Array.from(modules.querySelectorAll("button"));
+      expect(buttons.length).toBeGreaterThan(0);
       buttons.forEach((btn) => {
         expect(btn).toHaveAttribute("title");
       });
     });
 
-    it("tablet sidebar is hidden on mobile (has hidden class)", () => {
+    it("renders one rail destination per shared tab contract entry", () => {
+      setViewportWidth(DEFAULT_WIDTH);
       const { container } = render(<App />);
 
-      const allAsides = container.querySelectorAll("aside");
-      const tabletSidebar = Array.from(allAsides).find(
-        (aside) =>
-          aside.className.includes("md:flex") &&
-          aside.className.includes("lg:hidden"),
-      );
-
-      expect(tabletSidebar).toBeDefined();
-      // Should have 'hidden' as the base state
-      expect(tabletSidebar!.className).toMatch(/\bhidden\b/);
+      const { modules } = rail(container);
+      // The rail is the Studio's own presentation of the shared catalog: a
+      // destination that is missing here is a destination with no entry point.
+      expect(modules.querySelectorAll("button")).toHaveLength(TABS.length);
     });
 
-    it("tablet sidebar is hidden on large screens (has lg:hidden class)", () => {
+    it("expands to the labelled rail on wide screens", () => {
+      setViewportWidth(1600);
       const { container } = render(<App />);
 
-      const allAsides = container.querySelectorAll("aside");
-      const tabletSidebar = Array.from(allAsides).find(
-        (aside) =>
-          aside.className.includes("md:flex") &&
-          aside.className.includes("lg:hidden"),
-      );
+      const { aside, modules } = rail(container);
+      expect(aside.className).toContain("w-56");
+      expect(modules.textContent).toContain("Calculadora");
+    });
 
-      expect(tabletSidebar).toBeDefined();
-      expect(tabletSidebar!.className).toContain("lg:hidden");
+    it("collapses again when the window shrinks past the breakpoint", () => {
+      setViewportWidth(1600);
+      const { container } = render(<App />);
+      expect(rail(container).aside.className).toContain("w-56");
+
+      setViewportWidth(DEFAULT_WIDTH);
+      fireEvent(window, new Event("resize"));
+
+      expect(rail(container).aside.className).toContain("w-16");
     });
   });
 
   describe("2.3 Secondary navigation links", () => {
-    it("keeps all secondary links together at the bottom of the desktop sidebar", () => {
+    it("keeps the resource destinations in one hub inside the rail", () => {
+      setViewportWidth(DEFAULT_WIDTH);
       const { container } = render(<App />);
-      const desktopSidebar = Array.from(
-        container.querySelectorAll("aside"),
-      ).find((aside) => aside.className.includes("hidden lg:flex"));
 
-      expect(desktopSidebar).toBeDefined();
-      expect(desktopSidebar).toHaveTextContent("nav.wiki");
-      expect(desktopSidebar).toHaveTextContent("nav.changelog");
-      expect(desktopSidebar).toHaveTextContent("footer.github");
-      expect(desktopSidebar).toHaveTextContent("footer.telegram");
-
-      const secondaryGroup = desktopSidebar!.querySelector(
-        '[data-testid="secondary-navigation"]',
-      );
-      expect(secondaryGroup).toBeInTheDocument();
-      expect(secondaryGroup).toHaveClass("mt-auto");
+      const { resources } = rail(container);
+      for (const label of [
+        "Documentação / Wiki",
+        "Notas de Versão",
+        "Código no GitHub",
+        "Comunidade Telegram",
+      ]) {
+        expect(resources.querySelector(`[title="${label}"]`)).not.toBeNull();
+      }
     });
 
-    it("keeps the same secondary links available from the mobile menu", () => {
+    it("splits the hub into internal destinations and external links", () => {
+      setViewportWidth(DEFAULT_WIDTH);
       const { container } = render(<App />);
-      fireEvent.click(
-        container.querySelector('button[aria-haspopup="dialog"]')!,
-      );
 
-      const menu = container.querySelector('[role="dialog"]');
-      expect(menu).toHaveTextContent("nav.wiki");
-      expect(menu).toHaveTextContent("nav.changelog");
-      expect(menu).toHaveTextContent("footer.github");
-      expect(menu).toHaveTextContent("footer.telegram");
+      const { resources } = rail(container);
+      // Wiki and Novidades stay inside the app; the community links leave it.
+      expect(resources.querySelectorAll("button")).toHaveLength(2);
+      expect(resources.querySelectorAll("a")).toHaveLength(2);
+    });
 
-      const externalLinks = menu!.querySelectorAll('a[target="_blank"]');
+    it("opens the external links in a new tab without leaking the opener", () => {
+      setViewportWidth(DEFAULT_WIDTH);
+      const { container } = render(<App />);
+
+      const { resources } = rail(container);
+      const externalLinks = resources.querySelectorAll('a[target="_blank"]');
       expect(externalLinks).toHaveLength(2);
-      externalLinks.forEach((link) =>
-        expect(link).toHaveAttribute("rel", "noopener noreferrer"),
-      );
+      externalLinks.forEach((link) => {
+        // `noreferrer` is the rail's contract here; it implies `noopener`, so
+        // the new tab cannot reach back through `window.opener`.
+        expect(link).toHaveAttribute("rel", "noreferrer");
+      });
     });
 
-    it("does not put secondary surfaces back in the primary bottom tab array", () => {
+    it("does not put secondary surfaces back in the primary tab array", () => {
       expect(TABS).toHaveLength(10);
       expect(TABS.map((tab) => tab.id)).not.toEqual(
         expect.arrayContaining(["wiki", "changelog"]),
