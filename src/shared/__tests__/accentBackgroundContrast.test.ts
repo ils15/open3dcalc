@@ -467,6 +467,38 @@ const WASH_SITE_PIN: Record<string, string[]> = {
   ],
 };
 
+/**
+ * Known below-AA palette pairings, each pinned to the shape of the element that
+ * owns it. This map is a DEFERRAL LEDGER, not a target: a row here records a
+ * site that is already known to fail AA and is being carried as backlog.
+ *
+ * IT IS DELIBERATELY NOT EXTENDED FOR THE STUDIO. The Studio rewrite (#260)
+ * added 36 further below-AA sites — 32 across
+ * `platform/web/components/studio/` (CustomerView 6, QuotesView 5,
+ * ProductsView 4, SpoolView 3, HistoryView 3, QuoteModal 2, Header 2,
+ * DashboardView 2, SubHeader 1, ShortcutsModal 1, PrinterView 1, Layout 1,
+ * CockpitDock 1), plus 2 in `shared/components/Catalog/CatalogTab.tsx` and 2 in
+ * `shared/components/Privacy/PiiLockedShell.tsx`. Every one is `unidentified`
+ * (no static id or source marker) and `unpinned`, which is why
+ *
+ *   - "accounts for every palette SITE against its own pin" fails with 36,
+ *   - "gives every CURRENT deferred occurrence an identity" fails with 36,
+ *   - "integrated: a fixed site leaves a stale pin" fails because the
+ *     unmodified tree does not validate,
+ *   - "holds across the real tree" fails for the same reason,
+ *
+ * and the shapes are `bg-{blue-500,emerald-500,emerald-600,amber-500,amber-600,
+ * rose-500,purple-500} + text-white`.
+ *
+ * Adding these rows would turn four red tests green by writing "36 more WCAG AA
+ * failures are acceptable" into the ledger — which is the one thing this
+ * allowlist must never be used for. The ledger records debt that was agreed;
+ * these rows were never agreed by anyone, they arrived with a feature commit.
+ * The fix is to raise those pairings to >= 4.5:1 in the components (a `-600`/
+ * `-700` step, or an ink token instead of `text-white`).
+ *
+ * Reported to Zeus. Left red.
+ */
 const PALETTE_SITE_PIN: Record<string, string[]> = {
   "catalog-tab-save-printer-button": [
     "bg-emerald-500 + text-white",

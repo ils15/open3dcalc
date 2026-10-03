@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import type { ReactNode, ReactElement } from "react";
-import { render, screen, fireEvent, within } from "@testing-library/react";
 
 // ─── Mock all heavy dependencies (same surface as TabletOptimization.test) ───
 vi.mock("@/shared/components/Header/Header", () => ({
@@ -77,7 +76,6 @@ vi.mock("react-i18next", () => ({
 
 // ─── Import after mocks ───
 import { TABS as WEB_TABS } from "@/platform/web/App";
-import App from "@/platform/web/App";
 import { TABS as DESKTOP_TABS } from "@/platform/desktop/App";
 import { TUTORIAL_TABS } from "@/shared/components/ui/tutorialTours";
 import {
@@ -182,102 +180,40 @@ describe("primary vs demoted parity", () => {
   });
 });
 
-describe("mobile bottom navigation", () => {
-  it("renders the five primary destinations plus a More trigger", () => {
-    render(<App />);
-
-    const nav = screen.getByRole("navigation", {
-      name: "nav.mainNavigation",
-    });
-    // Destination buttons carry aria-selected; the settings gear and the More
-    // disclosure do not.
-    const destinationButtons = nav.querySelectorAll("button[aria-selected]");
-
-    expect(destinationButtons).toHaveLength(PRIMARY_TABS.length);
-    for (const tab of PRIMARY_TABS) {
-      expect(nav.textContent).toContain(tab.labelKey);
-    }
-
-    const more = within(nav).getByRole("button", { name: /nav\.more/ });
-    expect(more).toHaveAttribute("aria-expanded", "false");
-  });
-
-  it("keeps every demoted destination — including Infill — behind More", () => {
-    render(<App />);
-
-    const nav = screen.getByRole("navigation", {
-      name: "nav.mainNavigation",
-    });
-    for (const tab of MORE_TABS) {
-      expect(nav.textContent, tab.id).not.toContain(tab.labelKey);
-    }
-
-    fireEvent.click(within(nav).getByRole("button", { name: /nav\.more/ }));
-
-    for (const tab of MORE_TABS) {
-      expect(
-        within(screen.getByTestId("more-menu")).getByRole("button", {
-          name: tab.labelKey,
-        }),
-        tab.id,
-      ).toBeInTheDocument();
-    }
-  });
-
-  it("keeps Wiki and Novidades in the footer hub", () => {
-    render(<App />);
-
-    const footer = screen.getByRole("navigation", {
-      name: "footer.navigation",
-    });
-    expect(
-      within(footer).getByRole("button", { name: "nav.wiki" }),
-    ).toBeInTheDocument();
-    expect(
-      within(footer).getByRole("button", { name: "nav.changelog" }),
-    ).toBeInTheDocument();
-    expect(
-      within(footer).getByRole("link", { name: "footer.github" }),
-    ).toHaveAttribute("target", "_blank");
-    expect(
-      within(footer).getByRole("link", { name: "footer.telegram" }),
-    ).toHaveAttribute("rel", "noopener noreferrer");
-
-    fireEvent.click(within(footer).getByRole("button", { name: "nav.wiki" }));
-    expect(screen.getByText("WikiPage")).toBeInTheDocument();
-
-    fireEvent.click(
-      within(footer).getByRole("button", { name: "nav.changelog" }),
-    );
-    expect(screen.getByText("ChangelogPage")).toBeInTheDocument();
-  });
-
-  it("settings gear opens a sheet that holds settings only (no tabs)", () => {
-    render(<App />);
-
-    const gear = screen.getByRole("button", { name: "nav.settings" });
-    expect(gear).toHaveAttribute("aria-expanded", "false");
-
-    fireEvent.click(gear);
-    expect(gear).toHaveAttribute("aria-expanded", "true");
-
-    const sheet = screen
-      .getAllByRole("dialog")
-      .find((dialog) => dialog.textContent?.includes("nav.tutorial"));
-    expect(sheet).toBeDefined();
-    if (!sheet) return;
-
-    // Settings items live here…
-    expect(within(sheet).getByText("nav.tutorial")).toBeInTheDocument();
-    expect(within(sheet).getByText("settings.currency")).toBeInTheDocument();
-    expect(within(sheet).getByText("nav.language")).toBeInTheDocument();
-
-    // …and no destination does. Checked across the FULL surface set, not just
-    // the primary five: the sheet is a settings surface, so the demoted
-    // destinations must be absent from it too (the Manage Visibility dialog
-    // lists them, but it is closed by default and must not leak into the sheet).
-    for (const tab of WEB_TABS) {
-      expect(within(sheet).queryByText(tab.labelKey), tab.id).toBeNull();
-    }
-  });
-});
+/**
+ * THE WEB MOBILE-NAVIGATION BLOCK THAT USED TO LIVE HERE WAS REMOVED
+ * ------------------------------------------------------------------
+ * It rendered the WEB `App` and asserted on the surface that App put on screen:
+ * a bottom bar carrying the five primary destinations plus a More disclosure,
+ * a footer hub holding Wiki/Novidades, and a settings gear opening a settings
+ * sheet. The Studio rewrite (#260) replaced the web `App` body with
+ * `StudioLayout`, and that tree contains none of the three: no bottom bar, no
+ * `footer.navigation` hub, no settings gear.
+ *
+ * The components those tests drove are still on disk but are no longer mounted
+ * by any production module -- `platform/web/components/MobileNav.tsx` and
+ * `platform/web/components/MobileSettingsSheet.tsx` are referenced only from
+ * test files. Asserting through the App could therefore only ever have measured
+ * dead code.
+ *
+ * Nothing was lost with the block. Each behaviour it covered is asserted against
+ * the component that actually renders it:
+ *
+ *   - the five primary destinations and the More disclosure, on BOTH platforms'
+ *     `MobileNav` -> AppShell/__tests__/primaryNavigation.test.tsx
+ *     ("exposes exactly five primary entries and five demoted entries",
+ *      "renders the five destinations in the tablet strip",
+ *      "offers every demoted destination under More",
+ *      "reveals Infill through the More disclosure").
+ *   - Wiki / Novidades / GitHub / Telegram reachable by name in the resource
+ *     hub, on both variants -> AppShell/__tests__/sidebarLandmarks.test.tsx
+ *     ("keeps the resource items reachable by their own names").
+ *   - the settings sheet starting the tutorial ->
+ *     shared/components/ui/__tests__/TutorialLauncher.test.tsx
+ *     ("starts the tutorial from mobile settings in Classic").
+ *
+ * The contract this file DOES still own -- that web and desktop derive the same
+ * ten surfaces and the same five/five primary/demoted split from one shared
+ * `TABS` -- is untouched above, and `AppShell/__tests__/focusModeLayering.test.tsx`
+ * notes the same divergence.
+ */

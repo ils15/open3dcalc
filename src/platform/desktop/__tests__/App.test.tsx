@@ -44,8 +44,10 @@ vi.mock("@/shared/components/Catalog/FilamentInventory", () => ({
 vi.mock("@/shared/components/Catalog/CustomerTab", () => ({
   CustomerTab: () => <div>CustomerTab</div>,
 }));
-vi.mock("@/shared/components/Catalog/ProductInventory", () => ({
-  ProductInventory: () => <div>ProductInventory</div>,
+// The Products surface is the Studio view the shared `MainContent` switch
+// adopted in #260; ProductInventory is no longer what `products` renders.
+vi.mock("@/platform/web/components/studio/StudioProductsView", () => ({
+  StudioProductsView: () => <div>StudioProductsView</div>,
 }));
 vi.mock("@/shared/components/Privacy/PrivacyScreen", () => ({
   PrivacyScreen: () => <div>PrivacyScreen</div>,
@@ -58,8 +60,8 @@ vi.mock("@/shared/components/ui/ConsentModal", () => ({
 vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({
   LegacyMigrationPrompt: () => null,
 }));
-vi.mock("@/shared/components/Calculator/QuoteSection", () => ({
-  QuoteSection: () => <div>QuoteSection</div>,
+vi.mock("@/platform/web/components/studio/StudioQuotesView", () => ({
+  StudioQuotesView: () => <div>StudioQuotesView</div>,
 }));
 vi.mock("@/shared/stores/storeBridge", () => ({
   restoreAutoSnapshot: vi.fn(),
@@ -260,7 +262,7 @@ describe("desktop App shell (post-extraction)", () => {
     });
 
     // The surface mounted…
-    expect(screen.getByText("ProductInventory")).toBeInTheDocument();
+    expect(screen.getByText("StudioProductsView")).toBeInTheDocument();
     // …and the More disclosure, which owns demoted surfaces, reflects it.
     expect(moreButton).toHaveAttribute("aria-current", "page");
   });

@@ -821,6 +821,36 @@ describe("focus mode — a passive surface never buries the exit", () => {
 
     // 2. The covered set may not fall behind the tree, or a new z-50 is
     //    silently unpinned. This is what catches a file nobody thought to list.
+    //
+    //    RED ON PURPOSE — REPORTED PRODUCT BUG, not a stale list. The Studio
+    //    rewrite (#260) added ten files that paint a class-level z-50 and none
+    //    of them is listed. Adding the list is NOT the fix, because step 3
+    //    below then runs over them and one of them fails it outright.
+    //
+    //    Nine are legitimate dimming backdrops and would pass step 3 as-is
+    //    (`fixed inset-0 z-50 bg-black/NN`): StudioCopilotModal, StudioCustomerView,
+    //    StudioMiniDashOverlay, StudioProductsView, StudioQuoteModal,
+    //    StudioQuotesView, StudioShortcutsModal, StudioSpoolView and
+    //    shared/components/Privacy/PiiLockedShell.
+    //
+    //    The tenth does not:
+    //
+    //      platform/web/components/studio/StudioCockpitDock.tsx:35
+    //        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 …">
+    //
+    //    One z-50, zero backdrops, zero panels — `fixed inset-0` is absent and
+    //    there is no `bottom-0 rounded-t-2xl` sheet. It is a floating dock filed
+    //    in the scrim tier, which is precisely the false pass this test was
+    //    written to eliminate ("calls a bottom sheet a panel and a floating box
+    //    not a panel"). Tailwind's `z-50` is 50, above `--z-shell-chrome: 45`
+    //    that the always-visible exit is pinned to, so it outranks the exit.
+    //
+    //    The fix is in the component: put the dock on a named scale step below
+    //    `z-shell-chrome` (the passive band is what the other floating surfaces
+    //    use). It cannot be made here, because step 2 demands exact equality
+    //    with the tree — omitting the dock fails on "list one that is missing",
+    //    and listing it fails on step 3. Both failure modes are the guard
+    //    working. Reported to Zeus rather than worked around.
     const covered = [
       "src/shared/components/ui/ComparisonModal.tsx",
       "src/shared/components/ui/ConfirmDialog.tsx",

@@ -35,14 +35,19 @@ vi.mock("@/shared/components/SpoolShelf/SpoolShelf", () => ({
 vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
   InfillCalculator: () => <div data-testid="surface-infill" />,
 }));
-vi.mock("@/shared/components/Calculator/QuoteSection", () => ({
-  QuoteSection: () => <div data-testid="surface-quotes" />,
+// Quotes and Products are the two destinations whose surface the Studio
+// rewrite (#260) adopted into the shared `MainContent` switch, so the modules
+// mocked here are the Studio views rather than the shared QuoteSection /
+// ProductInventory they replaced. The test ids are unchanged: this file asserts
+// WHICH surface focus mode returns to, not how that surface is built.
+vi.mock("@/platform/web/components/studio/StudioQuotesView", () => ({
+  StudioQuotesView: () => <div data-testid="surface-quotes" />,
 }));
 vi.mock("@/shared/components/Catalog/CustomerTab", () => ({
   CustomerTab: () => <div data-testid="surface-customers" />,
 }));
-vi.mock("@/shared/components/Catalog/ProductInventory", () => ({
-  ProductInventory: () => <div data-testid="surface-products" />,
+vi.mock("@/platform/web/components/studio/StudioProductsView", () => ({
+  StudioProductsView: () => <div data-testid="surface-products" />,
 }));
 vi.mock("@/shared/components/Privacy/PrivacyScreen", () => ({
   PrivacyScreen: () => <div data-testid="surface-privacy" />,
