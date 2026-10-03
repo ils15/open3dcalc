@@ -262,7 +262,9 @@ function QuoteFormModal({
       customerId: customerId || undefined,
       items: items.map((item) => ({
         historyEntryId: item.historyEntryId,
+        name: item.name,
         quantity: item.quantity,
+        unitPrice: item.unitPrice,
         discountPercent: item.discountPercent,
       })),
       globalDiscountPercent: globalDiscount,

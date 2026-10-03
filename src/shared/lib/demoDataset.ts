@@ -308,8 +308,23 @@ export const DEMO_QUOTES: DemoQuoteSeed[] = [
     form: {
       title: "Encomenda — Loja Artes Analíticas",
       items: [
-        { historyEntryId: "demo_hist_01", quantity: 4, discountPercent: 5 },
-        { historyEntryId: "demo_hist_03", quantity: 2, discountPercent: 0 },
+        // The caller owns the price (@athena W1): these mirror the `sellPrice`
+        // the matching DEMO_HISTORY_SEEDS entry derives, so a demo quote is
+        // worth what its history says it is instead of R$ 0,00.
+        {
+          historyEntryId: "demo_hist_01",
+          name: "Vaso Decorativo Geométrico",
+          quantity: 4,
+          unitPrice: 89.9,
+          discountPercent: 5,
+        },
+        {
+          historyEntryId: "demo_hist_03",
+          name: "Porta Canetas Helicoidal",
+          quantity: 2,
+          unitPrice: 74.5,
+          discountPercent: 0,
+        },
       ],
       globalDiscountPercent: 5,
       validUntil: "2026-12-31",
@@ -322,7 +337,15 @@ export const DEMO_QUOTES: DemoQuoteSeed[] = [
   {
     form: {
       title: "Brindes corporativos — BC Brindes",
-      items: [{ historyEntryId: "demo_hist_04", quantity: 10, discountPercent: 10 }],
+      items: [
+        {
+          historyEntryId: "demo_hist_04",
+          name: "Chaveiro Personalizado (lote 10)",
+          quantity: 10,
+          unitPrice: 12.9,
+          discountPercent: 10,
+        },
+      ],
       globalDiscountPercent: 0,
       validUntil: "2026-11-30",
       paymentTerms: "Pagamento à vista (PIX)",

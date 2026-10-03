@@ -58,15 +58,18 @@ export const useQuoteStore = create<QuoteStore>()(
         const now = Date.now();
         const id = generateId();
 
-        const items: QuoteItem[] = data.items.map((item, idx) => {
-          const unitPrice = 0; // will be populated from history sync
+        // The caller owns the price (@athena W1): a form knows the unitPrice it
+        // just asked for. The store derives every monetary field from it, so
+        // `calculateTotals` stays the only calculator in the quote path.
+        const items: QuoteItem[] = data.items.map((item) => {
+          const unitPrice = item.unitPrice;
           const qty = item.quantity;
           const discPct = item.discountPercent ?? 0;
           const lineTotal = qty * unitPrice;
           const discountedLineTotal = lineTotal * (1 - discPct / 100);
           return {
             historyEntryId: item.historyEntryId,
-            name: `Item #${idx + 1}`,
+            name: item.name,
             quantity: qty,
             unitPrice,
             totalPrice: discountedLineTotal,
@@ -79,20 +82,18 @@ export const useQuoteStore = create<QuoteStore>()(
           data.globalDiscountPercent,
         );
 
-        const customerSnapshot = undefined;
-
         const quote: Quote = {
           id,
           number: nextNumber,
           title: data.title,
           customerId: data.customerId,
-          customerSnapshot,
+          customerSnapshot: data.customerSnapshot,
           items,
           globalDiscountPercent: data.globalDiscountPercent,
           subtotal,
           discountAmount,
           total,
-          status: "draft",
+          status: data.status ?? "draft",
           validUntil: data.validUntil,
           paymentTerms: data.paymentTerms,
           deliveryEstimate: data.deliveryEstimate,
