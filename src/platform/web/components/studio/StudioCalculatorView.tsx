@@ -1327,15 +1327,15 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
           {/* Section 4: Precificação Comercial & Lucro */}
           {/* F1 tour anchor `sales` — step copy promises "definir sua margem de
-              lucro" and, secondarily, "custos de embalagem e frete". The
-              margin slider (MARGEM DE LUCRO DESEJADA) and VALOR HORA DE TRABALHO
-              are here, so this card is the honest anchor for the step.
+              lucro". The margin slider (MARGEM DE LUCRO DESEJADA) and VALOR HORA
+              DE TRABALHO are here, so this card is the honest anchor for the step.
 
-              KNOWN COPY MISMATCH, reported not papered over: EMBALAGEM & CAIXA
-              lives in Section 3 (Custos Extras), not in this card, and the
-              Studio has no frete/shipping field at all. The step's primary
-              promise (margin) is honoured; the secondary clause over-promises
-              on this surface. Fixed in the tour copy, not by moving the field. */}
+              The step copy used to promise "custos de embalagem e frete" as well,
+              which over-promised on this surface: EMBALAGEM & CAIXA lives in
+              Section 3 (Custos Extras) and the Studio has no frete/shipping field
+              at all. RESOLVED IN THE TOUR COPY, not by moving the field — the
+              step now names only what this section shows (margin, hourly rate,
+              sales channel, quantity discount table). This anchor did not move. */}
           <div
             data-tutorial="sales"
             className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3"
@@ -1593,9 +1593,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
       {/* Right Sticky Results Panel */}
       {/* F1 tour anchor `results` — step copy promises "o custo total, o preço
           sugerido e o lucro estimado". PREÇO SUGERIDO, CUSTO DE PRODUÇÃO and
-          LUCRO BRUTO are all in this panel. The step's "use os sliders" tail
-          points at the margin slider in Section 4 (`sales`), not here; the
-          three headline numbers the step is named after are here. */}
+          LUCRO BRUTO are all in this panel. This panel holds NO slider at all,
+          so the step's "use os sliders" tail pointed at the margin slider in
+          Section 4 (`sales`) and not here; RESOLVED IN THE TOUR COPY, which now
+          points back to Section 4 for scenarios. This anchor did not move. */}
       <div
         data-tutorial="results"
         className="w-full lg:w-80 shrink-0 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col gap-4 sticky top-28 shadow-xl"

@@ -965,11 +965,11 @@
       },
       "sales": {
         "title": "Pricing",
-        "description": "Now let's set your profit margin. Here you can also add packaging and shipping costs."
+        "description": "Now let's set your profit margin. The margin control lives in this section, next to your hourly rate, the sales channel and the quantity discount table."
       },
       "results": {
         "title": "Results",
-        "description": "Done! Here's the total cost, suggested price, and estimated profit. Use the sliders to simulate different scenarios."
+        "description": "Done! On the right are the suggested price, production cost and gross profit, recomputed on every change. To simulate scenarios, go back to the margin control in the previous section."
       },
       "export": {
         "title": "Export",

@@ -965,11 +965,11 @@
       },
       "sales": {
         "title": "Precificação",
-        "description": "Agora vamos definir sua margem de lucro. Aqui você também pode adicionar custos de embalagem e frete."
+        "description": "Agora vamos definir sua margem de lucro. O controle de margem fica nesta seção, junto com o valor hora de trabalho, o canal de venda e a tabela de descontos por quantidade."
       },
       "results": {
         "title": "Resultados",
-        "description": "Pronto! Aqui está o custo total, o preço sugerido e o lucro estimado. Use os sliders para simular diferentes cenários."
+        "description": "Pronto! À direita estão o preço sugerido, o custo de produção e o lucro bruto, recalculados a cada ajuste. Para simular cenários, volte ao controle de margem da seção anterior."
       },
       "export": {
         "title": "Exportar",
