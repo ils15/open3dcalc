@@ -7,6 +7,7 @@ import {
   Activity,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { guardExport } from "@/shared/lib/demoExportGuard";
 
 export interface MaterialProfile {
   name: string;
@@ -172,6 +173,9 @@ export function SalesPitchPanel({
           href={`https://wa.me/?text=${encodeURIComponent(pitch)}`}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={(event) => {
+            if (guardExport()) event.preventDefault();
+          }}
           aria-label={t("copilot.openWhatsApp")}
           className="flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-800 active:scale-95"
         >

@@ -20,7 +20,11 @@ import { subscribeBlockedExport } from "@/shared/lib/demoExportGuard";
  * Renderiza `null` quando ocioso para não deixar uma região `aria-live` vazia
  * na árvore.
  */
-export function DemoExportBlockedToast(): ReactElement | null {
+export function DemoExportBlockedToast({
+  focusMode = false,
+}: {
+  focusMode?: boolean;
+} = {}): ReactElement | null {
   const [items, setItems] = useState<ToastItem[]>([]);
   const nextId = useRef(0);
 
@@ -42,5 +46,11 @@ export function DemoExportBlockedToast(): ReactElement | null {
     return null;
   }
 
-  return <ToastContainer items={items} onDismiss={dismiss} />;
+  return (
+    <ToastContainer
+      items={items}
+      onDismiss={dismiss}
+      placement={focusMode ? "flow" : "overlay"}
+    />
+  );
 }

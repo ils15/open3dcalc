@@ -21,6 +21,7 @@ import { useCalculatorStore } from '@/shared/stores/calculatorStore';
 import { useIsDemoMode } from '@/shared/hooks/useDemoMode';
 import { useDemoModeStore } from '@/shared/stores/demoModeStore';
 import { HistoryEntry } from '@/shared/types';
+import { guardExport } from '@/shared/lib/demoExportGuard';
 
 interface StudioHistoryViewProps {
   onTabChange: (tab: Tab) => void;
@@ -83,6 +84,7 @@ export const StudioHistoryView: React.FC<StudioHistoryViewProps> = ({
   };
 
   const handleWhatsApp = (entry: HistoryEntry) => {
+    if (guardExport()) return;
     const text = encodeURIComponent(
       `*Orçamento - Open3DCalc Studio*\n` +
       `Peça: *${entry.name}*\n` +

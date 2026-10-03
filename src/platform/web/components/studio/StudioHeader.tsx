@@ -16,6 +16,7 @@ import {
 import { Tab } from '@/shared/components/AppShell/tabs';
 import { DemoModeButton } from '@/shared/components/DemoMode/DemoModeButton';
 import { useIsDemoMode } from '@/shared/hooks/useDemoMode';
+import { guardExport } from '@/shared/lib/demoExportGuard';
 
 interface StudioHeaderProps {
   activeTab: Tab;
@@ -105,6 +106,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   const breadcrumb = getBreadcrumbInfo();
 
   const handleWhatsApp = () => {
+    if (guardExport()) return;
     const text = encodeURIComponent(
       `*Orçamento - Open3DCalc Studio*\n` +
       `Projeto: *${currentProjectName || "Projeto 3D"}*\n` +
