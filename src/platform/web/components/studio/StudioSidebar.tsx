@@ -1,23 +1,23 @@
-import React from 'react';
-import { 
-  Box, 
-  Calculator, 
-  BarChart3, 
-  Grid3x3, 
-  Package, 
-  Settings2, 
-  Clock, 
-  Users, 
-  BookOpen, 
-  FileText, 
+import React from "react";
+import {
+  Box,
+  Calculator,
+  BarChart3,
+  Grid3x3,
+  Package,
+  Settings2,
+  Clock,
+  Users,
+  BookOpen,
+  FileText,
   ShoppingBag,
   ShieldCheck,
-  ChevronLeft, 
+  ChevronLeft,
   ChevronRight,
-  ExternalLink
-} from 'lucide-react';
-import { Tab } from '@/shared/components/AppShell/tabs';
-import { BrandIcon } from '@/platform/web/BrandIcon';
+  ExternalLink,
+} from "lucide-react";
+import { Tab } from "@/shared/components/AppShell/tabs";
+import { BrandIcon } from "@/platform/web/BrandIcon";
 
 interface StudioSidebarProps {
   activeTab: Tab;
@@ -26,6 +26,18 @@ interface StudioSidebarProps {
   onToggleCollapse: () => void;
   currency: string;
   onCurrencyChange: (c: string) => void;
+  /** Optional per-module decoration (static hint and/or live count). */
+  modules?: StudioModule[];
+}
+
+interface StudioModule {
+  id: Tab;
+  label: string;
+  icon: React.ReactElement;
+  /** Small static hint rendered after the label (e.g. "beta"). */
+  badge?: string;
+  /** Live count badge, e.g. the number of quotes awaiting action. */
+  countBadge?: number;
 }
 
 export const StudioSidebar: React.FC<StudioSidebarProps> = ({
@@ -35,31 +47,95 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   onToggleCollapse,
   currency,
   onCurrencyChange,
+  modules,
 }) => {
-  const modules = [
-    { id: 'calculator' as Tab, label: 'Calculadora', icon: <Calculator className="w-4 h-4" /> },
-    { id: 'dashboard' as Tab, label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" /> },
-    { id: 'infill' as Tab, label: 'Calc. Infill', icon: <Grid3x3 className="w-4 h-4" /> },
-    { id: 'inventory' as Tab, label: 'Insumos', icon: <Package className="w-4 h-4" /> },
-    { id: 'catalog' as Tab, label: 'Cadastros', icon: <Settings2 className="w-4 h-4" /> },
-    { id: 'history' as Tab, label: 'Histórico', icon: <Clock className="w-4 h-4" /> },
-    { id: 'quotes' as Tab, label: 'Orçamentos', icon: <FileText className="w-4 h-4" /> },
-    { id: 'customers' as Tab, label: 'Clientes', icon: <Users className="w-4 h-4" /> },
-    { id: 'products' as Tab, label: 'Produtos', icon: <ShoppingBag className="w-4 h-4" /> },
-    { id: 'privacy' as Tab, label: 'Privacidade', icon: <ShieldCheck className="w-4 h-4" /> },
+  const allModules: StudioModule[] = [
+    {
+      id: "calculator" as Tab,
+      label: "Calculadora",
+      icon: <Calculator className="w-4 h-4" />,
+    },
+    {
+      id: "dashboard" as Tab,
+      label: "Dashboard",
+      icon: <BarChart3 className="w-4 h-4" />,
+    },
+    {
+      id: "infill" as Tab,
+      label: "Calc. Infill",
+      icon: <Grid3x3 className="w-4 h-4" />,
+    },
+    {
+      id: "inventory" as Tab,
+      label: "Insumos",
+      icon: <Package className="w-4 h-4" />,
+    },
+    {
+      id: "catalog" as Tab,
+      label: "Cadastros",
+      icon: <Settings2 className="w-4 h-4" />,
+    },
+    {
+      id: "history" as Tab,
+      label: "Histórico",
+      icon: <Clock className="w-4 h-4" />,
+    },
+    {
+      id: "quotes" as Tab,
+      label: "Orçamentos",
+      icon: <FileText className="w-4 h-4" />,
+    },
+    {
+      id: "customers" as Tab,
+      label: "Clientes",
+      icon: <Users className="w-4 h-4" />,
+    },
+    {
+      id: "products" as Tab,
+      label: "Produtos",
+      icon: <ShoppingBag className="w-4 h-4" />,
+    },
+    {
+      id: "privacy" as Tab,
+      label: "Privacidade",
+      icon: <ShieldCheck className="w-4 h-4" />,
+    },
   ];
 
+  // The caller may override a module to attach a badge/count; unknown ids fall
+  // back to the default entry so a typo degrades to a plain item instead of
+  // dropping a navigation destination.
+  const resolvedModules = allModules.map(
+    (m) => modules?.find((o) => o.id === m.id) ?? m,
+  );
+
   const resources = [
-    { label: 'Documentação / Wiki', icon: <BookOpen className="w-3.5 h-3.5" />, tab: 'wiki' as Tab },
-    { label: 'Notas de Versão', icon: <FileText className="w-3.5 h-3.5" />, tab: 'changelog' as Tab },
-    { label: 'Código no GitHub', icon: <BrandIcon brand="github" className="w-3.5 h-3.5" />, href: 'https://github.com/ils15/open3dcalc' },
-    { label: 'Comunidade Telegram', icon: <BrandIcon brand="telegram" className="w-3.5 h-3.5" />, href: 'https://t.me/open3dcalc' },
+    {
+      label: "Documentação / Wiki",
+      icon: <BookOpen className="w-3.5 h-3.5" />,
+      tab: "wiki" as Tab,
+    },
+    {
+      label: "Notas de Versão",
+      icon: <FileText className="w-3.5 h-3.5" />,
+      tab: "changelog" as Tab,
+    },
+    {
+      label: "Código no GitHub",
+      icon: <BrandIcon brand="github" className="w-3.5 h-3.5" />,
+      href: "https://github.com/ils15/open3dcalc",
+    },
+    {
+      label: "Comunidade Telegram",
+      icon: <BrandIcon brand="telegram" className="w-3.5 h-3.5" />,
+      href: "https://t.me/open3dcalc",
+    },
   ];
 
   return (
-    <aside 
+    <aside
       className={`bg-[#090d16] border-r border-[#1a2337] flex flex-col justify-between select-none shrink-0 transition-all duration-200 z-30 sticky top-0 h-screen ${
-        collapsed ? 'w-16' : 'w-56'
+        collapsed ? "w-16" : "w-56"
       }`}
     >
       {/* Top branding */}
@@ -70,7 +146,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           </div>
           {!collapsed && (
             <div className="flex items-center gap-1.5 overflow-hidden">
-              <span className="font-extrabold text-sm text-slate-100 tracking-tight">Open3DCalc</span>
+              <span className="font-extrabold text-sm text-slate-100 tracking-tight">
+                Open3DCalc
+              </span>
               <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30">
                 v2.5
               </span>
@@ -86,7 +164,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             </p>
           )}
           <nav className="flex flex-col gap-1">
-            {modules.map((m) => {
+            {resolvedModules.map((m) => {
               const isActive = activeTab === m.id;
               return (
                 <button
@@ -95,11 +173,15 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   title={m.label}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all ${
                     isActive
-                      ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-[#121828]'
+                      ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-sm"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
                   }`}
                 >
-                  <span className={isActive ? 'text-blue-400' : 'text-slate-400'}>{m.icon}</span>
+                  <span
+                    className={isActive ? "text-blue-400" : "text-slate-400"}
+                  >
+                    {m.icon}
+                  </span>
                   {!collapsed && (
                     <div className="flex-1 flex items-center justify-between overflow-hidden text-left">
                       <span className="truncate">{m.label}</span>
@@ -157,7 +239,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   onClick={() => r.tab && onTabChange(r.tab)}
                   title={r.label}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    isActive ? 'text-blue-400 bg-blue-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-[#121828]'
+                    isActive
+                      ? "text-blue-400 bg-blue-500/10"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
                   }`}
                 >
                   {r.icon}
@@ -183,15 +267,17 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               <span className="font-bold text-slate-300">{currency}</span>
             </div>
             <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-lg p-0.5 w-full">
-              {['BRL', 'USD', 'EUR'].map((curr) => {
-                const sym = curr === 'BRL' ? 'R$' : curr === 'USD' ? '$' : '€';
+              {["BRL", "USD", "EUR"].map((curr) => {
+                const sym = curr === "BRL" ? "R$" : curr === "USD" ? "$" : "€";
                 const isCurr = currency === curr;
                 return (
                   <button
                     key={curr}
                     onClick={() => onCurrencyChange(curr)}
                     className={`flex-1 py-1 text-[11px] font-bold rounded text-center transition-colors ${
-                      isCurr ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                      isCurr
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "text-slate-400 hover:text-white"
                     }`}
                   >
                     {sym}
@@ -207,7 +293,14 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           onClick={onToggleCollapse}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-[#121828] border border-slate-800 transition-colors"
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <><ChevronLeft className="w-4 h-4" /><span>Recolher Painel</span></>}
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <>
+              <ChevronLeft className="w-4 h-4" />
+              <span>Recolher Painel</span>
+            </>
+          )}
         </button>
       </div>
     </aside>

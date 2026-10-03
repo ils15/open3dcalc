@@ -16,11 +16,8 @@ import {
   Search,
   Trash2,
   X,
-  Sparkles,
   Zap,
-  Layers,
   ArrowLeft,
-  CheckCircle2,
 } from "lucide-react";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import type { PrinterProfile } from "@/shared/types";
@@ -355,7 +352,8 @@ function PrinterManager() {
             Minhas Impressoras 3D Cadastradas
           </h3>
           <p className="text-xs text-slate-400">
-            {store.printers.length} equipamentos na frota • Clique em "Definir Ativa" para aplicar potência e custos no cálculo
+            {store.printers.length} equipamentos na frota • Clique em "Definir
+            Ativa" para aplicar potência e custos no cálculo
           </p>
         </div>
 
@@ -591,11 +589,13 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
   const { t } = useTranslation();
   const { symbol: currencySymbol } = useCurrency();
 
-  const [mode, setMode] = useState<'presets' | 'custom'>('presets');
+  const [mode, setMode] = useState<"presets" | "custom">("presets");
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
-  const [presetSearch, setPresetSearch] = useState('');
-  const [presetTechFilter, setPresetTechFilter] = useState<'all' | 'fdm' | 'resin'>('all');
-  const [presetBrandFilter, setPresetBrandFilter] = useState<string>('all');
+  const [presetSearch, setPresetSearch] = useState("");
+  const [presetTechFilter, setPresetTechFilter] = useState<
+    "all" | "fdm" | "resin"
+  >("all");
+  const [presetBrandFilter, setPresetBrandFilter] = useState<string>("all");
 
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
@@ -611,16 +611,21 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
   const presetBrands = useMemo(() => {
     const bSet = new Set<string>();
     printers.forEach((p) => bSet.add(p.brand));
-    return ['all', ...Array.from(bSet).sort()];
+    return ["all", ...Array.from(bSet).sort()];
   }, []);
 
   // Filter presets
   const filteredPresets = useMemo(() => {
     const q = presetSearch.trim().toLowerCase();
     return printers.filter((p) => {
-      const matchesSearch = !q || p.name.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q);
-      const matchesTech = presetTechFilter === 'all' || p.technology === presetTechFilter;
-      const matchesBrand = presetBrandFilter === 'all' || p.brand === presetBrandFilter;
+      const matchesSearch =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.brand.toLowerCase().includes(q);
+      const matchesTech =
+        presetTechFilter === "all" || p.technology === presetTechFilter;
+      const matchesBrand =
+        presetBrandFilter === "all" || p.brand === presetBrandFilter;
       return matchesSearch && matchesTech && matchesBrand;
     });
   }, [presetSearch, presetTechFilter, presetBrandFilter]);
@@ -661,13 +666,13 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
   const totalMachineHourCost = depreciationPerHour + numMaint;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
     >
       <section
-        className="bg-[#0c1220] border border-[#21304f] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl text-slate-200 animate-in zoom-in-95"
+        className="bg-[#0c1220] border border-[#21304f] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl text-slate-200 animate-scale-in"
         aria-label={t("catalog.addPrinter")}
       >
         {/* Modal Header */}
@@ -684,7 +689,8 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
               Catálogo de Presets & Cadastro de Impressoras 3D
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Escolha um modelo homologado da biblioteca ou cadastre uma impressora personalizada
+              Escolha um modelo homologado da biblioteca ou cadastre uma
+              impressora personalizada
             </p>
           </div>
           <button
@@ -698,19 +704,19 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
         </div>
 
         {/* Mode Switcher Tabs */}
-        {!selectedPresetId && mode === 'presets' && (
+        {!selectedPresetId && mode === "presets" && (
           <div className="flex items-center justify-between p-3 border-b border-[#1b253b] bg-[#0c1220] gap-3">
             <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-xl p-0.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => {
-                  setMode('presets');
+                  setMode("presets");
                   setSelectedPresetId(null);
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-                  mode === 'presets'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                  mode === "presets"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white"
                 }`}
               >
                 <Zap className="w-3.5 h-3.5 text-amber-300" />
@@ -719,22 +725,18 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
               <button
                 type="button"
                 onClick={() => {
-                  setMode('custom');
-                  setSelectedPresetId('custom');
-                  setName('Impressora Personalizada');
-                  setBrand('DIY / Custom');
-                  setPower('200');
-                  setValue('2000');
-                  setUsefulLife('3000');
-                  setMaintenancePerHour('0.30');
-                  setTechnology('fdm');
+                  setMode("custom");
+                  setSelectedPresetId("custom");
+                  setName("Impressora Personalizada");
+                  setBrand("DIY / Custom");
+                  setPower("200");
+                  setValue("2000");
+                  setUsefulLife("3000");
+                  setMaintenancePerHour("0.30");
+                  setTechnology("fdm");
                   setBuildVolumeMm({ x: 220, y: 220, z: 250 });
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-                  mode === 'custom'
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Impressora Personalizada / Do Zero</span>
@@ -749,7 +751,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
 
         {/* Modal Body */}
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
-          {!selectedPresetId && mode === 'presets' ? (
+          {!selectedPresetId && mode === "presets" ? (
             /* Presets Gallery View */
             <div className="space-y-4">
               {/* Preset Search and Filter Bar */}
@@ -765,7 +767,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                   />
                   {presetSearch && (
                     <button
-                      onClick={() => setPresetSearch('')}
+                      onClick={() => setPresetSearch("")}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs"
                     >
                       ✕
@@ -777,27 +779,33 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                 <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg p-0.5 text-[11px] font-semibold">
                   <button
                     type="button"
-                    onClick={() => setPresetTechFilter('all')}
+                    onClick={() => setPresetTechFilter("all")}
                     className={`px-2.5 py-1 rounded transition-all ${
-                      presetTechFilter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                      presetTechFilter === "all"
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-400 hover:text-white"
                     }`}
                   >
                     Todas
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPresetTechFilter('fdm')}
+                    onClick={() => setPresetTechFilter("fdm")}
                     className={`px-2.5 py-1 rounded transition-all ${
-                      presetTechFilter === 'fdm' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                      presetTechFilter === "fdm"
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-400 hover:text-white"
                     }`}
                   >
                     FDM
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPresetTechFilter('resin')}
+                    onClick={() => setPresetTechFilter("resin")}
                     className={`px-2.5 py-1 rounded transition-all ${
-                      presetTechFilter === 'resin' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                      presetTechFilter === "resin"
+                        ? "bg-purple-600 text-white"
+                        : "text-slate-400 hover:text-white"
                     }`}
                   >
                     Resina
@@ -807,7 +815,9 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
 
               {/* Brands Horizontal Scroll */}
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                <span className="text-[10px] text-slate-500 font-mono uppercase shrink-0 mr-1">MARCA:</span>
+                <span className="text-[10px] text-slate-500 font-mono uppercase shrink-0 mr-1">
+                  MARCA:
+                </span>
                 {presetBrands.map((b) => (
                   <button
                     key={b}
@@ -815,11 +825,11 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                     onClick={() => setPresetBrandFilter(b)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                       presetBrandFilter === b
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-[#111728] text-slate-400 hover:text-white border border-[#1b253b]'
+                        ? "bg-blue-600 text-white"
+                        : "bg-[#111728] text-slate-400 hover:text-white border border-[#1b253b]"
                     }`}
                   >
-                    {b === 'all' ? 'Todas as Marcas' : b}
+                    {b === "all" ? "Todas as Marcas" : b}
                   </button>
                 ))}
               </div>
@@ -829,8 +839,8 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                 {filteredPresets.map((preset) => {
                   const vol = preset.buildVolumeMm
                     ? `${preset.buildVolumeMm.x}×${preset.buildVolumeMm.y}×${preset.buildVolumeMm.z} mm`
-                    : 'Padrão';
-                  const isFdm = preset.technology === 'fdm';
+                    : "Padrão";
+                  const isFdm = preset.technology === "fdm";
 
                   return (
                     <div
@@ -845,11 +855,11 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                           <span
                             className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full font-bold border ${
                               isFdm
-                                ? 'bg-blue-950/60 text-blue-400 border-blue-500/40'
-                                : 'bg-purple-950/60 text-purple-400 border-purple-500/40'
+                                ? "bg-blue-950/60 text-blue-400 border-blue-500/40"
+                                : "bg-purple-950/60 text-purple-400 border-purple-500/40"
                             }`}
                           >
-                            {preset.technology?.toUpperCase() || 'FDM'}
+                            {preset.technology?.toUpperCase() || "FDM"}
                           </span>
                         </div>
 
@@ -864,11 +874,15 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                           </div>
                           <div className="flex items-center justify-between">
                             <span>Potência:</span>
-                            <span className="text-slate-200">{preset.power} W</span>
+                            <span className="text-slate-200">
+                              {preset.power} W
+                            </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span>Valor Base:</span>
-                            <span className="text-emerald-400 font-bold">{currencySymbol} {preset.value}</span>
+                            <span className="text-emerald-400 font-bold">
+                              {currencySymbol} {preset.value}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -894,7 +908,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                   type="button"
                   onClick={() => {
                     setSelectedPresetId(null);
-                    setMode('presets');
+                    setMode("presets");
                   }}
                   className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-semibold"
                 >
@@ -955,16 +969,29 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                     CUSTO CALCULADO DA HORA DE MÁQUINA
                   </span>
                   <div className="text-sm font-bold text-white flex items-center gap-3">
-                    <span>Depreciação: <strong className="font-mono text-slate-300">{currencySymbol} {depreciationPerHour.toFixed(2)}/h</strong></span>
+                    <span>
+                      Depreciação:{" "}
+                      <strong className="font-mono text-slate-300">
+                        {currencySymbol} {depreciationPerHour.toFixed(2)}/h
+                      </strong>
+                    </span>
                     <span>•</span>
-                    <span>Manutenção: <strong className="font-mono text-slate-300">{currencySymbol} {numMaint.toFixed(2)}/h</strong></span>
+                    <span>
+                      Manutenção:{" "}
+                      <strong className="font-mono text-slate-300">
+                        {currencySymbol} {numMaint.toFixed(2)}/h
+                      </strong>
+                    </span>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">TOTAL DE HORA-MÁQUINA:</span>
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">
+                    TOTAL DE HORA-MÁQUINA:
+                  </span>
                   <span className="text-xl font-extrabold text-emerald-400 font-mono">
-                    {currencySymbol} {totalMachineHourCost.toFixed(2).replace('.', ',')}/h
+                    {currencySymbol}{" "}
+                    {totalMachineHourCost.toFixed(2).replace(".", ",")}/h
                   </span>
                 </div>
               </div>
@@ -982,7 +1009,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
             {t("catalog.cancel")}
           </button>
 
-          {(selectedPresetId || mode === 'custom') && (
+          {(selectedPresetId || mode === "custom") && (
             <button
               type="button"
               onClick={add}
