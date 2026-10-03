@@ -115,6 +115,9 @@ export const StudioLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+      {/* Global guard feedback must survive focus mode, which removes the chrome. */}
+      <DemoExportBlockedToast focusMode={focusMode} />
+
       {/* Top Header */}
       {!focusMode && (
         <>
@@ -141,7 +144,6 @@ export const StudioLayout: React.FC = () => {
             onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
           />
           <DemoModeIndicator />
-          <DemoExportBlockedToast />
           <PrivacyOnboarding />
           <LegacyMigrationPrompt />
           <PiiLockedShell />

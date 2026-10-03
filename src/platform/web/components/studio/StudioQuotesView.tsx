@@ -27,6 +27,7 @@ import {
   beginPiiSurfaceWrite,
 } from "@/shared/lib/crypto/piiStoreHydration";
 import { downloadBlob } from "@/shared/lib/download";
+import { guardExport } from "@/shared/lib/demoExportGuard";
 import { jsPDF } from "jspdf";
 import confetti from "canvas-confetti";
 
@@ -528,7 +529,8 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
   };
 
   // WhatsApp Share helper
-  const shareWhatsApp = (q: Quote) => {
+  const shareWhatsApp = (q: Quote): void => {
+    if (guardExport()) return;
     const customer = customers.find((c) => c.id === q.customerId);
     const text = encodeURIComponent(
       `Olá ${customer ? customer.name : ""}! Segue a proposta comercial de impressão 3D:\n` +
@@ -550,7 +552,9 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
       {/* H-4: a locked vault refuses the write at the persistence layer. Without
           this the store mutates in memory, the list shows the new quote, and it
           evaporates on reload with no message. */}
-      <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
+      {!isFormOpen && !viewingQuote && confirmDeleteId === null && (
+        <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
+      )}
       {feedback !== null && (
         <div
           role="status"
@@ -900,6 +904,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             onClick={() => setViewingQuote(quote)}
                             className="p-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 transition-colors"
                             title="Visualizar Proposta"
+                            aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -909,6 +914,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             onClick={() => exportQuoteToPdf(quote)}
                             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
                             title="Download em PDF Comercial"
+                            aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
@@ -918,6 +924,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             onClick={() => shareWhatsApp(quote)}
                             className="p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-500/30 transition-colors"
                             title="Enviar no WhatsApp"
+                            aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                           >
                             <MessageCircle className="w-3.5 h-3.5" />
                           </button>
@@ -927,6 +934,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             onClick={() => openEditModal(quote)}
                             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
                             title="Editar Orçamento"
+                            aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -936,6 +944,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             onClick={() => setConfirmDeleteId(quote.id)}
                             className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors"
                             title="Excluir Orçamento"
+                            aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -953,6 +962,9 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredQuotes.map((quote) => {
             const customer = customers.find((c) => c.id === quote.customerId);
+            const customerDisplayName = customer
+              ? customer.name
+              : quote.customerSnapshot?.name || "Cliente sem cadastro nominal";
             const statusCfg = STATUS_CONFIG[quote.status];
 
             return (
@@ -1043,6 +1055,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       onClick={() => setViewingQuote(quote)}
                       className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-semibold text-xs border border-blue-500/30 transition-colors"
                       title="Visualizar detalhes da proposta"
+                      aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Ver</span>
@@ -1053,6 +1066,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       onClick={() => exportQuoteToPdf(quote)}
                       className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
                       title="Download em PDF"
+                      aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
                     >
                       <Download className="w-3.5 h-3.5" />
                     </button>
@@ -1062,6 +1076,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       onClick={() => shareWhatsApp(quote)}
                       className="p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 transition-colors border border-emerald-500/30"
                       title="Compartilhar no WhatsApp"
+                      aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                     </button>
@@ -1071,6 +1086,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       onClick={() => openEditModal(quote)}
                       className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
                       title="Editar Orçamento"
+                      aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
@@ -1080,6 +1096,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       onClick={() => setConfirmDeleteId(quote.id)}
                       className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700 hover:border-rose-500/30"
                       title="Excluir Orçamento"
+                      aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -1094,10 +1111,16 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
       {/* Create / Edit Quote Modal in Studio Dark Theme */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in max-h-[90vh] overflow-y-auto">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="studio-quote-form-title"
+            className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in max-h-[90vh] overflow-y-auto"
+          >
+            <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
             <div className="flex items-center justify-between pb-3 border-b border-[#1b253b]">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <h3 id="studio-quote-form-title" className="text-base font-bold text-white flex items-center gap-2">
                   <FileText className="w-4 h-4 text-blue-400" />
                   {editingQuote
                     ? `Editar Orçamento #${String(editingQuote.number).padStart(3, "0")}`
@@ -1111,6 +1134,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                 type="button"
                 onClick={() => setIsFormOpen(false)}
                 className="text-slate-400 hover:text-white p-1"
+                aria-label="Fechar proposta"
               >
                 ✕
               </button>
@@ -1380,13 +1404,19 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
       {/* Viewing Quote Modal in Studio Dark Theme */}
       {viewingQuote && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-xl w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="studio-quote-view-title"
+            className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-xl w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in"
+          >
+            <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
             <div className="flex items-center justify-between pb-3 border-b border-[#1b253b]">
               <div>
                 <span className="text-[10px] font-mono text-blue-400 font-bold uppercase">
                   ORÇAMENTO #{String(viewingQuote.number).padStart(3, "0")}
                 </span>
-                <h3 className="text-base font-bold text-white">
+                <h3 id="studio-quote-view-title" className="text-base font-bold text-white">
                   {viewingQuote.title}
                 </h3>
               </div>
@@ -1410,6 +1440,9 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       key={st}
                       onClick={() => {
+                        if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null) {
+                          return;
+                        }
                         setQuoteStatus(viewingQuote.id, st);
                         setViewingQuote({ ...viewingQuote, status: st });
                       }}
@@ -1497,9 +1530,16 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
       {/* Delete Confirmation Dialog */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 text-slate-200">
-            <h4 className="text-sm font-bold text-white">Excluir Orçamento?</h4>
-            <p className="text-xs text-slate-400">
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="studio-quote-delete-title"
+            aria-describedby="studio-quote-delete-description"
+            className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 text-slate-200"
+          >
+            <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
+            <h4 id="studio-quote-delete-title" className="text-sm font-bold text-white">Excluir Orçamento?</h4>
+            <p id="studio-quote-delete-description" className="text-xs text-slate-400">
               Esta ação removerá permanentemente este orçamento. Deseja
               prosseguir?
             </p>
@@ -1514,6 +1554,9 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => {
+                  if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null) {
+                    return;
+                  }
                   removeQuote(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}

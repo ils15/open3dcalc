@@ -7,6 +7,7 @@ import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { useShallow } from "zustand/react/shallow";
 import { useKeyboardShortcuts } from "@/shared/hooks/useKeyboardShortcuts";
+import { guardExport } from "@/shared/lib/demoExportGuard";
 import { QuickStartBanner } from "@/shared/components/ui/QuickStartBanner";
 import { ResultsSidebar } from "@/shared/components/Results/ResultsSidebar";
 import { TechToggle } from "./TechToggle";
@@ -35,7 +36,10 @@ export function Calculator() {
     {
       key: "p",
       ctrl: true,
-      handler: () => window.print(),
+      handler: () => {
+        if (guardExport()) return;
+        window.print();
+      },
       description: "Imprimir",
     },
   ]);

@@ -11,6 +11,8 @@ import {
 import confetti from "canvas-confetti";
 import { downloadBlob } from "@/shared/lib/download";
 import { useCustomerStore } from "@/shared/stores/customerStore";
+import { guardExport } from "@/shared/lib/demoExportGuard";
+import { serializeCsvRows } from "@/shared/lib/csvExport";
 
 interface StudioQuoteModalProps {
   isOpen: boolean;
@@ -47,6 +49,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
   const [deliveryDays, setDeliveryDays] = useState("2 a 3 dias úteis");
   const [proposalValidity, setProposalValidity] = useState("10 dias corridos");
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   if (!isOpen) return null;
 
@@ -86,22 +89,45 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
     `===============================================\n` +
     `Open3DCalc Studio • Oficina de Manufatura Digital`;
 
-  const handleCopy = () => {
-    navigator.clipboard?.writeText(quoteText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async (): Promise<void> => {
+    if (guardExport()) return;
+    if (!navigator.clipboard) {
+      setCopied(false);
+      setCopyError(true);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(quoteText);
+      setCopyError(false);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+      setCopyError(true);
+    }
   };
 
-  const handlePrint = () => {
+  const handlePrint = (): void => {
+    if (guardExport()) return;
     confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
     window.print();
   };
 
-  const handleDownloadCsv = () => {
-    confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-    const csvContent =
-      `Projeto,Cliente,Material,Peso_g,Tempo_h,Custo_Fabricacao_BRL,Preco_Venda_BRL,Lucro_BRL,Margem_Pct,Data\n` +
-      `"${projectName}","${clientName}","${material}",${weightGrams},${(hours + minutes / 60).toFixed(2)},${totalCost.toFixed(2)},${sellPrice.toFixed(2)},${profit.toFixed(2)},${marginPercent}%,"${new Date().toISOString()}"\n`;
+  const handleDownloadCsv = (): void => {
+    const csvContent = serializeCsvRows([
+      {
+        Projeto: projectName,
+        Cliente: clientName,
+        Material: material,
+        Peso_g: weightGrams,
+        Tempo_h: (hours + minutes / 60).toFixed(2),
+        Custo_Fabricacao_BRL: totalCost.toFixed(2),
+        Preco_Venda_BRL: sellPrice.toFixed(2),
+        Lucro_BRL: profit.toFixed(2),
+        Margem_Pct: `${marginPercent}%`,
+        Data: new Date().toISOString(),
+      },
+    ]);
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     // Single funnel: `downloadBlob` is the only place a Blob reaches the disk,
@@ -112,14 +138,20 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
     );
   };
 
-  const handleWhatsApp = () => {
+  const handleWhatsApp = (): void => {
+    if (guardExport()) return;
     const text = encodeURIComponent(quoteText);
     window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-[#0b0f19] border border-[#1e2a44] rounded-2xl w-full max-w-2xl shadow-2xl p-6 flex flex-col gap-4 text-slate-100 max-h-[92vh] overflow-y-auto">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="studio-quote-modal-title"
+        className="bg-[#0b0f19] border border-[#1e2a44] rounded-2xl w-full max-w-2xl shadow-2xl p-6 flex flex-col gap-4 text-slate-100 max-h-[92vh] overflow-y-auto"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <div className="flex items-center gap-2">
@@ -127,7 +159,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
               <FileText className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white">
+              <h3 id="studio-quote-modal-title" className="font-bold text-sm text-white">
                 Gerador de Proposta Comercial & Relatório
               </h3>
               <p className="text-[11px] text-slate-400">
@@ -136,12 +168,20 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            aria-label="Fechar proposta"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {copyError && (
+          <p role="alert" className="text-xs text-rose-300">
+            Não foi possível copiar a proposta. Verifique as permissões do navegador.
+          </p>
+        )}
 
         {/* Customer Select Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#090d18] border border-[#18233a] rounded-xl p-3">

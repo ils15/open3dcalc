@@ -28,6 +28,7 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useSpoolStore, FilamentSpool } from "@/shared/stores/spoolStore";
 import { marketplaces, Marketplace } from "@/shared/lib/marketplace";
 import { generateQuotePdf } from "./exportQuotePdf";
+import { guardExport } from "@/shared/lib/demoExportGuard";
 
 export interface StudioCalculatorViewProps {
   onOpenCopilot: () => void;
@@ -426,6 +427,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
     effectiveProfit > 0 ? effectiveProfit.toFixed(2).replace(".", ",") : "0,00";
 
   const handleCopyLink = () => {
+    if (guardExport()) return;
     navigator.clipboard?.writeText(window.location.href);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
