@@ -23,9 +23,14 @@ import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
  *     was vacuous — there is no footer to begin with. Their replacements are
  *     `StudioHeader`, the sub-header rail, `StudioSidebar` and the floating
  *     `StudioCockpitDock`, and those are what this file tracks.
- *   - There is no `Tutorial` layer in the Studio and no `ConsentModal`; first
- *     run is `PrivacyOnboarding` + `PiiLockedShell`. Asserting they survive a
- *     mode that cannot touch them proved nothing.
+ *   - There IS a `Tutorial` layer on web again — `App.tsx` mounts it behind
+ *     `layoutMode === "classic"`, mirroring the desktop shell, because
+ *     `useAppInit` auto-starts the first-run tour on web and a tour that
+ *     "activates" without rendering is worse than no tour. `useAppInit` is
+ *     stubbed below, so the timer never fires here and the Tutorial stays
+ *     inert; this file is about which chrome a focus state takes away, and
+ *     the tour is not chrome. There is still no `ConsentModal`; first run is
+ *     `PrivacyOnboarding` + `PiiLockedShell`.
  *   - `<main>` no longer reserves `pb-32` for a fixed mobile bar. The Studio
  *     has no such bar, so the reserve it asserted was a page of whitespace
  *     that Focus Mode was, in fact, right to drop. What Focus Mode really
@@ -121,7 +126,7 @@ function chrome(container: HTMLElement): Chrome {
 }
 
 function renderApp(): HTMLElement {
-  const { container } = render(<App /> as ReactElement);
+  const { container } = render((<App />) as ReactElement);
   return container;
 }
 

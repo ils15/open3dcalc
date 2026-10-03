@@ -58,25 +58,37 @@ describe("Classic-only tutorial locale", () => {
  *       if (!store.isCompleted && !store.isActive) store.startTutorial();
  *     }, 1500);
  *
- * On web that timer always fires: `StudioLayout` keeps `layoutMode` in LOCAL
- * `useState` (line 39) and never writes it to `useLayoutStore`, so the store
- * still reads its `"classic"` default and neither guard can reject. But nothing
- * in the web tree mounts `<Tutorial />` — the only mount left in production is
+ * On web that timer always fired: `StudioLayout` kept `layoutMode` in LOCAL
+ * `useState` and never wrote it to `useLayoutStore`, so the store still read
+ * its `"classic"` default and neither guard could reject. But nothing in the
+ * web tree mounted `<Tutorial />` — the only mount left in production was
  * `platform/desktop/App.tsx`. So on the web platform the first-run tutorial
- * starts, sets the transient `isActive: true`, renders nothing, and the
- * `!store.isActive` guard above then prevents it from ever firing again for the
+ * started, set the transient `isActive: true`, rendered nothing, and the
+ * `!store.isActive` guard above then prevented it from ever firing again for the
  * session. A silent no-op that leaves the store claiming a tour is running.
  *
- * The same divergence strands the layout preference itself: the only other web
+ * The same divergence stranded the layout preference itself: the only other web
  * tutorial entry point, the Tutorial item in `platform/web/components/
  * MobileSettingsSheet.tsx`, reads `isClassicLayout` off `useLayoutStore` — a
- * value the web user can no longer change — and that sheet is in any case no
- * longer mounted by any production module.
+ * value the web user could not change — and that sheet is in any case no longer
+ * mounted by any production module.
  *
- * One of two things is correct, and the choice is a product decision, not a
+ * One of two things was correct, and the choice was a product decision, not a
  * test decision: either the web Studio mounts `<Tutorial />` and sources
  * `layoutMode` from `useLayoutStore`, or web stops auto-starting the tutorial.
- * Until then this row stays red.
+ * The owner chose the first — a tour that "activates" without rendering is
+ * worse than no tour at all — so both halves are now true:
+ *
+ *   - `StudioLayout` reads and writes `layoutMode` through
+ *     `useLayoutStore` instead of a local `useState`, which is what makes the
+ *     two `layoutMode` guards above able to reject anything, and is what makes
+ *     the preference persist and be readable from outside the Studio.
+ *   - the web `App` mounts `{layoutMode === "classic" && <Tutorial />}`, the
+ *     same gate and the same leave-Classic skip effect the desktop shell has.
+ *
+ * The row below is therefore green on both platforms, and it is still the
+ * assertion that would catch a regression: a future change that re-localises
+ * `layoutMode`, or unmounts the tutorial on web, fails here.
  */
 describe("Classic-only tutorial mount points", () => {
   it.each([
