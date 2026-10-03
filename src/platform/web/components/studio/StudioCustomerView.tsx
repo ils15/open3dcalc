@@ -1,27 +1,27 @@
-import React, { useState } from 'react';
-import { 
-  Users, 
-  Search, 
-  Plus, 
-  MessageCircle, 
-  Mail, 
-  Phone, 
-  Building, 
-  FileText, 
-  Edit2, 
-  Trash2, 
-  Calendar, 
-  Check, 
+import React, { useState } from "react";
+import {
+  Users,
+  Search,
+  Plus,
+  MessageCircle,
+  Mail,
+  Phone,
+  Building,
+  FileText,
+  Edit2,
+  Trash2,
+  Calendar,
+  Check,
   X,
   Sparkles,
   MapPin,
-  FileCheck
-} from 'lucide-react';
-import { Tab } from '@/shared/components/AppShell/tabs';
-import { useCustomerStore } from '@/shared/stores/customerStore';
-import { useIsDemoMode } from '@/shared/hooks/useDemoMode';
-import { useDemoModeStore } from '@/shared/stores/demoModeStore';
-import { Customer, CustomerFormData } from '@/shared/types';
+  FileCheck,
+} from "lucide-react";
+import { Tab } from "@/shared/components/AppShell/tabs";
+import { useCustomerStore } from "@/shared/stores/customerStore";
+import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
+import { useDemoModeStore } from "@/shared/stores/demoModeStore";
+import { Customer, CustomerFormData } from "@/shared/types";
 
 interface StudioCustomerViewProps {
   onTabChange: (tab: Tab) => void;
@@ -38,47 +38,47 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
   const updateCustomer = useCustomerStore((s) => s.updateCustomer);
   const removeCustomer = useCustomerStore((s) => s.removeCustomer);
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
   // Form fields
-  const [name, setName] = useState('');
-  const [company, setCompany] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [notes, setNotes] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [name, setName] = useState("");
+  const [company, setCompany] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const openCreateModal = () => {
     setEditingCustomer(null);
-    setName('');
-    setCompany('');
-    setEmail('');
-    setPhone('');
-    setAddress('');
-    setNotes('');
-    setErrorMsg('');
+    setName("");
+    setCompany("");
+    setEmail("");
+    setPhone("");
+    setAddress("");
+    setNotes("");
+    setErrorMsg("");
     setIsModalOpen(true);
   };
 
   const openEditModal = (c: Customer) => {
     setEditingCustomer(c);
     setName(c.name);
-    setCompany(c.company || '');
-    setEmail(c.email || '');
-    setPhone(c.phone || '');
-    setAddress(c.address || '');
-    setNotes(c.notes || '');
-    setErrorMsg('');
+    setCompany(c.company || "");
+    setEmail(c.email || "");
+    setPhone(c.phone || "");
+    setAddress(c.address || "");
+    setNotes(c.notes || "");
+    setErrorMsg("");
     setIsModalOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim().length < 2) {
-      setErrorMsg('O nome do cliente deve ter pelo menos 2 caracteres.');
+      setErrorMsg("O nome do cliente deve ter pelo menos 2 caracteres.");
       return;
     }
 
@@ -99,7 +99,8 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
       }
       setIsModalOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao salvar cliente.';
+      const msg =
+        err instanceof Error ? err.message : "Erro ao salvar cliente.";
       setErrorMsg(msg);
     }
   };
@@ -116,16 +117,19 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
     );
   });
 
-  const totalQuotes = customers.reduce((acc, c) => acc + (c.quoteCount || 0), 0);
+  const totalQuotes = customers.reduce(
+    (acc, c) => acc + (c.quoteCount || 0),
+    0,
+  );
   const activeClients = customers.filter((c) => (c.quoteCount || 0) > 0).length;
 
   const handleWhatsApp = (customer: Customer) => {
-    const cleanPhone = (customer.phone || '').replace(/\D/g, '');
+    const cleanPhone = (customer.phone || "").replace(/\D/g, "");
     const text = encodeURIComponent(
       `Olá, ${customer.name}! Tudo bem?\n` +
-      `Estou entrando em contato através do Open3DCalc Studio para falar sobre seus orçamentos de impressão 3D.`
+        `Estou entrando em contato através do Open3DCalc Studio para falar sobre seus orçamentos de impressão 3D.`,
     );
-    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+    window.open(`https://wa.me/${cleanPhone}?text=${text}`, "_blank");
   };
 
   return (
@@ -143,7 +147,8 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
             Carteira de Clientes da Oficina
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Gerencie contatos, empresas parceiras e acompanhe o histórico de propostas emitidas
+            Gerencie contatos, empresas parceiras e acompanhe o histórico de
+            propostas emitidas
           </p>
         </div>
 
@@ -173,41 +178,57 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
         {/* Total Customers */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">TOTAL DE CLIENTES</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              TOTAL DE CLIENTES
+            </span>
             <Users className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">{customers.length}</span>
+            <span className="text-2xl font-extrabold text-white">
+              {customers.length}
+            </span>
             <span className="text-xs text-slate-400 ml-1.5">cadastrados</span>
           </div>
           <div className="text-[10px] text-slate-500">
-            {isDemoMode ? 'Clientes modelo do Estúdio' : 'Armazenamento local seguro (LGPD)'}
+            {isDemoMode
+              ? "Clientes modelo do Estúdio"
+              : "Armazenamento local seguro (LGPD)"}
           </div>
         </div>
 
         {/* Active Customers */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">CLIENTES ATIVOS</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              CLIENTES ATIVOS
+            </span>
             <FileCheck className="w-4 h-4 text-blue-400" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">{activeClients}</span>
+            <span className="text-2xl font-extrabold text-white">
+              {activeClients}
+            </span>
             <span className="text-xs text-slate-400 ml-1.5">com pedidos</span>
           </div>
           <div className="text-[10px] text-blue-400">
-            {customers.length > 0 ? `${Math.round((activeClients / customers.length) * 100)}% de taxa de conversão` : '0% conversão'}
+            {customers.length > 0
+              ? `${Math.round((activeClients / customers.length) * 100)}% de taxa de conversão`
+              : "0% conversão"}
           </div>
         </div>
 
         {/* Quotes generated */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">PROPOSTAS VINCULADAS</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              PROPOSTAS VINCULADAS
+            </span>
             <FileText className="w-4 h-4 text-purple-400" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-purple-400">{totalQuotes}</span>
+            <span className="text-2xl font-extrabold text-purple-400">
+              {totalQuotes}
+            </span>
             <span className="text-xs text-slate-400 ml-1.5">orçamentos</span>
           </div>
           <div className="text-[10px] text-slate-400">
@@ -218,15 +239,21 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
         {/* Quick action card */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">AÇÃO RÁPIDA</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              AÇÃO RÁPIDA
+            </span>
             <Sparkles className="w-4 h-4 text-amber-400" />
           </div>
           <div className="my-2">
-            <span className="text-sm font-bold text-white block">Envio Direto WhatsApp</span>
-            <span className="text-[11px] text-slate-400">Envie propostas com 1 clique</span>
+            <span className="text-sm font-bold text-white block">
+              Envio Direto WhatsApp
+            </span>
+            <span className="text-[11px] text-slate-400">
+              Envie propostas com 1 clique
+            </span>
           </div>
           <button
-            onClick={() => onTabChange('calculator')}
+            onClick={() => onTabChange("calculator")}
             className="text-[11px] text-amber-400 hover:text-amber-300 font-bold text-left"
           >
             Calcular nova peça →
@@ -257,12 +284,14 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-12 flex flex-col items-center justify-center text-center">
           <Users className="w-12 h-12 text-slate-600 mb-3" />
           <h3 className="text-base font-bold text-white mb-1">
-            {search ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado ainda'}
+            {search
+              ? "Nenhum cliente encontrado"
+              : "Nenhum cliente cadastrado ainda"}
           </h3>
           <p className="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
             {search
-              ? 'Tente buscar por outro termo ou limpe a pesquisa.'
-              : 'Cadastre seus primeiros contatos para emitir orçamentos nominais em PDF e gerenciar propostas no WhatsApp.'}
+              ? "Tente buscar por outro termo ou limpe a pesquisa."
+              : "Cadastre seus primeiros contatos para emitir orçamentos nominais em PDF e gerenciar propostas no WhatsApp."}
           </p>
           <div className="flex items-center gap-3">
             <button
@@ -287,13 +316,15 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredCustomers.map((customer) => {
             const initials = customer.name
-              .split(' ')
+              .split(" ")
               .map((n) => n[0])
               .slice(0, 2)
-              .join('')
+              .join("")
               .toUpperCase();
 
-            const dateFormatted = new Date(customer.createdAt).toLocaleDateString('pt-BR');
+            const dateFormatted = new Date(
+              customer.createdAt,
+            ).toLocaleDateString("pt-BR");
 
             return (
               <div
@@ -317,7 +348,9 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                             <span>{customer.company}</span>
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-500 font-mono">Pessoa Física</span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            Pessoa Física
+                          </span>
                         )}
                       </div>
                     </div>
@@ -406,13 +439,15 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
 
       {/* Modal: Create / Edit Customer */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#0c111e] border border-[#1f2c47] rounded-2xl w-full max-w-lg shadow-2xl p-6 relative flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-[#1b253b] pb-3">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-400" />
                 <h2 className="text-sm font-bold text-white">
-                  {editingCustomer ? 'Editar Dados do Cliente' : 'Cadastrar Novo Cliente'}
+                  {editingCustomer
+                    ? "Editar Dados do Cliente"
+                    : "Cadastrar Novo Cliente"}
                 </h2>
               </div>
               <button
@@ -429,7 +464,10 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-xs">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-3 text-xs"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
@@ -526,7 +564,9 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-md"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>{editingCustomer ? 'Salvar Alterações' : 'Cadastrar'}</span>
+                  <span>
+                    {editingCustomer ? "Salvar Alterações" : "Cadastrar"}
+                  </span>
                 </button>
               </div>
             </form>
