@@ -1,41 +1,38 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Package, 
-  Search, 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  Download, 
-  AlertTriangle, 
-  Check, 
-  ShoppingBag, 
-  DollarSign, 
-  TrendingUp, 
-  Scale, 
-  List, 
+import React, { useState, useMemo } from "react";
+import {
+  Package,
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  Download,
+  AlertTriangle,
+  ShoppingBag,
+  DollarSign,
+  TrendingUp,
+  List,
   LayoutGrid,
   Sparkles,
   Layers,
-  ArrowRight
-} from 'lucide-react';
-import { 
-  useProductInventory, 
-  isBelowCost, 
-  exportProductsCSV 
-} from '@/shared/stores/productInventory';
-import { useCurrency } from '@/shared/hooks/useCurrency';
-import { useIsDemoMode } from '@/shared/hooks/useDemoMode';
-import { useDemoModeStore } from '@/shared/stores/demoModeStore';
-import { downloadBlob } from '@/shared/lib/download';
-import type { Product, ProductFormData } from '@/shared/types';
-import confetti from 'canvas-confetti';
-import { Tab } from '@/shared/components/AppShell/tabs';
+} from "lucide-react";
+import {
+  useProductInventory,
+  isBelowCost,
+  exportProductsCSV,
+} from "@/shared/stores/productInventory";
+import { useCurrency } from "@/shared/hooks/useCurrency";
+import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
+import { useDemoModeStore } from "@/shared/stores/demoModeStore";
+import { downloadBlob } from "@/shared/lib/download";
+import type { Product, ProductFormData } from "@/shared/types";
+import confetti from "canvas-confetti";
+import { Tab } from "@/shared/components/AppShell/tabs";
 
 interface StudioProductsViewProps {
   onTabChange?: (tab: Tab) => void;
 }
 
-export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabChange }) => {
+export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
   const isDemoMode = useIsDemoMode();
   const { symbol: currencySymbol } = useCurrency();
   const products = useProductInventory((s) => s.products);
@@ -44,9 +41,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
   const removeProduct = useProductInventory((s) => s.removeProduct);
   const markSold = useProductInventory((s) => s.markSold);
 
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'sold'>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "available" | "sold"
+  >("all");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -54,18 +53,18 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Form input states
-  const [name, setName] = useState('');
-  const [weightGrams, setWeightGrams] = useState<number | ''>('');
-  const [filamentType, setFilamentType] = useState('PLA');
-  const [costPrice, setCostPrice] = useState<number | ''>('');
-  const [salePrice, setSalePrice] = useState<number | ''>('');
+  const [name, setName] = useState("");
+  const [weightGrams, setWeightGrams] = useState<number | "">("");
+  const [filamentType, setFilamentType] = useState("PLA");
+  const [costPrice, setCostPrice] = useState<number | "">("");
+  const [salePrice, setSalePrice] = useState<number | "">("");
 
   // Filtered products
   const filteredProducts = useMemo(() => {
     const q = search.trim().toLowerCase();
     return products.filter((p) => {
-      if (statusFilter === 'sold' && !p.sold) return false;
-      if (statusFilter === 'available' && p.sold) return false;
+      if (statusFilter === "sold" && !p.sold) return false;
+      if (statusFilter === "available" && p.sold) return false;
       if (!q) return true;
       return (
         p.name.toLowerCase().includes(q) ||
@@ -79,17 +78,26 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
   const availableProducts = products.filter((p) => !p.sold);
   const soldProducts = products.filter((p) => p.sold);
 
-  const stockCostValue = availableProducts.reduce((acc, p) => acc + (p.costPrice || 0), 0);
-  const potentialRevenue = availableProducts.reduce((acc, p) => acc + (p.salePrice || 0), 0);
+  const stockCostValue = availableProducts.reduce(
+    (acc, p) => acc + (p.costPrice || 0),
+    0,
+  );
+  const potentialRevenue = availableProducts.reduce(
+    (acc, p) => acc + (p.salePrice || 0),
+    0,
+  );
   const projectedProfit = potentialRevenue - stockCostValue;
-  const avgMargin = stockCostValue > 0 ? Math.round((projectedProfit / stockCostValue) * 100) : 0;
+  const avgMargin =
+    stockCostValue > 0
+      ? Math.round((projectedProfit / stockCostValue) * 100)
+      : 0;
 
   // Open modal handlers
   const openCreateModal = () => {
     setEditingProduct(null);
-    setName('');
+    setName("");
     setWeightGrams(100);
-    setFilamentType('PLA');
+    setFilamentType("PLA");
     setCostPrice(15.0);
     setSalePrice(45.0);
     setIsFormOpen(true);
@@ -99,7 +107,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
     setEditingProduct(p);
     setName(p.name);
     setWeightGrams(p.weightGrams);
-    setFilamentType(p.filamentType || 'PLA');
+    setFilamentType(p.filamentType || "PLA");
     setCostPrice(p.costPrice);
     setSalePrice(p.salePrice);
     setIsFormOpen(true);
@@ -112,7 +120,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
     const payload: ProductFormData = {
       name: name.trim(),
       weightGrams: Number(weightGrams) || 0,
-      filamentType: filamentType.trim() || 'PLA',
+      filamentType: filamentType.trim() || "PLA",
       costPrice: Number(costPrice) || 0,
       salePrice: Number(salePrice) || 0,
     };
@@ -130,8 +138,8 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
 
   const handleExportCsv = () => {
     downloadBlob(
-      new Blob([exportProductsCSV()], { type: 'text/csv;charset=utf-8' }),
-      'catalogo_produtos_3d.csv'
+      new Blob([exportProductsCSV()], { type: "text/csv;charset=utf-8" }),
+      "catalogo_produtos_3d.csv",
     );
   };
 
@@ -139,7 +147,12 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
   const formCostNum = Number(costPrice) || 0;
   const formSaleNum = Number(salePrice) || 0;
   const formProfit = formSaleNum - formCostNum;
-  const formMargin = formCostNum > 0 ? Math.round((formProfit / formCostNum) * 100) : (formSaleNum > 0 ? 100 : 0);
+  const formMargin =
+    formCostNum > 0
+      ? Math.round((formProfit / formCostNum) * 100)
+      : formSaleNum > 0
+        ? 100
+        : 0;
   const formIsBelowCost = formSaleNum < formCostNum;
 
   return (
@@ -157,7 +170,8 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
             Estoque de Peças Prontas para Venda
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Gerencie o estoque de peças acabadas, calcule preços de venda e acompanhe margens de lucro
+            Gerencie o estoque de peças acabadas, calcule preços de venda e
+            acompanhe margens de lucro
           </p>
         </div>
 
@@ -188,27 +202,36 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
         {/* Total Peças */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">TOTAL DE PRODUTOS</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              TOTAL DE PRODUTOS
+            </span>
             <Package className="w-4 h-4 text-purple-400" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">{totalProducts}</span>
-            <span className="text-xs text-slate-400 ml-1.5">itens cadastrados</span>
+            <span className="text-2xl font-extrabold text-white">
+              {totalProducts}
+            </span>
+            <span className="text-xs text-slate-400 ml-1.5">
+              itens cadastrados
+            </span>
           </div>
           <div className="text-[10px] text-slate-400">
-            {availableProducts.length} disponíveis • {soldProducts.length} vendidos
+            {availableProducts.length} disponíveis • {soldProducts.length}{" "}
+            vendidos
           </div>
         </div>
 
         {/* Faturamento Potencial */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">FATURAMENTO POTENCIAL</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              FATURAMENTO POTENCIAL
+            </span>
             <DollarSign className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="my-2">
             <span className="text-2xl font-extrabold text-emerald-400">
-              {currencySymbol} {potentialRevenue.toFixed(2).replace('.', ',')}
+              {currencySymbol} {potentialRevenue.toFixed(2).replace(".", ",")}
             </span>
           </div>
           <div className="text-[10px] text-emerald-500/80 font-medium">
@@ -219,12 +242,14 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
         {/* Custo do Estoque */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">CUSTO TOTAL DE PRODUÇÃO</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              CUSTO TOTAL DE PRODUÇÃO
+            </span>
             <Layers className="w-4 h-4 text-blue-400" />
           </div>
           <div className="my-2">
             <span className="text-2xl font-extrabold text-white">
-              {currencySymbol} {stockCostValue.toFixed(2).replace('.', ',')}
+              {currencySymbol} {stockCostValue.toFixed(2).replace(".", ",")}
             </span>
           </div>
           <div className="text-[10px] text-slate-400">
@@ -235,16 +260,19 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
         {/* Lucro e Margem */}
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-mono uppercase font-semibold">LUCRO PROJETADO</span>
+            <span className="text-[10px] font-mono uppercase font-semibold">
+              LUCRO PROJETADO
+            </span>
             <TrendingUp className="w-4 h-4 text-purple-400" />
           </div>
           <div className="my-2">
             <span className="text-2xl font-extrabold text-purple-400">
-              {currencySymbol} {projectedProfit.toFixed(2).replace('.', ',')}
+              {currencySymbol} {projectedProfit.toFixed(2).replace(".", ",")}
             </span>
           </div>
           <div className="text-[10px] text-slate-400">
-            Margem média prevista de <span className="text-white font-bold">+{avgMargin}%</span>
+            Margem média prevista de{" "}
+            <span className="text-white font-bold">+{avgMargin}%</span>
           </div>
         </div>
       </div>
@@ -263,7 +291,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
           <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
           {search && (
             <button
-              onClick={() => setSearch('')}
+              onClick={() => setSearch("")}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
             >
               ✕
@@ -277,9 +305,9 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             {(
               [
-                ['all', 'Todos', products.length],
-                ['available', 'Disponíveis', availableProducts.length],
-                ['sold', 'Vendidos', soldProducts.length],
+                ["all", "Todos", products.length],
+                ["available", "Disponíveis", availableProducts.length],
+                ["sold", "Vendidos", soldProducts.length],
               ] as const
             ).map(([st, label, count]) => {
               const isActive = statusFilter === st;
@@ -291,14 +319,14 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                   onClick={() => setStatusFilter(st)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                     isActive
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : 'bg-[#111728] text-slate-400 hover:text-white hover:bg-[#151e33]'
+                      ? "bg-purple-600 text-white shadow-sm"
+                      : "bg-[#111728] text-slate-400 hover:text-white hover:bg-[#151e33]"
                   }`}
                 >
                   <span>{label}</span>
                   <span
                     className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
-                      isActive ? 'bg-black/30' : 'bg-slate-800'
+                      isActive ? "bg-black/30" : "bg-slate-800"
                     }`}
                   >
                     {count}
@@ -312,11 +340,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
           <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-xl p-0.5 shrink-0 text-xs">
             <button
               type="button"
-              onClick={() => setViewMode('list')}
+              onClick={() => setViewMode("list")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
-                viewMode === 'list'
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                viewMode === "list"
+                  ? "bg-purple-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-white"
               }`}
               title="Visualização em Lista / Tabela"
             >
@@ -325,11 +353,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('grid')}
+              onClick={() => setViewMode("grid")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
-                viewMode === 'grid'
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                viewMode === "grid"
+                  ? "bg-purple-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-white"
               }`}
               title="Visualização em Grade de Cards"
             >
@@ -346,11 +374,13 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
           <div className="w-14 h-14 rounded-2xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-3">
             <ShoppingBag className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-white mb-1">Nenhum produto encontrado</h3>
+          <h3 className="text-base font-bold text-white mb-1">
+            Nenhum produto encontrado
+          </h3>
           <p className="text-xs text-slate-400 max-w-sm mb-4">
-            {search || statusFilter !== 'all'
-              ? 'Nenhum item corresponde aos filtros selecionados.'
-              : 'Cadastre peças prontas para venda ou pronta entrega com cálculo de custo, preço sugerido e controle de estoque.'}
+            {search || statusFilter !== "all"
+              ? "Nenhum item corresponde aos filtros selecionados."
+              : "Cadastre peças prontas para venda ou pronta entrega com cálculo de custo, preço sugerido e controle de estoque."}
           </p>
           <div className="flex items-center gap-3">
             <button
@@ -373,20 +403,30 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
             )}
           </div>
         </div>
-      ) : viewMode === 'list' ? (
+      ) : viewMode === "list" ? (
         /* Modern Studio List / Table View */
         <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-[#1b253b] bg-[#090e1a] text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                  <th className="py-3.5 px-4 font-bold text-center w-16">STATUS</th>
+                  <th className="py-3.5 px-4 font-bold text-center w-16">
+                    STATUS
+                  </th>
                   <th className="py-3.5 px-4 font-bold">NOME DO PRODUTO</th>
-                  <th className="py-3.5 px-4 font-bold">MATERIAL / FILAMENTO</th>
+                  <th className="py-3.5 px-4 font-bold">
+                    MATERIAL / FILAMENTO
+                  </th>
                   <th className="py-3.5 px-4 font-bold">PESO</th>
-                  <th className="py-3.5 px-4 font-bold text-right">CUSTO FABRIL</th>
-                  <th className="py-3.5 px-4 font-bold text-right">PREÇO VENDA</th>
-                  <th className="py-3.5 px-4 font-bold text-right">LUCRO / MARGEM</th>
+                  <th className="py-3.5 px-4 font-bold text-right">
+                    CUSTO FABRIL
+                  </th>
+                  <th className="py-3.5 px-4 font-bold text-right">
+                    PREÇO VENDA
+                  </th>
+                  <th className="py-3.5 px-4 font-bold text-right">
+                    LUCRO / MARGEM
+                  </th>
                   <th className="py-3.5 px-4 font-bold text-right">AÇÕES</th>
                 </tr>
               </thead>
@@ -394,12 +434,17 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                 {filteredProducts.map((p) => {
                   const belowCost = isBelowCost(p);
                   const profitVal = p.salePrice - p.costPrice;
-                  const marginPct = p.costPrice > 0 ? Math.round((profitVal / p.costPrice) * 100) : (p.salePrice > 0 ? 100 : 0);
+                  const marginPct =
+                    p.costPrice > 0
+                      ? Math.round((profitVal / p.costPrice) * 100)
+                      : p.salePrice > 0
+                        ? 100
+                        : 0;
 
                   return (
                     <tr
                       key={p.id}
-                      className={`hover:bg-[#0f1629] transition-colors group ${p.sold ? 'opacity-75' : ''}`}
+                      className={`hover:bg-[#0f1629] transition-colors group ${p.sold ? "opacity-75" : ""}`}
                     >
                       {/* Checkbox de Vendido / Disponível */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
@@ -413,11 +458,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                           <span
                             className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border transition-colors ${
                               p.sold
-                                ? 'bg-slate-800 text-slate-400 border-slate-700'
-                                : 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40'
+                                ? "bg-slate-800 text-slate-400 border-slate-700"
+                                : "bg-emerald-950/60 text-emerald-400 border-emerald-500/40"
                             }`}
                           >
-                            {p.sold ? 'Vendido' : 'Disponível'}
+                            {p.sold ? "Vendido" : "Disponível"}
                           </span>
                         </label>
                       </td>
@@ -434,7 +479,9 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                               className="text-amber-400 bg-amber-950/50 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1"
                             >
                               <AlertTriangle className="w-3 h-3 shrink-0" />
-                              <span className="font-mono text-[9px]">Abaixo do Custo</span>
+                              <span className="font-mono text-[9px]">
+                                Abaixo do Custo
+                              </span>
                             </span>
                           )}
                         </div>
@@ -443,7 +490,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                       {/* Material */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded-md bg-[#131b2e] border border-[#1f2b45] text-[11px] text-slate-300 font-mono">
-                          {p.filamentType || 'PLA'}
+                          {p.filamentType || "PLA"}
                         </span>
                       </td>
 
@@ -454,12 +501,14 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
 
                       {/* Custo Fabril */}
                       <td className="py-3.5 px-4 whitespace-nowrap text-right font-mono text-slate-300">
-                        {currencySymbol} {p.costPrice.toFixed(2).replace('.', ',')}
+                        {currencySymbol}{" "}
+                        {p.costPrice.toFixed(2).replace(".", ",")}
                       </td>
 
                       {/* Preço Venda */}
                       <td className="py-3.5 px-4 whitespace-nowrap text-right font-mono font-bold text-emerald-400 text-sm">
-                        {currencySymbol} {p.salePrice.toFixed(2).replace('.', ',')}
+                        {currencySymbol}{" "}
+                        {p.salePrice.toFixed(2).replace(".", ",")}
                       </td>
 
                       {/* Lucro / Margem */}
@@ -467,17 +516,25 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                         <div className="flex flex-col items-end">
                           <span
                             className={`font-mono font-bold text-xs ${
-                              profitVal >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                              profitVal >= 0
+                                ? "text-emerald-400"
+                                : "text-rose-400"
                             }`}
                           >
-                            {profitVal >= 0 ? '+' : ''}{currencySymbol} {profitVal.toFixed(2).replace('.', ',')}
+                            {profitVal >= 0 ? "+" : ""}
+                            {currencySymbol}{" "}
+                            {profitVal.toFixed(2).replace(".", ",")}
                           </span>
                           <span
                             className={`text-[10px] font-mono ${
-                              marginPct >= 0 ? 'text-slate-400' : 'text-rose-400'
+                              marginPct >= 0
+                                ? "text-slate-400"
+                                : "text-rose-400"
                             }`}
                           >
-                            {marginPct >= 0 ? `+${marginPct}%` : `${marginPct}%`}
+                            {marginPct >= 0
+                              ? `+${marginPct}%`
+                              : `${marginPct}%`}
                           </span>
                         </div>
                       </td>
@@ -517,30 +574,35 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
           {filteredProducts.map((p) => {
             const belowCost = isBelowCost(p);
             const profitVal = p.salePrice - p.costPrice;
-            const marginPct = p.costPrice > 0 ? Math.round((profitVal / p.costPrice) * 100) : (p.salePrice > 0 ? 100 : 0);
+            const marginPct =
+              p.costPrice > 0
+                ? Math.round((profitVal / p.costPrice) * 100)
+                : p.salePrice > 0
+                  ? 100
+                  : 0;
 
             return (
               <div
                 key={p.id}
                 className={`bg-[#0c111e] hover:bg-[#0f1526] border border-[#1b253b] hover:border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative ${
-                  p.sold ? 'opacity-80' : ''
+                  p.sold ? "opacity-80" : ""
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span className="px-2 py-0.5 rounded-md bg-[#131b2e] border border-[#1f2b45] text-[10px] text-slate-300 font-mono">
-                      {p.filamentType || 'PLA'} • {p.weightGrams}g
+                      {p.filamentType || "PLA"} • {p.weightGrams}g
                     </span>
                     <button
                       type="button"
                       onClick={() => markSold(p.id, !p.sold)}
                       className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full font-bold border transition-colors ${
                         p.sold
-                          ? 'bg-slate-800 text-slate-400 border-slate-700'
-                          : 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40'
+                          ? "bg-slate-800 text-slate-400 border-slate-700"
+                          : "bg-emerald-950/60 text-emerald-400 border-emerald-500/40"
                       }`}
                     >
-                      {p.sold ? 'Vendido' : 'Disponível'}
+                      {p.sold ? "Vendido" : "Disponível"}
                     </button>
                   </div>
 
@@ -551,7 +613,9 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                   {belowCost && (
                     <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 mt-2">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      <span className="text-[11px] font-medium">Preço de venda inferior ao custo fabril</span>
+                      <span className="text-[11px] font-medium">
+                        Preço de venda inferior ao custo fabril
+                      </span>
                     </div>
                   )}
 
@@ -559,17 +623,32 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                   <div className="bg-[#080d18] border border-[#172238] rounded-xl p-3 mt-3 space-y-1.5 font-mono text-xs">
                     <div className="flex items-center justify-between text-slate-400">
                       <span>Custo de Fabricação:</span>
-                      <span>{currencySymbol} {p.costPrice.toFixed(2).replace('.', ',')}</span>
+                      <span>
+                        {currencySymbol}{" "}
+                        {p.costPrice.toFixed(2).replace(".", ",")}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-slate-400">
                       <span>Lucro Líquido:</span>
-                      <span className={profitVal >= 0 ? 'text-purple-400 font-bold' : 'text-rose-400 font-bold'}>
-                        {profitVal >= 0 ? '+' : ''}{currencySymbol} {profitVal.toFixed(2).replace('.', ',')}
+                      <span
+                        className={
+                          profitVal >= 0
+                            ? "text-purple-400 font-bold"
+                            : "text-rose-400 font-bold"
+                        }
+                      >
+                        {profitVal >= 0 ? "+" : ""}
+                        {currencySymbol}{" "}
+                        {profitVal.toFixed(2).replace(".", ",")}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-slate-400">
                       <span>Margem:</span>
-                      <span className={marginPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                      <span
+                        className={
+                          marginPct >= 0 ? "text-emerald-400" : "text-rose-400"
+                        }
+                      >
                         +{marginPct}%
                       </span>
                     </div>
@@ -579,9 +658,12 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                 {/* Footer and Actions */}
                 <div className="pt-2 border-t border-[#1b253b] flex items-center justify-between">
                   <div>
-                    <span className="text-[9px] font-mono uppercase text-slate-500 block">PREÇO DE VENDA</span>
+                    <span className="text-[9px] font-mono uppercase text-slate-500 block">
+                      PREÇO DE VENDA
+                    </span>
                     <span className="text-base font-extrabold text-emerald-400 font-mono">
-                      {currencySymbol} {p.salePrice.toFixed(2).replace('.', ',')}
+                      {currencySymbol}{" "}
+                      {p.salePrice.toFixed(2).replace(".", ",")}
                     </span>
                   </div>
 
@@ -614,15 +696,18 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
       {/* Create / Edit Modal in Studio Dark Theme */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-in zoom-in-95">
+          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-[#1b253b]">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Package className="w-4 h-4 text-purple-400" />
-                  {editingProduct ? 'Editar Peça / Produto' : 'Cadastrar Novo Produto para Pronta Entrega'}
+                  {editingProduct
+                    ? "Editar Peça / Produto"
+                    : "Cadastrar Novo Produto para Pronta Entrega"}
                 </h3>
                 <span className="text-xs text-slate-400">
-                  Defina os custos fabris e o preço de venda para calcular a margem real
+                  Defina os custos fabris e o preço de venda para calcular a
+                  margem real
                 </span>
               </div>
               <button
@@ -634,7 +719,10 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="flex flex-col gap-3.5">
+            <form
+              onSubmit={handleSaveProduct}
+              className="flex flex-col gap-3.5"
+            >
               <div>
                 <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
                   NOME DO PRODUTO / PEÇA 3D
@@ -672,7 +760,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                     min="0"
                     step="1"
                     value={weightGrams}
-                    onChange={(e) => setWeightGrams(e.target.value === '' ? '' : Number(e.target.value))}
+                    onChange={(e) =>
+                      setWeightGrams(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
                     placeholder="Ex: 120"
                     className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
                   />
@@ -689,7 +781,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                     min="0"
                     step="0.1"
                     value={costPrice}
-                    onChange={(e) => setCostPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                    onChange={(e) =>
+                      setCostPrice(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
                     placeholder="Ex: 18.50"
                     className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
                   />
@@ -704,7 +800,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                     min="0"
                     step="0.5"
                     value={salePrice}
-                    onChange={(e) => setSalePrice(e.target.value === '' ? '' : Number(e.target.value))}
+                    onChange={(e) =>
+                      setSalePrice(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
                     placeholder="Ex: 45.00"
                     className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 font-bold text-emerald-400"
                   />
@@ -714,15 +814,24 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
               {/* Real-time Profit Simulation Box */}
               <div className="bg-[#080d18] border border-[#192338] p-3 rounded-xl flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">LUCRO PROJETADO:</span>
-                  <span className={`text-base font-extrabold font-mono ${formProfit >= 0 ? 'text-purple-400' : 'text-rose-400'}`}>
-                    {formProfit >= 0 ? '+' : ''}{currencySymbol} {formProfit.toFixed(2).replace('.', ',')}
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">
+                    LUCRO PROJETADO:
+                  </span>
+                  <span
+                    className={`text-base font-extrabold font-mono ${formProfit >= 0 ? "text-purple-400" : "text-rose-400"}`}
+                  >
+                    {formProfit >= 0 ? "+" : ""}
+                    {currencySymbol} {formProfit.toFixed(2).replace(".", ",")}
                   </span>
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">MARGEM:</span>
-                  <span className={`text-base font-extrabold font-mono ${formMargin >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">
+                    MARGEM:
+                  </span>
+                  <span
+                    className={`text-base font-extrabold font-mono ${formMargin >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+                  >
                     +{formMargin}%
                   </span>
                 </div>
@@ -731,7 +840,10 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
               {formIsBelowCost && (
                 <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-xl p-2.5">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
-                  <span className="text-[11px] font-medium">Atenção: O preço de venda está menor que o custo de produção.</span>
+                  <span className="text-[11px] font-medium">
+                    Atenção: O preço de venda está menor que o custo de
+                    produção.
+                  </span>
                 </div>
               )}
 
@@ -748,7 +860,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
                   disabled={!name.trim()}
                   className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-md disabled:opacity-40 transition-colors"
                 >
-                  {editingProduct ? 'Salvar Alterações' : 'Cadastrar Produto'}
+                  {editingProduct ? "Salvar Alterações" : "Cadastrar Produto"}
                 </button>
               </div>
             </form>
@@ -760,9 +872,12 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({ onTabCha
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 text-slate-200">
-            <h4 className="text-sm font-bold text-white">Excluir Produto do Catálogo?</h4>
+            <h4 className="text-sm font-bold text-white">
+              Excluir Produto do Catálogo?
+            </h4>
             <p className="text-xs text-slate-400">
-              Esta ação removerá este produto do seu inventário de pronta entrega. Deseja prosseguir?
+              Esta ação removerá este produto do seu inventário de pronta
+              entrega. Deseja prosseguir?
             </p>
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
