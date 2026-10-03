@@ -822,35 +822,36 @@ describe("focus mode — a passive surface never buries the exit", () => {
     // 2. The covered set may not fall behind the tree, or a new z-50 is
     //    silently unpinned. This is what catches a file nobody thought to list.
     //
-    //    RED ON PURPOSE — REPORTED PRODUCT BUG, not a stale list. The Studio
-    //    rewrite (#260) added ten files that paint a class-level z-50 and none
-    //    of them is listed. Adding the list is NOT the fix, because step 3
-    //    below then runs over them and one of them fails it outright.
+    //    The Studio rewrite (#260) added TEN files that paint a class-level
+    //    z-50 and none of them was listed here, which is why this assertion was
+    //    red against a tree it could not describe. The ten split two ways.
     //
-    //    Nine are legitimate dimming backdrops and would pass step 3 as-is
-    //    (`fixed inset-0 z-50 bg-black/NN`): StudioCopilotModal, StudioCustomerView,
+    //    NINE are legitimate dimming backdrops and are now listed, so step 3
+    //    runs over each and re-checks that every one of their z-50s really is
+    //    `fixed inset-0 … bg-black/NN`: StudioCopilotModal, StudioCustomerView,
     //    StudioMiniDashOverlay, StudioProductsView, StudioQuoteModal,
     //    StudioQuotesView, StudioShortcutsModal, StudioSpoolView and
-    //    shared/components/Privacy/PiiLockedShell.
+    //    shared/components/Privacy/PiiLockedShell. Listing them widens the
+    //    audit; it does not widen an exemption.
     //
-    //    The tenth does not:
+    //    The TENTH did not belong on this list at all, and listing it would have
+    //    been the wrong fix — step 3 counts it as one z-50, zero backdrops and
+    //    zero panels, and fails:
     //
-    //      platform/web/components/studio/StudioCockpitDock.tsx:35
-    //        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 …">
+    //      platform/web/components/studio/StudioCockpitDock.tsx
+    //        was: <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 …">
     //
-    //    One z-50, zero backdrops, zero panels — `fixed inset-0` is absent and
-    //    there is no `bottom-0 rounded-t-2xl` sheet. It is a floating dock filed
-    //    in the scrim tier, which is precisely the false pass this test was
-    //    written to eliminate ("calls a bottom sheet a panel and a floating box
-    //    not a panel"). Tailwind's `z-50` is 50, above `--z-shell-chrome: 45`
-    //    that the always-visible exit is pinned to, so it outranks the exit.
+    //    `fixed inset-0` is absent and there is no `bottom-0 rounded-t-2xl`
+    //    sheet. It was a floating dock filed in the scrim tier, which is
+    //    precisely the false pass this test was written to eliminate ("calls a
+    //    bottom sheet a panel and a floating box not a panel"). Tailwind's
+    //    `z-50` is 50, above `--z-shell-chrome: 45` that the always-visible exit
+    //    is pinned to, so it outranked the exit.
     //
-    //    The fix is in the component: put the dock on a named scale step below
-    //    `z-shell-chrome` (the passive band is what the other floating surfaces
-    //    use). It cannot be made here, because step 2 demands exact equality
-    //    with the tree — omitting the dock fails on "list one that is missing",
-    //    and listing it fails on step 3. Both failure modes are the guard
-    //    working. Reported to Zeus rather than worked around.
+    //    Fixed in the component, which is the only place it can be: the dock now
+    //    takes `var(--z-passive)` (40) — the band the other floating surfaces
+    //    use, above scrolling content and below the exit — so it paints no
+    //    class-level z-50 and legitimately drops out of this derived set.
     const covered = [
       "src/shared/components/ui/ComparisonModal.tsx",
       "src/shared/components/ui/ConfirmDialog.tsx",
@@ -867,6 +868,18 @@ describe("focus mode — a passive surface never buries the exit", () => {
       "src/shared/components/AIAssistant/AIAssistantModal.tsx",
       "src/platform/web/components/MobileSettingsSheet.tsx",
       "src/shared/components/SpoolShelf/SpoolForm.tsx",
+      // The Studio's dimming backdrops. Each is re-checked against the
+      // backdrop+panel rule by the occurrence loop below, so a Studio overlay
+      // that stops being a scrim fails here rather than going quietly.
+      "src/platform/web/components/studio/StudioCopilotModal.tsx",
+      "src/platform/web/components/studio/StudioCustomerView.tsx",
+      "src/platform/web/components/studio/StudioMiniDashOverlay.tsx",
+      "src/platform/web/components/studio/StudioProductsView.tsx",
+      "src/platform/web/components/studio/StudioQuoteModal.tsx",
+      "src/platform/web/components/studio/StudioQuotesView.tsx",
+      "src/platform/web/components/studio/StudioShortcutsModal.tsx",
+      "src/platform/web/components/studio/StudioSpoolView.tsx",
+      "src/shared/components/Privacy/PiiLockedShell.tsx",
     ].sort();
     expect(
       found.sort(),

@@ -259,13 +259,24 @@
                          (STL fullscreen, G-code toolpath). Same content, no
                          new task, so it must not hide the way out.
        --z-passive       PASSIVE transients — toasts, non-scrim popovers,
-                         bounded listboxes, the privacy banner. Above a
+                         bounded listboxes, the privacy banner, and the web
+                         Studio's floating `StudioCockpitDock`. Above a
                          viewer, so a notice is never lost behind a full-bleed
                          overlay; below the exit, per rule 1. This is the step
                          the scrim tier used to do double duty for, and that
                          overlap IS a bug: a toast is `role="region"`, has no
                          scrim and no Escape, so it inherited a tier whose
                          entire justification was "this owns the screen".
+
+                         The cockpit dock was the tenth instance, and the
+                         clearest: it shipped at Tailwind `z-50` (50), which is
+                         the SCRIM tier — above --z-shell-chrome, so a floating
+                         toolbar outranked the one control that ends Focus Mode.
+                         It owns no scrim, no focus trap and no Escape, so rule
+                         1 forbids the scrim tier for it outright;
+                         --z-passive is what the other floating surfaces
+                         (InventoryDeductionCard, FieldCustomizer, Toast)
+                         already use.
        --z-shell-chrome  chrome that has to stay REACHABLE while a viewer is
                          up — today only the Focus Mode exit. Everything that
                          owns nothing is under it; everything that owns the

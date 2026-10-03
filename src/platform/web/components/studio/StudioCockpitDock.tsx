@@ -32,7 +32,10 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
   const [showQuickActions, setShowQuickActions] = useState(false);
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 select-none">
+    <div
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 select-none"
+      style={{ zIndex: "var(--z-passive)" }}
+    >
       {/* Quick actions popup menu if open */}
       {showQuickActions && (
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#0d1322] border border-[#212d47] rounded-2xl p-2 shadow-2xl shadow-black/80 flex flex-col gap-1 w-56 animate-fade-up">
