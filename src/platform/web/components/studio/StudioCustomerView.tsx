@@ -165,7 +165,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/40"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/40"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Cadastrar Cliente</span>
@@ -296,7 +296,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Primeiro Cliente</span>
@@ -561,7 +561,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-md"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition-all shadow-md"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>

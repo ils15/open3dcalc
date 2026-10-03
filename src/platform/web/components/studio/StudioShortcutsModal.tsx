@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, Keyboard } from 'lucide-react';
+import React from "react";
+import { X, Keyboard } from "lucide-react";
 
 interface StudioShortcutsModalProps {
   isOpen: boolean;
@@ -13,14 +13,14 @@ export const StudioShortcutsModal: React.FC<StudioShortcutsModalProps> = ({
   if (!isOpen) return null;
 
   const shortcuts = [
-    { key: '1', desc: 'Ir para Calculadora 3D' },
-    { key: '2', desc: 'Ir para Dashboard Geral' },
-    { key: '3', desc: 'Ir para Frota de Impressoras' },
-    { key: '4', desc: 'Ir para Estoque de Carretéis' },
-    { key: 'M', desc: 'Abrir / Fechar Mini-Dash' },
-    { key: 'F', desc: 'Alternar Modo Foco' },
-    { key: 'Esc', desc: 'Fechar modais abertos' },
-    { key: '?', desc: 'Abrir esta tela de atalhos' },
+    { key: "1", desc: "Ir para Calculadora 3D" },
+    { key: "2", desc: "Ir para Dashboard Geral" },
+    { key: "3", desc: "Ir para Frota de Impressoras" },
+    { key: "4", desc: "Ir para Estoque de Carretéis" },
+    { key: "M", desc: "Abrir / Fechar Mini-Dash" },
+    { key: "F", desc: "Alternar Modo Foco" },
+    { key: "Esc", desc: "Fechar modais abertos" },
+    { key: "?", desc: "Abrir esta tela de atalhos" },
   ];
 
   return (
@@ -31,7 +31,7 @@ export const StudioShortcutsModal: React.FC<StudioShortcutsModalProps> = ({
             <Keyboard className="w-4 h-4 text-blue-400" />
             <h3 className="font-bold text-sm text-white">Atalhos de Teclado</h3>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
@@ -41,7 +41,10 @@ export const StudioShortcutsModal: React.FC<StudioShortcutsModalProps> = ({
 
         <div className="flex flex-col gap-2">
           {shortcuts.map((s, i) => (
-            <div key={i} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-[#101726] border border-[#1e2a44] text-xs">
+            <div
+              key={i}
+              className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-[#101726] border border-[#1e2a44] text-xs"
+            >
               <span className="text-slate-300">{s.desc}</span>
               <kbd className="px-2 py-0.5 rounded bg-slate-800 font-mono font-bold text-slate-200 border border-slate-700 text-[11px]">
                 {s.key}
@@ -53,7 +56,7 @@ export const StudioShortcutsModal: React.FC<StudioShortcutsModalProps> = ({
         <div className="flex justify-end pt-2 border-t border-slate-800">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
+            className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
           >
             Entendido
           </button>

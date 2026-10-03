@@ -474,7 +474,7 @@ export function PiiLockedShell(): ReactElement | null {
                 type="button"
                 onClick={() => void handleResetVault()}
                 disabled={busy}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-500 transition-colors shadow-md disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 transition-colors shadow-md disabled:opacity-50"
               >
                 {busy ? "Redefinindo..." : "Redefinir e Criar Nova Senha"}
               </button>

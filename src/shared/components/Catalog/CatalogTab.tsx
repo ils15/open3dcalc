@@ -361,7 +361,7 @@ function PrinterManager() {
           type="button"
           aria-expanded={showCreateForm}
           onClick={() => setShowCreateForm(true)}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white transition-all shadow-md shadow-blue-950/40 hover:scale-[1.02] active:scale-[0.98] shrink-0 self-start sm:self-auto"
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 px-4 py-2 text-xs font-bold text-white transition-all shadow-md shadow-blue-950/40 hover:scale-[1.02] active:scale-[0.98] shrink-0 self-start sm:self-auto"
         >
           <Plus aria-hidden="true" className="h-4 w-4" />
           <span>{t("catalog.addPrinter")}</span>
@@ -1014,7 +1014,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
               type="button"
               onClick={add}
               disabled={!name.trim()}
-              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md disabled:opacity-40"
+              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md disabled:opacity-40"
             >
               {t("catalog.save")}
             </button>

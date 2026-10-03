@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { 
-  Plus, 
-  Maximize, 
-  HelpCircle, 
-  X, 
-  Calculator, 
-  Package, 
-  Settings2, 
-  FileText, 
-  Sparkles
-} from 'lucide-react';
-import { Tab } from '@/shared/components/AppShell/tabs';
+import React, { useState } from "react";
+import {
+  Plus,
+  Maximize,
+  HelpCircle,
+  X,
+  Calculator,
+  Package,
+  Settings2,
+  FileText,
+  Sparkles,
+} from "lucide-react";
+import { Tab } from "@/shared/components/AppShell/tabs";
 
 interface StudioCockpitDockProps {
   onOpenMiniDash: () => void;
@@ -38,40 +38,58 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 bg-[#0d1322] border border-[#212d47] rounded-2xl p-2 shadow-2xl shadow-black/80 flex flex-col gap-1 w-56 animate-fade-up">
           <div className="flex items-center justify-between px-2 py-1 border-b border-slate-800 text-xs font-bold text-slate-300">
             <span>Ações Rápidas</span>
-            <button onClick={() => setShowQuickActions(false)} className="text-slate-500 hover:text-white">
+            <button
+              onClick={() => setShowQuickActions(false)}
+              className="text-slate-500 hover:text-white"
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
           <button
-            onClick={() => { setShowQuickActions(false); onTabChange('calculator'); }}
+            onClick={() => {
+              setShowQuickActions(false);
+              onTabChange("calculator");
+            }}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
           >
             <Calculator className="w-3.5 h-3.5 text-blue-400" />
             <span>Novo Cálculo 3D</span>
           </button>
           <button
-            onClick={() => { setShowQuickActions(false); onTabChange('inventory'); }}
+            onClick={() => {
+              setShowQuickActions(false);
+              onTabChange("inventory");
+            }}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
           >
             <Package className="w-3.5 h-3.5 text-amber-400" />
             <span>Cadastrar Carretel</span>
           </button>
           <button
-            onClick={() => { setShowQuickActions(false); onTabChange('catalog'); }}
+            onClick={() => {
+              setShowQuickActions(false);
+              onTabChange("catalog");
+            }}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
           >
             <Settings2 className="w-3.5 h-3.5 text-indigo-400" />
             <span>Adicionar Impressora</span>
           </button>
           <button
-            onClick={() => { setShowQuickActions(false); onOpenNewQuote(); }}
+            onClick={() => {
+              setShowQuickActions(false);
+              onOpenNewQuote();
+            }}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
           >
             <FileText className="w-3.5 h-3.5 text-emerald-400" />
             <span>Emitir Orçamento PDF</span>
           </button>
           <button
-            onClick={() => { setShowQuickActions(false); onOpenCopilot(); }}
+            onClick={() => {
+              setShowQuickActions(false);
+              onOpenCopilot();
+            }}
             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-amber-600/20 transition-colors text-left"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
@@ -101,7 +119,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         {/* Action button */}
         <button
           onClick={() => setShowQuickActions(!showQuickActions)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-md shadow-blue-600/30"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md shadow-blue-600/30"
         >
           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
           <span>Ações Rápidas</span>
