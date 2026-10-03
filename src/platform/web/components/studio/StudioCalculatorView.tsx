@@ -820,7 +820,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           )}
 
           {/* Section 1: Insumos & Materiais */}
-          <div className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3">
+          {/* F1 tour anchor `material` — step copy promises "o tipo de
+              filamento, o peso da peça e o custo". This card owns all three
+              (TIPO DE FILAMENTO, PESO ESTIMADO DO FATIADOR, CUSTO / KG) in both
+              the FDM and the Resin branch. */}
+          <div
+            data-tutorial="material"
+            className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3"
+          >
             <div className="flex items-center justify-between border-b border-[#1b253b] pb-2">
               <h2 className="text-xs font-bold text-slate-100 flex items-center gap-2">
                 <Box className="w-3.5 h-3.5 text-blue-400" />
@@ -1013,7 +1020,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           </div>
 
           {/* Section 2: Tempo, Cura & Consumo de Energia */}
-          <div className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3">
+          {/* F1 tour anchor `print` — step copy promises "o tempo de impressão,
+              potência da sua impressora e o custo da energia". TEMPO DE
+              IMPRESSÃO, POTÊNCIA FDM (MESA+BICO) and TARIFA ENERGIA (R$/kWh)
+              are all in this card. */}
+          <div
+            data-tutorial="print"
+            className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3"
+          >
             <div className="flex items-center justify-between border-b border-[#1b253b] pb-2">
               <h2 className="text-xs font-bold text-slate-100 flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-amber-400" />
@@ -1312,7 +1326,20 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           </div>
 
           {/* Section 4: Precificação Comercial & Lucro */}
-          <div className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3">
+          {/* F1 tour anchor `sales` — step copy promises "definir sua margem de
+              lucro" and, secondarily, "custos de embalagem e frete". The
+              margin slider (MARGEM DE LUCRO DESEJADA) and VALOR HORA DE TRABALHO
+              are here, so this card is the honest anchor for the step.
+
+              KNOWN COPY MISMATCH, reported not papered over: EMBALAGEM & CAIXA
+              lives in Section 3 (Custos Extras), not in this card, and the
+              Studio has no frete/shipping field at all. The step's primary
+              promise (margin) is honoured; the secondary clause over-promises
+              on this surface. Fixed in the tour copy, not by moving the field. */}
+          <div
+            data-tutorial="sales"
+            className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3"
+          >
             <div className="flex items-center justify-between border-b border-[#1b253b] pb-2">
               <h2 className="text-xs font-bold text-slate-100 flex items-center gap-2">
                 <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
@@ -1564,7 +1591,15 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
       </div>
 
       {/* Right Sticky Results Panel */}
-      <div className="w-full lg:w-80 shrink-0 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col gap-4 sticky top-28 shadow-xl">
+      {/* F1 tour anchor `results` — step copy promises "o custo total, o preço
+          sugerido e o lucro estimado". PREÇO SUGERIDO, CUSTO DE PRODUÇÃO and
+          LUCRO BRUTO are all in this panel. The step's "use os sliders" tail
+          points at the margin slider in Section 4 (`sales`), not here; the
+          three headline numbers the step is named after are here. */}
+      <div
+        data-tutorial="results"
+        className="w-full lg:w-80 shrink-0 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col gap-4 sticky top-28 shadow-xl"
+      >
         {/* Suggested Price Header */}
         <div className="text-center py-2 border-b border-[#1b253b]">
           <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1">
@@ -1761,7 +1796,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
         </div>
 
         {/* Action Buttons: Primary Export / Download PDF + Quote Modal */}
-        <div className="flex flex-col gap-2 pt-2 border-t border-[#1b253b]">
+        {/* F1 tour anchor `export` — step copy promises "salve seu cálculo no
+            histórico ou exporte como PDF". "Salvar Projeto", "Copiar Link" and
+            "Download Relatório PDF (Orçamento)" are all in this block, so the
+            step's two promises both resolve inside the spotlight. */}
+        <div
+          data-tutorial="export"
+          className="flex flex-col gap-2 pt-2 border-t border-[#1b253b]"
+        >
           {/* 🌟 DOWNLOAD PDF BUTTON */}
           <button
             type="button"
