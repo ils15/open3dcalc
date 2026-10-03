@@ -1333,6 +1333,8 @@
       "creating": "Criando…",
       "mismatchError": "As duas senhas não coincidem.",
       "irrecoverableNotice": "Não há redefinição: se você esquecer esta senha, os dados deste perfil não poderão ser recuperados.",
+      "showPassphrase": "Ver senha",
+      "hidePassphrase": "Ocultar senha",
       "unlock": "Desbloquear",
       "unlocking": "Desbloqueando…",
       "memoryNote": "A senha fica somente na memória desta sessão e nunca é gravada.",
@@ -2401,6 +2403,7 @@
     "searchPlaceholder": "Buscar por título ou cliente...",
     "emptyItems": "Adicione itens do histórico de cálculos",
     "saveSuccess": "Orçamento salvo com sucesso!",
+    "updatedSuccess": "Orçamento atualizado com sucesso!",
     "deleteConfirm": "Tem certeza que deseja excluir o orçamento #{{number}}?"
   },
   "sync": {

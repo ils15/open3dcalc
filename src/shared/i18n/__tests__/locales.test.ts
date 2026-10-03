@@ -632,6 +632,11 @@ const VAULT_KEYS = [
   // on the surface that exists precisely to make a refused PII write visible.
   "writeRefusedTitle",
   "writeRefusedAreaUnknown",
+  // The eye toggle on the passphrase field is an icon-only button, so its
+  // `title` is the entire accessible name — it has to be a real string, not a
+  // hardcoded literal in the component.
+  "showPassphrase",
+  "hidePassphrase",
 ] as const;
 
 const VAULT_DETAIL_KEYS = [

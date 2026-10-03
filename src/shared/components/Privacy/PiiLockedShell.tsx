@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import { 
-  Lock, 
-  ShieldAlert, 
-  Eye, 
-  EyeOff, 
-  HelpCircle, 
-  RotateCcw, 
-  Check, 
+import {
+  Lock,
+  ShieldAlert,
+  Eye,
+  EyeOff,
+  HelpCircle,
+  RotateCcw,
   KeyRound,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react";
 import {
   getPiiStoreAccessState,
@@ -24,6 +23,7 @@ import {
 import type { PiiStoreDenialReason } from "@/shared/lib/crypto/piiStoreCapability";
 import { migrateLegacyPlaintextPiiToVault } from "@/shared/lib/migration/legacyPiiRehome";
 
+const VAULT_HINT_KEY = "open3dcalc_vault_hint";
 const PASSPHRASE_INPUT_ID = "pii-vault-passphrase";
 const CONFIRM_INPUT_ID = "pii-vault-passphrase-confirm";
 const NOTE_ID = "pii-vault-note";
@@ -61,17 +61,16 @@ export function PiiLockedShell(): ReactElement | null {
   // Recovery & Reset states
   const [showRecoveryHint, setShowRecoveryHint] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [storedHint, setStoredHint] = useState<string | null>(null);
+  // The hint is read once, lazily, instead of via an effect: an effect that
+  // only mirrors localStorage into state forces a second render pass on every
+  // mount for a value that cannot change underneath us. `handleResetVault` is
+  // the one place that clears it, and it sets the state directly.
+  const [storedHint, setStoredHint] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem(VAULT_HINT_KEY);
+  });
 
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Read stored hint on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const hint = localStorage.getItem("open3dcalc_vault_hint");
-      setStoredHint(hint);
-    }
-  }, [mode]);
 
   // Startup rehydrate check
   useEffect(() => {
@@ -110,7 +109,9 @@ export function PiiLockedShell(): ReactElement | null {
     }
   }, [access.status, mode]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
     event.preventDefault();
     if (busy || mode === "detecting" || passphrase.length === 0) return;
 
@@ -129,7 +130,8 @@ export function PiiLockedShell(): ReactElement | null {
 
       // Save password hint if in create mode
       if (mode === "create" && passwordHint.trim().length > 0) {
-        localStorage.setItem("open3dcalc_vault_hint", passwordHint.trim());
+        localStorage.setItem(VAULT_HINT_KEY, passwordHint.trim());
+        setStoredHint(passwordHint.trim());
       }
 
       setPassphrase("");
@@ -162,7 +164,7 @@ export function PiiLockedShell(): ReactElement | null {
         }
       });
 
-      localStorage.removeItem("open3dcalc_vault_hint");
+      localStorage.removeItem(VAULT_HINT_KEY);
       setStoredHint(null);
       setMode("create");
       setPassphrase("");
@@ -198,20 +200,20 @@ export function PiiLockedShell(): ReactElement | null {
     unavailableReason !== null
       ? t("privacy.vault.unavailableTitle")
       : creating
-        ? "Criar Senha de Proteção do Perfil (LGPD)"
-        : "Perfil Bloqueado por Senha Local";
+        ? t("privacy.vault.createTitle")
+        : t("privacy.vault.lockedTitle");
 
   const message =
     unavailableReason !== null
       ? t("privacy.vault.unavailableMessage")
       : creating
-        ? "Defina uma senha para criptografar seus orçamentos e clientes no banco de dados local seguro deste dispositivo."
-        : "Digite sua senha para desbloquear e salvar seus orçamentos, clientes e histórico protegidos.";
+        ? t("privacy.vault.createMessage")
+        : t("privacy.vault.lockedMessage");
 
   return (
     <>
       <section
-        aria-label="Controle de Senha e Cofre de Dados"
+        aria-label={t("privacy.vault.ariaLabel")}
         className="w-full border-b bg-[#12192b] border-amber-500/40 text-slate-200 select-none"
       >
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto w-full px-4 sm:px-6 lg:px-12 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -251,6 +253,12 @@ export function PiiLockedShell(): ReactElement | null {
               >
                 {/* Passphrase Input with Eye toggle */}
                 <div className="relative">
+                  {/* A placeholder is not an accessible name — it vanishes the
+                      moment the field is typed into. The vault gate is only
+                      usable with a screen reader if the label is real. */}
+                  <label htmlFor={PASSPHRASE_INPUT_ID} className="sr-only">
+                    {t("privacy.vault.passphraseLabel")}
+                  </label>
                   <input
                     ref={inputRef}
                     id={PASSPHRASE_INPUT_ID}
@@ -260,30 +268,49 @@ export function PiiLockedShell(): ReactElement | null {
                     aria-invalid={formError !== null ? true : undefined}
                     value={passphrase}
                     onChange={(event) => setPassphrase(event.target.value)}
-                    placeholder={creating ? "Criar nova senha..." : "Sua senha..."}
+                    placeholder={
+                      creating
+                        ? t("privacy.vault.createPassphrasePlaceholder")
+                        : t("privacy.vault.passphrasePlaceholder")
+                    }
                     className="h-9 w-36 sm:w-44 px-3 pr-8 rounded-lg text-xs bg-[#0b101c] text-white border border-[#21304f] focus:border-amber-400 focus:outline-none placeholder-slate-500"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                    title={showPassword ? "Ocultar senha" : "Ver senha"}
+                    title={
+                      showPassword
+                        ? t("privacy.vault.hidePassphrase")
+                        : t("privacy.vault.showPassphrase")
+                    }
                   >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
                   </button>
                 </div>
 
                 {creating && (
                   <>
+                    <label htmlFor={CONFIRM_INPUT_ID} className="sr-only">
+                      {t("privacy.vault.confirmPassphraseLabel")}
+                    </label>
                     <input
                       id={CONFIRM_INPUT_ID}
                       type={showPassword ? "text" : "password"}
                       autoComplete="off"
                       aria-describedby={IRRECOVERABLE_ID}
-                      aria-invalid={formError?.kind === "mismatch" ? true : undefined}
+                      aria-invalid={
+                        formError?.kind === "mismatch" ? true : undefined
+                      }
                       value={confirmation}
                       onChange={(event) => setConfirmation(event.target.value)}
-                      placeholder="Confirmar senha..."
+                      placeholder={t(
+                        "privacy.vault.confirmPassphrasePlaceholder",
+                      )}
                       className="h-9 w-36 sm:w-44 px-3 rounded-lg text-xs bg-[#0b101c] text-white border border-[#21304f] focus:border-amber-400 focus:outline-none placeholder-slate-500"
                     />
 
@@ -303,9 +330,13 @@ export function PiiLockedShell(): ReactElement | null {
                   className="inline-flex items-center justify-center h-9 px-4 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors shadow-sm disabled:opacity-50"
                 >
                   {busy ? (
-                    <span>Processando...</span>
+                    <span>{t("privacy.vault.unlocking")}</span>
                   ) : (
-                    <span>{creating ? "Ativar Proteção" : "Desbloquear"}</span>
+                    <span>
+                      {creating
+                        ? t("privacy.vault.create")
+                        : t("privacy.vault.unlock")}
+                    </span>
                   )}
                 </button>
               </form>
@@ -338,18 +369,36 @@ export function PiiLockedShell(): ReactElement | null {
           )}
         </div>
 
+        {/* Irrecoverability is stated BEFORE a passphrase is chosen, not after
+            it fails: by then the user already typed a secret they cannot
+            recover. Referenced by the confirm field's aria-describedby. */}
+        {creating && (
+          <p
+            id={IRRECOVERABLE_ID}
+            className="mt-1.5 text-[11px] text-amber-200/90"
+          >
+            {t("privacy.vault.irrecoverableNotice")}
+          </p>
+        )}
+
         {/* Display Recovery Password Hint Banner if requested */}
         {showRecoveryHint && !creating && (
-          <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto w-full px-4 sm:px-6 lg:px-12 pb-2.5 animate-in fade-in">
+          <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto w-full px-4 sm:px-6 lg:px-12 pb-2.5 animate-fade-in">
             <div className="bg-[#0b101c] border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-between text-xs text-amber-200">
               <span className="flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-amber-400 shrink-0" />
                 {storedHint ? (
                   <span>
-                    Sua dica de senha cadastrada é: <strong className="text-white underline">{storedHint}</strong>
+                    Sua dica de senha cadastrada é:{" "}
+                    <strong className="text-white underline">
+                      {storedHint}
+                    </strong>
                   </span>
                 ) : (
-                  <span>Nenhuma dica de senha foi cadastrada anteriormente para este perfil.</span>
+                  <span>
+                    Nenhuma dica de senha foi cadastrada anteriormente para este
+                    perfil.
+                  </span>
                 )}
               </span>
               <button
@@ -366,11 +415,14 @@ export function PiiLockedShell(): ReactElement | null {
         {/* Form Error alert */}
         {formError !== null && (
           <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto w-full px-4 sm:px-6 lg:px-12 pb-2">
-            <p role="alert" className="text-xs font-semibold text-rose-400 flex items-center gap-1.5">
+            <p
+              role="alert"
+              className="text-xs font-semibold text-rose-400 flex items-center gap-1.5"
+            >
               <AlertTriangle className="w-3.5 h-3.5" />
               {formError.kind === "mismatch"
-                ? "As senhas digitadas não coincidem. Digite a mesma senha nos dois campos."
-                : "Senha incorreta para este cofre local. Verifique sua senha ou utilize a opção 'Esqueci a Senha'."}
+                ? t("privacy.vault.mismatchError")
+                : t("privacy.vault.unlockError")}
             </p>
           </div>
         )}
@@ -379,23 +431,34 @@ export function PiiLockedShell(): ReactElement | null {
       {/* Confirmation Modal: Reset Local Vault Password */}
       {showResetModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-in zoom-in-95">
+          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                 <RotateCcw className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Redefinir Senha do Perfil Local</h3>
-                <span className="text-[11px] text-slate-400">Recuperação e recriação do cofre seguro</span>
+                <h3 className="text-sm font-bold text-white">
+                  Redefinir Senha do Perfil Local
+                </h3>
+                <span className="text-[11px] text-slate-400">
+                  Recuperação e recriação do cofre seguro
+                </span>
               </div>
             </div>
 
             <div className="text-xs text-slate-300 flex flex-col gap-2.5 leading-relaxed bg-[#070b14] p-3.5 rounded-xl border border-[#1b253b]">
               <p>
-                A proteção do Open3DCalc utiliza <strong>criptografia local AES-256 bits</strong> diretamente no seu navegador (sem servidores externos para total privacidade LGPD).
+                A proteção do Open3DCalc utiliza{" "}
+                <strong>criptografia local AES-256 bits</strong> diretamente no
+                seu navegador (sem servidores externos para total privacidade
+                LGPD).
               </p>
               <p>
-                Se você não lembra sua senha antiga, você pode <strong>redefinir o cofre local agora</strong>. Isso permitirá que você crie uma nova senha imediatamente e continue salvando novos orçamentos e clientes sem nenhum travamento ou erro de bloqueio.
+                Se você não lembra sua senha antiga, você pode{" "}
+                <strong>redefinir o cofre local agora</strong>. Isso permitirá
+                que você crie uma nova senha imediatamente e continue salvando
+                novos orçamentos e clientes sem nenhum travamento ou erro de
+                bloqueio.
               </p>
             </div>
 
