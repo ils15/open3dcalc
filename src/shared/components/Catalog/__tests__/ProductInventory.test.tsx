@@ -114,6 +114,27 @@ describe("ProductInventory UI behavior", () => {
     expect(screen.queryByText("Vaso Espiral")).not.toBeInTheDocument();
   });
 
+  it("does not steal focus back if the user already moved it", async () => {
+    // The form autofocuses its name input on a 50ms timer. Under load that
+    // timer fires late: after the user has already moved focus into another
+    // field. When it then yanked focus back to the name input, the keystrokes
+    // they were sending went into a field they were no longer looking at. Real
+    // input loss — this spec holds the timer to that.
+    const user = userEvent.setup({ delay: null });
+    render(<ProductInventory />);
+    await user.click(
+      screen.getByRole("button", { name: "products.newProduct" }),
+    );
+
+    const price = screen.getByLabelText("products.price");
+    price.focus();
+
+    // Long enough for the 50ms autofocus timer to have landed.
+    await new Promise((resolve) => setTimeout(resolve, 120));
+
+    expect(price).toHaveFocus();
+  });
+
   it("exports CSV via Blob download", async () => {
     const user = userEvent.setup();
     useProductInventory.getState().addProduct({

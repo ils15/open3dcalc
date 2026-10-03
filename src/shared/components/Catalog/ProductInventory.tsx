@@ -73,8 +73,18 @@ function ProductFormModal({
   // The parent remounts this modal (via `key`) on every open, so the
   // useState initializer above always starts from the current product.
   // This effect only syncs focus with the DOM (an external system).
+  //
+  // The guard matters: this timer is 50ms, and under load it lands AFTER the
+  // user has already moved focus into another field — then it yanked focus back
+  // to the name input mid-keystroke, and what they were typing went into a field
+  // they were no longer looking at. Only autofocus while focus is still where
+  // the browser put it; a user that already moved it has stated an intent.
   useEffect(() => {
-    const timer = setTimeout(() => nameInputRef.current?.focus(), 50);
+    const timer = setTimeout(() => {
+      if (document.activeElement === document.body) {
+        nameInputRef.current?.focus();
+      }
+    }, 50);
     return () => clearTimeout(timer);
   }, []);
 
