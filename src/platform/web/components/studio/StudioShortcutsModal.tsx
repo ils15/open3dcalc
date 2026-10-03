@@ -56,7 +56,7 @@ export const StudioShortcutsModal: React.FC<StudioShortcutsModalProps> = ({
         <div className="flex justify-end pt-2 border-t border-slate-800">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+            className="px-4 py-1.5 rounded-lg bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-semibold"
           >
             Entendido
           </button>

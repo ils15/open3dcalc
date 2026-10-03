@@ -262,7 +262,7 @@ export const StudioSubHeader: React.FC<StudioSubHeaderProps> = ({
         {/* Orçamento Button */}
         <button
           onClick={onOpenQuoteModal}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white transition-colors shadow-sm"
           title="Gerar Proposta & Orçamento"
         >
           <Briefcase className="w-3 h-3" />

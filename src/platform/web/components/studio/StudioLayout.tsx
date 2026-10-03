@@ -181,7 +181,7 @@ export const StudioLayout: React.FC = () => {
               </span>
               <button
                 onClick={() => setFocusMode(false)}
-                className="px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold"
+                className="px-3 py-1 rounded-lg bg-purple-600 hover:ring-2 hover:ring-purple-500/40 text-white font-bold"
               >
                 Sair do Modo Foco (Esc)
               </button>

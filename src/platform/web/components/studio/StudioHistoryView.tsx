@@ -133,7 +133,7 @@ export const StudioHistoryView: React.FC<StudioHistoryViewProps> = ({
           <button
             type="button"
             onClick={() => onTabChange("calculator")}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-950/40"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md shadow-blue-950/40"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Novo Cálculo</span>
@@ -298,7 +298,7 @@ export const StudioHistoryView: React.FC<StudioHistoryViewProps> = ({
                       clearHistory();
                       setConfirmClear(false);
                     }}
-                    className="px-2 py-1 rounded bg-rose-700 hover:bg-rose-800 text-white font-bold text-[11px]"
+                    className="px-2 py-1 rounded bg-rose-700 hover:ring-2 hover:ring-rose-500/40 text-white font-bold text-[11px]"
                   >
                     Confirmar
                   </button>
@@ -340,7 +340,7 @@ export const StudioHistoryView: React.FC<StudioHistoryViewProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={() => onTabChange("calculator")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>Criar Novo Cálculo</span>

@@ -184,7 +184,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => onTabChange("calculator")}
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md"
+              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md"
             >
               Criar Primeiro Cálculo
             </button>
@@ -264,7 +264,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
 
           <button
             onClick={() => onTabChange("calculator")}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Novo Cálculo</span>

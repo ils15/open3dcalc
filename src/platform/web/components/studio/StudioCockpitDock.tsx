@@ -122,7 +122,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         {/* Action button */}
         <button
           onClick={() => setShowQuickActions(!showQuickActions)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md shadow-blue-600/30"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white transition-all shadow-md shadow-blue-600/30"
         >
           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
           <span>Ações Rápidas</span>

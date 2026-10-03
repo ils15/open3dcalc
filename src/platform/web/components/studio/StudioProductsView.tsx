@@ -189,7 +189,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-md shadow-purple-950/40 hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:ring-2 hover:ring-purple-500/40 text-white text-xs font-bold transition-all shadow-md shadow-purple-950/40 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Produto</span>
@@ -386,7 +386,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
             <button
               type="button"
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition-all shadow-md"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:ring-2 hover:ring-purple-500/40 text-white text-xs font-bold transition-all shadow-md"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Cadastrar Primeiro Produto</span>
@@ -858,7 +858,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                 <button
                   type="submit"
                   disabled={!name.trim()}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-md disabled:opacity-40 transition-colors"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:ring-2 hover:ring-purple-500/40 text-white shadow-md disabled:opacity-40 transition-colors"
                 >
                   {editingProduct ? "Salvar Alterações" : "Cadastrar Produto"}
                 </button>
@@ -893,7 +893,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                   if (confirmDeleteId) removeProduct(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}
-                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-rose-700 hover:bg-rose-800 text-white"
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-rose-700 hover:ring-2 hover:ring-rose-500/40 text-white"
               >
                 Excluir
               </button>

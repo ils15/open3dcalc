@@ -581,7 +581,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         <button
           type="button"
           onClick={openCreateModal}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md shadow-blue-950/40 self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md shadow-blue-950/40 self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" />
           <span>Novo Orçamento</span>
@@ -771,7 +771,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-md"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Criar Primeiro Orçamento</span>
@@ -1367,7 +1367,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-md"
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:ring-2 hover:ring-blue-500/40 transition-colors shadow-md"
                 >
                   {editingQuote ? "Salvar Alterações" : "Criar Orçamento"}
                 </button>
@@ -1484,7 +1484,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => exportQuoteToPdf(viewingQuote)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-md"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:ring-2 hover:ring-blue-500/40 transition-colors shadow-md"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download PDF</span>
@@ -1517,7 +1517,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   removeQuote(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-700 hover:bg-rose-800 text-white"
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-700 hover:ring-2 hover:ring-rose-500/40 text-white"
               >
                 Excluir
               </button>

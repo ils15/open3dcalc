@@ -182,7 +182,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={handleWhatsApp}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold transition-all shadow-sm shadow-emerald-950/40"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white font-semibold transition-all shadow-sm shadow-emerald-950/40"
           title="Gerar proposta rápida para WhatsApp"
         >
           <MessageCircle className="w-3.5 h-3.5 fill-white/20" />

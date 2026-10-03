@@ -331,7 +331,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
 
             <button
               onClick={handleWhatsApp}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold transition-all shadow-md shadow-emerald-950/50"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white font-bold transition-all shadow-md shadow-emerald-950/50"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Enviar no WhatsApp</span>
