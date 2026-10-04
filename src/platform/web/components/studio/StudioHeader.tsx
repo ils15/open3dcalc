@@ -145,7 +145,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2">
         {/* Template selector ONLY visible in Demo Mode */}
         {isDemoMode && (
           <div className="hidden sm:flex items-center gap-1 bg-[#151226] border border-purple-500/40 rounded-lg p-0.5 text-xs">

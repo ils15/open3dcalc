@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { PrinterTagEditor } from "@/shared/components/Catalog/PrinterTagEditor";
@@ -26,6 +27,153 @@ import type { CatalogPrinter } from "@/shared/stores/catalogStore";
 type Section = "printers" | "materials" | "marketplaces";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
+
+const SHIPPED_PRINTER_IMAGE_PATHS = new Set([
+  "/images/printers/fallback-fdm.svg",
+  "/images/printers/fallback-resin.svg",
+]);
+
+function getImageSource(source: string | undefined): string | null {
+  const normalizedSource = source?.trim();
+  if (!normalizedSource || !SHIPPED_PRINTER_IMAGE_PATHS.has(normalizedSource)) {
+    return null;
+  }
+
+  const baseUrl = import.meta.env.BASE_URL;
+  if (baseUrl === "/") return normalizedSource;
+  return `${baseUrl.replace(/\/?$/, "/")}${normalizedSource.slice(1)}`;
+}
+
+interface CatalogCardProps {
+  ariaLabel: string;
+  children: ReactNode;
+  className?: string;
+}
+
+function CatalogCard({
+  ariaLabel,
+  children,
+  className = "",
+}: CatalogCardProps) {
+  return (
+    <article
+      aria-label={ariaLabel}
+      className={`surface min-w-0 rounded-xl border border-[var(--color-border)] p-4 shadow-sm ${className}`}
+    >
+      {children}
+    </article>
+  );
+}
+
+interface CatalogSearchFieldProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function CatalogSearchField({
+  label,
+  value,
+  onChange,
+}: CatalogSearchFieldProps) {
+  const { t } = useTranslation();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="relative min-w-0 flex-1" role="search" aria-label={label}>
+      <Search
+        aria-hidden="true"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]"
+      />
+      <input
+        ref={inputRef}
+        type="search"
+        aria-label={label}
+        placeholder={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] py-2 pl-9 pr-10 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+      />
+      {value && (
+        <button
+          type="button"
+          aria-label={t("catalog.clearSearch")}
+          onClick={() => {
+            onChange("");
+            inputRef.current?.focus();
+          }}
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+        >
+          <X aria-hidden="true" className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+interface CatalogSectionLayoutProps {
+  form: ReactNode;
+  toolbar: ReactNode;
+  children: ReactNode;
+}
+
+function CatalogSectionLayout({
+  form,
+  toolbar,
+  children,
+}: CatalogSectionLayoutProps) {
+  return (
+    <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+      {form}
+      <section className="min-w-0 space-y-3">
+        {toolbar}
+        {children}
+      </section>
+    </div>
+  );
+}
+
+interface PrinterThumbnailProps {
+  source?: string;
+  name: string;
+  className?: string;
+}
+
+function PrinterThumbnail({
+  source,
+  name,
+  className = "",
+}: PrinterThumbnailProps) {
+  const { t } = useTranslation();
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  const imageSource = getImageSource(source) ?? "";
+  const showImage = Boolean(imageSource) && failedSource !== imageSource;
+
+  return (
+    <span
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] ${className}`}
+    >
+      {showImage ? (
+        <img
+          src={imageSource}
+          alt={name}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailedSource(imageSource)}
+          className="h-full w-full object-contain p-1"
+        />
+      ) : (
+        <span
+          role="img"
+          aria-label={t("catalog.imageUnavailable")}
+          className="flex h-full w-full items-center justify-center"
+        >
+          <PrinterIcon aria-hidden="true" className="h-5 w-5" />
+        </span>
+      )}
+    </span>
+  );
+}
 
 const SECTION_ORDER: Section[] = ["printers", "materials", "marketplaces"];
 
@@ -72,7 +220,7 @@ export function CatalogTab() {
             {t("catalog.subtitle")}
           </p>
         </div>
-        <div className="flex gap-2 text-xs">
+        <div className="flex flex-wrap gap-2 text-xs">
           <span className="px-3 py-1.5 rounded-[6px] bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
             {stats.printers} {t("catalog.printers")}
           </span>
@@ -368,24 +516,12 @@ function PrinterManager() {
         </button>
       </div>
 
-      <div
-        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
-        role="search"
-      >
-        <label className="relative min-w-0 flex-1 sm:min-w-[220px]">
-          <Search
-            aria-hidden="true"
-            className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"
-          />
-          <input
-            type="search"
-            aria-label={t("catalog.printerName")}
-            placeholder={t("catalog.printerName")}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="h-[30px] w-full rounded border border-[#292e42] bg-[#161824] pl-8 pr-3 text-xs text-slate-100 placeholder:text-slate-500 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          />
-        </label>
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <CatalogSearchField
+          label={t("catalog.printerSearch")}
+          value={search}
+          onChange={setSearch}
+        />
         <div
           className="flex flex-wrap items-center gap-1.5"
           role="group"
@@ -465,7 +601,7 @@ function PrinterManager() {
       )}
 
       <div
-        className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+        className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
         role="group"
         aria-label={t("catalog.printers")}
       >
@@ -480,7 +616,11 @@ function PrinterManager() {
           />
         ))}
         {filteredPrinters.length === 0 && (
-          <p className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)]">
+          <p
+            role="status"
+            aria-live="polite"
+            className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)]"
+          >
             {t("history.noResults")}
           </p>
         )}
@@ -840,7 +980,9 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                   const vol = preset.buildVolumeMm
                     ? `${preset.buildVolumeMm.x}×${preset.buildVolumeMm.y}×${preset.buildVolumeMm.z} mm`
                     : "Padrão";
-                  const isFdm = preset.technology === "fdm";
+                  const technologyLabel = preset.technology
+                    ? t(`catalog.${preset.technology}`)
+                    : t("catalog.technologyUnknown");
 
                   return (
                     <div
@@ -848,18 +990,25 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                       className="bg-[#090e1a] hover:bg-[#0f1629] border border-[#1b253b] hover:border-blue-500/50 rounded-xl p-3.5 flex flex-col justify-between gap-3 transition-all group"
                     >
                       <div>
+                        <PrinterThumbnail
+                          source={preset.image}
+                          name={preset.name}
+                          className="mb-3 h-20 w-full"
+                        />
                         <div className="flex items-center justify-between gap-2 mb-1.5">
                           <span className="text-[10px] font-mono font-bold text-slate-400 px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
                             {preset.brand}
                           </span>
                           <span
-                            className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full font-bold border ${
-                              isFdm
-                                ? "bg-blue-950/60 text-blue-400 border-blue-500/40"
-                                : "bg-purple-950/60 text-purple-400 border-purple-500/40"
+                            className={`rounded-full border px-2 py-0.5 text-[9px] font-mono font-bold uppercase ${
+                              preset.technology === "fdm"
+                                ? "border-blue-500/40 bg-blue-950/60 text-blue-400"
+                                : preset.technology === "resin"
+                                  ? "border-purple-500/40 bg-purple-950/60 text-purple-400"
+                                  : "border-slate-600 bg-slate-800 text-slate-300"
                             }`}
                           >
-                            {preset.technology?.toUpperCase() || "FDM"}
+                            {technologyLabel}
                           </span>
                         </div>
 
@@ -1044,12 +1193,11 @@ function PrinterProfileCard({
   const { symbol: currencySymbol } = useCurrency();
   const technologyLabel = printer.technology
     ? t(`catalog.${printer.technology}`)
-    : "—";
+    : t("catalog.technologyUnknown");
   const volumeLabel = printer.buildVolumeMm
     ? `${printer.buildVolumeMm.x} × ${printer.buildVolumeMm.y} × ${printer.buildVolumeMm.z} mm`
     : "—";
   const specs = [
-    { label: t("catalog.materialType"), value: technologyLabel },
     { label: t("stl.volume"), value: volumeLabel },
     { label: t("catalog.power"), value: `${printer.power} W` },
     { label: t("catalog.value"), value: `${currencySymbol} ${printer.value}` },
@@ -1061,46 +1209,59 @@ function PrinterProfileCard({
   ];
 
   return (
-    <article
-      aria-label={`${printer.name} ${printer.brand}`}
-      className={`min-w-0 flex flex-col justify-between gap-2.5 rounded-md border p-3 transition-colors ${
+    <CatalogCard
+      ariaLabel={`${printer.name} ${printer.brand}`}
+      className={`flex flex-col justify-between gap-3 transition-colors ${
         selected
-          ? "border-blue-500 bg-[#161927]"
-          : "border-[#262b3c] bg-[#151722] hover:border-[#383e57]"
+          ? "border-[var(--color-accent)]"
+          : "hover:border-[var(--color-accent)]"
       }`}
     >
       <div className="flex min-w-0 items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-[#2d3348] bg-[#1c1f2e] text-slate-300">
-            <PrinterIcon aria-hidden="true" className="h-3.5 w-3.5" />
-          </span>
+          <PrinterThumbnail
+            source={printer.image}
+            name={printer.name}
+            className="h-14 w-14"
+          />
           <div className="min-w-0">
-            <h3 className="truncate text-xs font-semibold text-slate-100">
+            <h3 className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
               {printer.name}
             </h3>
-            <p className="truncate font-mono text-[10px] text-slate-400">
-              {printer.brand} · {technologyLabel}
+            <p className="truncate text-xs text-[var(--color-text-secondary)]">
+              {printer.brand}
             </p>
+            <span
+              className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                printer.technology === "fdm"
+                  ? "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                  : printer.technology === "resin"
+                    ? "border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300"
+                    : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]"
+              }`}
+            >
+              {technologyLabel}
+            </span>
           </div>
         </div>
         {printer.custom ? (
-          <span className="shrink-0 rounded border border-[#2d3348] bg-[#11131c] px-1.5 py-0.5 font-mono text-[10px] text-slate-300">
+          <span className="shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-secondary)]">
             {t("catalog.customPrinter")}
           </span>
         ) : (
-          <span className="shrink-0 rounded border border-[#2d3348] bg-[#11131c] px-1.5 py-0.5 font-mono text-[10px] text-slate-300">
+          <span className="shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-secondary)]">
             {t("catalog.defaultPrinter")}
           </span>
         )}
       </div>
 
-      <dl className="grid grid-cols-2 gap-1.5 rounded border border-[#232738] bg-[#11131c] p-2 font-mono text-[11px]">
+      <dl className="grid grid-cols-2 gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 text-xs">
         {specs.map((spec) => (
           <div key={spec.label} className="min-w-0">
-            <dt className="truncate text-[10px] text-slate-400">
+            <dt className="truncate text-[10px] text-[var(--color-text-muted)]">
               {spec.label}
             </dt>
-            <dd className="truncate font-semibold text-[11px] text-slate-100">
+            <dd className="truncate font-semibold text-[var(--color-text-primary)]">
               {spec.value}
             </dd>
           </div>
@@ -1114,10 +1275,10 @@ function PrinterProfileCard({
           type="button"
           aria-pressed={selected}
           onClick={onSelect}
-          className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+          className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
             selected
-              ? "border-blue-500/80 bg-[#1b2234] text-blue-300"
-              : "border-[#262b3c] bg-transparent text-slate-300 hover:bg-[#1f2232]"
+              ? "border-[var(--color-accent)] bg-[var(--color-bg-elevated)] text-[var(--color-accent)]"
+              : "border-[var(--color-border)] bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)]"
           }`}
         >
           {selected ? <Check aria-hidden="true" className="h-3 w-3" /> : null}
@@ -1129,7 +1290,7 @@ function PrinterProfileCard({
             onClick={onEdit}
             aria-label={t("catalog.editPrinter")}
             title={t("catalog.editPrinter")}
-            className="flex h-7 w-7 items-center justify-center rounded text-slate-400 transition-colors hover:bg-[#1f2232] hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="flex h-8 w-8 items-center justify-center rounded text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
           >
             <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
           </button>
@@ -1139,14 +1300,14 @@ function PrinterProfileCard({
               onClick={onRemove}
               aria-label={t("catalog.remove")}
               title={t("catalog.remove")}
-              className="flex h-7 w-7 items-center justify-center rounded text-slate-400 transition-colors hover:bg-[#1f2232] hover:text-rose-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+              className="flex h-8 w-8 items-center justify-center rounded text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)]"
             >
               <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
       </div>
-    </article>
+    </CatalogCard>
   );
 }
 
@@ -1158,6 +1319,14 @@ function MaterialManager() {
   const [type, setType] = useState<"fdm" | "resin">("fdm");
   const [density, setDensity] = useState("");
   const [price, setPrice] = useState("");
+  const [search, setSearch] = useState("");
+
+  const filteredMaterials = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase();
+    return store.materials.filter(
+      (material) => !query || material.name.toLocaleLowerCase().includes(query),
+    );
+  }, [search, store.materials]);
 
   const add = () => {
     if (!name.trim()) return;
@@ -1176,85 +1345,96 @@ function MaterialManager() {
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-      <div className="surface rounded-xl p-5 space-y-3">
-        <div className="text-sm font-semibold text-[var(--color-text-primary)]">
-          {t("catalog.addMaterial")}
-        </div>
-        <Select
-          label={t("catalog.selectMaterial")}
-          value=""
-          onChange={(id) => {
-            const m = materials.find((mat) => mat.id === id);
-            if (m) {
-              setName(m.name);
-              setType(m.type);
-              setDensity(String(m.density));
-              setPrice(String(m.avgPrice));
-            }
-          }}
-          options={[
-            { label: t("catalog.customMaterial"), value: "" },
-            ...materials.map((m) => ({
-              label: m.name,
-              value: m.id,
-              subtitle: `${m.density}g/cm³ · ${currencySymbol} ${m.avgPrice}`,
-              group: t(m.type === "fdm" ? "catalog.fdm" : "catalog.resin"),
-            })),
-          ]}
-          groups
-          search
-        />
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[var(--color-border)]" />
+    <CatalogSectionLayout
+      form={
+        <div className="surface rounded-xl p-5 space-y-3">
+          <div className="text-sm font-semibold text-[var(--color-text-primary)]">
+            {t("catalog.addMaterial")}
           </div>
-          <div className="relative flex justify-center text-xs text-[var(--color-text-muted)]">
-            <span className="bg-[var(--color-bg-primary)] px-2">
-              {t("catalog.orManual")}
-            </span>
+          <Select
+            label={t("catalog.selectMaterial")}
+            value=""
+            onChange={(id) => {
+              const m = materials.find((mat) => mat.id === id);
+              if (m) {
+                setName(m.name);
+                setType(m.type);
+                setDensity(String(m.density));
+                setPrice(String(m.avgPrice));
+              }
+            }}
+            options={[
+              { label: t("catalog.customMaterial"), value: "" },
+              ...materials.map((m) => ({
+                label: m.name,
+                value: m.id,
+                subtitle: `${m.density}g/cm³ · ${currencySymbol} ${m.avgPrice}`,
+                group: t(m.type === "fdm" ? "catalog.fdm" : "catalog.resin"),
+              })),
+            ]}
+            groups
+            search
+          />
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[var(--color-border)]" />
+            </div>
+            <div className="relative flex justify-center text-xs text-[var(--color-text-muted)]">
+              <span className="bg-[var(--color-bg-primary)] px-2">
+                {t("catalog.orManual")}
+              </span>
+            </div>
           </div>
-        </div>
-        <InputGroup
-          label={t("catalog.materialName")}
-          value={name}
-          onChange={setName}
-        />
-        <Select
-          label={t("catalog.materialType")}
-          value={type}
-          onChange={(v) => setType(v as "fdm" | "resin")}
-          options={[
-            { label: "FDM", value: "fdm" },
-            { label: "Resin", value: "resin" },
-          ]}
-          search={false}
-        />
-        <div className="grid grid-cols-2 gap-3">
           <InputGroup
-            label={t("catalog.density")}
-            value={density}
-            onChange={setDensity}
-            type="number"
+            label={t("catalog.materialName")}
+            value={name}
+            onChange={setName}
           />
-          <InputGroup
-            label={t("catalog.avgPrice")}
-            value={price}
-            onChange={setPrice}
-            type="number"
-            prefix={currencySymbol}
+          <Select
+            label={t("catalog.materialType")}
+            value={type}
+            onChange={(v) => setType(v as "fdm" | "resin")}
+            options={[
+              { label: "FDM", value: "fdm" },
+              { label: "Resin", value: "resin" },
+            ]}
+            search={false}
           />
+          <div className="grid grid-cols-2 gap-3">
+            <InputGroup
+              label={t("catalog.density")}
+              value={density}
+              onChange={setDensity}
+              type="number"
+            />
+            <InputGroup
+              label={t("catalog.avgPrice")}
+              value={price}
+              onChange={setPrice}
+              type="number"
+              prefix={currencySymbol}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={add}
+            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          >
+            {t("catalog.save")}
+          </button>
         </div>
-        <button
-          onClick={add}
-          className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-        >
-          {t("catalog.save")}
-        </button>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-        {store.materials.map((m) => (
-          <div key={m.id} className="surface rounded-xl p-4 space-y-2">
+      }
+      toolbar={
+        <CatalogSearchField
+          label={t("catalog.materialSearch")}
+          value={search}
+          onChange={setSearch}
+        />
+      }
+    >
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {filteredMaterials.map((m) => (
+          <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-semibold text-[var(--color-text-primary)]">
@@ -1285,10 +1465,19 @@ function MaterialManager() {
                 {t("catalog.remove")}
               </button>
             )}
-          </div>
+          </CatalogCard>
         ))}
+        {filteredMaterials.length === 0 && (
+          <p
+            role="status"
+            aria-live="polite"
+            className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)]"
+          >
+            {t("history.noResults")}
+          </p>
+        )}
       </div>
-    </div>
+    </CatalogSectionLayout>
   );
 }
 
@@ -1300,6 +1489,15 @@ function MarketplaceManager() {
   const [feePercent, setFeePercent] = useState("");
   const [feeFixed, setFeeFixed] = useState("");
   const [hasFreeShipping, setHasFreeShipping] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredMarketplaces = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase();
+    return store.marketplaces.filter(
+      (marketplace) =>
+        !query || marketplace.name.toLocaleLowerCase().includes(query),
+    );
+  }, [search, store.marketplaces]);
 
   const add = () => {
     if (!name.trim()) return;
@@ -1318,83 +1516,94 @@ function MarketplaceManager() {
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-      <div className="surface rounded-xl p-5 space-y-3">
-        <div className="text-sm font-semibold text-[var(--color-text-primary)]">
-          {t("catalog.addMarketplace")}
-        </div>
-        <Select
-          label={t("catalog.selectMarketplace")}
-          value=""
-          onChange={(id) => {
-            const m = marketplaces.find((mp) => mp.id === id);
-            if (m) {
-              setName(m.name);
-              setFeePercent(String(m.feePercent));
-              setFeeFixed(String(m.feeFixed));
-              setHasFreeShipping(m.hasFreeShipping);
-            }
-          }}
-          options={[
-            { label: t("catalog.customMarketplace"), value: "" },
-            ...marketplaces.map((m) => ({
-              label: m.name,
-              value: m.id,
-              subtitle: `${m.feePercent}% + ${currencySymbol}${m.feeFixed}`,
-            })),
-          ]}
-          search
-        />
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[var(--color-border)]" />
+    <CatalogSectionLayout
+      form={
+        <div className="surface rounded-xl p-5 space-y-3">
+          <div className="text-sm font-semibold text-[var(--color-text-primary)]">
+            {t("catalog.addMarketplace")}
           </div>
-          <div className="relative flex justify-center text-xs text-[var(--color-text-muted)]">
-            <span className="bg-[var(--color-bg-primary)] px-2">
-              {t("catalog.orManual")}
-            </span>
+          <Select
+            label={t("catalog.selectMarketplace")}
+            value=""
+            onChange={(id) => {
+              const m = marketplaces.find((mp) => mp.id === id);
+              if (m) {
+                setName(m.name);
+                setFeePercent(String(m.feePercent));
+                setFeeFixed(String(m.feeFixed));
+                setHasFreeShipping(m.hasFreeShipping);
+              }
+            }}
+            options={[
+              { label: t("catalog.customMarketplace"), value: "" },
+              ...marketplaces.map((m) => ({
+                label: m.name,
+                value: m.id,
+                subtitle: `${m.feePercent}% + ${currencySymbol}${m.feeFixed}`,
+              })),
+            ]}
+            search
+          />
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[var(--color-border)]" />
+            </div>
+            <div className="relative flex justify-center text-xs text-[var(--color-text-muted)]">
+              <span className="bg-[var(--color-bg-primary)] px-2">
+                {t("catalog.orManual")}
+              </span>
+            </div>
           </div>
+          <InputGroup
+            label={t("catalog.marketplaceName")}
+            value={name}
+            onChange={setName}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <InputGroup
+              label={t("catalog.feePercent")}
+              value={feePercent}
+              onChange={setFeePercent}
+              type="number"
+              unit="%"
+            />
+            <InputGroup
+              label={t("catalog.feeFixed")}
+              value={feeFixed}
+              onChange={setFeeFixed}
+              type="number"
+              prefix={currencySymbol}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hasFreeShipping}
+              onChange={(e) => setHasFreeShipping(e.target.checked)}
+              className="rounded bg-[var(--color-bg-elevated)] border-[var(--color-border)]"
+            />
+            {t("catalog.freeShipping")}
+          </label>
+          <button
+            type="button"
+            onClick={add}
+            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          >
+            {t("catalog.save")}
+          </button>
         </div>
-        <InputGroup
-          label={t("catalog.marketplaceName")}
-          value={name}
-          onChange={setName}
+      }
+      toolbar={
+        <CatalogSearchField
+          label={t("catalog.marketplaceSearch")}
+          value={search}
+          onChange={setSearch}
         />
-        <div className="grid grid-cols-2 gap-3">
-          <InputGroup
-            label={t("catalog.feePercent")}
-            value={feePercent}
-            onChange={setFeePercent}
-            type="number"
-            unit="%"
-          />
-          <InputGroup
-            label={t("catalog.feeFixed")}
-            value={feeFixed}
-            onChange={setFeeFixed}
-            type="number"
-            prefix={currencySymbol}
-          />
-        </div>
-        <label className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] cursor-pointer">
-          <input
-            type="checkbox"
-            checked={hasFreeShipping}
-            onChange={(e) => setHasFreeShipping(e.target.checked)}
-            className="rounded bg-[var(--color-bg-elevated)] border-[var(--color-border)]"
-          />
-          {t("catalog.freeShipping")}
-        </label>
-        <button
-          onClick={add}
-          className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-        >
-          {t("catalog.save")}
-        </button>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-        {store.marketplaces.map((m) => (
-          <div key={m.id} className="surface rounded-xl p-4 space-y-2">
+      }
+    >
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {filteredMarketplaces.map((m) => (
+          <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="font-semibold text-[var(--color-text-primary)]">
@@ -1425,9 +1634,18 @@ function MarketplaceManager() {
                 {t("catalog.remove")}
               </button>
             )}
-          </div>
+          </CatalogCard>
         ))}
+        {filteredMarketplaces.length === 0 && (
+          <p
+            role="status"
+            aria-live="polite"
+            className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)]"
+          >
+            {t("history.noResults")}
+          </p>
+        )}
       </div>
-    </div>
+    </CatalogSectionLayout>
   );
 }
