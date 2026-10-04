@@ -186,16 +186,23 @@ describe("web App — Focus Mode chrome", () => {
     expect(chrome(container).dock).not.toBeNull();
   });
 
-  it("keeps the demo export toast alive while taking the rest of the chrome block", () => {
+  it("takes the demo indicator and the privacy surfaces with the chrome block", () => {
     renderApp();
 
     enterFocusMode();
 
-    // The export guard is deliberately outside the chrome block: a blocked
-    // export must still be announced after the interface is stripped. This is
-    // the guarantee `StudioLayout.exportGuard.test.tsx` also depends on, from
-    // the chrome side.
-    expect(screen.getByTestId("demo-toast")).toBeInTheDocument();
+    // Everything the Studio mounts inside `{!focusMode && …}` goes with it: the
+    // demo indicator and the three privacy surfaces are siblings of the header
+    // in that block, not chrome that survives it.
+    //
+    // `DemoExportBlockedToast` is deliberately NOT asserted here. It used to be,
+    // under the guarantee that a blocked export stays announced after the
+    // interface is stripped — but that guarantee belongs to PR #262, which is
+    // the change that lifts the toast out of the focus block. Until that lands
+    // on this tree the toast is chrome like its neighbours, so asserting either
+    // way here would be reaching into a change this branch deliberately does not
+    // carry. #262 covers it from the other side, in
+    // `StudioLayout.exportGuard.test.tsx`.
     expect(screen.queryByTestId("demo-indicator")).toBeNull();
     expect(screen.queryByTestId("privacy-onboarding")).toBeNull();
     expect(screen.queryByTestId("legacy-migration-prompt")).toBeNull();
