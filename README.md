@@ -175,8 +175,7 @@ open3dcalc/
 │           └── overrides/       # Brides SQLite ↔ localStorage
 │               ├── db-bridge.ts
 │               ├── persistence-bridge.ts
-│               ├── storage-adapter.ts
-│               └── theme-persistence.ts
+│               └── storage-adapter.ts
 ├── docs/                          # Documentação
 │   └── wiki/                      # Artigos da aba Wiki (markdown, pt-BR + en-US)
 │       └── README.md              # Contrato de autoria da Wiki (subset, schema)
