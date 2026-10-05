@@ -8,21 +8,16 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
 import {
   initDatabase,
-  closeDatabase,
-  validateDatabaseFile,
-  getDbPath,
+  getSqlClient,
 } from "../db/database.js";
 import {
   initUpdateService,
-  setDatabase,
   checkForUpdates,
   downloadUpdate,
   installUpdate,
   skipVersion,
   getUpdateStatus,
 } from "./update.js";
-
-// ESM compatibility: __dirname is not available in ES modules
 import {
   getCapability,
   adoptSessionPassphrase,
@@ -67,13 +62,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /* ------------------------------------------------------------------ */
-/*  Constants                                                          */
+/* Constants                                                          */
 /* ------------------------------------------------------------------ */
 
 const isDev = process.env.NODE_ENV === "development";
 
 /* ------------------------------------------------------------------ */
-/*  Window state persistence                                           */
+/* Window state persistence                                           */
 /* ------------------------------------------------------------------ */
 
 interface WindowState {
@@ -108,7 +103,7 @@ async function saveWindowState(state: WindowState): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Window creation                                                    */
+/* Window creation                                                    */
 /* ------------------------------------------------------------------ */
 
 let mainWindow: BrowserWindow | null = null;
@@ -137,14 +132,10 @@ async function createWindow(): Promise<void> {
   mainWindow = new BrowserWindow(options);
 
   // ── Window hardening ─────────────────────────────────────────────
-  // Block top-level navigation to external origins (e.g. a compromised
-  // page navigating the window away from the app).
   mainWindow.webContents.on("will-navigate", (event) => {
     event.preventDefault();
   });
 
-  // Open external http(s) links in the system browser and deny creating
-  // new in-app windows (popups).
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:/i.test(url)) {
       void shell.openExternal(url);
@@ -152,8 +143,6 @@ async function createWindow(): Promise<void> {
     return { action: "deny" };
   });
 
-  // In production, remove the application menu (and its DevTools/Reload
-  // shortcuts). Dev keeps the menu so DevTools can be toggled.
   if (!isDev) {
     Menu.setApplicationMenu(null);
   }
@@ -162,7 +151,6 @@ async function createWindow(): Promise<void> {
     mainWindow.maximize();
   }
 
-  // Track window state changes
   const trackState = (): void => {
     if (!mainWindow) return;
     const bounds = mainWindow.getBounds();
@@ -174,13 +162,10 @@ async function createWindow(): Promise<void> {
   mainWindow.on("move", trackState);
   mainWindow.on("close", trackState);
 
-  // Load the renderer
   if (isDev) {
-    // In development, load from the Vite dev server
     await mainWindow.loadURL("http://localhost:5173");
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
-    // In production, load from the built files
     await mainWindow.loadFile(
       path.join(__dirname, "..", "..", "..", "dist", "index.desktop.html"),
     );
@@ -192,16 +177,9 @@ async function createWindow(): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ */
-/*  IPC Handlers                                                       */
+/* IPC Handlers                                                       */
 /* ------------------------------------------------------------------ */
 
-let db: ReturnType<typeof initDatabase>;
-
-/**
- * Returns true when the IPC message originates from the app's own
- * renderer frame: http://localhost / http://127.0.0.1 in dev, or a
- * file:// URL in production.
- */
 function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   const frame = event.senderFrame;
   if (!frame) return false;
@@ -219,22 +197,26 @@ function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   }
 }
 
-/** Throws unless the IPC event originates from the app's own renderer. */
 function assertTrustedSender(event: IpcMainInvokeEvent): void {
   if (!isTrustedSender(event)) {
     throw new Error("Untrusted IPC sender rejected");
   }
 }
 
-function setupIpcHandlers(): void {
+async function setupIpcHandlers(): Promise<void> {
+  let sql: ReturnType<typeof getSqlClient>;
+
   try {
-    db = initDatabase();
-    console.log("[main] Database initialized");
+    await initDatabase();
+    sql = getSqlClient();
+    console.log("[main] Database initialized (PostgreSQL)");
   } catch (error: unknown) {
     console.error("[main] Failed to initialize database:", error);
-    // Don't throw - register handlers anyway, they'll fail gracefully
-    // But create a null db object so handlers return meaningful errors
-    db = {} as ReturnType<typeof initDatabase>;
+    sql = new Proxy({} as ReturnType<typeof getSqlClient>, {
+      get() {
+        throw new Error("Database not initialized");
+      },
+    });
   }
 
   // ── db:load ──────────────────────────────────────────────────────
@@ -246,17 +228,7 @@ function setupIpcHandlers(): void {
         if (typeof key !== "string" || key.trim().length === 0) {
           throw new Error("Key must be a non-empty string");
         }
-        // ADR-002 §2.1: the persistence gate classifies the key against the
-        // SPEC-01 manifest — non-PII passes through, PII is decrypted from
-        // its ADR-001 capability blob, legacy plaintext stays readable
-        // (quarantined in S4), unknown keys return null (default-deny).
-        //
-        // A value that exists but cannot be read is REFUSED, not returned as
-        // null: null means "no such key", and a renderer that read it as
-        // empty would write over a row it could not read. `unreadable` is a
-        // distinct answer that carries the main process's reason code across
-        // the boundary.
-        const stored = readStoredRow(db.$client, key);
+        const stored = await readStoredRow(sql, key);
         if (stored === null) return null;
         const outcome = await gateLoad(key, stored);
         if (outcome.action === "unreadable") {
@@ -271,22 +243,18 @@ function setupIpcHandlers(): void {
     },
   );
 
-  // ── privacy:recovery-report (ADR-001 §3.6) ──────────────────────────
-  // Which classes of stored data are unavailable, and whether §3.6 recovery
-  // can still be attempted. Metadata only: key NAMES and reason codes, never a
-  // value (§3.2).
+  // ── privacy:recovery-report ──────────────────────────────────────
   ipcMain.handle("privacy:recovery-report", async (event) => {
     try {
       assertTrustedSender(event);
-      return await buildRecoveryReport(db.$client);
+      return await buildRecoveryReport(sql);
     } catch (error) {
       console.error("[privacy:recovery-report] Error:", error);
       throw error;
     }
   });
 
-  // ── privacy:recover-key (ADR-001 §3.6) ──────────────────────────────
-  // copy → re-seal → verify, for one key. Never deletes the legacy blob.
+  // ── privacy:recover-key ──────────────────────────────────────────
   ipcMain.handle(
     "privacy:recover-key",
     async (event, key: string): Promise<RecoveryResult> => {
@@ -295,7 +263,7 @@ function setupIpcHandlers(): void {
         if (typeof key !== "string" || key.trim().length === 0) {
           throw new Error("Key must be a non-empty string");
         }
-        return await recoverLegacyKey(db.$client, key);
+        return await recoverLegacyKey(sql, key);
       } catch (error) {
         console.error("[privacy:recover-key] Error:", error);
         throw error;
@@ -315,10 +283,7 @@ function setupIpcHandlers(): void {
         if (typeof value !== "string") {
           throw new Error("Value must be a string");
         }
-        // ADR-002 §2.1 default-deny: PII is encrypted through the ADR-001
-        // capability layer; without a capability the write is REFUSED —
-        // never downgraded to plaintext.
-        await saveGated(db.$client, key, value);
+        await saveGated(sql, key, value);
       } catch (error) {
         console.error("[db:save] Error:", error);
         throw error;
@@ -333,11 +298,7 @@ function setupIpcHandlers(): void {
       if (typeof key !== "string" || key.trim().length === 0) {
         throw new Error("Key must be a non-empty string");
       }
-      // ADR-002 §2.1 fail-closed at the delete path too. A delete needs no
-      // value, but it needs the classification: with the manifest unloadable no
-      // key can be classified, and an unclassifiable row might be PII. See
-      // `deleteGated`.
-      deleteGated(db.$client, key);
+      await deleteGated(sql, key);
     } catch (error) {
       console.error("[db:delete] Error:", error);
       throw error;
@@ -348,63 +309,45 @@ function setupIpcHandlers(): void {
   ipcMain.handle("db:list-keys", async (event): Promise<string[]> => {
     try {
       assertTrustedSender(event);
-      const stmt = db.$client.prepare("SELECT key FROM storage ORDER BY key");
-      const rows = stmt.all() as Array<{ key: string }>;
-      return rows.map((r) => r.key);
+      const rows = await sql`SELECT key FROM storage ORDER BY key`;
+      return rows.map((r) => r.key as string);
     } catch (error) {
       console.error("[db:list-keys] Error:", error);
       throw error;
     }
   });
 
-  // ── db:export (D1.1 S6 — ADR-003 §2.2 reclassification) ─────────────
-  // The raw SQLite copy is a DIAGNOSTIC backup, not a user feature: it is
-  // gated behind the diagnostic flag, refuses to run in production without
-  // it, and supports manifest-driven redaction. Users export via the
-  // SPEC-03 envelope instead. No renderer UI invokes this.
+  // ── db:export ────────────────────────────────────────────────────
   ipcMain.handle(
     "db:export",
     async (event, options?: { redact?: boolean }): Promise<string> => {
       try {
         assertTrustedSender(event);
         const redact = options?.redact === true;
-        const dbPath = getDbPath();
-
-        // §2.2.1 authorized access only — fail-closed without the gate.
         if (!isDiagnosticGateEnabled()) {
           throw new DiagnosticGateError();
         }
-
         if (!mainWindow) {
           throw new Error("No active window");
         }
-
         const suffix = redact ? "redacted" : "full";
         const result = await dialog.showSaveDialog(mainWindow, {
           title: "Backup diagnóstico (engenharia) — uso interno",
           defaultPath: `diagnostic-backup-${suffix}-${new Date()
             .toISOString()
-            .slice(0, 10)}.sqlite3`,
+            .slice(0, 10)}.sql`,
           filters: [
-            { name: "SQLite Database", extensions: ["sqlite3", "db"] },
+            { name: "SQL Dump", extensions: ["sql"] },
             { name: "All Files", extensions: ["*"] },
           ],
         });
-
         if (result.canceled || !result.filePath) {
           throw new Error("Export cancelled");
         }
-
         const backup = await createDiagnosticBackup({
-          dbPath,
+          sql,
           targetPath: result.filePath,
           redact,
-          checkpoint: () => {
-            // Checkpoint first so the copy includes all WAL data.
-            if (db && db.$client) {
-              db.$client.pragma("wal_checkpoint(TRUNCATE)");
-            }
-          },
         });
         console.log(
           `[db:export] diagnostic backup (${suffix}) written by operator: ` +
@@ -418,16 +361,16 @@ function setupIpcHandlers(): void {
     },
   );
 
-  // ── erasure:start (D1.1 S7 — SPEC-02 delete-all saga) ───────────────
-  // The renderer purges its own surfaces first and passes the report; the
-  // main process runs the resumable saga over every durable surface and
-  // returns the completion receipt (with external_copies_notice).
+  // ── erasure:start ────────────────────────────────────────────────
   ipcMain.handle(
     "erasure:start",
-    async (event, rendererReport?: Parameters<typeof runDesktopErasure>[1]) => {
+    async (
+      event,
+      rendererReport?: Parameters<typeof runDesktopErasure>[1],
+    ) => {
       try {
         assertTrustedSender(event);
-        return await runDesktopErasure(db, rendererReport);
+        return await runDesktopErasure(sql, rendererReport);
       } catch (error) {
         console.error("[erasure:start] Error:", error);
         throw error;
@@ -435,8 +378,7 @@ function setupIpcHandlers(): void {
     },
   );
 
-  // ── erasure:status ──────────────────────────────────────────────────
-  // Metadata-only journal state for the privacy screen.
+  // ── erasure:status ───────────────────────────────────────────────
   ipcMain.handle("erasure:status", (event) => {
     try {
       assertTrustedSender(event);
@@ -447,7 +389,7 @@ function setupIpcHandlers(): void {
     }
   });
 
-  // ── update:check ────────────────────────────────────────────────────
+  // ── update:check ─────────────────────────────────────────────────
   ipcMain.handle(
     "update:check",
     async (): Promise<{
@@ -465,17 +407,17 @@ function setupIpcHandlers(): void {
     },
   );
 
-  // ── update:download ──────────────────────────────────────────────────
+  // ── update:download ──────────────────────────────────────────────
   ipcMain.handle("update:download", async (): Promise<void> => {
     await downloadUpdate();
   });
 
-  // ── update:install ───────────────────────────────────────────────────
+  // ── update:install ───────────────────────────────────────────────
   ipcMain.handle("update:install", async (): Promise<void> => {
     installUpdate();
   });
 
-  // ── update:get-status ────────────────────────────────────────────────
+  // ── update:get-status ────────────────────────────────────────────
   ipcMain.handle(
     "update:get-status",
     async (): Promise<{
@@ -487,7 +429,7 @@ function setupIpcHandlers(): void {
     },
   );
 
-  // ── update:skip ─────────────────────────────────────────────────────
+  // ── update:skip ──────────────────────────────────────────────────
   ipcMain.handle(
     "update:skip",
     async (_event, version: string): Promise<void> => {
@@ -499,169 +441,15 @@ function setupIpcHandlers(): void {
   );
 
   // ── db:import ────────────────────────────────────────────────────
-  //
-  // Safe-swap strategy (documented decision):
-  // The drizzle singleton is re-initialized for real after the swap via
-  // closeDatabase() + initDatabase(). To make the reconnect reliable we
-  // never touch the live DB before validating a candidate copy:
-  //   1. The user picks the file via a native dialog (no renderer path).
-  //   2. The source is copied to a temp file in the same directory, the
-  //      live DB is checkpointed+closed, and the temp is validated
-  //      (integrity / foreign keys / required tables) BEFORE any swap.
-  //   3. Only after validation does the temp atomically replace the live
-  //      DB; orphan -wal/-shm of the old DB are removed first.
-  //   4. The singleton is re-opened with initDatabase(); if that fails,
-  //      the pre-import backup is restored and the DB reconnected, and
-  //      the import is rejected with a clear error.
-  // Backups are pruned to the 3 most recent.
   ipcMain.handle("db:import", async (event): Promise<string> => {
-    try {
-      assertTrustedSender(event);
-
-      const dbPath = getDbPath();
-      const dbDir = path.dirname(dbPath);
-
-      if (!mainWindow) {
-        throw new Error("No active window");
-      }
-
-      // (a) Choose the file with a native dialog — never accept a path
-      // from the renderer.
-      const result = await dialog.showOpenDialog(mainWindow, {
-        title: "Importar Banco de Dados",
-        defaultPath: dbDir,
-        properties: ["openFile"],
-        filters: [
-          { name: "SQLite Database", extensions: ["sqlite3", "db"] },
-          { name: "All Files", extensions: ["*"] },
-        ],
-      });
-
-      if (result.canceled || result.filePaths.length === 0) {
-        throw new Error("Import cancelled");
-      }
-      const sourcePath = result.filePaths[0];
-
-      // Verify the source file exists and is readable
-      await fs.access(sourcePath, fs.constants.R_OK);
-
-      // Same-directory temp copy so the final swap is an atomic rename.
-      const tempPath = path.join(dbDir, `.open3dcalc-import-${Date.now()}.tmp`);
-
-      try {
-        await fs.copyFile(sourcePath, tempPath);
-
-        // Carry over a sibling WAL so manually-copied backups with
-        // uncheckpointed data are still complete after validation.
-        try {
-          await fs.copyFile(`${sourcePath}-wal`, `${tempPath}-wal`);
-        } catch {
-          // No sibling WAL — normal case.
-        }
-
-        // (b) Validate the candidate BEFORE touching the live DB.
-        validateDatabaseFile(tempPath);
-
-        // Create a backup of the current DB before replacing. Checkpoint
-        // first so the backup copy includes all WAL data.
-        const backupPath = `${dbPath}.backup-${Date.now()}`;
-        if (db && db.$client) {
-          db.$client.pragma("wal_checkpoint(TRUNCATE)");
-        }
-        try {
-          await fs.copyFile(dbPath, backupPath);
-        } catch {
-          // If the current DB doesn't exist yet, that's fine.
-        }
-
-        // Close the live connection and reset the singleton so it can be
-        // reopened (this is what makes the reconnect real).
-        closeDatabase();
-
-        // Remove orphan -wal/-shm of the OLD database (they were
-        // checkpointed and the connection closed, so deletion is safe).
-        await fs.rm(`${dbPath}-wal`, { force: true }).catch(() => {});
-        await fs.rm(`${dbPath}-shm`, { force: true }).catch(() => {});
-
-        // Atomic swap: temp → live DB path.
-        try {
-          await fs.rename(tempPath, dbPath);
-        } catch {
-          // Fallback for filesystems that can't rename over an existing
-          // file: copy + remove.
-          await fs.copyFile(tempPath, dbPath);
-          await fs.rm(tempPath, { force: true }).catch(() => {});
-        }
-
-        // (c) Reconnect for real.
-        try {
-          db = initDatabase();
-          // The updater service keeps its own reference to the database —
-          // rebind it so skipVersion()/checkForUpdates() don't keep using
-          // the handle whose client was closed above.
-          setDatabase(db);
-        } catch (error) {
-          // Restore the pre-import database and reconnect, then reject
-          // the import with a clear error.
-          //
-          // initDatabase() closes the connection it opened on failure, but
-          // close anyway (defensive) BEFORE overwriting the file so the
-          // restore never tries to copy over a still-open/locked handle.
-          closeDatabase();
-
-          // The backup copy MUST succeed: a silent failure would leave the
-          // broken imported file in place and the retry below would just
-          // re-open it.
-          try {
-            await fs.copyFile(backupPath, dbPath);
-          } catch (restoreError) {
-            const restoreMessage =
-              restoreError instanceof Error
-                ? restoreError.message
-                : String(restoreError);
-            console.error(
-              "[db:import] Failed to restore pre-import backup:",
-              restoreError,
-            );
-            throw new Error(
-              `Import failed: could not open the imported database and the ` +
-                `original database could not be restored automatically. ` +
-                `Restore it manually from: ${backupPath} (${restoreMessage})`,
-              { cause: restoreError },
-            );
-          }
-
-          db = initDatabase();
-          setDatabase(db);
-          throw new Error(
-            `Import failed: could not open the imported database. Original data restored. ` +
-              `(${(error as Error)?.message ?? String(error)})`,
-            { cause: error },
-          );
-        }
-
-        // (d) Keep at most 3 backups, delete the oldest.
-        await pruneBackups(dbPath, 3);
-
-        console.log(
-          `Database imported from ${sourcePath}. Backup saved at ${backupPath}`,
-        );
-        return dbPath;
-      } finally {
-        // Cleanup the temp copy and any sidecars it created.
-        await fs.rm(tempPath, { force: true }).catch(() => {});
-        await fs.rm(`${tempPath}-wal`, { force: true }).catch(() => {});
-        await fs.rm(`${tempPath}-shm`, { force: true }).catch(() => {});
-      }
-    } catch (error) {
-      console.error("[db:import] Error:", error);
-      throw error;
-    }
+    assertTrustedSender(event);
+    throw new Error(
+      "SQLite-style file import is not supported for PostgreSQL. " +
+        "Use pg_restore or the diagnostic backup feature instead.",
+    );
   });
 
-  // ── crypto:capability (D1.1 S2 — ADR-001 §2.3) ──────────────────────
-  // Reports the current capability decision. Probe results stay in main
-  // memory; no key material or passphrase ever crosses IPC.
+  // ── crypto:capability ────────────────────────────────────────────
   ipcMain.handle("crypto:capability", () => {
     try {
       return getCapability();
@@ -671,10 +459,7 @@ function setupIpcHandlers(): void {
     }
   });
 
-  // ── crypto:set-passphrase ───────────────────────────────────────────
-  // Adopts the session passphrase into MAIN-process memory only (SPEC-01
-  // `session_passphrase_key`: surface memory, sync never, export never).
-  // It is never echoed back, never persisted, never logged.
+  // ── crypto:set-passphrase ────────────────────────────────────────
   ipcMain.handle(
     "crypto:set-passphrase",
     async (event, passphrase: string): Promise<void> => {
@@ -691,9 +476,7 @@ function setupIpcHandlers(): void {
     },
   );
 
-  // ── crypto:lock ─────────────────────────────────────────────────────
-  // Zeroizes the session passphrase (irreversible). PII capability
-  // degrades to DENIED until a new passphrase is adopted.
+  // ── crypto:lock ──────────────────────────────────────────────────
   ipcMain.handle("crypto:lock", async (event): Promise<void> => {
     try {
       assertTrustedSender(event);
@@ -704,41 +487,35 @@ function setupIpcHandlers(): void {
     }
   });
 
-  // ── privacy:scan-report (D1.1 S3 — ADR-002 §2.3) ────────────────────
-  // On-demand re-run of the legacy plaintext scan. Metadata only: key
-  // NAMES and counts, never stored values.
-  ipcMain.handle("privacy:scan-report", () => {
+  // ── privacy:scan-report ──────────────────────────────────────────
+  ipcMain.handle("privacy:scan-report", async () => {
     try {
-      return runPrivacyScan();
+      return await runPrivacyScan();
     } catch (error) {
       console.error("[privacy:scan-report] Error:", error);
       throw error;
     }
   });
 
-  // ── privacy:quarantine-report (D1.1 S4 — ADR-002 §2.2) ──────────────
-  // Quarantine state derived from the scan: PII keys holding legacy
-  // plaintext are quarantined (read-only) until migrate/eliminate.
-  ipcMain.handle("privacy:quarantine-report", (event) => {
+  // ── privacy:quarantine-report ────────────────────────────────────
+  ipcMain.handle("privacy:quarantine-report", async (event) => {
     try {
       assertTrustedSender(event);
-      return buildQuarantineReport(db.$client);
+      return await buildQuarantineReport(sql);
     } catch (error) {
       console.error("[privacy:quarantine-report] Error:", error);
       throw error;
     }
   });
 
-  // ── privacy:migrate-key (ADR-002 §2.2.3) ────────────────────────────
-  // Encrypt the quarantined plaintext with the ADR-001 capability, verify
-  // the encrypted copy reads back, then consider the plaintext destroyed.
+  // ── privacy:migrate-key ──────────────────────────────────────────
   ipcMain.handle("privacy:migrate-key", async (event, key: string) => {
     try {
       assertTrustedSender(event);
       if (typeof key !== "string" || key.trim().length === 0) {
         throw new Error("Key must be a non-empty string");
       }
-      const result = await migrateKey(db.$client, key);
+      const result = await migrateKey(sql, key);
       console.log(
         `[privacy] migrated key "${key}" (verified=${result.verified})`,
       );
@@ -749,16 +526,14 @@ function setupIpcHandlers(): void {
     }
   });
 
-  // ── privacy:eliminate-key (ADR-002 §2.2.3) ──────────────────────────
-  // Delete the quarantined rows for a PII key (SPEC-02 saga in S7
-  // formalizes the cross-surface erasure with receipts).
+  // ── privacy:eliminate-key ────────────────────────────────────────
   ipcMain.handle("privacy:eliminate-key", async (event, key: string) => {
     try {
       assertTrustedSender(event);
       if (typeof key !== "string" || key.trim().length === 0) {
         throw new Error("Key must be a non-empty string");
       }
-      const result = eliminateKey(db.$client, key);
+      const result = await eliminateKey(sql, key);
       console.log(`[privacy] eliminated key "${key}"`);
       return result;
     } catch (error) {
@@ -767,18 +542,11 @@ function setupIpcHandlers(): void {
     }
   });
 
-  // ── privacy:legacy-rows (Beta5 desktop re-home) ─────────────────────
-  // READ-ONLY: the RAW legacy plaintext values for the three migrated PII
-  // keys, so the renderer can COPY them into the encrypted vault (the web
-  // re-home's desktop twin). The handler reads the three DECLARED keys and
-  // never a renderer-supplied key; an already-encrypted row yields no value.
-  // The values are PII: they travel in memory to the renderer only, are not
-  // logged, and are NEVER persisted in the renderer (the persistence bridge
-  // still refuses these three keys).
-  ipcMain.handle("privacy:legacy-rows", (event) => {
+  // ── privacy:legacy-rows ──────────────────────────────────────────
+  ipcMain.handle("privacy:legacy-rows", async (event) => {
     try {
       assertTrustedSender(event);
-      return readLegacyPiiRows(db.$client);
+      return await readLegacyPiiRows(sql);
     } catch (error) {
       console.error("[privacy:legacy-rows] Error:", error);
       throw error;
@@ -790,45 +558,38 @@ function setupIpcHandlers(): void {
  * ADR-002 §2.3 startup scan: classify every storage-table row against the
  * manifest's expected encrypted form and count the plaintext domain tables.
  * Logs a METADATA-ONLY summary (key names, counts — never values).
- * Returns the report for the privacy:scan-report IPC (S4 wires the
- * quarantine state machine and the privacy screen on top of this).
  */
-function runPrivacyScan(): ReturnType<typeof buildScanReport> {
-  const rows = db.$client
-    .prepare("SELECT key, value FROM storage")
-    .all() as Array<{
+async function runPrivacyScan(): Promise<ReturnType<typeof buildScanReport>> {
+  const sql = getSqlClient();
+  const rows = (await sql`SELECT key, value FROM storage`) as Array<{
     key: string;
     value: string;
   }>;
-  // Counts are read for every table in the canonical list — hardcoding the
-  // names here is exactly how `history_entries` went unreported. A table the
-  // profile predates counts as 0, the same "absent is already-empty" rule the
-  // erasure adapters follow: a scan that throws here would take startup down
-  // with it, and a scan report is metadata, not a gate.
-  const countRows = (table: string): number => {
+
+  const countRows = async (table: string): Promise<number> => {
     try {
-      return (
-        db.$client.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as {
-          c: number;
-        }
-      ).c;
+      const result = await sql.unsafe(
+        `SELECT COUNT(*) AS c FROM "${table}"`,
+      );
+      return Number(result[0]?.c ?? 0);
     } catch {
       return 0;
     }
   };
-  const domainCounts = Object.fromEntries(
-    PII_DOMAIN_TABLES.map((table) => [table, countRows(table)]),
-  ) as PiiDomainTableCounts;
-  const report = buildScanReport(rows, domainCounts);
+
+  const domainCounts: Record<string, number> = {};
+  for (const table of PII_DOMAIN_TABLES) {
+    domainCounts[table] = await countRows(table);
+  }
+
+  const report = buildScanReport(rows, domainCounts as PiiDomainTableCounts);
   const summary = summarizeReport(report);
-  // Only the tables where a row IS plaintext evidence. A `pii_stage` row is
-  // always a sealed envelope, so summing it in would make every in-flight
-  // migration warn "legacy plaintext PII detected" — the same class of lie as
-  // the `history_entries` omission, in the other direction.
+
   const domainPlaintext = PII_LEGACY_PLAINTEXT_TABLES.reduce(
     (total, table) => total + (report.domainTables[table] ?? 0),
     0,
   );
+
   if (report.legacyCount > 0 || domainPlaintext > 0) {
     console.warn(
       `[privacy] legacy plaintext PII detected (ADR-002 §2.2): ${summary}`,
@@ -836,40 +597,19 @@ function runPrivacyScan(): ReturnType<typeof buildScanReport> {
   } else {
     console.log(`[privacy] at-rest scan clean: ${summary}`);
   }
+
   return report;
 }
 
-/**
- * Deletes the oldest backups of a database file, keeping at most
- * `maxKeep` (backups are named `<db>.backup-<timestamp>`).
- */
-async function pruneBackups(dbPath: string, maxKeep: number): Promise<void> {
-  try {
-    const dir = path.dirname(dbPath);
-    const prefix = `${path.basename(dbPath)}.backup-`;
-    const entries = (await fs.readdir(dir))
-      .filter((f) => f.startsWith(prefix))
-      .map((f) => path.join(dir, f));
-    // Backup names embed a numeric timestamp — lexicographic sort is chronological.
-    entries.sort((a, b) => b.localeCompare(a));
-    for (const entry of entries.slice(maxKeep)) {
-      await fs.rm(entry, { force: true }).catch(() => {});
-    }
-  } catch (error) {
-    console.error("[db] Backup pruning failed:", error);
-  }
-}
-
 /* ------------------------------------------------------------------ */
-/*  App lifecycle                                                      */
+/* App lifecycle                                                      */
 /* ------------------------------------------------------------------ */
 
-// ===== GLOBAL ERROR HANDLERS =====
 process.on("uncaughtException", (error: Error) => {
   console.error("[main] Uncaught exception:", error);
   dialog.showErrorBox(
     "Unexpected Error",
-    `An unexpected error occurred:\n\n${(error as Error)?.message ?? String(error)}\n\nThe application will now exit.`,
+    `An unexpected error occurred:\n${(error as Error)?.message ?? String(error)}\nThe application will now exit.`,
   );
   app.exit(1);
 });
@@ -879,54 +619,51 @@ process.on("unhandledRejection", (reason: unknown) => {
   const message = reason instanceof Error ? reason.message : String(reason);
   dialog.showErrorBox(
     "Unhandled Error",
-    `An unhandled error occurred:\n\n${message}\n\nCheck the logs for details.`,
+    `An unhandled error occurred:\n${message}\nCheck the logs for details.`,
   );
 });
 
 app.whenReady().then(async () => {
   try {
-    setupIpcHandlers();
-    // ADR-002 §2.3: startup scan of persisted PII (metadata-only summary).
-    runPrivacyScan();
-    // SPEC-02 §2: resume a non-terminal erasure saga (never re-prompts).
-    void resumeErasureIfNeeded(db).catch((error) => {
+    await setupIpcHandlers();
+    await runPrivacyScan();
+
+    const sql = getSqlClient();
+    void resumeErasureIfNeeded(sql).catch((error) => {
       console.error("[erasure] resume failed:", error);
     });
+
     await createWindow();
+
     if (mainWindow) {
-      initUpdateService(mainWindow, db);
+      initUpdateService(mainWindow, null as never);
     }
   } catch (error: unknown) {
     console.error("[main] Startup error:", error);
     dialog.showErrorBox(
       "Startup Error",
-      `Failed to start Open3DCalc:\n\n${(error as Error)?.message ?? String(error)}`,
+      `Failed to start Open3DCalc:\n${(error as Error)?.message ?? String(error)}`,
     );
     app.quit();
   }
 
   app.on("activate", async () => {
-    // macOS: re-create window when dock icon clicked
     if (BrowserWindow.getAllWindows().length === 0) {
       await createWindow();
     }
   });
 });
 
-// Zeroize the session passphrase on quit (ADR-001 §2.1 — best-effort
-// within JS limits; the hard guarantee is that nothing was persisted).
 app.on("before-quit", () => {
   lockCryptoSession();
 });
 
 app.on("window-all-closed", () => {
-  // On macOS, apps typically stay active until Cmd+Q
   if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
-// Prevent multiple instances
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();

@@ -1,6 +1,10 @@
 /**
  * Desktop erasure orchestration (D1.1 S7) — SPEC-02 §2–§7.
  *
+ * Adapted for PostgreSQL: uses async postgres.Sql and pg* adapters instead
+ * of sync better-sqlite3 and sqlite* adapters. WAL/SHM adapter removed
+ * as PostgreSQL manages its own WAL internally.
+ *
  * The renderer purges its own surfaces first (rendererSweep) and passes the
  * report here; the main process runs the saga over every durable surface
  * with a safeStorage-backed snapshot capability. Journal + snapshots live
@@ -10,6 +14,7 @@
 import { app, safeStorage } from "electron";
 import path from "node:path";
 import fs from "node:fs";
+import type postgres from "postgres";
 import {
   startSaga,
   resumeSaga,
@@ -26,17 +31,14 @@ import {
   appdataFilesAdapter,
   logsAdapter,
   rendererReportAdapter,
-  sqliteDomainTablesAdapter,
-  sqliteStorageAdapter,
-  sqliteWalShmAdapter,
+  pgDomainTablesAdapter,
+  pgStorageAdapter,
   tempStagingAdapter,
   type RendererPurgeReport,
 } from "./erasureStores.js";
-import { getDbPath } from "../db/database.js";
 import {
   snapshotPayload,
   restoreSnapshotPayload,
-  type PayloadDb,
 } from "./erasurePayload.js";
 
 export function erasureDir(): string {
@@ -68,23 +70,22 @@ export function safeStorageSnapshotCapability(): SnapshotCapability {
 }
 
 function buildAdapters(
-  db: PayloadDb,
+  sql: postgres.Sql,
   rendererReport: RendererPurgeReport | undefined,
 ): SagaEngineOptions["adapters"] {
-  const dbPath = getDbPath();
   const userData = app.getPath("userData");
   const snapStore = diskSnapshotStore(erasureDir());
+  const stagingDir = userData;
   return [
     rendererReportAdapter("localstorage", rendererReport?.localstorage),
-    sqliteDomainTablesAdapter(db.$client),
-    sqliteStorageAdapter(db.$client),
-    sqliteWalShmAdapter(dbPath, db.$client),
+    pgDomainTablesAdapter(sql),
+    pgStorageAdapter(sql),
     rendererReportAdapter("indexeddb", rendererReport?.indexeddb),
     rendererReportAdapter("opfs", rendererReport?.opfs),
     rendererReportAdapter("cache_api_sw", rendererReport?.cache_api_sw),
     appdataFilesAdapter(userData),
     logsAdapter(path.join(userData, "logs")),
-    tempStagingAdapter(path.dirname(dbPath)),
+    tempStagingAdapter(stagingDir),
     {
       store: "snapshots",
       async purge() {
@@ -101,7 +102,7 @@ function buildAdapters(
 }
 
 function engineOptions(
-  db: Parameters<typeof buildAdapters>[0],
+  sql: postgres.Sql,
   rendererReport: RendererPurgeReport | undefined,
 ): SagaEngineOptions {
   const sagaDir = erasureDir();
@@ -111,11 +112,11 @@ function engineOptions(
     journal: diskJournalAdapter(sagaDir),
     snapshots: snapStore,
     policyVersion: "1.1",
-    adapters: buildAdapters(db, rendererReport),
+    adapters: buildAdapters(sql, rendererReport),
     snapshotCapability: safeStorageSnapshotCapability(),
-    collectSnapshotPayload: async () => snapshotPayload(db),
+    collectSnapshotPayload: async () => snapshotPayload(sql),
     restoreSnapshotPayload: async (payload) =>
-      restoreSnapshotPayload(db, payload),
+      restoreSnapshotPayload(sql, payload),
     externalCopiesNotice: [
       "Pacotes de exportação (arquivos .open3dcalc) criados anteriormente continuam onde você os salvou — apague-os manualmente.",
       "Backups diagnósticos feitos por operadores seguem a política de retenção de 14 dias.",
@@ -126,10 +127,10 @@ function engineOptions(
 
 /** Run (or resume) the desktop erasure saga. Returns the completion receipt. */
 export async function runDesktopErasure(
-  db: Parameters<typeof buildAdapters>[0],
+  sql: postgres.Sql,
   rendererReport: RendererPurgeReport | undefined,
 ): Promise<{ receipt: SagaReceipt; rolledBack: boolean }> {
-  const options = engineOptions(db, rendererReport);
+  const options = engineOptions(sql, rendererReport);
   const { journal, receipt } = journalFileHasSaga(options)
     ? await resumeSaga(options)
     : await startSaga(options);
@@ -148,10 +149,10 @@ function journalFileHasSaga(options: SagaEngineOptions): boolean {
 
 /** Startup resume: a non-terminal journal continues automatically (§2). */
 export async function resumeErasureIfNeeded(
-  db: Parameters<typeof buildAdapters>[0],
+  sql: postgres.Sql,
 ): Promise<{ resumed: boolean; receipt?: SagaReceipt; journal?: SagaJournal }> {
   if (!erasureDirHasJournal()) return { resumed: false };
-  const { journal, receipt } = await resumeSaga(engineOptions(db, undefined));
+  const { journal, receipt } = await resumeSaga(engineOptions(sql, undefined));
   return { resumed: journal !== null, receipt, journal: journal ?? undefined };
 }
 

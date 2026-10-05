@@ -1,16 +1,15 @@
 /**
- * db/migrate.ts — Migration CLI with rollback + pre-migration backup.
+ * db/migrate.ts — Migration CLI for PostgreSQL.
  *
  * Usage (tsx):
- *   tsx db/migrate.ts up [dbPath]     # backup, then apply pending .sql files
- *   tsx db/migrate.ts down [dbPath]   # backup, then roll back 0002 and 0004
+ *   tsx db/migrate.ts up    # apply pending .sql files to PG
+ *   tsx db/migrate.ts down  # roll back 0002 and 0004
  *
- * `down` intentionally only reverses the two migrations that own a table of
- * their own (0002 products, 0004 pii_stage): earlier migrations are the app
- * baseline and have no recorded rollback. Nothing here replaces
- * initDatabase() — the Electron main process keeps using runMigrations().
+ * Requires DATABASE_URL env var or defaults to localhost:5432/open3dcalc.
+ * Backup strategy changed from SQLite WAL checkpoint+copy to pg_dump
+ * recommendation (not automated here — run pg_dump manually before migrations).
  */
-import Database from "better-sqlite3";
+import postgres from "postgres";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,53 +19,8 @@ const __dirname = path.dirname(__filename);
 
 export const MIGRATIONS_DIR = path.join(__dirname, "migrations");
 
-/**
- * Copy the live DB file to a timestamped backup. Returns the backup path.
- *
- * The WAL is checkpointed FIRST, through a short-lived connection, because the
- * backup is taken while the app may still be running: with `journal_mode=WAL`
- * every commit since the last checkpoint lives in the `-wal` sidecar, so
- * copying the main file alone yields a backup that is missing exactly the rows
- * a user would restore. A hollow backup is worse than none — it looks like a
- * safety net and is not one — so a checkpoint that cannot complete is an error
- * rather than a silent skip.
- */
-export function backupDatabase(dbPath: string): string {
-  if (!fs.existsSync(dbPath)) {
-    throw new Error(`[migrate] Database not found at ${dbPath}`);
-  }
-  // TRUNCATE folds the WAL into the main file and empties the sidecar, so the
-  // copy below is self-contained. It needs its own connection: the live handle
-  // belongs to the Electron main process, not to this CLI.
-  const sqlite = new Database(dbPath);
-  try {
-    const result = sqlite.pragma("wal_checkpoint(TRUNCATE)") as Array<{
-      busy: number;
-    }>;
-    // KNOWN LIMITATION (pre-existing, recorded not fixed) — the non-array
-    // branch fails OPEN. An unexpected pragma shape (a bare number, an object, a
-    // better-sqlite3 version that changes the return) silently becomes
-    // `busy = 0` and the copy below is written anyway, which is the one outcome
-    // this function exists to prevent: a backup that is missing every commit
-    // since the last checkpoint, presented as a safety net. It should fail
-    // CLOSED — an unrecognised result is an error, exactly like a non-zero
-    // `busy`. `result[0]?.busy ?? 0` has the same hole one level in.
-    const busy = Array.isArray(result) ? (result[0]?.busy ?? 0) : 0;
-    if (busy !== 0) {
-      throw new Error(
-        `[migrate] Could not checkpoint the WAL of ${dbPath} (busy=${busy}); ` +
-          "refusing to write an incomplete backup",
-      );
-    }
-  } finally {
-    sqlite.close();
-  }
-
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupPath = `${dbPath}.bak_${stamp}`;
-  fs.copyFileSync(dbPath, backupPath);
-  console.log(`[migrate] Backup written to ${backupPath}`);
-  return backupPath;
+function getConnectionString(): string {
+  return process.env["DATABASE_URL"] ?? "postgresql://localhost:5432/open3dcalc";
 }
 
 function sortedMigrationFiles(): string[] {
@@ -77,84 +31,70 @@ function sortedMigrationFiles(): string[] {
 }
 
 /**
- * Apply every .sql migration in order.
- *
- * Idempotent, as the docstring has always claimed: re-running against an
- * already-migrated database is the normal case (a restart, a db:import of an
- * up-to-date backup), and it takes BOTH shapes SQLite uses to say "already
- * done" — `… already exists` for DDL, and `duplicate column name:` for the
- * ALTER TABLE migrations (0003 and any after it). Tolerating only the first
- * meant `migrate up` threw on any database that had 0003 applied, which is
- * every database created after it shipped.
+ * Apply every .sql migration in order against PostgreSQL.
+ * Idempotent: tolerates "already exists" and "duplicate column" errors.
  */
-export function migrateUp(sqlite: Database.Database): void {
+export async function migrateUp(sql: postgres.Sql): Promise<void> {
   for (const file of sortedMigrationFiles()) {
     const ddl = fs.readFileSync(path.join(MIGRATIONS_DIR, file), "utf-8");
     try {
-      sqlite.exec(ddl);
+      await sql.unsafe(ddl);
       console.log(`[migrate] Applied ${file}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (
         /already exists/i.test(message) ||
-        /^duplicate column name:/i.test(message)
+        /duplicate column/i.test(message) ||
+        /relation .* already exists/i.test(message)
       ) {
         console.warn(`[migrate] ${file} already applied, skipping`);
         continue;
       }
-      throw error;
+      throw new Error(`Failed to execute migration ${file}: ${message}`, {
+        cause: error,
+      });
     }
   }
 }
 
 /**
  * Roll back the migrations that own a table: 0002 (products) and 0004
- * (pii_stage). Both drops are `IF EXISTS`, so the step is idempotent and safe
- * to repeat after a partial run.
- *
- * 0004's down step is destructive by nature — a staged preimage IS the user's
- * data mid-re-homing — which is why `main()` takes a checkpointed backup
- * before calling this. Nothing here VACUUMs: the dropped pages may still hold
- * the ciphertext, and rewriting the file is the caller's decision, not a
- * side effect of a rollback.
+ * (pii_stage). Both drops are IF EXISTS, so the step is idempotent.
  */
-export function migrateDown(sqlite: Database.Database): void {
-  sqlite.exec("DROP TABLE IF EXISTS `products`");
-  console.log("[migrate] Rolled back 0002_products (dropped `products`)");
-  sqlite.exec("DROP TABLE IF EXISTS `pii_stage`");
-  console.log("[migrate] Rolled back 0004_pii_stage (dropped `pii_stage`)");
+export async function migrateDown(sql: postgres.Sql): Promise<void> {
+  await sql.unsafe("DROP TABLE IF EXISTS products");
+  console.log("[migrate] Rolled back 0002_products (dropped products)");
+  await sql.unsafe("DROP TABLE IF EXISTS pii_stage");
+  console.log("[migrate] Rolled back 0004_pii_stage (dropped pii_stage)");
 }
 
-function openDb(dbPath: string): Database.Database {
-  const sqlite = new Database(dbPath);
-  sqlite.pragma("foreign_keys = ON");
-  return sqlite;
-}
-
-function main(): void {
-  const [command, dbPathArg] = process.argv.slice(2);
+async function main(): Promise<void> {
+  const [command] = process.argv.slice(2);
   if (command !== "up" && command !== "down") {
-    console.error("Usage: tsx db/migrate.ts <up|down> [dbPath]");
+    console.error("Usage: tsx db/migrate.ts <up|down>");
+    console.error("Set DATABASE_URL env var or defaults to localhost:5432/open3dcalc");
     process.exit(1);
   }
-  const dbPath =
-    dbPathArg ??
-    process.env["OPEN3DCALC_DB_PATH"] ??
-    path.join(__dirname, "..", "open3dcalc.db");
-  if (!fs.existsSync(dbPath) && command === "down") {
-    console.error(`[migrate] Database not found at ${dbPath}`);
-    process.exit(1);
-  }
-  backupDatabase(dbPath);
-  const sqlite = openDb(dbPath);
+
+  const url = getConnectionString();
+  console.log(`[migrate] Connecting to PostgreSQL at: ${url.replace(/\/\/.*@/, "//***@")}`);
+
+  const sql = postgres(url);
   try {
-    if (command === "up") migrateUp(sqlite);
-    else migrateDown(sqlite);
+    if (command === "up") {
+      console.log("[migrate] TIP: Run 'pg_dump' manually before applying migrations for backup.");
+      await migrateUp(sql);
+    } else {
+      await migrateDown(sql);
+    }
   } finally {
-    sqlite.close();
+    await sql.end();
   }
 }
 
 if (process.argv[1] === __filename) {
-  main();
+  main().catch((error) => {
+    console.error("[migrate] Fatal error:", error);
+    process.exit(1);
+  });
 }

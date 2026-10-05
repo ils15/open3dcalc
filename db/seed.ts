@@ -1,8 +1,11 @@
-import { type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { type PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import { catalogPrinters, catalogMaterials, catalogMarketplaces } from './schema/index.js'
-
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // ── Inline fallback data (mirrors src/lib/printers.ts / materials.ts / marketplace.ts) ──
 
@@ -91,7 +94,7 @@ const FALLBACK_MARKETPLACES: SeedMarketplace[] = [
 
 function loadPrintersJson(): SeedPrinter[] {
   try {
-    const jsonPath = path.join(__dirname, '..', '..', 'src', 'data', 'printers-database.json')
+    const jsonPath = path.join(__dirname, '..', 'src', 'data', 'printers-database.json')
     const raw = fs.readFileSync(jsonPath, 'utf-8')
     const data = JSON.parse(raw) as Record<string, unknown>[]
     return data.map((p) => ({
@@ -116,18 +119,19 @@ function loadPrintersJson(): SeedPrinter[] {
  * Inserts built-in catalog data into the database if the catalog tables are empty.
  * Idempotent: subsequent calls are no-ops.
  *
- * @param db - Drizzle ORM instance (better-sqlite3)
- * @returns Summary of inserted rows
+ * Adapted for PostgreSQL: uses async Drizzle PostgresJsDatabase instead of
+ * sync BetterSQLite3Database. Boolean values are stored as native booleans
+ * rather than SQLite integers.
  */
-export function seed(db: BetterSQLite3Database): { printers: number; materials: number; marketplaces: number } {
+export async function seed(db: PostgresJsDatabase): Promise<{ printers: number; materials: number; marketplaces: number }> {
   const result = { printers: 0, materials: 0, marketplaces: 0 }
 
   // Seed printers
-  const existingPrinters = db.select({ id: catalogPrinters.id }).from(catalogPrinters).all()
+  const existingPrinters = await db.select({ id: catalogPrinters.id }).from(catalogPrinters)
   if (existingPrinters.length === 0) {
     const printers = loadPrintersJson()
     for (const p of printers) {
-      db.insert(catalogPrinters).values({
+      await db.insert(catalogPrinters).values({
         id: p.id,
         name: p.name,
         brand: p.brand,
@@ -137,41 +141,41 @@ export function seed(db: BetterSQLite3Database): { printers: number; materials: 
         maintenancePerHour: p.maintenancePerHour,
         image: p.image ?? null,
         maxFilaments: p.maxFilaments ?? null,
-        custom: 0,
-      }).run()
+        custom: false,
+      })
     }
     result.printers = printers.length
   }
 
   // Seed materials
-  const existingMaterials = db.select({ id: catalogMaterials.id }).from(catalogMaterials).all()
+  const existingMaterials = await db.select({ id: catalogMaterials.id }).from(catalogMaterials)
   if (existingMaterials.length === 0) {
     for (const m of FALLBACK_MATERIALS) {
-      db.insert(catalogMaterials).values({
+      await db.insert(catalogMaterials).values({
         id: m.id,
         name: m.name,
         density: m.density,
         avgPrice: m.avgPrice,
         type: m.type,
-        custom: 0,
-      }).run()
+        custom: false,
+      })
     }
     result.materials = FALLBACK_MATERIALS.length
   }
 
   // Seed marketplaces
-  const existingMarketplaces = db.select({ id: catalogMarketplaces.id }).from(catalogMarketplaces).all()
+  const existingMarketplaces = await db.select({ id: catalogMarketplaces.id }).from(catalogMarketplaces)
   if (existingMarketplaces.length === 0) {
     for (const mp of FALLBACK_MARKETPLACES) {
-      db.insert(catalogMarketplaces).values({
+      await db.insert(catalogMarketplaces).values({
         id: mp.id,
         name: mp.name,
         feePercent: mp.feePercent,
         feeFixed: mp.feeFixed,
-        hasFreeShipping: mp.hasFreeShipping ? 1 : 0,
+        hasFreeShipping: mp.hasFreeShipping,
         shippingFeePercent: mp.shippingFeePercent ?? null,
-        custom: 0,
-      }).run()
+        custom: false,
+      })
     }
     result.marketplaces = FALLBACK_MARKETPLACES.length
   }

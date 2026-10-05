@@ -1,91 +1,23 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema/index.js";
 import fs from "node:fs";
 import path from "node:path";
-import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
-// ESM compatibility: __dirname is not available in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Initialises the SQLite database, runs pending migrations (raw SQL files),
- * and returns a Drizzle ORM instance.
- *
- * The database file is stored at the path returned by `getDbPath()`.
- * Migrations are loaded from `db/migrations/` relative to this file.
- *
- * Usage (Electron main process):
- *   import { initDatabase } from './db/database'
- *   const db = initDatabase()
+ * Returns the PostgreSQL connection string from environment variables.
+ * Falls back to localhost for development if not set.
  */
-
-/**
- * Resolves Electron's userData path via dynamic require for ESM compatibility.
- * Returns null when not running inside Electron (test/CLI environments).
- */
-function getElectronUserData(): string | null {
-  try {
-    // Dynamic require for ESM compatibility
-    const require = createRequire(import.meta.url);
-    const electron = require("electron");
-    return electron?.app?.getPath("userData") ?? null;
-  } catch {
-    return null;
-  }
-}
-
-export function getDbPath(): string {
-  const testPath = process.env["OPEN3DCALC_DB_PATH"];
-  if (testPath) return testPath;
-
-  // In Electron, use app.getPath('userData') for a platform-standard location
-  const userData = getElectronUserData();
-  if (userData) {
-    const dbPath = path.join(userData, "open3dcalc.db");
-    return dbPath;
-  }
-
-  // CLI / test fallback
-  const fallbackPath = path.join(__dirname, "..", "..", "..", "open3dcalc.db");
-  console.log(
-    "[db] No Electron userData available, using fallback:",
-    fallbackPath,
-  );
-  return fallbackPath;
-}
-
-/**
- * Restricts the SQLite database file (and its WAL/SHM sidecars) to the
- * current user on non-Windows platforms. SQLite creates files with the
- * default umask (typically 0644), which would leave client PII
- * world-readable. Windows uses ACLs, so this is a no-op there.
- */
-function restrictFilePermissions(dbPath: string): void {
-  if (process.platform === "win32") return;
-  for (const target of [dbPath, `${dbPath}-wal`, `${dbPath}-shm`]) {
-    try {
-      fs.chmodSync(target, 0o600);
-    } catch {
-      // File may not exist yet (e.g. -wal/-shm are created lazily) — ignore
-    }
-  }
+export function getConnectionString(): string {
+  return process.env["DATABASE_URL"] ?? "postgresql://localhost:5432/open3dcalc";
 }
 
 /**
  * Resolves the directory holding the raw SQL migration files.
- *
- * Primary candidate covers the built Electron layout: `db/database.ts`
- * compiles to `electron/dist/db/database.js`, so `../../../db/migrations`
- * reaches the shipped `db/migrations` folder at the app root.
- *
- * The fallback covers the source layout used by tests and `tsx`, where the
- * file sits at `db/database.ts` and the migrations are its sibling folder.
- * Without it the runner silently no-ops (no tables are created) — which went
- * unnoticed because every test either mocked better-sqlite3 or ran the
- * migration SQL by hand.
  */
 function resolveMigrationsDir(): string | null {
   const candidates = [
@@ -96,10 +28,7 @@ function resolveMigrationsDir(): string | null {
 }
 
 /**
- * Reads SQL migration files in order and executes each statement separately.
- * Already-applied DDL statements are skipped individually so a restart after
- * interruption resumes the remainder of the file instead of accepting a
- * partial schema as complete.
+ * Splits a SQL script into individual statements, respecting quotes and comments.
  */
 function splitSqlStatements(sql: string): string[] {
   const statements: string[] = [];
@@ -157,10 +86,13 @@ function splitSqlStatements(sql: string): string[] {
   return statements;
 }
 
-export function runMigrations(
-  sqlite: Database.Database,
+/**
+ * Runs pending SQL migrations against the PostgreSQL database.
+ */
+export async function runMigrations(
+  sql: postgres.Sql,
   migrationsDir: string | null = resolveMigrationsDir(),
-): void {
+): Promise<void> {
   if (migrationsDir === null || !fs.existsSync(migrationsDir)) {
     throw new Error(
       "Database migrations directory is missing; startup aborted.",
@@ -178,19 +110,16 @@ export function runMigrations(
   }
 
   for (const file of files) {
-    const sql = fs.readFileSync(path.join(migrationsDir, file), "utf-8");
-    for (const statement of splitSqlStatements(sql)) {
+    const content = fs.readFileSync(path.join(migrationsDir, file), "utf-8");
+    for (const statement of splitSqlStatements(content)) {
       try {
-        sqlite.exec(statement);
+        await sql.unsafe(statement);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        // SQLite commits each DDL/DML statement in an exec script unless an
-        // explicit transaction is active. On restart after a partial script,
-        // skip only the statement already applied; never skip the rest of its
-        // migration file.
         const isAlreadyApplied =
-          /^(?:table|index|view|trigger) .+ already exists$/i.test(message) ||
-          /^duplicate column name:/i.test(message);
+          /already exists/i.test(message) ||
+          /duplicate column/i.test(message) ||
+          /relation .* already exists/i.test(message);
         if (isAlreadyApplied) {
           console.warn(
             `[db] Migration ${file} statement already applied, continuing (${message})`,
@@ -208,41 +137,11 @@ export function runMigrations(
 const TABLE_CREATE_RE =
   /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([A-Za-z0-9_]+)`?/gi;
 
-/**
- * Tables a `db:import` candidate is NOT required to carry, because the
- * migration runner creates them itself on the very next line of the import.
- *
- * `pii_stage` (migration 0004) and `legacy_residue` (migration 0005) are the
- * entries, and both are exempt on purpose:
- *
- *  - The check cannot prevent a bad swap. `db:import` validates a temp copy,
- *    swaps it in, and then calls `initDatabase()`, which re-runs `runMigrations`
- *    against the swapped file. Requiring the table in the candidate buys no
- *    safety the runner does not already provide.
- *  - Rejecting it would remove recoverability exactly where it is needed: the
- *    files that lack these tables are pre-remediation backups — the users this
- *    work is protecting — and `db:import` is how they get their data back.
- *  - `requiredTables()` is a legitimacy test on the user's DATA schema, not a
- *    "is this the newest migration" test. Both tables are created EMPTY by
- *    their own migration and hold no user data at import time (`pii_stage` is a
- *    transient re-homing staging table; `legacy_residue` only ever receives a
- *    row when the §3.6 recovery runs, which cannot have happened in a file that
- *    predates 0005). A file without them is still unambiguously one of ours.
- *
- * Adding to this set is a behaviour change to data recovery, so it is a named
- * constant rather than an inferred rule, and `db/__tests__/pii-stage-migration.test.ts`
- * pins both halves: a 0000-0003 and a 0000-0004 file are accepted, and a file
- * missing any real table is still refused.
- */
 const IMPORT_EXEMPT_TABLES: ReadonlySet<string> = new Set([
   "pii_stage",
   "legacy_residue",
 ]);
 
-/**
- * Returns the table names declared by the current SQL migration files, minus
- * the ones `IMPORT_EXEMPT_TABLES` excuses from `db:import` validation.
- */
 function requiredTables(): string[] {
   const migrationsDir = resolveMigrationsDir();
   const tables = new Set<string>();
@@ -261,132 +160,77 @@ function requiredTables(): string[] {
 }
 
 /**
- * Validates a SQLite database file before it is swapped in as the live
- * database (used by db:import). Throws with a clear message when the
- * file is not a valid SQLite database, fails integrity/foreign-key
- * checks, or is missing tables expected by the current migrations.
- *
- * Intended to run on a disposable copy (never on the live database).
+ * Validates connectivity and schema completeness against PostgreSQL.
  */
-export function validateDatabaseFile(dbPath: string): void {
-  let sqlite: Database.Database;
+export async function validateConnection(sql: postgres.Sql): Promise<void> {
   try {
-    sqlite = new Database(dbPath);
+    await sql`SELECT 1`;
   } catch (error) {
     throw new Error(
-      `Not a valid SQLite database file: ${(error as Error)?.message ?? String(error)}`,
+      `Failed to connect to PostgreSQL: ${(error as Error)?.message ?? String(error)}`,
     );
   }
-  try {
-    // Fold any sibling WAL into the main file so a single-file copy is complete
-    sqlite.pragma("wal_checkpoint(TRUNCATE)");
 
-    const integrity = sqlite.pragma("integrity_check", { simple: true }) as
-      string | string[];
-    // better-sqlite3 returns the scalar 'ok' (single-value pragma) or an array
-    const integrityOk = Array.isArray(integrity)
-      ? integrity.length === 1 && integrity[0] === "ok"
-      : integrity === "ok";
-    if (!integrityOk) {
-      throw new Error(`Integrity check failed: ${JSON.stringify(integrity)}`);
-    }
-
-    const fkViolations = sqlite.pragma("foreign_key_check") as unknown[];
-    if (fkViolations.length > 0) {
-      throw new Error(
-        `Foreign key check failed: ${fkViolations.length} violation(s)`,
-      );
-    }
-
-    const existing = new Set(
-      (
-        sqlite
-          .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
-          .all() as Array<{ name: string }>
-      ).map((r) => r.name),
+  const existingRows = await sql`
+    SELECT tablename AS name FROM pg_tables WHERE schemaname = 'public'
+  `;
+  const existing = new Set(existingRows.map((r) => r.name as string));
+  const missing = requiredTables().filter((t) => !existing.has(t));
+  if (missing.length > 0) {
+    throw new Error(
+      `Database is missing tables required by this app version: ${missing.join(", ")}. ` +
+        "Run migrations or restore from a compatible backup.",
     );
-    const missing = requiredTables().filter((t) => !existing.has(t));
-    if (missing.length > 0) {
-      throw new Error(
-        `Database is missing tables required by this app version: ${missing.join(", ")}. ` +
-          "Use a backup exported by the current version.",
-      );
-    }
-  } finally {
-    sqlite.close();
   }
 }
 
-// Singleton cache — initDatabase() should only be called once
 let drizzleInstance: ReturnType<typeof drizzle> | null = null;
+let sqlClient: postgres.Sql | null = null;
 
 /**
- * Closes the underlying SQLite connection and resets the singleton so
- * that initDatabase() can be called again. Used by db:import to swap
- * the database file and reconnect in-place.
+ * Closes the PostgreSQL connection pool and resets the singleton.
  */
-export function closeDatabase(): void {
+export async function closeDatabase(): Promise<void> {
   if (!drizzleInstance) return;
   try {
-    drizzleInstance.$client.close();
+    if (sqlClient) await sqlClient.end();
   } catch (error) {
     console.error("[db] Failed to close database:", error);
   } finally {
     drizzleInstance = null;
+    sqlClient = null;
   }
 }
 
-/**
- * Creates and returns a Drizzle ORM instance backed by better-sqlite3.
- *
- * In Electron's main process: call initDatabase() once at startup.
- * In tests: call initDatabase(':memory:') for an isolated in-memory DB.
- */
 export interface InitDatabaseOptions {
-  /** Test-only integration seam; application startup should omit this. */
   migrationsDir?: string;
 }
 
-export function initDatabase(
-  dbPath?: string,
+/**
+ * Creates and returns a Drizzle ORM instance backed by postgres.js.
+ */
+export async function initDatabase(
+  connectionString?: string,
   options: InitDatabaseOptions = {},
-): ReturnType<typeof drizzle> {
+): Promise<ReturnType<typeof drizzle>> {
   if (drizzleInstance) return drizzleInstance;
 
-  let sqlite: Database.Database | undefined;
+  const url = connectionString ?? getConnectionString();
+  console.log("[db] Connecting to PostgreSQL at:", url.replace(/\/\/.*@/, "//***@"));
+
   try {
-    const resolvedPath = dbPath ?? getDbPath();
-    console.log("[db] Opening database at:", resolvedPath);
+    const sql = postgres(url);
+    sqlClient = sql;
 
-    sqlite = new Database(resolvedPath);
+    await runMigrations(sql, options.migrationsDir ?? resolveMigrationsDir());
 
-    // Recommended performance pragmas for better-sqlite3
-    sqlite.pragma("journal_mode = WAL");
-    sqlite.pragma("foreign_keys = ON");
-    sqlite.pragma("busy_timeout = 5000");
-
-    // Restrict permissions immediately after opening (and again after
-    // migrations, when WAL/SHM sidecars have been (re)created).
-    restrictFilePermissions(resolvedPath);
-
-    runMigrations(sqlite, options.migrationsDir ?? resolveMigrationsDir());
-
-    restrictFilePermissions(resolvedPath);
-
-    drizzleInstance = drizzle(sqlite, { schema });
-    // Ownership of the connection is transferred to the singleton — it must
-    // NOT be closed by the error handler below.
-    sqlite = undefined;
+    drizzleInstance = drizzle(sql, { schema });
     console.log("[db] Database initialized successfully");
     return drizzleInstance;
   } catch (error) {
-    // Close the connection this call opened before rethrowing. A leaked
-    // handle keeps the DB file locked (Windows/macOS), which would make a
-    // subsequent db:import backup restore silently fail and leave the
-    // broken imported file in place.
-    if (sqlite) {
+    if (sqlClient) {
       try {
-        sqlite.close();
+        await sqlClient.end();
       } catch (closeError) {
         console.error(
           "[db] Failed to close connection after initialization error:",
@@ -399,5 +243,14 @@ export function initDatabase(
   }
 }
 
-// Re-export schema for convenience
+/**
+ * Returns the raw postgres.js client for advanced operations.
+ */
+export function getSqlClient(): postgres.Sql {
+  if (!sqlClient) {
+    throw new Error("Database not initialized. Call initDatabase() first.");
+  }
+  return sqlClient;
+}
+
 export * as schema from "./schema/index.js";

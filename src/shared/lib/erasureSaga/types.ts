@@ -16,6 +16,8 @@ export const ERASURE_STORES = [
   "sqlite_domain_tables",
   "sqlite_storage",
   "sqlite_wal_shm",
+  "pg_domain_tables",
+  "pg_storage",
   "indexeddb",
   "opfs",
   "cache_api_sw",

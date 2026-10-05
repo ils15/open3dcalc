@@ -1,12 +1,15 @@
 /**
  * Beta5 Wave 1 — the `pii_stage` preimage state machine (data-structure layer).
  *
+ * Adapted for PostgreSQL: uses async postgres.Sql with sql.begin() for
+ * transactional verification instead of sync better-sqlite3 transactions.
+ *
  * Four durable steps, one transaction each, in this order:
  *
- *   S2  stagePreimage    — park the SEALED preimage in `pii_stage`
- *   S4  writeDestination — write that sealed blob to its destination row
- *   S6  discardStage     — retire the stage row
- *   S8  deleteSourceRow  — drop one plaintext source row, one transaction each
+ * S2 stagePreimage — park the SEALED preimage in `pii_stage`
+ * S4 writeDestination — write that sealed blob to its destination row
+ * S6 discardStage — retire the stage row
+ * S8 deleteSourceRow — drop one plaintext source row, one transaction each
  *
  * Why `pii_stage` is a table and not a `storage` row is recorded in
  * `db/migrations/0004_pii_stage.sql`: the 10 s `deleteStaleKeys` sweep deletes
@@ -18,27 +21,27 @@
  * Two rules hold across every step here, and both exist because the weaker
  * version of them has already shipped somewhere in this codebase:
  *
- *  1. `run().changes` is NOT proof that anything was written. A statement that
- *     matched no row and a statement that stored the wrong bytes both report a
- *     `changes` count. Every step therefore RE-READS the stored bytes and
- *     throws when they differ from what was written — inside the transaction,
- *     so an unverifiable write is rolled back rather than left standing.
- *  2. There is no `VACUUM` in this module. It cannot run inside a transaction
- *     and it rewrites the whole file; the caller compacts after the sequence
- *     commits, once, deliberately.
+ * 1. `result.count` is NOT proof that anything was written. A statement that
+ *    matched no row and a statement that stored the wrong bytes both report a
+ *    count. Every step therefore RE-READS the stored bytes and throws when
+ *    they differ from what was written — inside the transaction, so an
+ *    unverifiable write is rolled back rather than left standing.
+ * 2. There is no `VACUUM` in this module. It cannot run inside a transaction
+ *    and it rewrites the whole table; the caller compacts after the sequence
+ *    commits, once, deliberately.
  *
  * This layer never sees plaintext and never encrypts: `blob` is an ADR-001
  * sealed envelope produced by the caller, written and retired verbatim.
  */
-
+import type postgres from "postgres";
 import { PII_STAGE_TABLE } from "./piiDomainTables.js";
 
 /**
  * Lifecycle of one staged preimage.
  *
- *  - `staged`  the preimage is durable; the destination row is not written yet
- *  - `applied` the destination row is written AND verified; the stage row is
- *               still here, so a crash before S6 knows the work is done
+ * - `staged` the preimage is durable; the destination row is not written yet
+ * - `applied` the destination row is written AND verified; the stage row is
+ *   still here, so a crash before S6 knows the work is done
  *
  * No `failed` state: a stage row that cannot be applied is discarded (S6), not
  * annotated, so a resuming reader never has to interpret a half-state.
@@ -62,25 +65,6 @@ export interface PiiStageRow {
   createdAt: number;
 }
 
-/**
- * The subset of the better-sqlite3 client this layer needs. Structurally
- * satisfied by the live `db.$client` (drizzle wraps better-sqlite3 without
- * changing it) — declared structurally, like `MinimalStorageDb`, so this
- * module stays importable from a node test with no Electron.
- */
-export interface StageDb {
-  prepare(sql: string): {
-    get(...params: unknown[]): unknown;
-    run(...params: unknown[]): unknown;
-    all(...params: unknown[]): unknown[];
-  };
-  /**
-   * better-sqlite3 shape: `db.transaction(fn)` returns a CALLABLE that runs
-   * `fn` inside a transaction, rolling back and rethrowing if it throws.
-   */
-  transaction<T>(fn: () => T): () => T;
-}
-
 /** A verification that failed: the bytes on disk are not the bytes written. */
 export class PiiStageVerificationError extends Error {
   readonly code = "pii_stage_unverified";
@@ -94,8 +78,6 @@ export class PiiStageVerificationError extends Error {
     this.name = "PiiStageVerificationError";
   }
 }
-
-const SELECT_STAGE = `SELECT transaction_id, generation, privacy_epoch, schema_version, envelope_version, state, blob, created_at FROM ${PII_STAGE_TABLE} WHERE transaction_id = ? AND generation = ?`;
 
 interface RawStageRow {
   transaction_id: string;
@@ -122,10 +104,35 @@ function toStageRow(row: RawStageRow): PiiStageRow {
 }
 
 /** The stored value of a destination `storage` row, or null when absent. */
-function readStoredValue(db: StageDb, key: string): string | null {
-  const row = db.prepare("SELECT value FROM storage WHERE key = ?").get(key) as
-    { value: string } | undefined;
-  return row ? row.value : null;
+async function readStoredValue(
+  sql: postgres.TransactionSql,
+  key: string,
+): Promise<string | null> {
+  const rows = await sql`SELECT value FROM storage WHERE key = ${key}`;
+  return rows.length > 0 ? (rows[0].value as string) : null;
+}
+
+async function readStageRow(
+  sql: postgres.TransactionSql,
+  transactionId: string,
+  generation: number,
+): Promise<RawStageRow | undefined> {
+  const rows = await sql.unsafe(
+    `SELECT transaction_id, generation, privacy_epoch, schema_version, envelope_version, state, blob, created_at FROM ${PII_STAGE_TABLE} WHERE transaction_id = $1 AND generation = $2`,
+    [transactionId, generation],
+  );
+  const row = rows[0];
+if (!row) return undefined;
+return {
+  transaction_id: String(row.transaction_id),
+  generation: Number(row.generation),
+  privacy_epoch: Number(row.privacy_epoch),
+  schema_version: Number(row.schema_version),
+  envelope_version: Number(row.envelope_version),
+  state: String(row.state),
+  blob: String(row.blob),
+  created_at: Number(row.created_at),
+} as RawStageRow;
 }
 
 /**
@@ -151,25 +158,27 @@ function readStoredValue(db: StageDb, key: string): string | null {
  * the remaining columns matter to a correctness decision has to widen this
  * comparison; do not read "it returned a row" as "every column is proven".
  */
-export function stagePreimage(db: StageDb, row: PiiStageRow): PiiStageRow {
-  const write = db.transaction((): PiiStageRow => {
-    db.prepare(
-      `INSERT INTO ${PII_STAGE_TABLE} (transaction_id, generation, privacy_epoch, schema_version, envelope_version, state, blob, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      row.transactionId,
-      row.generation,
-      row.privacyEpoch,
-      row.schemaVersion,
-      row.envelopeVersion,
-      row.state,
-      row.blob,
-      row.createdAt,
+export async function stagePreimage(
+  sql: postgres.Sql,
+  row: PiiStageRow,
+): Promise<PiiStageRow> {
+  return sql.begin(async (tx) => {
+    await tx.unsafe(
+      `INSERT INTO ${PII_STAGE_TABLE} (transaction_id, generation, privacy_epoch, schema_version, envelope_version, state, blob, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        row.transactionId,
+        row.generation,
+        row.privacyEpoch,
+        row.schemaVersion,
+        row.envelopeVersion,
+        row.state,
+        row.blob,
+        row.createdAt,
+      ],
     );
     // Re-read INSIDE the transaction: a mismatch throws, and the throw rolls
     // the INSERT back, so an unproven stage row is never left on disk.
-    const stored = db
-      .prepare(SELECT_STAGE)
-      .get(row.transactionId, row.generation) as RawStageRow | undefined;
+    const stored = await readStageRow(tx, row.transactionId, row.generation);
     if (!stored) {
       throw new PiiStageVerificationError(
         PII_STAGE_TABLE,
@@ -184,37 +193,46 @@ export function stagePreimage(db: StageDb, row: PiiStageRow): PiiStageRow {
     }
     return toStageRow(stored);
   });
-  return write();
 }
 
 /** The newest generation staged for a transaction, or null. */
-export function readStage(
-  db: StageDb,
+export async function readStage(
+  sql: postgres.Sql,
   transactionId: string,
-): PiiStageRow | null {
-  const row = db
-    .prepare(
-      `SELECT transaction_id, generation, privacy_epoch, schema_version, envelope_version, state, blob, created_at FROM ${PII_STAGE_TABLE} WHERE transaction_id = ? ORDER BY generation DESC LIMIT 1`,
-    )
-    .get(transactionId) as RawStageRow | undefined;
-  return row ? toStageRow(row) : null;
+): Promise<PiiStageRow | null> {
+  const rows = await sql.unsafe(
+    `SELECT transaction_id, generation, privacy_epoch, schema_version, envelope_version, state, blob, created_at FROM ${PII_STAGE_TABLE} WHERE transaction_id = $1 ORDER BY generation DESC LIMIT 1`,
+    [transactionId],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return toStageRow({
+    transaction_id: String(row.transaction_id),
+    generation: Number(row.generation),
+    privacy_epoch: Number(row.privacy_epoch),
+    schema_version: Number(row.schema_version),
+    envelope_version: Number(row.envelope_version),
+    state: String(row.state),
+    blob: String(row.blob),
+    created_at: Number(row.created_at),
+  } as RawStageRow);
 }
 
 /**
  * Move a staged preimage to `applied` — the destination write is done and
  * verified, the stage row is not retired yet. One transaction, proof by re-read.
  */
-export function markStageApplied(
-  db: StageDb,
+export async function markStageApplied(
+  sql: postgres.Sql,
   transactionId: string,
   generation: number,
-): PiiStageRow {
-  const write = db.transaction((): PiiStageRow => {
-    db.prepare(
-      `UPDATE ${PII_STAGE_TABLE} SET state = 'applied' WHERE transaction_id = ? AND generation = ?`,
-    ).run(transactionId, generation);
-    const stored = db.prepare(SELECT_STAGE).get(transactionId, generation) as
-      RawStageRow | undefined;
+): Promise<PiiStageRow> {
+  return sql.begin(async (tx) => {
+    await tx.unsafe(
+      `UPDATE ${PII_STAGE_TABLE} SET state = 'applied' WHERE transaction_id = $1 AND generation = $2`,
+      [transactionId, generation],
+    );
+    const stored = await readStageRow(tx, transactionId, generation);
     if (!stored || stored.state !== "applied") {
       throw new PiiStageVerificationError(
         PII_STAGE_TABLE,
@@ -223,7 +241,6 @@ export function markStageApplied(
     }
     return toStageRow(stored);
   });
-  return write();
 }
 
 /**
@@ -236,17 +253,19 @@ export function markStageApplied(
  *
  * Returns the value as it reads back from disk.
  */
-export function writeDestination(
-  db: StageDb,
+export async function writeDestination(
+  sql: postgres.Sql,
   key: string,
   blob: string,
   updatedAt: number = Date.now(),
-): string {
-  const write = db.transaction((): string => {
-    db.prepare(
-      "INSERT INTO storage (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
-    ).run(key, blob, updatedAt);
-    const stored = readStoredValue(db, key);
+): Promise<string> {
+  return sql.begin(async (tx) => {
+    await tx`
+      INSERT INTO storage (key, value, updated_at)
+      VALUES (${key}, ${blob}, ${updatedAt})
+      ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    `;
+    const stored = await readStoredValue(tx, key);
     if (stored !== blob) {
       throw new PiiStageVerificationError(
         "storage",
@@ -255,7 +274,6 @@ export function writeDestination(
     }
     return stored;
   });
-  return write();
 }
 
 /**
@@ -265,17 +283,17 @@ export function writeDestination(
  * success, which is the SPEC-02 §2 resume rule — a resumed run must be able to
  * re-drive any step without treating it as a failure.
  */
-export function discardStage(
-  db: StageDb,
+export async function discardStage(
+  sql: postgres.Sql,
   transactionId: string,
   generation: number,
-): boolean {
-  const write = db.transaction((): boolean => {
-    db.prepare(
-      `DELETE FROM ${PII_STAGE_TABLE} WHERE transaction_id = ? AND generation = ?`,
-    ).run(transactionId, generation);
-    const still = db.prepare(SELECT_STAGE).get(transactionId, generation) as
-      RawStageRow | undefined;
+): Promise<boolean> {
+  return sql.begin(async (tx) => {
+    await tx.unsafe(
+      `DELETE FROM ${PII_STAGE_TABLE} WHERE transaction_id = $1 AND generation = $2`,
+      [transactionId, generation],
+    );
+    const still = await readStageRow(tx, transactionId, generation);
     if (still) {
       throw new PiiStageVerificationError(
         PII_STAGE_TABLE,
@@ -284,7 +302,6 @@ export function discardStage(
     }
     return true;
   });
-  return write();
 }
 
 /**
@@ -296,10 +313,14 @@ export function discardStage(
  * resumed run re-drives only what is left. The destination row is never
  * touched here — S4 owns it.
  */
-export function deleteSourceRow(db: StageDb, key: string): boolean {
-  const write = db.transaction((): boolean => {
-    db.prepare("DELETE FROM storage WHERE key = ?").run(key);
-    if (readStoredValue(db, key) !== null) {
+export async function deleteSourceRow(
+  sql: postgres.Sql,
+  key: string,
+): Promise<boolean> {
+  return sql.begin(async (tx) => {
+    await tx`DELETE FROM storage WHERE key = ${key}`;
+    const remaining = await readStoredValue(tx, key);
+    if (remaining !== null) {
       throw new PiiStageVerificationError(
         "storage",
         `source row ${key} survived the delete`,
@@ -307,5 +328,4 @@ export function deleteSourceRow(db: StageDb, key: string): boolean {
     }
     return true;
   });
-  return write();
 }

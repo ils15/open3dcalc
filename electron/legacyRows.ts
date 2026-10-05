@@ -1,45 +1,11 @@
 /**
  * Read-only access to the legacy plaintext PII rows (Beta5 desktop re-home).
  *
- * ## Why this exists
- *
- * On desktop the three migrated PII keys live as `storage` rows in SQLite. After
- * Wave 3 the `persistence-bridge` deliberately STOPS hydrating them
- * (`PII_BRIDGE_KEYS`), so a profile that predates the vault unlocks to EMPTY
- * stores while its real records stay in plaintext in `storage` — retained but,
- * from the renderer, inaccessible. The web remediation
- * (`migrateLegacyPlaintextPiiToVault`) reads the residue from `localStorage`;
- * the desktop equivalent needs the RESIDUE VALUES over IPC to copy them into the
- * vault, and no existing handler returns them:
- *
- *  - `privacy:scan-report` / `privacy:quarantine-report` are metadata only
- *    (key NAMES and counts, never values — TEST-MATRIX §3.2);
- *  - `db:load` is refused for these keys or would surface an unreadable blob;
- *  - `privacy:recover-key` is ADR-001 §3.6 recovery of a CIPHERTEXT blob, not
- *    the plaintext residue.
- *
- * ## What it does, and refuses to do
- *
- * `readLegacyPiiRows()` reads EXACTLY the three declared keys — never an
- * arbitrary key supplied by the renderer — and returns the RAW value verbatim
- * for one that is legacy plaintext. A row that is already an ADR-001 envelope
- * (`enc1:`) carries nothing to re-home and is reported `already_encrypted` with
- * no value; an absent row is `absent`. It is READ-ONLY: no INSERT, UPDATE,
- * DELETE or VACUUM is issued.
- *
- * The values are PII and travel to the renderer in memory only. They are never
- * logged here and the renderer MUST NOT persist them (the persistence bridge
- * already refuses these three keys, and the vault is the only destination).
- *
- * The key list is a local literal so this module stays importable from the
- * Node main process with no renderer dependency (it must not pull in
- * `manifestStorage`'s zustand/`window` chain). `legacyRows.test.ts` pins it
- * against the canonical `LEGACY_PII_PLAINTEXT_KEYS` so the two cannot drift.
+ * Adapted for PostgreSQL: uses async postgres.Sql instead of sync MinimalStorageDb.
  */
 
-import type { MinimalStorageDb } from "./persistGate.js";
+import type postgres from "postgres";
 
-/** The three plaintext `storage` keys the encrypted vault replaces. */
 export const LEGACY_PII_STORAGE_KEYS = [
   "open3dcalc_customers_v1",
   "open3dcalc_quotes_v1",
@@ -48,22 +14,13 @@ export const LEGACY_PII_STORAGE_KEYS = [
 
 export type LegacyPiiStorageKey = (typeof LEGACY_PII_STORAGE_KEYS)[number];
 
-/**
- * Why a declared key has (or has not) a value to re-home.
- *
- *  - `legacy_plaintext` — a plaintext row; `value` carries it.
- *  - `already_encrypted` — an ADR-001 envelope (`enc1:`); nothing to re-home.
- *  - `absent` — there is no row.
- */
 export type LegacyPiiRowStatus =
-  "legacy_plaintext" | "already_encrypted" | "absent";
+  | "legacy_plaintext"
+  | "already_encrypted"
+  | "absent";
 
 export interface LegacyPiiRow {
   key: LegacyPiiStorageKey;
-  /**
-   * The RAW legacy value verbatim, for `legacy_plaintext` only; `null` for
-   * `already_encrypted` and `absent` (nothing is opened or decrypted here).
-   */
   value: string | null;
   status: LegacyPiiRowStatus;
 }
@@ -75,27 +32,27 @@ export interface LegacyPiiRowsReport {
 
 const ENCRYPTED_PREFIX = "enc1:";
 
-/** The stored bytes for one key, or null when there is no row. */
-function readStoredValue(db: MinimalStorageDb, key: string): string | null {
-  const row = db.prepare("SELECT value FROM storage WHERE key = ?").get(key) as
-    { value: string } | undefined;
-  return row ? row.value : null;
+async function readStoredValue(
+  sql: postgres.Sql,
+  key: string,
+): Promise<string | null> {
+  const rows = await sql`SELECT value FROM storage WHERE key = ${key}`;
+  return rows.length > 0 ? (rows[0].value as string) : null;
 }
 
-/**
- * Read the three declared legacy PII rows. Read-only; logs nothing.
- *
- * The returned `rows` are always in `LEGACY_PII_STORAGE_KEYS` order, one entry
- * per declared key, so a caller can map them deterministically.
- */
-export function readLegacyPiiRows(db: MinimalStorageDb): LegacyPiiRowsReport {
-  const rows: LegacyPiiRow[] = LEGACY_PII_STORAGE_KEYS.map((key) => {
-    const stored = readStoredValue(db, key);
-    if (stored === null) return { key, value: null, status: "absent" };
-    if (stored.startsWith(ENCRYPTED_PREFIX)) {
-      return { key, value: null, status: "already_encrypted" };
+export async function readLegacyPiiRows(
+  sql: postgres.Sql,
+): Promise<LegacyPiiRowsReport> {
+  const rows: LegacyPiiRow[] = [];
+  for (const key of LEGACY_PII_STORAGE_KEYS) {
+    const stored = await readStoredValue(sql, key);
+    if (stored === null) {
+      rows.push({ key, value: null, status: "absent" });
+    } else if (stored.startsWith(ENCRYPTED_PREFIX)) {
+      rows.push({ key, value: null, status: "already_encrypted" });
+    } else {
+      rows.push({ key, value: stored, status: "legacy_plaintext" });
     }
-    return { key, value: stored, status: "legacy_plaintext" };
-  });
+  }
   return { scannedAt: new Date().toISOString(), rows };
 }

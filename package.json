@@ -40,7 +40,7 @@
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
     "@types/canvas-confetti": "^1.9.0",
-    "better-sqlite3": "^13.0.3",
+    "postgres": "^3.4.7",
     "canvas-confetti": "^1.9.4",
     "drizzle-orm": "^0.45.2",
     "electron-updater": "^6.8.9",
@@ -67,8 +67,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
-    "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^26.6.2",
+        "@types/node": "^26.6.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@types/three": "^0.185.4",
@@ -134,11 +133,7 @@
       "docs/privacy/SPEC-01-manifest-fixture.json"
     ],
     "asar": true,
-    "asarUnpack": [
-      "node_modules/better-sqlite3/**",
-      "node_modules/bindings/**",
-      "node_modules/file-uri-to-path/**"
-    ],
+    "asarUnpack": [],
     "publish": [
       {
         "provider": "github",
