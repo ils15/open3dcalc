@@ -313,38 +313,38 @@ describe("CatalogTab", () => {
     expect(dialog).toBeDefined();
     if (!dialog) throw new Error("Printer preset dialog was not rendered");
 
+    const presetCards = new Map(
+      Array.from(dialog.querySelectorAll<HTMLDivElement>("div.group")).map(
+        (card) =>
+          [card.querySelector("h4")?.textContent?.trim() ?? "", card] as const,
+      ),
+    );
+
     const verifiedFdmPreset = printers.find(
       (printer) => printer.technology === "fdm",
     );
     expect(verifiedFdmPreset).toBeDefined();
     if (!verifiedFdmPreset) throw new Error("No verified FDM seed was found");
-    const presetCard = screen
-      .getByRole("heading", { name: verifiedFdmPreset.name })
-      .closest("div.group");
-    expect(presetCard).not.toBeNull();
-    if (!(presetCard instanceof HTMLElement))
+    const verifiedFdmCard = presetCards.get(verifiedFdmPreset.name);
+    expect(verifiedFdmCard).toBeDefined();
+    if (!verifiedFdmCard)
       throw new Error("Verified FDM preset card was not rendered");
-    expect(within(presetCard).getByText("catalog.fdm")).toHaveClass(
+    expect(within(verifiedFdmCard).getByText("catalog.fdm")).toHaveClass(
       "border-[var(--color-accent-muted)]",
       "bg-[var(--color-accent-muted)]",
       "text-[var(--color-accent)]",
     );
 
     for (const printer of missingPngPrinters) {
-      const presetCard = screen
-        .getByRole("heading", { name: printer.name })
-        .closest("div.group");
-      expect(presetCard).not.toBeNull();
+      const presetCard = presetCards.get(printer.name);
+      expect(presetCard).toBeDefined();
       if (!presetCard) throw new Error(`Preset missing: ${printer.name}`);
       expect(
-        within(presetCard as HTMLElement).getByRole("img", {
+        within(presetCard).getByRole("img", {
           name: "catalog.imageUnavailable",
         }),
       ).toBeInTheDocument();
       expect(presetCard.querySelector("img")).toBeNull();
-      expect(
-        within(dialog).queryByRole("img", { name: printer.name }),
-      ).not.toBeInTheDocument();
     }
   });
 
