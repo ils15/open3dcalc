@@ -56,6 +56,7 @@ export const MORE_TAB_IDS = [
   "customers",
   "products",
   "privacy",
+  "marketplace",
 ] as const satisfies readonly Tab[];
 
 /**

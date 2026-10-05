@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import React from "react";
 
 // ─── Mock all heavy dependencies ───
@@ -194,6 +194,22 @@ describe("Phase 2 — Tablet Optimization", () => {
       expect(modules.querySelectorAll("button")).toHaveLength(TABS.length);
     });
 
+    it("routes the Marketplace sidebar destination to the browse-only catalog", async () => {
+      setViewportWidth(DEFAULT_WIDTH);
+      const { container } = render(<App />);
+      const marketplaceButton = container.querySelector<HTMLButtonElement>(
+        'button[title="Marketplace"]',
+      );
+
+      expect(marketplaceButton).not.toBeNull();
+      fireEvent.click(marketplaceButton!);
+      await waitFor(() =>
+        expect(
+          container.querySelector("#marketplace-printers-heading"),
+        ).not.toBeNull(),
+      );
+    });
+
     it("expands to the labelled rail on wide screens", () => {
       setViewportWidth(1600);
       const { container } = render(<App />);
@@ -256,7 +272,7 @@ describe("Phase 2 — Tablet Optimization", () => {
     });
 
     it("does not put secondary surfaces back in the primary tab array", () => {
-      expect(TABS).toHaveLength(10);
+      expect(TABS).toHaveLength(11);
       expect(TABS.map((tab) => tab.id)).not.toEqual(
         expect.arrayContaining(["wiki", "changelog"]),
       );

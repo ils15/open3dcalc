@@ -1,0 +1,47 @@
+{
+  "assets": [
+    {
+      "profileId": "prusa_mk4",
+      "assetPath": "prusa-mk4-cropped.jpg",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Prusa_MK4.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Prusa_MK4.jpg",
+      "author": "Majkluss",
+      "license": {
+        "name": "Creative Commons Attribution-Share Alike 4.0 International",
+        "shortName": "CC BY-SA 4.0",
+        "version": "4.0",
+        "url": "https://creativecommons.org/licenses/by-sa/4.0/"
+      },
+      "dateAccessed": "2026-10-04",
+      "transformation": {
+        "description": "Cropped to omit the front control/display assembly and its visible wordmark; resized and recompressed for the app; selected additional visible maker marks on the gantry, print, and toolhead softly blurred; source metadata stripped. This adaptation is distributed under CC BY-SA 4.0.",
+        "tool": "ImageMagick",
+        "sourceDimensions": "6016x4016",
+        "crop": {
+          "x": 508,
+          "y": 0,
+          "width": 5000,
+          "height": 2850
+        },
+        "outputDimensions": "1280x730",
+        "format": "JPEG",
+        "quality": 84,
+        "metadataStripped": true,
+        "blurredMarkRegionsOutputPixels": [
+          { "x": 480, "y": 196, "width": 230, "height": 61, "sigma": 24 },
+          { "x": 596, "y": 396, "width": 92, "height": 45, "sigma": 12 },
+          { "x": 590, "y": 503, "width": 60, "height": 34, "sigma": 12 },
+          { "x": 836, "y": 188, "width": 72, "height": 58, "sigma": 12 }
+        ]
+      },
+      "visibleAttribution": {
+        "author": "Majkluss",
+        "sourcePageLinked": true,
+        "licenseLinked": true,
+        "modificationNote": "Cropped to remove visible wordmark; other visible marks blurred.",
+        "endorsementDisclaimer": "Independent photo; not an endorsement by Prusa Research."
+      },
+      "sha256": "d61d94e4f69b1eac068aba2a054d88559d4d7e540ba641510999f1cc8ee654dc"
+    }
+  ]
+}

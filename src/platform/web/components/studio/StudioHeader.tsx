@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MessageCircle,
   Sparkles,
@@ -36,6 +37,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   currentProjectName,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { t } = useTranslation();
   const isDemoMode = useIsDemoMode();
 
   const toggleFullscreen = () => {
@@ -72,9 +74,19 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         };
       case "catalog":
         return {
-          icon: <Settings2 className="w-3.5 h-3.5 text-blue-400" />,
+          icon: (
+            <Settings2 className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+          ),
           title: "Frota de Impressoras",
           subtitle: "Gerenciamento de máquinas e custos/hora",
+        };
+      case "marketplace":
+        return {
+          icon: (
+            <Settings2 className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+          ),
+          title: t("marketplaceBrowse.title"),
+          subtitle: t("marketplaceBrowse.subtitle"),
         };
       case "history":
         return {
@@ -116,49 +128,53 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   };
 
   return (
-    <header className="h-12 bg-[#090d16] border-b border-[#1b2438] px-4 flex items-center justify-between text-xs select-none sticky top-0 z-40">
+    <header className="h-12 bg-[var(--color-bg-elevated)] border-b border-[var(--color-border)] px-4 flex items-center justify-between text-xs text-[var(--color-text-primary)] select-none sticky top-0 z-40">
       {/* Left: Breadcrumbs */}
-      <div className="flex items-center gap-2 text-slate-300">
+      <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
         <button
           onClick={() => onTabChange("calculator")}
-          className="flex items-center gap-1.5 hover:text-white transition-colors"
+          className="flex items-center gap-1.5 hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
         >
-          <span className="text-slate-400 font-medium">Oficina 3D</span>
+          <span className="text-[var(--color-text-secondary)] font-medium">
+            Oficina 3D
+          </span>
         </button>
-        <ChevronRight className="w-3 h-3 text-slate-600" />
-        <div className="flex items-center gap-1.5 font-semibold text-slate-100">
+        <ChevronRight className="w-3 h-3 text-[var(--color-text-muted)]" />
+        <div className="flex items-center gap-1.5 font-semibold text-[var(--color-text-primary)]">
           {breadcrumb.icon}
           <span>{breadcrumb.title}</span>
         </div>
-        <span className="text-slate-600 hidden md:inline">|</span>
-        <span className="text-slate-400 hidden md:inline truncate max-w-[320px] 2xl:max-w-md">
+        <span className="text-[var(--color-text-muted)] hidden md:inline">
+          |
+        </span>
+        <span className="text-[var(--color-text-secondary)] hidden md:inline truncate max-w-[320px] 2xl:max-w-md">
           {breadcrumb.subtitle}
         </span>
       </div>
 
       {/* Center: Branding */}
-      <div className="hidden lg:flex items-center gap-2 text-slate-400 font-medium tracking-wide">
-        <span className="text-slate-300 font-bold tracking-tight">
+      <div className="hidden lg:flex items-center gap-2 text-[var(--color-text-secondary)] font-medium tracking-wide">
+        <span className="text-[var(--color-text-primary)] font-bold tracking-tight">
           Open3DCalc
         </span>
-        <span className="text-slate-500">Studio</span>
+        <span className="text-[var(--color-text-muted)]">Studio</span>
       </div>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1 sm:gap-2">
         {/* Template selector ONLY visible in Demo Mode */}
         {isDemoMode && (
-          <div className="hidden sm:flex items-center gap-1 bg-[#151226] border border-purple-500/40 rounded-lg p-0.5 text-xs">
-            <span className="text-[10px] font-mono text-purple-300 font-bold px-1.5 uppercase">
+          <div className="hidden sm:flex items-center gap-1 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg p-0.5 text-xs">
+            <span className="text-[10px] font-mono text-[var(--color-text-muted)] font-bold px-1.5 uppercase">
               Demo:
             </span>
             <button
               type="button"
               onClick={() => onSelectDemoTemplate("fdm")}
-              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
                 demoTemplate === "fdm"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-sm"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               }`}
             >
               🖨️ Filamento (FDM)
@@ -166,10 +182,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             <button
               type="button"
               onClick={() => onSelectDemoTemplate("resin")}
-              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
                 demoTemplate === "resin"
-                  ? "bg-purple-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-sm"
+                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               }`}
             >
               💧 Resina (MSLA)
@@ -184,10 +200,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={handleWhatsApp}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white font-semibold transition-all shadow-sm shadow-emerald-950/40"
+          className="flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-positive-fill)] hover:opacity-90 text-[var(--color-positive-fill-fg)] font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
           title="Gerar proposta rápida para WhatsApp"
         >
-          <MessageCircle className="w-3.5 h-3.5 fill-white/20" />
+          <MessageCircle className="w-3.5 h-3.5" />
           <span className="hidden xs:inline">Proposta WhatsApp</span>
         </button>
 
@@ -195,10 +211,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenCopilot}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all shadow-sm shadow-amber-950/40"
+          className="flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-warning-fill)] hover:bg-[var(--color-warning-fill-hover)] text-[var(--color-warning-fill-fg)] font-bold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
           title="Abrir Copilot IA"
         >
-          <Sparkles className="w-3.5 h-3.5 fill-slate-950/20" />
+          <Sparkles className="w-3.5 h-3.5" />
           <span>Copilot IA</span>
         </button>
 
@@ -206,7 +222,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={toggleFullscreen}
-          className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
           title="Alternar Tela Cheia"
         >
           {isFullscreen ? (

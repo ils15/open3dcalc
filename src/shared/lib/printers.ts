@@ -184,6 +184,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "creality_k1c",
+    technology: "fdm",
     name: "K1C",
     brand: "Creality",
     power: 350,
@@ -446,6 +447,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "anycubic_mega_x",
+    technology: "fdm",
     name: "Mega X",
     brand: "Anycubic",
     power: 180,
@@ -457,6 +459,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "anycubic_vyper",
+    technology: "fdm",
     name: "Vyper",
     brand: "Anycubic",
     power: 200,
@@ -561,6 +564,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "prusa_xl_2",
+    technology: "fdm",
     name: "XL 2-Head",
     brand: "Prusa",
     power: 350,
@@ -573,6 +577,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "prusa_xl_5",
+    technology: "fdm",
     name: "XL 5-Head",
     brand: "Prusa",
     power: 500,
@@ -599,6 +604,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "prusa_sl1s",
+    technology: "resin",
     name: "SL1S Speed",
     brand: "Prusa",
     power: 100,
@@ -795,6 +801,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "flashforge_adventurer_4",
+    technology: "fdm",
     name: "Adventurer 4",
     brand: "Flashforge",
     power: 250,
@@ -820,6 +827,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "flashforge_finder_3",
+    technology: "fdm",
     name: "Finder 3",
     brand: "Flashforge",
     power: 150,
@@ -869,6 +877,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "ultimaker_fact_4",
+    technology: "fdm",
     name: "Factor 4",
     brand: "UltiMaker",
     power: 400,
@@ -880,6 +889,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "ultimaker_method_x",
+    technology: "fdm",
     name: "Method X",
     brand: "UltiMaker",
     power: 300,
@@ -891,6 +901,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "ultimaker_method_xl",
+    technology: "fdm",
     name: "Method XL",
     brand: "UltiMaker",
     power: 400,
@@ -968,6 +979,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "artillery_sw_x4_plus",
+    technology: "fdm",
     name: "SW X4 Plus",
     brand: "Artillery",
     power: 350,
@@ -1019,6 +1031,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "qidi_i_fast",
+    technology: "fdm",
     name: "I-Fast",
     brand: "Qidi Tech",
     power: 350,
@@ -1097,6 +1110,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "sovol_sv01",
+    technology: "fdm",
     name: "SV01",
     brand: "Sovol",
     power: 200,
@@ -1108,6 +1122,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "ankermake_m5",
+    technology: "fdm",
     name: "M5",
     brand: "AnkerMake",
     power: 300,
@@ -1119,6 +1134,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "ankermake_m5c",
+    technology: "fdm",
     name: "M5C",
     brand: "AnkerMake",
     power: 300,
@@ -1188,6 +1204,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "snapmaker_j1",
+    technology: "fdm",
     name: "J1",
     brand: "Snapmaker",
     power: 250,
@@ -1199,6 +1216,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "snapmaker_artisan",
+    technology: "fdm",
     name: "Artisan",
     brand: "Snapmaker",
     power: 350,
@@ -1226,6 +1244,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "voron_v0",
+    technology: "fdm",
     name: "V0.2",
     brand: "Voron",
     power: 180,
@@ -1283,6 +1302,7 @@ export const printers: PrinterProfile[] = [
   },
   {
     id: "peopoly_forge",
+    technology: "resin",
     name: "Forge",
     brand: "Peopoly",
     power: 400,

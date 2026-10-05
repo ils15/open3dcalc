@@ -25,7 +25,7 @@
 
 ### 🧭 Navegação
 
-Todas as superfícies dão acesso às **12 abas** — Calculadora, Dashboard, Calc. Infill, Filamentos, Cadastros, Histórico, Novidades, Orçamentos, Clientes, Produtos, Privacidade e Wiki — sem que nenhuma fique escondida atrás de um menu:
+Todas as superfícies dão acesso às **13 abas** — Calculadora, Dashboard, Calc. Infill, Filamentos, Cadastros, Marketplace, Histórico, Novidades, Orçamentos, Clientes, Produtos, Privacidade e Wiki — sem que nenhuma fique escondida atrás de um menu:
 
 | Tela                   | Navegação                                                                                                                                                                                      |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -35,7 +35,7 @@ Todas as superfícies dão acesso às **12 abas** — Calculadora, Dashboard, Ca
 
 ### Interface em evolução (PR em draft)
 
-A atualização visual está em andamento, usando o Example como referência para um shell compacto e alinhado — sem declarar paridade concluída. Cadastros usa cards em grid responsivo; impressoras, materiais e modelos de taxa têm busca, e impressoras exibem imagem com fallback e selo informativo de tecnologia. Na Calculator Classic, o results rail é responsivo e dá lugar a um fallback em telas estreitas; o cálculo existente é mantido.
+A atualização visual está em andamento, usando o Example como referência para um shell compacto e alinhado — sem declarar paridade concluída. Cadastros usa cards em grid responsivo; impressoras, materiais e modelos de taxa têm busca, e impressoras exibem imagem com fallback e selo informativo de tecnologia. A aba Marketplace é somente para consulta das definições de materiais e perfis de impressora do catálogo; não exibe estoque físico nem oferece ações de compra. O piloto de fotos do Marketplace mostra somente a imagem exata do Prusa MK4 licenciada em CC BY-SA 4.0, com crédito e aviso de recorte/ocultação de marcas visíveis; os demais perfis mantêm ilustrações de fallback por tecnologia ou um ícone genérico quando a tecnologia não está especificada. A licença CC BY-SA 4.0 se aplica apenas à foto adaptada; o código mantém a licença do repositório. Veja o [manifesto de proveniência e licença das fotos](src/shared/assets/printers/manifest.json). Os perfis de taxas existentes permanecem em **Cadastros → Taxas e Canais**. Tecnologias verificadas foram adicionadas apenas às sementes estáticas; arrays de catálogo já salvos não são migrados ou enriquecidos automaticamente, então perfis salvos sem tecnologia continuam como **Não especificada**. Na Calculator Classic, o results rail é responsivo e dá lugar a um fallback em telas estreitas; o cálculo existente é mantido.
 
 ## 📦 Desktop App
 

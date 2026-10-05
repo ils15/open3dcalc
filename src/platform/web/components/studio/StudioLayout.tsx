@@ -21,6 +21,7 @@ import { StudioProductsView } from "./StudioProductsView";
 // Existing shared surfaces for remaining tabs
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
 import { CatalogTab } from "@/shared/components/Catalog/CatalogTab";
+import { MarketplaceBrowseTab } from "@/shared/components/Catalog/MarketplaceBrowseTab";
 import { WikiPage } from "@/shared/components/Wiki/WikiPage";
 import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
 import { PrivacyScreen } from "@/shared/components/Privacy/PrivacyScreen";
@@ -36,6 +37,8 @@ import { PiiLockedShell } from "@/shared/components/Privacy/PiiLockedShell";
 
 export const StudioLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("calculator");
+  const needsCockpitBottomInset =
+    activeTab === "catalog" || activeTab === "marketplace";
   // `layoutMode` is SHARED state, not local. It used to be a local `useState`,
   // which meant `useLayoutStore` kept reporting its `"classic"` default no matter
   // what the user picked here — so `useAppInit`'s first-visit tutorial guard
@@ -121,7 +124,7 @@ export const StudioLayout: React.FC = () => {
   }, [focusMode]);
 
   return (
-    <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex flex-col font-sans selection:bg-[var(--color-accent-muted)] selection:text-[var(--color-text-primary)]">
       {/* Global guard feedback must survive focus mode, which removes the chrome. */}
       <DemoExportBlockedToast focusMode={focusMode} />
 
@@ -173,7 +176,7 @@ export const StudioLayout: React.FC = () => {
 
         {/* Main Content Area */}
         <main
-          className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${focusMode ? "max-w-7xl mx-auto" : ""}`}
+          className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${needsCockpitBottomInset ? "pb-24 sm:pb-24 lg:pb-24" : ""} ${focusMode ? "max-w-7xl mx-auto" : ""}`}
         >
           {/* Focus mode exit banner */}
           {focusMode && (
@@ -239,27 +242,29 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "catalog" && (
-                <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-20">
-                  <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5">
+                <div className="flex max-w-full flex-col gap-6 text-[var(--color-text-primary)]">
+                  <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-400 font-bold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-accent)] font-bold">
                         PARÂMETROS DE PRODUÇÃO & TAXAS
                       </span>
                     </div>
-                    <h1 className="text-xl font-bold tracking-tight text-white">
+                    <h1 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
                       Cadastros Gerais da Oficina
                     </h1>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
                       Gerenciamento de impressoras 3D, especificações de
                       materiais e taxas de marketplaces
                     </p>
                   </div>
-                  <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-6">
+                  <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6">
                     <CatalogTab />
                   </div>
                 </div>
               )}
+
+              {activeTab === "marketplace" && <MarketplaceBrowseTab />}
 
               {activeTab === "history" && (
                 <StudioHistoryView

@@ -40,6 +40,7 @@
   "nav": {
     "calculator": "Calculadora",
     "catalog": "Cadastros",
+    "marketplace": "Marketplace",
     "history": "Histórico",
     "dashboard": "Dashboard",
     "infill": "Calc. Infill",
@@ -78,7 +79,10 @@
       "description": "Cada impressão salva e comparável"
     },
     "catalog": {
-      "description": "Máquinas, materiais e marketplaces"
+      "description": "Impressoras, materiais e taxas e canais"
+    },
+    "marketplace": {
+      "description": "Definições de materiais e perfis de impressora"
     },
     "inventory": {
       "description": "Estoque de filamentos"
@@ -383,12 +387,43 @@
     "saleLabel": "Venda",
     "profitLabel": "Lucro"
   },
+  "marketplaceBrowse": {
+    "title": "Marketplace",
+    "subtitle": "Consulte definições do catálogo de materiais e perfis de impressora.",
+    "browseOnly": "Somente consulta",
+    "materials": "Materiais",
+    "printers": "Perfis de impressora",
+    "searchMaterials": "Buscar materiais",
+    "searchPrinters": "Buscar perfis de impressora",
+    "filterBrand": "Marca",
+    "allBrands": "Todas as marcas",
+    "filterTechnology": "Tecnologia declarada",
+    "allTechnologies": "Todas as tecnologias",
+    "fdm": "FDM",
+    "resin": "Resina",
+    "unspecified": "Não especificada",
+    "unknownProfiles_one": "{{count}} perfil sem tecnologia especificada.",
+    "unknownProfiles_other": "{{count}} perfis sem tecnologia especificada.",
+    "revealUnknown_one": "Mostrar {{count}} perfil sem tecnologia especificada",
+    "revealUnknown_other": "Mostrar {{count}} perfis sem tecnologia especificada",
+    "type": "Tipo",
+    "density": "Densidade",
+    "averagePrice": "Preço médio",
+    "prusaMk4PhotoAlt": "Impressora 3D Original Prusa MK4 vista de frente, com uma peça laranja impressa na mesa",
+    "openPrusaMk4PhotoSource": "Abrir a página da foto do Prusa MK4 no Wikimedia Commons",
+    "photoBy": "Foto de",
+    "photoModified": "Recortada para remover a marca visível; outras marcas foram desfocadas.",
+    "photoNotEndorsed": "Foto independente; não representa endosso da Prusa Research.",
+    "fdmPlaceholderAlt": "Ilustração genérica de impressora FDM; não é uma foto do produto",
+    "resinPlaceholderAlt": "Ilustração genérica de impressora de resina; não é uma foto do produto",
+    "unknownPlaceholderAlt": "Ilustração genérica de impressora; tecnologia não especificada"
+  },
   "catalog": {
     "title": "Cadastros e Presets",
-    "subtitle": "Gerencie impressoras, materiais e marketplaces usados pela calculadora.",
+    "subtitle": "Gerencie impressoras, materiais e taxas e canais usados pela calculadora.",
     "printers": "Impressoras",
     "materials": "Materiais",
-    "marketplaces": "Marketplaces",
+    "marketplaces": "Taxas e Canais",
     "addPrinter": "Nova impressora",
     "selectPrinter": "Selecionar impressora",
     "customPrinter": "Personalizada",
@@ -2522,6 +2557,11 @@
     "catalog": {
       "title": "Cadastros",
       "description": "Central de clientes, produtos, máquinas e materiais usados em orçamentos e na calculadora.",
+      "cta": "Abrir guia"
+    },
+    "marketplace": {
+      "title": "Marketplace",
+      "description": "Consulte definições de materiais e perfis de impressora sem acessar o estoque físico.",
       "cta": "Abrir guia"
     },
     "history": {

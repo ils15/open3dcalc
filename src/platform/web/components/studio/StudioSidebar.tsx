@@ -12,6 +12,7 @@ import {
   FileText,
   ShoppingBag,
   ShieldCheck,
+  Search,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -100,6 +101,11 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
       label: "Privacidade",
       icon: <ShieldCheck className="w-4 h-4" />,
     },
+    {
+      id: "marketplace" as Tab,
+      label: "Marketplace",
+      icon: <Search className="w-4 h-4" />,
+    },
   ];
 
   // The caller may override a module to attach a badge/count; unknown ids fall
@@ -169,9 +175,10 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               return (
                 <button
                   key={m.id}
+                  type="button"
                   onClick={() => onTabChange(m.id)}
                   title={m.label}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
                     isActive
                       ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-sm"
                       : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"

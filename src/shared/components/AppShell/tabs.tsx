@@ -8,6 +8,7 @@ import {
   FileText,
   Users,
   Package,
+  Search,
   ShieldCheck,
   MoreHorizontal,
 } from "lucide-react";
@@ -21,7 +22,7 @@ import { MORE_TAB_IDS, PRIMARY_TAB_IDS } from "@/shared/lib/navigationPrefs";
  * → surface switch and the tutorial registry already speak, and it is
  * unchanged by this phase. What changed is which surfaces are *primary
  * destinations* (the five in `PRIMARY_TABS`, rendered in the nav bar) versus
- * *demoted* surfaces (the five in `MORE_TABS`, still fully functional and
+ * *demoted* surfaces (the six in `MORE_TABS`, still fully functional and
  * reachable through the "More" disclosure).
  *
  * The five primary destinations are the existing surface ids under
@@ -46,6 +47,7 @@ export type Tab =
   | "customers"
   | "products"
   | "privacy"
+  | "marketplace"
   | "wiki";
 
 export interface TabEntry {
@@ -115,6 +117,12 @@ export const TABS: TabEntry[] = [
     icon: <ShieldCheck className="w-[18px] h-[18px]" />,
     labelKey: "nav.privacy",
     label: "Privacidade",
+  },
+  {
+    id: "marketplace",
+    icon: <Search className="w-[18px] h-[18px]" />,
+    labelKey: "nav.marketplace",
+    label: "Marketplace",
   },
 ];
 

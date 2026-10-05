@@ -1,4 +1,5 @@
 import { CatalogTab } from "@/shared/components/Catalog/CatalogTab";
+import { MarketplaceBrowseTab } from "@/shared/components/Catalog/MarketplaceBrowseTab";
 import { HistoryTab } from "@/shared/components/Calculator/HistoryTab/HistoryTab";
 import { Dashboard } from "@/shared/components/Dashboard/Dashboard";
 import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
@@ -36,6 +37,7 @@ export function MainContent({
       {activeTab === "infill" && <InfillCalculator />}
       {activeTab === "inventory" && <SpoolShelf />}
       {activeTab === "catalog" && <CatalogTab />}
+      {activeTab === "marketplace" && <MarketplaceBrowseTab />}
       {activeTab === "history" && (
         <HistoryTab onLoadToCalculator={onSelectCalculator} />
       )}

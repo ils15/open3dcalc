@@ -3,12 +3,29 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./StudioHeader", () => ({ StudioHeader: () => null }));
 vi.mock("./StudioSubHeader", () => ({ StudioSubHeader: () => null }));
-vi.mock("./StudioSidebar", () => ({ StudioSidebar: () => null }));
+vi.mock("./StudioSidebar", () => ({
+  StudioSidebar: ({
+    onTabChange,
+  }: {
+    onTabChange: (tab: "catalog" | "marketplace") => void;
+  }) => (
+    <nav>
+      <button type="button" onClick={() => onTabChange("catalog")}>
+        Select Cadastros
+      </button>
+      <button type="button" onClick={() => onTabChange("marketplace")}>
+        Select Marketplace
+      </button>
+    </nav>
+  ),
+}));
 vi.mock("./StudioCockpitDock", () => ({ StudioCockpitDock: () => null }));
 vi.mock("./StudioDashboardView", () => ({ StudioDashboardView: () => null }));
 vi.mock("./StudioCalculatorView", () => ({ StudioCalculatorView: () => null }));
 vi.mock("./StudioSpoolView", () => ({ StudioSpoolView: () => null }));
-vi.mock("./StudioMiniDashOverlay", () => ({ StudioMiniDashOverlay: () => null }));
+vi.mock("./StudioMiniDashOverlay", () => ({
+  StudioMiniDashOverlay: () => null,
+}));
 vi.mock("./StudioCopilotModal", () => ({ StudioCopilotModal: () => null }));
 vi.mock("./StudioShortcutsModal", () => ({ StudioShortcutsModal: () => null }));
 vi.mock("./StudioQuoteModal", () => ({ StudioQuoteModal: () => null }));
@@ -16,19 +33,44 @@ vi.mock("./StudioHistoryView", () => ({ StudioHistoryView: () => null }));
 vi.mock("./StudioCustomerView", () => ({ StudioCustomerView: () => null }));
 vi.mock("./StudioQuotesView", () => ({ StudioQuotesView: () => null }));
 vi.mock("./StudioProductsView", () => ({ StudioProductsView: () => null }));
-vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({ InfillCalculator: () => null }));
-vi.mock("@/shared/components/Catalog/CatalogTab", () => ({ CatalogTab: () => null }));
+vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
+  InfillCalculator: () => null,
+}));
+vi.mock("@/shared/components/Catalog/CatalogTab", () => ({
+  CatalogTab: () => null,
+}));
+vi.mock("@/shared/components/Catalog/MarketplaceBrowseTab", () => ({
+  MarketplaceBrowseTab: () => null,
+}));
 vi.mock("@/shared/components/Wiki/WikiPage", () => ({ WikiPage: () => null }));
-vi.mock("@/shared/components/Changelog/ChangelogPage", () => ({ ChangelogPage: () => null }));
-vi.mock("@/shared/components/Privacy/PrivacyScreen", () => ({ PrivacyScreen: () => null }));
-vi.mock("@/shared/components/Calculator/surfaces/BentoSurface", () => ({ BentoSurface: () => null }));
-vi.mock("@/shared/components/Calculator/surfaces/GuidedSurface", () => ({ GuidedSurface: () => null }));
-vi.mock("@/shared/components/DemoMode/DemoModeIndicator", () => ({ DemoModeIndicator: () => null }));
-vi.mock("@/shared/components/Privacy/PrivacyOnboarding", () => ({ PrivacyOnboarding: () => null }));
-vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({ LegacyMigrationPrompt: () => null }));
-vi.mock("@/shared/components/Privacy/PiiLockedShell", () => ({ PiiLockedShell: () => null }));
+vi.mock("@/shared/components/Changelog/ChangelogPage", () => ({
+  ChangelogPage: () => null,
+}));
+vi.mock("@/shared/components/Privacy/PrivacyScreen", () => ({
+  PrivacyScreen: () => null,
+}));
+vi.mock("@/shared/components/Calculator/surfaces/BentoSurface", () => ({
+  BentoSurface: () => null,
+}));
+vi.mock("@/shared/components/Calculator/surfaces/GuidedSurface", () => ({
+  GuidedSurface: () => null,
+}));
+vi.mock("@/shared/components/DemoMode/DemoModeIndicator", () => ({
+  DemoModeIndicator: () => null,
+}));
+vi.mock("@/shared/components/Privacy/PrivacyOnboarding", () => ({
+  PrivacyOnboarding: () => null,
+}));
+vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({
+  LegacyMigrationPrompt: () => null,
+}));
+vi.mock("@/shared/components/Privacy/PiiLockedShell", () => ({
+  PiiLockedShell: () => null,
+}));
 vi.mock("@/shared/hooks/useAppInit", () => ({ useAppInit: () => {} }));
-vi.mock("@/shared/hooks/useReducedMotion", () => ({ useReducedMotion: () => true }));
+vi.mock("@/shared/hooks/useReducedMotion", () => ({
+  useReducedMotion: () => true,
+}));
 
 import { StudioLayout } from "./StudioLayout";
 import { guardExport } from "@/shared/lib/demoExportGuard";
@@ -54,5 +96,35 @@ describe("StudioLayout demo export feedback", () => {
     expect(
       await screen.findByRole("region", { name: "Notificações" }),
     ).toHaveClass("relative");
+  });
+
+  it.each([
+    { route: "catalog", control: "Select Cadastros" },
+    { route: "marketplace", control: "Select Marketplace" },
+  ])(
+    "uses theme surfaces and reserves dock clearance for $route",
+    ({ control }) => {
+      const { container } = render(<StudioLayout />);
+      act(() => {
+        fireEvent.click(screen.getByRole("button", { name: control }));
+      });
+
+      const root = container.firstElementChild;
+      expect(root).toHaveClass(
+        "bg-[var(--color-bg-primary)]",
+        "text-[var(--color-text-primary)]",
+      );
+      expect(screen.getByRole("main")).toHaveClass(
+        "pb-24",
+        "sm:pb-24",
+        "lg:pb-24",
+      );
+    },
+  );
+
+  it("does not add the content inset to unrelated routes", () => {
+    render(<StudioLayout />);
+
+    expect(screen.getByRole("main")).not.toHaveClass("pb-24");
   });
 });

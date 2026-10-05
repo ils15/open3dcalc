@@ -156,7 +156,7 @@ test("localized Cadastros tabs, keyboard search, and CRUD work in the browser", 
     await materialCard.getByRole("button", { name: "Remover" }).click();
     await materialCard.waitFor({ state: "detached" });
 
-    await main.getByRole("tab", { name: "Marketplaces" }).click();
+    await main.getByRole("tab", { name: "Taxas e Canais" }).click();
     await main.getByLabel("Nome da loja").fill("Playwright Marketplace");
     await main.getByLabel("Taxa %").fill("8");
     await main.getByLabel("Taxa fixa").fill("1.5");
@@ -193,7 +193,7 @@ test("localized Cadastros tabs, keyboard search, and CRUD work in the browser", 
       "failed HTTP responses during catalog flow",
     );
     t.diagnostic(
-      "pt-BR tabs, search clear keyboard focus, material/marketplace create-delete, and printer edit passed",
+      "pt-BR tabs, search clear keyboard focus, material/fees-and-channels create-delete, and printer edit passed",
     );
   } finally {
     await context.close();

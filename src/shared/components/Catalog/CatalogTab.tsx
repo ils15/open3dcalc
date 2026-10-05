@@ -234,7 +234,7 @@ export function CatalogTab() {
       </div>
 
       <div
-        className="surface rounded-xl p-2 flex gap-2"
+        className="surface grid grid-cols-1 gap-2 rounded-xl p-2 sm:grid-cols-3"
         role="tablist"
         aria-label={t("catalog.title")}
       >
@@ -244,7 +244,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-printers"
           onClick={() => setSection("printers")}
           onKeyDown={(e) => handleTabKeyDown(e, "printers")}
-          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "printers" ? "bg-[var(--accent-fill)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "printers" ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.printers")}
         </button>
@@ -254,7 +254,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-materials"
           onClick={() => setSection("materials")}
           onKeyDown={(e) => handleTabKeyDown(e, "materials")}
-          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "materials" ? "bg-[var(--accent-fill)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "materials" ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.materials")}
         </button>
@@ -264,7 +264,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-marketplaces"
           onClick={() => setSection("marketplaces")}
           onKeyDown={(e) => handleTabKeyDown(e, "marketplaces")}
-          className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "marketplaces" ? "bg-[var(--accent-fill)] text-white" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "marketplaces" ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.marketplaces")}
         </button>
@@ -1001,11 +1001,9 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                           </span>
                           <span
                             className={`rounded-full border px-2 py-0.5 text-[9px] font-mono font-bold uppercase ${
-                              preset.technology === "fdm"
-                                ? "border-blue-500/40 bg-blue-950/60 text-blue-400"
-                                : preset.technology === "resin"
-                                  ? "border-purple-500/40 bg-purple-950/60 text-purple-400"
-                                  : "border-slate-600 bg-slate-800 text-slate-300"
+                              preset.technology
+                                ? "border-[var(--color-accent-muted)] bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
+                                : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]"
                             }`}
                           >
                             {technologyLabel}
@@ -1234,9 +1232,9 @@ function PrinterProfileCard({
             <span
               className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
                 printer.technology === "fdm"
-                  ? "border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                  ? "border-[var(--color-accent-muted)] bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
                   : printer.technology === "resin"
-                    ? "border-purple-500/40 bg-purple-500/10 text-purple-700 dark:text-purple-300"
+                    ? "border-[var(--color-accent-muted)] bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
                     : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]"
               }`}
             >
@@ -1418,7 +1416,7 @@ function MaterialManager() {
           <button
             type="button"
             onClick={add}
-            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
             {t("catalog.save")}
           </button>
@@ -1587,7 +1585,7 @@ function MarketplaceManager() {
           <button
             type="button"
             onClick={add}
-            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-white font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
             {t("catalog.save")}
           </button>

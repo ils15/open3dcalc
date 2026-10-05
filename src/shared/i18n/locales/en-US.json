@@ -40,6 +40,7 @@
   "nav": {
     "calculator": "Calculator",
     "catalog": "Catalog",
+    "marketplace": "Marketplace",
     "history": "History",
     "dashboard": "Dashboard",
     "infill": "Infill Calc.",
@@ -78,7 +79,10 @@
       "description": "Every print saved and comparable"
     },
     "catalog": {
-      "description": "Machines, materials and marketplaces"
+      "description": "Printers, materials and fees & channels"
+    },
+    "marketplace": {
+      "description": "Material definitions and printer profiles"
     },
     "inventory": {
       "description": "Filament stock"
@@ -383,12 +387,43 @@
     "saleLabel": "Sale",
     "profitLabel": "Profit"
   },
+  "marketplaceBrowse": {
+    "title": "Marketplace",
+    "subtitle": "Browse material catalog definitions and printer profiles.",
+    "browseOnly": "Browse only",
+    "materials": "Materials",
+    "printers": "Printer profiles",
+    "searchMaterials": "Search materials",
+    "searchPrinters": "Search printer profiles",
+    "filterBrand": "Brand",
+    "allBrands": "All brands",
+    "filterTechnology": "Declared technology",
+    "allTechnologies": "All technologies",
+    "fdm": "FDM",
+    "resin": "Resin",
+    "unspecified": "Not specified",
+    "unknownProfiles_one": "{{count}} profile has no specified technology.",
+    "unknownProfiles_other": "{{count}} profiles have no specified technology.",
+    "revealUnknown_one": "Show {{count}} profile with no specified technology",
+    "revealUnknown_other": "Show {{count}} profiles with no specified technology",
+    "type": "Type",
+    "density": "Density",
+    "averagePrice": "Average price",
+    "prusaMk4PhotoAlt": "Original Prusa MK4 3D printer with an orange print on the bed",
+    "openPrusaMk4PhotoSource": "Open the Wikimedia Commons source page for the Prusa MK4 photo",
+    "photoBy": "Photo by",
+    "photoModified": "Cropped to remove visible wordmark; other visible marks blurred.",
+    "photoNotEndorsed": "Independent photo; not an endorsement by Prusa Research.",
+    "fdmPlaceholderAlt": "Illustrated FDM printer placeholder, not a product photo",
+    "resinPlaceholderAlt": "Illustrated resin printer placeholder, not a product photo",
+    "unknownPlaceholderAlt": "Generic printer illustration; technology not specified"
+  },
   "catalog": {
     "title": "Catalogs & Presets",
-    "subtitle": "Manage printers, materials and marketplaces used by the calculator.",
+    "subtitle": "Manage printers, materials and fee profiles used by the calculator.",
     "printers": "Printers",
     "materials": "Materials",
-    "marketplaces": "Marketplaces",
+    "marketplaces": "Fees & Channels",
     "addPrinter": "New printer",
     "selectPrinter": "Select printer",
     "customPrinter": "Custom",
@@ -2522,6 +2557,11 @@
     "catalog": {
       "title": "Catalog",
       "description": "Hub for the customers, products, machines and materials used across quotes and the calculator.",
+      "cta": "Open guide"
+    },
+    "marketplace": {
+      "title": "Marketplace",
+      "description": "Browse material definitions and printer profiles without accessing physical inventory.",
       "cta": "Open guide"
     },
     "history": {

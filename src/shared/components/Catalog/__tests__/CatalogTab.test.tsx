@@ -124,6 +124,19 @@ describe("CatalogTab", () => {
     expect(tabs[2]).toHaveAttribute("aria-controls", "tabpanel-marketplaces");
   });
 
+  it("keeps catalog section tabs readable and semantically themed on mobile", () => {
+    render(<CatalogTab />);
+
+    const tablist = screen.getByRole("tablist");
+    expect(tablist).toHaveClass("grid-cols-1", "sm:grid-cols-3");
+    for (const tab of screen.getAllByRole("tab")) {
+      expect(tab).toHaveClass("min-h-11", "w-full", "whitespace-nowrap");
+    }
+    expect(screen.getByRole("tab", { name: "catalog.printers" })).toHaveClass(
+      "text-[var(--accent-fill-fg)]",
+    );
+  });
+
   it("has tabpanel with correct id", () => {
     render(<CatalogTab />);
     expect(screen.getByRole("tabpanel")).toHaveAttribute(
@@ -252,7 +265,12 @@ describe("CatalogTab", () => {
         name: "catalog.imageUnavailable",
       }),
     ).toBeInTheDocument();
-    expect(within(imageCard).getAllByText("catalog.fdm")).toHaveLength(1);
+    const fdmBadge = within(imageCard).getByText("catalog.fdm");
+    expect(fdmBadge).toHaveClass(
+      "border-[var(--color-accent-muted)]",
+      "bg-[var(--color-accent-muted)]",
+      "text-[var(--color-accent)]",
+    );
 
     const unknownCard = screen.getByRole("article", {
       name: /Unknown Printer/,
@@ -294,6 +312,23 @@ describe("CatalogTab", () => {
       .find((candidate) => candidate.querySelector("h2"));
     expect(dialog).toBeDefined();
     if (!dialog) throw new Error("Printer preset dialog was not rendered");
+
+    const verifiedFdmPreset = printers.find(
+      (printer) => printer.technology === "fdm",
+    );
+    expect(verifiedFdmPreset).toBeDefined();
+    if (!verifiedFdmPreset) throw new Error("No verified FDM seed was found");
+    const presetCard = screen
+      .getByRole("heading", { name: verifiedFdmPreset.name })
+      .closest("div.group");
+    expect(presetCard).not.toBeNull();
+    if (!(presetCard instanceof HTMLElement))
+      throw new Error("Verified FDM preset card was not rendered");
+    expect(within(presetCard).getByText("catalog.fdm")).toHaveClass(
+      "border-[var(--color-accent-muted)]",
+      "bg-[var(--color-accent-muted)]",
+      "text-[var(--color-accent)]",
+    );
 
     for (const printer of missingPngPrinters) {
       const presetCard = screen
@@ -350,10 +385,12 @@ describe("CatalogTab", () => {
       screen.getByPlaceholderText(
         "Buscar por modelo ou marca (ex: Ender, P1S, A1, K1, Mars, Saturn, Prusa...)",
       ),
-      { target: { value: "K1C" } },
+      { target: { value: "OrangeStorm G2" } },
     );
 
-    expect(screen.getByRole("heading", { name: "K1C" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "OrangeStorm G2" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("catalog.technologyUnknown")).toBeInTheDocument();
   });
 
@@ -682,7 +719,11 @@ describe("CatalogTab", () => {
         target: { value: "135" },
       },
     );
-    fireEvent.click(screen.getByRole("button", { name: "catalog.save" }));
+    const materialSaveButton = screen.getByRole("button", {
+      name: "catalog.save",
+    });
+    expect(materialSaveButton).toHaveClass("text-[var(--accent-fill-fg)]");
+    fireEvent.click(materialSaveButton);
     expect(mockCatalog.addMaterial).toHaveBeenCalledWith(
       expect.objectContaining({
         id: expect.any(String),
@@ -707,7 +748,11 @@ describe("CatalogTab", () => {
       screen.getByRole("spinbutton", { name: "catalog.feeFixed" }),
       { target: { value: "2.5" } },
     );
-    fireEvent.click(screen.getByRole("button", { name: "catalog.save" }));
+    const feeSaveButton = screen.getByRole("button", {
+      name: "catalog.save",
+    });
+    expect(feeSaveButton).toHaveClass("text-[var(--accent-fill-fg)]");
+    fireEvent.click(feeSaveButton);
     expect(mockCatalog.addMarketplace).toHaveBeenCalledWith(
       expect.objectContaining({
         id: expect.any(String),

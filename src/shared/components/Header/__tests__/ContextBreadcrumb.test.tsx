@@ -223,7 +223,7 @@ describe("contextual breadcrumb", () => {
     expect(read(DesktopHeader)).toBe(read(WebHeader));
   });
 
-  it("describes all twelve destinations, so no surface can leak a raw key", () => {
+  it("describes all thirteen destinations, so no surface can leak a raw key", () => {
     // The ten tab-contract surfaces plus the two footer-only ones (Wiki and
     // Novidades), which are reachable destinations even though they are
     // deliberately absent from TABS.

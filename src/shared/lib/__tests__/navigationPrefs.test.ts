@@ -74,6 +74,7 @@ describe("navigationPrefs — destination contract", () => {
       "customers",
       "products",
       "privacy",
+      "marketplace",
     ]);
   });
 
@@ -85,7 +86,7 @@ describe("navigationPrefs — destination contract", () => {
 
     const combined = [...PRIMARY_TAB_IDS, ...MORE_TAB_IDS];
     expect(new Set(combined).size).toBe(combined.length);
-    expect(combined).toHaveLength(10);
+    expect(combined).toHaveLength(11);
   });
 
   it("accepts the secondary footer surfaces as persisted destinations", () => {
@@ -222,6 +223,7 @@ describe("navigationPrefs — visibility helpers", () => {
       "customers",
       "products",
       "privacy",
+      "marketplace",
     ]);
   });
 

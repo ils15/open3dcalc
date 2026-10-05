@@ -110,11 +110,15 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span className="text-emerald-400 font-bold">Mini-Dash</span>
-          <span className="text-slate-400 font-medium">R$ 3.737,94</span>
-          <span className="text-slate-600">•</span>
-          <span className="text-cyan-400 font-medium">2/6 máq.</span>
-          <span className="text-slate-600">•</span>
-          <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/30">
+          <span className="hidden text-slate-400 font-medium sm:inline">
+            R$ 3.737,94
+          </span>
+          <span className="hidden text-slate-600 sm:inline">•</span>
+          <span className="hidden text-cyan-400 font-medium sm:inline">
+            2/6 máq.
+          </span>
+          <span className="hidden text-slate-600 sm:inline">•</span>
+          <span className="hidden rounded border border-amber-500/30 bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-400 sm:inline">
             ⚠️ 2 baixos
           </span>
         </button>

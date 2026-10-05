@@ -116,7 +116,7 @@ function renderMobileNav(platform: "web" | "desktop"): HTMLElement {
 }
 
 describe("primary navigation — the five always-available destinations", () => {
-  it("exposes exactly five primary entries and five demoted entries", () => {
+  it("exposes exactly five primary entries and six demoted entries", () => {
     expect(PRIMARY_TABS.map((tab) => tab.id)).toEqual([...PRIMARY_TAB_IDS]);
     expect(MORE_TABS.map((tab) => tab.id)).toEqual([...MORE_TAB_IDS]);
   });

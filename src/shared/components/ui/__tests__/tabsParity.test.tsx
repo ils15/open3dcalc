@@ -109,7 +109,7 @@ function tabShape(tab: TabEntry) {
 }
 
 describe("tabs parity", () => {
-  it("keeps all ten navigation surfaces in the tab contract", () => {
+  it("keeps all eleven navigation surfaces in the tab contract", () => {
     expect(WEB_TABS.map((tab) => tab.id)).toEqual([
       "calculator",
       "dashboard",
@@ -121,6 +121,7 @@ describe("tabs parity", () => {
       "customers",
       "products",
       "privacy",
+      "marketplace",
     ]);
   });
 
@@ -143,7 +144,7 @@ describe("tabs parity", () => {
  * navigation bars, which is the regression the whole lock exists to prevent.
  */
 describe("primary vs demoted parity", () => {
-  it("splits into exactly the five primary destinations and five demoted", () => {
+  it("splits into exactly the five primary destinations and six demoted", () => {
     expect(PRIMARY_TABS.map((tab) => tab.id)).toEqual([...PRIMARY_TAB_IDS]);
     expect(MORE_TABS.map((tab) => tab.id)).toEqual([...MORE_TAB_IDS]);
   });

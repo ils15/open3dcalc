@@ -39,7 +39,7 @@ describe("GuideDrawer", () => {
   it("renders one card for each of the 20 guide areas", async () => {
     render(<GuideDrawer />);
 
-    expect(GUIDE_AREAS).toHaveLength(20);
+    expect(GUIDE_AREAS).toHaveLength(21);
     await user.click(screen.getByRole("button", { name: "nav.wiki" }));
 
     for (const area of GUIDE_AREAS) {

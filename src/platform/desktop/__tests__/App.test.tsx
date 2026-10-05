@@ -350,6 +350,7 @@ describe("desktop App shell (post-extraction)", () => {
   it.each([
     ["wiki", "nav.wiki", "WikiPage"],
     ["changelog", "nav.changelog", "ChangelogPage"],
+    ["marketplace", "nav.marketplace", "marketplaceBrowse.title"],
   ] as const)(
     "routes desktop More action %s to its existing surface and closes the disclosure",
     (_route, label, surface) => {
