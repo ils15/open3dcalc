@@ -26,7 +26,7 @@
     "typecheck:electron": "tsc -p electron/tsconfig.json --noEmit",
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx db/migrate.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
     "diagnostic:retention": "node scripts/diagnostic-retention.mjs"
   },
   "dependencies": {

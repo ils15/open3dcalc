@@ -123,7 +123,7 @@ function loadPrintersJson(): SeedPrinter[] {
  * sync BetterSQLite3Database. Boolean values are stored as native booleans
  * rather than SQLite integers.
  */
-export async function seed(db: PostgresJsDatabase): Promise<{ printers: number; materials: number; marketplaces: number }> {
+export async function seed(db: PostgresJsDatabase<Record<string, unknown>>): Promise<{ printers: number; materials: number; marketplaces: number }> {
   const result = { printers: 0, materials: 0, marketplaces: 0 }
 
   // Seed printers

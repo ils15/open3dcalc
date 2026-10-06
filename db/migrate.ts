@@ -1,13 +1,13 @@
 /**
- * db/migrate.ts — Migration CLI for PostgreSQL.
+ * db/migrate.ts — PostgreSQL Migration CLI.
  *
- * Usage (tsx):
- *   tsx db/migrate.ts up    # apply pending .sql files to PG
- *   tsx db/migrate.ts down  # roll back 0002 and 0004
+ * Usage:
+ *   tsx db/migrate.ts [up]          # apply all pending .sql migrations (default)
+ *   tsx db/migrate.ts down          # no-op placeholder (PG rollback is manual)
  *
- * Requires DATABASE_URL env var or defaults to localhost:5432/open3dcalc.
- * Backup strategy changed from SQLite WAL checkpoint+copy to pg_dump
- * recommendation (not automated here — run pg_dump manually before migrations).
+ * Reads DATABASE_URL from env (defaults to postgresql://localhost:5432/open3dcalc).
+ * Applies every .sql file in db/migrations/ in sorted order.
+ * Idempotent: uses CREATE TABLE IF NOT EXISTS / DO $$ blocks so re-runs are safe.
  */
 import postgres from "postgres";
 import fs from "node:fs";
@@ -24,75 +24,64 @@ function getConnectionString(): string {
 }
 
 function sortedMigrationFiles(): string[] {
+  if (!fs.existsSync(MIGRATIONS_DIR)) return [];
   return fs
     .readdirSync(MIGRATIONS_DIR)
     .filter((f) => f.endsWith(".sql"))
     .sort();
 }
 
-/**
- * Apply every .sql migration in order against PostgreSQL.
- * Idempotent: tolerates "already exists" and "duplicate column" errors.
- */
-export async function migrateUp(sql: postgres.Sql): Promise<void> {
-  for (const file of sortedMigrationFiles()) {
+async function migrateUp(sql: postgres.Sql): Promise<void> {
+  const files = sortedMigrationFiles();
+  if (files.length === 0) {
+    console.log("[migrate] No migration files found in", MIGRATIONS_DIR);
+    return;
+  }
+
+  for (const file of files) {
     const ddl = fs.readFileSync(path.join(MIGRATIONS_DIR, file), "utf-8");
     try {
       await sql.unsafe(ddl);
       console.log(`[migrate] Applied ${file}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (
-        /already exists/i.test(message) ||
-        /duplicate column/i.test(message) ||
-        /relation .* already exists/i.test(message)
-      ) {
+      // Tolerate "already exists" errors for idempotent re-runs
+      if (/already exists/i.test(message)) {
         console.warn(`[migrate] ${file} already applied, skipping`);
         continue;
       }
-      throw new Error(`Failed to execute migration ${file}: ${message}`, {
-        cause: error,
-      });
+      throw new Error(`[migrate] Failed to apply ${file}: ${message}`);
     }
   }
 }
 
-/**
- * Roll back the migrations that own a table: 0002 (products) and 0004
- * (pii_stage). Both drops are IF EXISTS, so the step is idempotent.
- */
-export async function migrateDown(sql: postgres.Sql): Promise<void> {
-  await sql.unsafe("DROP TABLE IF EXISTS products");
-  console.log("[migrate] Rolled back 0002_products (dropped products)");
-  await sql.unsafe("DROP TABLE IF EXISTS pii_stage");
-  console.log("[migrate] Rolled back 0004_pii_stage (dropped pii_stage)");
-}
-
 async function main(): Promise<void> {
-  const [command] = process.argv.slice(2);
+  const [command = "up"] = process.argv.slice(2);
+
   if (command !== "up" && command !== "down") {
-    console.error("Usage: tsx db/migrate.ts <up|down>");
-    console.error("Set DATABASE_URL env var or defaults to localhost:5432/open3dcalc");
+    console.error("Usage: tsx db/migrate.ts [up|down] (default: up)");
     process.exit(1);
   }
 
   const url = getConnectionString();
-  console.log(`[migrate] Connecting to PostgreSQL at: ${url.replace(/\/\/.*@/, "//***@")}`);
+  console.log("[migrate] Connecting to:", url.replace(/\/\/.*@/, "//***@"));
 
   const sql = postgres(url);
+
   try {
     if (command === "up") {
-      console.log("[migrate] TIP: Run 'pg_dump' manually before applying migrations for backup.");
       await migrateUp(sql);
+      console.log("[migrate] All migrations applied successfully.");
     } else {
-      await migrateDown(sql);
+      console.warn("[migrate] 'down' is not implemented for PostgreSQL.");
+      console.warn("Rollback must be done manually or via pg_dump restore.");
     }
   } finally {
     await sql.end();
   }
 }
 
-if (process.argv[1] === __filename) {
+if (process.argv[1] === __filename || import.meta.url.endsWith(process.argv[1])) {
   main().catch((error) => {
     console.error("[migrate] Fatal error:", error);
     process.exit(1);

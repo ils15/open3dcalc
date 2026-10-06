@@ -10,6 +10,7 @@ import {
   initDatabase,
   getSqlClient,
 } from "../db/database.js";
+import { seed } from "../db/seed.js";
 import {
   initUpdateService,
   checkForUpdates,
@@ -207,9 +208,12 @@ async function setupIpcHandlers(): Promise<void> {
   let sql: ReturnType<typeof getSqlClient>;
 
   try {
-    await initDatabase();
+    const db = await initDatabase();
     sql = getSqlClient();
-    console.log("[main] Database initialized (PostgreSQL)");
+    const seeded = await seed(db);
+    console.log(
+      `[main] Database initialized (PostgreSQL); seed: printers=${seeded.printers}, materials=${seeded.materials}, marketplaces=${seeded.marketplaces}`,
+    );
   } catch (error: unknown) {
     console.error("[main] Failed to initialize database:", error);
     sql = new Proxy({} as ReturnType<typeof getSqlClient>, {
