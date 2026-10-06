@@ -1,12 +1,59 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      Declared BEFORE the boot script below, and that ordering is load-bearing
+      rather than cosmetic. A `<meta http-equiv="Content-Security-Policy">`
+      governs only what is parsed AFTER it; it is not retroactive. With the
+      script above the meta, the script was exempt from the policy entirely —
+      the `sha256-` entry was decorative and the anti-FOUC script would have
+      worked even with a wrong hash, which is how a broken policy hides.
+
+      Declaring the policy first makes the hash mean something: the script is
+      authorised by name, and an edit that is not re-hashed is blocked in
+      production instead of silently shipping. studioShellTheme.test.ts
+      recomputes the hash from the script element on every run.
+
+      The meta is inert to layout and the script still runs in <head> ahead of
+      every stylesheet, so this costs nothing in timing.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'sha256-mIBLPiabB8hWGrjD61S6LWtnVjvNROBQTMw2poKczkg='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'"
+    />
+    <!-- prettier-ignore -->
+    <script>
+      (function () {
+        try {
+          var k = "open3dcalc_theme";
+          var s = window.localStorage.getItem(k);
+          var t =
+            s === "light" || s === "dark"
+              ? s
+              : window.matchMedia &&
+                  window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark";
+          var d = document.documentElement;
+          d.classList.add(t);
+          d.classList.remove(t === "dark" ? "light" : "dark");
+          d.setAttribute("color-scheme", t);
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>Open3DCalc</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="description" content="Open3DCalc - Calculadora de custos de impressão 3D" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'" />
+    <meta
+      name="description"
+      content="Open3DCalc - Calculadora de custos de impressão 3D"
+    />
   </head>
   <body>
     <div id="root"></div>

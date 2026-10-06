@@ -110,10 +110,7 @@ describe("StudioLayout demo export feedback", () => {
       });
 
       const root = container.firstElementChild;
-      expect(root).toHaveClass(
-        "bg-[var(--color-bg-primary)]",
-        "text-[var(--color-text-primary)]",
-      );
+      expect(root).toHaveClass("bg-surface-canvas", "text-text-primary");
       expect(screen.getByRole("main")).toHaveClass(
         "pb-24",
         "sm:pb-24",

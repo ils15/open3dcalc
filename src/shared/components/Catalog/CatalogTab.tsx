@@ -220,6 +220,13 @@ export function CatalogTab() {
             {t("catalog.subtitle")}
           </p>
         </div>
+        {/*
+         VIS-003(a) — `flex-wrap` so the three stat chips reflow instead of
+         pushing the page wide. Measured at 390px: this row was 294px inside a
+         242px column and reached x=420, making the document 420px wide on the
+         Cadastros destination even after the shell and the dock were fixed. The
+         chips were already token-driven; only the layout was at fault.
+         */}
         <div className="flex flex-wrap gap-2 text-xs">
           <span className="px-3 py-1.5 rounded-[6px] bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
             {stats.printers} {t("catalog.printers")}
@@ -233,6 +240,17 @@ export function CatalogTab() {
         </div>
       </div>
 
+      {/*
+         VIS-004 — the fee tabs were uneven and clipped at 390px.
+
+         Measured before: 83 / 61 / 92px. `flex-1` alone does not equalise them,
+         because a flex item defaults to `min-width: auto` and therefore cannot
+         shrink below its longest label. On the 390px layout, the collapsed
+         sidebar leaves too little room for three legible labels in one row.
+         `grid-cols-1` gives each tab the full row on mobile; `sm:grid-cols-3`
+         restores equal-width columns once the content area can fit the labels.
+         `whitespace-nowrap` keeps each label uncut.
+         */}
       <div
         className="surface grid grid-cols-1 gap-2 rounded-xl p-2 sm:grid-cols-3"
         role="tablist"
@@ -244,7 +262,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-printers"
           onClick={() => setSection("printers")}
           onKeyDown={(e) => handleTabKeyDown(e, "printers")}
-          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "printers" ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "printers" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.printers")}
         </button>
@@ -254,7 +272,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-materials"
           onClick={() => setSection("materials")}
           onKeyDown={(e) => handleTabKeyDown(e, "materials")}
-          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "materials" ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "materials" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.materials")}
         </button>
@@ -264,7 +282,7 @@ export function CatalogTab() {
           aria-controls="tabpanel-marketplaces"
           onClick={() => setSection("marketplaces")}
           onKeyDown={(e) => handleTabKeyDown(e, "marketplaces")}
-          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "marketplaces" ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "marketplaces" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
         >
           {t("catalog.marketplaces")}
         </button>
@@ -1416,7 +1434,7 @@ function MaterialManager() {
           <button
             type="button"
             onClick={add}
-            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)] font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
             {t("catalog.save")}
           </button>
@@ -1585,7 +1603,7 @@ function MarketplaceManager() {
           <button
             type="button"
             onClick={add}
-            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+            className="w-full py-3 rounded-xl bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)] font-semibold hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           >
             {t("catalog.save")}
           </button>

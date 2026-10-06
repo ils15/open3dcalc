@@ -110,7 +110,7 @@ export const StudioSubHeader: React.FC<StudioSubHeaderProps> = ({
   ];
 
   return (
-    <div className="h-11 bg-[#0c101d] border-b border-[#1c2438] px-4 flex items-center justify-between text-xs select-none sticky top-12 z-30">
+    <div className="h-11 bg-surface-raised border-b border-border-subtle px-4 flex items-center justify-between text-xs select-none sticky top-12 z-30">
       {/* Left: Primary tabs & Mode selector */}
       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {primaryTabs.map((t) => {

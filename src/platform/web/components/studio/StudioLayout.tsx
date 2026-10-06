@@ -124,7 +124,40 @@ export const StudioLayout: React.FC = () => {
   }, [focusMode]);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex flex-col font-sans selection:bg-[var(--color-accent-muted)] selection:text-[var(--color-text-primary)]">
+    /* SHELL SURFACE (Track 1). This root was `bg-[#080c14] text-slate-100` —
+       a hardcoded dark-only palette. That is the app's outer surface on web, so
+       in light mode every token-driven component below (tutorial, dialogs,
+       Select, Toast, Privacy) flipped to light INSIDE a near-black shell: the
+       "dark mode mixing with light mode" report.
+
+       The two `--accent-fill*` utilities are written in the ARBITRARY-VALUE
+       form on purpose. `--color-accent-fill` and `--color-accent-fill-fg` exist
+       only in the runtime alias layer of tokens.css and are NOT declared in
+       `@theme inline`, so a bare `bg-accent-fill` / `text-accent-fill-fg`
+       generates NO CSS at all: the browser then falls back to the inherited
+       value and `selection:text-accent-fill-fg` silently leaves selected text
+       on `--color-text-primary`. Verified absent from both shipped bundles.
+       `tailwindUtilitiesResolve.test.ts` now asserts that every token-driven
+       colour utility used in src/ actually resolves against `@theme`, so this
+       cannot recur.
+
+       `selection:*` uses `--color-accent-fill`, NOT `--color-accent`. Both are
+       #4f46e5 in light mode, but `--color-accent` flips to #818cf8 in dark —
+       a foreground-weight colour that reaches only 2.98:1 with white ink, i.e.
+       a WCAG failure. `--color-accent-fill` is non-flipping, so the selection
+       pair measures 6.29:1 in BOTH themes. Same rule the token layer already
+       states for the `--*-fill` family: when the background is fixed, the ink
+       must be fixed too.
+
+       Deliberately NOT tokenized here: the eight *view* components
+       (StudioDashboardView, StudioCalculatorView, StudioQuotesView,
+       StudioProductsView, StudioSpoolView, StudioHistoryView,
+       StudioCustomerView, StudioPrinterView) and the inline catalog/infill
+       panels in this file keep their hardcoded dark palette. That is a separate
+       epic. This boundary is asserted by studioShellTheme.test.ts — including
+       that the list above stays complete against the directory — so "the
+       Studio shell is tokenized" is never read as "the Studio is tokenized". */
+    <div className="min-h-screen bg-surface-canvas text-text-primary flex flex-col font-sans selection:bg-[var(--color-accent-fill)] selection:text-[var(--color-accent-fill-fg)]">
       {/* Global guard feedback must survive focus mode, which removes the chrome. */}
       <DemoExportBlockedToast focusMode={focusMode} />
 
@@ -178,15 +211,20 @@ export const StudioLayout: React.FC = () => {
         <main
           className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${needsCockpitBottomInset ? "pb-24 sm:pb-24 lg:pb-24" : ""} ${focusMode ? "max-w-7xl mx-auto" : ""}`}
         >
-          {/* Focus mode exit banner */}
+          {/* Focus mode exit banner. The exit button uses the arbitrary-value
+              form for `--accent-fill*` — see the note on the shell root: those
+              tokens are not in `@theme inline`, so the bare utilities generate
+              no CSS and the button loses its fill entirely (this is what C1
+              caught). The comment lives out here because `{focusMode && ( … )}`
+              is an expression, and JSX comments are not allowed inside one. */}
           {focusMode && (
-            <div className="mb-4 flex items-center justify-between p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/40 text-xs">
-              <span className="text-purple-300 font-semibold">
+            <div className="mb-4 flex items-center justify-between p-2.5 rounded-xl bg-accent-subtle border border-accent/40 text-xs">
+              <span className="text-accent font-semibold">
                 Modo Foco Ativo • Visualização maximizada para produção
               </span>
               <button
                 onClick={() => setFocusMode(false)}
-                className="px-3 py-1 rounded-lg bg-purple-600 hover:ring-2 hover:ring-purple-500/40 text-white font-bold"
+                className="px-3 py-1 rounded-lg bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] font-bold"
               >
                 Sair do Modo Foco (Esc)
               </button>

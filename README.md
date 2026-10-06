@@ -129,6 +129,73 @@ padrão (embutida no app) e uma parte personalizada (persistida por usuário):
 
 ---
 
+## 🌓 Invariantes do tema: a classe decide, não o sistema operacional
+
+O tema vive em **uma chave e uma classe**: `localStorage['open3dcalc_theme']` e uma
+classe `dark`/`light` no `<html>`, escritas por `src/shared/hooks/useTheme.ts`
+(`initTheme()` roda antes do primeiro `render()`). Quatro invariantes
+aparentemente óbvias quebram a aplicação silenciosamente se forem movidas —
+nenhuma delas falha em build, e todas já custaram um incidente.
+
+**1. `dark:` segue a CLASSE, não `prefers-color-scheme`.** O Tailwind v4 amarra
+`dark:` a `@media (prefers-color-scheme: dark)` por padrão, que é um segundo
+interruptor independente do que o app usa: quem escolheu **claro** num SO escuro
+recebia todas as utilidades `dark:`, e quem escolheu **escuro** num SO claro não
+recebia nenhuma. O desvinculo é
+`@custom-variant dark (&:where(.dark, .dark *));` em `src/styles/tokens.css`, e
+ela fica **imediatamente antes do bloco `@theme inline`** — não no topo do
+arquivo. Motivo: os guards de token de `src/shared/__tests__` leem o arquivo com
+um scanner chapado de blocos (`/([^{}]*)\{([^{}]*)\}/`), e uma at-rule sem
+chaves acima do `:root` é lida como parte do **seletor** dele; a string passa a
+começar com `@custom-variant`, não casa nem com `:root` nem com `.dark`, e a
+**paleta clara inteira desaparece** da cascata que os testes reconstroem —
+transformando toda medição de tema claro em "irresolvível" em vez de falha.
+
+**2. `.light` é âncora na camada de ÁLIAS, não na paleta.** `applyTheme()` adiciona
+`.light` no `<html>` a cada render em tema claro, e antes disso **nada** casava
+com essa classe. A âncora entra no bloco `:root` de aliases (o que os
+componentes consomem via `var(--color-*)`) e **não** no bloco de paleta, pelo
+mesmo motivo do scanner: `tokenInBlock(css, ":root", …)` usa `/:root\s*{/`, que
+só casa quando `{` vem logo depois de `:root` — escrever `:root, .light` na
+paleta faz a regex cair no bloco de alias e medir as declarações erradas.
+
+**3. Utilidade de cor "pelada" só é gerada a partir de `@theme`.** O Tailwind só
+sintetiza `bg-accent-fill` a partir de uma entrada em `@theme`, e
+`--color-accent-fill` / `--color-accent-fill-fg` existem **apenas** na camada de
+álias em tempo de execução — nunca em `@theme inline`. A forma pelada portanto
+**não gera CSS nenhum**: o elemento cai no valor herdado. Foi assim que o botão
+de saída do Focus Mode perdeu o preenchimento e `selection:text-accent-fill-fg`
+deixou o texto selecionado herdar `--color-text-primary` (2,82:1 no tema claro).
+Use a forma arbitrária: `bg-[var(--color-accent-fill)]`,
+`text-[var(--color-accent-fill-fg)]`. `tailwindUtilitiesResolve.test.ts` exige
+que **toda** utilidade de cor usada em `src/` exista em `@theme` ou na paleta
+nativa, e falha se alguma não resolver.
+
+**4. A CSP de produção é `script-src 'self'` — o script anti-FOUC é inline e
+precisa de hash, e o `<meta>` da CSP precisa ficar ACIMA dele.** O
+`index.web.html` e o `index.desktop.html` trazem um `<script>` inline que lê
+`localStorage['open3dcalc_theme']` e aplica a classe antes do primeiro paint
+(sem ele, `initTheme()` só roda no eval do módulo, depois do CSS). Duas
+consequências, ambas verificadas por build:
+
+- a CSP de produção **não** tem `'unsafe-inline'` (só o dev a relaxa, via
+  `apply: "serve"` nos configs do Vite), então o script inline precisa de
+  `'sha256-…'` em `script-src`, senão ele é descartado em produção enquanto
+  continua parecendo correto no código;
+- um `<meta http-equiv="Content-Security-Policy">` vale **só para o que é
+  parseado depois dele** — ele não é retroativo. Com o script **acima** do meta,
+  ele fica isento da política, o `sha256-…` é decorativo, e um hash errado
+  continua executando. `studioShellTheme.test.ts` verifica o hash **e** a ordem
+  dos dois, porque só o hash não pega isso.
+
+Consequência colateral que vale registrar: `selection:*` usa
+`--color-accent-fill`, **não** `--color-accent`. As duas valem `#4f46e5` no tema
+claro, mas `--color-accent` vira `#818cf8` no escuro — uma cor de peso de
+foreground que só chega a 2,98:1 com tinta branca. O par de seleção mede 6,29:1
+nos **dois** temas.
+
+---
+
 ## 🏗️ Project Structure
 
 ```
