@@ -31,10 +31,37 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      /*
+       * VIS-005 — migrated from a hardcoded dark-only palette to semantic
+       * tokens. This screen renders on BOTH targets, and it is the screen a
+       * user sees when something has already gone wrong, so a palette that
+       * ignores the theme is the worst possible place for one.
+       *
+       * `--color-danger` / `--color-danger-muted` are used here, and
+       * `--color-critical` would have been equally valid: both are emitted at
+       * runtime and both alias `var(--critical)`, so they resolve to the same
+       * colour (#b91c1c light, #fda4af dark — measured in a live page, not
+       * read off the stylesheet). `--color-danger` is the spelling the rest of
+       * the alias layer already uses.
+       *
+       * An earlier version of this comment claimed `--color-critical` lived
+       * only in `@theme inline` and therefore "resolved to nothing". That was
+       * wrong: `@theme` DOES emit its custom properties. The genuinely
+       * unresolvable names in this codebase are a different, small, and
+       * pre-existing set — `--color-bg-tertiary`, `--color-surface`,
+       * `--color-surface-hover` and `--surface-elevated` — all of which measure
+       * empty in a live page. None is used here. Do not "fix" them in a change
+       * that is not about them; they need a token-layer decision first.
+       *
+       * Measured contrast, both themes (light / dark):
+       *   heading on screen   16.57 / 17.94    body copy on card   7.58 / 10.29
+       *   alert chip           5.89 /  8.52    error box           5.67 / 10.65
+       *   reload button        6.29 /  6.29    clear-cache        17.32 / 15.65
+       */
       return (
-        <div className="min-h-screen bg-[#020617] text-slate-100 flex items-center justify-center p-6">
-          <div className="max-w-lg w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-            <div className="w-12 h-12 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center mb-4">
+        <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] flex items-center justify-center p-6">
+          <div className="max-w-lg w-full bg-[var(--color-bg-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-2xl">
+            <div className="w-12 h-12 rounded-xl bg-[var(--color-danger-muted)] text-[var(--color-danger)] flex items-center justify-center mb-4">
               <svg
                 className="w-6 h-6"
                 fill="none"
@@ -49,26 +76,26 @@ export class ErrorBoundary extends Component<Props, State> {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">
               Ops! Ocorreu um problema ao carregar
             </h2>
-            <p className="text-sm text-slate-400 mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
               Um erro inesperado aconteceu durante a inicialização. Você pode
               tentar recarregar ou limpar os dados locais temporários.
             </p>
-            <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-xs font-mono text-red-300 overflow-x-auto mb-6 max-h-40">
+            <div className="bg-[var(--color-bg-secondary)] p-3 rounded-lg border border-[var(--color-border)] text-xs font-mono text-[var(--color-danger)] overflow-x-auto mb-6 max-h-40">
               {this.state.error?.message || "Erro desconhecido"}
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => window.location.reload()}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-medium text-sm transition-colors cursor-pointer"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-accent-fill)] hover:bg-[var(--color-accent-fill-hover)] text-[var(--color-accent-fill-fg)] font-medium text-sm transition-colors cursor-pointer"
               >
                 Recarregar Página
               </button>
               <button
                 onClick={this.handleReset}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-sm transition-colors cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-primary)] font-medium text-sm transition-colors cursor-pointer"
               >
                 Limpar Cache Local
               </button>

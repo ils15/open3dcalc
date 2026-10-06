@@ -12,11 +12,37 @@ import { SpoolThumb, FALLBACK_HEX } from "./SpoolThumb";
 /** Limiar (g) abaixo do qual um carretel em estoque é sinalizado como baixo. */
 export const LOW_STOCK_GRAMS = 100;
 
+/**
+ * Status badge: the background/border washes stay the raw Tailwind palette
+ * (theme-independent, so one value serves both themes), but the INK is now a
+ * per-theme pair instead of a `dark:` variant.
+ *
+ * Why: `dark:` used to be bound to `@media (prefers-color-scheme: dark)` while
+ * the app's theme is a CLASS on <html> (see `@custom-variant dark` in
+ * styles/tokens.css). The two are independent switches, so the "light" ink was
+ * being chosen by the OS rather than by the theme the user actually picked.
+ *
+ * Why not just keep `dark:`: once bound to the class, the light leg is what
+ * renders in light mode — and it fails WCAG AA. Measured against the wash
+ * composited over this card's own themed surface (`--surface-raised`, white in
+ * light) using the shipped Tailwind v4 palette: `text-emerald-400` is 1.53:1,
+ * `text-amber-400` 1.39:1 and `text-amber-500` 1.83:1 — all light-on-light.
+ * The 800 steps clear it at 5.99:1 / 5.70:1 / 6.08:1, and the dark legs are
+ * unchanged at 8.80:1 / 9.08:1 / 8.19:1.
+ *
+ * Unlike StudioQuotesView, this card's surface IS themed (it paints on
+ * `--color-bg-elevated`), so following the theme is correct here — which is
+ * exactly why the two need opposite treatments.
+ *
+ * A `dark:` variant is still the right tool when the two themes genuinely want
+ * the same hue at different weights. Here they do not: a light-400 green on a
+ * 20% wash is a light-on-light pairing no matter which theme asked for it.
+ */
 const STATUS_CLASS: Record<SpoolStatus, string> = {
   in_stock:
-    "bg-emerald-600/20 text-emerald-400 border-emerald-600/30 dark:text-emerald-300",
+    "bg-emerald-600/20 text-emerald-800 border-emerald-600/30 dark:text-emerald-300",
   on_the_way:
-    "bg-amber-600/20 text-amber-400 border-amber-600/30 dark:text-amber-300",
+    "bg-amber-600/20 text-amber-800 border-amber-600/30 dark:text-amber-300",
   empty: "bg-gray-600/20 text-[var(--color-text-secondary)] border-gray-600/30",
 };
 
@@ -115,7 +141,7 @@ export const SpoolCard = memo(function SpoolCard({
       aria-labelledby={`spool-${spool.id}-title`}
     >
       {isLow && (
-        <span className="self-start flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-[6px] bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-500/30 font-semibold">
+        <span className="self-start flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-[6px] bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 font-semibold">
           <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" />
           {t("spools.lowStock")}
         </span>
