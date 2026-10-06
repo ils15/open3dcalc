@@ -58,8 +58,8 @@ import { resolve } from "node:path";
  *     (`SlicerOptimizationProfile`, `SLICER_OPTIMIZATION_PROFILES`,
  *     `SlicerOptimizationAnalysis`, `analyzeSlicerParameters`) has an importer
  *     anywhere in src. Migrating unrendered code is churn, not progress, so it
- *     is floored and reported instead. Same disposition as the dead
- *     `platform/desktop/overrides/theme-persistence.ts`.
+ *     is floored and reported instead — the same dead-on-arrival disposition
+ *     as the desktop theme-persistence override removed in PR #275.
  *
  * SCOPE
  * `src/shared/**`, `src/platform/web/components/studio/**`, `src/utils/**`

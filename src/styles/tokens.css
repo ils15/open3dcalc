@@ -22,10 +22,9 @@
  * `dark:` utility does not outrank the unprefixed utility it modifies.
  *
  * This MUST be declared before the `@theme inline` block at the foot of this
- * file, which is where Tailwind resolves utility definitions. Verified with
- * @tailwindcss/cli: declaring it first vs. immediately above `@theme inline`
- * produces byte-identical utility output, because `@custom-variant` registers
- * a variant rather than consuming one.
+ * file, which is where Tailwind resolves utility definitions. Position
+ * equivalence verified only indirectly (token guards' cascade reconstruction
+ * + full suite); `@tailwindcss/cli` is not installed here.
  *
  * It is NOT placed at the very top, and that is load-bearing. The token
  * guards in src/shared/__tests__ read this file with a flat
