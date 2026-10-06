@@ -489,8 +489,22 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
     <div className="flex flex-col lg:flex-row gap-6 text-slate-100 max-w-full pb-20 items-start">
       {/* Left Sub-nav & Main Form */}
       <div className="flex-1 min-w-0 flex flex-col md:flex-row gap-4 w-full">
-        {/* Sub-Nav menu */}
-        <div className="w-full md:w-36 shrink-0 bg-[#0c111e] border border-[#1b253b] rounded-xl p-2.5 flex flex-row md:flex-col gap-1 select-none">
+        {/* Sub-Nav menu.
+            LAYOUT-ONLY FIX (VIS-003a), deliberately touching nothing else in
+            this file: the deferred colour epic owns this component's palette
+            and none of its literals were altered.
+
+            On mobile this is a horizontal row of five `whitespace-nowrap`
+            buttons (~665px of content in a ~326px column), and with no overflow
+            handling the row escaped its column by ~340px. That was the single
+            largest contributor to the page being 628px wide at a 390px
+            viewport — the dock and the fee tabs were smaller.
+
+            `overflow-x-auto` makes this box the scroll container so the pills
+            scroll inside it, exactly as the sub-header tab strip already does;
+            `md:` restores the original vertical column, where five short labels
+            fit without scrolling. */}
+        <div className="w-full md:w-36 shrink-0 overflow-x-auto bg-[#0c111e] border border-[#1b253b] rounded-xl p-2.5 flex flex-row md:flex-col gap-1 select-none">
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 px-2 py-1 hidden md:block">
             FORMULÁRIO
           </span>

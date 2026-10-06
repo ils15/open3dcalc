@@ -116,19 +116,23 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   };
 
   return (
-    <header className="h-12 bg-[#090d16] border-b border-[#1b2438] px-4 flex items-center justify-between text-xs select-none sticky top-0 z-40">
-      {/* Left: Breadcrumbs */}
-      <div className="flex items-center gap-2 text-slate-300">
+    <header className="h-12 bg-surface-raised border-b border-border-subtle px-4 flex items-center justify-between text-xs select-none sticky top-0 z-40">
+      {/* Left: Breadcrumbs.
+          `min-w-0` + `truncate` so this group can yield the 6px it used to
+          overflow at 390px (measured scrollWidth 396 vs clientWidth 390): as a
+          flex item it defaulted to `min-width: auto`, so the breadcrumb refused
+          to shrink and pushed the header wider than the viewport. */}
+      <div className="flex items-center gap-2 min-w-0 text-slate-300">
         <button
           onClick={() => onTabChange("calculator")}
-          className="flex items-center gap-1.5 hover:text-white transition-colors"
+          className="flex items-center gap-1.5 hover:text-white transition-colors shrink-0"
         >
           <span className="text-slate-400 font-medium">Oficina 3D</span>
         </button>
-        <ChevronRight className="w-3 h-3 text-slate-600" />
-        <div className="flex items-center gap-1.5 font-semibold text-slate-100">
+        <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />
+        <div className="flex items-center gap-1.5 font-semibold text-slate-100 min-w-0">
           {breadcrumb.icon}
-          <span>{breadcrumb.title}</span>
+          <span className="truncate">{breadcrumb.title}</span>
         </div>
         <span className="text-slate-600 hidden md:inline">|</span>
         <span className="text-slate-400 hidden md:inline truncate max-w-[320px] 2xl:max-w-md">
@@ -144,8 +148,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <span className="text-slate-500">Studio</span>
       </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-2">
+      {/* Right: Actions. `shrink-0` keeps these at their natural size so the
+          breadcrumb is what gives way when the header is tight. */}
+      <div className="flex items-center gap-2 shrink-0">
         {/* Template selector ONLY visible in Demo Mode */}
         {isDemoMode && (
           <div className="hidden sm:flex items-center gap-1 bg-[#151226] border border-purple-500/40 rounded-lg p-0.5 text-xs">

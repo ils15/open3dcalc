@@ -38,10 +38,25 @@ interface StudioQuotesViewProps {
 
 type FeedbackTone = "positive" | "warning" | "critical";
 
+/**
+ * Status ink for a FIXED dark surface. Was `var(--color-positive)` /
+ * `--color-warning` / `--color-critical`, which are FOREGROUND tokens that flip
+ * per theme — but the card they sit on is `bg-[#0c111e]` in BOTH themes, so in
+ * light mode they landed light inks on a near-black surface at 3.44:1 /
+ * 2.66:1 / 2.91:1, under the 4.5:1 AA floor.
+ *
+ * `--color-*-ink-dark` is the dark-surface ink and is deliberately
+ * theme-INDEPENDENT for the same reason the `--*-fill` tokens are: the
+ * background is theme-independent, so the ink has to be too. Measured on
+ * #0c111e: 9.80:1 / 11.29:1 / 9.96:1. See the token notes in styles/tokens.css.
+ */
 const FEEDBACK_CLASS: Record<FeedbackTone, string> = {
-  positive: "border-[var(--color-positive)]/40 text-[var(--color-positive)]",
-  warning: "border-[var(--color-warning)]/40 text-[var(--color-warning)]",
-  critical: "border-[var(--color-critical)]/40 text-[var(--color-critical)]",
+  positive:
+    "border-[var(--color-positive-ink-dark)]/40 text-[var(--color-positive-ink-dark)]",
+  warning:
+    "border-[var(--color-warning-ink-dark)]/40 text-[var(--color-warning-ink-dark)]",
+  critical:
+    "border-[var(--color-critical-ink-dark)]/40 text-[var(--color-critical-ink-dark)]",
 };
 
 const STATUS_CONFIG: Record<

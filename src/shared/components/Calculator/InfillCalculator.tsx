@@ -75,8 +75,24 @@ export function InfillCalculator() {
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
-        <div className="surface rounded-xl p-6 sm:p-7 space-y-4">
+      {/*
+           VIS-003(a) — `grid-cols-1` + `min-w-0` on the cards.
+
+           With no explicit `grid-cols-*`, the implicit track is `auto`, which
+           sizes to MAX-content and may exceed its container. Measured at 390px:
+           this grid is 244px wide but computed
+           `grid-template-columns: 316px`, so both cards were laid out at 316px
+           and the document became 421px wide. Neither the `lg:` two-column
+           definition nor any single child explained it — removing any one
+           element changed the page width by at most 4px, because the track
+           itself was already oversized.
+
+           `grid-cols-1` is `minmax(0, 1fr)`, a FLEXIBLE track that can shrink
+           below its content, and `min-w-0` lets the cards accept that width.
+           Desktop is unchanged: `lg:grid-cols-[…]` still overrides from 1024px.
+         */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
+        <div className="surface rounded-xl p-6 sm:p-7 space-y-4 min-w-0">
           <div className="text-sm sm:text-[15px] font-semibold text-[var(--color-text-primary)]">
             {t("infillCalculator.dimensions")}
           </div>
@@ -177,8 +193,9 @@ export function InfillCalculator() {
             </div>
           </div>
 
-          {/* Comparison Table */}
-          <div className="surface rounded-xl p-6 sm:p-7">
+          {/* Comparison Table. `min-w-0` with the note above: the table below is wide,
+              and without this the card holds the grid track open. */}
+          <div className="surface rounded-xl p-6 sm:p-7 min-w-0">
             <h3 className="text-sm sm:text-[15px] font-bold text-[var(--color-text-primary)] mb-3">
               {t("infillCalculator.comparison")}
             </h3>
