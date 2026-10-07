@@ -7,7 +7,7 @@ vi.mock("./StudioSidebar", () => ({
   StudioSidebar: ({
     onTabChange,
   }: {
-    onTabChange: (tab: "catalog" | "marketplace") => void;
+    onTabChange: (tab: "catalog" | "marketplace" | "privacy") => void;
   }) => (
     <nav>
       <button type="button" onClick={() => onTabChange("catalog")}>
@@ -15,6 +15,9 @@ vi.mock("./StudioSidebar", () => ({
       </button>
       <button type="button" onClick={() => onTabChange("marketplace")}>
         Select Marketplace
+      </button>
+      <button type="button" onClick={() => onTabChange("privacy")}>
+        Select Privacidade
       </button>
     </nav>
   ),
@@ -99,11 +102,24 @@ describe("StudioLayout demo export feedback", () => {
   });
 
   it.each([
-    { route: "catalog", control: "Select Cadastros" },
-    { route: "marketplace", control: "Select Marketplace" },
+    {
+      route: "catalog",
+      control: "Select Cadastros",
+      clearanceClasses: ["pb-24", "sm:pb-24", "lg:pb-24"],
+    },
+    {
+      route: "marketplace",
+      control: "Select Marketplace",
+      clearanceClasses: ["pb-24", "sm:pb-24", "lg:pb-24"],
+    },
+    {
+      route: "privacy",
+      control: "Select Privacidade",
+      clearanceClasses: ["pb-24", "sm:pb-0"],
+    },
   ])(
     "uses theme surfaces and reserves dock clearance for $route",
-    ({ control }) => {
+    ({ control, clearanceClasses, route }) => {
       const { container } = render(<StudioLayout />);
       act(() => {
         fireEvent.click(screen.getByRole("button", { name: control }));
@@ -111,11 +127,11 @@ describe("StudioLayout demo export feedback", () => {
 
       const root = container.firstElementChild;
       expect(root).toHaveClass("bg-surface-canvas", "text-text-primary");
-      expect(screen.getByRole("main")).toHaveClass(
-        "pb-24",
-        "sm:pb-24",
-        "lg:pb-24",
-      );
+      const main = screen.getByRole("main");
+      expect(main).toHaveClass(...clearanceClasses);
+      if (route === "privacy") {
+        expect(main).not.toHaveClass("lg:pb-24");
+      }
     },
   );
 

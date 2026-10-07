@@ -45,6 +45,7 @@ import {
 import { zeroizeSessionPassphrase } from "@/shared/lib/crypto/passphraseSession";
 import { PII_STORE_ENVIRONMENT } from "@/shared/lib/crypto/__tests__/piiStoreFixtures";
 import { createFakeIndexedDb } from "@/shared/test/fakeIndexedDb";
+import * as legacyPiiRehome from "@/shared/lib/migration/legacyPiiRehome";
 
 const CUSTOMERS = "open3dcalc_customers_v1";
 const PASS = "senha-sintetica-acesso-4242";
@@ -114,6 +115,7 @@ describe("T3.3 — PiiLockedShell", () => {
     resetPiiStoreHydrationForTests();
     window.localStorage.clear();
     zeroizeSessionPassphrase();
+    vi.restoreAllMocks();
   });
 
   it("renders a labelled create form for a fresh, locked, capable vault", async () => {
@@ -221,6 +223,10 @@ describe("T3.3 — PiiLockedShell", () => {
   });
 
   it("creates the passphrase and rehydrates when both fields match", async () => {
+    const rehome = vi.spyOn(
+      legacyPiiRehome,
+      "migrateLegacyPlaintextPiiToVault",
+    );
     renderShell();
     await screen.findByLabelText(CONFIRM_LABEL);
 
@@ -230,6 +236,7 @@ describe("T3.3 — PiiLockedShell", () => {
 
     await waitFor(() => expect(container).toBeEmptyDOMElement());
     expect(getPiiStoreAccessState()).toEqual({ status: "hydrated" });
+    expect(rehome).not.toHaveBeenCalled();
     // Memory-only: the passphrase never reaches localStorage.
     expect(window.localStorage.length).toBe(0);
   });

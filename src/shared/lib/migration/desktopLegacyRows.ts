@@ -1,58 +1,118 @@
 /**
- * Renderer-side source of the DESKTOP legacy PII residue (Beta5 desktop
- * re-home).
- *
- * The web re-home reads the residue from `localStorage`. On desktop the
- * `persistence-bridge` deliberately never hydrates the three migrated PII keys,
- * so `localStorage` holds none of it: the residue lives in SQLite `storage`
- * rows and reaches the renderer through the READ-ONLY `privacy:legacy-rows` IPC
- * (see `electron/legacyRows.ts`).
- *
- * This module is the thin adapter between that IPC contract and the re-home's
- * `read` function. It is deliberately NOT where PII is written: it returns the
- * values in memory so the caller can copy them into the encrypted vault. The
- * values are never persisted here — the persistence bridge refuses these keys,
- * and the vault is the only destination.
- *
- * A refused or failed IPC read resolves to `null` ("no desktop source"), never a
- * throw: a storage problem must not turn an unlock into an error, and the caller
- * then falls back to the (empty) `localStorage` source and reports honestly.
+ * Read-only, renderer-side classification of the Desktop legacy PII source.
+ * A missing/disabled bridge is not evidence that legacy rows are absent.
  */
 
+import { LEGACY_PII_PLAINTEXT_KEYS } from "@/shared/lib/legacyPiiPlaintext";
 import type { LegacyPiiPlaintextKey } from "@/shared/lib/legacyPiiPlaintext";
-import type { LegacyPiiRowsReport } from "../../../../electron/legacyRows.js";
+import type {
+  LegacyPiiRowsReport,
+  LegacyPiiRowStatus,
+} from "../../../../electron/legacyRows.js";
 
 /** Key NAME → raw legacy value, for the declared keys that have one. */
 export type LegacyPiiRowMap = Partial<Record<LegacyPiiPlaintextKey, string>>;
 
+export type DesktopLegacyPiiRowsResult =
+  | { status: "not_applicable" }
+  | { status: "unavailable" }
+  | { status: "absent"; rows: LegacyPiiRowMap }
+  | { status: "available"; rows: LegacyPiiRowMap };
+
+const ROW_STATUSES: readonly LegacyPiiRowStatus[] = [
+  "legacy_plaintext",
+  "already_encrypted",
+  "absent",
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Renderer user agents include Electron when this is the Desktop target. */
+export function isElectronRuntime(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    /\bElectron\//i.test(navigator.userAgent)
+  );
+}
+
+/** Validate the IPC payload before its values are trusted by inspection UI. */
+export function isLegacyPiiRowsReport(
+  report: unknown,
+): report is LegacyPiiRowsReport {
+  if (!isRecord(report) || typeof report.scannedAt !== "string") return false;
+  if (Number.isNaN(Date.parse(report.scannedAt))) return false;
+  if (
+    !Array.isArray(report.rows) ||
+    report.rows.length !== LEGACY_PII_PLAINTEXT_KEYS.length
+  ) {
+    return false;
+  }
+
+  const seen = new Set<string>();
+  return (
+    report.rows.every((candidate) => {
+      if (!isRecord(candidate)) return false;
+      const { key, value, status } = candidate;
+      if (
+        typeof key !== "string" ||
+        !LEGACY_PII_PLAINTEXT_KEYS.includes(key as LegacyPiiPlaintextKey) ||
+        seen.has(key) ||
+        !ROW_STATUSES.includes(status as LegacyPiiRowStatus)
+      ) {
+        return false;
+      }
+      seen.add(key);
+      return status === "legacy_plaintext"
+        ? typeof value === "string"
+        : value === null;
+    }) && LEGACY_PII_PLAINTEXT_KEYS.every((key) => seen.has(key))
+  );
+}
+
 /**
- * Map a `privacy:legacy-rows` report to the value map the re-home reads.
- *
- * Only rows that carry a value (`legacy_plaintext`) are kept; an
- * `already_encrypted` or `absent` row contributes nothing, so the merge can
- * never treat a ciphertext as residue.
+ * Map a validated report to its plaintext values. Non-plaintext rows never
+ * contribute values, even if a malformed caller bypasses runtime validation.
  */
 export function toLegacyPiiRowMap(
   report: LegacyPiiRowsReport,
 ): LegacyPiiRowMap {
   const map: LegacyPiiRowMap = {};
   for (const row of report.rows) {
-    if (row.value !== null) map[row.key] = row.value;
+    if (row.status === "legacy_plaintext" && typeof row.value === "string") {
+      map[row.key] = row.value;
+    }
   }
   return map;
 }
 
 /**
- * Fetch the desktop legacy rows over IPC, or `null` when there is no desktop
- * source (not Electron, the bridge lacks the method, or the read refused).
+ * Read the Desktop legacy source when explicitly requested by the user.
+ * `not_applicable` is reserved for a non-Electron runtime; all missing, disabled,
+ * rejected, or malformed Desktop bridge responses are `unavailable`.
  */
-export async function fetchDesktopLegacyPiiRows(): Promise<LegacyPiiRowMap | null> {
-  if (typeof window === "undefined") return null;
-  const privacy = window.electronAPI?.privacy;
-  if (typeof privacy?.legacyRows !== "function") return null;
+export async function fetchDesktopLegacyPiiRows(): Promise<DesktopLegacyPiiRowsResult> {
+  if (typeof window === "undefined") return { status: "not_applicable" };
+
   try {
-    return toLegacyPiiRowMap(await privacy.legacyRows());
+    const electronAPI = window.electronAPI;
+    if (!electronAPI) {
+      return isElectronRuntime()
+        ? { status: "unavailable" }
+        : { status: "not_applicable" };
+    }
+
+    const legacyRows = electronAPI.privacy?.legacyRows;
+    if (typeof legacyRows !== "function") return { status: "unavailable" };
+
+    const report: unknown = await legacyRows();
+    if (!isLegacyPiiRowsReport(report)) return { status: "unavailable" };
+    const rows = toLegacyPiiRowMap(report);
+    return Object.keys(rows).length === 0
+      ? { status: "absent", rows }
+      : { status: "available", rows };
   } catch {
-    return null;
+    return { status: "unavailable" };
   }
 }

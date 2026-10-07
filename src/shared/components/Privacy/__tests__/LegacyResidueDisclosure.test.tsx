@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import type { LegacyPiiDisclosure } from "@/shared/lib/migration/legacyPiiDisclosure";
 import { LEGACY_PII_REHOME_MARKER_KEY } from "@/shared/lib/migration/legacyPiiRehome";
@@ -243,42 +243,116 @@ describe("LegacyResidueDisclosure — drift (T4.6, value-free)", () => {
 });
 
 describe("LegacyResidueDisclosure — default derivation", () => {
-  it("derives its own disclosure when none is injected", () => {
-    // No throw and a labelled region: the default path installs the capability
-    // snapshot and reads through the gate without a DOM-backed vault.
+  it("waits for an explicit user action before inspecting legacy data", () => {
+    const legacyRows = vi.fn();
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: { legacyRows },
+    };
     render(<LegacyResidueDisclosure />);
     expect(
       screen.getByRole("region", { name: "privacy.residue.title" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "privacy.residue.inspect" }),
+    ).toBeInTheDocument();
+    expect(legacyRows).not.toHaveBeenCalled();
   });
 
-  it("discloses the DESKTOP residue read over IPC", async () => {
-    // The bridge never hydrates the three PII keys, so the residue is in SQLite
-    // and only the read-only IPC answers. The panel must show it, key name and
-    // count only.
+  it("discloses the DESKTOP residue only after an explicit inspection", async () => {
+    const legacyRows = vi.fn(async () => ({
+      scannedAt: new Date().toISOString(),
+      rows: [
+        {
+          key: "open3dcalc_customers_v1",
+          value: JSON.stringify({
+            state: { customers: [{ id: "a" }, { id: "b" }] },
+          }),
+          status: "legacy_plaintext",
+        },
+        { key: "open3dcalc_quotes_v1", value: null, status: "absent" },
+        { key: "open3dcalc_history_v2", value: null, status: "absent" },
+      ],
+    }));
     (window as unknown as { electronAPI: unknown }).electronAPI = {
-      privacy: {
-        legacyRows: async () => ({
-          scannedAt: new Date().toISOString(),
-          rows: [
-            {
-              key: "open3dcalc_customers_v1",
-              value: JSON.stringify({
-                state: { customers: [{ id: "a" }, { id: "b" }] },
-              }),
-              status: "legacy_plaintext",
-            },
-          ],
-        }),
-      },
+      privacy: { legacyRows },
     };
     try {
       render(<LegacyResidueDisclosure />);
+      expect(legacyRows).not.toHaveBeenCalled();
+      fireEvent.click(
+        screen.getByRole("button", { name: "privacy.residue.inspect" }),
+      );
       await waitFor(() =>
         expect(screen.getByText(/open3dcalc_customers_v1/)).toBeInTheDocument(),
       );
+      expect(legacyRows).toHaveBeenCalledTimes(1);
     } finally {
       delete (window as { electronAPI?: unknown }).electronAPI;
+    }
+  });
+
+  it("reports unavailable after an IPC failure without showing an absence claim", async () => {
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: { legacyRows: async () => Promise.reject(new Error("refused")) },
+    };
+    try {
+      render(<LegacyResidueDisclosure />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "privacy.residue.inspect" }),
+      );
+      expect(
+        await screen.findByText("privacy.residue.inspectionUnavailable"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText("privacy.residue.residueNone"),
+      ).not.toBeInTheDocument();
+    } finally {
+      delete (window as { electronAPI?: unknown }).electronAPI;
+    }
+  });
+
+  it("states that Desktop inspection is unavailable and never calls its disabled route", async () => {
+    const originalUserAgent = navigator.userAgent;
+    const legacyRows = vi.fn();
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 Electron/36.0.0",
+    });
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: { legacyRows },
+    };
+    window.localStorage.setItem(
+      "open3dcalc_customers_v1",
+      JSON.stringify({ state: { customers: [{ id: "local-only" }] } }),
+    );
+    window.localStorage.setItem("open3dcalc_legacy_pii_rehomed_v1", "done");
+
+    try {
+      render(<LegacyResidueDisclosure />);
+      expect(
+        screen.getByText("privacy.residue.inspectionDesktopUnavailable"),
+      ).toBeInTheDocument();
+      fireEvent.click(
+        screen.getByRole("button", { name: "privacy.residue.inspectLocal" }),
+      );
+      expect(
+        await screen.findByText("privacy.residue.inspectionUnavailable"),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/open3dcalc_customers_v1/)).toBeInTheDocument();
+      expect(
+        screen.queryByText("privacy.residue.rehomeMigrated"),
+      ).not.toBeInTheDocument();
+      expect(legacyRows).not.toHaveBeenCalled();
+      expect(
+        screen.queryByText("privacy.residue.residueNone"),
+      ).not.toBeInTheDocument();
+    } finally {
+      Object.defineProperty(navigator, "userAgent", {
+        configurable: true,
+        value: originalUserAgent,
+      });
+      delete (window as { electronAPI?: unknown }).electronAPI;
+      window.localStorage.clear();
     }
   });
 });

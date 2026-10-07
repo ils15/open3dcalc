@@ -50,8 +50,8 @@
  * read-only `privacy:legacy-rows` IPC and the rest of the contract — consent,
  * fail-closed vault check, copy-without-delete, verify-before-complete,
  * idempotency — is unchanged. When the sync `read` finds no residue and
- * `fetchLegacy` is absent the injected default reads the desktop rows; on the
- * web that default resolves to `null` and the `localStorage` path is untouched.
+ * `fetchLegacy` is absent the default classifies the Desktop source; on the web
+ * it reports `not_applicable` and leaves the `localStorage` path untouched.
  */
 
 import { guardedStorage } from "@/shared/lib/manifestStorage";
@@ -61,6 +61,7 @@ import {
 } from "@/shared/lib/legacyPiiPlaintext";
 import {
   fetchDesktopLegacyPiiRows,
+  type DesktopLegacyPiiRowsResult,
   type LegacyPiiRowMap,
 } from "@/shared/lib/migration/desktopLegacyRows";
 import {
@@ -133,8 +134,8 @@ export interface LegacyPiiRehomeOptions {
    * Async source of the legacy residue, consulted ONLY when the sync `read`
    * finds none. This is the DESKTOP source: the residue is in SQLite rows the
    * persistence bridge never hydrates, so it must be fetched over IPC. Defaults
-   * to the read-only `privacy:legacy-rows` reader, which resolves to `null` on
-   * the web — so the browser path is unchanged.
+   * to the read-only `privacy:legacy-rows` reader, which reports
+   * `not_applicable` on the web — so the browser path is unchanged.
    */
   fetchLegacy?: () => Promise<LegacyPiiRowMap | null>;
 }
@@ -265,9 +266,8 @@ async function vaultHolds(
  * The web path wins whenever the sync `read` finds residue: that data is the
  * user's, in `localStorage`, and there is no reason to touch IPC. Only when the
  * sync read finds NOTHING is the async source consulted — the desktop case,
- * where the residue is in SQLite. A `null` (or throwing) async source means
- * "no desktop source", so the sync reader is returned unchanged and the caller
- * reports `no_residue` honestly.
+ * where the residue is in SQLite. A rejected or unavailable desktop read is
+ * not evidence of absence and is surfaced as an incomplete attempt.
  */
 async function resolveLegacyRead(
   localRead: (key: string) => string | null,
@@ -275,12 +275,21 @@ async function resolveLegacyRead(
 ): Promise<(key: string) => string | null> {
   if (detectLegacyPlaintextPii(localRead).present) return localRead;
 
-  const fetch = fetchLegacy ?? fetchDesktopLegacyPiiRows;
   let rows: LegacyPiiRowMap | null = null;
-  try {
-    rows = await fetch();
-  } catch {
-    rows = null;
+  if (fetchLegacy) {
+    rows = await fetchLegacy();
+  } else {
+    let source: DesktopLegacyPiiRowsResult;
+    try {
+      source = await fetchDesktopLegacyPiiRows();
+    } catch {
+      throw new Error("Desktop legacy source unavailable");
+    }
+    if (source.status === "unavailable") {
+      throw new Error("Desktop legacy source unavailable");
+    }
+    if (source.status === "not_applicable") return localRead;
+    rows = source.rows;
   }
   if (!rows) return localRead;
   return (key) => rows[key as LegacyPiiPlaintextKey] ?? localRead(key);
@@ -302,7 +311,12 @@ export async function migrateLegacyPlaintextPiiToVault(
 
   const localRead =
     options.read ?? ((key: string) => guardedStorage.getItem(key));
-  const read = await resolveLegacyRead(localRead, options.fetchLegacy);
+  let read: (key: string) => string | null;
+  try {
+    read = await resolveLegacyRead(localRead, options.fetchLegacy);
+  } catch {
+    return rehomeResult("incomplete");
+  }
 
   const report = detectLegacyPlaintextPii(read);
   if (!report.present) return rehomeResult("no_residue");

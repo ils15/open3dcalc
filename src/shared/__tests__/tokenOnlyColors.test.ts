@@ -12,7 +12,7 @@ import { resolve } from "node:path";
  * whole branch exists to fix ("modo escuro ta misturando com modo claro").
  *
  * WHY THIS IS A FLOOR AND NOT A ZERO ASSERTION
- * The epic is NOT finished — 2936 occurrences remain across 70 files. A guard
+ * The epic is NOT finished — 2924 occurrences remain across 70 files. A guard
  * that asserted zero would be red on arrival and would block every pull request
  * until someone finished an epic that is explicitly out of scope here. So this
  * file pins the CURRENT inventory per file and fails on any DEVIATION from it:
@@ -163,7 +163,7 @@ function measuredDebt(): Map<string, number> {
 const measured = measuredDebt();
 
 /**
- * THE FLOOR — the audited inventory, 2026-10-06, 70 files / 2936 occurrences.
+ * THE FLOOR — the audited inventory, 2026-10-07, 70 files / 2924 occurrences.
  *
  * Regenerate after an intentional migration:
  *   node -e '...' (see the PR description) or re-derive with the same regex.
@@ -192,7 +192,7 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/platform/web/components/studio/StudioCopilotModal.tsx": 32,
   "src/shared/components/SpoolShelf/SpoolCard.tsx": 28,
   "src/shared/components/Results/CostDistributionBars.tsx": 26,
-  "src/shared/components/Privacy/PrivacyScreen.tsx": 23,
+  "src/shared/components/Privacy/PrivacyScreen.tsx": 11,
   "src/shared/components/Calculator/QuoteSection.tsx": 22,
   "src/platform/web/components/studio/StudioShortcutsModal.tsx": 20,
   "src/shared/components/Calculator/surfaces/BentoSurface.tsx": 20,
@@ -302,7 +302,7 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
     expect(files).toBe(70);
-    expect(occurrences).toBe(2936);
+    expect(occurrences).toBe(2924);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

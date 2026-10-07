@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,16 +10,16 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import {
-  getLegacyPiiDisclosure,
   type HistoryMarkerState,
   type LegacyPiiDisclosure,
   type RehomeDisclosureState,
 } from "@/shared/lib/migration/legacyPiiDisclosure";
+import type { PiiVaultAccessState } from "@/shared/lib/crypto/piiStoreHydration";
 import {
-  installPiiStoreRuntimeEnvironment,
-  type PiiVaultAccessState,
-} from "@/shared/lib/crypto/piiStoreHydration";
-import { useLegacyPiiDisclosure } from "@/shared/hooks/useLegacyPiiDisclosure";
+  useLegacyPiiDisclosure,
+  type LegacyPiiInspectionStatus,
+} from "@/shared/hooks/useLegacyPiiDisclosure";
+import { isElectronRuntime } from "@/shared/lib/migration/desktopLegacyRows";
 
 /**
  * T5.3 — the honest, value-free legacy-residue disclosure panel.
@@ -68,27 +68,35 @@ export interface LegacyResidueDisclosureProps {
   disclosure?: LegacyPiiDisclosure;
 }
 
-function deriveLiveDisclosure(): LegacyPiiDisclosure {
-  // Install the capability snapshot before the first read, or a capable
-  // browser would report `capability_unknown` and read as unavailable.
-  installPiiStoreRuntimeEnvironment();
-  return getLegacyPiiDisclosure();
-}
-
 export function LegacyResidueDisclosure({
   disclosure,
 }: LegacyResidueDisclosureProps = {}): ReactElement {
   const { t } = useTranslation();
-  // Desktop-aware live derivation: the hook merges the SQLite legacy rows
-  // (read-only, over IPC) over `localStorage`. It is disabled when a caller
-  // injects its own disclosure, so an injected value never triggers a live read.
-  const live = useLegacyPiiDisclosure(disclosure === undefined);
-  const data = useMemo(
-    () => disclosure ?? live ?? deriveLiveDisclosure(),
-    [disclosure, live],
+  const [inspectionRequested, setInspectionRequested] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const desktopRuntime = isElectronRuntime();
+  const inspection = useLegacyPiiDisclosure(
+    disclosure === undefined && inspectionRequested,
+    revision,
   );
+  const data = disclosure ?? inspection.disclosure;
 
-  const presentKeys = data.residue.keys.filter((entry) => entry.present);
+  const presentKeys = data?.residue.keys.filter((entry) => entry.present) ?? [];
+  const inspectionLabelKeys: Record<
+    Exclude<LegacyPiiInspectionStatus, "not_inspected" | "loading">,
+    string
+  > = {
+    not_applicable: "privacy.residue.inspectionNotApplicable",
+    absent: "privacy.residue.inspectionAbsent",
+    available: "privacy.residue.inspectionAvailable",
+    partial: "privacy.residue.inspectionPartial",
+    unavailable: "privacy.residue.inspectionUnavailable",
+  };
+
+  function inspect(): void {
+    setInspectionRequested(true);
+    setRevision((current) => current + 1);
+  }
 
   return (
     <section
@@ -111,121 +119,175 @@ export function LegacyResidueDisclosure({
         {t("privacy.residue.subtitle")}
       </p>
 
-      {/* (a) plaintext residue — key NAMES + counts only */}
-      <div className="space-y-1">
-        <p className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-          <Database className="w-3.5 h-3.5 text-amber-400" aria-hidden="true" />
-          {t("privacy.residue.residueHeading")}
-        </p>
-        {presentKeys.length === 0 ? (
-          <p className="text-xs text-[var(--color-text-secondary)]">
-            {t("privacy.residue.residueNone")}
-          </p>
-        ) : (
-          <>
-            <p className="text-xs text-[var(--color-text-secondary)]">
-              {t("privacy.residue.residueTotal", {
-                count: data.residue.total,
-              })}
+      {disclosure === undefined && (
+        <div className="flex flex-wrap items-center gap-3">
+          {desktopRuntime && (
+            <p className="text-xs text-[var(--color-warning)]">
+              {t("privacy.residue.inspectionDesktopUnavailable")}
             </p>
-            <ul className="text-xs text-[var(--color-text-secondary)] space-y-0.5">
-              {presentKeys.map((entry) => (
-                <li key={entry.key}>
-                  {t("privacy.residue.residueKey", {
-                    key: entry.key,
-                    count: entry.count,
-                  })}
-                </li>
-              ))}
-            </ul>
-            <p className="text-[11px] text-[var(--color-text-muted)]">
-              {t("privacy.residue.residueKeptNote")}
-            </p>
-          </>
-        )}
-      </div>
-
-      {/* (b) vault access state */}
-      <div className="space-y-1">
-        <p className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-          <HardDrive
-            className="w-3.5 h-3.5 text-[var(--color-accent)]"
-            aria-hidden="true"
-          />
-          {t("privacy.residue.vaultHeading")}
-        </p>
-        <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
-          {data.vault.status === "locked" && (
-            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
           )}
-          {t(VAULT_LABEL_KEYS[data.vault.status])}
-        </p>
-        {data.vault.status === "unavailable" && (
-          <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
-            {t("privacy.residue.vaultUnavailableDetail", {
-              reason: data.vault.reason,
-            })}
-          </p>
-        )}
-      </div>
-
-      {/* (c) re-home state */}
-      <div className="space-y-1">
-        <p className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-          <History
-            className="w-3.5 h-3.5 text-[var(--color-accent)]"
-            aria-hidden="true"
-          />
-          {t("privacy.residue.rehomeHeading")}
-        </p>
-        <p className="text-xs text-[var(--color-text-secondary)]">
-          {t(REHOME_LABEL_KEYS[data.rehome.state])}
-        </p>
-        <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
-          {t("privacy.residue.markerNote", { key: data.rehome.markerKey })}
-        </p>
-      </div>
-
-      {/* (c cont.) history-migration marker state */}
-      <div className="space-y-1">
-        <p className="text-xs font-semibold text-[var(--color-text-primary)]">
-          {t("privacy.residue.historyHeading")}
-        </p>
-        <p className="text-xs text-[var(--color-text-secondary)]">
-          {t(HISTORY_LABEL_KEYS[data.historyMarker.state])}
-        </p>
-        <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
-          {t("privacy.residue.markerNote", {
-            key: data.historyMarker.markerKey,
-          })}
-        </p>
-        {data.historyMarker.legacyPlaintextResidue && (
-          <p className="text-[11px] text-[var(--color-warning)]">
-            {t("privacy.residue.legacyMarkerPlaintext", {
-              key: data.historyMarker.markerKey,
-            })}
-          </p>
-        )}
-      </div>
-
-      {/* T4.6 — value-free drift: the legacy source changed after the commit */}
-      {data.drift?.detected && (
-        <div className="space-y-1" role="status">
-          <p className="text-xs font-semibold text-[var(--color-warning)] flex items-center gap-2">
-            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-            {t("privacy.residue.driftHeading")}
-          </p>
-          <p className="text-xs text-[var(--color-text-secondary)]">
-            {t("privacy.residue.driftWarning", {
-              sources: data.drift.sources.join(", "),
-            })}
-          </p>
+          <button
+            type="button"
+            onClick={inspect}
+            disabled={inspection.status === "loading"}
+            className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
+          >
+            {desktopRuntime
+              ? t(
+                  inspectionRequested
+                    ? "privacy.residue.inspectLocalAgain"
+                    : "privacy.residue.inspectLocal",
+                )
+              : t(
+                  inspectionRequested
+                    ? "privacy.residue.inspectAgain"
+                    : "privacy.residue.inspect",
+                )}
+          </button>
+          {inspection.status === "loading" ? (
+            <p role="status" className="text-xs text-[var(--color-text-muted)]">
+              {t("privacy.residue.inspectionLoading")}
+            </p>
+          ) : inspection.status !== "not_inspected" ? (
+            <p
+              role="status"
+              className="text-xs text-[var(--color-text-secondary)]"
+            >
+              {t(inspectionLabelKeys[inspection.status])}
+            </p>
+          ) : null}
         </div>
       )}
 
-      <p className="text-[11px] text-[var(--color-text-muted)]">
-        {t("privacy.residue.valueFreeNote")}
-      </p>
+      {data !== null && (
+        <div className="space-y-3">
+          {/* (a) plaintext residue — key NAMES + counts only */}
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
+              <Database
+                className="w-3.5 h-3.5 text-amber-400"
+                aria-hidden="true"
+              />
+              {t("privacy.residue.residueHeading")}
+            </p>
+            {presentKeys.length === 0 && inspection.status !== "unavailable" ? (
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {t("privacy.residue.residueNone")}
+              </p>
+            ) : presentKeys.length > 0 ? (
+              <>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  {t("privacy.residue.residueTotal", {
+                    count: data.residue.total,
+                  })}
+                </p>
+                <ul className="text-xs text-[var(--color-text-secondary)] space-y-0.5">
+                  {presentKeys.map((entry) => (
+                    <li key={entry.key}>
+                      {t("privacy.residue.residueKey", {
+                        key: entry.key,
+                        count: entry.count,
+                      })}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[11px] text-[var(--color-text-muted)]">
+                  {t("privacy.residue.residueKeptNote")}
+                </p>
+              </>
+            ) : null}
+          </div>
+
+          {/* Local markers cannot establish a combined Desktop profile state. */}
+          {inspection.status !== "unavailable" && (
+            <>
+              {/* (b) vault access state */}
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
+                  <HardDrive
+                    className="w-3.5 h-3.5 text-[var(--color-accent)]"
+                    aria-hidden="true"
+                  />
+                  {t("privacy.residue.vaultHeading")}
+                </p>
+                <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
+                  {data.vault.status === "locked" && (
+                    <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                  )}
+                  {t(VAULT_LABEL_KEYS[data.vault.status])}
+                </p>
+                {data.vault.status === "unavailable" && (
+                  <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
+                    {t("privacy.residue.vaultUnavailableDetail", {
+                      reason: data.vault.reason,
+                    })}
+                  </p>
+                )}
+              </div>
+
+              {/* (c) re-home state */}
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
+                  <History
+                    className="w-3.5 h-3.5 text-[var(--color-accent)]"
+                    aria-hidden="true"
+                  />
+                  {t("privacy.residue.rehomeHeading")}
+                </p>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  {t(REHOME_LABEL_KEYS[data.rehome.state])}
+                </p>
+                <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
+                  {t("privacy.residue.markerNote", {
+                    key: data.rehome.markerKey,
+                  })}
+                </p>
+              </div>
+
+              {/* (c cont.) history-migration marker state */}
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-[var(--color-text-primary)]">
+                  {t("privacy.residue.historyHeading")}
+                </p>
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  {t(HISTORY_LABEL_KEYS[data.historyMarker.state])}
+                </p>
+                <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
+                  {t("privacy.residue.markerNote", {
+                    key: data.historyMarker.markerKey,
+                  })}
+                </p>
+                {data.historyMarker.legacyPlaintextResidue && (
+                  <p className="text-[11px] text-[var(--color-warning)]">
+                    {t("privacy.residue.legacyMarkerPlaintext", {
+                      key: data.historyMarker.markerKey,
+                    })}
+                  </p>
+                )}
+              </div>
+
+              {/* T4.6 — value-free drift: the legacy source changed after the commit */}
+              {data.drift?.detected && (
+                <div className="space-y-1" role="status">
+                  <p className="text-xs font-semibold text-[var(--color-warning)] flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+                    {t("privacy.residue.driftHeading")}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    {t("privacy.residue.driftWarning", {
+                      sources: data.drift.sources.join(", "),
+                    })}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          <p className="text-[11px] text-[var(--color-text-muted)]">
+            {t("privacy.residue.valueFreeNote")}
+          </p>
+        </div>
+      )}
     </section>
   );
 }

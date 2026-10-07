@@ -429,7 +429,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
     expect(useCustomerStore.getState().customers).toHaveLength(2);
   });
 
-  it("reports no_residue when the IPC reader refuses (fail-closed, no throw)", async () => {
+  it("reports incomplete when the IPC reader refuses instead of claiming absence", async () => {
     (window as unknown as { electronAPI: unknown }).electronAPI = {
       privacy: { legacyRows: async () => Promise.reject(new Error("refused")) },
     };
@@ -438,7 +438,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
 
     const result = await migrateLegacyPlaintextPiiToVault();
 
-    expect(result.status).toBe("no_residue");
+    expect(result.status).toBe("incomplete");
     expect(
       window.localStorage.getItem(LEGACY_PII_REHOME_MARKER_KEY),
     ).toBeNull();

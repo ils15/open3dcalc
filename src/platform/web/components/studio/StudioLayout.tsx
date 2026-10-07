@@ -39,6 +39,7 @@ export const StudioLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("calculator");
   const needsCockpitBottomInset =
     activeTab === "catalog" || activeTab === "marketplace";
+  const needsMobilePrivacyBottomInset = activeTab === "privacy";
   // `layoutMode` is SHARED state, not local. It used to be a local `useState`,
   // which meant `useLayoutStore` kept reporting its `"classic"` default no matter
   // what the user picked here — so `useAppInit`'s first-visit tutorial guard
@@ -209,7 +210,7 @@ export const StudioLayout: React.FC = () => {
 
         {/* Main Content Area */}
         <main
-          className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${needsCockpitBottomInset ? "pb-24 sm:pb-24 lg:pb-24" : ""} ${focusMode ? "max-w-7xl mx-auto" : ""}`}
+          className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${needsCockpitBottomInset ? "pb-24 sm:pb-24 lg:pb-24" : needsMobilePrivacyBottomInset ? "pb-24 sm:pb-0" : ""} ${focusMode ? "max-w-7xl mx-auto" : ""}`}
         >
           {/* Focus mode exit banner. The exit button uses the arbitrary-value
               form for `--accent-fill*` — see the note on the shell root: those

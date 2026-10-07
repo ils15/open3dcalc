@@ -21,7 +21,6 @@ import {
   type PiiVaultAccessState,
 } from "@/shared/lib/crypto/piiStoreHydration";
 import type { PiiStoreDenialReason } from "@/shared/lib/crypto/piiStoreCapability";
-import { migrateLegacyPlaintextPiiToVault } from "@/shared/lib/migration/legacyPiiRehome";
 
 const VAULT_HINT_KEY = "open3dcalc_vault_hint";
 const PASSPHRASE_INPUT_ID = "pii-vault-passphrase";
@@ -37,12 +36,6 @@ function refusalCode(error: unknown): string {
 }
 
 type FormError = { kind: "mismatch" } | { kind: "unlock"; reason: string };
-
-function rehomeLegacyPii(): void {
-  void migrateLegacyPlaintextPiiToVault().catch(() => {
-    console.warn("[PiiLockedShell] legacy PII re-home did not complete");
-  });
-}
 
 export function PiiLockedShell(): ReactElement | null {
   const { t } = useTranslation();
@@ -77,7 +70,6 @@ export function PiiLockedShell(): ReactElement | null {
     let cancelled = false;
     void rehydratePiiStoresIfUnlocked().then((outcomes) => {
       if (cancelled || outcomes === null) return;
-      rehomeLegacyPii();
       const next = getPiiStoreAccessState();
       setAccess((current) => (current.status === next.status ? current : next));
     });
@@ -138,7 +130,6 @@ export function PiiLockedShell(): ReactElement | null {
       setConfirmation("");
       setPasswordHint("");
       setAccess(getPiiStoreAccessState());
-      rehomeLegacyPii();
     } catch (caught) {
       setPassphrase("");
       setConfirmation("");

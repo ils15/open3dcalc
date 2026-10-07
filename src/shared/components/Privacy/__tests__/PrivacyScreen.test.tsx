@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import enUS from "@/shared/i18n/locales/en-US.json";
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
@@ -16,6 +16,7 @@ const hoisted = vi.hoisted(() => ({
   quarantineReport: vi.fn(),
   migrateKey: vi.fn(),
   eliminateKey: vi.fn(),
+  erasureStart: vi.fn(),
   evaluateReceipt: vi.fn(),
   // `t` is the IDENTITY by default, because the specs above pin i18n KEYS and
   // a resolving `t` would rename every assertion in them. The SPEC-04 spec at
@@ -29,6 +30,10 @@ vi.mock("@/shared/lib/consentReceipt", async (importOriginal) => {
     await importOriginal<typeof import("@/shared/lib/consentReceipt")>();
   return { ...actual, evaluateReceipt: hoisted.evaluateReceipt };
 });
+
+vi.mock("@/shared/lib/erasureSaga/rendererSweep", () => ({
+  purgeRendererStores: vi.fn().mockResolvedValue({}),
+}));
 
 vi.mock("react-i18next", () => {
   const identity = (key: string, opts?: Record<string, unknown>) => {
@@ -50,15 +55,6 @@ vi.mock("react-i18next", () => {
   };
 });
 
-const baseReport = {
-  scannedAt: new Date().toISOString(),
-  entries: [
-    { key: "open3dcalc_quotes_v1", status: "quarantined", recordCount: 3 },
-    { key: "open3dcalc_settings_v2", status: "non_pii" },
-  ],
-  quarantinedKeys: ["open3dcalc_quotes_v1"],
-};
-
 function stubElectronApi(): void {
   vi.stubGlobal("electronAPI", {
     privacy: {
@@ -79,7 +75,13 @@ beforeEach(() => {
     currentPolicyHash: "sha256:synthetic",
     currentPolicyVersion: "2026.09",
   });
-  hoisted.quarantineReport.mockResolvedValue(baseReport);
+  hoisted.erasureStart.mockResolvedValue({
+    receipt: {
+      stores_completed: ["test-store"],
+      external_copies_notice: ["test-export"],
+    },
+    rolledBack: false,
+  });
   hoisted.migrateKey.mockResolvedValue({
     key: "open3dcalc_quotes_v1",
     migrated: true,
@@ -92,69 +94,18 @@ beforeEach(() => {
 });
 
 describe("PrivacyScreen (D1.1 S4)", () => {
-  it("renders quarantined keys with record counts and both exits", async () => {
+  it("shows unavailable without invoking disabled quarantine IPCs", async () => {
     stubElectronApi();
     render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(
-        screen.getAllByText(/quarantined|Quarantined/).length,
-      ).toBeGreaterThan(0),
-    );
     expect(
-      screen.getByText(/privacy.quarantine.records:3/),
+      await screen.findByText("privacy.quarantine.unavailable"),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "privacy.quarantine.migrate" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "privacy.quarantine.eliminate" }),
-    ).toBeInTheDocument();
-  });
-
-  it("migrate calls the IPC and refreshes the report", async () => {
-    stubElectronApi();
-    const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(hoisted.quarantineReport).toHaveBeenCalledTimes(1),
-    );
-    await user.click(
-      screen.getByRole("button", { name: "privacy.quarantine.migrate" }),
-    );
-    await waitFor(() => expect(hoisted.migrateKey).toHaveBeenCalled());
-    await waitFor(() =>
-      expect(hoisted.quarantineReport).toHaveBeenCalledTimes(2),
-    );
-  });
-
-  it("eliminate calls the IPC with the quarantined key", async () => {
-    stubElectronApi();
-    const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-    render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "privacy.quarantine.eliminate" }),
-      ),
-    );
-    await user.click(
-      screen.getByRole("button", { name: "privacy.quarantine.eliminate" }),
-    );
-    await waitFor(() =>
-      expect(hoisted.eliminateKey).toHaveBeenCalledWith("open3dcalc_quotes_v1"),
-    );
-  });
-
-  it("never renders quarantined values — metadata only", async () => {
-    stubElectronApi();
-    render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(
-        screen.getAllByText(/open3dcalc_quotes_v1/).length,
-      ).toBeGreaterThan(0),
-    );
-    expect(screen.queryByText(/Fernanda/)).not.toBeInTheDocument();
+      screen.queryByText("privacy.quarantine.noQuarantined"),
+    ).not.toBeInTheDocument();
+    expect(hoisted.quarantineReport).not.toHaveBeenCalled();
+    expect(hoisted.migrateKey).not.toHaveBeenCalled();
+    expect(hoisted.eliminateKey).not.toHaveBeenCalled();
   });
 
   it("shows the desktop-only notice on web (no electronAPI)", () => {
@@ -163,6 +114,59 @@ describe("PrivacyScreen (D1.1 S4)", () => {
       screen.getByText("privacy.quarantine.desktopOnly"),
     ).toBeInTheDocument();
     expect(hoisted.quarantineReport).not.toHaveBeenCalled();
+  });
+
+  it("reports unavailable when the quarantine bridge is missing", async () => {
+    const electronAPI = { privacy: {} };
+    Object.defineProperty(window, "electronAPI", {
+      configurable: true,
+      value: electronAPI,
+    });
+    render(<PrivacyScreen />);
+
+    expect(
+      await screen.findByText("privacy.quarantine.unavailable"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("privacy.quarantine.noQuarantined"),
+    ).not.toBeInTheDocument();
+    expect(hoisted.quarantineReport).not.toHaveBeenCalled();
+  });
+
+  it("does not invoke a present but disabled report IPC", async () => {
+    stubElectronApi();
+    hoisted.quarantineReport.mockRejectedValueOnce(new Error("disabled"));
+    render(<PrivacyScreen />);
+
+    expect(
+      await screen.findByText("privacy.quarantine.unavailable"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("privacy.quarantine.noQuarantined"),
+    ).not.toBeInTheDocument();
+    expect(hoisted.quarantineReport).not.toHaveBeenCalled();
+    expect(hoisted.migrateKey).not.toHaveBeenCalled();
+    expect(hoisted.eliminateKey).not.toHaveBeenCalled();
+  });
+
+  it("reports the returned deletion receipt without claiming every copy was erased", async () => {
+    vi.stubGlobal("electronAPI", {
+      erasure: { start: hoisted.erasureStart },
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<PrivacyScreen />);
+
+    await user.click(
+      screen.getByRole("button", { name: "privacy.erasure.button" }),
+    );
+
+    const done = await screen.findByText("privacy.erasure.done");
+    const report = done.closest('[role="status"]');
+    expect(report).not.toBeNull();
+    expect(report).toHaveTextContent("test-store");
+    expect(report).toHaveTextContent("test-export");
+    expect(hoisted.erasureStart).toHaveBeenCalledTimes(1);
   });
 
   it("discloses the legacy residue panel on web (no electronAPI)", () => {
@@ -175,55 +179,32 @@ describe("PrivacyScreen (D1.1 S4)", () => {
   it("discloses the legacy residue panel on desktop too", async () => {
     stubElectronApi();
     render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(hoisted.quarantineReport).toHaveBeenCalledTimes(1),
-    );
     expect(
       screen.getByRole("region", { name: "privacy.residue.title" }),
     ).toBeInTheDocument();
+    expect(hoisted.quarantineReport).not.toHaveBeenCalled();
   });
 });
 
-/**
- * L-2 — the way back to the legacy-migration choice. When a keep-read-only
- * decision is stored the screen must disclose it and offer to reopen the
- * choice, because the prompt no longer asks while the residue is unchanged.
- */
-describe("PrivacyScreen (L-2) — reopen the keep-read-only choice", () => {
+describe("PrivacyScreen — automatic migration choice stays unavailable", () => {
   afterEach(() => {
     useLegacyKeepReadOnlyStore.setState({ signature: null });
   });
 
-  it("offers a way back to the choice when a decision is stored", () => {
+  it("does not offer an inert reopen control when migration choices are disabled", () => {
     useLegacyKeepReadOnlyStore.setState({
       signature: "open3dcalc_customers_v1=1",
     });
     render(<PrivacyScreen />);
 
     expect(
-      screen.getByText("privacy.migration.keepReadOnlyTitle"),
-    ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", {
+      screen.queryByRole("button", {
         name: "privacy.migration.keepReadOnlyReopen",
       }),
+    ).not.toBeInTheDocument();
+    expect(useLegacyKeepReadOnlyStore.getState().signature).toBe(
+      "open3dcalc_customers_v1=1",
     );
-
-    expect(useLegacyKeepReadOnlyStore.getState().signature).toBeNull();
-    expect(
-      screen.queryByRole("button", {
-        name: "privacy.migration.keepReadOnlyReopen",
-      }),
-    ).toBeNull();
-  });
-
-  it("renders no control when no decision is stored", () => {
-    render(<PrivacyScreen />);
-    expect(
-      screen.queryByRole("button", {
-        name: "privacy.migration.keepReadOnlyReopen",
-      }),
-    ).toBeNull();
   });
 });
 
@@ -354,6 +335,60 @@ describe("PrivacyScreen (SPEC-04) — the consent receipt block resolves real co
       }
       // And the block is not reading the ConsentModal namespace either.
       expect(container.textContent).not.toContain(dict.privacy.consent.title);
+    },
+  );
+
+  it.each([
+    [
+      "pt-BR",
+      ptBR,
+      {
+        description:
+          "Remove todos os seus dados de todas as superfícies de armazenamento do aplicativo (banco de dados, arquivos, caches e backups internos), de forma verificável e com recibo. Pacotes de exportação que você salvou fora do app não são alcançáveis.",
+        done: "O processo de exclusão retornou um recibo. Ele informa os armazenamentos processados, mas não verifica se todas as cópias foram removidas.",
+        confirm:
+          "Apagar TODOS os seus dados? Um snapshot criptografado permite reverter por até 7 dias em caso de falha. Depois de concluído, a remoção é definitiva. Continuar?",
+        failed:
+          "O processo de exclusão informou uma falha. Não foi possível confirmar o estado final; revise seus dados antes de tentar novamente.",
+        processedStores: "Armazenamentos informados como processados:",
+        withdrawConfirm:
+          "Retirar o consentimento? Os dados coletados sob essa permissão serão apagados conforme a política (SPEC-04 §6) e os recursos afetados serão bloqueados.",
+        section8Lgpd:
+          "Em conformidade com o Art. 18 da LGPD (direito à portabilidade dos dados), você pode exportar seus dados a qualquer momento e importá-los em outro dispositivo.",
+      },
+    ],
+    [
+      "en-US",
+      enUS,
+      {
+        description:
+          "Removes all your data from every app storage surface (database, files, caches and internal backups), verifiably and with a receipt. Export packages you saved outside the app are out of reach.",
+        done: "The deletion process returned a receipt. It reports stores processed but does not verify that every copy was removed.",
+        confirm:
+          "Delete ALL your data? An encrypted snapshot allows rollback for up to 7 days in case of failure. Once committed, removal is permanent. Continue?",
+        failed:
+          "The deletion process reported a failure. The final state could not be confirmed; review your data before trying again.",
+        processedStores: "Stores reported as processed:",
+        withdrawConfirm:
+          "Withdraw consent? Data collected under it will be erased per policy (SPEC-04 §6) and the affected features will be blocked.",
+        section8Lgpd:
+          "In compliance with LGPD Art. 18 (right to data portability), you can export your data at any time and import it on another device.",
+      },
+    ],
+  ] as const)(
+    "keeps policy copy unchanged and uses operational deletion status copy in %s",
+    (_locale, dict, expected) => {
+      expect(dict.privacy.erasure.description).toBe(expected.description);
+      expect(dict.privacy.erasure.done).toBe(expected.done);
+      expect(dict.privacy.erasure.confirm).toBe(expected.confirm);
+      expect(dict.privacy.erasure.failed).toBe(expected.failed);
+      expect(dict.privacy.erasure.processedStores).toBe(
+        expected.processedStores,
+      );
+      expect(dict.privacy.consent_receipt.withdrawConfirm).toBe(
+        expected.withdrawConfirm,
+      );
+      expect(dict.privacy.policy.section8Lgpd).toBe(expected.section8Lgpd);
     },
   );
 });

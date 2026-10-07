@@ -1,86 +1,129 @@
-/**
- * Residue source for the legacy-PII surfaces, desktop-aware.
- *
- * The web residue lives in `localStorage` and is read SYNCHRONOUSLY. On desktop
- * the persistence bridge never hydrates the three migrated PII keys, so the
- * residue is in SQLite and only reachable asynchronously through the read-only
- * `privacy:legacy-rows` IPC. A surface that only read `localStorage` would show
- * nothing on desktop: no prompt, and no residue in the disclosure panel — which
- * is exactly the "retained but invisible" defect the re-home closes.
- *
- * These hooks bridge the two: they start from the sync `localStorage` reader
- * (so the web behaviour and every existing test are unchanged) and, when a
- * desktop source answers, merge the fetched values in. The merge NEVER writes
- * anything and never persists PII — it only feeds detection and the re-home's
- * read path.
- */
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  detectLegacyPlaintextPii,
-  type LegacyPiiPlaintextReport,
-} from "@/shared/lib/legacyPiiPlaintext";
-import type { LegacyPiiPlaintextKey } from "@/shared/lib/legacyPiiPlaintext";
+  getLegacyPiiDisclosure,
+  type LegacyPiiDisclosure,
+} from "@/shared/lib/migration/legacyPiiDisclosure";
+import { LEGACY_PII_PLAINTEXT_KEYS } from "@/shared/lib/legacyPiiPlaintext";
+import { installPiiStoreRuntimeEnvironment } from "@/shared/lib/crypto/piiStoreHydration";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import {
   fetchDesktopLegacyPiiRows,
+  isElectronRuntime,
+  type DesktopLegacyPiiRowsResult,
   type LegacyPiiRowMap,
 } from "@/shared/lib/migration/desktopLegacyRows";
 
-/** A sync reader of a raw storage value, the shape the detection half takes. */
-export type LegacyPiiRead = (key: string) => string | null;
+export type LegacyPiiInspectionStatus =
+  | "not_inspected"
+  | "loading"
+  | "not_applicable"
+  | "absent"
+  | "available"
+  | "partial"
+  | "unavailable";
 
-/**
- * Merge the desktop rows over a local reader.
- *
- * A desktop value wins for a key it carries; every other key falls through to
- * the local reader. `null` rows means "no desktop source", so the local reader
- * is returned unchanged.
- */
+export interface LegacyPiiInspection {
+  status: LegacyPiiInspectionStatus;
+  disclosure: LegacyPiiDisclosure | null;
+}
+
+interface InspectionState extends LegacyPiiInspection {
+  revision: number;
+}
+
+/** Merge validated Desktop rows over the local legacy source without losing local evidence. */
 export function mergeLegacyPiiRead(
-  localRead: LegacyPiiRead,
+  localRead: (key: string) => string | null,
   rows: LegacyPiiRowMap | null,
-): LegacyPiiRead {
+): (key: string) => string | null {
   if (!rows) return localRead;
-  return (key) => rows[key as LegacyPiiPlaintextKey] ?? localRead(key);
+  return (key) => {
+    if (
+      LEGACY_PII_PLAINTEXT_KEYS.includes(
+        key as (typeof LEGACY_PII_PLAINTEXT_KEYS)[number],
+      )
+    ) {
+      return rows[key as keyof LegacyPiiRowMap] ?? localRead(key);
+    }
+    return localRead(key);
+  };
+}
+
+function isUnavailable(
+  source: DesktopLegacyPiiRowsResult,
+): source is { status: "unavailable" } {
+  return source.status === "unavailable";
 }
 
 /**
- * Fetch the desktop residue once per mount. Returns `null` until it answers (and
- * forever on the web), so the first render is the sync-only view.
+ * Inspect legacy values only after a caller explicitly enables the hook.
+ * Desktop row inspection is disabled in this build, so Desktop runtimes inspect
+ * only local evidence and report the combined profile as unavailable.
  */
-function useDesktopLegacyRows(enabled: boolean): LegacyPiiRowMap | null {
-  const [rows, setRows] = useState<LegacyPiiRowMap | null>(null);
+export function useLegacyPiiDisclosure(
+  enabled = false,
+  revision = 0,
+): LegacyPiiInspection {
+  const [inspection, setInspection] = useState<InspectionState>({
+    status: "not_inspected",
+    disclosure: null,
+    revision: -1,
+  });
+
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    void fetchDesktopLegacyPiiRows().then((fetched) => {
-      if (!cancelled && fetched) setRows(fetched);
-    });
+
+    void (async () => {
+      const source: DesktopLegacyPiiRowsResult = isElectronRuntime()
+        ? { status: "unavailable" }
+        : await fetchDesktopLegacyPiiRows();
+      if (cancelled) return;
+
+      try {
+        installPiiStoreRuntimeEnvironment();
+        const localRead = (key: string): string | null =>
+          guardedStorage.getItem(key);
+        if (isUnavailable(source)) {
+          const localDisclosure = getLegacyPiiDisclosure({ read: localRead });
+          setInspection({
+            status: "unavailable",
+            disclosure: localDisclosure,
+            revision,
+          });
+          return;
+        }
+
+        const rows =
+          source.status === "available" || source.status === "absent"
+            ? source.rows
+            : null;
+        const disclosure = getLegacyPiiDisclosure({
+          read: mergeLegacyPiiRead(localRead, rows),
+        });
+        const status =
+          source.status === "not_applicable"
+            ? "not_applicable"
+            : source.status === "available" || disclosure.residue.present
+              ? "available"
+              : "absent";
+        setInspection({ status, disclosure, revision });
+      } catch {
+        setInspection({
+          status: "unavailable",
+          disclosure: null,
+          revision,
+        });
+      }
+    })();
+
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
-  return rows;
-}
+  }, [enabled, revision]);
 
-/**
- * The reader a residue surface should use right now: the desktop rows merged
- * over `localStorage`. Stable across renders until the desktop rows arrive.
- */
-export function useLegacyPiiRead(enabled = true): LegacyPiiRead {
-  const rows = useDesktopLegacyRows(enabled);
-  return useMemo(
-    () => mergeLegacyPiiRead((key) => guardedStorage.getItem(key), rows),
-    [rows],
-  );
-}
-
-/** The value-free residue report, desktop-aware. */
-export function useLegacyPiiResidue(enabled = true): LegacyPiiPlaintextReport {
-  const read = useLegacyPiiRead(enabled);
-  return useMemo(
-    () => detectLegacyPlaintextPii(enabled ? read : undefined),
-    [enabled, read],
-  );
+  if (enabled && inspection.revision !== revision) {
+    return { status: "loading", disclosure: null };
+  }
+  return inspection;
 }

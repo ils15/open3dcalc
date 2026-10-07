@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Calculator,
@@ -50,6 +51,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   onCurrencyChange,
   modules,
 }) => {
+  const { t } = useTranslation();
   const allModules: StudioModule[] = [
     {
       id: "calculator" as Tab,
@@ -305,6 +307,12 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
         <button
           type="button"
           onClick={onToggleCollapse}
+          aria-label={
+            collapsed
+              ? t("results.sidebar.expand")
+              : t("results.sidebar.collapse")
+          }
+          aria-expanded={!collapsed}
           className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-[#121828] border border-slate-800 transition-colors"
         >
           {collapsed ? (

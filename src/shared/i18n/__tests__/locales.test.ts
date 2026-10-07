@@ -714,6 +714,17 @@ describe("i18n locales (privacy.migration.*) — T5.2 choice dialog", () => {
 const RESIDUE_KEYS = [
   "title",
   "subtitle",
+  "inspect",
+  "inspectAgain",
+  "inspectLocal",
+  "inspectLocalAgain",
+  "inspectionLoading",
+  "inspectionNotApplicable",
+  "inspectionDesktopUnavailable",
+  "inspectionAbsent",
+  "inspectionAvailable",
+  "inspectionPartial",
+  "inspectionUnavailable",
   "residueHeading",
   "residueNone",
   "residueTotal",
@@ -865,4 +876,60 @@ describe("i18n locales — no hardcoded currency symbol (R$) in en-US", () => {
       [],
     );
   });
+});
+
+describe("i18n locales — privacy and consent policy copy remains unchanged", () => {
+  it.each([
+    [
+      "en-US",
+      enUS,
+      {
+        section8Lgpd:
+          "In compliance with LGPD Art. 18 (right to data portability), you can export your data at any time and import it on another device.",
+        quarantineSubtitle:
+          "Personal data written in plaintext by older versions is quarantined: readable, but blocked from new writes until you choose to migrate (encrypt) or eliminate it.",
+        erasureDescription:
+          "Removes all your data from every app storage surface (database, files, caches and internal backups), verifiably and with a receipt. Export packages you saved outside the app are out of reach.",
+        erasureConfirm:
+          "Delete ALL your data? An encrypted snapshot allows rollback for up to 7 days in case of failure. Once committed, removal is permanent. Continue?",
+        withdrawConfirm:
+          "Withdraw consent? Data collected under it will be erased per policy (SPEC-04 §6) and the affected features will be blocked.",
+      },
+    ],
+    [
+      "pt-BR",
+      ptBR,
+      {
+        section8Lgpd:
+          "Em conformidade com o Art. 18 da LGPD (direito à portabilidade dos dados), você pode exportar seus dados a qualquer momento e importá-los em outro dispositivo.",
+        quarantineSubtitle:
+          "Dados pessoais gravados em texto puro por versões antigas ficam em quarentena: legíveis, mas bloqueados para novas gravações até você escolher migrar (criptografar) ou eliminar.",
+        erasureDescription:
+          "Remove todos os seus dados de todas as superfícies de armazenamento do aplicativo (banco de dados, arquivos, caches e backups internos), de forma verificável e com recibo. Pacotes de exportação que você salvou fora do app não são alcançáveis.",
+        erasureConfirm:
+          "Apagar TODOS os seus dados? Um snapshot criptografado permite reverter por até 7 dias em caso de falha. Depois de concluído, a remoção é definitiva. Continuar?",
+        withdrawConfirm:
+          "Retirar o consentimento? Os dados coletados sob essa permissão serão apagados conforme a política (SPEC-04 §6) e os recursos afetados serão bloqueados.",
+      },
+    ],
+  ])(
+    "preserves the branch-base policy statements in %s",
+    (_locale, dict, copy) => {
+      expect(resolve(dict, ["privacy", "policy", "section8Lgpd"])).toBe(
+        copy.section8Lgpd,
+      );
+      expect(resolve(dict, ["privacy", "quarantine", "subtitle"])).toBe(
+        copy.quarantineSubtitle,
+      );
+      expect(resolve(dict, ["privacy", "erasure", "description"])).toBe(
+        copy.erasureDescription,
+      );
+      expect(resolve(dict, ["privacy", "erasure", "confirm"])).toBe(
+        copy.erasureConfirm,
+      );
+      expect(
+        resolve(dict, ["privacy", "consent_receipt", "withdrawConfirm"]),
+      ).toBe(copy.withdrawConfirm);
+    },
+  );
 });
