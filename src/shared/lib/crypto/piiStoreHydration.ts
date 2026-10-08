@@ -1,5 +1,6 @@
 /**
- * The hydration gate for the three migrated browser PII stores.
+ * Hydration lifecycle for the encrypted Desktop PII stores. Stable Web stores
+ * use the policy-approved synchronous localStorage adapter instead.
  *
  * ## Why a gate and not just `piiPersistStorage`
  *
@@ -7,7 +8,7 @@
  * `PiiStoreDeniedError`. That is necessary but not sufficient for the zustand
  * wiring, because zustand hydrates SYNCHRONOUSLY at store creation, at ES-module
  * evaluation time — before any React code, before the desktop bridge, and long
- * before a passphrase exists. The three stores therefore set
+ * before a passphrase exists. The encrypted Desktop stores therefore set
  * `skipHydration: true` and are rehydrated here, explicitly, after unlock.
  *
  * Two things are easy to get wrong without a single owner for that lifecycle:
@@ -196,18 +197,78 @@ export function recordPiiWriteRefusal(
 }
 
 /**
+ * Beta readability hook, injected by the renderer-only Beta persistence
+ * module (see `betaPersistence.ts`).
+ *
+ * This module is compiled by the Electron main process
+ * (`electron/tsconfig.json`: no DOM, no `@/` alias, no ESM JSON), so it must
+ * not statically import the Beta persistence chain (`betaPersistence` →
+ * `manifestGate` → `shippedManifest` → JSON fixtures). The renderer registers
+ * a checker at module load; main never does, so the Beta branch stays
+ * fail-closed there and Stable behavior is untouched.
+ *
+ * The checker answers, for a Stable PII key (`PII_STORE_KEY.*`), whether Beta
+ * plaintext persistence is readable right now (manifest allows the mapped
+ * Beta key and its envelope is empty-or-valid). The mapping lives with the
+ * checker, not here, so this module holds no Beta key strings.
+ */
+let betaReadabilityChecker: ((piiKey: string) => boolean) | null = null;
+
+/** Register (or clear with null) the Beta readability checker. */
+export function setBetaReadabilityChecker(
+  checker: ((piiKey: string) => boolean) | null,
+): void {
+  betaReadabilityChecker = checker;
+}
+
+/** Test-only reset for the injected checker (registrations do not leak). */
+export function resetBetaReadabilityCheckerForTests(): void {
+  betaReadabilityChecker = null;
+}
+
+function isBetaReadableForPiiKey(key: string): boolean {
+  try {
+    return betaReadabilityChecker?.(key) ?? false;
+  } catch {
+    return false;
+  }
+}
+
+function isStableWebPiiKey(key: string): boolean {
+  const browser = (
+    globalThis as typeof globalThis & {
+      navigator?: { userAgent?: string };
+    }
+  ).navigator;
+  return (
+    browser !== undefined &&
+    !browser.userAgent?.includes("Electron") &&
+    PII_STORE_KEYS.includes(key as PiiStoreKey)
+  );
+}
+
+/**
  * The reason a USER-initiated write to a PII store must be blocked, or null.
  *
- * A demo session is ephemeral BY DESIGN (`demo_session`): it is not a failure,
- * so it does not block — the demo dataset still writes in memory and the LGPD
- * contract is unchanged. Every other not-yet-hydrated state (locked, consent
- * declined, no capability) blocks the user action before it can mutate the
- * store, because the vault would refuse the write and the entry would vanish on
- * reload. This is the honest answer to "may this surface accept an entry now?".
+ * Stable Web saves do not depend on vault hydration, consent, or crypto
+ * capability. They complete synchronous localStorage hydration before writes.
+ * The encrypted Desktop path continues to block until its store is hydrated.
+ * A demo session remains ephemeral by design and never persists writes.
+ *
+ * Beta channel: Beta never registers encrypted PII stores; its three
+ * `open3dcalc_beta_test_*` stores are allowed only when the Beta manifest and
+ * persisted envelope are readable. Stable Web keys skip this vault gate;
+ * Desktop continues to require a hydrated encrypted store.
  */
 export function getPiiSurfaceWriteBlockReason(
   key: string,
 ): PiiStoreDenialReason | null {
+  if (betaReadabilityChecker !== null) {
+    if (isBetaReadableForPiiKey(key)) return null;
+    const betaReason = refusalForUnhydrated();
+    return betaReason === "demo_session" ? null : betaReason;
+  }
+  if (isStableWebPiiKey(key)) return null;
   if (getPiiStoreHydrationStatus(key) === "hydrated") return null;
   const reason = refusalForUnhydrated();
   return reason === "demo_session" ? null : reason;
@@ -216,9 +277,10 @@ export function getPiiSurfaceWriteBlockReason(
 /**
  * Block a PII surface write, recording the refusal for the visible consumer.
  *
- * Call BEFORE mutating the store. A non-null return means the caller must
- * abort: the entry was never accepted, so nothing is shown as saved, nothing is
- * persisted, and the returned (recorded) reason is what the surface renders.
+ * Call BEFORE mutating a Beta or encrypted Desktop store. Stable Web returns
+ * null without consulting vault prerequisites and persists through the
+ * dedicated plaintext adapter. A non-null return means the caller must abort
+ * and render the recorded reason.
  */
 export function beginPiiSurfaceWrite(key: string): PiiStoreDenialReason | null {
   const reason = getPiiSurfaceWriteBlockReason(key);

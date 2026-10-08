@@ -1,6 +1,13 @@
 import { defineConfig, mergeConfig } from "vite";
 import baseConfig from "./vite.base.config";
 import path from "node:path";
+import { isBetaElectronRuntime } from "./electron/betaRuntime";
+
+if (isBetaElectronRuntime()) {
+  throw new Error(
+    "The synthetic Beta channel is Web-only; Desktop builds are disabled.",
+  );
+}
 
 export default defineConfig(
   mergeConfig(baseConfig, {

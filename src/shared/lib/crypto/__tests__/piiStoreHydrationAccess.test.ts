@@ -16,7 +16,13 @@
  * Real Web Crypto and the real gate; synthetic fixtures only (TEST-MATRIX §0).
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.hoisted(() => {
+  Object.defineProperty(globalThis.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 Electron/43.0",
+  });
+});
 
 // Side-effect imports: registering each store's persist handle is what makes it
 // rehydratable. Without them `rehydratePiiStores()` reports `unregistered`.

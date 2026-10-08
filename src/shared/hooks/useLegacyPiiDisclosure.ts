@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import {
   getLegacyPiiDisclosure,
   type LegacyPiiDisclosure,
@@ -34,7 +35,9 @@ export function useLegacyPiiDisclosure(
   });
 
   useEffect(() => {
-    if (!enabled) return;
+    // Beta is a synthetic test-only channel. Do not inspect Stable residue or
+    // invoke the retired desktop reader, even when a legacy caller opts in.
+    if (!enabled || isBetaChannel) return;
 
     let cancelled = false;
     void fetchDesktopLegacyPiiRows()
@@ -71,5 +74,8 @@ export function useLegacyPiiDisclosure(
   }, [enabled]);
 
   if (!enabled) return { status: "idle" };
+  if (isBetaChannel) {
+    return { status: "unavailable", reason: "legacy_inspection_retired" };
+  }
   return state.status === "idle" ? { status: "loading" } : state;
 }

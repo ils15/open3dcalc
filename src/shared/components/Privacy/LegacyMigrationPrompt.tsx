@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import type { LegacyPiiPlaintextReport } from "@/shared/lib/legacyPiiPlaintext";
 import { useConsentStore } from "@/shared/stores/consentStore";
 import { useLegacyPiiResidue } from "@/shared/hooks/useLegacyPiiResidue";
@@ -29,6 +30,13 @@ import { LegacyMigrationDialog } from "./LegacyMigrationDialog";
  * prompt instead of silently keeping it invisible.
  */
 export function LegacyMigrationPrompt() {
+  // Beta is a synthetic test-only channel: Stable data is never read or
+  // migrated there, so the legacy-residue prompt must never surface.
+  if (isBetaChannel) return null;
+  return <StableLegacyMigrationPrompt />;
+}
+
+function StableLegacyMigrationPrompt() {
   const migrationConsentGiven = useConsentStore((s) => s.migrationConsentGiven);
   const keepSignature = useLegacyKeepReadOnlyStore((s) => s.signature);
   const keepReadOnly = useLegacyKeepReadOnlyStore((s) => s.keep);
