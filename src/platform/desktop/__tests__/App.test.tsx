@@ -77,7 +77,13 @@ vi.mock("@/shared/stores/historyStore", () => {
       vi.fn((selector?: (s: typeof state) => unknown) =>
         selector ? selector(state) : state,
       ),
-      { getState: vi.fn(() => state) },
+      {
+        getState: vi.fn(() => state),
+        // App.tsx installs the passwordless Desktop storage at import time; the
+        // installer probes `persist.setOptions`, so the mock must expose it or
+        // the import would take the fail-closed skip path.
+        persist: { setOptions: vi.fn() },
+      },
     ),
   };
 });

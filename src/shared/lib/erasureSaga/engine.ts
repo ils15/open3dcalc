@@ -6,12 +6,10 @@
  * standalone crash-test drivers.
  *
  * Commit point: the saga commits only after every store row is `done` AND
- * the §6 post-condition rescan finds zero PII. Before the commit point any
- * unrecoverable failure rolls back (snapshot restore); with an impossible
- * rollback (§5) the saga completes as `committed` with a `rollback_unavailable`
- * annotation — never a silent partial state. Re-running a store's deletion is
- * always safe (idempotent purges), so resume after SIGKILL never restarts
- * from scratch and never re-prompts (the journal holds the confirmation).
+ * the §6 post-condition rescan finds zero PII. If a failure cannot be rolled
+ * back, the journal remains incomplete and retryable; it is never reported as
+ * a successful erasure. Resume requires a structurally valid journal with an
+ * explicit durable `delete_all` confirmation.
  */
 
 import type {
@@ -21,7 +19,9 @@ import type {
   StoreAdapterLike,
 } from "./types.js";
 import {
+  isValidSagaJournal,
   MAX_STORE_ATTEMPTS,
+  PLATFORM_STORES,
   SNAPSHOT_TTL_DAYS,
   buildStorePlan,
 } from "./types.js";
@@ -77,6 +77,19 @@ function findAdapter(
   return adapter;
 }
 
+function assertAuthorizedJournal(
+  options: SagaEngineOptions,
+  journal: SagaJournal | null,
+): asserts journal is SagaJournal {
+  const expectedStores = options.storePlan ?? PLATFORM_STORES[options.platform];
+  if (!isValidSagaJournal(journal, expectedStores)) {
+    throw new SagaError(
+      "no_saga",
+      "journal invalid or lacks explicit delete_all authorization; preserved",
+    );
+  }
+}
+
 async function persist(options: SagaEngineOptions, journal: SagaJournal) {
   options.journal.save(journal);
   options.onProgress?.(structuredClone(journal));
@@ -91,11 +104,8 @@ export async function startSaga(
 ): Promise<{ journal: SagaJournal; receipt?: SagaReceipt }> {
   if (options.journal.exists()) {
     const existing = options.journal.load();
-    if (
-      existing &&
-      existing.state !== "committed" &&
-      existing.state !== "rolled_back"
-    ) {
+    assertAuthorizedJournal(options, existing);
+    if (existing.state !== "committed" && existing.state !== "rolled_back") {
       throw new SagaError("saga_in_progress", "a saga is already running");
     }
     options.journal.destroy();
@@ -119,6 +129,7 @@ export async function startSaga(
       )
       .filter((row): row is NonNullable<typeof row> => row !== null),
   };
+  assertAuthorizedJournal(options, journal);
   await persist(options, journal);
   return drive(options, journal);
 }
@@ -130,8 +141,13 @@ export async function startSaga(
 export async function resumeSaga(
   options: SagaEngineOptions,
 ): Promise<{ journal: SagaJournal | null; receipt?: SagaReceipt }> {
+  const exists = options.journal.exists();
   const journal = options.journal.load();
-  if (!journal) return { journal: null };
+  if (!journal) {
+    if (exists) assertAuthorizedJournal(options, journal);
+    return { journal: null };
+  }
+  assertAuthorizedJournal(options, journal);
   if (journal.state === "committed" || journal.state === "rolled_back") {
     return { journal };
   }
@@ -206,12 +222,21 @@ async function drive(
     // ── §6 post-condition rescan — never success with PII remaining ──
     const leftovers: string[] = [];
     for (const row of journal.stores) {
-      const adapter = findAdapter(options, row.store);
-      const remaining = await adapter.rescan();
-      if (remaining.length > 0) {
-        leftovers.push(...remaining);
+      try {
+        const adapter = findAdapter(options, row.store);
+        const remaining = await adapter.rescan();
+        if (!Array.isArray(remaining)) {
+          throw new Error("invalid postcondition result");
+        }
+        if (remaining.length > 0) {
+          leftovers.push(...remaining);
+          row.state = "failed";
+          row.error = "postcondition failed";
+        }
+      } catch {
+        leftovers.push(`rescan failed for ${row.store}`);
         row.state = "failed";
-        row.error = `rescan found PII: ${remaining.join(", ")}`;
+        row.error = "postcondition rescan failed";
       }
     }
     await persist(options, journal);
@@ -223,9 +248,18 @@ async function drive(
         retryable.state = "in_progress";
         return drive(options, journal);
       }
-      console.log("__DRIVE_FAILROLLBACK__");
-      return failOrRollback(options, journal, "sqlite_storage");
+      const failed = journal.stores.find((row) => row.state === "failed");
+      if (failed) return failOrRollback(options, journal, failed.store);
+      throw new SagaError(
+        "rescan_failed",
+        "postcondition rescan did not complete",
+      );
     }
+  }
+
+  if (journal.stores.some((row) => row.state !== "done")) {
+    const failed = journal.stores.find((row) => row.state !== "done");
+    if (failed) return failOrRollback(options, journal, failed.store);
   }
 
   // ── committed (§2: terminal, snapshot destroyed) ───────────────────
@@ -249,9 +283,8 @@ async function drive(
 
 /**
  * Pre-commit unrecoverable failure: roll back when the snapshot window
- * allows (§5); otherwise complete as committed with rollback_unavailable —
- * the user asked for erasure and a half-deleted state is never reported
- * as success.
+ * allows (§5); otherwise preserve an incomplete, retryable journal annotated
+ * with the unavailable rollback reason. An incomplete erase is never success.
  */
 async function failOrRollback(
   options: SagaEngineOptions,
@@ -265,24 +298,15 @@ async function failOrRollback(
     now(),
   );
   if (!window.possible || !options.restoreSnapshotPayload) {
+    const row = journal.stores.find((store) => store.store === failedStore);
+    if (row) row.state = "failed";
     journal.rollback_unavailable = {
       reason: window.reason ?? "no_restore_adapter",
       at: now().toISOString(),
     };
-    journal.state = "committed";
-    options.snapshots.destroy(journal.saga_id);
+    journal.state = "deleting";
     await persist(options, journal);
-    return {
-      journal,
-      receipt: {
-        saga_id: journal.saga_id,
-        committed_at: now().toISOString(),
-        policy_version: journal.policy_version,
-        stores_completed: journal.stores.map((r) => r.store),
-        external_copies_notice: options.externalCopiesNotice ?? [],
-        rollback_unavailable: journal.rollback_unavailable,
-      },
-    };
+    return { journal };
   }
   const payload = await options.snapshots.restore(
     journal.saga_id,

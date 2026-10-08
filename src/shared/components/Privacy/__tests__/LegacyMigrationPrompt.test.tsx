@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 
 import type { LegacyPiiPlaintextReport } from "@/shared/lib/legacyPiiPlaintext";
 import {
@@ -99,46 +105,51 @@ beforeEach(() => {
 });
 
 describe("LegacyMigrationPrompt", () => {
-  it("does not prompt when there is no residue", () => {
+  it("does not prompt when there is no residue", async () => {
     mockDetect.mockReturnValue(reportOf(false));
     render(<LegacyMigrationPrompt />);
+    await waitFor(() => expect(mockDetect).toHaveBeenCalled());
     expect(screen.queryByTestId("migration-dialog")).toBeNull();
   });
 
-  it("prompts when residue exists and migration consent is pending", () => {
+  it("prompts when residue exists and migration consent is pending", async () => {
     mockDetect.mockReturnValue(reportOf(true));
     render(<LegacyMigrationPrompt />);
-    expect(screen.getByTestId("migration-dialog")).toBeInTheDocument();
+    expect(await screen.findByTestId("migration-dialog")).toBeInTheDocument();
   });
 
-  it("does not prompt once migration consent is granted", () => {
+  it("does not prompt once migration consent is granted", async () => {
     mockDetect.mockReturnValue(reportOf(true));
     consentState.migrationConsentGiven = true;
     render(<LegacyMigrationPrompt />);
+    await waitFor(() => expect(mockDetect).toHaveBeenCalled());
     expect(screen.queryByTestId("migration-dialog")).toBeNull();
   });
 
-  it("dismisses for the session when the dialog closes", () => {
+  it("dismisses for the session when the dialog closes", async () => {
     mockDetect.mockReturnValue(reportOf(true));
     render(<LegacyMigrationPrompt />);
 
+    await screen.findByTestId("migration-dialog");
     fireEvent.click(screen.getByRole("button", { name: "close" }));
     expect(screen.queryByTestId("migration-dialog")).toBeNull();
   });
 
-  it("hands export over to the existing sync modal and closes the dialog", () => {
+  it("hands export over to the existing sync modal and closes the dialog", async () => {
     mockDetect.mockReturnValue(reportOf(true));
     render(<LegacyMigrationPrompt />);
 
+    await screen.findByTestId("migration-dialog");
     fireEvent.click(screen.getByRole("button", { name: "export" }));
     expect(screen.queryByTestId("migration-dialog")).toBeNull();
     expect(screen.getByTestId("sync-modal")).toBeInTheDocument();
   });
 
-  it("closes the export modal when the sync flow requests it", () => {
+  it("closes the export modal when the sync flow requests it", async () => {
     mockDetect.mockReturnValue(reportOf(true));
     render(<LegacyMigrationPrompt />);
 
+    await screen.findByTestId("migration-dialog");
     fireEvent.click(screen.getByRole("button", { name: "export" }));
     expect(screen.getByTestId("sync-modal")).toBeInTheDocument();
 
@@ -148,10 +159,11 @@ describe("LegacyMigrationPrompt", () => {
 
   // ── L-2: the keep-read-only decision is remembered ──────────────────────
 
-  it("records the keep-read-only choice value-free when the user keeps it", () => {
+  it("records the keep-read-only choice value-free when the user keeps it", async () => {
     mockDetect.mockReturnValue(reportOf(true));
     render(<LegacyMigrationPrompt />);
 
+    await screen.findByTestId("migration-dialog");
     fireEvent.click(screen.getByRole("button", { name: "keep" }));
 
     expect(useLegacyKeepReadOnlyStore.getState().signature).toBe(
@@ -165,37 +177,39 @@ describe("LegacyMigrationPrompt", () => {
     expect(raw).toContain(residueSignature(reportOf(true)));
   });
 
-  it("does not prompt on a later session while the residue is unchanged", () => {
+  it("does not prompt on a later session while the residue is unchanged", async () => {
     useLegacyKeepReadOnlyStore.setState({
       signature: residueSignature(reportOf(true)),
     });
     mockDetect.mockReturnValue(reportOf(true));
 
     render(<LegacyMigrationPrompt />);
+    await waitFor(() => expect(mockDetect).toHaveBeenCalled());
     expect(screen.queryByTestId("migration-dialog")).toBeNull();
   });
 
-  it("prompts again when the residue changed after the keep-read-only choice", () => {
+  it("prompts again when the residue changed after the keep-read-only choice", async () => {
     useLegacyKeepReadOnlyStore.setState({
       signature: residueSignature(reportOf(false)),
     });
     mockDetect.mockReturnValue(reportOf(true));
 
     render(<LegacyMigrationPrompt />);
-    expect(screen.getByTestId("migration-dialog")).toBeInTheDocument();
+    expect(await screen.findByTestId("migration-dialog")).toBeInTheDocument();
   });
 
-  it("re-prompts when the Privacy screen reopens the choice", () => {
+  it("re-prompts when the Privacy screen reopens the choice", async () => {
     useLegacyKeepReadOnlyStore.setState({
       signature: residueSignature(reportOf(true)),
     });
     mockDetect.mockReturnValue(reportOf(true));
 
     render(<LegacyMigrationPrompt />);
+    await waitFor(() => expect(mockDetect).toHaveBeenCalled());
     expect(screen.queryByTestId("migration-dialog")).toBeNull();
 
     act(() => useLegacyKeepReadOnlyStore.getState().reopen());
 
-    expect(screen.getByTestId("migration-dialog")).toBeInTheDocument();
+    expect(await screen.findByTestId("migration-dialog")).toBeInTheDocument();
   });
 });

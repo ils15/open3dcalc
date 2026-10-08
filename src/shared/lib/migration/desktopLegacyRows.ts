@@ -14,9 +14,8 @@
  * values are never persisted here — the persistence bridge refuses these keys,
  * and the vault is the only destination.
  *
- * A refused or failed IPC read resolves to `null` ("no desktop source"), never a
- * throw: a storage problem must not turn an unlock into an error, and the caller
- * then falls back to the (empty) `localStorage` source and reports honestly.
+ * Source state is explicit: a browser has no desktop source, while an Electron
+ * bridge failure is unavailable (not proof that the legacy rows are absent).
  */
 
 import type { LegacyPiiPlaintextKey } from "@/shared/lib/legacyPiiPlaintext";
@@ -24,6 +23,57 @@ import type { LegacyPiiRowsReport } from "../../../../electron/legacyRows.js";
 
 /** Key NAME → raw legacy value, for the declared keys that have one. */
 export type LegacyPiiRowMap = Partial<Record<LegacyPiiPlaintextKey, string>>;
+
+export type DesktopLegacyPiiRowsResult =
+  | { status: "not_applicable" }
+  | { status: "absent" }
+  | { status: "available"; rows: LegacyPiiRowMap }
+  | { status: "unavailable"; reason: string };
+
+const EXPECTED_KEYS = new Set<string>([
+  "open3dcalc_customers_v1",
+  "open3dcalc_quotes_v1",
+  "open3dcalc_history_v2",
+]);
+
+function isLegacyRowsReport(value: unknown): value is LegacyPiiRowsReport {
+  if (!value || typeof value !== "object") return false;
+  const report = value as { scannedAt?: unknown; rows?: unknown };
+  if (
+    typeof report.scannedAt !== "string" ||
+    report.scannedAt.length === 0 ||
+    !Array.isArray(report.rows) ||
+    report.rows.length !== EXPECTED_KEYS.size
+  ) {
+    return false;
+  }
+
+  const seen = new Set<string>();
+  return (
+    report.rows.every((candidate: unknown) => {
+      if (!candidate || typeof candidate !== "object") return false;
+      const row = candidate as {
+        key?: unknown;
+        status?: unknown;
+        value?: unknown;
+      };
+      if (
+        typeof row.key !== "string" ||
+        !EXPECTED_KEYS.has(row.key) ||
+        seen.has(row.key)
+      ) {
+        return false;
+      }
+      seen.add(row.key);
+      if (row.status === "legacy_plaintext")
+        return typeof row.value === "string";
+      return (
+        (row.status === "already_encrypted" || row.status === "absent") &&
+        row.value === null
+      );
+    }) && seen.size === EXPECTED_KEYS.size
+  );
+}
 
 /**
  * Map a `privacy:legacy-rows` report to the value map the re-home reads.
@@ -43,16 +93,34 @@ export function toLegacyPiiRowMap(
 }
 
 /**
- * Fetch the desktop legacy rows over IPC, or `null` when there is no desktop
- * source (not Electron, the bridge lacks the method, or the read refused).
+ * Fetch the desktop legacy rows over IPC. A report is absent only after all
+ * expected rows have been validated and none contains plaintext.
  */
-export async function fetchDesktopLegacyPiiRows(): Promise<LegacyPiiRowMap | null> {
-  if (typeof window === "undefined") return null;
-  const privacy = window.electronAPI?.privacy;
-  if (typeof privacy?.legacyRows !== "function") return null;
+export async function fetchDesktopLegacyPiiRows(): Promise<DesktopLegacyPiiRowsResult> {
+  if (typeof window === "undefined") return { status: "not_applicable" };
+  const electronRuntime =
+    typeof navigator !== "undefined" &&
+    navigator.userAgent.includes("Electron");
+  const api = window.electronAPI;
+  if (!api) {
+    return electronRuntime
+      ? { status: "unavailable", reason: "preload_bridge_unavailable" }
+      : { status: "not_applicable" };
+  }
+  const privacy = api.privacy;
+  if (typeof privacy?.legacyRows !== "function") {
+    return { status: "unavailable", reason: "legacy_rows_api_unavailable" };
+  }
   try {
-    return toLegacyPiiRowMap(await privacy.legacyRows());
+    const report: unknown = await privacy.legacyRows();
+    if (!isLegacyRowsReport(report)) {
+      return { status: "unavailable", reason: "invalid_legacy_rows_report" };
+    }
+    const rows = toLegacyPiiRowMap(report);
+    return Object.keys(rows).length > 0
+      ? { status: "available", rows }
+      : { status: "absent" };
   } catch {
-    return null;
+    return { status: "unavailable", reason: "legacy_rows_read_failed" };
   }
 }

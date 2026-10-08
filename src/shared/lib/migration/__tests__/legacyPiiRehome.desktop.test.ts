@@ -21,7 +21,10 @@ import {
   LEGACY_PII_REHOME_MARKER_KEY,
   migrateLegacyPlaintextPiiToVault,
 } from "@/shared/lib/migration/legacyPiiRehome";
-import type { LegacyPiiRowMap } from "@/shared/lib/migration/desktopLegacyRows";
+import type {
+  DesktopLegacyPiiRowsResult,
+  LegacyPiiRowMap,
+} from "@/shared/lib/migration/desktopLegacyRows";
 import { LEGACY_PII_PLAINTEXT_KEYS } from "@/shared/lib/legacyPiiPlaintext";
 import { useConsentStore } from "@/shared/stores/consentStore";
 import { useCustomerStore } from "@/shared/stores/customerStore";
@@ -163,6 +166,10 @@ function desktopResidue(): LegacyPiiRowMap {
   };
 }
 
+function sourceWithRows(rows: LegacyPiiRowMap): DesktopLegacyPiiRowsResult {
+  return { status: "available", rows };
+}
+
 async function drainWrites(): Promise<void> {
   await whenPiiWritesSettled();
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -239,7 +246,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
 
   it("refuses a locked vault without persisting any of the desktop residue", async () => {
     const residue = desktopResidue();
-    const fetchLegacy = vi.fn(async () => residue);
+    const fetchLegacy = vi.fn(async () => sourceWithRows(residue));
     await useConsentStore.getState().grantMigrationConsent();
 
     // No unlock: the vault is locked.
@@ -261,7 +268,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
   // ── 2. Consent gate ─────────────────────────────────────────────────
 
   it("refuses without migration consent and writes nothing", async () => {
-    const fetchLegacy = vi.fn(async () => desktopResidue());
+    const fetchLegacy = vi.fn(async () => sourceWithRows(desktopResidue()));
     await unlockVault();
 
     const result = await migrateLegacyPlaintextPiiToVault({ fetchLegacy });
@@ -282,7 +289,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
     await unlockVault();
 
     const result = await migrateLegacyPlaintextPiiToVault({
-      fetchLegacy: async () => residue,
+      fetchLegacy: async () => sourceWithRows(residue),
     });
 
     expect(result.status).toBe("migrated");
@@ -330,13 +337,13 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
     await unlockVault();
 
     const first = await migrateLegacyPlaintextPiiToVault({
-      fetchLegacy: async () => residue,
+      fetchLegacy: async () => sourceWithRows(residue),
     });
     expect(first.status).toBe("migrated");
     const vaultBefore = await readPiiPersistedRecord(CUSTOMERS);
 
     const second = await migrateLegacyPlaintextPiiToVault({
-      fetchLegacy: async () => residue,
+      fetchLegacy: async () => sourceWithRows(residue),
     });
     expect(second.status).toBe("already_migrated");
     expect(useCustomerStore.getState().customers).toHaveLength(2);
@@ -363,7 +370,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
     await unlockVault();
 
     const result = await migrateLegacyPlaintextPiiToVault({
-      fetchLegacy: async () => ({ [HISTORY]: "{ not json" }),
+      fetchLegacy: async () => sourceWithRows({ [HISTORY]: "{ not json" }),
     });
 
     expect(result.status).toBe("incomplete");
@@ -377,12 +384,26 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
 
   // ── 6. No desktop source → the web path is untouched ────────────────
 
-  it("falls back to the local source when the desktop fetch yields nothing", async () => {
+  it("does not infer absence when the desktop fetch is unavailable", async () => {
     await useConsentStore.getState().grantMigrationConsent();
     await unlockVault();
 
     const result = await migrateLegacyPlaintextPiiToVault({
-      fetchLegacy: async () => null,
+      fetchLegacy: async () => ({
+        status: "unavailable",
+        reason: "bridge_missing",
+      }),
+    });
+
+    expect(result.status).toBe("source_unavailable");
+  });
+
+  it("reports no_residue only for a positively established absent source", async () => {
+    await useConsentStore.getState().grantMigrationConsent();
+    await unlockVault();
+
+    const result = await migrateLegacyPlaintextPiiToVault({
+      fetchLegacy: async () => ({ status: "absent" }),
     });
 
     expect(result.status).toBe("no_residue");
@@ -393,7 +414,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
       CUSTOMERS,
       wrapper("customers", CUSTOMER_FIXTURES),
     );
-    const fetchLegacy = vi.fn(async () => desktopResidue());
+    const fetchLegacy = vi.fn(async () => sourceWithRows(desktopResidue()));
     await useConsentStore.getState().grantMigrationConsent();
     await unlockVault();
 
@@ -429,7 +450,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
     expect(useCustomerStore.getState().customers).toHaveLength(2);
   });
 
-  it("reports no_residue when the IPC reader refuses (fail-closed, no throw)", async () => {
+  it("reports source_unavailable when the IPC reader refuses (fail-closed, no throw)", async () => {
     (window as unknown as { electronAPI: unknown }).electronAPI = {
       privacy: { legacyRows: async () => Promise.reject(new Error("refused")) },
     };
@@ -438,7 +459,7 @@ describe("Beta5 desktop re-home — migrateLegacyPlaintextPiiToVault over IPC so
 
     const result = await migrateLegacyPlaintextPiiToVault();
 
-    expect(result.status).toBe("no_residue");
+    expect(result.status).toBe("source_unavailable");
     expect(
       window.localStorage.getItem(LEGACY_PII_REHOME_MARKER_KEY),
     ).toBeNull();

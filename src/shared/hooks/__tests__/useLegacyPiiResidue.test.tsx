@@ -6,11 +6,11 @@
  * so a prompt that only read `localStorage` would never open and the disclosure
  * panel would always say "no residue" — the retained-but-invisible defect. These
  * tests pin that the hook merges the read-only IPC rows over `localStorage`, that
- * the web path is unchanged, and that a refused IPC read degrades to the local
- * view rather than throwing.
+ * the web path is unchanged, and that a refused IPC read remains unavailable
+ * rather than becoming a local-only empty report.
  */
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 
 import {
@@ -74,27 +74,34 @@ describe("toLegacyPiiRowMap", () => {
 });
 
 describe("fetchDesktopLegacyPiiRows", () => {
-  it("resolves to null without a desktop bridge", async () => {
-    await expect(fetchDesktopLegacyPiiRows()).resolves.toBeNull();
+  it("reports not_applicable without a desktop bridge in the browser", async () => {
+    await expect(fetchDesktopLegacyPiiRows()).resolves.toEqual({
+      status: "not_applicable",
+    });
   });
 
-  it("resolves to null when the bridge lacks the read-only reader", async () => {
+  it("reports unavailable when the bridge lacks the read-only reader", async () => {
     (window as unknown as { electronAPI: unknown }).electronAPI = {
       privacy: {},
     };
-    await expect(fetchDesktopLegacyPiiRows()).resolves.toBeNull();
+    await expect(fetchDesktopLegacyPiiRows()).resolves.toMatchObject({
+      status: "unavailable",
+    });
   });
 });
 
 describe("useLegacyPiiResidue", () => {
-  it("reads only localStorage when there is no desktop bridge", () => {
+  it("reads localStorage when the desktop source is not applicable", async () => {
     window.localStorage.setItem(
       CUSTOMERS,
       JSON.stringify({ state: { customers: [{ id: "a" }, { id: "b" }] } }),
     );
     const { result } = renderHook(() => useLegacyPiiResidue());
-    expect(result.current.present).toBe(true);
-    expect(result.current.total).toBe(2);
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    if (result.current.status === "ready") {
+      expect(result.current.report.present).toBe(true);
+      expect(result.current.report.total).toBe(2);
+    }
   });
 
   it("merges the desktop rows over localStorage", async () => {
@@ -109,26 +116,91 @@ describe("useLegacyPiiResidue", () => {
         value: JSON.stringify({ state: { quotes: [{ id: "q" }] } }),
         status: "legacy_plaintext",
       },
+      { key: HISTORY, value: null, status: "absent" },
     ]);
 
     const { result } = renderHook(() => useLegacyPiiResidue());
 
-    await waitFor(() => expect(result.current.present).toBe(true));
-    expect([...result.current.keys].map((k) => k.key)).toEqual([
-      CUSTOMERS,
-      QUOTES,
-      "open3dcalc_history_v2",
-    ]);
-    expect(result.current.total).toBe(2);
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    if (result.current.status === "ready") {
+      expect([...result.current.report.keys].map((k) => k.key)).toEqual([
+        CUSTOMERS,
+        QUOTES,
+        HISTORY,
+      ]);
+      expect(result.current.report.total).toBe(2);
+    }
   });
 
-  it("degrades to the local view when the IPC read refuses (no throw)", async () => {
+  it("preserves unavailable state when the IPC read refuses", async () => {
     (window as unknown as { electronAPI: unknown }).electronAPI = {
       privacy: {
         legacyRows: async () => Promise.reject(new Error("refused")),
       },
     };
     const { result } = renderHook(() => useLegacyPiiResidue());
-    await waitFor(() => expect(result.current.present).toBe(false));
+    await waitFor(() => expect(result.current.status).toBe("unavailable"));
+  });
+
+  it("returns idle without any read when disabled", () => {
+    const legacyRows = vi.fn();
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: { legacyRows },
+    };
+    const { result } = renderHook(() => useLegacyPiiResidue(false));
+    expect(result.current).toEqual({ status: "idle" });
+    expect(legacyRows).not.toHaveBeenCalled();
+  });
+
+  it("stays unavailable when the bridge lacks the reader instead of a local empty report", async () => {
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: {},
+    };
+    const { result } = renderHook(() => useLegacyPiiResidue());
+    await waitFor(() => expect(result.current.status).toBe("unavailable"));
+    if (result.current.status === "unavailable") {
+      expect(result.current.reason.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("ignores a late desktop resolution after unmount", async () => {
+    const resolvers: Array<(value: unknown) => void> = [];
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: {
+        legacyRows: () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve);
+          }),
+      },
+    };
+
+    const { unmount } = renderHook(() => useLegacyPiiResidue());
+    unmount();
+    resolvers[0]?.({ scannedAt: new Date().toISOString(), rows: [] });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // The cancelled guard skipped the state write.
+    expect(resolvers).toHaveLength(1);
+  });
+
+  it("ignores a late desktop rejection after unmount", async () => {
+    const rejecters: Array<(reason: unknown) => void> = [];
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: {
+        legacyRows: () =>
+          new Promise((_resolve, reject) => {
+            rejecters.push(reject);
+          }),
+      },
+    };
+
+    const { unmount } = renderHook(() => useLegacyPiiResidue());
+    unmount();
+    rejecters[0]?.(new Error("late refusal"));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(rejecters).toHaveLength(1);
   });
 });

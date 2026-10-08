@@ -391,7 +391,6 @@ export function PiiUnavailableBanner(): ReactElement | null {
     const latched = parseUnavailable(getUnavailableClasses());
     return latched.length > 0 ? latched : null;
   });
-  const [outcome, setOutcome] = useState<string | null>(null);
 
   useEffect(() => {
     const onUnavailable = (event: Event): void => {
@@ -443,47 +442,27 @@ export function PiiUnavailableBanner(): ReactElement | null {
     )
     .join("\n");
 
-  // Recovery is opt-in and per key: it is the only action offered, and a failure
-  // reports itself rather than retrying, because every failure path leaves the
-  // original bytes untouched and there is nothing a second attempt would fix.
-  const recoverable = entries.find((e) => e.recoverable);
-
-  const onRecover = (): void => {
-    if (!recoverable) return;
-    const recover = window.electronAPI?.privacy?.recoverKey;
-    if (typeof recover !== "function") {
-      setOutcome(t("persistence.recovery.recoverFailed"));
-      return;
-    }
-    void recover(recoverable.key)
-      .then((result: { recovered: boolean; verified: boolean }) => {
-        // `verified` is the only field that means the round-trip was checked;
-        // a `recovered: true` without it would be a claim, not a result.
-        setOutcome(
-          result.recovered && result.verified
-            ? t("persistence.recovery.recovered")
-            : t("persistence.recovery.recoverFailed"),
-        );
-        setEntries(
-          (current) =>
-            current?.filter((e) => e.key !== recoverable.key) ?? null,
-        );
-      })
-      .catch(() => setOutcome(t("persistence.recovery.recoverFailed")));
-  };
-
+  // Per-key legacy recovery is PERMANENTLY DISABLED: `privacy:recover-key` is
+  // rejected by the main process and is no longer exposed through the preload
+  // bridge, so this surface must not offer an action that can never succeed. It
+  // discloses the refusal codes (what support diagnoses from) plus an explicit
+  // unavailability note, and offers only a dismissal — no value is read and
+  // nothing is deleted.
   return (
     <BridgeErrorSurface
       variant="banner"
       label={t("persistence.recovery.ariaLabel")}
       title={t("persistence.recovery.title")}
       message={t("persistence.recovery.message")}
-      detail={[t("persistence.recovery.detail", { reason: detail }), outcome]
+      detail={[
+        t("persistence.recovery.detail", { reason: detail }),
+        t("persistence.recovery.unavailable"),
+      ]
         .filter(Boolean)
         .join("\n")}
-      actionLabel={t("persistence.recovery.recoverAction")}
-      actionIcon={<RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />}
-      onAction={onRecover}
+      actionLabel={t("persistence.bridge.dismiss")}
+      actionIcon={<X className="w-3.5 h-3.5" aria-hidden="true" />}
+      onAction={() => setEntries(null)}
       dismissLabel={t("persistence.bridge.dismiss")}
       onDismiss={() => setEntries(null)}
     />

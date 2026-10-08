@@ -18,7 +18,10 @@ import type {
   SnapshotStore,
 } from "@/shared/lib/erasureSaga/ports";
 import type { StoreAdapterLike } from "@/shared/lib/erasureSaga/types";
-import { MAX_STORE_ATTEMPTS } from "@/shared/lib/erasureSaga/types";
+import {
+  MAX_STORE_ATTEMPTS,
+  PLATFORM_STORES,
+} from "@/shared/lib/erasureSaga/types";
 
 const PAYLOAD = '{"rows":[{"key":"open3dcalc_customers_v1","value":"x"}]}';
 
@@ -243,16 +246,32 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     expect(ids).toHaveLength(0);
   });
 
-  it("6.7: key lost after failure ⇒ completes committed with rollback_unavailable", async () => {
+  it("6.7: key lost after failure ⇒ remains incomplete without a false receipt", async () => {
     const { options, h } = makeHarness({
       failStore: { store: "sqlite_storage", times: MAX_STORE_ATTEMPTS },
     });
     h.snapshots.setKeyLost(true);
     // The capability wrote the snapshot, but the key disappeared afterwards:
-    const { journal } = await startSaga({ ...options });
-    // startSaga fails the store; rollback impossible ⇒ committed annotation.
-    expect(journal.state).toBe("committed");
+    const { journal, receipt } = await startSaga({ ...options });
+    // Rollback impossible is not proof of erasure; preserve retryable progress.
+    expect(journal.state).toBe("deleting");
+    expect(receipt).toBeUndefined();
+    expect(
+      journal.stores.find((row) => row.store === "sqlite_storage")?.state,
+    ).toBe("failed");
     expect(journal.rollback_unavailable?.reason).toBe("key_unavailable");
+    expect(h.snapshots.blobs.size).toBe(1);
+
+    // The user can explicitly retry after fixing the transient condition.
+    h.failStore = undefined;
+    h.snapshots.setKeyLost(false);
+    const retried = await resumeSaga(options);
+    expect(retried.journal?.state).toBe("committed");
+    expect(retried.receipt?.stores_completed).toEqual([
+      "sqlite_domain_tables",
+      "sqlite_storage",
+      "sqlite_wal_shm",
+    ]);
   });
 
   it("6.8: rescan finding PII ⇒ store failed, saga never reports success", async () => {
@@ -264,20 +283,36 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     expect(h.restored).toEqual([PAYLOAD]);
   });
 
-  it("6.9: snapshot past its TTL ⇒ rollback unavailable, saga completes committed", async () => {
+  it("does not commit or mark stores done when postcondition verification fails without rollback", async () => {
+    const { options, h } = makeHarness({
+      rescanLeftovers: ["synthetic leftover"],
+    });
+    h.snapshots.setKeyLost(true);
+
+    const { journal, receipt } = await startSaga(options);
+
+    expect(journal.state).toBe("deleting");
+    expect(receipt).toBeUndefined();
+    expect(journal.stores.every((row) => row.state === "failed")).toBe(true);
+    expect(journal.rollback_unavailable?.reason).toBe("key_unavailable");
+  });
+
+  it("6.9: snapshot past its TTL ⇒ rollback unavailable, saga stays incomplete", async () => {
     const { options, h } = makeHarness({
       failStore: { store: "sqlite_storage", times: MAX_STORE_ATTEMPTS },
     });
     // Advance the injected clock 8 days past created_at (ttl_days: 7). The
-    // TTL sweep in drive() destroys the expired snapshot before the failure
-    // path runs, so canRollback reports it missing and the saga completes
-    // "committed" with a rollback_unavailable annotation — data is NOT
-    // restored. This is the intent the frozen-clock fix makes deterministic.
-    const { journal } = await startSaga({
+    // TTL sweep destroys the expired snapshot before failure handling. It
+    // cannot turn incomplete data deletion into a committed success.
+    const { journal, receipt } = await startSaga({
       ...options,
       now: () => new Date("2026-09-20T12:00:00Z"),
     });
-    expect(journal.state).toBe("committed");
+    expect(journal.state).toBe("deleting");
+    expect(receipt).toBeUndefined();
+    expect(
+      journal.stores.find((row) => row.store === "sqlite_storage")?.state,
+    ).toBe("failed");
     expect(journal.rollback_unavailable?.reason).toBe("snapshot_missing");
     expect(h.restored).toEqual([]);
   });
@@ -299,5 +334,162 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     expect(h.purgeCalls.get("sqlite_storage")).toBe(MAX_STORE_ATTEMPTS);
     // Other stores completed exactly once (resume is per-store).
     expect(h.purgeCalls.get("sqlite_domain_tables")).toBe(1);
+  });
+
+  it("refuses a second start while an incomplete saga is in progress", async () => {
+    const { options, h } = makeHarness({
+      failStore: { store: "sqlite_storage", times: MAX_STORE_ATTEMPTS },
+    });
+    h.snapshots.setKeyLost(true);
+
+    const first = await startSaga(options);
+    expect(first.journal.state).toBe("deleting");
+
+    await expect(startSaga(options)).rejects.toThrow(/already running/);
+  });
+
+  it("discards a terminal journal and starts a fresh saga", async () => {
+    const { options } = makeHarness();
+    // Keep the journal after commit so the terminal-journal branch is reached.
+    options.journal = { ...options.journal, destroy: () => undefined };
+
+    const first = await startSaga(options);
+    expect(first.journal.state).toBe("committed");
+
+    const second = await startSaga(options);
+    expect(second.journal.state).toBe("committed");
+    expect(second.journal.saga_id).not.toBe(first.journal.saga_id);
+  });
+
+  it("fails a store with no adapter instead of silently skipping it", async () => {
+    const { options, h } = makeHarness();
+    options.adapters = options.adapters.filter(
+      (adapter) => adapter.store !== "sqlite_storage",
+    );
+    h.snapshots.setKeyLost(true);
+
+    const { journal } = await startSaga(options);
+    const row = journal.stores.find(
+      (store) => store.store === "sqlite_storage",
+    );
+    expect(row?.state).toBe("failed");
+    expect(row?.error).toMatch(/no adapter/);
+  });
+
+  it("fails a store whose postcondition rescan throws, never reporting success", async () => {
+    const { options, h } = makeHarness();
+    const target = options.adapters.find(
+      (adapter) => adapter.store === "sqlite_storage",
+    )!;
+    target.rescan = async () => {
+      throw new Error("synthetic rescan failure");
+    };
+    h.snapshots.setKeyLost(true);
+
+    const { journal } = await startSaga(options);
+    expect(journal.state).toBe("deleting");
+    expect(
+      journal.stores.find((store) => store.store === "sqlite_storage")?.state,
+    ).toBe("failed");
+    expect(journal.rollback_unavailable?.reason).toBe("key_unavailable");
+  });
+
+  it("refuses a journal that exists but cannot be loaded", async () => {
+    const { options } = makeHarness();
+    options.journal = {
+      exists: () => true,
+      load: () => null,
+      save: () => undefined,
+      destroy: () => undefined,
+    };
+
+    await expect(resumeSaga(options)).rejects.toThrow(SagaError);
+  });
+});
+
+describe("erasure saga engine — failure-detail branches", () => {
+  it("records an Error snapshot failure as capability_denied without weakening erasure", async () => {
+    const { options } = makeHarness();
+    options.collectSnapshotPayload = async () => {
+      throw new Error("payload denied");
+    };
+
+    const { journal } = await startSaga(options);
+
+    // Snapshot capture failed, but the erasure still completes (§5).
+    expect(journal.state).toBe("committed");
+    expect(journal.rollback_unavailable?.reason).toContain("payload denied");
+  });
+
+  it("stringifies a non-Error snapshot failure", async () => {
+    const { options } = makeHarness();
+    options.collectSnapshotPayload = async () => {
+      throw "plain denial";
+    };
+
+    const { journal } = await startSaga(options);
+
+    expect(journal.state).toBe("committed");
+    expect(journal.rollback_unavailable?.reason).toContain("plain denial");
+  });
+
+  it("stringifies a non-Error store purge failure", async () => {
+    const { options, h } = makeHarness();
+    const target = options.adapters.find(
+      (adapter) => adapter.store === "sqlite_storage",
+    )!;
+    target.purge = async () => {
+      throw "synthetic string failure";
+    };
+    h.snapshots.setKeyLost(true);
+
+    const { journal } = await startSaga(options);
+
+    const row = journal.stores.find(
+      (store) => store.store === "sqlite_storage",
+    );
+    expect(row?.state).toBe("failed");
+    expect(row?.error).toBe("synthetic string failure");
+    expect(journal.state).toBe("deleting");
+  });
+
+  it("treats a non-array postcondition result as a failed rescan", async () => {
+    const { options, h } = makeHarness();
+    const target = options.adapters.find(
+      (adapter) => adapter.store === "sqlite_storage",
+    )!;
+    target.rescan = (async () =>
+      "not-an-array") as unknown as typeof target.rescan;
+    h.snapshots.setKeyLost(true);
+
+    const { journal } = await startSaga(options);
+
+    expect(journal.state).toBe("deleting");
+    expect(
+      journal.stores.find((store) => store.store === "sqlite_storage")?.error,
+    ).toBe("postcondition rescan failed");
+  });
+
+  it("uses the default clock and names a cause-less rollback window", async () => {
+    const { options, h } = makeHarness({
+      failStore: { store: "sqlite_storage", times: MAX_STORE_ATTEMPTS },
+    });
+    delete (options as { now?: unknown }).now;
+    h.snapshots.store.canRollback = async () => ({ possible: false });
+
+    const { journal } = await startSaga(options);
+
+    expect(journal.state).toBe("deleting");
+    expect(journal.rollback_unavailable?.reason).toBe("no_restore_adapter");
+  });
+
+  it("binds a journal to the full platform plan when no store plan is injected", async () => {
+    const { options, h } = makeHarness();
+    delete (options as { storePlan?: unknown }).storePlan;
+    h.snapshots.setKeyLost(true);
+
+    const { journal } = await startSaga(options);
+
+    expect(journal.stores).toHaveLength(PLATFORM_STORES.electron.length);
   });
 });

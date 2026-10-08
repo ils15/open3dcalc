@@ -119,9 +119,20 @@ describe("StudioLayout demo export feedback", () => {
     },
   );
 
-  it("does not add the content inset to unrelated routes", () => {
+  it("reserves dock clearance on every non-focus route and drops it in focus mode", () => {
     render(<StudioLayout />);
 
+    // The cockpit dock is a fixed, full-width track (`inset-x-0 bottom-4`) on
+    // EVERY non-focus route, not only the cockpit tabs — so the workspace must
+    // reserve clearance everywhere, or the dock obscures the last controls on
+    // the calculator/dashboard routes too.
+    const main = screen.getByRole("main");
+    expect(main).toHaveClass("pb-24", "sm:pb-24", "lg:pb-24");
+
+    // Focus mode removes the dock, so the clearance goes with it.
+    act(() => {
+      fireEvent.keyDown(window, { key: "f" });
+    });
     expect(screen.getByRole("main")).not.toHaveClass("pb-24");
   });
 });

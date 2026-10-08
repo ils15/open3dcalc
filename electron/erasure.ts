@@ -1,46 +1,76 @@
-/**
- * Desktop erasure orchestration (D1.1 S7) — SPEC-02 §2–§7.
- *
- * The renderer purges its own surfaces first (rendererSweep) and passes the
- * report here; the main process runs the saga over every durable surface
- * with a safeStorage-backed snapshot capability. Journal + snapshots live
- * under `<userData>/erasure/`.
- */
+/** Desktop erasure preflight. Destructive delete-all remains unavailable. */
 
 import { app, safeStorage } from "electron";
 import path from "node:path";
-import fs from "node:fs";
-import {
-  startSaga,
-  resumeSaga,
-  type SagaEngineOptions,
-} from "../src/shared/lib/erasureSaga/engine.js";
 import { diskJournalAdapter } from "../src/shared/lib/erasureSaga/journal.js";
-import { diskSnapshotStore } from "../src/shared/lib/erasureSaga/snapshot.js";
 import type {
   SagaJournal,
   SagaReceipt,
 } from "../src/shared/lib/erasureSaga/types.js";
+import {
+  isValidSagaJournal,
+  PLATFORM_STORES,
+} from "../src/shared/lib/erasureSaga/types.js";
 import type { SnapshotCapability } from "../src/shared/lib/erasureSaga/ports.js";
+import { PII_ERASURE_TABLES } from "./piiDomainTables.js";
+import type { PayloadDb } from "./erasurePayload.js";
 import {
-  appdataFilesAdapter,
-  logsAdapter,
-  rendererReportAdapter,
-  sqliteDomainTablesAdapter,
-  sqliteStorageAdapter,
-  sqliteWalShmAdapter,
-  tempStagingAdapter,
-  type RendererPurgeReport,
-} from "./erasureStores.js";
-import { getDbPath } from "../db/database.js";
-import {
-  snapshotPayload,
-  restoreSnapshotPayload,
-  type PayloadDb,
-} from "./erasurePayload.js";
+  assertDesktopErasureUnavailable,
+  getDesktopErasurePolicy,
+} from "./erasurePolicy.js";
 
 export function erasureDir(): string {
   return path.join(app.getPath("userData"), "erasure");
+}
+
+const INVALID_JOURNAL_DIAGNOSTIC =
+  "[erasure] durable journal invalid or lacks delete_all authorization; preserved; no erasure resumed";
+const RENDERER_RESUME_DEFERRED_DIAGNOSTIC =
+  "[erasure] durable delete_all resume deferred; renderer verification required";
+
+/** Load and validate the durable saga journal without touching profile data. */
+function loadAuthorizedJournal(): SagaJournal | null {
+  const journal = diskJournalAdapter(erasureDir()).load();
+  if (journal === null) return null;
+  if (!isValidSagaJournal(journal, PLATFORM_STORES.electron)) {
+    throw new Error(INVALID_JOURNAL_DIAGNOSTIC);
+  }
+  return journal;
+}
+
+function preflightJournal(): SagaJournal | null {
+  try {
+    return loadAuthorizedJournal();
+  } catch {
+    console.warn(INVALID_JOURNAL_DIAGNOSTIC);
+    throw new Error(INVALID_JOURNAL_DIAGNOSTIC);
+  }
+}
+
+/** Strict counterpart to the legacy adapter's best-effort table rescan. */
+export async function verifySqliteDomainTables(
+  db: PayloadDb,
+): Promise<string[]> {
+  const remaining: string[] = [];
+  for (const table of PII_ERASURE_TABLES) {
+    try {
+      const count = db.$client
+        .prepare(`SELECT COUNT(*) AS c FROM ${table}`)
+        .get() as { c: number } | undefined;
+      if (!count || !Number.isSafeInteger(count.c) || count.c < 0) {
+        throw new Error("invalid SQLite count result");
+      }
+      if (count.c > 0) remaining.push(`${table}: ${count.c} rows`);
+    } catch (error) {
+      if (error instanceof Error && /no such table/i.test(error.message)) {
+        continue;
+      }
+      throw new Error("SQLite domain table verification failed", {
+        cause: error,
+      });
+    }
+  }
+  return remaining;
 }
 
 /** ADR-001 capability for the snapshot: safeStorage on desktop. */
@@ -67,108 +97,81 @@ export function safeStorageSnapshotCapability(): SnapshotCapability {
   };
 }
 
-function buildAdapters(
-  db: PayloadDb,
-  rendererReport: RendererPurgeReport | undefined,
-): SagaEngineOptions["adapters"] {
-  const dbPath = getDbPath();
-  const userData = app.getPath("userData");
-  const snapStore = diskSnapshotStore(erasureDir());
-  return [
-    rendererReportAdapter("localstorage", rendererReport?.localstorage),
-    sqliteDomainTablesAdapter(db.$client),
-    sqliteStorageAdapter(db.$client),
-    sqliteWalShmAdapter(dbPath, db.$client),
-    rendererReportAdapter("indexeddb", rendererReport?.indexeddb),
-    rendererReportAdapter("opfs", rendererReport?.opfs),
-    rendererReportAdapter("cache_api_sw", rendererReport?.cache_api_sw),
-    appdataFilesAdapter(userData),
-    logsAdapter(path.join(userData, "logs")),
-    tempStagingAdapter(path.dirname(dbPath)),
-    {
-      store: "snapshots",
-      async purge() {
-        snapStore.destroyAll();
-        return 1;
-      },
-      async rescan() {
-        return fs.existsSync(path.join(erasureDir(), "erasure-snapshots"))
-          ? ["snapshots directory remains"]
-          : [];
-      },
-    },
-  ];
-}
-
-function engineOptions(
-  db: Parameters<typeof buildAdapters>[0],
-  rendererReport: RendererPurgeReport | undefined,
-): SagaEngineOptions {
-  const sagaDir = erasureDir();
-  const snapStore = diskSnapshotStore(sagaDir);
-  return {
-    platform: "electron",
-    journal: diskJournalAdapter(sagaDir),
-    snapshots: snapStore,
-    policyVersion: "1.1",
-    adapters: buildAdapters(db, rendererReport),
-    snapshotCapability: safeStorageSnapshotCapability(),
-    collectSnapshotPayload: async () => snapshotPayload(db),
-    restoreSnapshotPayload: async (payload) =>
-      restoreSnapshotPayload(db, payload),
-    externalCopiesNotice: [
-      "Pacotes de exportação (arquivos .open3dcalc) criados anteriormente continuam onde você os salvou — apague-os manualmente.",
-      "Backups diagnósticos feitos por operadores seguem a política de retenção de 14 dias.",
-      "Outros dispositivos onde você importou um pacote de sincronização precisam executar o apagamento localmente.",
-    ],
-  };
-}
-
-/** Run (or resume) the desktop erasure saga. Returns the completion receipt. */
+/** Reject all starts until exact scope and durable authorization are supported. */
 export async function runDesktopErasure(
-  db: Parameters<typeof buildAdapters>[0],
-  rendererReport: RendererPurgeReport | undefined,
-): Promise<{ receipt: SagaReceipt; rolledBack: boolean }> {
-  const options = engineOptions(db, rendererReport);
-  const { journal, receipt } = journalFileHasSaga(options)
-    ? await resumeSaga(options)
-    : await startSaga(options);
-  if (!journal || !receipt) {
-    throw new Error("[erasure] saga ended without a receipt");
-  }
-  return {
-    receipt,
-    rolledBack: journal.state === "rolled_back",
-  };
+  db: PayloadDb,
+  _authorizationToken: unknown,
+  _rendererReport: unknown,
+): Promise<never> {
+  void db;
+  void _authorizationToken;
+  void _rendererReport;
+  preflightJournal();
+  assertDesktopErasureUnavailable();
 }
 
-function journalFileHasSaga(options: SagaEngineOptions): boolean {
-  return options.journal.exists();
+/** Authorization cannot be issued until an exact PII-only scope is supported. */
+export function authorizeDesktopErasure(): never {
+  preflightJournal();
+  assertDesktopErasureUnavailable();
 }
 
-/** Startup resume: a non-terminal journal continues automatically (§2). */
+/** No authorization exists in the current unavailable state; reject all claims. */
+export async function claimDesktopErasure(_token: unknown): Promise<never> {
+  void _token;
+  preflightJournal();
+  assertDesktopErasureUnavailable();
+}
+
+/** Startup preflight: non-terminal journals await renderer-side verification. */
 export async function resumeErasureIfNeeded(
-  db: Parameters<typeof buildAdapters>[0],
+  _db: PayloadDb,
 ): Promise<{ resumed: boolean; receipt?: SagaReceipt; journal?: SagaJournal }> {
-  if (!erasureDirHasJournal()) return { resumed: false };
-  const { journal, receipt } = await resumeSaga(engineOptions(db, undefined));
-  return { resumed: journal !== null, receipt, journal: journal ?? undefined };
-}
-
-function erasureDirHasJournal(): boolean {
-  return diskJournalAdapter(erasureDir()).exists();
+  // Retained for the existing IPC/startup call signature; intentionally not
+  // dereferenced before the journal and renderer-verification preflight.
+  void _db;
+  const existing = preflightJournal();
+  if (!existing) return { resumed: false };
+  if (existing.state === "committed" || existing.state === "rolled_back") {
+    return { resumed: false, journal: existing };
+  }
+  // Startup has no durable authorization or exact target proof. Preserve the
+  // journal and defer without constructing database/store capabilities.
+  console.warn(RENDERER_RESUME_DEFERRED_DIAGNOSTIC);
+  return { resumed: false, journal: existing };
 }
 
 /** Metadata-only journal state for the UI. */
 export function erasureStatus(): {
   active: boolean;
+  available: boolean;
+  blockerCodes: string[];
   state?: string;
   stores?: Array<{ store: string; state: string; attempts: number }>;
 } {
-  const journal = diskJournalAdapter(erasureDir()).load();
-  if (!journal) return { active: false };
+  let blockerCodes: string[];
+  try {
+    blockerCodes = getDesktopErasurePolicy().blockerCodes;
+  } catch {
+    blockerCodes = ["manifest_unavailable"];
+  }
+  let journal: SagaJournal | null;
+  try {
+    journal = preflightJournal();
+  } catch {
+    return {
+      active: true,
+      available: false,
+      blockerCodes,
+      state: "invalid",
+      stores: [],
+    };
+  }
+  if (!journal) return { active: false, available: false, blockerCodes };
   return {
     active: journal.state !== "committed" && journal.state !== "rolled_back",
+    available: false,
+    blockerCodes,
     state: journal.state,
     stores: journal.stores.map((r) => ({
       store: r.store,

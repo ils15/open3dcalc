@@ -137,7 +137,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       <div className="flex items-center gap-2 min-w-0 text-[var(--color-text-secondary)]">
         <button
           onClick={() => onTabChange("calculator")}
-          className="flex shrink-0 items-center gap-1.5 transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="flex min-h-11 min-w-11 shrink-0 items-center gap-1.5 transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
         >
           <span className="text-[var(--color-text-secondary)] font-medium">
             Oficina 3D
@@ -205,7 +205,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={handleWhatsApp}
-          className="flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-positive-fill)] hover:opacity-90 text-[var(--color-positive-fill-fg)] font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
+          className="flex min-h-11 min-w-11 items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-positive-fill)] hover:opacity-90 text-[var(--color-positive-fill-fg)] font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
           title="Gerar proposta rápida para WhatsApp"
         >
           <MessageCircle className="w-3.5 h-3.5" />
@@ -216,7 +216,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenCopilot}
-          className="flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-warning-fill)] hover:bg-[var(--color-warning-fill-hover)] text-[var(--color-warning-fill-fg)] font-bold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
+          className="flex min-h-11 min-w-11 items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-warning-fill)] hover:bg-[var(--color-warning-fill-hover)] text-[var(--color-warning-fill-fg)] font-bold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
           title="Abrir Copilot IA"
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -227,7 +227,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={toggleFullscreen}
-          className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="min-h-11 min-w-11 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
           title="Alternar Tela Cheia"
         >
           {isFullscreen ? (

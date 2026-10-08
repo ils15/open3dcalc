@@ -21,7 +21,6 @@ import {
   type PiiVaultAccessState,
 } from "@/shared/lib/crypto/piiStoreHydration";
 import type { PiiStoreDenialReason } from "@/shared/lib/crypto/piiStoreCapability";
-import { migrateLegacyPlaintextPiiToVault } from "@/shared/lib/migration/legacyPiiRehome";
 
 const VAULT_HINT_KEY = "open3dcalc_vault_hint";
 const PASSPHRASE_INPUT_ID = "pii-vault-passphrase";
@@ -37,12 +36,6 @@ function refusalCode(error: unknown): string {
 }
 
 type FormError = { kind: "mismatch" } | { kind: "unlock"; reason: string };
-
-function rehomeLegacyPii(): void {
-  void migrateLegacyPlaintextPiiToVault().catch(() => {
-    console.warn("[PiiLockedShell] legacy PII re-home did not complete");
-  });
-}
 
 export function PiiLockedShell(): ReactElement | null {
   const { t } = useTranslation();
@@ -77,7 +70,6 @@ export function PiiLockedShell(): ReactElement | null {
     let cancelled = false;
     void rehydratePiiStoresIfUnlocked().then((outcomes) => {
       if (cancelled || outcomes === null) return;
-      rehomeLegacyPii();
       const next = getPiiStoreAccessState();
       setAccess((current) => (current.status === next.status ? current : next));
     });
@@ -138,7 +130,6 @@ export function PiiLockedShell(): ReactElement | null {
       setConfirmation("");
       setPasswordHint("");
       setAccess(getPiiStoreAccessState());
-      rehomeLegacyPii();
     } catch (caught) {
       setPassphrase("");
       setConfirmation("");
@@ -273,12 +264,12 @@ export function PiiLockedShell(): ReactElement | null {
                         ? t("privacy.vault.createPassphrasePlaceholder")
                         : t("privacy.vault.passphrasePlaceholder")
                     }
-                    className="h-9 w-36 sm:w-44 px-3 pr-8 rounded-lg text-xs bg-[#0b101c] text-white border border-[#21304f] focus:border-amber-400 focus:outline-none placeholder-slate-500"
+                    className="h-9 min-h-11 w-44 px-3 pr-12 rounded-lg text-xs bg-[#0b101c] text-white border border-[#21304f] focus:border-amber-400 focus:outline-none placeholder-slate-500"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 min-h-11 min-w-11 text-slate-500 hover:text-slate-300"
                     title={
                       showPassword
                         ? t("privacy.vault.hidePassphrase")
@@ -311,7 +302,7 @@ export function PiiLockedShell(): ReactElement | null {
                       placeholder={t(
                         "privacy.vault.confirmPassphrasePlaceholder",
                       )}
-                      className="h-9 w-36 sm:w-44 px-3 rounded-lg text-xs bg-[#0b101c] text-white border border-[#21304f] focus:border-amber-400 focus:outline-none placeholder-slate-500"
+                      className="h-9 min-h-11 w-44 px-3 rounded-lg text-xs bg-[#0b101c] text-white border border-[#21304f] focus:border-amber-400 focus:outline-none placeholder-slate-500"
                     />
 
                     <input
@@ -319,7 +310,7 @@ export function PiiLockedShell(): ReactElement | null {
                       value={passwordHint}
                       onChange={(e) => setPasswordHint(e.target.value)}
                       placeholder="Dica de senha (opcional)..."
-                      className="h-9 w-40 sm:w-48 px-3 rounded-lg text-xs bg-[#0b101c] text-white border border-[#21304f] focus:border-blue-400 focus:outline-none placeholder-slate-500"
+                      className="h-9 min-h-11 w-40 sm:w-48 px-3 rounded-lg text-xs bg-[#0b101c] text-white border border-[#21304f] focus:border-blue-400 focus:outline-none placeholder-slate-500"
                     />
                   </>
                 )}
@@ -327,7 +318,7 @@ export function PiiLockedShell(): ReactElement | null {
                 <button
                   type="submit"
                   disabled={!canSubmit}
-                  className="inline-flex items-center justify-center h-9 px-4 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors shadow-sm disabled:opacity-50"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center h-9 px-4 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition-colors shadow-sm disabled:opacity-50"
                 >
                   {busy ? (
                     <span>{t("privacy.vault.unlocking")}</span>
@@ -347,7 +338,7 @@ export function PiiLockedShell(): ReactElement | null {
                   <button
                     type="button"
                     onClick={() => setShowRecoveryHint(!showRecoveryHint)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-amber-300 text-[11px] font-semibold transition-colors border border-amber-500/20"
+                    className="inline-flex min-h-11 min-w-11 items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-amber-300 text-[11px] font-semibold transition-colors border border-amber-500/20"
                     title="Ver dica de senha"
                   >
                     <KeyRound className="w-3 h-3" />
@@ -357,7 +348,7 @@ export function PiiLockedShell(): ReactElement | null {
                   <button
                     type="button"
                     onClick={() => setShowResetModal(true)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 text-[11px] font-semibold transition-colors border border-slate-700 hover:border-rose-500/40"
+                    className="inline-flex min-h-11 min-w-11 items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 text-[11px] font-semibold transition-colors border border-slate-700 hover:border-rose-500/40"
                     title="Esqueci minha senha / Redefinir cofre local"
                   >
                     <RotateCcw className="w-3 h-3" />
@@ -404,7 +395,7 @@ export function PiiLockedShell(): ReactElement | null {
               <button
                 type="button"
                 onClick={() => setShowRecoveryHint(false)}
-                className="text-slate-400 hover:text-white px-1.5"
+                className="min-h-11 min-w-11 text-slate-400 hover:text-white px-1.5"
               >
                 ✕
               </button>
@@ -466,7 +457,7 @@ export function PiiLockedShell(): ReactElement | null {
               <button
                 type="button"
                 onClick={() => setShowResetModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 transition-colors"
+                className="min-h-11 min-w-11 px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 transition-colors"
               >
                 Cancelar
               </button>
@@ -474,7 +465,7 @@ export function PiiLockedShell(): ReactElement | null {
                 type="button"
                 onClick={() => void handleResetVault()}
                 disabled={busy}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-700 hover:ring-2 hover:ring-amber-500/40 transition-colors shadow-md disabled:opacity-50"
+                className="min-h-11 min-w-11 px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-700 hover:ring-2 hover:ring-amber-500/40 transition-colors shadow-md disabled:opacity-50"
               >
                 {busy ? "Redefinindo..." : "Redefinir e Criar Nova Senha"}
               </button>

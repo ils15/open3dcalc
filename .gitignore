@@ -84,3 +84,5 @@ release-notes-output/
 Example/
 opencode.json
 AGENTS.md
+.worktrees/
+.playwright-mcp/

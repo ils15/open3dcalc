@@ -64,7 +64,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
             <span>Ações Rápidas</span>
             <button
               onClick={() => setShowQuickActions(false)}
-              className="text-slate-500 hover:text-white"
+              className="min-h-11 min-w-11 text-slate-500 hover:text-white"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -74,7 +74,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
               setShowQuickActions(false);
               onTabChange("calculator");
             }}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
+            className="flex min-h-11 items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
           >
             <Calculator className="w-3.5 h-3.5 text-blue-400" />
             <span>Novo Cálculo 3D</span>
@@ -84,7 +84,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
               setShowQuickActions(false);
               onTabChange("inventory");
             }}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
+            className="flex min-h-11 items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
           >
             <Package className="w-3.5 h-3.5 text-amber-400" />
             <span>Cadastrar Carretel</span>
@@ -94,7 +94,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
               setShowQuickActions(false);
               onTabChange("catalog");
             }}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
+            className="flex min-h-11 items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
           >
             <Settings2 className="w-3.5 h-3.5 text-indigo-400" />
             <span>Adicionar Impressora</span>
@@ -104,7 +104,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
               setShowQuickActions(false);
               onOpenNewQuote();
             }}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
+            className="flex min-h-11 items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-blue-600/20 transition-colors text-left"
           >
             <FileText className="w-3.5 h-3.5 text-emerald-400" />
             <span>Emitir Orçamento PDF</span>
@@ -114,7 +114,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
               setShowQuickActions(false);
               onOpenCopilot();
             }}
-            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-amber-600/20 transition-colors text-left"
+            className="flex min-h-11 items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-amber-600/20 transition-colors text-left"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Assistente IA de Impressão</span>
@@ -129,7 +129,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         {/* Mini-dash status indicator */}
         <button
           onClick={onOpenMiniDash}
-          className="shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#111728] hover:bg-[#18233c] text-slate-200 border border-[#212c45] transition-all"
+          className="shrink-0 flex min-h-11 items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#111728] hover:bg-[#18233c] text-slate-200 border border-[#212c45] transition-all"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span className="text-emerald-400 font-bold">Mini-Dash</span>
@@ -149,7 +149,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         {/* Action button */}
         <button
           onClick={() => setShowQuickActions(!showQuickActions)}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white transition-all shadow-md shadow-blue-600/30"
+          className="shrink-0 flex min-h-11 items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white transition-all shadow-md shadow-blue-600/30"
         >
           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
           <span>Ações Rápidas</span>
@@ -158,7 +158,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         {/* Modo foco */}
         <button
           onClick={onToggleFocusMode}
-          className="shrink-0 p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-950/40 rounded-full transition-colors"
+          className="shrink-0 min-h-11 min-w-11 p-1.5 text-purple-400 hover:text-purple-300 hover:bg-purple-950/40 rounded-full transition-colors"
           title="Modo Foco"
         >
           <Maximize className="w-3.5 h-3.5" />
@@ -167,7 +167,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         {/* Atalhos */}
         <button
           onClick={onOpenShortcuts}
-          className="shrink-0 p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-full transition-colors"
+          className="shrink-0 min-h-11 min-w-11 p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-full transition-colors"
           title="Atalhos (?)"
         >
           <HelpCircle className="w-3.5 h-3.5" />

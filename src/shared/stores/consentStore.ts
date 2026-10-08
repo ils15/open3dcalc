@@ -9,6 +9,7 @@ import {
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { evaluateReceipt } from "@/shared/lib/consentReceipt";
 import { consentErasurePlan } from "@/shared/lib/consentReceipt";
+import { setWithdrawalPending } from "@/shared/lib/crypto/piiStoreCapability";
 
 /**
  * Consent store (D1.1 S8) — SPEC-04.
@@ -116,9 +117,12 @@ export const useConsentStore = create<ConsentStore>()(
       withdrawConsent: async () => {
         const current = get().receipt;
         if (!current || current.withdrawn_at !== null) return;
-        // §6.1: erase the consent-basis data per the manifest.
-        eraseConsentBasisLocalStorage();
-        // §6.3: annotate — the receipt is kept, never re-usable.
+        // §6.3: annotate and persist the revocation FIRST. The withdrawn
+        // receipt is the durable audit record, and the store's gated storage is
+        // synchronous, so it is written before any purge attempt. A crash
+        // between the two leaves a revoked receipt with un-erased data
+        // (recoverable); erasing first would leave no proof the withdrawal was
+        // requested.
         const withdrawn = annotateWithdrawn(current, new Date().toISOString());
         set({
           receipt: null,
@@ -127,6 +131,11 @@ export const useConsentStore = create<ConsentStore>()(
           consentDate: null,
           withdrawnReceipts: [...get().withdrawnReceipts, withdrawn],
         });
+        // Full-device erasure cannot be verified in this slice, so the lock
+        // stays engaged and new PII writes are blocked. No erasure is claimed.
+        setWithdrawalPending(true);
+        // §6.1: erase the consent-basis data per the manifest.
+        eraseConsentBasisLocalStorage();
       },
 
       resetConsent: () =>

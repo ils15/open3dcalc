@@ -5,6 +5,7 @@ import enUS from "@/shared/i18n/locales/en-US.json";
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import i18n from "@/shared/i18n/i18n";
 import { useLegacyKeepReadOnlyStore } from "@/shared/stores/legacyKeepReadOnlyStore";
+import { useConsentStore } from "@/shared/stores/consentStore";
 import { PrivacyScreen } from "../PrivacyScreen";
 
 // ---------------------------------------------------------------------------
@@ -14,14 +15,28 @@ import { PrivacyScreen } from "../PrivacyScreen";
 
 const hoisted = vi.hoisted(() => ({
   quarantineReport: vi.fn(),
+  authorizeErasure: vi.fn(),
+  claimErasure: vi.fn(),
+  erasureStatus: vi.fn(),
+  startErasure: vi.fn(),
+  purgeRendererStores: vi.fn(),
+  purgeCalls: [] as unknown[][],
   migrateKey: vi.fn(),
   eliminateKey: vi.fn(),
+  legacyRows: vi.fn(),
   evaluateReceipt: vi.fn(),
   // `t` is the IDENTITY by default, because the specs above pin i18n KEYS and
   // a resolving `t` would rename every assertion in them. The SPEC-04 spec at
   // the bottom flips this to the real i18next instance, which is the only way
   // to see what a wrong namespace prefix does: it renders the key itself.
   tMode: "identity" as "identity" | "real",
+}));
+
+vi.mock("@/shared/lib/erasureSaga/rendererSweep", () => ({
+  purgeRendererStores: (...args: unknown[]) => {
+    hoisted.purgeCalls.push(args);
+    return hoisted.purgeRendererStores(...args);
+  },
 }));
 
 vi.mock("@/shared/lib/consentReceipt", async (importOriginal) => {
@@ -60,18 +75,27 @@ const baseReport = {
 };
 
 function stubElectronApi(): void {
+  vi.stubGlobal("navigator", { userAgent: "Electron/40.0" });
   vi.stubGlobal("electronAPI", {
     privacy: {
       quarantineReport: hoisted.quarantineReport,
       migrateKey: hoisted.migrateKey,
       eliminateKey: hoisted.eliminateKey,
+      legacyRows: hoisted.legacyRows,
+    },
+    erasure: {
+      authorize: hoisted.authorizeErasure,
+      claim: hoisted.claimErasure,
+      start: hoisted.startErasure,
+      status: hoisted.erasureStatus,
     },
   });
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   vi.unstubAllGlobals();
+  hoisted.purgeCalls.length = 0;
   hoisted.tMode = "identity";
   hoisted.evaluateReceipt.mockResolvedValue({
     status: "absent",
@@ -80,6 +104,20 @@ beforeEach(() => {
     currentPolicyVersion: "2026.09",
   });
   hoisted.quarantineReport.mockResolvedValue(baseReport);
+  hoisted.authorizeErasure.mockResolvedValue({ token: "synthetic-token" });
+  hoisted.claimErasure.mockResolvedValue({
+    targets: [{ surface: "localStorage", id: "open3dcalc_customers_v1" }],
+  });
+  hoisted.erasureStatus.mockResolvedValue({ active: false, available: false });
+  hoisted.startErasure.mockResolvedValue({
+    receipt: {
+      stores_completed: ["localstorage"],
+      external_copies_notice: ["external copy notice"],
+    },
+    rolledBack: false,
+  });
+  hoisted.purgeRendererStores.mockResolvedValue({});
+  hoisted.legacyRows.mockRejectedValue(new Error("disabled IPC"));
   hoisted.migrateKey.mockResolvedValue({
     key: "open3dcalc_quotes_v1",
     migrated: true,
@@ -92,68 +130,172 @@ beforeEach(() => {
 });
 
 describe("PrivacyScreen (D1.1 S4)", () => {
-  it("renders quarantined keys with record counts and both exits", async () => {
+  it("reports unavailable quarantine status without invoking disabled IPC or claiming empty residue", async () => {
     stubElectronApi();
     render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(
-        screen.getAllByText(/quarantined|Quarantined/).length,
-      ).toBeGreaterThan(0),
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "privacy.quarantine.inspectionPaused",
     );
+    expect(screen.queryByText("privacy.quarantine.noQuarantined")).toBeNull();
     expect(
-      screen.getByText(/privacy.quarantine.records:3/),
+      screen.queryByRole("button", { name: "privacy.quarantine.migrate" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "privacy.quarantine.eliminate" }),
+    ).toBeNull();
+    expect(hoisted.quarantineReport).not.toHaveBeenCalled();
+    expect(hoisted.migrateKey).not.toHaveBeenCalled();
+    expect(hoisted.eliminateKey).not.toHaveBeenCalled();
+    expect(
+      await screen.findByRole("button", {
+        name: "privacy.consent_receipt.grant",
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "privacy.quarantine.migrate" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "privacy.quarantine.eliminate" }),
+      screen.getByRole("button", { name: "privacy.erasure.button" }),
     ).toBeInTheDocument();
   });
 
-  it("migrate calls the IPC and refreshes the report", async () => {
+  it("does not call renderer purge when durable authorization persistence fails", async () => {
     stubElectronApi();
-    const user = userEvent.setup();
+    hoisted.erasureStatus.mockResolvedValueOnce({
+      active: false,
+      available: true,
+      blockerCodes: [],
+    });
+    hoisted.authorizeErasure.mockRejectedValueOnce(
+      new Error("synthetic journal persistence failure"),
+    );
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<PrivacyScreen />);
+
+    const button = await screen.findByRole("button", {
+      name: "privacy.erasure.button",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
     await waitFor(() =>
-      expect(hoisted.quarantineReport).toHaveBeenCalledTimes(1),
+      expect(hoisted.authorizeErasure).toHaveBeenCalledOnce(),
     );
-    await user.click(
-      screen.getByRole("button", { name: "privacy.quarantine.migrate" }),
-    );
-    await waitFor(() => expect(hoisted.migrateKey).toHaveBeenCalled());
-    await waitFor(() =>
-      expect(hoisted.quarantineReport).toHaveBeenCalledTimes(2),
-    );
+    expect(hoisted.claimErasure).not.toHaveBeenCalled();
+    expect(hoisted.purgeRendererStores).not.toHaveBeenCalled();
   });
 
-  it("eliminate calls the IPC with the quarantined key", async () => {
+  it.each([
+    ["missing authorization", undefined],
+    ["invalid authorization", { token: "not-a-token" }],
+    ["expired authorization", { token: "expired-token" }],
+    ["replayed authorization", { token: "replayed-token" }],
+  ])("does not purge when main rejects %s", async (_name, authorization) => {
     stubElectronApi();
-    const user = userEvent.setup();
+    hoisted.erasureStatus.mockResolvedValueOnce({
+      active: false,
+      available: true,
+      blockerCodes: [],
+    });
+    hoisted.authorizeErasure.mockResolvedValueOnce(authorization);
+    hoisted.claimErasure.mockRejectedValueOnce(
+      new Error("authorization denied"),
+    );
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "privacy.quarantine.eliminate" }),
-      ),
-    );
-    await user.click(
-      screen.getByRole("button", { name: "privacy.quarantine.eliminate" }),
-    );
-    await waitFor(() =>
-      expect(hoisted.eliminateKey).toHaveBeenCalledWith("open3dcalc_quotes_v1"),
-    );
+
+    const button = await screen.findByRole("button", {
+      name: "privacy.erasure.button",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      if (authorization && typeof authorization.token === "string") {
+        expect(hoisted.claimErasure).toHaveBeenCalledOnce();
+      } else {
+        expect(hoisted.authorizeErasure).toHaveBeenCalledOnce();
+      }
+    });
+    expect(hoisted.purgeRendererStores).not.toHaveBeenCalled();
   });
 
-  it("never renders quarantined values — metadata only", async () => {
+  it("reports unavailable status when the Electron preload bridge is missing", () => {
+    vi.stubGlobal("navigator", { userAgent: "Electron/40.0" });
+    render(<PrivacyScreen />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "privacy.quarantine.inspectionPaused",
+    );
+    expect(screen.queryByText("privacy.quarantine.desktopOnly")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "privacy.erasure.button" }),
+    ).toBeDisabled();
+    expect(hoisted.quarantineReport).not.toHaveBeenCalled();
+  });
+
+  it("renders a truthful paused quarantine notice, never a load-failure claim", () => {
     stubElectronApi();
     render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(
-        screen.getAllByText(/open3dcalc_quotes_v1/).length,
-      ).toBeGreaterThan(0),
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("privacy.quarantine.inspectionPaused");
+    expect(status).not.toHaveTextContent("privacy.quarantine.loadError");
+  });
+
+  it("discloses that delete-all is unavailable and keeps the control disabled", async () => {
+    stubElectronApi();
+    render(<PrivacyScreen />);
+
+    expect(await screen.findByTestId("erasure-unavailable")).toHaveTextContent(
+      "privacy.erasure.unavailable",
     );
+    expect(
+      screen.getByRole("button", { name: "privacy.erasure.button" }),
+    ).toBeDisabled();
+  });
+
+  it("surfaces the exact blocker codes behind an unavailable delete-all", async () => {
+    stubElectronApi();
+    hoisted.erasureStatus.mockResolvedValueOnce({
+      active: false,
+      available: false,
+      blockerCodes: ["manifest_code_mismatch", "unmapped_pii_target"],
+    });
+    render(<PrivacyScreen />);
+
+    // The disabled control must say WHY it is disabled, with the main process's
+    // own blocker codes, so "unavailable" is diagnosable rather than a shrug.
+    expect(await screen.findByTestId("erasure-unavailable")).toHaveTextContent(
+      "privacy.erasure.unavailable",
+    );
+    const blockers = await screen.findByTestId("erasure-blockers");
+    expect(blockers).toHaveTextContent("privacy.erasure.blockersLabel");
+    expect(blockers).toHaveTextContent("manifest_code_mismatch");
+    expect(blockers).toHaveTextContent("unmapped_pii_target");
+    expect(
+      screen.getByRole("button", { name: "privacy.erasure.button" }),
+    ).toBeDisabled();
+  });
+
+  it("never claims success when main reports delete-all unavailable", async () => {
+    stubElectronApi();
+    hoisted.erasureStatus.mockResolvedValueOnce({
+      active: false,
+      available: false,
+      blockerCodes: ["manifest_unavailable"],
+    });
+    render(<PrivacyScreen />);
+
+    // The control is disabled, so there is no success path to reach; the
+    // receipt block must never appear on an unavailable saga.
+    await screen.findByTestId("erasure-unavailable");
+    expect(screen.queryByText("privacy.erasure.done")).toBeNull();
+    expect(hoisted.startErasure).not.toHaveBeenCalled();
+    expect(hoisted.purgeRendererStores).not.toHaveBeenCalled();
+  });
+
+  it("does not render stale report values when quarantine IPC is disabled", () => {
+    stubElectronApi();
+    render(<PrivacyScreen />);
+    expect(screen.queryByText(/open3dcalc_quotes_v1/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Fernanda/)).not.toBeInTheDocument();
   });
 
@@ -170,17 +312,129 @@ describe("PrivacyScreen (D1.1 S4)", () => {
     expect(
       screen.getByRole("region", { name: "privacy.residue.title" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "privacy.quarantine.refresh" }),
+    ).toBeInTheDocument();
+    expect(hoisted.quarantineReport).not.toHaveBeenCalled();
   });
 
-  it("discloses the legacy residue panel on desktop too", async () => {
+  it("does not inspect desktop legacy residue until the user requests it", async () => {
     stubElectronApi();
     render(<PrivacyScreen />);
-    await waitFor(() =>
-      expect(hoisted.quarantineReport).toHaveBeenCalledTimes(1),
-    );
     expect(
       screen.getByRole("region", { name: "privacy.residue.title" }),
     ).toBeInTheDocument();
+    expect(hoisted.legacyRows).not.toHaveBeenCalled();
+    expect(hoisted.quarantineReport).not.toHaveBeenCalled();
+  });
+
+  it("runs the authorized plan and renders the honest receipt with external copies", async () => {
+    stubElectronApi();
+    hoisted.erasureStatus.mockResolvedValueOnce({
+      active: false,
+      available: true,
+      blockerCodes: [],
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<PrivacyScreen />);
+
+    const button = await screen.findByRole("button", {
+      name: "privacy.erasure.button",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    await waitFor(() =>
+      expect(hoisted.authorizeErasure).toHaveBeenCalledOnce(),
+    );
+    await waitFor(() =>
+      expect(hoisted.purgeCalls[0]?.[0]).toEqual([
+        { surface: "localStorage", id: "open3dcalc_customers_v1" },
+      ]),
+    );
+    expect(hoisted.startErasure).toHaveBeenCalledWith("synthetic-token", {});
+    expect(await screen.findByText("privacy.erasure.done")).toBeInTheDocument();
+    expect(screen.getByText("external copy notice")).toBeInTheDocument();
+  });
+
+  it("does not start the saga when the user cancels the confirmation", async () => {
+    stubElectronApi();
+    hoisted.erasureStatus.mockResolvedValueOnce({
+      active: false,
+      available: true,
+      blockerCodes: [],
+    });
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<PrivacyScreen />);
+
+    const button = await screen.findByRole("button", {
+      name: "privacy.erasure.button",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    expect(hoisted.authorizeErasure).not.toHaveBeenCalled();
+    expect(hoisted.startErasure).not.toHaveBeenCalled();
+  });
+
+  it("grants consent and refreshes into the active-receipt branch", async () => {
+    stubElectronApi();
+    const giveConsent = vi
+      .spyOn(useConsentStore.getState(), "giveConsent")
+      .mockResolvedValue(undefined);
+    hoisted.evaluateReceipt
+      .mockResolvedValueOnce({
+        status: "absent",
+        consentGiven: false,
+        currentPolicyHash: "sha256:synthetic",
+        currentPolicyVersion: "2026.09",
+      })
+      .mockResolvedValueOnce({
+        status: "valid",
+        consentGiven: true,
+        currentPolicyHash: "sha256:synthetic",
+        currentPolicyVersion: "2026.09",
+      });
+    const user = userEvent.setup();
+    render(<PrivacyScreen />);
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "privacy.consent_receipt.grant",
+      }),
+    );
+
+    await waitFor(() => expect(giveConsent).toHaveBeenCalledOnce());
+    expect(
+      await screen.findByRole("button", {
+        name: "privacy.consent_receipt.withdraw",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("withdraws consent without surfacing an error on success", async () => {
+    stubElectronApi();
+    hoisted.evaluateReceipt.mockResolvedValue({
+      status: "valid",
+      consentGiven: true,
+      currentPolicyHash: "sha256:synthetic",
+      currentPolicyVersion: "2026.09",
+    });
+    const withdrawConsent = vi
+      .spyOn(useConsentStore.getState(), "withdrawConsent")
+      .mockResolvedValue(undefined);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+    render(<PrivacyScreen />);
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "privacy.consent_receipt.withdraw",
+      }),
+    );
+
+    await waitFor(() => expect(withdrawConsent).toHaveBeenCalledOnce());
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });
 
@@ -356,4 +610,78 @@ describe("PrivacyScreen (SPEC-04) — the consent receipt block resolves real co
       expect(container.textContent).not.toContain(dict.privacy.consent.title);
     },
   );
+});
+
+/**
+ * Withdrawal honesty. The prior copy promised that data "will be erased",
+ * while the store only removed locally reachable consent-basis localStorage
+ * keys. Full-device erasure is unavailable in this slice, so the copy and the
+ * failure path must say so instead of claiming erasure.
+ */
+describe("PrivacyScreen (SPEC-04) — honest withdrawal", () => {
+  const LOCALES = [
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ] as const;
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it.each(LOCALES)(
+    "withdrawal copy does not promise erasure in %s",
+    (_locale, dict) => {
+      const receipt = dict.privacy.consent_receipt;
+      expect(receipt.withdrawConfirm).not.toMatch(
+        /will be erased|serão apagados/i,
+      );
+      expect(receipt.withdrawConfirm.length).toBeGreaterThan(0);
+      expect(receipt.withdrawScopeNote.length).toBeGreaterThan(0);
+      expect(receipt.withdrawFailed.length).toBeGreaterThan(0);
+      expect(receipt.withdrawRetry.length).toBeGreaterThan(0);
+    },
+  );
+
+  async function renderGranted(): Promise<void> {
+    stubElectronApi();
+    hoisted.evaluateReceipt.mockResolvedValue({
+      status: "valid",
+      consentGiven: true,
+      currentPolicyHash: "sha256:synthetic",
+      currentPolicyVersion: "2026.09",
+    });
+    render(<PrivacyScreen />);
+    await screen.findByRole("button", {
+      name: "privacy.consent_receipt.withdraw",
+    });
+  }
+
+  it("shows the honest withdrawal scope note on the granted branch", async () => {
+    await renderGranted();
+    expect(
+      screen.getByText("privacy.consent_receipt.withdrawScopeNote"),
+    ).toBeInTheDocument();
+  });
+
+  it("surfaces a withdrawal failure with a retry, without claiming erasure", async () => {
+    await renderGranted();
+    const withdraw = vi
+      .spyOn(useConsentStore.getState(), "withdrawConsent")
+      .mockRejectedValueOnce(new Error("synthetic withdrawal failure"));
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole("button", { name: "privacy.consent_receipt.withdraw" }),
+    );
+
+    expect(withdraw).toHaveBeenCalledOnce();
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("privacy.consent_receipt.withdrawFailed");
+    expect(
+      screen.getByRole("button", {
+        name: "privacy.consent_receipt.withdrawRetry",
+      }),
+    ).toBeInTheDocument();
+  });
 });

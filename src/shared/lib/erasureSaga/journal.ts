@@ -8,7 +8,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import type { SagaJournal } from "./types.js";
+import { isValidSagaJournal, type SagaJournal } from "./types.js";
 import type { JournalAdapter } from "./ports.js";
 
 export class JournalError extends Error {
@@ -32,18 +32,13 @@ export function diskJournalAdapter(dir: string): JournalAdapter {
     load(): SagaJournal | null {
       if (!fs.existsSync(file)) return null;
       try {
-        const parsed = JSON.parse(fs.readFileSync(file, "utf8")) as SagaJournal;
-        if (
-          typeof parsed.saga_id !== "string" ||
-          typeof parsed.state !== "string"
-        ) {
-          throw new Error("malformed journal");
-        }
+        const parsed: unknown = JSON.parse(fs.readFileSync(file, "utf8"));
+        if (!isValidSagaJournal(parsed)) throw new Error("invalid journal");
         return parsed;
-      } catch (error) {
-        throw new JournalError(
-          `journal unreadable: ${error instanceof Error ? error.message : String(error)}`,
-        );
+      } catch {
+        // Do not include parse/validation details: malformed bytes are
+        // untrusted and may contain user data. The caller preserves the file.
+        throw new JournalError("journal invalid or unreadable; preserved");
       }
     },
     save(journal: SagaJournal): void {

@@ -269,22 +269,27 @@ describe("persistence bridge — unloadable manifest", () => {
 });
 
 describe("persistence bridge — a healthy manifest still sweeps", () => {
-  it("deletes a genuinely stale row while preserving the manifest's data", async () => {
+  it("cleans a hydrated settings key but preserves unknown and PII rows", async () => {
     resetManifestForTests(manifestFixture as ManifestDocument);
-    // The stale row is an internal key the renderer never holds, which is
-    // exactly what the sweep exists to remove. Restoring a document must not
-    // have disabled the sweep generally.
     await initPersistenceBridge();
+    expect(localStorage.getItem(SETTINGS)).toBe('{"theme":"dark"}');
+    // A runtime removal of a positively hydrated, known non-PII key is the only
+    // condition that permits stale cleanup.
+    localStorage.removeItem(SETTINGS);
 
     await vi.advanceTimersByTimeAsync(10_000);
 
     expect(
       deleteCalls,
-      "the sweep must still delete a genuinely stale row",
-    ).toContain(INTERNAL);
+      "the sweep must clean a positively hydrated non-PII settings key",
+    ).toContain(SETTINGS);
+    expect(deleteCalls).not.toContain(INTERNAL);
     expect(
       db.prepare("SELECT value FROM storage WHERE key = ?").get(CUSTOMERS),
     ).toBeDefined();
+    expect(
+      db.prepare("SELECT value FROM storage WHERE key = ?").get(INTERNAL),
+    ).toEqual({ value: "internal-only" });
   });
 
   it("preserves a declared key that enters storage after hydration", async () => {

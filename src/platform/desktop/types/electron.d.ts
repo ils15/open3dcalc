@@ -5,10 +5,6 @@
  * and consumed by `src/overrides/db-bridge.ts`.
  */
 
-// Type-only: erased at compile time. Deriving the report shape from the
-// canonical PII table list means adding a table is a compile error here rather
-// than a silently un-reported column in the IPC contract.
-import type { PiiDomainTableCounts } from "../../../../electron/piiDomainTables.js";
 // Type-only: derives the legacy-rows contract from the main-process reader, so
 // a change to the report shape is a compile error here, not a silent drift.
 import type { LegacyPiiRowsReport } from "../../../../electron/legacyRows.js";
@@ -21,12 +17,41 @@ export interface ElectronAPI {
   crypto: ElectronCryptoApi;
   privacy: ElectronPrivacyApi;
   erasure: ElectronErasureApi;
+  piiNew: ElectronPiiNewApi;
+}
+
+/**
+ * Desktop passwordless new-PII route (Beta12 Phase3). Main-only encryption
+ * under the OS-keyring-wrapped profile data key; disjoint key namespace.
+ */
+declare global {
+  interface ElectronPiiNewApi {
+    /** OS-keyring gate verdict for the passwordless route. */
+    capability: () => Promise<{
+      available: boolean;
+      backend?: string;
+      reason?: string;
+    }>;
+
+    /** Open a NEW-namespace PII record, or null when absent. */
+    load: (key: string) => Promise<string | null>;
+
+    /** Seal and store a NEW-namespace PII record (encrypted before SQL). */
+    save: (key: string, value: string) => Promise<void>;
+  }
 }
 
 /** Erasure saga operations available through IPC (D1.1 S7). */
 declare global {
   interface ElectronErasureApi {
+    /** Persist an authorization barrier before any renderer deletion. */
+    authorize: () => Promise<{ token: string }>;
+    /** Consume a one-use authorization and return its approved target plan. */
+    claim: (
+      token: string,
+    ) => Promise<{ targets: Array<{ surface: string; id: string }> }>;
     start: (
+      token: string,
       rendererReport?: Record<
         string,
         { purged: number; remaining: string[] } | undefined
@@ -44,92 +69,33 @@ declare global {
     }>;
     status: () => Promise<{
       active: boolean;
+      available: boolean;
+      blockerCodes: string[];
       state?: string;
       stores?: Array<{ store: string; state: string; attempts: number }>;
     }>;
   }
 }
 
-/** Privacy scan operations available through IPC (D1.1 S3). */
+/** Privacy IPC includes legacy UI contracts explicitly rejected by main. */
 declare global {
   interface ElectronPrivacyApi {
     /**
-     * On-demand ADR-002 §2.3 legacy-plaintext scan. Metadata only:
-     * key NAMES and counts, never stored values.
-     */
-    scanReport: () => Promise<{
-      scannedAt: string;
-      entries: Array<{ key: string; surface: string; status: string }>;
-      legacyCount: number;
-      encryptedCount: number;
-      domainTables: PiiDomainTableCounts;
-      manifestAvailable: boolean;
-    }>;
-
-    /**
-     * ADR-002 §2.2 quarantine report: PII keys holding legacy plaintext
-     * (quarantined, read-only) and their record counts.
-     */
-    quarantineReport: () => Promise<{
-      scannedAt: string;
-      entries: Array<{ key: string; status: string; recordCount?: number }>;
-      quarantinedKeys: string[];
-    }>;
-
-    /**
-     * ADR-002 §2.2.3 migrate: encrypt the quarantined plaintext with the
-     * ADR-001 capability and verify before the plaintext is destroyed.
+     * Obsolete legacy-key migration; main rejects it without modifying rows.
      */
     migrateKey: (
       key: string,
     ) => Promise<{ key: string; migrated: boolean; verified: boolean }>;
 
     /**
-     * ADR-002 §2.2.3 eliminate: delete the quarantined rows for a PII key.
+     * Obsolete per-key elimination; use the explicit delete-all saga instead.
      */
     eliminateKey: (
       key: string,
     ) => Promise<{ key: string; eliminated: boolean }>;
 
     /**
-     * ADR-001 §3.6: which stored classes are unreadable, and whether recovery
-     * can still be attempted for each. `reason` is the MAIN process's own
-     * refusal code, reused rather than re-invented here — a second vocabulary
-     * would drift, and these are the codes an operator needs. Metadata only:
-     * key NAMES and codes, never a value (§3.2).
-     */
-    recoveryReport: () => Promise<{
-      scannedAt: string;
-      unavailable: Array<{
-        key: string;
-        reason: string;
-        recoverable: boolean;
-      }>;
-    }>;
-
-    /**
-     * ADR-001 §3.6 recovery for one key: copy → re-seal → verify.
-     *
-     * `verified` is true only after a fresh read-back through the normal bound
-     * path authenticated and matched the full payload, so `recovered: true` may
-     * be read as "this is now a properly bound envelope" rather than "a write
-     * was attempted". NEVER deletes the legacy blob: the copy is retained as
-     * disclosed residue and the user removes it through the erasure flow.
-     */
-    recoverKey: (key: string) => Promise<{
-      key: string;
-      recovered: boolean;
-      verified: boolean;
-      shape?: string;
-      reason?: string;
-      residueRetained?: boolean;
-    }>;
-
-    /**
-     * Beta5 desktop re-home: the RAW legacy plaintext values of the three
-     * migrated PII keys, so the renderer can COPY them into the encrypted vault
-     * (the web re-home's desktop twin). READ-ONLY. These values are PII: they
-     * live in renderer memory only and are NEVER persisted there.
+     * Obsolete raw legacy-PII reader; main rejects it without reading rows.
      */
     legacyRows: () => Promise<LegacyPiiRowsReport>;
   }
@@ -171,23 +137,15 @@ declare global {
     /** Delete a key and its value from the store. */
     delete(key: string): Promise<void>;
 
-    /** List all keys in the store, sorted alphabetically. */
+    /** List only existing keys from the exact app-owned non-PII allowlist. */
     listKeys(): Promise<string[]>;
 
-    /**
-     * Run a raw SQL query (SELECT / PRAGMA / EXPLAIN only).
-     * Write operations must use the dedicated save/delete helpers.
-     */
-    query(sql: string, params?: unknown[]): Promise<unknown[]>;
-
-    /** Open a save dialog and export the database file. Returns the chosen path. */
+    /** Internal diagnostic export; requires the gate and no active erasure. */
     exportDatabase(): Promise<string>;
 
     /**
-     * Import a database from an external backup file.
-     * The file is chosen via a native dialog in the main process — any
-     * renderer-supplied path argument is ignored. Replaces the current
-     * database. Returns the path of the imported database on success.
+     * Legacy API contract retained for compatibility. Main rejects imports
+     * while legacy PII isolation is enforced; no dialog or DB replacement runs.
      */
     importDatabase(): Promise<string>;
   }

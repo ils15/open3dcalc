@@ -1338,7 +1338,8 @@
       "eliminateFailed": "Falha ao eliminar \"{{key}}\" — os dados permanecem em quarentena.",
       "otherData": "Outros dados locais",
       "readNote": "A quarentena nunca se resolve sozinha: as únicas saídas são migrar ou eliminar, sempre por uma ação sua explícita.",
-      "loadError": "Não foi possível carregar o relatório de quarentena."
+      "loadError": "Não foi possível carregar o relatório de quarentena.",
+      "inspectionPaused": "A inspeção da quarentena está pausada nesta versão. Nenhum relatório é carregado e nada é apagado automaticamente; a divulgação de resíduo somente leitura abaixo continua disponível."
     },
     "erasure": {
       "title": "Apagar todos os meus dados",
@@ -1348,7 +1349,9 @@
       "done": "Apagamento concluído e verificado. Todos os armazenamentos foram limpos.",
       "externalCopies": "Cópias externas que o aplicativo não pode apagar:",
       "confirm": "Apagar TODOS os seus dados? Um snapshot criptografado permite reverter por até 7 dias em caso de falha. Depois de concluído, a remoção é definitiva. Continuar?",
-      "failed": "Falha no apagamento — seus dados foram restaurados do snapshot de segurança (se disponível) e nada foi perdido."
+      "failed": "Falha no apagamento — seus dados foram restaurados do snapshot de segurança (se disponível) e nada foi perdido.",
+      "unavailable": "A exclusão total está indisponível até que o aplicativo possa verificar um plano exato de alvos contendo apenas dados pessoais. Nenhuma exclusão será iniciada nesta tela.",
+      "blockersLabel": "Motivos do bloqueio:"
     },
     "consent_receipt": {
       "title": "Consentimento",
@@ -1356,7 +1359,10 @@
       "absent": "Nenhum consentimento válido registrado — os recursos que dependem de consentimento permanecem bloqueados.",
       "grant": "Consentir com a política atual",
       "withdraw": "Retirar consentimento",
-      "withdrawConfirm": "Retirar o consentimento? Os dados coletados sob essa permissão serão apagados conforme a política (SPEC-04 §6) e os recursos afetados serão bloqueados.",
+      "withdrawConfirm": "Retirar o consentimento? Isso registra a retirada e remove os dados de consentimento que este dispositivo consegue alcançar localmente. NÃO apaga dados mantidos em armazenamentos criptografados ou em outras superfícies, que podem permanecer. Os recursos que dependem de consentimento serão bloqueados.",
+      "withdrawScopeNote": "A retirada remove os dados de base consensual alcançáveis localmente e bloqueia os recursos que dependem de consentimento. Um apagamento verificado de todo o dispositivo não está disponível nesta versão, então alguns dados armazenados podem permanecer.",
+      "withdrawFailed": "A retirada não foi concluída — nada foi apagado. Verifique o aplicativo e tente novamente.",
+      "withdrawRetry": "Tentar retirar novamente",
       "flagsNote": "Flags de tutorial, onboarding ou banner nunca substituem o consentimento — apenas o recibo conta (SPEC-04 §2)."
     },
     "vault": {
@@ -1387,6 +1393,11 @@
       "writeRefusedTitle": "Entradas novas não foram salvas",
       "writeRefusedMessage": "Não foi possível salvar em {{area}}: o perfil está bloqueado ou a proteção de dados está indisponível ({{reason}}). A entrada NÃO foi salva e será perdida ao recarregar. Desbloqueie o perfil para salvar.",
       "writeRefusedAreaUnknown": "dados pessoais"
+    },
+    "passwordless": {
+      "title": "Novos dados usam a chave do sistema",
+      "message": "Novos clientes, orçamentos e histórico são criptografados com uma chave gerenciada pelo seu sistema operacional — não há senha do aplicativo para lembrar. Somente registros criados por esta versão a utilizam; dados criptografados antigos permanecem intactos.",
+      "limitation": "Esta chave fica na sua conta do sistema. Se o perfil do sistema, o dispositivo ou a chave forem perdidos, esses novos registros não poderão ser recuperados — não há redefinição nem cópia na nuvem."
     },
     "residue": {
       "title": "Dados legados em texto puro",
@@ -2769,9 +2780,7 @@
       "detail": "Indisponível: {{reason}}",
       "recoverable": "Pode ser recuperado",
       "unrecoverable": "Não pode ser recuperado",
-      "recoverAction": "Recuperar agora",
-      "recovered": "Recuperado e verificado. A cópia original foi mantida como backup.",
-      "recoverFailed": "Não foi possível recuperar estes dados. Nada foi alterado e a cópia original está intacta."
+      "unavailable": "A recuperação automática está indisponível nesta versão. Nada foi alterado e os dados permanecem no disco."
     },
     "manifestUnavailable": {
       "ariaLabel": "Dados salvos indisponíveis",

@@ -1,12 +1,9 @@
 /**
  * Desktop erasure store adapters (D1.1 S7) — SPEC-02 §3 (electron rows).
  *
- * Each adapter is idempotent (purging an already-empty store is a no-op
- * success — the resume rule) and implements the §6 post-condition rescan.
- * Renderer-surface rows (localStorage/IndexedDB/OPFS/caches) are executed
- * BY THE RENDERER before the saga starts and arrive here as a purge
- * report; the main process records them and trusts the renderer's rescan
- * for those rows only — every durable surface is rescanned here directly.
+ * The legacy adapters remain for isolated tests, but Desktop delete-all is
+ * gated unavailable. Renderer reports are telemetry only: they can never
+ * satisfy the main-process postcondition or authorize a destructive adapter.
  */
 
 import fs from "node:fs";
@@ -31,7 +28,10 @@ export interface RendererReportAdapter extends StoreAdapterLike {
   report: RendererStoreReport;
 }
 
-/** Wrap a renderer purge report as an already-executed store row. */
+/**
+ * Preserve renderer execution telemetry, but never treat renderer-supplied
+ * `remaining` values as main-process postcondition evidence.
+ */
 export function rendererReportAdapter(
   store: StoreAdapterLike["store"],
   report: RendererStoreReport | undefined,
@@ -45,7 +45,10 @@ export function rendererReportAdapter(
       return purged;
     },
     async rescan() {
-      return remaining;
+      void remaining;
+      throw new Error(
+        "independent renderer postcondition verification unavailable",
+      );
     },
   };
 }

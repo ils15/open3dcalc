@@ -624,3 +624,113 @@ export async function decryptFromStorage(
   }
   throw new UnknownBlobError();
 }
+
+/* ------------------------------------------------------------------ */
+/*  OS-keyring-ONLY entry points (Beta12 Phase3 passwordless Desktop)  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The refusal code for "this route will ONLY use the OS keyring".
+ *
+ * The general `encryptForStorage`/`decryptFromStorage` pair falls back to a
+ * session-passphrase envelope when the keyring is unavailable. The passwordless
+ * Desktop route deliberately MUST NOT: a record written under a passphrase the
+ * user never chose would be indistinguishable from an OS-protected one on the
+ * next read, and the whole point of this route is "no app passphrase, OS-managed
+ * key only". So the fallback is refused by name.
+ */
+export const OS_KEYRING_ONLY_REASON = "os_keyring_required";
+
+/**
+ * The gate for the OS-only route: `safe_storage` mode or nothing.
+ *
+ * `getCapability()` returns `safe_storage` only when the §3.4 keyring gate
+ * passes (Linux backend allowlist / Windows-macOS round-trip), so a `basic_text`
+ * or unknown backend resolves to `denied` and a machine with a session
+ * passphrase but no keyring resolves to `passphrase` — both refused. The
+ * specific gate code wins where the capability table has one, so the operator
+ * message names the fix instead of the generic table row.
+ */
+function requireOsKeyringCapability(): void {
+  const capability = getCapability();
+  if (capability.mode === "safe_storage") return;
+  throw new CryptoDeniedError(
+    capability.mode === "passphrase"
+      ? OS_KEYRING_ONLY_REASON
+      : denialReason(capability),
+  );
+}
+
+/**
+ * True when a blob is a record this route wrote: an ADR-001 envelope sealed
+ * under the OS-keyring-wrapped profile data key. The ONLY shape the new-PII
+ * read path will open; a legacy `enc1:safeStorage:` blob, a passphrase
+ * `enc1:envelope:` blob and plaintext are all NOT this shape and are refused
+ * before any decrypt.
+ */
+export function isOsKeyringRecord(blob: string): boolean {
+  return typeof blob === "string" && blob.startsWith(PROFILE_KEY_PREFIX);
+}
+
+/**
+ * Seal a NEW PII value for the passwordless Desktop route.
+ *
+ * Same envelope and AAD binding as the primary path, same wrapped profile data
+ * key, same self-test — but with the passphrase fallback REMOVED. Throws
+ * `CryptoDeniedError`:
+ *  - `write_path_disabled` when the rollback flag is off;
+ *  - `os_keyring_required` when only a session passphrase is available;
+ *  - the §3.4 gate code (e.g. `backend_basic_text`) or the self-test code
+ *    (`profile_data_key_unavailable`, `os_round_trip_failed`, …) otherwise.
+ *
+ * Never writes plaintext, never mints a key on a machine that cannot protect
+ * PII, and never falls back to the passphrase path.
+ */
+export async function sealNewPiiValue(
+  key: string,
+  plaintext: string,
+): Promise<string> {
+  if (!CRYPTO_WRITE_PATH_ENABLED) {
+    throw new CryptoDeniedError("write_path_disabled");
+  }
+  requireOsKeyringCapability();
+  await requirePiiReady();
+  const envelope = await encryptWithPassphrase(
+    plaintext,
+    requireProfileDataKey(),
+    expectationFor(key),
+  );
+  return PROFILE_KEY_PREFIX + envelope;
+}
+
+/**
+ * Open a value written by `sealNewPiiValue`.
+ *
+ * Only an `enc1:profileKey:` record is accepted. Anything else is refused by
+ * class — legacy unbound keyring output, a passphrase envelope, or unknown
+ * bytes — so this path can never alias a legacy Beta row or open a value the
+ * route did not write. The OS gate is re-checked on EVERY open (not only at
+ * startup), so a keyring that changed underneath the process fails closed.
+ */
+export async function openNewPiiValue(
+  key: string,
+  blob: string,
+): Promise<string> {
+  if (!blob.startsWith(PROFILE_KEY_PREFIX)) {
+    if (blob.startsWith(LEGACY_UNBOUND_PREFIX)) {
+      throw new LegacyUnboundBlobError();
+    }
+    if (blob.startsWith(ENVELOPE_PREFIX)) {
+      // A passphrase-keyed value: this route has no passphrase to offer.
+      throw new CryptoDeniedError(OS_KEYRING_ONLY_REASON);
+    }
+    throw new UnknownBlobError();
+  }
+  requireOsKeyringCapability();
+  await requirePiiReady();
+  return decryptWithPassphrase(
+    blob.slice(PROFILE_KEY_PREFIX.length),
+    requireProfileDataKey(),
+    expectationFor(key),
+  );
+}

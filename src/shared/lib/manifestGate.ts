@@ -106,6 +106,15 @@ export function isKeyAllowed(key: string): boolean {
 }
 
 /**
+ * Manifest entry for a key, or undefined. Non-throwing and fail-closed on an
+ * unloadable manifest. Used by write guards that need the key's class, not
+ * just its `pii` flag.
+ */
+export function getKeyEntry(key: string): ManifestEntry | undefined {
+  return ensureLoaded()?.get(key);
+}
+
+/**
  * Whether the manifest declares `key` as carrying PII (`pii: true`).
  *
  * Non-throwing and fail-closed on an unknown key or an unloadable manifest:

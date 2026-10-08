@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,15 +10,11 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import {
-  getLegacyPiiDisclosure,
   type HistoryMarkerState,
   type LegacyPiiDisclosure,
   type RehomeDisclosureState,
 } from "@/shared/lib/migration/legacyPiiDisclosure";
-import {
-  installPiiStoreRuntimeEnvironment,
-  type PiiVaultAccessState,
-} from "@/shared/lib/crypto/piiStoreHydration";
+import type { PiiVaultAccessState } from "@/shared/lib/crypto/piiStoreHydration";
 import { useLegacyPiiDisclosure } from "@/shared/hooks/useLegacyPiiDisclosure";
 
 /**
@@ -68,25 +64,64 @@ export interface LegacyResidueDisclosureProps {
   disclosure?: LegacyPiiDisclosure;
 }
 
-function deriveLiveDisclosure(): LegacyPiiDisclosure {
-  // Install the capability snapshot before the first read, or a capable
-  // browser would report `capability_unknown` and read as unavailable.
-  installPiiStoreRuntimeEnvironment();
-  return getLegacyPiiDisclosure();
-}
-
 export function LegacyResidueDisclosure({
   disclosure,
 }: LegacyResidueDisclosureProps = {}): ReactElement {
   const { t } = useTranslation();
-  // Desktop-aware live derivation: the hook merges the SQLite legacy rows
-  // (read-only, over IPC) over `localStorage`. It is disabled when a caller
-  // injects its own disclosure, so an injected value never triggers a live read.
-  const live = useLegacyPiiDisclosure(disclosure === undefined);
-  const data = useMemo(
-    () => disclosure ?? live ?? deriveLiveDisclosure(),
-    [disclosure, live],
+  const [inspectionRequested, setInspectionRequested] = useState(
+    disclosure !== undefined,
   );
+  // A live source read is deliberately deferred until the user asks to inspect
+  // old data. Injected test disclosures remain read-free.
+  const live = useLegacyPiiDisclosure(
+    disclosure === undefined && inspectionRequested,
+  );
+  const data = disclosure ?? (live.status === "ready" ? live.disclosure : null);
+
+  if (!data) {
+    return (
+      <section
+        role="region"
+        aria-labelledby={HEADING_ID}
+        aria-live="polite"
+        className="surface rounded-xl p-4 space-y-3"
+      >
+        <h3
+          id={HEADING_ID}
+          className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-2"
+        >
+          <ShieldCheck
+            className="w-4 h-4 text-[var(--color-accent)]"
+            aria-hidden="true"
+          />
+          {t("privacy.residue.title")}
+        </h3>
+        <p className="text-xs text-[var(--color-text-secondary)]">
+          {t("privacy.residue.subtitle")}
+        </p>
+        {!inspectionRequested ? (
+          <button
+            type="button"
+            onClick={() => setInspectionRequested(true)}
+            className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          >
+            {t("privacy.quarantine.refresh")}
+          </button>
+        ) : live.status === "loading" ? (
+          <p
+            role="status"
+            className="text-xs text-[var(--color-text-secondary)]"
+          >
+            {t("privacy.quarantine.working")}
+          </p>
+        ) : live.status === "unavailable" ? (
+          <p role="alert" className="text-xs text-[var(--color-warning)]">
+            {t("privacy.quarantine.loadError")}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
 
   const presentKeys = data.residue.keys.filter((entry) => entry.present);
 

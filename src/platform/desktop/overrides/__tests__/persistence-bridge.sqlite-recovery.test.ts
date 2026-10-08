@@ -338,13 +338,14 @@ describe("production Electron persistence bridge over on-disk SQLite", () => {
       expect(reportedSaveError(warn.mock.calls, closeFailure)).toBeDefined(),
     );
 
-    const staleKey = "open3dcalc_synthetic_stale";
-    writeStoredRow(sqlite.$client, staleKey, "synthetic stale value");
+    // Only a known, positively hydrated non-PII key can be cleaned. It is
+    // present in localStorage after hydration, then removed as a runtime change.
+    localStorage.removeItem(FIRST_BRIDGE_KEY);
     await vi.advanceTimersByTimeAsync(10_000);
     expect(
       sqlite.$client
         .prepare("SELECT key FROM storage WHERE key = ?")
-        .get(staleKey),
+        .get(FIRST_BRIDGE_KEY),
     ).toBeUndefined();
 
     const cleanupFailure = new Error("synthetic stale-key cleanup failure");
