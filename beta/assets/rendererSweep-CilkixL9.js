@@ -1,0 +1,1 @@
+async function e(e){throw Error(`Renderer erasure is unsupported in Beta`)}export{e as purgeRendererStores};
