@@ -70,6 +70,39 @@ describe("durable withdrawal journal", () => {
     ).toThrow(/pending/i);
   });
 
+  it("replaces a COMPLETED journal with a fresh request (terminal is not reusable)", () => {
+    requestWithdrawal(dir, INPUT);
+    const claim: WithdrawalClaim = {
+      nonce: "nonce-1",
+      operation: "withdraw_consent",
+      profile: "profile-1",
+      targets: INPUT.targets,
+    };
+    expect(
+      claimWithdrawalVerification(
+        dir,
+        claim,
+        new Date("2026-10-07T00:30:00.000Z"),
+      ),
+    ).toMatchObject({ ok: true });
+    completeWithdrawal(dir, "req-1");
+    expect(loadWithdrawalJournal(dir)?.state).toBe("completed");
+
+    // A later withdrawal (new receipt/scope) is a NEW operation: it must
+    // persist a fresh durable record rather than reuse the settled one.
+    const second = requestWithdrawal(dir, {
+      ...INPUT,
+      requestId: "req-2",
+      receiptId: "receipt-2",
+      nonce: "nonce-2",
+    });
+    expect(second.request_id).toBe("req-2");
+    expect(second.state).toBe("pending");
+    expect(second.claimed_nonce).toBeNull();
+    expect(loadWithdrawalJournal(dir)?.request_id).toBe("req-2");
+    expect(withdrawalLocksPii(dir)).toBe(true);
+  });
+
   it("consumes a one-use, exactly-bound, unexpired verification claim", () => {
     requestWithdrawal(dir, INPUT);
     const claim: WithdrawalClaim = {

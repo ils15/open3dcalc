@@ -79,6 +79,7 @@ import {
   requestWithdrawal,
   withdrawalJournalPath,
 } from "../withdrawalJournal.js";
+import { requestNewPiiErasure } from "../newPiiErasure.js";
 import type { MinimalStorageDb } from "../persistGate.js";
 
 const MARKER = "Fernanda Sintética <fernanda@exemplo.teste>";
@@ -775,6 +776,37 @@ describe("pii:new:* — durable withdrawal lock is fail-closed", () => {
     await expect(
       handlers.get(NEW_PII_CHANNELS.load)!(trustedEvent, CUSTOMERS),
     ).resolves.toBe(MARKER);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  5b. Exact new-namespace delete-all lock (Beta12 follow-up)         */
+/* ------------------------------------------------------------------ */
+
+describe("pii:new:* — a pending new-PII delete-all is fail-closed", () => {
+  it("refuses capability/load/save while an exact delete-all is pending", async () => {
+    requestNewPiiErasure(hoisted.userDataDir.value, "profile-synthetic");
+    const { db, rows, calls } = makeDatabase();
+    const { handlers } = registerRoute(db);
+
+    await expect(
+      handlers.get(NEW_PII_CHANNELS.capability)!(trustedEvent),
+    ).resolves.toEqual({ available: false, reason: "withdrawal_pending" });
+    expect(
+      await refusalReason(
+        handlers.get(NEW_PII_CHANNELS.save)!(trustedEvent, CUSTOMERS, MARKER),
+      ),
+    ).toBe("withdrawal_pending");
+    expect(
+      await refusalReason(
+        handlers.get(NEW_PII_CHANNELS.load)!(trustedEvent, CUSTOMERS),
+      ),
+    ).toBe("withdrawal_pending");
+
+    expect(rows.size).toBe(0);
+    expect(calls.prepare).toEqual([]);
+    expect(hoisted.mockSafeStorage.encryptString).not.toHaveBeenCalled();
+    expect(hoisted.mockSafeStorage.decryptString).not.toHaveBeenCalled();
   });
 });
 

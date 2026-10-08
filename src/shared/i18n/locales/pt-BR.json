@@ -1351,7 +1351,17 @@
       "confirm": "Apagar TODOS os seus dados? Um snapshot criptografado permite reverter por até 7 dias em caso de falha. Depois de concluído, a remoção é definitiva. Continuar?",
       "failed": "Falha no apagamento — seus dados foram restaurados do snapshot de segurança (se disponível) e nada foi perdido.",
       "unavailable": "A exclusão total está indisponível até que o aplicativo possa verificar um plano exato de alvos contendo apenas dados pessoais. Nenhuma exclusão será iniciada nesta tela.",
-      "blockersLabel": "Motivos do bloqueio:"
+      "blockersLabel": "Motivos do bloqueio:",
+      "newPiiTitle": "Apagar registros locais sem senha",
+      "newPiiDescription": "Apaga apenas os registros de clientes, orçamentos e histórico que esta versão guardou localmente com o chaveiro do sistema. Não toca em registros de versões anteriores, tabelas do banco de dados nem backups.",
+      "newPiiButton": "Apagar registros locais sem senha",
+      "newPiiWorking": "Apagando… isso pode levar alguns instantes.",
+      "newPiiDone": "Os registros locais sem senha foram apagados e verificados.",
+      "newPiiUnavailable": "O apagamento local sem senha está indisponível agora — nenhum apagamento será iniciado.",
+      "newPiiConfirm": "Apagar os registros locais sem senha (clientes, orçamentos, histórico) guardados com o chaveiro do sistema? Isso não pode ser desfeito. Registros de versões anteriores, tabelas do banco e backups não são afetados.",
+      "newPiiFailed": "O apagamento não foi concluído — nenhuma exclusão é declarada. Verifique o aplicativo e tente novamente.",
+      "legacyScopeTitle": "Exclusão total do dispositivo (indisponível)",
+      "legacyScopeNote": "Apagar TODOS os dados — versões anteriores, tabelas do banco e backups — permanece indisponível até existir um plano exato e verificável de alvos. O apagamento sem senha acima é a única exclusão disponível nesta versão."
     },
     "consent_receipt": {
       "title": "Consentimento",

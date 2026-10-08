@@ -1351,7 +1351,17 @@
       "confirm": "Delete ALL your data? An encrypted snapshot allows rollback for up to 7 days in case of failure. Once committed, removal is permanent. Continue?",
       "failed": "Erasure failed — your data was restored from the safety snapshot (when available) and nothing was lost.",
       "unavailable": "Delete-all is unavailable until the app can verify an exact personal-data-only target plan. No deletion will start from this screen.",
-      "blockersLabel": "Blocking reasons:"
+      "blockersLabel": "Blocking reasons:",
+      "newPiiTitle": "Delete passwordless local records",
+      "newPiiDescription": "Erases only the customer, quote and history records this build stored locally with the OS keyring. It does not touch records from older builds, database tables or backups.",
+      "newPiiButton": "Delete passwordless local records",
+      "newPiiWorking": "Erasing… this may take a moment.",
+      "newPiiDone": "Passwordless local records were erased and verified.",
+      "newPiiUnavailable": "Passwordless local deletion is unavailable right now — no deletion will start.",
+      "newPiiConfirm": "Delete the passwordless local records (customers, quotes, history) stored with the OS keyring? This cannot be undone. Records from older builds, database tables and backups are not touched.",
+      "newPiiFailed": "Deletion did not complete — no erasure is claimed. Check the app and try again.",
+      "legacyScopeTitle": "Full-device delete-all (unavailable)",
+      "legacyScopeNote": "Deleting ALL data — older builds, database tables and backups — stays unavailable until an exact, verifiable target plan exists. The passwordless deletion above is the only erasure available in this version."
     },
     "consent_receipt": {
       "title": "Consent",

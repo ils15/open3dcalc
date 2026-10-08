@@ -73,10 +73,29 @@ export function PrivacyScreen() {
             available: boolean;
             blockerCodes: string[];
           }>;
+          newPii?: {
+            authorize: () => Promise<{ token: string }>;
+            claim: (
+              token: string,
+            ) => Promise<{ targets: Array<{ surface: string; id: string }> }>;
+            start: (token: string) => Promise<{
+              request_id: string;
+              completed_at: string;
+              purged: string[];
+            }>;
+            status: () => Promise<{
+              active: boolean;
+              available: boolean;
+              blockerCodes: string[];
+              state?: string;
+              targets: Array<{ surface: string; id: string }>;
+            }>;
+          };
         };
       };
     }
   ).electronAPI?.erasure;
+  const newPiiErasureApi = erasureApi?.newPii;
 
   // ── SPEC-04 consent receipt (D1.1 S8) ───────────────────────────────
   const [consentStatus, setConsentStatus] = useState<{
@@ -148,6 +167,76 @@ export function PrivacyScreen() {
     rollback_unavailable?: { reason: string; at: string };
   } | null>(null);
   const [erasureError, setErasureError] = useState<string | null>(null);
+
+  // ── EXACT new-namespace delete-all (Beta12 follow-up) ───────────────
+  // This is the only functional erasure in this version: it targets exactly the
+  // three passwordless local records. Legacy/mixed delete-all below stays
+  // unavailable, and the copy says so.
+  const [newPiiAvailable, setNewPiiAvailable] = useState<boolean | null>(
+    newPiiErasureApi ? null : false,
+  );
+  const [newPiiErasing, setNewPiiErasing] = useState(false);
+  const [newPiiError, setNewPiiError] = useState<string | null>(null);
+  const [newPiiDone, setNewPiiDone] = useState(false);
+
+  const refreshNewPiiStatus = useCallback(async () => {
+    if (!newPiiErasureApi) return;
+    try {
+      const status = await newPiiErasureApi.status();
+      setNewPiiAvailable(status.available === true);
+    } catch {
+      setNewPiiAvailable(false);
+    }
+  }, [newPiiErasureApi]);
+
+  useEffect(() => {
+    if (!newPiiErasureApi) return;
+    let mounted = true;
+    void newPiiErasureApi
+      .status()
+      .then((status) => {
+        if (!mounted) return;
+        setNewPiiAvailable(status.available === true);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setNewPiiAvailable(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [newPiiErasureApi]);
+
+  const handleDeleteNewPii = useCallback(async () => {
+    if (!newPiiErasureApi) return;
+    if (newPiiAvailable !== true) {
+      setNewPiiError(t("privacy.erasure.newPiiUnavailable"));
+      return;
+    }
+    if (!window.confirm(t("privacy.erasure.newPiiConfirm"))) return;
+    setNewPiiErasing(true);
+    setNewPiiError(null);
+    setNewPiiDone(false);
+    try {
+      // Main persists the durable journal and issues the one-use nonce; if any
+      // step fails, no deletion is claimed.
+      const authorization = await newPiiErasureApi.authorize();
+      if (!authorization || typeof authorization.token !== "string") {
+        throw new Error("new-PII erasure authorization unavailable");
+      }
+      const plan = await newPiiErasureApi.claim(authorization.token);
+      if (!plan || !Array.isArray(plan.targets)) {
+        throw new Error("new-PII erasure plan unavailable");
+      }
+      await newPiiErasureApi.start(authorization.token);
+      setNewPiiDone(true);
+      await refreshNewPiiStatus();
+    } catch {
+      setNewPiiError(t("privacy.erasure.newPiiFailed"));
+    } finally {
+      setNewPiiErasing(false);
+    }
+  }, [newPiiErasureApi, newPiiAvailable, refreshNewPiiStatus, t]);
 
   useEffect(() => {
     if (!erasureApi) return;
@@ -331,13 +420,62 @@ export function PrivacyScreen() {
         </p>
       </div>
 
-      {/* ── SPEC-02 delete-all ──────────────────────────────────────── */}
+      {/* ── EXACT new-namespace delete-all (functional) ─────────────── */}
+      <div
+        className="surface rounded-xl p-4 border border-[var(--color-danger)]/30 space-y-3"
+        data-testid="new-pii-erasure"
+      >
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+          {t("privacy.erasure.newPiiTitle")}
+        </h3>
+        <p className="text-xs text-[var(--color-text-secondary)]">
+          {t("privacy.erasure.newPiiDescription")}
+        </p>
+        {newPiiAvailable === false && (
+          <p
+            data-testid="new-pii-unavailable"
+            className="text-xs text-[var(--color-warning)]"
+          >
+            {t("privacy.erasure.newPiiUnavailable")}
+          </p>
+        )}
+        {newPiiError && (
+          <p role="alert" className="text-xs text-[var(--color-danger)]">
+            {newPiiError}
+          </p>
+        )}
+        {newPiiDone && (
+          <p
+            role="status"
+            className="text-xs rounded-lg px-3 py-2 border border-[var(--color-success)]/30 bg-[var(--color-success-muted)] text-[var(--color-success)]"
+          >
+            {t("privacy.erasure.newPiiDone")}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => void handleDeleteNewPii()}
+          disabled={
+            newPiiErasing || !newPiiErasureApi || newPiiAvailable !== true
+          }
+          className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-danger-fill)] text-[var(--color-danger-fill-fg)] hover:bg-[var(--color-danger-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none disabled:opacity-60"
+        >
+          {newPiiErasing
+            ? t("privacy.erasure.newPiiWorking")
+            : t("privacy.erasure.newPiiButton")}
+        </button>
+      </div>
+
+      {/* ── SPEC-02 delete-all (legacy/mixed — stays unavailable) ───── */}
       <div className="surface rounded-xl p-4 border border-[var(--color-danger)]/30 space-y-3">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
-          {t("privacy.erasure.title")}
+          {t("privacy.erasure.legacyScopeTitle")}
         </h3>
         <p className="text-xs text-[var(--color-text-secondary)]">
           {t("privacy.erasure.description")}
+        </p>
+        <p className="text-[11px] text-[var(--color-text-muted)]">
+          {t("privacy.erasure.legacyScopeNote")}
         </p>
         {erasureAvailable === false && (
           <div className="space-y-1">

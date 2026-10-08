@@ -27,6 +27,8 @@ import {
   registerDisabledDatabaseImportHandler,
 } from "./databaseIpc.js";
 import { registerPasswordlessPiiHandlers } from "./newPiiIpc.js";
+import { registerNewPiiErasureHandlers } from "./newPiiErasure.js";
+import { registerWithdrawalPurgeHandlers } from "./withdrawalPurge.js";
 import { registerDisabledLegacyPrivacyHandlers } from "./disabledLegacyPrivacyIpc.js";
 import {
   createDiagnosticBackup,
@@ -49,6 +51,15 @@ const __dirname = path.dirname(__filename);
 /* ------------------------------------------------------------------ */
 
 const isDev = process.env.NODE_ENV === "development";
+
+/**
+ * Opaque profile identifier bound into the new-PII erasure/withdrawal nonces.
+ *
+ * It is a stable, non-identifying constant, never a name, email or device
+ * identifier: the journal already lives in the profile directory, so the value
+ * only has to distinguish "this profile" for the binding check.
+ */
+const NEW_PII_ERASURE_PROFILE_ID = "desktop-local-profile";
 
 /* ------------------------------------------------------------------ */
 /*  Window state persistence                                           */
@@ -231,6 +242,31 @@ function setupIpcHandlers(): void {
     db,
     assertTrustedSender,
     app.getPath("userData"),
+  );
+
+  // ── erasure:new-pii:* — EXACT new-namespace delete-all (Beta12 follow-up) ─
+  // Erases ONLY the three passwordless new-PII storage rows through a durable,
+  // one-use, expiring nonce and a trusted-process postcondition. Legacy rows,
+  // domain tables and mixed backups stay unavailable; this route never names
+  // them. A pending/incomplete request locks the new-PII route fail-closed.
+  registerNewPiiErasureHandlers(
+    ipcMain,
+    db,
+    assertTrustedSender,
+    app.getPath("userData"),
+    NEW_PII_ERASURE_PROFILE_ID,
+  );
+
+  // ── withdrawal:* — receipt-scoped purge of the new-PII rows ──────────────
+  // The production caller for `completeWithdrawal`: it purges ONLY the linked
+  // new-PII targets in the receipt scope and releases the lock only after the
+  // trusted-process rescan proves the rows are gone.
+  registerWithdrawalPurgeHandlers(
+    ipcMain,
+    db,
+    assertTrustedSender,
+    app.getPath("userData"),
+    NEW_PII_ERASURE_PROFILE_ID,
   );
 
   // ── db:export (D1.1 S6 — ADR-003 §2.2 reclassification) ─────────────

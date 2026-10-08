@@ -75,6 +75,7 @@ import {
   type MinimalStorageDb,
 } from "./persistGate.js";
 import { withdrawalLocksPii } from "./withdrawalJournal.js";
+import { newPiiErasureLocksPii } from "./newPiiErasure.js";
 
 /** The exact channels this route owns. */
 export const NEW_PII_CHANNELS = {
@@ -91,17 +92,18 @@ export const NEW_PII_CHANNELS = {
 export const WITHDRAWAL_PENDING_REASON = "withdrawal_pending";
 
 /**
- * True while a durable, non-completed withdrawal journal exists for this
- * profile directory, i.e. new PII must not be written into a surface that is
- * mid-erasure.
+ * True while a durable, non-completed withdrawal OR new-PII delete-all journal
+ * exists for this profile directory, i.e. new PII must not be written into a
+ * surface that is mid-erasure.
  *
- * Fail-closed: an unreadable/corrupt journal cannot PROVE the withdrawal
- * completed, so it is treated as locked. This reuses the single journal helper
- * (`withdrawalLocksPii`); the route owns no second copy of the lock state.
+ * Fail-closed: an unreadable/corrupt journal cannot PROVE the operation
+ * completed, so it is treated as locked. This reuses the single journal helpers
+ * (`withdrawalLocksPii`, `newPiiErasureLocksPii`); the route owns no second copy
+ * of the lock state.
  */
 function withdrawalLocked(dir: string): boolean {
   try {
-    return withdrawalLocksPii(dir);
+    return withdrawalLocksPii(dir) || newPiiErasureLocksPii(dir);
   } catch {
     return true;
   }

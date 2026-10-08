@@ -18,6 +18,26 @@ export interface ElectronAPI {
   privacy: ElectronPrivacyApi;
   erasure: ElectronErasureApi;
   piiNew: ElectronPiiNewApi;
+  withdrawal: ElectronWithdrawalApi;
+}
+
+/** Receipt-scoped withdrawal purge (Beta12 follow-up). */
+declare global {
+  interface ElectronWithdrawalApi {
+    /** Persist a durable receipt-scoped journal and return its one-use nonce. */
+    request: (input: { receiptId: string; scope: string[] }) => Promise<{
+      token: string;
+      expiresAt: string;
+      targets: Array<{ surface: string; id: string }>;
+    }>;
+
+    /** Consume the nonce and purge ONLY the linked new-PII rows. */
+    purge: (
+      token: string,
+    ) => Promise<
+      { ok: true; purged: string[] } | { ok: false; reason: string }
+    >;
+  }
 }
 
 /**
@@ -74,6 +94,34 @@ declare global {
       state?: string;
       stores?: Array<{ store: string; state: string; attempts: number }>;
     }>;
+
+    /**
+     * EXACT new-namespace delete-all. Erases ONLY the three passwordless
+     * new-PII storage rows; legacy rows, domain tables and mixed backups stay
+     * unavailable.
+     */
+    newPii: {
+      authorize: () => Promise<{
+        token: string;
+        expiresAt: string;
+        targets: Array<{ surface: string; id: string }>;
+      }>;
+      claim: (
+        token: string,
+      ) => Promise<{ targets: Array<{ surface: string; id: string }> }>;
+      start: (token: string) => Promise<{
+        request_id: string;
+        completed_at: string;
+        purged: string[];
+      }>;
+      status: () => Promise<{
+        active: boolean;
+        available: boolean;
+        blockerCodes: string[];
+        state?: string;
+        targets: Array<{ surface: string; id: string }>;
+      }>;
+    };
   }
 }
 

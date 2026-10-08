@@ -71,9 +71,14 @@ function saveWithdrawalJournal(dir: string, journal: WithdrawalJournal): void {
 /**
  * Persist a pending withdrawal request, or return the existing one.
  *
- * Idempotent by `request_id`. A DIFFERENT request while one is pending is
- * refused: overwriting the pending journal would lose the only durable record
- * of an operation that may already have touched a surface.
+ * Idempotent by `request_id`. A DIFFERENT request while one is pending or
+ * incomplete is refused: overwriting the pending journal would lose the only
+ * durable record of an operation that may already have touched a surface.
+ *
+ * A COMPLETED journal is terminal, not reusable: a later withdrawal (a new
+ * receipt or scope) is a NEW operation and may replace the settled record with
+ * a fresh pending journal. Returning the completed one instead would hand back
+ * a stale token whose `purge` reports a false success while the new rows remain.
  */
 export function requestWithdrawal(
   dir: string,
@@ -82,9 +87,11 @@ export function requestWithdrawal(
   const existing = loadWithdrawalJournal(dir);
   if (existing) {
     if (existing.request_id === input.requestId) return existing;
-    throw new WithdrawalJournalError(
-      "a different withdrawal request is already pending; refusing to overwrite it",
-    );
+    if (existing.state !== "completed") {
+      throw new WithdrawalJournalError(
+        "a different withdrawal request is already pending; refusing to overwrite it",
+      );
+    }
   }
   const journal = createWithdrawalJournal(input);
   saveWithdrawalJournal(dir, journal);

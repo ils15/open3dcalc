@@ -19,6 +19,10 @@ const hoisted = vi.hoisted(() => ({
   claimErasure: vi.fn(),
   erasureStatus: vi.fn(),
   startErasure: vi.fn(),
+  newPiiAuthorize: vi.fn(),
+  newPiiClaim: vi.fn(),
+  newPiiStart: vi.fn(),
+  newPiiStatus: vi.fn(),
   purgeRendererStores: vi.fn(),
   purgeCalls: [] as unknown[][],
   migrateKey: vi.fn(),
@@ -88,6 +92,12 @@ function stubElectronApi(): void {
       claim: hoisted.claimErasure,
       start: hoisted.startErasure,
       status: hoisted.erasureStatus,
+      newPii: {
+        authorize: hoisted.newPiiAuthorize,
+        claim: hoisted.newPiiClaim,
+        start: hoisted.newPiiStart,
+        status: hoisted.newPiiStatus,
+      },
     },
   });
 }
@@ -109,6 +119,27 @@ beforeEach(() => {
     targets: [{ surface: "localStorage", id: "open3dcalc_customers_v1" }],
   });
   hoisted.erasureStatus.mockResolvedValue({ active: false, available: false });
+  hoisted.newPiiStatus.mockResolvedValue({
+    active: false,
+    available: true,
+    blockerCodes: [],
+    targets: [],
+  });
+  hoisted.newPiiAuthorize.mockResolvedValue({ token: "new-pii-token" });
+  hoisted.newPiiClaim.mockResolvedValue({
+    targets: [
+      { surface: "sqlite_storage_table", id: "open3dcalc_pwless_customers_v1" },
+    ],
+  });
+  hoisted.newPiiStart.mockResolvedValue({
+    request_id: "req-new-pii",
+    completed_at: "2026-10-07T00:00:00.000Z",
+    purged: [
+      "open3dcalc_pwless_customers_v1",
+      "open3dcalc_pwless_quotes_v1",
+      "open3dcalc_pwless_history_v1",
+    ],
+  });
   hoisted.startErasure.mockResolvedValue({
     receipt: {
       stores_completed: ["localstorage"],
@@ -684,4 +715,119 @@ describe("PrivacyScreen (SPEC-04) — honest withdrawal", () => {
       }),
     ).toBeInTheDocument();
   });
+});
+
+/**
+ * Beta12 follow-up — the EXACT new-namespace delete is functional, while the
+ * legacy/mixed delete-all stays unavailable. The screen must show that
+ * difference honestly and never claim an erasure it did not verify.
+ */
+describe("PrivacyScreen (Beta12) — exact new-namespace delete vs unavailable legacy scope", () => {
+  it("runs the functional new-namespace delete and shows a verified receipt", async () => {
+    stubElectronApi();
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<PrivacyScreen />);
+
+    const button = await screen.findByRole("button", {
+      name: "privacy.erasure.newPiiButton",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    await waitFor(() => expect(hoisted.newPiiAuthorize).toHaveBeenCalledOnce());
+    expect(hoisted.newPiiClaim).toHaveBeenCalledWith("new-pii-token");
+    expect(hoisted.newPiiStart).toHaveBeenCalledWith("new-pii-token");
+    expect(
+      await screen.findByText("privacy.erasure.newPiiDone"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not claim success when the new-namespace delete fails", async () => {
+    stubElectronApi();
+    hoisted.newPiiStart.mockRejectedValueOnce(new Error("synthetic failure"));
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<PrivacyScreen />);
+
+    const button = await screen.findByRole("button", {
+      name: "privacy.erasure.newPiiButton",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "privacy.erasure.newPiiFailed",
+    );
+    expect(screen.queryByText("privacy.erasure.newPiiDone")).toBeNull();
+  });
+
+  it("does not start the new-namespace delete when the user cancels", async () => {
+    stubElectronApi();
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<PrivacyScreen />);
+
+    const button = await screen.findByRole("button", {
+      name: "privacy.erasure.newPiiButton",
+    });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    expect(hoisted.newPiiAuthorize).not.toHaveBeenCalled();
+    expect(hoisted.newPiiStart).not.toHaveBeenCalled();
+  });
+
+  it("keeps the legacy/mixed delete-all unavailable with the honest scope note", async () => {
+    stubElectronApi();
+    hoisted.erasureStatus.mockResolvedValueOnce({
+      active: false,
+      available: false,
+      blockerCodes: ["unmapped_pii_target"],
+    });
+    render(<PrivacyScreen />);
+
+    expect(await screen.findByTestId("erasure-unavailable")).toHaveTextContent(
+      "privacy.erasure.unavailable",
+    );
+    expect(
+      screen.getByText("privacy.erasure.legacyScopeNote"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "privacy.erasure.button" }),
+    ).toBeDisabled();
+  });
+
+  it("disables the new-namespace delete when main reports it unavailable", async () => {
+    stubElectronApi();
+    hoisted.newPiiStatus.mockResolvedValueOnce({
+      active: false,
+      available: false,
+      blockerCodes: ["journal_invalid"],
+      targets: [],
+    });
+    render(<PrivacyScreen />);
+
+    expect(await screen.findByTestId("new-pii-unavailable")).toHaveTextContent(
+      "privacy.erasure.newPiiUnavailable",
+    );
+    expect(
+      screen.getByRole("button", { name: "privacy.erasure.newPiiButton" }),
+    ).toBeDisabled();
+    expect(hoisted.newPiiAuthorize).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["pt-BR", ptBR],
+    ["en-US", enUS],
+  ] as const)(
+    "carries honest new-namespace and legacy-scope copy in %s",
+    (_locale, dict) => {
+      const erasure = dict.privacy.erasure;
+      expect(erasure.newPiiTitle.length).toBeGreaterThan(0);
+      expect(erasure.newPiiDescription.length).toBeGreaterThan(0);
+      expect(erasure.newPiiConfirm.length).toBeGreaterThan(0);
+      expect(erasure.newPiiFailed.length).toBeGreaterThan(0);
+      expect(erasure.legacyScopeTitle.length).toBeGreaterThan(0);
+      // The legacy scope note must state the limitation, not promise erasure.
+      expect(erasure.legacyScopeNote).toMatch(/unavailable|indisponível/i);
+    },
+  );
 });

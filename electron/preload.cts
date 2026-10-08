@@ -231,6 +231,63 @@ const electronAPI = {
       state?: string;
       stores?: Array<{ store: string; state: string; attempts: number }>;
     }> => ipcRenderer.invoke("erasure:status"),
+
+    /**
+     * EXACT new-namespace delete-all (Beta12 follow-up). Erases ONLY the three
+     * passwordless new-PII storage rows through a durable one-use nonce; legacy
+     * rows, domain tables and mixed backups stay unavailable.
+     */
+    newPii: {
+      authorize: (): Promise<{
+        token: string;
+        expiresAt: string;
+        targets: Array<{ surface: string; id: string }>;
+      }> => ipcRenderer.invoke("erasure:new-pii:authorize"),
+
+      claim: (
+        token: string,
+      ): Promise<{ targets: Array<{ surface: string; id: string }> }> =>
+        ipcRenderer.invoke("erasure:new-pii:claim", token),
+
+      start: (token: string): Promise<{
+        request_id: string;
+        completed_at: string;
+        purged: string[];
+      }> => ipcRenderer.invoke("erasure:new-pii:start", token),
+
+      status: (): Promise<{
+        active: boolean;
+        available: boolean;
+        blockerCodes: string[];
+        state?: string;
+        targets: Array<{ surface: string; id: string }>;
+      }> => ipcRenderer.invoke("erasure:new-pii:status"),
+    },
+  },
+
+  withdrawal: {
+    /**
+     * Persist a durable, receipt-scoped withdrawal journal and return its
+     * one-use nonce. Only the new-PII targets in the receipt scope are bound.
+     */
+    request: (input: {
+      receiptId: string;
+      scope: string[];
+    }): Promise<{
+      token: string;
+      expiresAt: string;
+      targets: Array<{ surface: string; id: string }>;
+    }> => ipcRenderer.invoke("withdrawal:request", input),
+
+    /**
+     * Consume the nonce, purge ONLY the linked new-PII rows and complete the
+     * withdrawal on a verified postcondition.
+     */
+    purge: (
+      token: string,
+    ): Promise<
+      { ok: true; purged: string[] } | { ok: false; reason: string }
+    > => ipcRenderer.invoke("withdrawal:purge", token),
   },
 
   privacy: {
