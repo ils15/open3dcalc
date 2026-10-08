@@ -71,6 +71,146 @@ export interface SagaJournal {
   stores: StoreJournalRow[];
 }
 
+const SAGA_STATES: readonly SagaState[] = [
+  "prepared",
+  "snapshot_taken",
+  "deleting",
+  "committed",
+  "rolled_back",
+];
+const STORE_STATES: readonly StoreRowState[] = [
+  "pending",
+  "in_progress",
+  "done",
+  "failed",
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasOnlyKeys(value: Record<string, unknown>, keys: readonly string[]) {
+  return Object.keys(value).every((key) => keys.includes(key));
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const time = Date.parse(value);
+  return Number.isFinite(time) && new Date(time).toISOString() === value;
+}
+
+/**
+ * Validate the complete durable journal shape before any data capability is
+ * touched. `expectedStores` binds a journal to the full platform plan (or an
+ * explicitly injected test plan); it prevents an omitted target being treated
+ * as an authorized, complete delete.
+ */
+export function isValidSagaJournal(
+  value: unknown,
+  expectedStores?: readonly ErasureStore[],
+): value is SagaJournal {
+  if (!isRecord(value)) return false;
+  if (
+    !hasOnlyKeys(value, [
+      "saga_id",
+      "state",
+      "policy_version",
+      "started_at",
+      "confirmation",
+      "rollback_window",
+      "rollback_unavailable",
+      "stores",
+    ]) ||
+    typeof value.saga_id !== "string" ||
+    value.saga_id.length === 0 ||
+    typeof value.policy_version !== "string" ||
+    value.policy_version.length === 0 ||
+    !SAGA_STATES.includes(value.state as SagaState) ||
+    !isIsoTimestamp(value.started_at)
+  ) {
+    return false;
+  }
+
+  if (!isRecord(value.confirmation)) return false;
+  const confirmation = value.confirmation;
+  if (
+    !hasOnlyKeys(confirmation, ["confirmed_at", "scope"]) ||
+    confirmation.scope !== "delete_all" ||
+    !isIsoTimestamp(confirmation.confirmed_at) ||
+    Date.parse(confirmation.confirmed_at) > Date.parse(value.started_at)
+  ) {
+    return false;
+  }
+
+  if (!isRecord(value.rollback_window)) return false;
+  const rollbackWindow = value.rollback_window;
+  if (
+    !hasOnlyKeys(rollbackWindow, ["ttl_days", "key_source"]) ||
+    !Number.isInteger(rollbackWindow.ttl_days) ||
+    (rollbackWindow.ttl_days as number) <= 0 ||
+    (rollbackWindow.key_source !== "safeStorage" &&
+      rollbackWindow.key_source !== "passphrase")
+  ) {
+    return false;
+  }
+
+  if (value.rollback_unavailable !== undefined) {
+    if (!isRecord(value.rollback_unavailable)) return false;
+    const rollbackUnavailable = value.rollback_unavailable;
+    if (
+      !hasOnlyKeys(rollbackUnavailable, ["reason", "at"]) ||
+      typeof rollbackUnavailable.reason !== "string" ||
+      rollbackUnavailable.reason.length === 0 ||
+      !isIsoTimestamp(rollbackUnavailable.at)
+    ) {
+      return false;
+    }
+  }
+
+  if (!Array.isArray(value.stores) || value.stores.length === 0) return false;
+  const stores: ErasureStore[] = [];
+  for (const candidate of value.stores) {
+    if (!isRecord(candidate)) return false;
+    if (
+      !hasOnlyKeys(candidate, ["store", "state", "attempts", "error"]) ||
+      !ERASURE_STORES.includes(candidate.store as ErasureStore) ||
+      !STORE_STATES.includes(candidate.state as StoreRowState) ||
+      !Number.isSafeInteger(candidate.attempts) ||
+      (candidate.attempts as number) < 0 ||
+      (candidate.state === "pending" && candidate.attempts !== 0) ||
+      (candidate.state !== "pending" && (candidate.attempts as number) < 1) ||
+      (candidate.error !== undefined && typeof candidate.error !== "string") ||
+      (candidate.state === "done" && candidate.error !== undefined)
+    ) {
+      return false;
+    }
+    stores.push(candidate.store as ErasureStore);
+  }
+
+  if (new Set(stores).size !== stores.length) return false;
+  if (
+    expectedStores &&
+    (stores.length !== expectedStores.length ||
+      stores.some((store, index) => store !== expectedStores[index]))
+  ) {
+    return false;
+  }
+
+  if (
+    (value.state === "prepared" || value.state === "snapshot_taken") &&
+    value.stores.some((store) => store.state !== "pending")
+  ) {
+    return false;
+  }
+  if (
+    value.state === "committed" &&
+    value.stores.some((store) => store.state !== "done")
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export const MAX_STORE_ATTEMPTS = 3;
 export const SNAPSHOT_TTL_DAYS = 7;
 

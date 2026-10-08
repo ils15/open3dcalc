@@ -1338,7 +1338,8 @@
       "eliminateFailed": "Failed to eliminate \"{{key}}\" — the data stays quarantined.",
       "otherData": "Other local data",
       "readNote": "Quarantine never resolves on its own: the only exits are migrate or eliminate, always through your explicit action.",
-      "loadError": "Could not load the quarantine report."
+      "loadError": "Could not load the quarantine report.",
+      "inspectionPaused": "Quarantine inspection is paused in this version. No report is loaded and nothing is deleted automatically; the read-only residue disclosure below stays available."
     },
     "erasure": {
       "title": "Delete all my data",
@@ -1348,7 +1349,19 @@
       "done": "Erasure completed and verified. All stores have been wiped.",
       "externalCopies": "External copies the app cannot erase:",
       "confirm": "Delete ALL your data? An encrypted snapshot allows rollback for up to 7 days in case of failure. Once committed, removal is permanent. Continue?",
-      "failed": "Erasure failed — your data was restored from the safety snapshot (when available) and nothing was lost."
+      "failed": "Erasure failed — your data was restored from the safety snapshot (when available) and nothing was lost.",
+      "unavailable": "Delete-all is unavailable until the app can verify an exact personal-data-only target plan. No deletion will start from this screen.",
+      "blockersLabel": "Blocking reasons:",
+      "newPiiTitle": "Delete passwordless local records",
+      "newPiiDescription": "Erases only the customer, quote and history records this build stored locally with the OS keyring. It does not touch records from older builds, database tables or backups.",
+      "newPiiButton": "Delete passwordless local records",
+      "newPiiWorking": "Erasing… this may take a moment.",
+      "newPiiDone": "Passwordless local records were erased and verified.",
+      "newPiiUnavailable": "Passwordless local deletion is unavailable right now — no deletion will start.",
+      "newPiiConfirm": "Delete the passwordless local records (customers, quotes, history) stored with the OS keyring? This cannot be undone. Records from older builds, database tables and backups are not touched.",
+      "newPiiFailed": "Deletion did not complete — no erasure is claimed. Check the app and try again.",
+      "legacyScopeTitle": "Full-device delete-all (unavailable)",
+      "legacyScopeNote": "Deleting ALL data — older builds, database tables and backups — stays unavailable until an exact, verifiable target plan exists. The passwordless deletion above is the only erasure available in this version."
     },
     "consent_receipt": {
       "title": "Consent",
@@ -1356,7 +1369,10 @@
       "absent": "No valid consent recorded — consent-gated features stay blocked.",
       "grant": "Consent to the current policy",
       "withdraw": "Withdraw consent",
-      "withdrawConfirm": "Withdraw consent? Data collected under it will be erased per policy (SPEC-04 §6) and the affected features will be blocked.",
+      "withdrawConfirm": "Withdraw consent? This records the withdrawal and removes the consent data this device can reach locally. It does NOT erase data held in encrypted or other storage surfaces, which may remain. Consent-gated features will be blocked.",
+      "withdrawScopeNote": "Withdrawal removes locally reachable consent-basis data and blocks consent-gated features. A verified full-device erasure is not available in this version, so some stored data may remain.",
+      "withdrawFailed": "Withdrawal did not complete — nothing was erased. Check the app and try again.",
+      "withdrawRetry": "Retry withdrawal",
       "flagsNote": "Tutorial, onboarding or banner flags never substitute consent — only the receipt counts (SPEC-04 §2)."
     },
     "vault": {
@@ -1387,6 +1403,11 @@
       "writeRefusedTitle": "New entries were not saved",
       "writeRefusedMessage": "Could not save to {{area}}: the profile is locked or data protection is unavailable ({{reason}}). The entry was NOT saved and will be lost when you reload. Unlock the profile to save.",
       "writeRefusedAreaUnknown": "personal data"
+    },
+    "passwordless": {
+      "title": "New data uses the system key",
+      "message": "New customers, quotes and history are encrypted with a key managed by your operating system — there is no app passphrase to remember. Only records created by this build use it; older encrypted data is left untouched.",
+      "limitation": "This key lives in your OS account. If the OS profile, the device, or the key is lost, these new records cannot be recovered — there is no reset and no cloud copy."
     },
     "residue": {
       "title": "Legacy plaintext data",
@@ -2769,9 +2790,7 @@
       "detail": "Unavailable: {{reason}}",
       "recoverable": "Can be recovered",
       "unrecoverable": "Cannot be recovered",
-      "recoverAction": "Recover now",
-      "recovered": "Recovered and verified. The original copy was kept as a backup.",
-      "recoverFailed": "Could not recover this data. Nothing was changed and the original copy is untouched."
+      "unavailable": "Automatic recovery is unavailable in this version. Nothing was changed and the data remains on disk."
     },
     "manifestUnavailable": {
       "ariaLabel": "Saved data unavailable",

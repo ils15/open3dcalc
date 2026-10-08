@@ -7,13 +7,13 @@
  * All values are serialized/deserialized as JSON strings.
  */
 
-import type { ElectronAPI } from '@/platform/desktop/types/electron';
+import type { ElectronAPI } from "@/platform/desktop/types/electron";
 
-function getAPI(): ElectronAPI['db'] {
-  if (typeof window === 'undefined' || !window.electronAPI?.db) {
+function getAPI(): ElectronAPI["db"] {
+  if (typeof window === "undefined" || !window.electronAPI?.db) {
     throw new Error(
-      'window.electronAPI is not available. ' +
-        'Ensure the app is running inside Electron with the preload script loaded.',
+      "window.electronAPI is not available. " +
+        "Ensure the app is running inside Electron with the preload script loaded.",
     );
   }
   return window.electronAPI.db;
@@ -45,10 +45,5 @@ export const dbBridge = {
   /** List all keys. */
   async listKeys(): Promise<string[]> {
     return getAPI().listKeys();
-  },
-
-  /** Run a raw SELECT/PRAGMA/EXPLAIN query. */
-  async query(sql: string, params?: unknown[]): Promise<unknown[]> {
-    return getAPI().query(sql, params);
   },
 } as const;

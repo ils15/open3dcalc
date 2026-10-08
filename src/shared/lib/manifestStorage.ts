@@ -26,7 +26,12 @@ import {
   type PersistStorage,
   type StateStorage,
 } from "zustand/middleware";
-import { checkKey, isPiiKey, ManifestError } from "./manifestGate.js";
+import {
+  checkKey,
+  getKeyEntry,
+  isPiiKey,
+  ManifestError,
+} from "./manifestGate.js";
 import { setDemoSuppressedForPiiGate } from "./crypto/piiStoreCapability.js";
 
 /**
@@ -67,6 +72,50 @@ export function isDemoPersistenceSuppressed(): boolean {
   return demoPersistenceSuppressed;
 }
 
+/**
+ * Is this the desktop renderer, where PII has a durable OS-backed path?
+ *
+ * Read at CALL time, never cached at module scope: a renderer can be the web
+ * target in one build and Electron in another, and the gate must reflect the
+ * runtime it is actually running in.
+ */
+function isElectronRuntime(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    typeof navigator.userAgent === "string" &&
+    navigator.userAgent.includes("Electron")
+  );
+}
+
+/**
+ * Refuse a plaintext PII write on the web target.
+ *
+ * Every manifest PII key is `encrypted_at_rest`, and the web build has no OS
+ * keyring; the encrypted vault is a separate, passphrase-gated path. A write
+ * through THIS choke point is therefore plaintext PII by construction. The
+ * denial lives here, below the UI, so a direct `guardedStorage.setItem` /
+ * `manifestStorage().setItem` call cannot create a plaintext record even when a
+ * component forgets to pre-check. Deny-safely: never throw, log the key NAME
+ * only, and never touch the backing store.
+ *
+ * Desktop is out of scope for this slice: its PII path is gated elsewhere and
+ * is deliberately left unchanged.
+ */
+function denyWebPlaintextPiiWrite(key: string): boolean {
+  if (isElectronRuntime()) return false;
+  const entry = getKeyEntry(key);
+  // Only NEW user PII is refused here. Sealed saga artifacts (class
+  // `snapshot`) are ciphertext written by the erasure store, not a
+  // user-facing PII write, and must keep working.
+  if (!entry || entry.pii !== true || entry.class !== "user_content") {
+    return false;
+  }
+  console.warn(
+    `[manifestStorage] refused plaintext PII write on web for key "${key}"`,
+  );
+  return true;
+}
+
 function rawStorage(): StateStorage {
   if (typeof window === "undefined" || !window.localStorage) {
     return {
@@ -90,6 +139,7 @@ function gatedStateStorage(): StateStorage {
     setItem: (name, value) => {
       // Demo mode: ephemeral by design — never persist.
       if (demoPersistenceSuppressed) return;
+      if (denyWebPlaintextPiiWrite(name)) return;
       if (!checkKey(name).allowed) return;
       backing.setItem(name, value);
     },
@@ -127,6 +177,7 @@ export const guardedStorage = {
   setItem(key: string, value: string): void {
     // Demo mode: ephemeral by design — never persist.
     if (demoPersistenceSuppressed) return;
+    if (denyWebPlaintextPiiWrite(key)) return;
     const backing = rawStorage();
     if (!checkKey(key).allowed) return;
     backing.setItem(key, value);
@@ -161,7 +212,10 @@ export const guardedSyncStorage = {
     if (isPiiKey(key)) {
       const message = `refused plaintext PII write for sync key "${key}"`;
       console.warn(`[manifestStorage] ${message}`);
-      if (typeof process !== "undefined" && process?.env?.NODE_ENV !== "production") {
+      if (
+        typeof process !== "undefined" &&
+        process?.env?.NODE_ENV !== "production"
+      ) {
         throw new ManifestError(message);
       }
       return;

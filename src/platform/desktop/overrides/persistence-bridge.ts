@@ -37,7 +37,7 @@ const MAX_FAILURES_BEFORE_WARN = 5;
 
 /**
  * True once `loadFromDatabase` has enumerated the stored key set and written
- * every readable key into localStorage.
+ * every readable, approved non-PII key into localStorage.
  *
  * The stale-key sweep's premise is "a DB row with no localStorage counterpart
  * has been removed at runtime". That premise is only valid AFTER hydration: run
@@ -50,12 +50,13 @@ let hydrationCompleted = false;
  * What hydration positively did with each manifest-declared key it attempted.
  *
  * The sweep's premise — "a DB row with no localStorage counterpart is stale" —
- * holds only when hydration POSITIVELY populated the key. A key it could not
- * read (a pre-AAD keyring blob, an authentication failure, a locked session,
- * or any unforeseen error) is absent from localStorage BY DESIGN, so that
- * absence is a refusal, not evidence of staleness. Recording the outcome per
- * key is what lets the sweep tell the two apart: only a key marked `hydrated`
- * is deletable, and a key marked `not_hydrated` is preserved.
+ * holds only when hydration POSITIVELY populated a key that is also on the
+ * static non-PII sweep allowlist. A key hydration could not read (a pre-AAD
+ * keyring blob, an authentication failure, a locked session, or any unforeseen
+ * error) is absent from localStorage BY DESIGN, so that absence is a refusal,
+ * not evidence of staleness. Recording the outcome per key lets the sweep tell
+ * the two apart: `hydrated` is necessary but not sufficient for deletion, and
+ * a key marked `not_hydrated` is preserved.
  *
  * A MISSING record is not proof of staleness either, and fails closed like
  * `not_hydrated`. The sweep re-reads `listKeys()` every cycle, so a key can
@@ -63,11 +64,10 @@ let hydrationCompleted = false;
  * app instance, a restored or copied profile, or a future store that writes to
  * the vault without a localStorage mirror). Hydration never enumerated such a
  * key, so it has no record, and treating that absence as staleness would delete
- * a declared key that was never classified at all. The one key that is NOT
- * protected this way is a key the manifest does not declare: the manifest
- * positively classified it `unknown_key`, which is a completed classification
- * (not a missing record) and is what keeps the sweep's internal-row cleanup
- * working — see `deleteStaleKeys`.
+ * a declared key that was never classified at all. Undeclared keys are always
+ * preserved as well: a storage row's absence from the manifest/localStorage is
+ * not proof that it is disposable. Only the explicit sweep allowlist owns stale
+ * cleanup — see `deleteStaleKeys`.
  *
  * It is keyed by the failure's OUTCOME, not its shape — a key that fails for a
  * new reason is covered without teaching the sweep about that reason — and it
@@ -214,6 +214,25 @@ const LOCALSTORAGE_KEYS = [
   "open3dcalc_sections",
   "open3dcalc_theme",
 ] as const;
+
+/**
+ * Only known, non-PII localStorage keys may be removed by the stale sweep.
+ * This explicit allowlist is deliberately narrower than the SQLite key space:
+ * unknown, internal, legacy PII, and future keys have no ownership evidence in
+ * renderer localStorage and must survive ordinary startup/sweeps unchanged.
+ */
+const STALE_SWEEP_ALLOWLIST = new Set<string>([
+  "open3dcalc_settings_v2",
+  "open3dcalc_catalog_v1",
+  "open3dcalc_filaments",
+  "open3dcalc_color_palette_v1",
+  "open3dcalc_consent_v1",
+  "open3dcalc_tutorial_v1",
+  "open3dcalc_onboarded",
+  "open3dcalc_dashboard_v1",
+  "open3dcalc_sections",
+  "open3dcalc_theme",
+]);
 
 /**
  * Keys the bridge must never write into, or read out of, the renderer.
@@ -566,8 +585,8 @@ async function saveToDatabase(): Promise<void> {
 }
 
 /**
- * Delete keys from SQLite that are no longer in localStorage.
- * Keeps the two stores in sync when keys are removed at runtime.
+ * Delete known non-PII SQLite keys that were hydrated and then removed locally.
+ * Unknown and legacy rows are never inferred stale from localStorage absence.
  */
 async function deleteStaleKeys(): Promise<void> {
   // The sweep deletes a DB row when its key is absent from localStorage. Both
@@ -606,52 +625,33 @@ async function deleteStaleKeys(): Promise<void> {
     for (const dbKey of dbKeys) {
       if (localKeys.has(dbKey)) continue;
 
-      // Positive proof, not absence. A row may be deleted as stale ONLY when
-      // hydration recorded that it read and populated the key: its localStorage
-      // counterpart is then genuinely gone because the app removed it at
-      // runtime.
-      if (hydrationOutcomes.get(dbKey) === "hydrated") {
+      // Positive proof plus ownership allowlist, not absence. A row may be
+      // deleted as stale ONLY when hydration populated an explicitly known,
+      // non-PII manifest key and the renderer counterpart was subsequently
+      // removed at runtime.
+      if (
+        hydrationOutcomes.get(dbKey) === "hydrated" &&
+        STALE_SWEEP_ALLOWLIST.has(dbKey) &&
+        !isPiiBridgeKey(dbKey) &&
+        isKeyAllowed(dbKey)
+      ) {
         await db().delete(dbKey);
         continue;
       }
 
-      // T3.1/T3.2: a PII key is never materialized by this bridge, so its
-      // absence from localStorage is BY DESIGN and can never be read as
-      // staleness. This is checked on the KEY against the bridge's own explicit
-      // denylist, not on the manifest's `pii` flag: the manifest is the
-      // classification source, but the bridge must not depend on a declaration
-      // that could be reverted. `pii_stage` is in a dedicated table the sweep
-      // never enumerates, so it is exempt structurally as well.
-      if (isPiiBridgeKey(dbKey)) {
-        continue;
-      }
-
-      // Everything else fails closed, because a MISSING record is no more proof
-      // of staleness than a refusal is. A record is missing for either of two
-      // reasons:
-      //
-      //  - `not_hydrated`: hydration enumerated the key and could not read it
-      //    (an unreadable blob, a locked session, an unforeseen error), so its
-      //    absence is a refusal BY DESIGN; or
-      //  - the key was never enumerated at hydration — it entered `storage`
-      //    afterwards, from a second writer (another app instance, a restored
-      //    profile, a future store with no localStorage mirror). The premise
-      //    "a row with no localStorage counterpart was removed at runtime" does
-      //    not hold for a row hydration never saw.
-      //
-      // A key the manifest does NOT declare is the one exception, and it is not
-      // a missing record in that sense: the manifest positively classified it
-      // `unknown_key`, the same classification `deleteGated` relies on to remove
-      // internal rows, and that classification permits deletion. Collapsing it
-      // with the fail-closed cases would disable the sweep's internal-row
-      // cleanup entirely. `isKeyAllowed` is safe to call: the manifest is known
-      // available — the guard above returned otherwise.
+      // Absence is never enough to classify an arbitrary SQLite row as stale.
+      // In particular, unknown keys and old PII may be deliberately absent from
+      // the renderer. Delete only an explicitly allowlisted non-PII key which
+      // this hydration positively materialized and which the manifest still
+      // recognizes; every other row is preserved byte-for-byte.
       if (
-        hydrationOutcomes.get(dbKey) === "not_hydrated" ||
-        isKeyAllowed(dbKey)
+        !STALE_SWEEP_ALLOWLIST.has(dbKey) ||
+        isPiiBridgeKey(dbKey) ||
+        hydrationOutcomes.get(dbKey) !== "hydrated" ||
+        !isKeyAllowed(dbKey)
       ) {
         console.warn(
-          `[persistence-bridge] Preserving key ${dbKey}: no hydrated record, absence is not staleness`,
+          `[persistence-bridge] Preserving key ${dbKey}: key is not proven stale by the non-PII allowlist and hydration`,
         );
         continue;
       }

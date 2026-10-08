@@ -38,10 +38,25 @@ interface StudioQuotesViewProps {
 
 type FeedbackTone = "positive" | "warning" | "critical";
 
+/**
+ * Status ink for a FIXED dark surface. Was `var(--color-positive)` /
+ * `--color-warning` / `--color-critical`, which are FOREGROUND tokens that flip
+ * per theme — but the card they sit on is `bg-[#0c111e]` in BOTH themes, so in
+ * light mode they landed light inks on a near-black surface at 3.44:1 /
+ * 2.66:1 / 2.91:1, under the 4.5:1 AA floor.
+ *
+ * `--color-*-ink-dark` is the dark-surface ink and is deliberately
+ * theme-INDEPENDENT for the same reason the `--*-fill` tokens are: the
+ * background is theme-independent, so the ink has to be too. Measured on
+ * #0c111e: 9.80:1 / 11.29:1 / 9.96:1. See the token notes in styles/tokens.css.
+ */
 const FEEDBACK_CLASS: Record<FeedbackTone, string> = {
-  positive: "border-[var(--color-positive)]/40 text-[var(--color-positive)]",
-  warning: "border-[var(--color-warning)]/40 text-[var(--color-warning)]",
-  critical: "border-[var(--color-critical)]/40 text-[var(--color-critical)]",
+  positive:
+    "border-[var(--color-positive-ink-dark)]/40 text-[var(--color-positive-ink-dark)]",
+  warning:
+    "border-[var(--color-warning-ink-dark)]/40 text-[var(--color-warning-ink-dark)]",
+  critical:
+    "border-[var(--color-critical-ink-dark)]/40 text-[var(--color-critical-ink-dark)]",
 };
 
 const STATUS_CONFIG: Record<
@@ -1120,7 +1135,10 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
             <div className="flex items-center justify-between pb-3 border-b border-[#1b253b]">
               <div>
-                <h3 id="studio-quote-form-title" className="text-base font-bold text-white flex items-center gap-2">
+                <h3
+                  id="studio-quote-form-title"
+                  className="text-base font-bold text-white flex items-center gap-2"
+                >
                   <FileText className="w-4 h-4 text-blue-400" />
                   {editingQuote
                     ? `Editar Orçamento #${String(editingQuote.number).padStart(3, "0")}`
@@ -1416,7 +1434,10 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                 <span className="text-[10px] font-mono text-blue-400 font-bold uppercase">
                   ORÇAMENTO #{String(viewingQuote.number).padStart(3, "0")}
                 </span>
-                <h3 id="studio-quote-view-title" className="text-base font-bold text-white">
+                <h3
+                  id="studio-quote-view-title"
+                  className="text-base font-bold text-white"
+                >
                   {viewingQuote.title}
                 </h3>
               </div>
@@ -1440,7 +1461,9 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       key={st}
                       onClick={() => {
-                        if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null) {
+                        if (
+                          beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null
+                        ) {
                           return;
                         }
                         setQuoteStatus(viewingQuote.id, st);
@@ -1538,8 +1561,16 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 text-slate-200"
           >
             <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
-            <h4 id="studio-quote-delete-title" className="text-sm font-bold text-white">Excluir Orçamento?</h4>
-            <p id="studio-quote-delete-description" className="text-xs text-slate-400">
+            <h4
+              id="studio-quote-delete-title"
+              className="text-sm font-bold text-white"
+            >
+              Excluir Orçamento?
+            </h4>
+            <p
+              id="studio-quote-delete-description"
+              className="text-xs text-slate-400"
+            >
               Esta ação removerá permanentemente este orçamento. Deseja
               prosseguir?
             </p>

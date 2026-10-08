@@ -173,7 +173,7 @@ describe("desktop App — Focus Mode chrome", () => {
     expect(screen.getByTestId("demo-indicator")).toBeInTheDocument();
     expect(screen.getByTestId("demo-toast")).toBeInTheDocument();
     expect(screen.getByTestId("consent-modal")).toBeInTheDocument();
-    expect(screen.getByTestId("legacy-migration-prompt")).toBeInTheDocument();
+    expect(screen.queryByTestId("legacy-migration-prompt")).toBeNull();
     expect(screen.getByTestId("tutorial")).toBeInTheDocument();
   });
 

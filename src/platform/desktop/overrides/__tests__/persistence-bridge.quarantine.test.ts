@@ -73,6 +73,7 @@ const REFUSED = "quarantined_read_only";
 interface DbStub {
   /** Keys `save` was called with, in call order. */
   attempts: string[];
+  load: ReturnType<typeof vi.fn<(key: string) => Promise<string | null>>>;
   remove: ReturnType<typeof vi.fn<(key: string) => Promise<void>>>;
   listKeys: ReturnType<typeof vi.fn<() => Promise<string[]>>>;
 }
@@ -87,8 +88,9 @@ function stubElectronDb(shouldRefuse: (key: string) => boolean): DbStub {
   const attempts: string[] = [];
   const remove = vi.fn<(key: string) => Promise<void>>(async () => undefined);
   const listKeys = vi.fn<() => Promise<string[]>>(async () => []);
+  const load = vi.fn<(key: string) => Promise<string | null>>(async () => null);
   const db = {
-    load: vi.fn<(key: string) => Promise<string | null>>(async () => null),
+    load,
     save: vi.fn(async (key: string) => {
       attempts.push(key);
       if (shouldRefuse(key)) throw denied(REFUSED);
@@ -99,7 +101,7 @@ function stubElectronDb(shouldRefuse: (key: string) => boolean): DbStub {
   (
     window as unknown as { electronAPI: { db: ElectronAPI["db"] } }
   ).electronAPI = { db: db as unknown as ElectronAPI["db"] };
-  return { attempts, remove, listKeys };
+  return { attempts, load, remove, listKeys };
 }
 
 /** The first aggregate the reporter was handed, if any. */
@@ -213,19 +215,22 @@ describe("persistence bridge — a refused key fails the pass, not the loop", ()
     const stub = stubElectronDb((key) => armed && key === QUARANTINED_KEY);
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(console, "log").mockImplementation(() => {});
+    stub.listKeys.mockResolvedValue([EARLIER_KEY]);
+    stub.load.mockResolvedValue(JSON.stringify({ key: EARLIER_KEY }));
     await initPersistenceBridge();
     armed = true;
 
-    // A row whose localStorage counterpart is gone. Nothing about the refused
-    // key changes this key's fate, so the sweep must still run.
-    const staleKey = "open3dcalc_synthetic_stale";
-    stub.listKeys.mockImplementation(async () => [staleKey]);
+    // This known settings row was positively hydrated and then removed at
+    // runtime. Nothing about a refused save changes its cleanup eligibility.
+    localStorage.removeItem(EARLIER_KEY);
 
     await vi.advanceTimersByTimeAsync(10_000);
-    await vi.waitFor(() => expect(stub.remove).toHaveBeenCalledWith(staleKey));
+    await vi.waitFor(() =>
+      expect(stub.remove).toHaveBeenCalledWith(EARLIER_KEY),
+    );
 
     // The defect: one `try` around both, so the rejection cancelled the sweep.
-    expect(stub.remove).toHaveBeenCalledWith(staleKey);
+    expect(stub.remove).toHaveBeenCalledWith(EARLIER_KEY);
   });
 
   it("leaves a clean pass reporting nothing", async () => {

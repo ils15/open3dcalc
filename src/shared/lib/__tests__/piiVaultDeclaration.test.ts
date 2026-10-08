@@ -122,11 +122,10 @@ describe("SPEC-01: the vault is a declared PII indexeddb surface", () => {
     expect(vault?.purpose).toMatch(/never synced|not synced|sync: never/i);
   });
 
-  it("is erased wholesale by the SPEC-02 IndexedDB sweep", () => {
-    // `indexeddbAdapter().purge()` deletes every database the origin holds, so
-    // the vault is covered by construction. The declaration has to agree with
-    // what that sweep does, or the post-condition reports "clean" while the
-    // sealed records survive.
+  it("declares erase_on_delete_all for the sealed vault", () => {
+    // The declaration has to say the sealed records go on delete-all; the
+    // renderer sweep itself is fail-closed (the broad adapters were removed),
+    // so this pins the manifest contract, not a live execution path.
     expect(getEntry(loadManifest(doc), PII_VAULT_KEY)?.erasure).toBe(
       "erase_on_delete_all",
     );

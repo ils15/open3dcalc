@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { localstorageAdapter, indexeddbAdapter } from "../rendererSweep";
 import {
   webJournalAdapter,
   webSnapshotStore,
@@ -8,9 +7,10 @@ import {
 import type { SagaJournal } from "../types";
 
 // ---------------------------------------------------------------------------
-// D1.1 S7 — web/renderer erasure adapters (SPEC-02 §3 rows 1/5/6/7, §4/§5).
-// jsdom provides a real localStorage; IDB/OPFS/caches are exercised at the
-// API boundary (feature-detected, no-ops when absent — documented boundary).
+// D1.1 S7 — web/renderer erasure stores (SPEC-02 §4/§5).
+// jsdom provides a real localStorage; the broad renderer purge adapters were
+// removed (see rendererSweep.ts) — that entry point is fail-closed, so only the
+// metadata-only journal and the encrypted snapshot store remain to verify here.
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
@@ -19,34 +19,6 @@ beforeEach(() => {
 
 afterEach(() => {
   window.localStorage.clear();
-});
-
-describe("localstorageAdapter (SPEC-02 §3 row 1 — R1 sweep)", () => {
-  it("removes every manifest key AND unknown open3dcalc_* keys", async () => {
-    window.localStorage.setItem("open3dcalc_settings_v2", "{}");
-    window.localStorage.setItem("open3dcalc_rogue_unknown", "x");
-    window.localStorage.setItem("i18nextLng", "pt-BR");
-    window.localStorage.setItem("third_party_analytics", "keep-out");
-    const purged = await localstorageAdapter().purge();
-    expect(purged).toBe(3);
-    expect(window.localStorage.getItem("third_party_analytics")).toBe(
-      "keep-out",
-    );
-    expect(await localstorageAdapter().rescan()).toEqual([]);
-  });
-
-  it("is idempotent — a second purge finds nothing", async () => {
-    window.localStorage.setItem("open3dcalc_settings_v2", "{}");
-    await localstorageAdapter().purge();
-    expect(await localstorageAdapter().purge()).toBe(0);
-  });
-});
-
-describe("indexeddbAdapter", () => {
-  it("no-ops cleanly when IndexedDB has no databases (jsdom boundary)", async () => {
-    expect(await indexeddbAdapter().purge()).toBe(0);
-    expect(await indexeddbAdapter().rescan()).toEqual([]);
-  });
 });
 
 describe("webJournalAdapter (SPEC-02 §4 — metadata-only journal)", () => {

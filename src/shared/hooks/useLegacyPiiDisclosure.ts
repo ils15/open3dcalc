@@ -10,24 +10,66 @@
  * never triggers a live read.
  */
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import {
   getLegacyPiiDisclosure,
   type LegacyPiiDisclosure,
 } from "@/shared/lib/migration/legacyPiiDisclosure";
 import { installPiiStoreRuntimeEnvironment } from "@/shared/lib/crypto/piiStoreHydration";
-import { useLegacyPiiRead } from "@/shared/hooks/useLegacyPiiResidue";
+import { guardedStorage } from "@/shared/lib/manifestStorage";
+import { mergeLegacyPiiRead } from "@/shared/hooks/useLegacyPiiResidue";
+import { fetchDesktopLegacyPiiRows } from "@/shared/lib/migration/desktopLegacyRows";
 
-/** The live disclosure, or `null` when disabled. */
+export type LegacyPiiDisclosureLoad =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; disclosure: LegacyPiiDisclosure }
+  | { status: "unavailable"; reason: string };
+
+/** The live disclosure state; it is fetched only after an explicit request. */
 export function useLegacyPiiDisclosure(
-  enabled = true,
-): LegacyPiiDisclosure | null {
-  const read = useLegacyPiiRead(enabled);
-  return useMemo(() => {
-    if (!enabled) return null;
-    // Install the capability snapshot before the first read, or a capable
-    // browser would report `capability_unknown` and read as unavailable.
-    installPiiStoreRuntimeEnvironment();
-    return getLegacyPiiDisclosure({ read });
-  }, [enabled, read]);
+  enabled = false,
+): LegacyPiiDisclosureLoad {
+  const [state, setState] = useState<LegacyPiiDisclosureLoad>({
+    status: "idle",
+  });
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    let cancelled = false;
+    void fetchDesktopLegacyPiiRows()
+      .then((source) => {
+        if (cancelled) return;
+        if (source.status === "unavailable") {
+          setState({ status: "unavailable", reason: source.reason });
+          return;
+        }
+
+        const localRead = (key: string) => guardedStorage.getItem(key);
+        const rows = source.status === "available" ? source.rows : null;
+        const read = mergeLegacyPiiRead(localRead, rows);
+        // Install the capability snapshot before reading markers, or a capable
+        // browser would report `capability_unknown` in the vault section.
+        installPiiStoreRuntimeEnvironment();
+        setState({
+          status: "ready",
+          disclosure: getLegacyPiiDisclosure({ read }),
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setState({
+            status: "unavailable",
+            reason: "legacy_source_unavailable",
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  if (!enabled) return { status: "idle" };
+  return state.status === "idle" ? { status: "loading" } : state;
 }

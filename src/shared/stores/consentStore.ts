@@ -9,6 +9,10 @@ import {
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { evaluateReceipt } from "@/shared/lib/consentReceipt";
 import { consentErasurePlan } from "@/shared/lib/consentReceipt";
+import {
+  isWithdrawalPending,
+  setWithdrawalPending,
+} from "@/shared/lib/crypto/piiStoreCapability";
 
 /**
  * Consent store (D1.1 S8) — SPEC-04.
@@ -77,6 +81,49 @@ function eraseConsentBasisLocalStorage(): void {
   }
 }
 
+/**
+ * Desktop-only production caller for the receipt-scoped withdrawal purge.
+ *
+ * Persists a durable, receipt-scoped journal in the main process and purges
+ * ONLY the new-PII rows the receipt authorised. It is absent on Web (no bridge),
+ * where the lock stays engaged and no erasure is claimed. It throws when the
+ * purge cannot be verified, so the caller never reports a success it cannot
+ * prove; only a verified completion releases the renderer-side lock mirror.
+ */
+async function runDesktopWithdrawalPurge(
+  scope: readonly string[],
+  receiptId: string,
+): Promise<void> {
+  if (typeof window === "undefined") return;
+  const bridge = (
+    window as unknown as {
+      electronAPI?: {
+        withdrawal?: {
+          request: (input: {
+            receiptId: string;
+            scope: string[];
+          }) => Promise<{ token: string }>;
+          purge: (
+            token: string,
+          ) => Promise<{ ok: true } | { ok: false; reason: string }>;
+        };
+      };
+    }
+  ).electronAPI?.withdrawal;
+  if (!bridge) return;
+  const request = await bridge.request({ receiptId, scope: [...scope] });
+  if (!request || typeof request.token !== "string") {
+    throw new Error("withdrawal authorization unavailable");
+  }
+  const result = await bridge.purge(request.token);
+  if (!result || result.ok !== true) {
+    throw new Error("withdrawal purge could not be verified");
+  }
+  // The durable journal is verifiably completed, so the main-process lock is
+  // released; mirror that here rather than leaving a false lock engaged.
+  setWithdrawalPending(false);
+}
+
 export const useConsentStore = create<ConsentStore>()(
   persist(
     (set, get) => ({
@@ -114,19 +161,46 @@ export const useConsentStore = create<ConsentStore>()(
       },
 
       withdrawConsent: async () => {
-        const current = get().receipt;
-        if (!current || current.withdrawn_at !== null) return;
-        // §6.1: erase the consent-basis data per the manifest.
-        eraseConsentBasisLocalStorage();
-        // §6.3: annotate — the receipt is kept, never re-usable.
-        const withdrawn = annotateWithdrawn(current, new Date().toISOString());
-        set({
-          receipt: null,
-          receiptDigest: null,
-          consentGiven: false,
-          consentDate: null,
-          withdrawnReceipts: [...get().withdrawnReceipts, withdrawn],
-        });
+        const state = get();
+        const active = state.receipt;
+        let target: ConsentReceipt | null;
+        if (active && active.withdrawn_at === null) {
+          // §6.3: annotate and persist the revocation FIRST. The withdrawn
+          // receipt is the durable audit record AND the retry anchor: it is
+          // written to the store's gated storage before any purge attempt, so a
+          // crash between the two leaves a revoked receipt with un-erased data
+          // (recoverable); erasing first would leave no proof the withdrawal
+          // was requested. Nulling `receipt` here never loses it — it is kept
+          // in `withdrawnReceipts`.
+          const withdrawn = annotateWithdrawn(active, new Date().toISOString());
+          set({
+            receipt: null,
+            receiptDigest: null,
+            consentGiven: false,
+            consentDate: null,
+            withdrawnReceipts: [...state.withdrawnReceipts, withdrawn],
+          });
+          // Full-device erasure cannot be verified in this slice, so the lock
+          // stays engaged and new PII writes are blocked until a purge is
+          // verified. No erasure is claimed.
+          setWithdrawalPending(true);
+          // §6.1: erase the consent-basis data per the manifest.
+          eraseConsentBasisLocalStorage();
+          target = withdrawn;
+        } else {
+          // Retry: no active receipt, but a prior withdrawal whose purge was
+          // not verified is still pending. Re-attempt it through the retained
+          // withdrawn receipt. An early return here is exactly what made a
+          // failed purge unretryable.
+          if (!isWithdrawalPending()) return;
+          target =
+            state.withdrawnReceipts[state.withdrawnReceipts.length - 1] ?? null;
+          if (!target) return;
+        }
+        // Desktop: persist a durable, receipt-scoped journal and purge ONLY the
+        // linked new-PII rows. A failed/unverifiable purge rejects, keeping the
+        // lock engaged; Web has no bridge and keeps the lock too.
+        await runDesktopWithdrawalPurge(target.scope, target.receipt_id);
       },
 
       resetConsent: () =>

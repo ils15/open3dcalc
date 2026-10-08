@@ -4,14 +4,9 @@
  *
  * ## The structural hazard this file pins
  *
- * This is the whole reason the preimage lives in its own table instead of a row
- * in `storage`, and it is asserted here against the REAL bridge rather than a
- * description of it. A preimage — or any PII value — parked in `storage` has
- * exactly one fatal fate left after T3.1:
- *
- *   - its key is not in the renderer (an internal staging key, or a PII key the
- *     bridge no longer mirrors) ⇒ the sweep DELETES it within one poll. Not a
- *     race; a certainty.
+ * The separate table keeps staged values outside the bridge's renderer-facing
+ * key surface. Unknown storage rows are now preserved too, but this spec pins
+ * that fact against the REAL bridge rather than a description of it.
  *
  * Before T3.1 there was a second fate: a manifest-ALLOWED `storage` row was
  * decrypted into renderer `localStorage` as PLAINTEXT by the startup pass. That
@@ -48,8 +43,10 @@ import { stagePreimage, type StageDb } from "../../../../../electron/piiStage";
 const MARKER = "Fernanda Sintética <fernanda@exemplo.teste>";
 /** A sealed envelope, in the shape `loadGated` would hand back decrypted. */
 const SEALED = `enc1:plain:${Buffer.from(MARKER, "utf8").toString("base64")}`;
-/** Manifest-allowed PII key (SPEC-01): the renderer is ALLOWED to hold it. */
+/** Manifest-declared PII key: the bridge refuses to materialize it. */
 const ALLOWED_KEY = "open3dcalc_customers_v1";
+const LEGACY_PII_KEY = "open3dcalc_quotes_v1";
+const LEGACY_PII_BYTES = '{"quotes":[{"customer":"Legacy PII 🧪"}]}';
 /** A key the manifest does not know: default-deny, never materialized. */
 const INTERNAL_KEY = "open3dcalc_pii_stage_tx1";
 
@@ -57,6 +54,7 @@ let dir: string;
 let dbPath: string;
 let db: Database.Database;
 let registered: Array<[string, EventListenerOrEventListenerObject]>;
+let loadCalls: string[];
 
 /** The value `storage` holds for a key, straight off disk. */
 function storedValue(key: string): string | null {
@@ -97,6 +95,7 @@ async function preimageHolders(): Promise<string[]> {
 function sqliteBackedDb(): ElectronAPI["db"] {
   return {
     load: async (key: string) => {
+      loadCalls.push(key);
       const row = db
         .prepare("SELECT value FROM storage WHERE key = ?")
         .get(key) as { value: string } | undefined;
@@ -132,6 +131,7 @@ beforeEach(() => {
   // `TypeError: registered is not iterable` — which replaced the test's own
   // failure with a teardown failure two stacks deeper.
   registered = [];
+  loadCalls = [];
 
   vi.useFakeTimers();
   localStorage.clear();
@@ -166,6 +166,11 @@ beforeEach(() => {
     ALLOWED_KEY,
     SEALED,
     1,
+  );
+  db.prepare("INSERT INTO storage VALUES (?, ?, ?)").run(
+    LEGACY_PII_KEY,
+    LEGACY_PII_BYTES,
+    2,
   );
 
   (
@@ -202,7 +207,7 @@ afterEach(() => {
 });
 
 describe("pii_stage vs. the 10 s persistence-bridge sweep", () => {
-  it("leaves the staged preimage intact while a storage-table stage is destroyed", async () => {
+  it("preserves unknown storage rows and the staged preimage byte for byte", async () => {
     await initPersistenceBridge();
 
     // T3.1 ABSENCE ASSERTION. The manifest-allowed PII row must NOT be mirrored
@@ -211,9 +216,9 @@ describe("pii_stage vs. the 10 s persistence-bridge sweep", () => {
     // the task calls for: prove NO PII plaintext is rehydrated.
     expect(localStorage.getItem(ALLOWED_KEY)).toBeNull();
 
-    // FATE: one 10 s cycle, and the internal `storage` row is gone.
+    // One sweep cycle must not interpret an unknown/internal row as stale.
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(storedValue(INTERNAL_KEY)).toBeNull();
+    expect(storedValue(INTERNAL_KEY)).toBe(SEALED);
 
     // The manifest-allowed PII row is RETAINED (copy-without-delete): the
     // sweep must not destroy a row the app may still need, even though the
@@ -226,6 +231,7 @@ describe("pii_stage vs. the 10 s persistence-bridge sweep", () => {
     // and no sealed envelope anywhere.
     expect(storedStageBlob()).toBe(SEALED);
     expect(stageRowCount()).toBe(1);
+    expect(storedValue(LEGACY_PII_KEY)).toBe(LEGACY_PII_BYTES);
     expect(Object.keys(localStorage)).not.toContain("pii_stage");
     expect(Object.keys(localStorage).join(",")).not.toContain("tx-0001");
     for (let i = 0; i < localStorage.length; i++) {
@@ -257,9 +263,8 @@ describe("pii_stage vs. the 10 s persistence-bridge sweep", () => {
     expect(fs.readFileSync(dbPath).includes(Buffer.from(SEALED, "utf8"))).toBe(
       true,
     );
-    // The control is gone by now: the sweep ran, and it is the sweep that
-    // removed the storage row while leaving the stage row alone.
-    expect(storedValue(INTERNAL_KEY)).toBeNull();
+    // The sweep ran, but unknown rows are not eligible for destructive cleanup.
+    expect(storedValue(INTERNAL_KEY)).toBe(SEALED);
   });
 
   it("never puts the sealed preimage on the key surface the sweep enumerates", async () => {
@@ -267,8 +272,8 @@ describe("pii_stage vs. the 10 s persistence-bridge sweep", () => {
     // `storage`-backed stage is on that surface BY CONSTRUCTION, whether or not
     // the pass goes on to delete it, so the surface is checked on the VALUE:
     // which keys hold the sealed preimage. The only one allowed to is the
-    // control this test inserted itself (the internal key; it is not a stage and
-    // the sweep removes it).
+    // controls this test inserted itself are retained; the bridge is not
+    // allowed to infer ownership or staleness for unknown keys.
     //
     // Asserting on key NAMES cannot do this, and the reason is worth recording:
     // no `storage` key is ever literally called "pii_stage", so
@@ -281,17 +286,11 @@ describe("pii_stage vs. the 10 s persistence-bridge sweep", () => {
     await initPersistenceBridge();
     expect(await preimageHolders()).toEqual([ALLOWED_KEY, INTERNAL_KEY]);
 
-    // One cycle later the preimage is nowhere on the surface the sweep walks
-    // as a DECRYPTED value: control A is deleted, and control B is REWRITTEN
-    // as plaintext by `saveToDatabase` (it mirrors the row's stored bytes, not
-    // the decrypted value it was handed). Crucially, no control is a stage, and
-    // a stage adds a third holder before the sweep even runs — so the sweep sees
-    // nothing it should not, and the renderer still holds no PII.
+    // One cycle later both rows remain byte-identical: only an explicitly
+    // allowlisted non-PII key hydrated this session is eligible for cleanup.
     await vi.advanceTimersByTimeAsync(10_000);
     const holders = await preimageHolders();
-    // The PII row is retained with its sealed bytes; only the internal control
-    // (not a stage, not PII) is deleted.
-    expect(holders).toEqual([ALLOWED_KEY]);
+    expect(holders).toEqual([ALLOWED_KEY, INTERNAL_KEY]);
     // T3.1: no PII was rehydrated from the decrypted IPC payload.
     expect(localStorage.getItem(ALLOWED_KEY)).toBeNull();
     expect(localStorage.getItem(ALLOWED_KEY)).not.toBe(MARKER);
@@ -312,6 +311,19 @@ describe("pii_stage vs. the 10 s persistence-bridge sweep", () => {
     expect(storedValue(ALLOWED_KEY)).toBe(SEALED);
     // And still not materialized in the renderer.
     expect(localStorage.getItem(ALLOWED_KEY)).toBeNull();
+  });
+
+  it("preserves old plaintext PII bytes when absent from renderer localStorage", async () => {
+    await initPersistenceBridge();
+    expect(localStorage.getItem(LEGACY_PII_KEY)).toBeNull();
+    expect(loadCalls).not.toContain(LEGACY_PII_KEY);
+    expect(loadCalls).not.toContain(ALLOWED_KEY);
+
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(storedValue(LEGACY_PII_KEY)).toBe(LEGACY_PII_BYTES);
+    expect(localStorage.getItem(LEGACY_PII_KEY)).toBeNull();
+    expect(loadCalls).not.toContain(LEGACY_PII_KEY);
   });
 
   it("never writes a decrypted PII value even when the IPC load returns one", async () => {

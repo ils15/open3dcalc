@@ -61,14 +61,18 @@ type HeatmapRung = "loss" | "empty" | "weak" | "strong" | "best";
  * the lower of the two, so light passing is what makes dark pass.
  *
  * Two of these names are not the ones the design note named, and measurement is
- * why. `--color-positive` is declared only inside `@theme inline`
- * (`tokens.css:557`) — a Tailwind build-time mapping, not a runtime custom
- * property, so `bg-[var(--color-positive)]` would paint nothing — and
- * `--color-positive-muted` does not exist anywhere in the repo. The runtime
- * alias layer (`tokens.css:510-516`) already exposes both roles as
- * `--color-success` / `--color-success-muted`, mirroring
+ * why. `--color-positive-muted` does not exist anywhere in the repo — it
+ * measures EMPTY in a live page, in both themes, so referencing it would paint
+ * nothing. The runtime alias layer (`tokens.css:510-516`) already exposes both
+ * roles as `--color-success` / `--color-success-muted`, mirroring
  * `--color-warning-muted` and `--color-danger-muted`, so those are the names
  * used here.
+ *
+ * Note `--color-positive` is NOT one of the broken names: it resolves
+ * (#047857 light / #34d399 dark). An earlier version of this comment claimed it
+ * lived only inside `@theme inline` and so emitted nothing — that was wrong,
+ * `@theme` does emit its custom properties. Only `--color-positive-muted` is
+ * genuinely absent.
  *
  * The "melhor" ink was resolved by measurement rather than invented. The
  * obvious guess, `--color-text-primary`, FAILS on this background in both

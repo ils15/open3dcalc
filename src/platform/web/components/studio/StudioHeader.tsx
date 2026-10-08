@@ -129,20 +129,24 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
 
   return (
     <header className="h-12 bg-[var(--color-bg-elevated)] border-b border-[var(--color-border)] px-4 flex items-center justify-between text-xs text-[var(--color-text-primary)] select-none sticky top-0 z-40">
-      {/* Left: Breadcrumbs */}
-      <div className="flex items-center gap-2 text-[var(--color-text-secondary)]">
+      {/* Left: Breadcrumbs.
+          `min-w-0` + `truncate` so this group can yield the 6px it used to
+          overflow at 390px (measured scrollWidth 396 vs clientWidth 390): as a
+          flex item it defaulted to `min-width: auto`, so the breadcrumb refused
+          to shrink and pushed the header wider than the viewport. */}
+      <div className="flex items-center gap-2 min-w-0 text-[var(--color-text-secondary)]">
         <button
           onClick={() => onTabChange("calculator")}
-          className="flex items-center gap-1.5 hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="flex min-h-11 min-w-11 shrink-0 items-center gap-1.5 transition-colors hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
         >
           <span className="text-[var(--color-text-secondary)] font-medium">
             Oficina 3D
           </span>
         </button>
-        <ChevronRight className="w-3 h-3 text-[var(--color-text-muted)]" />
-        <div className="flex items-center gap-1.5 font-semibold text-[var(--color-text-primary)]">
+        <ChevronRight className="h-3 w-3 shrink-0 text-[var(--color-text-muted)]" />
+        <div className="flex min-w-0 items-center gap-1.5 font-semibold text-[var(--color-text-primary)]">
           {breadcrumb.icon}
-          <span>{breadcrumb.title}</span>
+          <span className="truncate">{breadcrumb.title}</span>
         </div>
         <span className="text-[var(--color-text-muted)] hidden md:inline">
           |
@@ -160,8 +164,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <span className="text-[var(--color-text-muted)]">Studio</span>
       </div>
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-1 sm:gap-2">
+      {/* Right: Actions. `shrink-0` keeps these at their natural size so the
+          breadcrumb is what gives way when the header is tight. */}
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {/* Template selector ONLY visible in Demo Mode */}
         {isDemoMode && (
           <div className="hidden sm:flex items-center gap-1 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg p-0.5 text-xs">
@@ -200,7 +205,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={handleWhatsApp}
-          className="flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-positive-fill)] hover:opacity-90 text-[var(--color-positive-fill-fg)] font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
+          className="flex min-h-11 min-w-11 items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-positive-fill)] hover:opacity-90 text-[var(--color-positive-fill-fg)] font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
           title="Gerar proposta rápida para WhatsApp"
         >
           <MessageCircle className="w-3.5 h-3.5" />
@@ -211,7 +216,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={onOpenCopilot}
-          className="flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-warning-fill)] hover:bg-[var(--color-warning-fill-hover)] text-[var(--color-warning-fill-fg)] font-bold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
+          className="flex min-h-11 min-w-11 items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-warning-fill)] hover:bg-[var(--color-warning-fill-hover)] text-[var(--color-warning-fill-fg)] font-bold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
           title="Abrir Copilot IA"
         >
           <Sparkles className="w-3.5 h-3.5" />
@@ -222,7 +227,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={toggleFullscreen}
-          className="p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="min-h-11 min-w-11 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
           title="Alternar Tela Cheia"
         >
           {isFullscreen ? (

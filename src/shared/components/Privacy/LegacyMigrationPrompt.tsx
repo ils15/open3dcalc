@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { LegacyPiiPlaintextReport } from "@/shared/lib/legacyPiiPlaintext";
 import { useConsentStore } from "@/shared/stores/consentStore";
 import { useLegacyPiiResidue } from "@/shared/hooks/useLegacyPiiResidue";
 import {
@@ -38,7 +39,11 @@ export function LegacyMigrationPrompt() {
   // Desktop-aware and re-read on every change: the residue is
   // copy-without-delete, so it stays present until the user acts, and an unlock
   // elsewhere must be able to make the prompt actionable again without a remount.
-  const report = useLegacyPiiResidue();
+  const residueLoad = useLegacyPiiResidue();
+  const report: LegacyPiiPlaintextReport =
+    residueLoad.status === "ready"
+      ? residueLoad.report
+      : { present: false, total: 0, keys: [] };
   const signature = residueSignature(report);
   // A stored decision hides the prompt only while the residue is UNCHANGED.
   // `keptThisSession` keeps the confirmation visible on the run where the user
@@ -64,6 +69,8 @@ export function LegacyMigrationPrompt() {
       setKeptThisSession(false);
     }
   }
+
+  if (residueLoad.status !== "ready") return null;
 
   return (
     <>

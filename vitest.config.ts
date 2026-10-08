@@ -103,11 +103,17 @@ export default defineConfig(
           // of silently absent.
           "electron/preload.cts",
         ],
+        // ── Release gate (beta.12) ──────────────────────────────────────
+        // Raised from the placeholder 30/26/28/33 to the project's stated
+        // minimum (80% across the board) after a full green run measured
+        // repo-wide 87.41% statements / 81.28% branches / 84.64% functions /
+        // 88.71% lines (4704 tests, 334 files). The gate is a floor, never a
+        // target: it must not be lowered to make a change pass — add tests.
         thresholds: {
-          statements: 30,
-          branches: 26,
-          functions: 28,
-          lines: 33,
+          statements: 80,
+          branches: 80,
+          functions: 80,
+          lines: 80,
         },
       },
     },

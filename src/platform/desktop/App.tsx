@@ -3,8 +3,7 @@ import { Header } from "@/platform/desktop/components/Header/Header";
 import { DemoModeIndicator } from "@/shared/components/DemoMode/DemoModeIndicator";
 import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportBlockedToast";
 import { PrivacyOnboarding } from "@/shared/components/Privacy/PrivacyOnboarding";
-import { LegacyMigrationPrompt } from "@/shared/components/Privacy/LegacyMigrationPrompt";
-import { PiiLockedShell } from "@/shared/components/Privacy/PiiLockedShell";
+import { PasswordlessPiiStatus } from "./components/PasswordlessPiiStatus/PasswordlessPiiStatus";
 import { Tutorial } from "@/shared/components/ui/Tutorial";
 import { UpdateNotification } from "@/platform/desktop/components/UpdateNotification/UpdateNotification";
 import { AppShell } from "@/shared/components/AppShell/AppShell";
@@ -23,12 +22,18 @@ import { MobileNav } from "./components/MobileNav";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { Footer } from "./components/Footer";
 import { DesktopResourceLinks } from "./components/DesktopResourceLinks";
+import { rehydratePiiStores } from "@/shared/lib/crypto/piiStoreHydration";
+import { installNewPiiStorageForDesktop } from "./overrides/newPiiStorage";
 
 // The TABS contract is re-exported here so tabsParity.test keeps locking the
 // web/desktop/tutorial sets together after the array moved into AppShell.
 export { TABS } from "@/shared/components/AppShell/tabs";
 
 const DESKTOP_RESOURCE_TABS = ["wiki", "changelog"] as const;
+
+// The Desktop build uses the dedicated OS-managed route for new PII. Legacy
+// vault records are not migrated or resealed by this cutover.
+installNewPiiStorageForDesktop();
 
 function App(): React.ReactElement {
   return (
@@ -45,6 +50,9 @@ function AppContent(): React.ReactElement {
   const navigateToTab = useNavigateToTab();
   const { active: focusMode } = useFocusMode();
 
+  useEffect(() => {
+    void rehydratePiiStores();
+  }, []);
   useAppInit(navigateToTab);
   const layoutMode = useLayoutStore((state) => state.layoutMode);
 
@@ -71,8 +79,7 @@ function AppContent(): React.ReactElement {
       <DemoExportBlockedToast />
       <UpdateNotification className="max-w-[1440px] mx-auto w-full px-6 sm:px-8 lg:px-12 pt-4" />
       <PrivacyOnboarding />
-      <LegacyMigrationPrompt />
-      <PiiLockedShell />
+      <PasswordlessPiiStatus />
 
       <div className="flex flex-1 w-full max-w-[1600px] 2xl:max-w-[1920px] mx-auto overflow-x-clip">
         <AppShell

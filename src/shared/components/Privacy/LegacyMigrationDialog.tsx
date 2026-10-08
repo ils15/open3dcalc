@@ -65,6 +65,7 @@ const RESULT_KEYS: Record<LegacyPiiRehomeStatus, string> = {
   no_residue: "privacy.migration.resultNothingToMigrate",
   already_migrated: "privacy.migration.resultNothingToMigrate",
   consent_required: "privacy.migration.resultIncomplete",
+  source_unavailable: "privacy.migration.resultIncomplete",
   incomplete: "privacy.migration.resultIncomplete",
 };
 

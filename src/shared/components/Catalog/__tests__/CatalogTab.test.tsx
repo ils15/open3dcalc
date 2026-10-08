@@ -133,7 +133,7 @@ describe("CatalogTab", () => {
       expect(tab).toHaveClass("min-h-11", "w-full", "whitespace-nowrap");
     }
     expect(screen.getByRole("tab", { name: "catalog.printers" })).toHaveClass(
-      "text-[var(--accent-fill-fg)]",
+      "text-[var(--color-accent-fill-fg)]",
     );
   });
 
@@ -722,7 +722,9 @@ describe("CatalogTab", () => {
     const materialSaveButton = screen.getByRole("button", {
       name: "catalog.save",
     });
-    expect(materialSaveButton).toHaveClass("text-[var(--accent-fill-fg)]");
+    expect(materialSaveButton).toHaveClass(
+      "text-[var(--color-accent-fill-fg)]",
+    );
     fireEvent.click(materialSaveButton);
     expect(mockCatalog.addMaterial).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -751,7 +753,7 @@ describe("CatalogTab", () => {
     const feeSaveButton = screen.getByRole("button", {
       name: "catalog.save",
     });
-    expect(feeSaveButton).toHaveClass("text-[var(--accent-fill-fg)]");
+    expect(feeSaveButton).toHaveClass("text-[var(--color-accent-fill-fg)]");
     fireEvent.click(feeSaveButton);
     expect(mockCatalog.addMarketplace).toHaveBeenCalledWith(
       expect.objectContaining({

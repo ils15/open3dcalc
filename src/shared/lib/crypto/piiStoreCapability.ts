@@ -52,7 +52,13 @@ export type PiiStoreDenialReason =
   /** No IndexedDB to write sealed records into. */
   | "indexeddb_unavailable"
   /** A passphrase-derived key is not held in memory for this store. */
-  | "profile_locked";
+  | "profile_locked"
+  /**
+   * A withdrawal/revocation operation is pending or incomplete. New PII writes
+   * must not land in a surface that is mid-erasure, and reads are blocked too
+   * so a half-erased state is never presented as the user's data.
+   */
+  | "withdrawal_pending";
 
 /**
  * An install-time capability SNAPSHOT. Not a live probe: these are facts about
@@ -82,6 +88,11 @@ export interface PiiStoreGateInput {
   declined: boolean;
   /** Whether the store currently holds no derived key. */
   locked: boolean;
+  /**
+   * Whether a withdrawal/revocation is pending or incomplete. Optional so
+   * existing callers keep their exact behavior; absent means "not pending".
+   */
+  withdrawalPending?: boolean;
 }
 
 /**
@@ -99,6 +110,10 @@ export function resolvePiiStoreRefusal(
   if (input.demoSuppressed) return "demo_session";
   if (input.environment === null) return "capability_unknown";
   if (input.environment.browser !== true) return "not_a_browser";
+  // A destructive operation in flight outranks every other refusal: it is not
+  // fixable by the user (unlike `profile_locked`) and must not be masked by
+  // the live consent decision (which the withdrawal itself is changing).
+  if (input.withdrawalPending === true) return "withdrawal_pending";
   if (input.declined) return "consent_declined";
   if (input.environment.secureContext !== true) return "insecure_context";
   if (input.environment.webCryptoAvailable !== true) {
@@ -130,6 +145,7 @@ export function resolvePiiStoreRefusal(
 let piiStoreEnvironment: PiiStoreEnvironment | null = null;
 let piiPersistenceDeclined = false;
 let demoSuppressed = false;
+let withdrawalPending = false;
 
 /** Install (or clear, with null) the vault's capability snapshot. */
 export function setPiiStoreEnvironment(
@@ -146,6 +162,21 @@ export function setPiiPersistenceDeclined(value: boolean): void {
 /** True while the user has declined PII persistence. */
 export function isPiiPersistenceDeclined(): boolean {
   return piiPersistenceDeclined;
+}
+
+/**
+ * Engage/release the withdrawal lock. Set while a withdrawal/revocation
+ * journal is non-completed (see `withdrawalBlocksPiiWrites`), so no new PII is
+ * written into a surface that is mid-erasure. This is a mirror of the journal's
+ * state, not a second owner of it.
+ */
+export function setWithdrawalPending(value: boolean): void {
+  withdrawalPending = value;
+}
+
+/** True while a withdrawal/revocation is pending or incomplete. */
+export function isWithdrawalPending(): boolean {
+  return withdrawalPending;
 }
 
 /**
@@ -170,6 +201,7 @@ export function piiStoreRefusalReason(
     environment: piiStoreEnvironment,
     declined: piiPersistenceDeclined,
     locked,
+    withdrawalPending,
   });
 }
 
@@ -183,4 +215,5 @@ export function resetPiiStoreGateForTests(): void {
   piiStoreEnvironment = null;
   piiPersistenceDeclined = false;
   demoSuppressed = false;
+  withdrawalPending = false;
 }

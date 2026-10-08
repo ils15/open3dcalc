@@ -1,14 +1,13 @@
 import { contextBridge, ipcRenderer } from "electron";
 // Type-only: erased at compile time, so this adds no runtime require across the
 // CJS/ESM boundary. `resolution-mode: import` is required by TS1541 because
-// preload.cts is CommonJS and the source module is ESM. Deriving the shape
-// means a fifth PII table is a compile error here, not a silently un-reported
-// column in the IPC contract.
-import type { PiiDomainTableCounts } from "./piiDomainTables.js" with { "resolution-mode": "import" };
-// Type-only, same reason as above: the desktop re-home's read contract is
-// derived from the main-process reader, so a change to the report shape is a
-// compile error here rather than a silently narrower IPC contract.
-import type { LegacyPiiRowsReport } from "./legacyRows.js" with { "resolution-mode": "import" };
+// preload.cts is CommonJS and the source module is ESM. The desktop re-home's
+// read contract is derived from the main-process reader, so a change to the
+// report shape is a compile error here rather than a silently narrower IPC
+// contract.
+import type { LegacyPiiRowsReport } from "./legacyRows.js" with {
+  "resolution-mode": "import",
+};
 
 /**
  * Type-safe API exposed to the renderer process via contextBridge.
@@ -30,21 +29,18 @@ const electronAPI = {
     delete: (key: string): Promise<void> =>
       ipcRenderer.invoke("db:delete", key),
 
-    /** List all keys in the key-value store, sorted alphabetically. */
+    /** List existing keys only from the exact app-owned non-PII allowlist. */
     listKeys: (): Promise<string[]> => ipcRenderer.invoke("db:list-keys"),
 
     /**
-     * Export the database file to a user-chosen location.
-     * Returns the destination file path on success.
+     * Internal diagnostic export; requires the explicit main-process gate.
+     * It may contain legacy PII and is blocked while erasure is active/invalid.
      */
     exportDatabase: (): Promise<string> => ipcRenderer.invoke("db:export"),
 
     /**
-     * Import a database from an external backup file.
-     * The file is chosen via a native dialog in the main process — any
-     * renderer-supplied path argument is ignored. Replaces the current
-     * database; a backup of the current DB is created before the swap.
-     * Returns the path of the imported database on success.
+     * Legacy contract retained for compatibility. Main rejects imports while
+     * legacy PII isolation is enforced; it does not open a dialog or replace DB.
      */
     importDatabase: (_filePath?: string): Promise<string> =>
       ipcRenderer.invoke("db:import"),
@@ -169,37 +165,143 @@ const electronAPI = {
     lock: (): Promise<void> => ipcRenderer.invoke("crypto:lock"),
   },
 
+  piiNew: {
+    /**
+     * The OS-keyring gate verdict for the passwordless new-PII route. Main
+     * runs the §3.4 backend gate plus the pre-hydration self-test; no key
+     * material or value crosses this call.
+     */
+    capability: (): Promise<{
+      available: boolean;
+      backend?: string;
+      reason?: string;
+    }> => ipcRenderer.invoke("pii:new:capability"),
+
+    /**
+     * Open a NEW-namespace PII record. Returns null when absent. Legacy keys
+     * and non-new rows are refused by main; the renderer never sees them here.
+     */
+    load: (key: string): Promise<string | null> =>
+      ipcRenderer.invoke("pii:new:load", key),
+
+    /**
+     * Seal and store a NEW-namespace PII record. The value is encrypted in the
+     * main process BEFORE any SQLite write; a denied gate rejects.
+     */
+    save: (key: string, value: string): Promise<void> =>
+      ipcRenderer.invoke("pii:new:save", key, value),
+  },
+
+  erasure: {
+    /** Persist/validate the authorization barrier before renderer-side work. */
+    authorize: (): Promise<{ token: string }> =>
+      ipcRenderer.invoke("erasure:authorize"),
+
+    /** Consume a one-use authorization and receive its approved plan. */
+    claim: (
+      token: string,
+    ): Promise<{
+      targets: Array<{ surface: string; id: string }>;
+    }> => ipcRenderer.invoke("erasure:claim", token),
+
+    /** Continue the main-process saga; renderer report is never proof. */
+    start: (
+      token: string,
+      rendererReport?: Record<
+        string,
+        { purged: number; remaining: string[] } | undefined
+      >,
+    ): Promise<{
+      receipt: {
+        saga_id: string;
+        committed_at: string;
+        policy_version: string;
+        stores_completed: string[];
+        external_copies_notice: string[];
+        rollback_unavailable?: { reason: string; at: string };
+      };
+      rolledBack: boolean;
+    }> => ipcRenderer.invoke("erasure:start", token, rendererReport),
+
+    /** Metadata-only status and capability gate. */
+    status: (): Promise<{
+      active: boolean;
+      available: boolean;
+      blockerCodes: string[];
+      state?: string;
+      stores?: Array<{ store: string; state: string; attempts: number }>;
+    }> => ipcRenderer.invoke("erasure:status"),
+
+    /**
+     * EXACT new-namespace delete-all (Beta12 follow-up). Erases ONLY the three
+     * passwordless new-PII storage rows through a durable one-use nonce; legacy
+     * rows, domain tables and mixed backups stay unavailable.
+     */
+    newPii: {
+      authorize: (): Promise<{
+        token: string;
+        expiresAt: string;
+        targets: Array<{ surface: string; id: string }>;
+      }> => ipcRenderer.invoke("erasure:new-pii:authorize"),
+
+      claim: (
+        token: string,
+      ): Promise<{ targets: Array<{ surface: string; id: string }> }> =>
+        ipcRenderer.invoke("erasure:new-pii:claim", token),
+
+      start: (token: string): Promise<{
+        request_id: string;
+        completed_at: string;
+        purged: string[];
+      }> => ipcRenderer.invoke("erasure:new-pii:start", token),
+
+      status: (): Promise<{
+        active: boolean;
+        available: boolean;
+        blockerCodes: string[];
+        state?: string;
+        targets: Array<{ surface: string; id: string }>;
+      }> => ipcRenderer.invoke("erasure:new-pii:status"),
+    },
+  },
+
+  withdrawal: {
+    /**
+     * Persist a durable, receipt-scoped withdrawal journal and return its
+     * one-use nonce. Only the new-PII targets in the receipt scope are bound.
+     */
+    request: (input: {
+      receiptId: string;
+      scope: string[];
+    }): Promise<{
+      token: string;
+      expiresAt: string;
+      targets: Array<{ surface: string; id: string }>;
+    }> => ipcRenderer.invoke("withdrawal:request", input),
+
+    /**
+     * Consume the nonce, purge ONLY the linked new-PII rows and complete the
+     * withdrawal on a verified postcondition.
+     */
+    purge: (
+      token: string,
+    ): Promise<
+      { ok: true; purged: string[] } | { ok: false; reason: string }
+    > => ipcRenderer.invoke("withdrawal:purge", token),
+  },
+
   privacy: {
+    // These legacy UI contracts remain temporarily for preload/type
+    // compatibility. The main process rejects them without opening SQLite;
+    // callers are removed in the dedicated privacy-UI wave.
+    //
+    // The scan/quarantine/recovery/recover-key stubs are GONE: the main process
+    // rejects every one of them, so exposing them only advertised a renderer
+    // capability the app permanently refuses. The remaining three are still
+    // reachable from renderer code paths that fail closed on the main-process
+    // refusal (the desktop re-home's read-only reader is the live one).
     /**
-     * On-demand ADR-002 §2.3 legacy-plaintext scan. Metadata only:
-     * key NAMES and counts, never stored values.
-     */
-    scanReport: (): Promise<{
-      scannedAt: string;
-      entries: Array<{ key: string; surface: string; status: string }>;
-      legacyCount: number;
-      encryptedCount: number;
-      domainTables: PiiDomainTableCounts;
-      manifestAvailable: boolean;
-    }> => ipcRenderer.invoke("privacy:scan-report"),
-
-    /**
-     * ADR-002 §2.2 quarantine report: PII keys holding legacy plaintext
-     * (quarantined, read-only) and their record counts.
-     */
-    quarantineReport: (): Promise<{
-      scannedAt: string;
-      entries: Array<{
-        key: string;
-        status: string;
-        recordCount?: number;
-      }>;
-      quarantinedKeys: string[];
-    }> => ipcRenderer.invoke("privacy:quarantine-report"),
-
-    /**
-     * ADR-002 §2.2.3 migrate: encrypt the quarantined plaintext with the
-     * ADR-001 capability and verify before the plaintext is destroyed.
+     * Obsolete legacy-key migration. Main rejects this call without modifying rows.
      */
     migrateKey: (
       key: string,
@@ -207,7 +309,7 @@ const electronAPI = {
       ipcRenderer.invoke("privacy:migrate-key", key),
 
     /**
-     * ADR-002 §2.2.3 eliminate: delete the quarantined rows for a PII key.
+     * Obsolete per-key elimination. Use the explicit delete-all saga instead.
      */
     eliminateKey: (
       key: string,
@@ -215,55 +317,8 @@ const electronAPI = {
       ipcRenderer.invoke("privacy:eliminate-key", key),
 
     /**
-     * ADR-001 §3.6: which stored classes are unreadable, and whether recovery
-     * can still be attempted for each.
-     *
-     * `reason` is the MAIN process's own refusal code, reused rather than
-     * re-invented on this side — a second vocabulary here would drift, and these
-     * are the codes an operator needs in a bug report. Metadata only: key NAMES
-     * and codes, never a value (§3.2).
-     */
-    recoveryReport: (): Promise<{
-      scannedAt: string;
-      unavailable: Array<{
-        key: string;
-        reason: string;
-        recoverable: boolean;
-      }>;
-    }> => ipcRenderer.invoke("privacy:recovery-report"),
-
-    /**
-     * ADR-001 §3.6 recovery for one key: copy → re-seal → verify.
-     *
-     * `verified` is true only after a fresh read-back through the normal bound
-     * path authenticated and matched the full payload, so a caller can treat
-     * `recovered: true` as "this is now a properly bound envelope" rather than
-     * "a write was attempted". NEVER deletes the legacy blob: the copy is
-     * retained as disclosed residue and the user removes it through the erasure
-     * flow.
-     */
-    recoverKey: (
-      key: string,
-    ): Promise<{
-      key: string;
-      recovered: boolean;
-      verified: boolean;
-      shape?: string;
-      reason?: string;
-      residueRetained?: boolean;
-    }> => ipcRenderer.invoke("privacy:recover-key", key),
-
-    /**
-     * Beta5 desktop re-home: the RAW legacy plaintext values of the three
-     * migrated PII keys (`open3dcalc_customers_v1`, `open3dcalc_quotes_v1`,
-     * `open3dcalc_history_v2`), so the renderer can COPY them into the
-     * encrypted vault — the web re-home's desktop twin.
-     *
-     * READ-ONLY and metadata-complete: a key whose row is absent is `absent`, a
-     * key already holding an ADR-001 envelope is `already_encrypted` with no
-     * value, and only a legacy plaintext row carries `value`. These values are
-     * PII: they live in renderer memory only and are NEVER persisted there (the
-     * persistence bridge refuses the three keys).
+     * Obsolete raw legacy-PII reader. Main rejects this call without reading
+     * stored values; the renderer privacy/re-home mounts must be removed next.
      */
     legacyRows: (): Promise<LegacyPiiRowsReport> =>
       ipcRenderer.invoke("privacy:legacy-rows"),

@@ -139,8 +139,15 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   ];
 
   return (
+    /* `pb-20` is VIS-003(b) clearance for the floating dock. The rail is
+       `sticky h-screen`, so it does not move when the page scrolls: any content
+       in the bottom ~56px of it sat PERMANENTLY behind the dock, measured at
+       78% of "Notas de Versão" and 46% of "Documentação / Wiki" at 390px.
+       Scrolling cannot fix a sticky overlay, so the rail's own content box is
+       inset instead. The dock is 40px tall at bottom-4 (16px), so 80px clears
+       it with room to spare. */
     <aside
-      className={`bg-[#090d16] border-r border-[#1a2337] flex flex-col justify-between select-none shrink-0 transition-all duration-200 z-30 sticky top-0 h-screen ${
+      className={`bg-surface-raised border-r border-border-subtle flex flex-col justify-between select-none shrink-0 transition-all duration-200 z-30 sticky top-0 h-screen pb-20 ${
         collapsed ? "w-16" : "w-56"
       }`}
     >

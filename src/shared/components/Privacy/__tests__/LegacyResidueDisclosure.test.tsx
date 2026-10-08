@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import type { LegacyPiiDisclosure } from "@/shared/lib/migration/legacyPiiDisclosure";
 import { LEGACY_PII_REHOME_MARKER_KEY } from "@/shared/lib/migration/legacyPiiRehome";
@@ -22,6 +22,10 @@ vi.mock("react-i18next", () => ({
 }));
 
 import { LegacyResidueDisclosure } from "../LegacyResidueDisclosure";
+
+afterEach(() => {
+  delete (window as { electronAPI?: unknown }).electronAPI;
+});
 
 const CUSTOMERS = "open3dcalc_customers_v1";
 const QUOTES = "open3dcalc_quotes_v1";
@@ -243,16 +247,40 @@ describe("LegacyResidueDisclosure — drift (T4.6, value-free)", () => {
 });
 
 describe("LegacyResidueDisclosure — default derivation", () => {
-  it("derives its own disclosure when none is injected", () => {
-    // No throw and a labelled region: the default path installs the capability
-    // snapshot and reads through the gate without a DOM-backed vault.
+  it("waits for an explicit user request before inspecting legacy data", () => {
+    const legacyRows = vi.fn();
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: { legacyRows },
+    };
     render(<LegacyResidueDisclosure />);
     expect(
       screen.getByRole("region", { name: "privacy.residue.title" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "privacy.quarantine.refresh" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("privacy.residue.residueNone")).toBeNull();
+    expect(legacyRows).not.toHaveBeenCalled();
   });
 
-  it("discloses the DESKTOP residue read over IPC", async () => {
+  it("does not render an empty-residue claim when explicit inspection is unavailable", async () => {
+    const legacyRows = vi.fn().mockRejectedValue(new Error("IPC disabled"));
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: { legacyRows },
+    };
+    render(<LegacyResidueDisclosure />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "privacy.quarantine.refresh" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "privacy.quarantine.loadError",
+    );
+    expect(screen.queryByText("privacy.residue.residueNone")).toBeNull();
+    expect(legacyRows).toHaveBeenCalledTimes(1);
+  });
+
+  it("discloses the DESKTOP residue read over IPC after explicit inspection", async () => {
     // The bridge never hydrates the three PII keys, so the residue is in SQLite
     // and only the read-only IPC answers. The panel must show it, key name and
     // count only.
@@ -268,12 +296,25 @@ describe("LegacyResidueDisclosure — default derivation", () => {
               }),
               status: "legacy_plaintext",
             },
+            {
+              key: "open3dcalc_quotes_v1",
+              value: null,
+              status: "absent",
+            },
+            {
+              key: "open3dcalc_history_v2",
+              value: null,
+              status: "absent",
+            },
           ],
         }),
       },
     };
     try {
       render(<LegacyResidueDisclosure />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "privacy.quarantine.refresh" }),
+      );
       await waitFor(() =>
         expect(screen.getByText(/open3dcalc_customers_v1/)).toBeInTheDocument(),
       );

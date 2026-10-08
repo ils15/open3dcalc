@@ -45,4 +45,3 @@ npx electron-builder --win --linux  # Both
 - **Storage adapter** — `src/platform/desktop/overrides/storage-adapter.ts` maps localStorage API to SQLite
 - **Native file dialogs** — for STL/OBJ/3MF/G-code import
 - **Auto-updates** — via electron-builder (future: electron-updater)
-- **Theme persistence** — SQLite-backed (`src/platform/desktop/overrides/theme-persistence.ts`)

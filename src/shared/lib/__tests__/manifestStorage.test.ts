@@ -66,6 +66,7 @@ describe("guardedStorage (S1)", () => {
   it("never logs stored values — key NAMES only (TEST-MATRIX 3.2)", () => {
     const sensitiveValue = "João da Silva <joao@example.com>";
     guardedStorage.setItem("open3dcalc_customers_v1", sensitiveValue);
+    expect(window.localStorage.getItem("open3dcalc_customers_v1")).toBeNull();
     const logged = vi
       .mocked(console.warn)
       .mock.calls.map((args) => String(args[0]))
@@ -149,13 +150,13 @@ describe("manifestStorage (S1 zustand persist wrapper)", () => {
   it("returns a PersistStorage that round-trips a known key", () => {
     const storage = manifestStorage();
     expect(storage).toBeDefined();
-    storage!.setItem("open3dcalc_history_v2", { state: { v: 1 }, version: 1 });
-    expect(storage!.getItem("open3dcalc_history_v2")).toEqual({
+    storage!.setItem("open3dcalc_settings_v2", { state: { v: 1 }, version: 1 });
+    expect(storage!.getItem("open3dcalc_settings_v2")).toEqual({
       state: { v: 1 },
       version: 1,
     });
-    storage!.removeItem("open3dcalc_history_v2");
-    expect(storage!.getItem("open3dcalc_history_v2")).toBeNull();
+    storage!.removeItem("open3dcalc_settings_v2");
+    expect(storage!.getItem("open3dcalc_settings_v2")).toBeNull();
   });
 
   it("is JSON-based like the zustand default (persist wrapper shape kept)", () => {
@@ -193,5 +194,88 @@ describe("manifestStorage (S1 zustand persist wrapper)", () => {
     } finally {
       if (original) Object.defineProperty(window, "localStorage", original);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Web new-PII persistence block (below the UI)
+//
+// On the web target there is no OS keyring, and no new passwordless vault is
+// being added in this slice. Every manifest PII key is `encrypted_at_rest`, so
+// a write through the PLAINTEXT localStorage choke point is always wrong. The
+// denial has to live at the persistence layer — not only in a React surface —
+// so a direct call cannot create a plaintext PII record.
+// ---------------------------------------------------------------------------
+
+describe("plaintext PII write denial on the web target", () => {
+  const OLD_ENV = process.env.NODE_ENV;
+  const OLD_UA = navigator.userAgent;
+
+  beforeEach(() => {
+    resetManifestForTests(manifestFixture as ManifestDocument);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    window.localStorage.clear();
+    process.env.NODE_ENV = "production";
+  });
+
+  afterEach(() => {
+    resetManifestForTests(null);
+    vi.restoreAllMocks();
+    process.env.NODE_ENV = OLD_ENV;
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: OLD_UA,
+    });
+    window.localStorage.clear();
+  });
+
+  function setUserAgent(value: string): void {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value,
+    });
+  }
+
+  it.each([
+    "open3dcalc_customers_v1",
+    "open3dcalc_quotes_v1",
+    "open3dcalc_history_v2",
+  ])("refuses a direct guardedStorage plaintext write of %s", (key) => {
+    setUserAgent("Mozilla/5.0 (compatible; web)");
+    guardedStorage.setItem(key, '{"state":{"name":"synthetic"}}');
+
+    expect(window.localStorage.getItem(key)).toBeNull();
+    // Key NAMES only, never the value (TEST-MATRIX 3.2).
+    const logged = vi.mocked(console.warn).mock.calls.flat().join(" ");
+    expect(logged).toContain(key);
+    expect(logged).not.toContain("synthetic");
+  });
+
+  it("refuses a direct manifestStorage plaintext PII write", () => {
+    setUserAgent("Mozilla/5.0 (compatible; web)");
+    const storage = manifestStorage();
+
+    storage!.setItem("open3dcalc_history_v2", { state: { v: 1 }, version: 1 });
+
+    expect(window.localStorage.getItem("open3dcalc_history_v2")).toBeNull();
+    expect(storage!.getItem("open3dcalc_history_v2")).toBeNull();
+  });
+
+  it("still persists a non-PII key on the web target", () => {
+    setUserAgent("Mozilla/5.0 (compatible; web)");
+    guardedStorage.setItem("open3dcalc_settings_v2", '{"activeTab":"fdm"}');
+    expect(window.localStorage.getItem("open3dcalc_settings_v2")).toBe(
+      '{"activeTab":"fdm"}',
+    );
+  });
+
+  it("does not treat an Electron renderer as the web target", () => {
+    setUserAgent("Mozilla/5.0 Electron/40.0");
+    // Desktop PII is gated elsewhere; the web-specific plaintext refusal must
+    // not change desktop behavior in this slice.
+    guardedStorage.setItem("open3dcalc_settings_v2", '{"activeTab":"fdm"}');
+    expect(window.localStorage.getItem("open3dcalc_settings_v2")).toBe(
+      '{"activeTab":"fdm"}',
+    );
   });
 });

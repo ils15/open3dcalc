@@ -57,14 +57,15 @@ O Open3DCalc é **local-first** para os dados de cálculo salvos no dispositivo,
 - **Assistente local (Copilot)** — as dicas por material usam heurísticas locais, a proposta de venda é um template local e os números vêm da calculadora. Não há geração por IA, chamada a provedor de IA, leitura/armazenamento de chave de API nem transferência de dados do projeto ou chaves para serviços de IA. Uma chave eventualmente salva por uma versão beta antiga é ignorada pelo assistente atual. Ao abrir a proposta pelo link do WhatsApp, o texto é compartilhado com o WhatsApp por escolha do usuário.
 
 - **Aba 🔒 Privacidade** — um só lugar para ver e agir sobre seus dados:
-  - **Quarentena de dados legados**: dados antigos gravados em texto puro ficam legíveis, porém bloqueados para novas gravações, até você escolher **migrar** (criptografar e verificar) ou **eliminar**;
+  - **Quarentena de dados legados**: dados antigos gravados em texto puro ficam legíveis, porém bloqueados para novas gravações, até você escolher **migrar** (criptografar e verificar) ou **eliminar**; esses canais legados estão temporariamente pausados no desktop pelo limite de IPC descrito abaixo;
   - **Consentimento**: um recibo à prova de adulteração, vinculado à versão exata da política que você aceitou — flags de tutorial/onboarding nunca substituem consentimento, e a retirada apaga os dados coletados sob ela;
   - **Apagar todos os meus dados**: apagamento completo e verificável em todas as superfícies (banco, arquivos, caches, backups internos), com journal recuperável, snapshot criptografado de reversão (7 dias) e recibo listando as cópias externas que o app não alcança (ex.: exports salvos fora do app).
 - **Exportação sempre criptografada**: o pacote de sincronização/exportação (`.open3dcalc`) sai criptografado com AES-256-GCM a partir de uma senha sua — sem senha, não há export. Pacotes legados antigos continuam importáveis. Os dados marcados como exportáveis pelo usuário — incluindo paleta de cores personalizada e configurações de comparação de modelos — são preservados na exportação e importação.
 - **Backup bruto deixou de ser recurso de usuário**: a cópia bruta do banco SQLite agora é um artefato de diagnóstico interno, bloqueado por padrão (gate de desenvolvimento), com modo de redação de dados pessoais e retenção máxima de 14 dias. Para levar seus dados a outra máquina, use o pacote de exportação criptografado.
 - **Cofre de PII no navegador (fundação pronta, migração ainda não)**: o build web ganhou um destino cifrado para dados pessoais — um IndexedDB (`open3dcalc_pii_vault`) onde cada registro é um envelope AES-256-GCM selado com o mesmo contrato de dados vinculados (AAD) do build desktop, sob uma chave derivada de senha que existe **somente em memória** (não exportável, descartada ao travar). **Não há caminho de texto puro.** Se o perfil estiver travado, se Web Crypto ou IndexedDB não existirem, se o contexto não for seguro, ou se você tiver recusado, o cofre **recusa** a leitura e a gravação com um motivo explícito e tipado — ele não devolve lista vazia, porque uma leitura vazia deixaria o store persistir seu estado inicial (lista vazia) por cima dos seus dados reais, o que é perda de dados disfarçada de cadeado. Os três stores Zustand (`open3dcalc_customers_v1`, `open3dcalc_quotes_v1`, `open3dcalc_history_v2`) **ainda não** foram migrados para o cofre, e ainda não existe tela de desbloqueio no app web: por isso, migrá-los vai exigir `skipHydration` e um `rehydrate()` explícito depois do desbloqueio. A superfície está declarada no manifesto como `sync: never` e `export: never`, de modo que a exportação e a sincronização não conseguem alcançá-la.
 - **Escrita de PII recusa com aviso visível (H-4)**: uma escrita de dado pessoal é conferida **antes** de entrar na memória do store. Se o cofre está travado, a escrita é abortada e a recusa aparece na tela — nome da área afetada e motivo tipado, sem carregar o valor. Isso fecha o modo de falha em que o store mutava em memória, a lista mostrava o registro novo, o cofre recusava a gravação no disco e o dado sumia no recarregar **sem nenhuma mensagem**: a UI dizia "salvo" e a pessoa perdia o que tinha acabado de digitar. A checagem vive em `beginPiiSurfaceWrite()` e a recusa é mostrada por `PiiWriteRefusalNotice`, montado nas superfícies que aceitam entrada de PII (clientes, histórico e orçamentos). Uma sessão de demonstração é a única recusa deliberadamente silenciosa: os dados demo são efêmeros por definição.
-- **Migração de histórico e resíduo legado (W4)**: a retomada da migração do histórico legado deixou de guardar um preimage com PII — a marca de progresso (`open3dcalc_migration_progress_v2`) é **sem valores** (um tipo e uma versão, nunca um registro) e uma retomada relê a fonte legada intacta (**copy-without-delete**: nada é apagado automaticamente). A escolha de **manter somente leitura** é lembrada sem PII (`open3dcalc_legacy_keep_readonly_v1`, apenas uma assinatura de nomes de chave + contagens — re-ofertada assim que o resíduo muda, e reaberta pela tela Privacidade). Um **fingerprint de drift** (`open3dcalc_migration_fingerprint_v1`, só contagens) sinaliza honestamente na tela Privacidade se a fonte legada mudou depois da migração, **sem reconciliar nada automaticamente**. O painel de resíduo divulga o texto puro legado — inclusive um marker legado remanescente (`open3dcalc_migration_done_v2`), que o código atual **nunca escreve** e que, enquanto existir, permanece em texto puro até uma eliminação explícita. **No desktop**, o resíduo legado não é hidratado pela ponte de persistência (ele fica retido em SQLite, invisível ao renderer): a migração e o painel de resíduo passam a alcançá-lo por uma leitura **read-only** sobre IPC (`privacy:legacy-rows`, apenas as três chaves declaradas), com o mesmo contrato — consent-gated, fail-closed em cofre travado, copy-without-delete, verify-before-complete e idempotente. Sem `window.electronAPI` a leitura IPC é no-op e o caminho **web permanece inalterado**.
+- **Limite temporário de IPC no desktop (rascunho, não release)**: load/save/delete do SQLite aceitam somente chaves não-PII exatas da lista de preferências/catálogo/produtos; chaves PII e desconhecidas são recusadas antes de consultar o banco. A enumeração retorna apenas essa lista segura. A importação bruta de banco está desativada e rejeita a chamada sem abrir arquivo ou substituir o perfil. Os endpoints legados de inspeção, migração, recuperação e eliminação de PII permanecem desativados; registros legados são preservados, mas não podem ser lidos por esses caminhos. Exportação diagnóstica continua exigindo a opção interna existente e também é bloqueada enquanto a exclusão estiver pendente ou inválida. Esses limites não alteram o fluxo de retirada de consentimento nem habilitam gravações passwordless de PII.
+- **Migração de histórico e resíduo legado (W4)**: a retomada da migração do histórico legado deixou de guardar um preimage com PII — a marca de progresso (`open3dcalc_migration_progress_v2`) é **sem valores** (um tipo e uma versão, nunca um registro) e uma retomada relê a fonte legada intacta (**copy-without-delete**: nada é apagado automaticamente). A escolha de **manter somente leitura** é lembrada sem PII (`open3dcalc_legacy_keep_readonly_v1`, apenas uma assinatura de nomes de chave + contagens — re-ofertada assim que o resíduo muda, e reaberta pela tela Privacidade). Um **fingerprint de drift** (`open3dcalc_migration_fingerprint_v1`, só contagens) sinaliza honestamente na tela Privacidade se a fonte legada mudou depois da migração, **sem reconciliar nada automaticamente**. No desktop, os canais IPC de inspeção/migração/recuperação/eliminação legada estão temporariamente desativados: o resíduo permanece retido no SQLite, sem ser hidratado no renderer nem acessado pelo painel. O caminho **web permanece inalterado**.
 
 > Detalhes técnicos: `docs/privacy/` (SPEC-01 manifest de dados, ADR-001 capacidade criptográfica, ADR-002 quarentena, ADR-003 export vs backup, SPEC-02 saga de apagamento, SPEC-03 envelope de exportação, SPEC-04 recibo de consentimento).
 >
@@ -129,6 +130,73 @@ padrão (embutida no app) e uma parte personalizada (persistida por usuário):
 
 ---
 
+## 🌓 Invariantes do tema: a classe decide, não o sistema operacional
+
+O tema vive em **uma chave e uma classe**: `localStorage['open3dcalc_theme']` e uma
+classe `dark`/`light` no `<html>`, escritas por `src/shared/hooks/useTheme.ts`
+(`initTheme()` roda antes do primeiro `render()`). Quatro invariantes
+aparentemente óbvias quebram a aplicação silenciosamente se forem movidas —
+nenhuma delas falha em build, e todas já custaram um incidente.
+
+**1. `dark:` segue a CLASSE, não `prefers-color-scheme`.** O Tailwind v4 amarra
+`dark:` a `@media (prefers-color-scheme: dark)` por padrão, que é um segundo
+interruptor independente do que o app usa: quem escolheu **claro** num SO escuro
+recebia todas as utilidades `dark:`, e quem escolheu **escuro** num SO claro não
+recebia nenhuma. O desvinculo é
+`@custom-variant dark (&:where(.dark, .dark *));` em `src/styles/tokens.css`, e
+ela fica **imediatamente antes do bloco `@theme inline`** — não no topo do
+arquivo. Motivo: os guards de token de `src/shared/__tests__` leem o arquivo com
+um scanner chapado de blocos (`/([^{}]*)\{([^{}]*)\}/`), e uma at-rule sem
+chaves acima do `:root` é lida como parte do **seletor** dele; a string passa a
+começar com `@custom-variant`, não casa nem com `:root` nem com `.dark`, e a
+**paleta clara inteira desaparece** da cascata que os testes reconstroem —
+transformando toda medição de tema claro em "irresolvível" em vez de falha.
+
+**2. `.light` é âncora na camada de ÁLIAS, não na paleta.** `applyTheme()` adiciona
+`.light` no `<html>` a cada render em tema claro, e antes disso **nada** casava
+com essa classe. A âncora entra no bloco `:root` de aliases (o que os
+componentes consomem via `var(--color-*)`) e **não** no bloco de paleta, pelo
+mesmo motivo do scanner: `tokenInBlock(css, ":root", …)` usa `/:root\s*{/`, que
+só casa quando `{` vem logo depois de `:root` — escrever `:root, .light` na
+paleta faz a regex cair no bloco de alias e medir as declarações erradas.
+
+**3. Utilidade de cor "pelada" só é gerada a partir de `@theme`.** O Tailwind só
+sintetiza `bg-accent-fill` a partir de uma entrada em `@theme`, e
+`--color-accent-fill` / `--color-accent-fill-fg` existem **apenas** na camada de
+álias em tempo de execução — nunca em `@theme inline`. A forma pelada portanto
+**não gera CSS nenhum**: o elemento cai no valor herdado. Foi assim que o botão
+de saída do Focus Mode perdeu o preenchimento e `selection:text-accent-fill-fg`
+deixou o texto selecionado herdar `--color-text-primary` (2,82:1 no tema claro).
+Use a forma arbitrária: `bg-[var(--color-accent-fill)]`,
+`text-[var(--color-accent-fill-fg)]`. `tailwindUtilitiesResolve.test.ts` exige
+que **toda** utilidade de cor usada em `src/` exista em `@theme` ou na paleta
+nativa, e falha se alguma não resolver.
+
+**4. A CSP de produção é `script-src 'self'` — o script anti-FOUC é inline e
+precisa de hash, e o `<meta>` da CSP precisa ficar ACIMA dele.** O
+`index.web.html` e o `index.desktop.html` trazem um `<script>` inline que lê
+`localStorage['open3dcalc_theme']` e aplica a classe antes do primeiro paint
+(sem ele, `initTheme()` só roda no eval do módulo, depois do CSS). Duas
+consequências, ambas verificadas por build:
+
+- a CSP de produção **não** tem `'unsafe-inline'` (só o dev a relaxa, via
+  `apply: "serve"` nos configs do Vite), então o script inline precisa de
+  `'sha256-…'` em `script-src`, senão ele é descartado em produção enquanto
+  continua parecendo correto no código;
+- um `<meta http-equiv="Content-Security-Policy">` vale **só para o que é
+  parseado depois dele** — ele não é retroativo. Com o script **acima** do meta,
+  ele fica isento da política, o `sha256-…` é decorativo, e um hash errado
+  continua executando. `studioShellTheme.test.ts` verifica o hash **e** a ordem
+  dos dois, porque só o hash não pega isso.
+
+Consequência colateral que vale registrar: `selection:*` usa
+`--color-accent-fill`, **não** `--color-accent`. As duas valem `#4f46e5` no tema
+claro, mas `--color-accent` vira `#818cf8` no escuro — uma cor de peso de
+foreground que só chega a 2,98:1 com tinta branca. O par de seleção mede 6,29:1
+nos **dois** temas.
+
+---
+
 ## 🏗️ Project Structure
 
 ```
@@ -175,8 +243,7 @@ open3dcalc/
 │           └── overrides/       # Brides SQLite ↔ localStorage
 │               ├── db-bridge.ts
 │               ├── persistence-bridge.ts
-│               ├── storage-adapter.ts
-│               └── theme-persistence.ts
+│               └── storage-adapter.ts
 ├── docs/                          # Documentação
 │   └── wiki/                      # Artigos da aba Wiki (markdown, pt-BR + en-US)
 │       └── README.md              # Contrato de autoria da Wiki (subset, schema)

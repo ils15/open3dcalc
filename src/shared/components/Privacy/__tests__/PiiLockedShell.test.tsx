@@ -114,6 +114,7 @@ describe("T3.3 — PiiLockedShell", () => {
     resetPiiStoreHydrationForTests();
     window.localStorage.clear();
     zeroizeSessionPassphrase();
+    delete (window as { electronAPI?: unknown }).electronAPI;
   });
 
   it("renders a labelled create form for a fresh, locked, capable vault", async () => {
@@ -234,6 +235,23 @@ describe("T3.3 — PiiLockedShell", () => {
     expect(window.localStorage.length).toBe(0);
   });
 
+  it("does not inspect legacy sources during startup or after creating a profile", async () => {
+    const legacyRows = vi.fn().mockResolvedValue({ rows: [] });
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: { legacyRows },
+    };
+    renderShell();
+    await screen.findByLabelText(CONFIRM_LABEL);
+
+    await user.type(passphraseInput(), PASS);
+    await user.type(confirmInput(), PASS);
+    await user.click(screen.getByRole("button", { name: CREATE_BUTTON }));
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(legacyRows).not.toHaveBeenCalled();
+  });
+
   // --- unlock mode (MEDIUM-1) ---------------------------------------------
 
   it("unlocks with the passphrase typed and Enter, rehydrating the stores", async () => {
@@ -268,5 +286,97 @@ describe("T3.3 — PiiLockedShell", () => {
     // The failed passphrase is dropped from the field, never retained.
     expect(passphraseInput()).toHaveValue("");
     expect(window.localStorage.length).toBe(0);
+  });
+
+  // --- recovery, reset and visibility (UI affordances) ---------------------
+
+  it("toggles passphrase visibility without changing the value", async () => {
+    renderShell();
+    await screen.findByLabelText(CONFIRM_LABEL);
+
+    await user.type(passphraseInput(), PASS);
+    expect(passphraseInput()).toHaveAttribute("type", "password");
+
+    await user.click(screen.getByTitle("privacy.vault.showPassphrase"));
+    expect(passphraseInput()).toHaveAttribute("type", "text");
+    expect(passphraseInput()).toHaveValue(PASS);
+
+    await user.click(screen.getByTitle("privacy.vault.hidePassphrase"));
+    expect(passphraseInput()).toHaveAttribute("type", "password");
+  });
+
+  it("saves a password hint when creating a profile", async () => {
+    renderShell();
+    await screen.findByLabelText(CONFIRM_LABEL);
+
+    await user.type(passphraseInput(), PASS);
+    await user.type(confirmInput(), PASS);
+    await user.type(
+      screen.getByPlaceholderText("Dica de senha (opcional)..."),
+      "dica-sintetica",
+    );
+    await user.click(screen.getByRole("button", { name: CREATE_BUTTON }));
+
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
+    expect(window.localStorage.getItem("open3dcalc_vault_hint")).toBe(
+      "dica-sintetica",
+    );
+  });
+
+  it("reveals a stored password hint on the unlock surface", async () => {
+    await seedExistingProfile();
+    window.localStorage.setItem("open3dcalc_vault_hint", "dica-guardada");
+
+    renderShell();
+    await screen.findByRole("button", { name: UNLOCK_BUTTON });
+    await user.click(screen.getByRole("button", { name: "Dica" }));
+
+    expect(screen.getByText("dica-guardada")).toBeInTheDocument();
+  });
+
+  it("states plainly when no password hint was ever stored", async () => {
+    await seedExistingProfile();
+
+    renderShell();
+    await screen.findByRole("button", { name: UNLOCK_BUTTON });
+    await user.click(screen.getByRole("button", { name: "Dica" }));
+
+    expect(screen.getByText(/Nenhuma dica de senha/)).toBeInTheDocument();
+  });
+
+  it("opens and cancels the reset confirmation without touching the vault", async () => {
+    await seedExistingProfile();
+
+    renderShell();
+    await screen.findByRole("button", { name: UNLOCK_BUTTON });
+    await user.click(screen.getByRole("button", { name: "Esqueci a Senha" }));
+    expect(
+      screen.getByRole("button", { name: "Redefinir e Criar Nova Senha" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(
+      screen.queryByRole("button", { name: "Redefinir e Criar Nova Senha" }),
+    ).toBeNull();
+    // Still on the unlock surface.
+    expect(
+      screen.getByRole("button", { name: UNLOCK_BUTTON }),
+    ).toBeInTheDocument();
+  });
+
+  it("resets the local vault back to a fresh create surface", async () => {
+    await seedExistingProfile();
+    window.localStorage.setItem("open3dcalc_vault_hint", "dica-antiga");
+
+    renderShell();
+    await screen.findByRole("button", { name: UNLOCK_BUTTON });
+    await user.click(screen.getByRole("button", { name: "Esqueci a Senha" }));
+    await user.click(
+      screen.getByRole("button", { name: "Redefinir e Criar Nova Senha" }),
+    );
+
+    await screen.findByLabelText(CONFIRM_LABEL);
+    expect(screen.getByText(CREATE_TITLE)).toBeInTheDocument();
+    expect(window.localStorage.getItem("open3dcalc_vault_hint")).toBeNull();
   });
 });

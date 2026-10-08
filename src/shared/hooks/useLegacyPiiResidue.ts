@@ -30,12 +30,19 @@ import {
 /** A sync reader of a raw storage value, the shape the detection half takes. */
 export type LegacyPiiRead = (key: string) => string | null;
 
+export type LegacyPiiReadLoad =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; read: LegacyPiiRead }
+  | { status: "unavailable"; reason: string };
+
+export type LegacyPiiResidueLoad =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; report: LegacyPiiPlaintextReport }
+  | { status: "unavailable"; reason: string };
+
 /**
- * Merge the desktop rows over a local reader.
- *
- * A desktop value wins for a key it carries; every other key falls through to
- * the local reader. `null` rows means "no desktop source", so the local reader
- * is returned unchanged.
+ * Merge validated desktop rows over a local reader. A desktop value wins for a
+ * key it carries; every other key falls through to the local reader.
  */
 export function mergeLegacyPiiRead(
   localRead: LegacyPiiRead,
@@ -46,41 +53,52 @@ export function mergeLegacyPiiRead(
 }
 
 /**
- * Fetch the desktop residue once per mount. Returns `null` until it answers (and
- * forever on the web), so the first render is the sync-only view.
+ * Fetches the source only when enabled. An unavailable desktop source never
+ * falls through to a local-only empty report.
  */
-function useDesktopLegacyRows(enabled: boolean): LegacyPiiRowMap | null {
-  const [rows, setRows] = useState<LegacyPiiRowMap | null>(null);
+export function useLegacyPiiRead(enabled = true): LegacyPiiReadLoad {
+  const [source, setSource] = useState<LegacyPiiReadLoad>({ status: "idle" });
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    void fetchDesktopLegacyPiiRows().then((fetched) => {
-      if (!cancelled && fetched) setRows(fetched);
-    });
+    void fetchDesktopLegacyPiiRows()
+      .then((fetched) => {
+        if (cancelled) return;
+        if (fetched.status === "unavailable") {
+          setSource({ status: "unavailable", reason: fetched.reason });
+          return;
+        }
+        const rows = fetched.status === "available" ? fetched.rows : null;
+        setSource({
+          status: "ready",
+          read: mergeLegacyPiiRead((key) => guardedStorage.getItem(key), rows),
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSource({
+            status: "unavailable",
+            reason: "legacy_source_unavailable",
+          });
+        }
+      });
     return () => {
       cancelled = true;
     };
   }, [enabled]);
-  return rows;
+  if (!enabled) return { status: "idle" };
+  return source.status === "idle" ? { status: "loading" } : source;
 }
 
-/**
- * The reader a residue surface should use right now: the desktop rows merged
- * over `localStorage`. Stable across renders until the desktop rows arrive.
- */
-export function useLegacyPiiRead(enabled = true): LegacyPiiRead {
-  const rows = useDesktopLegacyRows(enabled);
-  return useMemo(
-    () => mergeLegacyPiiRead((key) => guardedStorage.getItem(key), rows),
-    [rows],
+/** The value-free residue report, available only after its source is resolved. */
+export function useLegacyPiiResidue(enabled = true): LegacyPiiResidueLoad {
+  const source = useLegacyPiiRead(enabled);
+  const report = useMemo(
+    () =>
+      source.status === "ready" ? detectLegacyPlaintextPii(source.read) : null,
+    [source],
   );
-}
-
-/** The value-free residue report, desktop-aware. */
-export function useLegacyPiiResidue(enabled = true): LegacyPiiPlaintextReport {
-  const read = useLegacyPiiRead(enabled);
-  return useMemo(
-    () => detectLegacyPlaintextPii(enabled ? read : undefined),
-    [enabled, read],
-  );
+  if (source.status !== "ready") return source;
+  if (report === null) return { status: "loading" };
+  return { status: "ready", report };
 }
