@@ -1,5 +1,20 @@
 # COMPLIANCE-MATRIX — D1.0 Themis Findings Traceability
 
+## Current policy 1.9 trace — approved change, not legacy compliance
+
+Policy 1.9 explicitly approves direct plaintext persistence for only
+`open3dcalc_customers_v1`, `open3dcalc_quotes_v1`, and `open3dcalc_history_v2` on the
+declared Stable Web/PWA and Desktop destinations. This is a change in policy and is **not**
+described as fulfillment of the historical zero-plaintext requirement in R3. `contract_performance`
+is provisional and requires qualified legal review. The encrypted logical export remains
+protected by SPEC-03 (E1 retained); its password does not gate local saves. Historical
+`open3dcalc_pii_vault` bytes are inert and expressly excluded from current deletion scope
+(ADR-002, SPEC-02); no access, conversion, migration, recovery, or purge is promised.
+
+The R1–R15 table below is a historical trace of the former D1.0 contract and must be read
+through this policy 1.9 supersession. The current operative contracts are SPEC-01 policy 1.9,
+ADR-001/002/003 supersession notes, SPEC-02, SPEC-03, SPEC-04, and the current TEST-MATRIX.
+
 **Track:** D1 — Privacy & Data Contracts (D1.0, documentation only)
 **DRI:** Hermes
 **Gate:** Themis (3 review rounds; findings R1–R15)
@@ -51,3 +66,29 @@ this deliverable and traced below. Status legend:
 All 15 findings are `Addressed`. Findings requiring runtime work carry the
 `D1.1+ obligation` marker: the contract is complete and binding, implementation is
 blocked until user approval (README §5) and is verified by TEST-MATRIX.
+
+## Approved Beta strip-down trace (D1–D12; additive)
+
+This trace covers the separately approved Web-Beta test-only profile; it does not revise the
+historical R1–R15 findings or claim that the current Beta runtime already satisfies it. Wave 1
+is documentation and RED tests only.
+
+| Decision | Required scope                                                                                                | Contract / evidence                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| D1       | Add exactly three plaintext, Web-Beta-only synthetic keys                                                     | `SPEC-01-beta-test-manifest-fixture.json`                             |
+| D2       | Separate strict exact-key Beta schema remains unchanged; Stable schema is separately updated under policy 1.9 | `SPEC-01-beta-test-manifest.schema.json`; SPEC-01 Stable schema       |
+| D3       | No Beta deletion, erasure saga, snapshot, or cleanup contract                                                 | SPEC-02 Beta addendum; `betaNoDestructiveOps`                         |
+| D4       | Encrypted export remains Stable/Desktop-only; Beta has no export/import/password path                         | SPEC-03 Beta addendum; `betaNoExport`                                 |
+| D5       | Beta and Stable saves have no consent prerequisite; old Stable receipts remain historical and mismatch on 1.9 | SPEC-04 §Policy 1.9; `noGatePrerequisites`                            |
+| D6       | Exclude crypto capability, vault, and password session from Beta                                              | ADR-001 Beta addendum; `betaTestStorage`                              |
+| D7       | Synthetic-only plaintext exception; no legacy PII read/access/migration                                       | ADR-002 Beta addendum; `betaFreshNamespace` / `betaIsolation.browser` |
+| D8       | No user export or backup in Beta                                                                              | ADR-003 Beta addendum; `betaNoExport`                                 |
+| D9       | Add named RED suites and same-origin isolation proof; retain Stable suites                                    | TEST-MATRIX §11                                                       |
+| D10      | Distinct Beta contract and fail-closed deployment restrictions; Stable policy version is 1.9                  | OWNERS-RUNBOOK; TEST-MATRIX §3                                        |
+| D11      | Document Beta limitations and the separately approved Stable/Desktop direct-plaintext scope                   | Root/privacy/Web/Desktop READMEs                                      |
+| D12      | Mark test-only Beta capabilities absent without rewriting history                                             | ROADMAP Beta strip-down note                                          |
+
+The Beta schema and fixture remain unchanged with exactly three synthetic keys. The Stable
+fixture is now policy 1.9, while manifest version 1.0 and encrypted-entry versions remain
+frozen. Earlier receipt bytes/hashes are preserved and evaluate as `policy_mismatch`; no
+workflow, publication, PR, or release action is authorized by this trace.

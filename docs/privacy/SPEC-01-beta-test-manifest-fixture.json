@@ -1,0 +1,62 @@
+{
+  "manifest_version": "1.0",
+  "policy_version": "1.0",
+  "channel": "web-beta",
+  "erasure": {
+    "supported": false,
+    "reason": "The test-only Beta profile has no deletion, reset, or erasure operation. Clear this disposable browser profile outside the app when needed."
+  },
+  "keys": [
+    {
+      "key": "open3dcalc_beta_test_customers_v1",
+      "surface": "localStorage",
+      "platforms": ["web"],
+      "channel": "web-beta",
+      "class": "synthetic_test_data",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "unsupported",
+      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "purpose": "Synthetic customer records for disposable Beta testing only; never use real customer data.",
+      "legal_basis": "not_personal_data",
+      "owner": "hermes",
+      "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_beta_test_quotes_v1",
+      "surface": "localStorage",
+      "platforms": ["web"],
+      "channel": "web-beta",
+      "class": "synthetic_test_data",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "unsupported",
+      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "purpose": "Synthetic quote records for disposable Beta testing only; never use real customer data.",
+      "legal_basis": "not_personal_data",
+      "owner": "hermes",
+      "version": "1.0"
+    },
+    {
+      "key": "open3dcalc_beta_test_history_v1",
+      "surface": "localStorage",
+      "platforms": ["web"],
+      "channel": "web-beta",
+      "class": "synthetic_test_data",
+      "pii": false,
+      "persistence": "plaintext_allowed",
+      "sync": "never",
+      "export": "never",
+      "erasure": "unsupported",
+      "retention": { "policy": "user_controlled", "max_days": 0 },
+      "purpose": "Synthetic calculation history for disposable Beta testing only; never use real customer data.",
+      "legal_basis": "not_personal_data",
+      "owner": "hermes",
+      "version": "1.0"
+    }
+  ]
+}

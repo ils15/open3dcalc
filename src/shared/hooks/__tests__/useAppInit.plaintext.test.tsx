@@ -1,181 +1,35 @@
-/**
- * Wave 3 — no plaintext PII write is reachable from `useAppInit`.
- *
- * The three migrated keys (`open3dcalc_customers_v1`, `open3dcalc_quotes_v1`,
- * `open3dcalc_history_v2`) now live in the encrypted vault. This spec proves,
- * on a REAL startup run rather than a unit call, that the startup path adds no
- * `localStorage` entry for any of them, and that the only keys the file writes
- * are the VALUE-FREE progress marker (W4.4) and the non-PII product key. It
- * also proves that no value the migration persists embeds the raw legacy
- * content: the marker can never be PII in plaintext.
- *
- * It uses the real `guardedStorage` (not the mocked one the sibling suite
- * installs) so a write that reached `localStorage` would land in the real
- * store and be observed. `localStorage` is reset between specs.
- */
-
 import { renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: true }));
 
 import { useAppInit } from "../useAppInit";
-import { useHistoryStore } from "@/shared/stores/historyStore";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 
-const MIGRATED_KEYS = [
-  "open3dcalc_customers_v1",
-  "open3dcalc_quotes_v1",
-  "open3dcalc_history_v2",
-] as const;
-/**
- * The legacy PII-bearing marker (W4.4). New code must NEVER write it; it is
- * read only to consume/clean a marker an older build already stored.
- */
-const LEGACY_PII_MARKER = "open3dcalc_migration_done_v2";
-/** The value-free progress marker the current migration writes instead. */
-const PROGRESS_MARKER = "open3dcalc_migration_progress_v2";
-const PRODUCTS_KEY = "open3dcalc_products";
+afterEach(() => {
+  vi.restoreAllMocks();
+  window.localStorage.clear();
+});
 
-/** A unique, high-signal token seeded into the legacy source. */
-const PII_CANARY = "SENTINEL-MIGRATION-PII-CANARY";
+describe("useAppInit Beta boundary", () => {
+  it("leaves Stable migration inputs untouched and performs no legacy storage access", async () => {
+    const key = "open3dcalc_history_v2";
+    const canary = '[{"id":"synthetic-stable-canary"}]';
+    window.localStorage.setItem(key, canary);
 
-/** A legacy history array, the input the migration reads to detect work. */
-const LEGACY_HISTORY = JSON.stringify([
-  {
-    id: "hist-1",
-    timestamp: 1_700_000_000_001,
-    type: "fdm",
-    summary: "Peça sintética",
-    totalCost: 10,
-    sellPrice: 20,
-    profit: 10,
-    result: {
-      materialCost: 1,
-      energyCost: 1,
-      machineCost: 1,
-      hardwareCost: 1,
-      consumablesCost: 1,
-      laborCost: 1,
-      softwareCost: 1,
-      failureCost: 1,
-      extrasCost: 1,
-      postProcessingCost: 1,
-      subtotal: 10,
-      totalCost: 10,
-      sellPrice: 20,
-      profit: 10,
-      marketplaceFee: 0,
-      taxAmount: 0,
-      costPerGram: 0.2,
-      costPerUnit: 10,
-      unitWeight: 50,
-      estimatedPrintTime: 1,
-      targetMarginPercent: 50,
-      breakEvenPrice: 10,
-      actualMargin: 50,
-      carbonFootprintGrams: 1,
-    },
-    snapshot: null,
-  },
-]);
-
-describe("useAppInit — no plaintext PII write on startup", () => {
-  let setSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    window.localStorage.clear();
-    useHistoryStore.setState({ entries: [] });
-    // Audit every write through the real storage facade.
-    setSpy = vi.spyOn(guardedStorage, "setItem");
-  });
-
-  afterEach(() => {
-    setSpy.mockRestore();
-    window.localStorage.clear();
-    useHistoryStore.setState({ entries: [] });
-  });
-
-  it("adds no localStorage entry for any migrated PII key during startup", async () => {
-    // Arm the migration with legacy input under the history key (read-only).
-    window.localStorage.setItem("open3dcalc_history_v2", LEGACY_HISTORY);
+    const getItem = vi.spyOn(guardedStorage, "getItem");
+    const setItem = vi.spyOn(guardedStorage, "setItem");
+    const removeItem = vi.spyOn(guardedStorage, "removeItem");
 
     renderHook(() => useAppInit(vi.fn()));
-    // Let the fire-and-forget migration settle on the legacy path.
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
-
-    for (const key of MIGRATED_KEYS) {
-      // The customer/quote keys must never be written at all. The history key
-      // may only hold the value this spec seeded as read-only input.
-      if (key === "open3dcalc_history_v2") {
-        expect(window.localStorage.getItem(key)).toBe(LEGACY_HISTORY);
-      } else {
-        expect(window.localStorage.getItem(key)).toBeNull();
-      }
-    }
-
-    // Structural half: the ONLY keys the startup path writes are the value-free
-    // progress marker and the non-PII product key.
-    const writtenKeys = setSpy.mock.calls.map(
-      (call: [key: string, value: string]) => call[0],
-    );
-    const unexpected = writtenKeys.filter(
-      (key: string) => key !== PROGRESS_MARKER && key !== PRODUCTS_KEY,
-    );
-    expect(unexpected).toEqual([]);
-    expect(writtenKeys).not.toContain("open3dcalc_customers_v1");
-    expect(writtenKeys).not.toContain("open3dcalc_quotes_v1");
-    expect(writtenKeys).not.toContain("open3dcalc_history_v2");
-    // The PII-bearing legacy marker is never written by the current code.
-    expect(writtenKeys).not.toContain(LEGACY_PII_MARKER);
-  });
-
-  it("never writes PII/raw history into any value the marker persists", async () => {
-    // Seed the legacy source with a canary so a raw copy of it is detectable in
-    // any value the migration writes.
-    const legacyWithCanary = LEGACY_HISTORY.replace(
-      "Peça sintética",
-      PII_CANARY,
-    );
-    window.localStorage.setItem("open3dcalc_history_v2", legacyWithCanary);
-
-    renderHook(() => useAppInit(vi.fn()));
-    // Let the fire-and-forget migration settle.
-    await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
 
-    // W4.4: NOT ONE value the migration persists may embed the raw legacy
-    // content. The recovery marker must be value-free.
-    for (const call of setSpy.mock.calls as Array<[string, string]>) {
-      expect(String(call[1])).not.toContain(PII_CANARY);
-    }
+    expect(getItem).not.toHaveBeenCalled();
+    expect(setItem).not.toHaveBeenCalled();
+    expect(removeItem).not.toHaveBeenCalled();
 
-    // The value written under the progress marker carries no backup shape.
-    const markerWrite = (setSpy.mock.calls as Array<[string, string]>).find(
-      ([key]) => key === PROGRESS_MARKER,
-    );
-    expect(markerWrite).toBeDefined();
-    expect(markerWrite![1]).not.toMatch(/source|baseEntries|productsSource/);
-    // And the legacy PII marker is never (re)written.
-    expect(
-      (setSpy.mock.calls as Array<[string, string]>).some(
-        ([key]) => key === LEGACY_PII_MARKER,
-      ),
-    ).toBe(false);
-  });
-
-  it("writes no migrated PII key even when there is no legacy work to do", async () => {
-    renderHook(() => useAppInit(vi.fn()));
-    await Promise.resolve();
-    await Promise.resolve();
-
-    const writtenKeys = setSpy.mock.calls.map(
-      (call: [key: string, value: string]) => call[0],
-    );
-    for (const key of MIGRATED_KEYS) {
-      expect(writtenKeys).not.toContain(key);
-      expect(window.localStorage.getItem(key)).toBeNull();
-    }
+    vi.restoreAllMocks();
+    expect(window.localStorage.getItem(key)).toBe(canary);
   });
 });

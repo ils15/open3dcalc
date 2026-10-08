@@ -25,6 +25,28 @@ Tag `v2.0.0-beta.11`: `fa23ac5df7e2373e0fe72b97c03d4994d272e59b`, publicada em 0
 - Os gates PII/export existentes não completam a checklist transversal LGPD das linhas 76–98.
 - Em 7q, IA, frota fora desta fase e vínculo cliente já têm decisão; continuam abertas a unidade de `usefulLife` e a formalização da decisão sobre `Example`. Coverage da beta.11 não foi medida.
 
+## Approved Beta test-only strip-down (planned; not a published behavior)
+
+The owner approved D1–D12 for a Web-Beta-only synthetic-data profile. This entry records the
+Beta target without rewriting the published release history above. The Stable manifest now
+uses policy 1.9, which supersedes the former policy 1.8 plaintext restriction for its exact
+three-key scope; prior receipt bytes and encrypted-entry versions remain unchanged. Desktop
+follows the Stable policy 1.9 contract and is not part of the Web-Beta profile.
+
+- The target Beta app uses only the three exact `open3dcalc_beta_test_*_v1` localStorage keys,
+  plaintext, for generated synthetic records. Real customer, quote, and history data are
+  prohibited.
+- Beta must not access Stable/legacy keys, migrate or sweep namespaces, open the vault/IndexedDB,
+  Cache API, SQLite, snapshots, or the desktop bridge, or expose consent/password, erasure,
+  deletion, import/export, sync, or backup paths.
+- The first-run disclosure must say test-only, synthetic-only, stored unencrypted, no password,
+  no migration/export, and disposable browser profile. Desktop is explicitly unaffected.
+- Wave 1 is documentation plus intentionally RED contract/regression tests only. No runtime,
+  i18n runtime strings, workflow, tag, publish, or release operation is part of this wave.
+- Wave 2 implements the guards and UI after review; Wave 3 verifies unit + built-Beta same-origin
+  browser isolation and Themis approval. Until those gates pass, do not claim that published
+  Beta builds satisfy this target or replace the current release gate.
+
 ---
 
 ## Priorities (Execution Order)

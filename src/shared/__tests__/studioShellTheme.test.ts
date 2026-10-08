@@ -105,7 +105,11 @@ const SHELL_SURFACES: ReadonlyArray<readonly [string, string, string]> = [
   ["StudioLayout root", shell.layout, "min-h-screen"],
   ["StudioHeader", shell.header, "sticky top-0 z-40"],
   ["StudioSubHeader", shell.subHeader, "sticky top-12 z-30"],
-  ["StudioSidebar", shell.sidebar, "sticky top-0 h-screen"],
+  [
+    "StudioSidebar",
+    shell.sidebar,
+    "bg-surface-raised border-r border-border-subtle flex flex-col",
+  ],
   ["StudioLayout focus banner", shell.layout, "Sair do Modo Foco (Esc)"],
 ];
 

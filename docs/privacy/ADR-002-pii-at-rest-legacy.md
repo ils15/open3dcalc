@@ -1,7 +1,22 @@
 # ADR-002 — PII at Rest: Default-Deny and Legacy Plaintext Quarantine
 
+## Policy 1.9 supersession — inert historical retention
+
+Policy 1.9 supersedes the default-deny quarantine, inspection, purge, and migration lifecycle
+described below. Historical vault bytes and other retired legacy targets are inert: the app
+must not inspect, read, enumerate, convert, migrate, recover, or delete them, and no startup
+scan or cleanup may touch them. They remain outside the current deletion scope and may remain
+on disk indefinitely. This is retention without an automatic cleanup promise, not a guarantee
+that the data is recoverable.
+
+Current Stable/Desktop customer, quote, and history saves use the exact plaintext scope in
+SPEC-01 policy 1.9 and require no local at-rest keyring, passphrase, vault, or consent gate.
+Web Beta remains limited to its separate synthetic-only keys and does not inspect legacy
+data. All sections below are retained as historical context only where they conflict with
+this superseding decision. SPEC-03 encrypted export remains unchanged.
+
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Proposed (awaiting Themis gate + user final approval)
+**Status:** Superseded by approved policy 1.9; historical-data handling is inert retention
 **Addresses findings:** R3 (PII at-rest), R11 (legacy plaintext quarantine)
 **Related:** ADR-001 (crypto capability), SPEC-01 (manifest), SPEC-02 (erasure)
 
@@ -119,3 +134,17 @@ and the two explicit exits. Nothing here claims current compliance.
 ## Status
 
 **Status: Proposed (awaiting Themis gate + user final approval)**
+
+## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+
+ADR-002's default-deny and legacy-quarantine rules continue to govern Stable/Desktop user
+data. The Web-Beta test-only profile is a separate synthetic-data exception: only generated
+fixtures may be stored plaintext, and the three Beta-specific keys are isolated from Stable
+keys. Beta must neither inspect nor read, migrate, disclose, quarantine, recover, sweep, or
+delete Stable/legacy PII keys. A Beta key must never be used for real customer, quote, or
+history information.
+
+This is not permission for plaintext personal data and does not relax Stable policy. The
+Beta guard fails closed on Stable keys, unknown keys, unreadable fixtures, and
+legacy-access attempts (betaFreshNamespace and betaIsolation suites). Waves 1–3 are
+implemented; Stable enforcement is unchanged.

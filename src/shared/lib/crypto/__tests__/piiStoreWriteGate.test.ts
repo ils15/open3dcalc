@@ -18,6 +18,12 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.hoisted(() => {
+  Object.defineProperty(globalThis.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 Electron/43.0",
+  });
+});
 
 // Registering each store's persist handle is what makes it rehydratable.
 import "@/shared/stores/customerStore";

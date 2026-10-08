@@ -10,6 +10,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 
+vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: true }));
+
 import { useLegacyPiiDisclosure } from "@/shared/hooks/useLegacyPiiDisclosure";
 
 afterEach(() => {
@@ -55,86 +57,54 @@ describe("useLegacyPiiDisclosure", () => {
     await waitFor(() => expect(result.current.status).toBe("unavailable"));
   });
 
-  it("resolves a disclosure on the web when there is no desktop bridge", async () => {
+  it("does not inspect Stable residue on the web", async () => {
+    const getItem = vi.spyOn(Storage.prototype, "getItem");
     const { result } = renderHook(() => useLegacyPiiDisclosure(true));
 
-    await waitFor(() => expect(result.current.status).toBe("ready"));
-    if (result.current.status === "ready") {
-      expect(result.current.disclosure).toBeDefined();
-    }
+    await waitFor(() => expect(result.current.status).toBe("unavailable"));
+    expect(result.current).toEqual({
+      status: "unavailable",
+      reason: "legacy_inspection_retired",
+    });
+    expect(getItem).not.toHaveBeenCalled();
   });
 
-  it("merges a validated desktop report into the disclosure", async () => {
-    (window as unknown as { electronAPI: unknown }).electronAPI = {
-      privacy: {
-        legacyRows: async () => ({
-          scannedAt: new Date().toISOString(),
-          rows: [
-            {
-              key: "open3dcalc_customers_v1",
-              value: JSON.stringify({ state: { customers: [{ id: "a" }] } }),
-              status: "legacy_plaintext",
-            },
-            { key: "open3dcalc_quotes_v1", value: null, status: "absent" },
-            { key: "open3dcalc_history_v2", value: null, status: "absent" },
-          ],
-        }),
-      },
-    };
-
-    const { result } = renderHook(() => useLegacyPiiDisclosure(true));
-
-    await waitFor(() => expect(result.current.status).toBe("ready"));
-    if (result.current.status === "ready") {
-      expect(result.current.disclosure).toBeDefined();
-    }
-  });
-
-  it("ignores a late desktop resolution after unmount", async () => {
-    const resolvers: Array<(value: unknown) => void> = [];
-    (window as unknown as { electronAPI: unknown }).electronAPI = {
-      privacy: {
-        legacyRows: () =>
-          new Promise((resolve) => {
-            resolvers.push(resolve);
-          }),
-      },
-    };
-
-    const { unmount } = renderHook(() => useLegacyPiiDisclosure(true));
-    unmount();
-    resolvers[0]?.({
+  it("does not invoke desktop IPC or disclose a legacy report", async () => {
+    const legacyRows = vi.fn(async () => ({
       scannedAt: new Date().toISOString(),
       rows: [
-        { key: "open3dcalc_customers_v1", value: null, status: "absent" },
-        { key: "open3dcalc_quotes_v1", value: null, status: "absent" },
-        { key: "open3dcalc_history_v2", value: null, status: "absent" },
+        {
+          key: "open3dcalc_customers_v1",
+          value: JSON.stringify({ state: { customers: [{ id: "a" }] } }),
+          status: "legacy_plaintext",
+        },
       ],
-    });
-    await Promise.resolve();
-    await Promise.resolve();
+    }));
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      privacy: { legacyRows },
+    };
 
-    // The cancelled guard skipped the state write (no act warning, no throw).
-    expect(resolvers).toHaveLength(1);
+    const { result } = renderHook(() => useLegacyPiiDisclosure(true));
+
+    await waitFor(() => expect(result.current.status).toBe("unavailable"));
+    expect(result.current).toEqual({
+      status: "unavailable",
+      reason: "legacy_inspection_retired",
+    });
+    expect(legacyRows).not.toHaveBeenCalled();
   });
 
-  it("ignores a late desktop rejection after unmount", async () => {
-    const rejecters: Array<(reason: unknown) => void> = [];
+  it("does not start a retired read that could resolve after unmount", async () => {
+    const legacyRows = vi.fn();
     (window as unknown as { electronAPI: unknown }).electronAPI = {
-      privacy: {
-        legacyRows: () =>
-          new Promise((_resolve, reject) => {
-            rejecters.push(reject);
-          }),
-      },
+      privacy: { legacyRows },
     };
 
     const { unmount } = renderHook(() => useLegacyPiiDisclosure(true));
     unmount();
-    rejecters[0]?.(new Error("late refusal"));
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(rejecters).toHaveLength(1);
+    expect(legacyRows).not.toHaveBeenCalled();
   });
 });

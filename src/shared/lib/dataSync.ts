@@ -16,6 +16,7 @@
  */
 
 import { guardedSyncStorage } from "@/shared/lib/manifestStorage";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import { getPiiStoreAccessState } from "@/shared/lib/crypto/piiStoreHydration";
 import {
   createExportEnvelope,
@@ -47,6 +48,12 @@ const PBKDF2_ITERATIONS = 100_000;
 const KEY_LENGTH_BITS = 256;
 const SALT_BYTES = 16;
 const IV_BYTES = 12;
+
+function refuseBetaSync(): void {
+  if (isBetaChannel) {
+    throw new Error("Sync, import, and export are unavailable in Beta");
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -132,6 +139,7 @@ const KEYS = {
  * vanish. Callers surface the state instead of guessing.
  */
 export function isPiiSyncAvailable(): boolean {
+  if (isBetaChannel) return false;
   return getPiiStoreAccessState().status === "hydrated";
 }
 
@@ -289,6 +297,7 @@ function isCustomItem(item: unknown): boolean {
  * empty default so an export never fails because of one bad key.
  */
 export function collectSyncData(): SyncData {
+  refuseBetaSync();
   const settings = readPlainJSON<Record<string, unknown>>(KEYS.settings, {});
 
   const history = useHistoryStore.getState().entries;
@@ -610,6 +619,7 @@ export function applySyncData(
   data: SyncData,
   mode: "merge" | "replace",
 ): ApplySyncDataResult {
+  refuseBetaSync();
   const imported: string[] = [];
   const conflicts: string[] = [];
   const refused: string[] = [];
@@ -1010,6 +1020,7 @@ export async function exportBundle(
   password?: string,
   platform?: "web" | "electron",
 ): Promise<ExportBundle | EncryptedBundle> {
+  refuseBetaSync();
   const syncData = collectSyncData();
   const plaintext = JSON.stringify(syncData);
 
@@ -1135,6 +1146,7 @@ export async function importBundle(
   bundle: ExportBundle | EncryptedBundle,
   password?: string,
 ): Promise<ApplySyncDataResult> {
+  refuseBetaSync();
   return applyImport(bundle, password, "merge");
 }
 
@@ -1207,6 +1219,7 @@ function syncFileName(date = new Date()): string {
 export async function exportData(options: {
   password?: string;
 }): Promise<DataSyncExportResult> {
+  refuseBetaSync();
   if (!options.password) {
     throw dataSyncError(
       "PASSWORD_REQUIRED",
@@ -1235,6 +1248,7 @@ export async function importData(
   file: File,
   options: { password?: string; mode: "merge" | "replace" },
 ): Promise<DataSyncImportResult> {
+  refuseBetaSync();
   const fileText = await file.text();
   let parsed: unknown;
   try {
@@ -1314,6 +1328,7 @@ export async function importData(
  * without decrypting it.
  */
 export async function isEncrypted(file: File): Promise<boolean> {
+  refuseBetaSync();
   try {
     const parsed = JSON.parse(await file.text()) as Record<string, unknown>;
     // SPEC-03 v1.1 envelopes are always encrypted.

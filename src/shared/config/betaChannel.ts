@@ -9,5 +9,18 @@
  * can be mocked deterministically in tests — `define` statically inlines the
  * value, which makes `import.meta.env` stubbing unreliable.
  */
+
+// The Electron main-process TypeScript project deliberately excludes
+// `vite/client`, but compiles shared crypto ports that import this tiny flag.
+// Merge only the field used by the build so the module remains type-safe there.
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_BETA_CHANNEL?: boolean;
+  }
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
+}
+
 export const isBetaChannel: boolean =
   import.meta.env.VITE_BETA_CHANNEL === true;

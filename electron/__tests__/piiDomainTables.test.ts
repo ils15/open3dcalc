@@ -36,6 +36,7 @@ import {
 } from "../erasurePayload.js";
 import { buildScanReport, summarizeReport } from "../legacyScan.js";
 import {
+  PII_CONTENT_TABLES,
   PII_DOMAIN_TABLES,
   PII_LEGACY_PLAINTEXT_TABLES,
   type PiiDomainTableCounts,
@@ -181,9 +182,10 @@ describe("PII_DOMAIN_TABLES (single source of truth)", () => {
     ]);
   });
 
-  it("is a subset of the tables SPEC-01 declares as sqlite_domain_tables", async () => {
-    // Cross-checked in the manifest test; kept here so the electron-side list
-    // and the privacy inventory cannot silently diverge.
+  it("keeps active PII content tables aligned with the manifest", async () => {
+    // Current content tables remain declared. The old vault staging and
+    // recovery-residue tables are retired and intentionally absent from the
+    // manifest, even though the legacy cleanup adapters remain covered below.
     const { default: fixture } =
       await import("../../docs/privacy/SPEC-01-manifest-fixture.json");
     const declared = fixture.keys
@@ -192,9 +194,11 @@ describe("PII_DOMAIN_TABLES (single source of truth)", () => {
           k.surface === "sqlite_domain_tables" && k.pii,
       )
       .map((k: { key: string }) => k.key);
-    for (const table of await shippedPiiTables()) {
+    for (const table of PII_CONTENT_TABLES) {
       expect(declared).toContain(table);
     }
+    expect(declared).not.toContain("pii_stage");
+    expect(declared).not.toContain("legacy_residue");
   });
 });
 

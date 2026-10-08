@@ -1,7 +1,23 @@
 # SPEC-04 — Consent Receipt
 
+## Policy 1.9 supersession — receipts are historical, not save gates
+
+The receipt issuance, consent prerequisite, and withdrawal-as-a-condition-of-saving rules in
+this specification are superseded for current local saves in both Stable and Beta. Neither
+channel requires consent, a receipt, or withdrawal state before accepting a save. Stable and
+Desktop follow SPEC-01's exact plaintext policy; Beta remains limited to synthetic-only test
+data and its existing restrictions. This does not authorize inspection or conversion of
+historical vault bytes, which remain inert and outside current deletion scope.
+
+Receipts issued under earlier policy versions remain untouched historical records. Under
+policy 1.9 they evaluate as `policy_mismatch`; they are not silently rewritten and do not
+gate saves. The retained `contract_performance` declaration for the three Stable PII keys is
+provisional and requires qualified legal review; this specification does not make a legal
+determination. The encrypted export password remains independent of receipt state and local
+saves.
+
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Normative for D1.1+ (D1.0 is documentation only)
+**Status:** Superseded for save prerequisites by approved policy 1.9; historical receipts retained
 **Addresses findings:** R5 (consent), R14 (receipt canonicalização)
 **Related:** SPEC-01 (manifest), SPEC-02 (erasure), ADR-002 (quarantine)
 
@@ -227,3 +243,16 @@ tests (tamper detection, withdrawal effect per manifest key, policy version chan
 ## Status
 
 **Status: Proposed (awaiting Themis gate + user final approval)**
+
+## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+
+SPEC-04 remains the receipt-backed Stable/Desktop consent contract. The Web-Beta test-only
+profile asks for no consent and issues no receipt because it is limited to generated synthetic
+test records and does not process real personal data. Its first-run disclosure is informational
+only and must not become a consent gate, password prompt, withdrawal control, or privacy-receipt
+surface. Beta consent and receipt APIs are not reachable from the Beta app.
+
+This addendum does not change the Stable receipt format, policy hash, policy version, or
+historical consent/withdrawal guarantees. Waves 1–3 are implemented: Beta first-run
+disclosure and reachability removals are enforced (betaFirstRun, betaReachability);
+Stable consent enforcement is unchanged.

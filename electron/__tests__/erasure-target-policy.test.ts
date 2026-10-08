@@ -84,10 +84,21 @@ describe("desktop erasure target policy", () => {
         { surface: "localStorage", id: "open3dcalc_quotes_v1" },
         { surface: "localStorage", id: "open3dcalc_history_v2" },
         { surface: "sqlite_domain_tables", id: "customers" },
-        { surface: "sqlite_domain_tables", id: "legacy_residue" },
         { surface: "sqlite_storage_table", id: "open3dcalc_customers_v1" },
       ]),
     );
+    expect(
+      policy.targets.some((target) => target.id === "legacy_residue"),
+    ).toBe(false);
+    expect(
+      policy.targets.some((target) =>
+        [
+          "open3dcalc_legacy_keep_readonly_v1",
+          "open3dcalc_legacy_pii_rehomed_v1",
+          "open3dcalc_migration_done_v2",
+        ].includes(target.id),
+      ),
+    ).toBe(false);
     expect(
       policy.targets.some((target) => target.id === "open3dcalc_consent_v1"),
     ).toBe(false);

@@ -55,6 +55,7 @@
  */
 
 import { guardedStorage } from "@/shared/lib/manifestStorage";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import {
   detectLegacyPlaintextPii,
   type LegacyPiiPlaintextKey,
@@ -102,6 +103,8 @@ const ID_PREFIX: Record<LegacyPiiPlaintextKey, string> = {
 };
 
 export type LegacyPiiRehomeStatus =
+  /** Beta does not inspect or re-home Stable legacy residue. */
+  | "disabled"
   /** The completion marker exists: a prior run already re-homed the residue. */
   | "already_migrated"
   /** There is no plaintext residue under any of the three keys. */
@@ -321,6 +324,9 @@ async function resolveLegacyRead(
 export async function migrateLegacyPlaintextPiiToVault(
   options: LegacyPiiRehomeOptions = {},
 ): Promise<LegacyPiiRehomeResult> {
+  // The Beta test-only channel must not read, copy, or mutate Stable data.
+  if (isBetaChannel) return rehomeResult("disabled");
+
   // 5 (first): a verified run already happened — do not touch anything.
   if (isRehomeComplete()) return rehomeResult("already_migrated");
 

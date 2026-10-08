@@ -2,6 +2,7 @@
 
 import { app, safeStorage } from "electron";
 import path from "node:path";
+import { isBetaElectronRuntime } from "./betaRuntime.js";
 import { diskJournalAdapter } from "../src/shared/lib/erasureSaga/journal.js";
 import type {
   SagaJournal,
@@ -130,6 +131,15 @@ export async function resumeErasureIfNeeded(
   // Retained for the existing IPC/startup call signature; intentionally not
   // dereferenced before the journal and renderer-verification preflight.
   void _db;
+  // Beta is Web-only: never resume, read or touch profile PII state at
+  // startup. The PII IPC surface refuses separately per call, and non-PII
+  // startup proceeds — so this is a skip, not a grant and not a crash.
+  if (isBetaElectronRuntime()) {
+    console.warn(
+      "[erasure] Beta channel is Web-only; startup resume skipped, no profile state touched",
+    );
+    return { resumed: false };
+  }
   const existing = preflightJournal();
   if (!existing) return { resumed: false };
   if (existing.state === "committed" || existing.state === "rolled_back") {

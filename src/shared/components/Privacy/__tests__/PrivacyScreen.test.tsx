@@ -469,40 +469,32 @@ describe("PrivacyScreen (D1.1 S4)", () => {
   });
 });
 
-/**
- * L-2 — the way back to the legacy-migration choice. When a keep-read-only
- * decision is stored the screen must disclose it and offer to reopen the
- * choice, because the prompt no longer asks while the residue is unchanged.
- */
-describe("PrivacyScreen (L-2) — reopen the keep-read-only choice", () => {
+/** The removed legacy decision must not surface as a privacy-screen control. */
+describe("PrivacyScreen — retired keep-read-only control", () => {
   afterEach(() => {
     useLegacyKeepReadOnlyStore.setState({ signature: null });
   });
 
-  it("offers a way back to the choice when a decision is stored", () => {
+  it("does not render or mutate a retired legacy decision", () => {
     useLegacyKeepReadOnlyStore.setState({
       signature: "open3dcalc_customers_v1=1",
     });
     render(<PrivacyScreen />);
 
     expect(
-      screen.getByText("privacy.migration.keepReadOnlyTitle"),
-    ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "privacy.migration.keepReadOnlyReopen",
-      }),
-    );
-
-    expect(useLegacyKeepReadOnlyStore.getState().signature).toBeNull();
+      screen.queryByText("privacy.migration.keepReadOnlyTitle"),
+    ).toBeNull();
     expect(
       screen.queryByRole("button", {
         name: "privacy.migration.keepReadOnlyReopen",
       }),
     ).toBeNull();
+    expect(useLegacyKeepReadOnlyStore.getState().signature).toBe(
+      "open3dcalc_customers_v1=1",
+    );
   });
 
-  it("renders no control when no decision is stored", () => {
+  it("renders no control when no legacy decision exists", () => {
     render(<PrivacyScreen />);
     expect(
       screen.queryByRole("button", {

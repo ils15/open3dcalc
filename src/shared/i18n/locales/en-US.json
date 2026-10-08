@@ -1265,6 +1265,16 @@
     }
   },
   "privacy": {
+    "betaFirstRun": {
+      "title": "Beta test profile",
+      "testOnly": "This is a disposable test-only profile, not the stable app.",
+      "syntheticOnly": "Use synthetic test data only; never enter real customer information.",
+      "plaintextLocal": "Customer, quote, and calculation history data is stored unencrypted in this browser.",
+      "noPassword": "No password or consent gate is provided for this test profile.",
+      "noMigration": "Stable profile data is not read or migrated into Beta.",
+      "noExport": "Import, export, sync, and erasure are unavailable in Beta.",
+      "disposable": "Clear this disposable browser profile outside the app when finished."
+    },
     "banner": {
       "text": "Your data stays only in your browser. Nothing you type — customer data, quotes, or logs — is sent to servers. You have full control: export, import, or delete your data anytime.",
       "dismiss": "Got it"
@@ -1353,12 +1363,12 @@
       "unavailable": "Delete-all is unavailable until the app can verify an exact personal-data-only target plan. No deletion will start from this screen.",
       "blockersLabel": "Blocking reasons:",
       "newPiiTitle": "Delete passwordless local records",
-      "newPiiDescription": "Erases only the customer, quote and history records this build stored locally with the OS keyring. It does not touch records from older builds, database tables or backups.",
+      "newPiiDescription": "Erases only the plaintext customer, quote and history records this build stored in the local Desktop profile. It does not touch records from older builds, database tables or backups.",
       "newPiiButton": "Delete passwordless local records",
       "newPiiWorking": "Erasing… this may take a moment.",
       "newPiiDone": "Passwordless local records were erased and verified.",
       "newPiiUnavailable": "Passwordless local deletion is unavailable right now — no deletion will start.",
-      "newPiiConfirm": "Delete the passwordless local records (customers, quotes, history) stored with the OS keyring? This cannot be undone. Records from older builds, database tables and backups are not touched.",
+      "newPiiConfirm": "Delete the plaintext local records (customers, quotes, history) stored in this Desktop profile? This cannot be undone. Records from older builds, database tables and backups are not touched.",
       "newPiiFailed": "Deletion did not complete — no erasure is claimed. Check the app and try again.",
       "legacyScopeTitle": "Full-device delete-all (unavailable)",
       "legacyScopeNote": "Deleting ALL data — older builds, database tables and backups — stays unavailable until an exact, verifiable target plan exists. The passwordless deletion above is the only erasure available in this version."
@@ -1405,9 +1415,9 @@
       "writeRefusedAreaUnknown": "personal data"
     },
     "passwordless": {
-      "title": "New data uses the system key",
-      "message": "New customers, quotes and history are encrypted with a key managed by your operating system — there is no app passphrase to remember. Only records created by this build use it; older encrypted data is left untouched.",
-      "limitation": "This key lives in your OS account. If the OS profile, the device, or the key is lost, these new records cannot be recovered — there is no reset and no cloud copy."
+      "title": "New data is stored locally",
+      "message": "New customers, quotes and history are stored as plaintext in this Desktop profile's local database. No app passphrase or OS keyring is required; records from older builds are left untouched.",
+      "limitation": "Anyone with access to this OS profile or its database may read these records. If the profile or device is lost, there is no cloud copy or recovery key."
     },
     "residue": {
       "title": "Legacy plaintext data",

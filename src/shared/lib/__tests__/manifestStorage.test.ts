@@ -3,6 +3,7 @@ import {
   manifestStorage,
   guardedStorage,
   guardedSyncStorage,
+  stablePiiPersistStorage,
 } from "@/shared/lib/manifestStorage";
 import {
   resetManifestForTests,
@@ -63,10 +64,12 @@ describe("guardedStorage (S1)", () => {
     expect(guardedStorage.getItem("open3dcalc_rogue")).toBeNull();
   });
 
-  it("never logs stored values — key NAMES only (TEST-MATRIX 3.2)", () => {
+  it("persists approved Stable PII without logging stored values", () => {
     const sensitiveValue = "João da Silva <joao@example.com>";
     guardedStorage.setItem("open3dcalc_customers_v1", sensitiveValue);
-    expect(window.localStorage.getItem("open3dcalc_customers_v1")).toBeNull();
+    expect(window.localStorage.getItem("open3dcalc_customers_v1")).toBe(
+      sensitiveValue,
+    );
     const logged = vi
       .mocked(console.warn)
       .mock.calls.map((args) => String(args[0]))
@@ -198,16 +201,11 @@ describe("manifestStorage (S1 zustand persist wrapper)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Web new-PII persistence block (below the UI)
-//
-// On the web target there is no OS keyring, and no new passwordless vault is
-// being added in this slice. Every manifest PII key is `encrypted_at_rest`, so
-// a write through the PLAINTEXT localStorage choke point is always wrong. The
-// denial has to live at the persistence layer — not only in a React surface —
-// so a direct call cannot create a plaintext PII record.
+// Stable Web plaintext persistence is restricted to the exact policy-approved
+// keys. Sync remains separately denied above.
 // ---------------------------------------------------------------------------
 
-describe("plaintext PII write denial on the web target", () => {
+describe("Stable Web plaintext PII persistence", () => {
   const OLD_ENV = process.env.NODE_ENV;
   const OLD_UA = navigator.userAgent;
 
@@ -240,25 +238,111 @@ describe("plaintext PII write denial on the web target", () => {
     "open3dcalc_customers_v1",
     "open3dcalc_quotes_v1",
     "open3dcalc_history_v2",
-  ])("refuses a direct guardedStorage plaintext write of %s", (key) => {
+  ])("persists the approved Stable key %s", (key) => {
     setUserAgent("Mozilla/5.0 (compatible; web)");
     guardedStorage.setItem(key, '{"state":{"name":"synthetic"}}');
 
-    expect(window.localStorage.getItem(key)).toBeNull();
-    // Key NAMES only, never the value (TEST-MATRIX 3.2).
-    const logged = vi.mocked(console.warn).mock.calls.flat().join(" ");
-    expect(logged).toContain(key);
-    expect(logged).not.toContain("synthetic");
+    expect(window.localStorage.getItem(key)).toBe(
+      '{"state":{"name":"synthetic"}}',
+    );
   });
 
-  it("refuses a direct manifestStorage plaintext PII write", () => {
+  it("persists a declared PII key through manifestStorage", () => {
     setUserAgent("Mozilla/5.0 (compatible; web)");
     const storage = manifestStorage();
 
     storage!.setItem("open3dcalc_history_v2", { state: { v: 1 }, version: 1 });
 
-    expect(window.localStorage.getItem("open3dcalc_history_v2")).toBeNull();
-    expect(storage!.getItem("open3dcalc_history_v2")).toBeNull();
+    expect(window.localStorage.getItem("open3dcalc_history_v2")).toBe(
+      '{"state":{"v":1},"version":1}',
+    );
+    expect(storage!.getItem("open3dcalc_history_v2")).toEqual({
+      state: { v: 1 },
+      version: 1,
+    });
+  });
+
+  it("does not overwrite a corrupt persisted state after failed hydration", () => {
+    setUserAgent("Mozilla/5.0 (compatible; web)");
+    const key = "open3dcalc_customers_v1";
+    const corrupt = "{not-json";
+    window.localStorage.setItem(key, corrupt);
+    const storage = stablePiiPersistStorage<{ customers: unknown[] }>(key);
+
+    expect(() => storage.getItem(key)).toThrow();
+    expect(() =>
+      storage.setItem(key, {
+        state: { customers: [] },
+        version: 1,
+      }),
+    ).toThrow();
+    expect(window.localStorage.getItem(key)).toBe(corrupt);
+  });
+
+  it("does not overwrite persisted bytes with an unsupported store version", () => {
+    setUserAgent("Mozilla/5.0 (compatible; web)");
+    const key = "open3dcalc_customers_v1";
+    const unsupported = JSON.stringify({
+      state: { customers: [] },
+      version: 9,
+    });
+    window.localStorage.setItem(key, unsupported);
+    const storage = stablePiiPersistStorage<{ customers: unknown[] }>(key);
+
+    expect(() => storage.getItem(key)).toThrow(/failed to hydrate/);
+    expect(() =>
+      storage.setItem(key, { state: { customers: [] }, version: 1 }),
+    ).toThrow(/before readable hydration/);
+    expect(window.localStorage.getItem(key)).toBe(unsupported);
+  });
+
+  it("reports unavailable localStorage and refuses to claim a save", () => {
+    setUserAgent("Mozilla/5.0 (compatible; web)");
+    const original = Object.getOwnPropertyDescriptor(window, "localStorage");
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new DOMException("storage unavailable", "SecurityError");
+      },
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const storage = stablePiiPersistStorage<{ customers: unknown[] }>(
+      "open3dcalc_customers_v1",
+    );
+
+    try {
+      expect(() => storage.getItem("open3dcalc_customers_v1")).toThrow(
+        /failed to hydrate/,
+      );
+      expect(() =>
+        storage.setItem("open3dcalc_customers_v1", {
+          state: { customers: [] },
+          version: 1,
+        }),
+      ).toThrow(/before readable hydration/);
+    } finally {
+      if (original) {
+        Object.defineProperty(window, "localStorage", original);
+      }
+      vi.restoreAllMocks();
+    }
+  });
+
+  it.each([
+    ["open3dcalc_customers_v1", "customers", 1],
+    ["open3dcalc_quotes_v1", "quotes", 1],
+    ["open3dcalc_history_v2", "entries", 2],
+  ] as const)("round-trips the approved store %s", (key, field, version) => {
+    setUserAgent("Mozilla/5.0 (compatible; web)");
+    const storage = stablePiiPersistStorage<Record<string, unknown[]>>(key);
+    expect(storage.getItem(key)).toBeNull();
+    storage.setItem(key, {
+      state: { [field]: [] },
+      version,
+    });
+    expect(window.localStorage.getItem(key)).toBe(
+      JSON.stringify({ state: { [field]: [] }, version }),
+    );
   });
 
   it("still persists a non-PII key on the web target", () => {

@@ -263,3 +263,19 @@ conteúdo aprovado está contido nesse merge. Todos os itens humanos do gate (§
 
 > ⚠️ **web-only:** não publicar artefato desktop nesta versão (re-home desktop/IPC indisponível —
 > §5 e §6).
+
+---
+
+## Supersession notice — policy 1.9 (historical evidence above preserved verbatim)
+
+The Beta 5 evidence above records the policy, code, release gates, and limitations that applied
+to that historical release. It is not the current Stable/Desktop at-rest policy. Under approved
+policy 1.9, Stable Web/PWA and Desktop directly save the exact customer, quote, and history
+keys as plaintext without a password, vault unlock, or consent prerequisite; encrypted logical
+export remains unchanged and its password never gates local saves. Web Beta remains
+synthetic-only with its existing no-sync, no-import/export, no-deletion, and no-legacy-access
+restrictions. Historical `open3dcalc_pii_vault` bytes are now inert and excluded from current
+deletion scope; no inspection, conversion, recovery, migration, or cleanup is promised. The
+`contract_performance` declaration is provisional and requires qualified legal review. This
+notice supersedes only current-policy interpretation; it does not rewrite the release history
+or claim the policy 1.9 runtime implementation is complete.

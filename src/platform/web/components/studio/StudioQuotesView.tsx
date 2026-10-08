@@ -18,6 +18,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { Quote, QuoteFormData } from "@/shared/types";
@@ -580,7 +581,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         </div>
       )}
       {/* Studio Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-2xl p-5 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -588,10 +589,10 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               CENTRAL DE ORÇAMENTOS & PROPOSTAS COMERCIAIS
             </span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)] flex items-center gap-2">
             Gestão de Propostas Comerciais
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
             Crie, envie e gerencie orçamentos profissionais em PDF com
             rastreamento de status e clientes
           </p>
@@ -600,7 +601,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         <button
           type="button"
           onClick={openCreateModal}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md shadow-blue-950/40 self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
+          className="flex min-h-11 items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md shadow-blue-950/40 self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" />
           <span>Novo Orçamento</span>
@@ -723,7 +724,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     key={st}
                     type="button"
                     onClick={() => setStatusFilter(st)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                    className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                       isActive
                         ? "bg-blue-600 text-white shadow-sm"
                         : "bg-[#111728] text-slate-400 hover:text-white hover:bg-[#151e33]"
@@ -746,7 +747,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
+              className={`flex min-h-11 items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
                 viewMode === "list"
                   ? "bg-blue-600 text-white shadow-sm"
                   : "text-slate-400 hover:text-white"
@@ -759,7 +760,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             <button
               type="button"
               onClick={() => setViewMode("grid")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
+              className={`flex min-h-11 items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
                 viewMode === "grid"
                   ? "bg-blue-600 text-white shadow-sm"
                   : "text-slate-400 hover:text-white"
@@ -790,7 +791,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md"
+            className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Criar Primeiro Orçamento</span>
@@ -917,7 +918,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => setViewingQuote(quote)}
-                            className="p-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 transition-colors"
                             title="Visualizar Proposta"
                             aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
                           >
@@ -927,7 +928,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => exportQuoteToPdf(quote)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
                             title="Download em PDF Comercial"
                             aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
                           >
@@ -937,7 +938,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => shareWhatsApp(quote)}
-                            className="p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-500/30 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-500/30 transition-colors"
                             title="Enviar no WhatsApp"
                             aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                           >
@@ -947,22 +948,24 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => openEditModal(quote)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
                             title="Editar Orçamento"
                             aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDeleteId(quote.id)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors"
-                            title="Excluir Orçamento"
-                            aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {!isBetaChannel && (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteId(quote.id)}
+                              className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors"
+                              title="Excluir Orçamento"
+                              aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1068,7 +1071,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => setViewingQuote(quote)}
-                      className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-semibold text-xs border border-blue-500/30 transition-colors"
+                      className="flex-1 flex min-h-11 items-center justify-center gap-1 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-semibold text-xs border border-blue-500/30 transition-colors"
                       title="Visualizar detalhes da proposta"
                       aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
                     >
@@ -1079,7 +1082,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => exportQuoteToPdf(quote)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
                       title="Download em PDF"
                       aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
                     >
@@ -1089,7 +1092,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => shareWhatsApp(quote)}
-                      className="p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 transition-colors border border-emerald-500/30"
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 transition-colors border border-emerald-500/30"
                       title="Compartilhar no WhatsApp"
                       aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                     >
@@ -1099,22 +1102,24 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => openEditModal(quote)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
                       title="Editar Orçamento"
                       aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDeleteId(quote.id)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700 hover:border-rose-500/30"
-                      title="Excluir Orçamento"
-                      aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {!isBetaChannel && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(quote.id)}
+                        className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700 hover:border-rose-500/30"
+                        title="Excluir Orçamento"
+                        aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1551,7 +1556,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      {confirmDeleteId && (
+      {confirmDeleteId && !isBetaChannel && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div
             role="alertdialog"
@@ -1585,7 +1590,10 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => {
-                  if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null) {
+                  if (
+                    isBetaChannel ||
+                    beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null
+                  ) {
                     return;
                   }
                   removeQuote(confirmDeleteId);

@@ -21,7 +21,13 @@
  * Real Web Crypto, real envelope code, synthetic fixtures only (TEST-MATRIX §0).
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+vi.hoisted(() => {
+  Object.defineProperty(globalThis.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 Electron/43.0",
+  });
+});
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -454,10 +460,7 @@ describe("Wave 3 — PII stores on the vault", () => {
     );
   });
 
-  it("the plaintext wiring is gone: the store source no longer uses manifestStorage", () => {
-    // Structural half — someone re-adding `manifestStorage()` would silently
-    // reopen the plaintext path without any behavioural test noticing until a
-    // real write landed in localStorage.
+  it("selects approved Stable Web plaintext and retains the Desktop vault path", () => {
     for (const file of [
       "customerStore.ts",
       "quoteStore.ts",
@@ -467,8 +470,9 @@ describe("Wave 3 — PII stores on the vault", () => {
         resolve(__dirname, "..", "..", "..", "stores", file),
         "utf8",
       );
-      expect(source).not.toContain("manifestStorage");
-      expect(source).toContain("skipHydration: true");
+      expect(source).toContain("stablePiiPersistStorage");
+      expect(source).toContain("gatedPiiPersistStorage");
+      expect(source).toContain("skipHydration:");
     }
   });
 

@@ -3,6 +3,15 @@
  *
  * These types mirror the API exposed by `electron/preload.ts`
  * and consumed by `src/overrides/db-bridge.ts`.
+ *
+ * Beta channel (Web-only): while `VITE_BETA_CHANNEL` is exactly `"true"`,
+ * every PII member below (`piiNew`, `erasure`, `withdrawal`,
+ * `privacy`, and the diagnostic `db.exportDatabase`) refuses fail-closed —
+ * first in the preload bridge, then independently in the main process — and
+ * the generic `db:*` storage additionally withholds the consent row. `db`
+ * (minus export/consent) and `updater` are non-PII infrastructure and keep
+ * working. No Beta change adds, removes or renames a channel: the surface is
+ * PII IPC remains unavailable to Beta.
  */
 
 // Type-only: derives the legacy-rows contract from the main-process reader, so
@@ -14,7 +23,6 @@ import type { LegacyPiiRowsReport } from "../../../../electron/legacyRows.js";
 export interface ElectronAPI {
   db: ElectronDBApi;
   updater: ElectronUpdaterApi;
-  crypto: ElectronCryptoApi;
   privacy: ElectronPrivacyApi;
   erasure: ElectronErasureApi;
   piiNew: ElectronPiiNewApi;
@@ -41,12 +49,12 @@ declare global {
 }
 
 /**
- * Desktop passwordless new-PII route (Beta12 Phase3). Main-only encryption
- * under the OS-keyring-wrapped profile data key; disjoint key namespace.
+ * Desktop exact-key plaintext route for the disjoint new-PII namespace.
+ * Unavailable on Beta (Web-only channel): every member refuses fail-closed.
  */
 declare global {
   interface ElectronPiiNewApi {
-    /** OS-keyring gate verdict for the passwordless route. */
+    /** Availability of the plaintext route; metadata only. */
     capability: () => Promise<{
       available: boolean;
       backend?: string;
@@ -56,12 +64,12 @@ declare global {
     /** Open a NEW-namespace PII record, or null when absent. */
     load: (key: string) => Promise<string | null>;
 
-    /** Seal and store a NEW-namespace PII record (encrypted before SQL). */
+    /** Store a validated plaintext envelope under a NEW-namespace key. */
     save: (key: string, value: string) => Promise<void>;
   }
 }
 
-/** Erasure saga operations available through IPC (D1.1 S7). */
+/** Erasure saga operations available through IPC (D1.1 S7). Unavailable on Beta. */
 declare global {
   interface ElectronErasureApi {
     /** Persist an authorization barrier before any renderer deletion. */
@@ -125,7 +133,7 @@ declare global {
   }
 }
 
-/** Privacy IPC includes legacy UI contracts explicitly rejected by main. */
+/** Privacy IPC includes legacy UI contracts explicitly rejected by main. Unavailable on Beta. */
 declare global {
   interface ElectronPrivacyApi {
     /**
@@ -149,31 +157,6 @@ declare global {
   }
 }
 
-/** Crypto capability operations available through IPC (D1.1 S2). */
-declare global {
-  interface ElectronCryptoApi {
-    /**
-     * Current ADR-001 §2.3 capability decision (main-process memory only;
-     * no key material or passphrase crosses IPC).
-     */
-    capability: () => Promise<{
-      mode: "safe_storage" | "passphrase" | "denied";
-      piiPersistence: "encrypted_at_rest" | "denied";
-      reason: string;
-    }>;
-
-    /**
-     * Adopt the session passphrase into main-process memory only
-     * (SPEC-01 `session_passphrase_key`). Never echoed back, never
-     * persisted. The renderer must not retain the value after the call.
-     */
-    setPassphrase: (passphrase: string) => Promise<void>;
-
-    /** Zeroize the session passphrase (irreversible). */
-    lock: () => Promise<void>;
-  }
-}
-
 declare global {
   interface ElectronDBApi {
     /** Load a JSON-encoded value from the key-value store by key. */
@@ -188,7 +171,7 @@ declare global {
     /** List only existing keys from the exact app-owned non-PII allowlist. */
     listKeys(): Promise<string[]>;
 
-    /** Internal diagnostic export; requires the gate and no active erasure. */
+    /** Internal diagnostic export; requires the gate and no active erasure. Unavailable on Beta. */
     exportDatabase(): Promise<string>;
 
     /**

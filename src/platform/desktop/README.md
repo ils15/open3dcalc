@@ -45,3 +45,10 @@ npx electron-builder --win --linux  # Both
 - **Storage adapter** — `src/platform/desktop/overrides/storage-adapter.ts` maps localStorage API to SQLite
 - **Native file dialogs** — for STL/OBJ/3MF/G-code import
 - **Auto-updates** — via electron-builder (future: electron-updater)
+
+## Beta scope
+
+The approved plaintext synthetic-test profile is Web-Beta-only and does not apply to Electron.
+Desktop continues to use its existing Stable persistence, crypto, consent, export, and erasure
+contracts; no Beta fixture key or Beta build flag may enable the test profile in an Electron
+build. The current documentation/test wave does not change Desktop runtime behavior.

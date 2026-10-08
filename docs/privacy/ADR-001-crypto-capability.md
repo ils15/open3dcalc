@@ -1,7 +1,24 @@
 # ADR-001 — Cryptographic Capability Model for PII at Rest
 
+## Policy 1.9 supersession — local at-rest capability retired
+
+As of policy 1.9, the former local at-rest encryption capability model in this ADR is
+superseded. Stable Web/PWA and Desktop save the three exact customer/quote/history keys
+declared by SPEC-01 directly as plaintext. Local saves do not require a passphrase, OS
+keyring, crypto capability, vault unlock, or consent. Web Beta remains synthetic-only and is
+governed by its separate exact-key fixture; it does not gain Stable data access.
+
+This supersession applies to every local persistence path and startup gate below. Those
+sections are historical rationale only, not active requirements or evidence that the former
+design is implemented. They do not authorize opening, reading, inspecting, converting,
+recovering, migrating, or deleting bytes already in `open3dcalc_pii_vault`; that historical
+store is inert and excluded from current deletion scope. SPEC-03's encrypted export envelope,
+including its password, algorithms, integrity checks, and limits, is explicitly retained.
+The export password never gates a local save. `contract_performance` is provisional and
+requires qualified legal review; this ADR makes no legal determination.
+
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Proposed (awaiting Themis gate + user final approval)
+**Status:** Superseded for local at-rest storage by approved policy 1.9; SPEC-03 export crypto retained
 **Addresses findings:** R3 (PII at-rest), R7 (web/PWA crypto)
 **Related:** ADR-002 (legacy plaintext quarantine), SPEC-01 (manifest), SPEC-03 (export envelope)
 
@@ -557,3 +574,18 @@ close. Nothing in this document claims that behavior is already implemented.
 ## Status
 
 **Status: Proposed (awaiting Themis gate + user final approval)**
+
+## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+
+The crypto capability and envelope contract in this ADR continues to govern Stable and
+Desktop. The separate Web-Beta test-only profile carries only generated synthetic values under
+the three `open3dcalc_beta_test_*_v1` keys; it uses plaintext localStorage and has no vault,
+passphrase session, Web Crypto capability, unlock shell, or password gate. No real customer,
+quote, or history data may be entered into that profile. Treating synthetic test data as
+non-PII is the narrowly scoped reason plaintext is permitted; it is not an exception for user
+data and must not leak into Stable or Desktop builds.
+
+This addendum does not alter Stable crypto behavior or any stored envelope, schema version,
+hash, or compatibility rule. Waves 1–3 are implemented on the beta-test-only branch: the
+Beta crypto/vault/password path is excluded at runtime fail-closed, covered by the
+betaTestStorage and betaElectronGating isolation suites.

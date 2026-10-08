@@ -30,6 +30,7 @@ import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
 import type { PersistStorage, StorageValue } from "zustand/middleware";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 
 /** The gate verdict the main process reports. Metadata only. */
 export type NewPiiCapability =
@@ -65,6 +66,7 @@ export class NewPiiRouteUnavailableError extends Error {
 
 /** The route, or null on the web build / a preload without it. */
 export function getNewPiiRoute(): NewPiiRoute | null {
+  if (isBetaChannel) return null;
   if (typeof window === "undefined") return null;
   const api = window.electronAPI?.piiNew;
   return api ?? null;
@@ -121,7 +123,7 @@ export async function loadNewPii(
   return route.load(key);
 }
 
-/** Seal and store a new-PII record. Throws when the route is absent. */
+/** Store a validated plaintext envelope. Throws when the route is absent. */
 export async function saveNewPii(
   key: NewPiiStorageKey,
   value: string,
@@ -263,6 +265,7 @@ export function installNewPiiStorageOnStore<S>(
   store: PersistInstallTarget<S> | null | undefined,
   domain: NewPiiDomain,
 ): boolean {
+  if (isBetaChannel) return false;
   const setOptions = store?.persist?.setOptions;
   if (typeof setOptions !== "function") {
     console.warn(
@@ -278,6 +281,12 @@ export function installNewPiiStorageOnStore<S>(
 
 /** Replace the vault-backed persistence for Desktop only; Web never calls this. */
 export function installNewPiiStorageForDesktop(): void {
+  if (isBetaChannel) {
+    console.warn(
+      "[newPiiStorage] SQLite-backed PII storage is unavailable in Beta",
+    );
+    return;
+  }
   installNewPiiStorageOnStore<ReturnType<typeof useCustomerStore.getState>>(
     useCustomerStore,
     "customers",

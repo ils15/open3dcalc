@@ -826,12 +826,12 @@ describe("focus mode — a passive surface never buries the exit", () => {
     //    z-50 and none of them was listed here, which is why this assertion was
     //    red against a tree it could not describe. The ten split two ways.
     //
-    //    NINE are legitimate dimming backdrops and are now listed, so step 3
+    //    EIGHT are legitimate dimming backdrops and are now listed, so step 3
     //    runs over each and re-checks that every one of their z-50s really is
     //    `fixed inset-0 … bg-black/NN`: StudioCopilotModal, StudioCustomerView,
     //    StudioMiniDashOverlay, StudioProductsView, StudioQuoteModal,
-    //    StudioQuotesView, StudioShortcutsModal, StudioSpoolView and
-    //    shared/components/Privacy/PiiLockedShell. Listing them widens the
+    //    StudioQuotesView, StudioShortcutsModal and StudioSpoolView. Listing
+    //    them widens the
     //    audit; it does not widen an exemption.
     //
     //    The TENTH did not belong on this list at all, and listing it would have
@@ -879,7 +879,10 @@ describe("focus mode — a passive surface never buries the exit", () => {
       "src/platform/web/components/studio/StudioQuotesView.tsx",
       "src/platform/web/components/studio/StudioShortcutsModal.tsx",
       "src/platform/web/components/studio/StudioSpoolView.tsx",
-      "src/shared/components/Privacy/PiiLockedShell.tsx",
+      // Wave4 Beta first-run notice: an owning modal surface (scrim +
+      // focus trap + Escape, rule 2) so it correctly sits above the exit
+      // while up, with the exit one Escape away.
+      "src/shared/components/Privacy/PrivacyOnboarding.tsx",
     ].sort();
     expect(
       found.sort(),

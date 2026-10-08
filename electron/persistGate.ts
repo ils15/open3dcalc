@@ -18,60 +18,23 @@
  */
 
 import {
-  type ManifestEntry,
-  type ManifestIndex,
-  isKnownKey,
-  getEntry,
-} from "../src/shared/lib/dataManifest.js";
-import { loadManifestFromDisk } from "./manifestSource.js";
-import {
   CryptoDeniedError,
   encryptForStorage,
   decryptFromStorage,
   LegacyUnboundBlobError,
   UnknownBlobError,
 } from "./cryptoCapability.js";
+import {
+  readStoredRow,
+  writeStoredRow,
+  type MinimalStorageDb,
+} from "./storageRows.js";
+import { resolveKeyPolicy } from "./manifestPolicy.js";
 
-/**
- * The two DIFFERENT facts a refusal can represent. They are separate because
- * they call for different handling:
- *
- *  - `unknown_key` — the manifest loaded and this key is not declared
- *    (SPEC-01 default-deny). The classification is known.
- *  - `manifest_unavailable` — the manifest itself could not be loaded, so NO
- *    key can be classified. This is not a statement about the key at all, and
- *    a caller that reads it as "unknown, therefore benign" fails open.
- */
-export type PolicyRefusalReason = "unknown_key" | "manifest_unavailable";
-
-export type KeyPolicy =
-  | { allowed: true; entry: ManifestEntry }
-  | { allowed: false; reason: PolicyRefusalReason };
-
-/**
- * Manifest policy for a key (main-process index; fail-closed on load errors).
- *
- * Fail-closed for BOTH refusal reasons, but the reasons are kept distinct so the
- * caller can tell "this key is not declared" from "I could not read the
- * manifest". Collapsing them is the defect this signature exists to prevent: an
- * unloadable manifest made every key look unknown, and a caller that passes
- * unknown keys through then emitted raw stored ciphertext as a value.
- */
-export function resolveKeyPolicy(key: string): KeyPolicy {
-  let manifest: ManifestIndex;
-  try {
-    manifest = loadManifestFromDisk();
-  } catch {
-    return { allowed: false, reason: "manifest_unavailable" };
-  }
-  if (!isKnownKey(manifest, key)) {
-    return { allowed: false, reason: "unknown_key" };
-  }
-  // `isKnownKey` is `manifest.has(key)`, so `getEntry` is defined here; the
-  // non-null assertion makes the invariant explicit rather than widening the
-  // allowed case back to an optional entry.
-  return { allowed: true, entry: getEntry(manifest, key)! };
-}
+export { readStoredRow, writeStoredRow } from "./storageRows.js";
+export type { MinimalStorageDb } from "./storageRows.js";
+export { resolveKeyPolicy } from "./manifestPolicy.js";
+export type { KeyPolicy, PolicyRefusalReason } from "./manifestPolicy.js";
 
 export type PersistOutcome =
   | { action: "passthrough"; value: string }
@@ -218,45 +181,6 @@ export async function loadRowForHydration(
 /*  Storage-table operations used by the IPC handlers and the selftest */
 /* ------------------------------------------------------------------ */
 
-export interface MinimalStorageDb {
-  prepare(sql: string): {
-    get(...params: unknown[]): unknown;
-    run(...params: unknown[]): unknown;
-    all(...params: unknown[]): unknown[];
-  };
-  /** Optional for callers like the real better-sqlite3 client (VACUUM etc.). */
-  exec?(sql: string): void;
-}
-
-const STORAGE_COLUMNS = "value FROM storage WHERE key = ?";
-
-export function writeStoredRow(
-  db: MinimalStorageDb,
-  key: string,
-  value: string,
-): void {
-  db.prepare(
-    "INSERT INTO storage (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
-  ).run(key, value, Date.now());
-}
-
-/**
- * The raw stored bytes for a key, or null when there is no row.
- *
- * Exported because the IPC read path needs to tell "no such key" (null, and the
- * renderer writes a fresh value) from "a row I could not read" (a refusal, and
- * the renderer must not write anything). `loadGated` collapses both into null,
- * which is the wrong answer for the second case.
- */
-export function readStoredRow(
-  db: MinimalStorageDb,
-  key: string,
-): string | null {
-  const row = db.prepare(`SELECT ${STORAGE_COLUMNS}`).get(key) as
-    { value: string } | undefined;
-  return row ? row.value : null;
-}
-
 /**
  * Gate and write a key/value pair into the storage table.
  * Throws on denial (fail-closed refusal — ADR-002 §2.1) and on SQL errors.
@@ -315,10 +239,9 @@ export async function loadGated(
   db: MinimalStorageDb,
   key: string,
 ): Promise<string | null> {
-  const row = db.prepare(`SELECT ${STORAGE_COLUMNS}`).get(key) as
-    { value: string } | undefined;
-  if (!row) return null;
-  const outcome = await gateLoad(key, row.value);
+  const stored = readStoredRow(db, key);
+  if (stored === null) return null;
+  const outcome = await gateLoad(key, stored);
   if (outcome.action === "denied" || outcome.action === "unreadable") {
     // An unreadable row is NOT reported as absent. `loadGated` predates the
     // `unreadable` outcome and returns a bare `string | null`, which cannot

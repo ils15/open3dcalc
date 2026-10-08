@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -32,6 +33,7 @@ interface DataSyncModalProps {
 
 export function DataSyncModal({ open, onRequestClose }: DataSyncModalProps) {
   const { t } = useTranslation();
+  if (isBetaChannel) return null;
 
   return (
     <AnimatePresence>

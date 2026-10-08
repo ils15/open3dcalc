@@ -1,7 +1,17 @@
 # SPEC-03 — Export Envelope (Normative)
 
+## Policy 1.9 retention — export cryptography is unchanged
+
+This specification's encrypted logical-export contract is retained unchanged: password
+handling, envelope format and version, algorithms, integrity verification, validation rules,
+and size/iteration limits remain normative. The export password is used only for export and
+import operations and never gates direct local saves on Stable Web/PWA, Desktop, or Beta. The
+export path must not unlock, inspect, read, convert, or migrate the inert historical
+`open3dcalc_pii_vault`; that data is excluded from current deletion scope. Beta continues to
+refuse import/export entirely.
+
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Normative for D1.1+ (D1.0 is documentation only)
+**Status:** Retained under policy 1.9 for encrypted export only; local at-rest crypto is governed by SPEC-01
 **Addresses findings:** R12 (envelope normativo completo), R2 (export lógico vs raw)
 **Related:** ADR-001 (crypto), ADR-003 (export vs backup), SPEC-01 (manifest)
 
@@ -168,3 +178,16 @@ contract tests (tamper, wrong password, downgrade, cross-version import, crash m
 ## Status
 
 **Status: Proposed (awaiting Themis gate + user final approval)**
+
+## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+
+SPEC-03 remains the Stable/Desktop encrypted export-envelope contract. The Web-Beta test-only
+profile has no user export, import, sync bundle, raw backup, or export-password flow; neither
+the vault password nor the separate export-envelope password is part of Beta. Beta data is
+never included in sync or export. The Beta runtime guard refuses export/import before data
+collection or file I/O, and Beta UI does not expose the import/export dialog.
+
+This does not retire or reinterpret any historical encrypted envelope. Stable fixture and
+policy versions, receipt hashes, and encrypted-entry/envelope compatibility remain frozen.
+Waves 1–3 are implemented: Beta export/import refusal and UI removal are enforced
+(betaNoExport); Stable envelope behavior is unchanged.

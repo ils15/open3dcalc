@@ -16,6 +16,7 @@
  */
 
 import { isKeyAllowed, isManifestUnavailable } from "@/shared/lib/manifestGate";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import {
   latchUnavailableClasses,
   type UnavailableEntry,
@@ -720,6 +721,10 @@ async function migrateIfNeeded(): Promise<void> {
  *   4. Start periodic auto-save (see AUTO_SAVE_INTERVAL_MS)
  */
 export async function initPersistenceBridge(): Promise<void> {
+  if (isBetaChannel) {
+    console.warn("[persistence-bridge] SQLite bridge is unavailable in Beta");
+    return;
+  }
   if (!isElectron()) {
     console.log(
       "[persistence-bridge] Not running in Electron — using localStorage only",

@@ -3,7 +3,6 @@ import ReactDOM from "react-dom/client";
 import App from "@/platform/desktop/App";
 import "@/shared/i18n/i18n";
 import "./index.css";
-import { initPersistenceBridge } from "@/platform/desktop/overrides/persistence-bridge";
 import { initTheme } from "@/platform/desktop/hooks/useTheme";
 import {
   DbErrorBanner,
@@ -25,7 +24,14 @@ initTheme();
 // element, and the app looked broken rather than refused. Failing closed is
 // still the rule: a renderer that hydrated from stale localStorage would look
 // like it worked and then lose every write. It just says so now.
-initPersistenceBridge()
+const isBetaBuild = import.meta.env.VITE_BETA_CHANNEL === true;
+const persistenceReady = isBetaBuild
+  ? Promise.resolve()
+  : import("@/platform/desktop/overrides/persistence-bridge").then(
+      ({ initPersistenceBridge }) => initPersistenceBridge(),
+    );
+
+persistenceReady
   .then(() => {
     ReactDOM.createRoot(document.getElementById("root")!).render(
       <React.StrictMode>

@@ -1265,6 +1265,16 @@
     }
   },
   "privacy": {
+    "betaFirstRun": {
+      "title": "Perfil de teste Beta",
+      "testOnly": "Este é um perfil descartável apenas para testes, separado do aplicativo estável.",
+      "syntheticOnly": "Use somente dados sintéticos; nunca informe dados reais de clientes.",
+      "plaintextLocal": "Clientes, orçamentos e histórico de cálculos ficam sem criptografia neste navegador.",
+      "noPassword": "Este perfil de teste não exige senha nem consentimento.",
+      "noMigration": "Os dados do perfil estável não são lidos nem migrados para o Beta.",
+      "noExport": "Importação, exportação, sincronização e exclusão não estão disponíveis no Beta.",
+      "disposable": "Ao terminar, limpe este perfil descartável do navegador fora do aplicativo."
+    },
     "banner": {
       "text": "Seus dados ficam apenas no seu navegador. Nada do que você digita — dados de clientes, orçamentos ou logs — é enviado para servidores. Você tem controle total: exporte, importe ou apague seus dados quando quiser.",
       "dismiss": "Entendi"
@@ -1353,12 +1363,12 @@
       "unavailable": "A exclusão total está indisponível até que o aplicativo possa verificar um plano exato de alvos contendo apenas dados pessoais. Nenhuma exclusão será iniciada nesta tela.",
       "blockersLabel": "Motivos do bloqueio:",
       "newPiiTitle": "Apagar registros locais sem senha",
-      "newPiiDescription": "Apaga apenas os registros de clientes, orçamentos e histórico que esta versão guardou localmente com o chaveiro do sistema. Não toca em registros de versões anteriores, tabelas do banco de dados nem backups.",
+      "newPiiDescription": "Apaga apenas os registros de clientes, orçamentos e histórico em texto puro que esta versão guardou no perfil local do Desktop. Não toca em registros de versões anteriores, tabelas do banco de dados nem backups.",
       "newPiiButton": "Apagar registros locais sem senha",
       "newPiiWorking": "Apagando… isso pode levar alguns instantes.",
       "newPiiDone": "Os registros locais sem senha foram apagados e verificados.",
       "newPiiUnavailable": "O apagamento local sem senha está indisponível agora — nenhum apagamento será iniciado.",
-      "newPiiConfirm": "Apagar os registros locais sem senha (clientes, orçamentos, histórico) guardados com o chaveiro do sistema? Isso não pode ser desfeito. Registros de versões anteriores, tabelas do banco e backups não são afetados.",
+      "newPiiConfirm": "Apagar os registros locais em texto puro (clientes, orçamentos, histórico) guardados neste perfil do Desktop? Isso não pode ser desfeito. Registros de versões anteriores, tabelas do banco e backups não são afetados.",
       "newPiiFailed": "O apagamento não foi concluído — nenhuma exclusão é declarada. Verifique o aplicativo e tente novamente.",
       "legacyScopeTitle": "Exclusão total do dispositivo (indisponível)",
       "legacyScopeNote": "Apagar TODOS os dados — versões anteriores, tabelas do banco e backups — permanece indisponível até existir um plano exato e verificável de alvos. O apagamento sem senha acima é a única exclusão disponível nesta versão."
@@ -1405,9 +1415,9 @@
       "writeRefusedAreaUnknown": "dados pessoais"
     },
     "passwordless": {
-      "title": "Novos dados usam a chave do sistema",
-      "message": "Novos clientes, orçamentos e histórico são criptografados com uma chave gerenciada pelo seu sistema operacional — não há senha do aplicativo para lembrar. Somente registros criados por esta versão a utilizam; dados criptografados antigos permanecem intactos.",
-      "limitation": "Esta chave fica na sua conta do sistema. Se o perfil do sistema, o dispositivo ou a chave forem perdidos, esses novos registros não poderão ser recuperados — não há redefinição nem cópia na nuvem."
+      "title": "Novos dados são armazenados localmente",
+      "message": "Novos clientes, orçamentos e histórico são armazenados em texto puro no banco de dados local deste perfil do Desktop. Não é necessária senha do aplicativo nem chaveiro do sistema; registros de versões antigas permanecem intactos.",
+      "limitation": "Qualquer pessoa com acesso a este perfil do sistema ou ao banco de dados pode ler esses registros. Se o perfil ou dispositivo for perdido, não há cópia na nuvem nem chave de recuperação."
     },
     "residue": {
       "title": "Dados legados em texto puro",

@@ -138,12 +138,6 @@ vi.mock("../update.js", () => ({
   getUpdateStatus: vi.fn(() => ({ status: "idle" })),
 }));
 
-vi.mock("../cryptoCapability.js", () => ({
-  getCapability: vi.fn(() => ({ available: false, reason: "synthetic" })),
-  adoptSessionPassphrase: vi.fn(),
-  lockCryptoSession: vi.fn(),
-}));
-
 vi.mock("../databaseIpc.js", () => ({
   registerDatabaseStorageHandlers: (...args: unknown[]) => {
     h.storageCalls.push(args);
@@ -257,9 +251,6 @@ describe("electron main process wiring", () => {
         "erasure:claim",
         "erasure:start",
         "erasure:status",
-        "crypto:capability",
-        "crypto:set-passphrase",
-        "crypto:lock",
         "update:check",
         "update:download",
         "update:install",
@@ -276,12 +267,8 @@ describe("electron main process wiring", () => {
     await expect(invoke("db:export", UNTRUSTED)).rejects.toThrow(
       /Untrusted IPC sender/,
     );
-    // The status/crypto handlers wrap the assertion in try/catch and rethrow.
-    for (const channel of [
-      "erasure:status",
-      "crypto:capability",
-      "crypto:lock",
-    ]) {
+    // The status handler wraps the assertion in try/catch and rethrows.
+    for (const channel of ["erasure:status"]) {
       await expect(invoke(channel, UNTRUSTED)).rejects.toThrow(
         /Untrusted IPC sender/,
       );
@@ -382,9 +369,8 @@ describe("electron main process wiring", () => {
     );
   });
 
-  it("validates update and crypto inputs before delegating", async () => {
+  it("validates update inputs and leaves legacy crypto IPC unregistered", async () => {
     const update = await import("../update.js");
-    const crypto = await import("../cryptoCapability.js");
 
     await expect(invoke("update:skip", TRUSTED, "   ")).rejects.toThrow(
       /non-empty string/,
@@ -392,21 +378,13 @@ describe("electron main process wiring", () => {
     await invoke("update:skip", TRUSTED, "2.0.0");
     expect(update.skipVersion).toHaveBeenCalledWith("2.0.0");
 
-    await expect(invoke("crypto:set-passphrase", TRUSTED, "")).rejects.toThrow(
-      /non-empty string/,
-    );
-    await invoke("crypto:set-passphrase", TRUSTED, "synthetic-pass");
-    expect(crypto.adoptSessionPassphrase).toHaveBeenCalledWith(
-      "synthetic-pass",
-    );
-
-    await invoke("crypto:lock", TRUSTED);
-    expect(crypto.lockCryptoSession).toHaveBeenCalled();
-
-    await expect(invoke("crypto:capability", TRUSTED)).resolves.toEqual({
-      available: false,
-      reason: "synthetic",
-    });
+    for (const channel of [
+      "crypto:capability",
+      "crypto:set-passphrase",
+      "crypto:lock",
+    ]) {
+      expect(h.handlers.has(channel)).toBe(false);
+    }
     await expect(invoke("update:check")).resolves.toEqual({
       available: false,
     });
@@ -418,11 +396,9 @@ describe("electron main process wiring", () => {
     });
   });
 
-  it("zeroizes the session passphrase on quit and on app lifecycle events", async () => {
-    const crypto = await import("../cryptoCapability.js");
+  it("has no passphrase lifecycle hook and still handles app lifecycle events", async () => {
     const { app } = await import("electron");
-    h.appHandlers.get("before-quit")?.();
-    expect(crypto.lockCryptoSession).toHaveBeenCalled();
+    expect(h.appHandlers.has("before-quit")).toBe(false);
 
     h.appHandlers.get("window-all-closed")?.();
     expect(app.quit).toHaveBeenCalled();

@@ -8,6 +8,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import { SNAPSHOT_TTL_DAYS } from "./types.js";
 import type { SnapshotStore } from "./ports.js";
 
@@ -19,6 +20,9 @@ export interface SnapshotMeta {
 }
 
 export function snapshotDir(sagaDir: string): string {
+  if (isBetaChannel) {
+    throw new Error("Snapshots are unavailable in Beta");
+  }
   return path.join(sagaDir, "erasure-snapshots");
 }
 
@@ -36,6 +40,9 @@ function ageDays(fromIso: string, now: Date): number {
 
 /** Desktop snapshot store over the userData filesystem. */
 export function diskSnapshotStore(sagaDir: string): SnapshotStore {
+  if (isBetaChannel) {
+    throw new Error("Snapshots are unavailable in Beta");
+  }
   const sdir = snapshotDir(sagaDir);
   function destroyOne(sagaId: string): void {
     const file = snapshotFile(sagaDir, sagaId);

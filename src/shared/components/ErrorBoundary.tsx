@@ -1,4 +1,6 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
+import { isBetaChannel } from "@/shared/config/betaChannel";
+import { BETA_TEST_STORAGE_KEYS } from "@/shared/lib/betaPersistence";
 
 interface Props {
   children: ReactNode;
@@ -24,6 +26,25 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReset = () => {
+    // Beta shares the origin with Stable: a blanket clear() would wipe
+    // Stable keys from the same origin. On Beta remove only the three
+    // synthetic beta_test keys (both storages, defensively) and reload.
+    if (isBetaChannel) {
+      for (const key of BETA_TEST_STORAGE_KEYS) {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          // Fail-closed: a denied storage must not block the reload.
+        }
+        try {
+          sessionStorage.removeItem(key);
+        } catch {
+          // Same: never let a storage denial trap the boundary.
+        }
+      }
+      window.location.reload();
+      return;
+    }
     localStorage.clear();
     sessionStorage.clear();
     window.location.reload();

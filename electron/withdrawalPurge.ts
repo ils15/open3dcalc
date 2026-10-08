@@ -40,6 +40,10 @@ import {
   markWithdrawalIncomplete,
   requestWithdrawal,
 } from "./withdrawalJournal.js";
+import {
+  betaElectronPiiRefusal,
+  isBetaElectronRuntime,
+} from "./betaRuntime.js";
 
 export type WithdrawalPurgeResult =
   { ok: true; purged: string[] } | { ok: false; reason: string };
@@ -186,6 +190,11 @@ export function registerWithdrawalPurgeHandlers(
   ipcMain.handle(
     WITHDRAWAL_PURGE_CHANNELS.request,
     (event, input: WithdrawalRequestInput = {}) => {
+      // Beta is Web-only: refuse before the sender check, the journal read and
+      // any nonce minting. Per call, never cached.
+      if (isBetaElectronRuntime()) {
+        throw betaElectronPiiRefusal(WITHDRAWAL_PURGE_CHANNELS.request);
+      }
       assertTrustedSender(event);
       const existing = loadWithdrawalJournal(dir);
       // A live request (pending/incomplete) is returned verbatim so a retry
@@ -229,6 +238,9 @@ export function registerWithdrawalPurgeHandlers(
   );
 
   ipcMain.handle(WITHDRAWAL_PURGE_CHANNELS.purge, (event, token: unknown) => {
+    if (isBetaElectronRuntime()) {
+      throw betaElectronPiiRefusal(WITHDRAWAL_PURGE_CHANNELS.purge);
+    }
     assertTrustedSender(event);
     const journal = loadWithdrawalJournal(dir);
     if (!journal) throw new Error("no withdrawal request");

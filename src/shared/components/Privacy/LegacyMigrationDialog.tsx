@@ -60,6 +60,7 @@ type Outcome =
 
 /** The honest message for each value-free re-home outcome. */
 const RESULT_KEYS: Record<LegacyPiiRehomeStatus, string> = {
+  disabled: "privacy.migration.resultIncomplete",
   migrated: "privacy.migration.resultMigrated",
   vault_unavailable: "privacy.migration.resultVaultLocked",
   no_residue: "privacy.migration.resultNothingToMigrate",

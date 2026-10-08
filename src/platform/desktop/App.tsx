@@ -23,6 +23,7 @@ import { SidebarFooter } from "./components/SidebarFooter";
 import { Footer } from "./components/Footer";
 import { DesktopResourceLinks } from "./components/DesktopResourceLinks";
 import { rehydratePiiStores } from "@/shared/lib/crypto/piiStoreHydration";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import { installNewPiiStorageForDesktop } from "./overrides/newPiiStorage";
 
 // The TABS contract is re-exported here so tabsParity.test keeps locking the
@@ -31,8 +32,8 @@ export { TABS } from "@/shared/components/AppShell/tabs";
 
 const DESKTOP_RESOURCE_TABS = ["wiki", "changelog"] as const;
 
-// The Desktop build uses the dedicated OS-managed route for new PII. Legacy
-// vault records are not migrated or resealed by this cutover.
+// The Desktop build uses the dedicated exact-key plaintext route for new PII.
+// Legacy vault records are not migrated or rehomed by this cutover.
 installNewPiiStorageForDesktop();
 
 function App(): React.ReactElement {
@@ -51,6 +52,7 @@ function AppContent(): React.ReactElement {
   const { active: focusMode } = useFocusMode();
 
   useEffect(() => {
+    if (isBetaChannel) return;
     void rehydratePiiStores();
   }, []);
   useAppInit(navigateToTab);

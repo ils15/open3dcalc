@@ -4,9 +4,16 @@ import {
   gatedPiiPersistStorage,
   registerPiiPersistStore,
 } from "@/shared/lib/crypto/piiStoreHydration";
+import { isBetaChannel } from "@/shared/config/betaChannel";
+import { betaPlaintextPersistStorage } from "@/shared/lib/betaPersistence";
+import {
+  isElectronRuntime,
+  stablePiiPersistStorage,
+} from "@/shared/lib/manifestStorage";
 import type { Customer, CustomerFormData } from "@/shared/types";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const useVaultPersistence = !isBetaChannel && isElectronRuntime();
 
 function generateId(): string {
   return `cust_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -198,17 +205,22 @@ export const useCustomerStore = create<CustomerStore>()(
       setSearchQuery: (query) => set({ searchQuery: query }),
     }),
     {
-      name: "open3dcalc_customers_v1",
+      name: isBetaChannel
+        ? "open3dcalc_beta_test_customers_v1"
+        : "open3dcalc_customers_v1",
       version: 1,
-      storage: gatedPiiPersistStorage<CustomerStore>("open3dcalc_customers_v1"),
-      // The vault is sealed and locked at store creation. Hydrating here would
-      // read a locked vault (refused) and leave the store writable at its
-      // initial, empty state — which its first `set()` would persist over the
-      // user's real customers. Hydration is explicit, after unlock:
-      // `rehydratePiiStores()`.
-      skipHydration: true,
+      storage: isBetaChannel
+        ? betaPlaintextPersistStorage<CustomerStore>(
+            "open3dcalc_beta_test_customers_v1",
+          )
+        : useVaultPersistence
+          ? gatedPiiPersistStorage<CustomerStore>("open3dcalc_customers_v1")
+          : stablePiiPersistStorage<CustomerStore>("open3dcalc_customers_v1"),
+      skipHydration: useVaultPersistence,
     },
   ),
 );
 
-registerPiiPersistStore("open3dcalc_customers_v1", useCustomerStore.persist);
+if (useVaultPersistence) {
+  registerPiiPersistStore("open3dcalc_customers_v1", useCustomerStore.persist);
+}

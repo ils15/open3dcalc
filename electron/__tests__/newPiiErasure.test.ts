@@ -27,11 +27,14 @@ import {
   requestNewPiiErasure,
   runNewPiiErasure,
 } from "../newPiiErasure.js";
-import type { MinimalStorageDb } from "../persistGate.js";
+import type { MinimalStorageDb } from "../storageRows.js";
 import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/crypto/newPiiNamespace.js";
 
 const [CUSTOMERS, QUOTES, HISTORY] = NEW_PII_STORAGE_KEYS;
-const SEALED = 'enc1:profileKey:{"v":"2.0"}';
+const PLAINTEXT_ENVELOPE = JSON.stringify({
+  state: { records: [{ id: "synthetic-row" }] },
+  version: 1,
+});
 const PROFILE = "profile-synthetic";
 
 let dir: string;
@@ -72,9 +75,9 @@ function makeDatabase(
 }
 
 const seededRows = (): Array<[string, string]> => [
-  [CUSTOMERS, SEALED],
-  [QUOTES, SEALED],
-  [HISTORY, SEALED],
+  [CUSTOMERS, PLAINTEXT_ENVELOPE],
+  [QUOTES, PLAINTEXT_ENVELOPE],
+  [HISTORY, PLAINTEXT_ENVELOPE],
   ["open3dcalc_customers_v1", "legacy-bytes"],
   ["open3dcalc_consent_v1", "consent-bytes"],
 ];
@@ -305,7 +308,7 @@ describe("new-PII delete-all — exact purge and trusted postcondition", () => {
     const snapshotAfterFailure = JSON.parse(
       fs.readFileSync(newPiiErasureSnapshotPath(dir), "utf8"),
     ) as { rows: Record<string, string | null> };
-    expect(snapshotAfterFailure.rows[CUSTOMERS]).toBe(SEALED);
+    expect(snapshotAfterFailure.rows[CUSTOMERS]).toBe(PLAINTEXT_ENVELOPE);
 
     // Retry against a working delete: the same snapshot must not be overwritten.
     const working = makeDatabase(seededRows());

@@ -141,6 +141,38 @@ describe("dataManifest loader (SPEC-01)", () => {
     }
   });
 
+  it("SPEC-01 policy 1.9: declares only the approved Stable plaintext PII scope", () => {
+    const doc = manifestFixture as ManifestDocument;
+    const approvedKeys = [
+      "open3dcalc_customers_v1",
+      "open3dcalc_quotes_v1",
+      "open3dcalc_history_v2",
+    ];
+    const plaintextPiiEntries = doc.keys.filter(
+      (entry) => entry.pii && entry.persistence === "plaintext_allowed",
+    );
+
+    expect(doc.policy_version).toBe("1.9");
+    expect(plaintextPiiEntries.map((entry) => entry.key).sort()).toEqual(
+      [...approvedKeys].sort(),
+    );
+    for (const entry of plaintextPiiEntries) {
+      expect(entry).toMatchObject({
+        surface: "localStorage",
+        platforms: ["electron", "web", "pwa"],
+        class: "user_content",
+        legal_basis: "contract_performance",
+      });
+    }
+    expect(
+      doc.keys
+        .filter(
+          (entry) => entry.surface === "sqlite_domain_tables" && entry.pii,
+        )
+        .every((entry) => entry.persistence === "encrypted_at_rest"),
+    ).toBe(true);
+  });
+
   it("SPEC-01: accepts the ui_preference class added for V2.0 (policy 1.4)", () => {
     // The three v2.0 keys (layout / share prefs / marketplace comparison) are
     // ui_preference: device-level ergonomic choices, never synced/exported.
@@ -159,18 +191,42 @@ describe("dataManifest loader (SPEC-01)", () => {
   });
 
   // -----------------------------------------------------------------------
-  // TEST-MATRIX 1.2 — plaintext_allowed + pii:true is rejected
+  // TEST-MATRIX 1.2–1.3 — only exact policy 1.9 plaintext PII scope is allowed
   // -----------------------------------------------------------------------
 
-  it("TEST-MATRIX 1.2: REJECTS plaintext_allowed with pii:true", () => {
+  it("TEST-MATRIX 1.2: accepts only the three Stable localStorage PII keys", () => {
+    const approved = validEntry({
+      key: "open3dcalc_customers_v1",
+      platforms: ["electron", "web", "pwa"],
+      class: "user_content",
+      pii: true,
+      persistence: "plaintext_allowed",
+      legal_basis: "contract_performance",
+    });
+    expect(() => validateManifestEntry(approved)).not.toThrow();
+
     expect(() =>
       validateManifestEntry(
-        validEntry({ pii: true, persistence: "plaintext_allowed" }),
+        validEntry({
+          key: "unapproved_pii_key",
+          pii: true,
+          persistence: "plaintext_allowed",
+          legal_basis: "contract_performance",
+        }),
       ),
     ).toThrow(ManifestError);
-    expect(() => loadManifest(docWith([validEntry({ pii: true })]))).toThrow(
-      ManifestError,
-    );
+    expect(() =>
+      validateManifestEntry({
+        ...approved,
+        surface: "sqlite_domain_tables",
+      }),
+    ).toThrow(ManifestError);
+    expect(() =>
+      validateManifestEntry({ ...approved, platforms: ["electron"] }),
+    ).toThrow(ManifestError);
+    expect(() =>
+      validateManifestEntry({ ...approved, legal_basis: "consent" }),
+    ).toThrow(ManifestError);
   });
 
   it("TEST-MATRIX 1.3: REJECTS legal_basis not_personal_data with pii:true", () => {
@@ -302,10 +358,10 @@ describe("dataManifest loader (SPEC-01)", () => {
   });
 
   it("S1: every runtime storage key written by the app is registered", () => {
-    // Mirrors the key constants in stores, platform overrides, and migration
-    // logic (persistence-bridge LOCALSTORAGE_KEYS + dataSync KEYS). If a new
-    // key is introduced without a manifest entry, this test fails — and the
-    // gate throws in dev at runtime (fail-closed, SPEC-01 default-deny).
+    // Mirrors the current active storage writers (persistence-bridge
+    // LOCALSTORAGE_KEYS + dataSync KEYS). Retired migration/legacy markers are
+    // intentionally absent from policy 1.9 and are not active destinations.
+    // A newly introduced writer without a manifest entry still fails closed.
     const manifest = loadManifest(manifestFixture as ManifestDocument);
     const runtimeKeys = [
       "open3dcalc_settings_v2",
@@ -322,12 +378,7 @@ describe("dataManifest loader (SPEC-01)", () => {
       "open3dcalc_dashboard_v1",
       "open3dcalc_dashboard_goal",
       "open3dcalc_onboarded",
-      "open3dcalc_migration_done_v2",
-      "open3dcalc_migration_progress_v2",
-      "open3dcalc_legacy_keep_readonly_v1",
-      "open3dcalc_migration_fingerprint_v1",
       "open3dcalc_quickstart_dismissed",
-      "open3dcalc_legacy_pii_rehomed_v1",
       "i18nextLng",
     ];
     expect(findOrphanKeys(manifest, runtimeKeys)).toEqual([]);

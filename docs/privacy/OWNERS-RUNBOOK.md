@@ -1,134 +1,79 @@
-# OWNERS-RUNBOOK — D1 Contracts
+# OWNERS-RUNBOOK — Policy 1.9
 
-**Track:** D1 — Privacy & Data Contracts
-**Status:** Active for D1.0 (documentation); runbook binds D1.1+ slices
-**Addresses findings:** R6 (DRI/testes), R15 (aprovadores/diff-check)
-**Related:** README (roles, block declaration), COMPLIANCE-MATRIX (traceability)
+**Owner:** Repository owner (policy approval); implementation owners are assigned per slice.
+**Review gates:** Themis review and explicit owner approval before promotion.
+**Scope:** Stable/Desktop direct local plaintext, unchanged Web-Beta restrictions, current-owned-data deletion, retained encrypted export.
 
-## 1. DRI
+## 1. Approved policy and consequences
 
-- **DRI:** Hermes — owns correctness, internal consistency, and cross-references of the
-  document set and of every D1.1+ slice against these contracts.
-- **Gate:** Themis — reviews every slice; a slice merges only after Themis approval.
-- **Final approver:** the user — approves this document set (unblocks D1.1+) and accepts
-  each slice's merge. Nothing derived from these contracts lands before the user approves
-  the contracts themselves (README §5).
+- Stable Web/PWA and Desktop directly persist only the three PII keys declared in SPEC-01
+  policy 1.9: customers, quotes, and history. Do not broaden the key or destination scope.
+- Stable and Beta local saves have no password, vault-unlock, consent, or receipt prerequisite.
+  Beta remains Web-only, synthetic-only, and restricted to its unchanged three Beta keys; it
+  still refuses sync, import, export, backup, deletion, migration, and legacy access.
+- `contract_performance` is a provisional fixture annotation requiring qualified legal
+  review. Engineering does not choose or certify a legal basis.
+- Encrypted logical export (E1) retains its existing password, algorithms, integrity checks,
+  compatibility, and limits. Its password never gates local saves. Beta has no export path.
+- Existing `open3dcalc_pii_vault` bytes are inert, may remain in the profile, and are excluded
+  from current deletion. No inspection, enumeration, conversion, recovery, migration, purge,
+  or startup cleanup is authorized. Recovery of these bytes is not promised.
+- Delete-all is limited to current app-owned data identified by supported current adapters.
+  Do not claim complete physical erasure, encrypted rollback, cross-surface recovery, or
+  deletion of external copies/historical bytes.
 
-## 2. Owners per contract
+## 2. Version and artifact rules
 
-| Contract                            | Owner                                                                  | Reviewer |
-| ----------------------------------- | ---------------------------------------------------------------------- | -------- |
-| ADR-001 crypto capability           | Hermes                                                                 | Themis   |
-| ADR-002 PII at-rest/quarantine      | Hermes                                                                 | Themis   |
-| ADR-003 export vs backup            | Hermes                                                                 | Themis   |
-| SPEC-01 manifest schema + fixture   | Hermes (schema), Demeter (SQLite surfaces), Aphrodite (web surfaces)   | Themis   |
-| SPEC-02 erasure saga                | Hermes                                                                 | Themis   |
-| SPEC-03 export envelope             | Hermes                                                                 | Themis   |
-| SPEC-04 consent receipt             | Hermes                                                                 | Themis   |
-| TEST-MATRIX                         | Hermes (author), all owners (execute their rows)                       | Themis   |
-| Surface-specific entries in SPEC-01 | Demeter (SQLite/WAL), Aphrodite (localStorage/IndexedDB/OPFS/Cache/SW) | Hermes   |
+| Artifact                              | Policy 1.9 rule                                                                                                                          |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Stable manifest                       | Keep `manifest_version` at `1.0`; set `policy_version` to `1.9`                                                                          |
+| Stable customer/quote/history entries | Set `pii:true`, `persistence:plaintext_allowed`, and provisional `legal_basis:contract_performance`; preserve per-entry `version` values |
+| Other PII entries and destinations    | Keep their prior restrictions; no blanket plaintext permission                                                                           |
+| Beta schema and fixture               | No change; preserve the exact three Web-only synthetic keys and restrictions                                                             |
+| SPEC-03 encrypted export              | Freeze format/version, algorithms, KDF parameters, integrity rules, and limits                                                           |
+| Existing receipts                     | Preserve bytes; old policy receipts evaluate as `policy_mismatch` under 1.9                                                              |
+| Historical vault/migration targets    | Retire as active manifest/write/delete targets; never mutate existing stored bytes                                                       |
 
-Owner duties: owners MUST keep their SPEC-01 entries truthful against the code; update `version` on
-policy change; implement their TEST-MATRIX rows in their slices.
+Never use this policy change as authorization for a data-format migration. Avoid changing
+encrypted-entry versions: policy 1.9 is not an encrypted-format migration.
 
-## 3. Escalation
+## 3. Verification checklist
 
-- Contract ambiguity or contradiction between documents → Hermes decides or escalates to
-  the user; contradictions are D1.0 defects and block approval.
-- Slice cannot satisfy a contract clause → the owner MUST NOT weaken the contract unilaterally;
-  escalate to Themis + user (a contract change requires re-approval, since receipts and
-  policy hashes bind to `policy_version`).
-- Security-relevant discovery mid-slice → stop the slice, notify Themis immediately.
+For each implementation phase, run and record:
 
-## 4. D1.1+ slice plan (indicative order; each slice is independently shippable)
+1. Stable manifest/schema and Beta fixture contract validation.
+2. `npm run test:run -- <changed test files>` and then the relevant full suite.
+3. `npm run typecheck` and `npm run typecheck:electron`.
+4. `npm run lint`.
+5. Save/reload checks for Stable Web, Desktop, and Beta; storage failure must not be reported
+   as a durable save.
+6. Negative reachability checks proving no historical-vault access and Beta refusal before
+   prohibited operations.
+7. Diff inspection to confirm no runtime changes occur in a documentation/RED-only phase,
+   and no Beta schema/fixture changes occur in this slice.
 
-| Slice | Scope                                                                                                   | Contracts exercised |
-| ----- | ------------------------------------------------------------------------------------------------------- | ------------------- |
-| S1    | Manifest loader + schema validation wired into stores (single source of truth; unknown-key deny)        | SPEC-01             |
-| S2    | Crypto capability layer (desktop `safeStorage` + fallback + deny path; web Web Crypto + secure context) | ADR-001             |
-| S3    | PII at-rest encryption on write paths + startup scan                                                    | ADR-001, ADR-002    |
-| S4    | Legacy quarantine state + privacy screen + migrate/eliminate flows                                      | ADR-002             |
-| S5    | Export envelope v1.1 (producer + consumer) replacing legacy bundle                                      | SPEC-03             |
-| S6    | `db:export` reclassification (dev gate, redaction, retention tooling)                                   | ADR-003             |
-| S7    | Erasure saga (journal, snapshot, rescan, receipts)                                                      | SPEC-02             |
-| S8    | Consent receipt (issue, verify, withdraw, policy-version delta)                                         | SPEC-04             |
+A RED test is acceptable only when it fails because the target policy behavior is missing.
+Fixture parse failures, type errors, unrelated component exceptions, and environmental setup
+failures are defects in the test, not evidence of RED behavior.
 
-Slices S2–S4 may proceed in parallel with S5–S6 after S1 lands (S1 is the dependency for
-everything). S7 depends on S1+S2 (scanner + capability). S8 depends on S7 (withdrawal uses
-the saga).
+## 4. Rollback
 
-## 5. Diagnostic backup disposal runbook (ADR-003 §2.2.4)
+- Rollback is a code/package rollback only. Do not run a migration, inspect or convert
+  historical vault bytes, remove old bytes, or rewrite receipts.
+- Leave all current plaintext and historical storage bytes unchanged during rollback. A
+  previous application version may again impose old save gates and may not operate on data
+  written under policy 1.9; disclose this compatibility risk rather than attempting an
+  undocumented conversion.
+- The SPEC-03 export envelope remains frozen, so policy rollback must not alter its crypto
+  format or compatibility behavior.
+- Beta's three-key namespace and all Beta restrictions remain unchanged during Stable policy
+  rollback.
+- Any rollback that would add vault access, data migration, or deletion of excluded bytes
+  requires a new explicit owner decision and a reviewed contract change.
 
-For every unredacted diagnostic backup taken under the dev gate:
+## 5. Phase ownership and release gate
 
-1. Record in the engineering log (metadata only — never PII): date, filename, operator,
-   redacted yes/no, retention deadline (creation + 14 days).
-2. Before the deadline: either delete (secure: overwrite + unlink, or `srm`-class tooling)
-   or justify extension in the log (only for redacted backups).
-3. Weekly check: a script (D1.1+ S6 deliverable) lists backups past deadline and fails CI
-   if any unredacted file exceeds retention.
-4. Disposal is logged (date, file, method). The log itself is `diagnostic` class,
-   `plaintext_allowed` (metadata only).
-
-## 6. Per-slice diff-check gate (R15)
-
-Every D1.1+ slice PR MUST declare its scope and pass:
-
-```bash
-# 1. Diff matches declared scope (no stray files)
-git diff --name-only main...<slice-branch>
-
-# 2. No changes to files outside the slice's declared modules
-#    (e.g., S5 must not touch electron/main.ts beyond the export handler)
-
-# 3. No contract documents modified without a policy_version bump
-git diff main...<slice-branch> -- docs/privacy/   # must be empty unless bumping policy
-```
-
-If a slice needs a contract change: stop, bump `policy_version` (SPEC-01) and
-`receipt_version` (SPEC-04) as applicable, update COMPLIANCE-MATRIX, and re-approve with
-the user — receipts bind to the policy hash, so silent changes invalidate consent records.
-
-### 6.1 Do NOT bump a SPEC-01 per-entry `version` yet
-
-`policy_version` is the safe field to bump; a per-entry `version` on a PII
-`encrypted_at_rest` key is **not**, and the two are easy to confuse because both
-are version fields in the same file and the runbook above tells you to bump one
-of them.
-
-The AAD's `S` is pinned as the constant `PII_SCHEMA_VERSION = 1`
-(`electron/cryptoCapability.ts:49-64`) and is _meant_ to come from the per-key
-`version`. Until that lookup lands, bumping a PII key's `version` changes nothing
-today and strands every passphrase-sealed envelope for that key the day it does.
-The failure is silent — no migration, no counter, no log line — and it hits only
-the passphrase fallback path, so a `safeStorage` test profile looks perfectly
-healthy throughout. Land the per-key lookup first, then bump freely. Mechanism and
-ordering: ADR-001 §3.3 `TODO(hermes)`. Tripwire:
-`src/shared/lib/__tests__/piiStageDeclaration.test.ts`.
-
-## 7. Rollback runbook (per slice)
-
-Each slice ships with a rollback path tested before merge:
-
-| Slice              | Rollback                                                                                                                                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1 manifest loader | Feature-flag off ⇒ stores fall back to direct keys; manifest file inert (read-only doc). No data migration in S1, so rollback is a flag flip.                                                                                                                     |
-| S2 crypto layer    | Flag off ⇒ previous write path returns. Data written encrypted under S2 remains readable only via the S2 path — keep the decrypt path enabled (flag "write-plaintext" never exists; rollback disables _new_ encrypted writes, not reads).                         |
-| S3 PII encryption  | Same as S2: rollback stops new encrypted writes; existing encrypted data stays encrypted and readable via the capability layer. Never convert back to plaintext.                                                                                                  |
-| S4 quarantine      | Flag off ⇒ quarantine screen hidden; legacy data returns to previous (unquarantined) state — **only acceptable pre-approval of the at-rest policy**; after ADR-002 is active in a release, rollback of S4 requires user sign-off because it re-exposes plaintext. |
-| S5 envelope v1.1   | Producer flag off ⇒ exports return to `1.0` bundle. Import keeps accepting both (never remove `1.0` import).                                                                                                                                                      |
-| S6 db:export gate  | Flag off ⇒ previous behavior returns — **requires user sign-off** (re-exposes raw PII copy); preferred rollback is keeping the gate and fixing forward.                                                                                                           |
-| S7 erasure saga    | Saga is user-triggered; rollback = disable the delete-all entry (feature flag), fix forward. Never leave a half-run saga: journal + resume logic must remain enabled even when the entry is hidden, so an interrupted saga still completes or rolls back.         |
-| S8 consent receipt | Flag off ⇒ boolean-consent behavior returns; receipts already issued stay stored (inert). Re-enabling re-validates digests.                                                                                                                                       |
-
-**General rule:** rollback never converts encrypted data back to plaintext and never
-deletes receipts/journals silently. Slices whose rollback would re-expose PII (S4, S6)
-require explicit user sign-off for the rollback itself.
-
-## 8. Contacts
-
-- DRI (contracts, backend slices): Hermes
-- SQLite/WAL surfaces: Demeter
-- Web/PWA surfaces, privacy screens: Aphrodite
-- Quality/security gate: Themis
-- Final approval, rollback sign-offs: user
+Each implementation phase has a named owner and must pass Themis review before the next
+phase. No phase may claim successful data erasure beyond the scope in SPEC-02. The repository
+owner separately approves legal review status, release promotion, and any change to the
+approved exact key scope. This runbook authorizes no commit, merge, release, or publication.

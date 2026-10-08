@@ -1,5 +1,5 @@
 /**
- * Phase3 — the Desktop adapter over the `pii:new:*` route.
+ * Desktop exact-key plaintext adapter over the `pii:new:*` route.
  *
  * These specs drive the REAL adapter (no module mock): they install a fake
  * `window.electronAPI.piiNew` and assert delegation, key mapping, and the
@@ -8,6 +8,12 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.hoisted(() => {
+  Object.defineProperty(globalThis.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 Electron/43.0",
+  });
+});
 
 import {
   createNewPiiPersistStorage,
@@ -43,7 +49,7 @@ function installRoute(partial: Partial<PiiNew> = {}): PiiNew {
   const route: PiiNew = {
     capability: vi.fn(
       partial.capability ??
-        (async () => ({ available: true, backend: "gnome_libsecret" })),
+        (async () => ({ available: true, backend: "plaintext" })),
     ),
     load: vi.fn(partial.load ?? (async () => null)),
     save: vi.fn(partial.save ?? (async () => undefined)),
@@ -105,16 +111,16 @@ describe("newPiiStorage adapter", () => {
 
     await expect(getNewPiiCapability()).resolves.toEqual({
       available: true,
-      backend: "gnome_libsecret",
+      backend: "plaintext",
     });
     await loadNewPii("open3dcalc_pwless_customers_v1");
-    await saveNewPii("open3dcalc_pwless_customers_v1", "sealed");
+    await saveNewPii("open3dcalc_pwless_customers_v1", "plaintext-envelope");
 
     expect(route.capability).toHaveBeenCalledTimes(3);
     expect(route.load).toHaveBeenCalledWith("open3dcalc_pwless_customers_v1");
     expect(route.save).toHaveBeenCalledWith(
       "open3dcalc_pwless_customers_v1",
-      "sealed",
+      "plaintext-envelope",
     );
   });
 

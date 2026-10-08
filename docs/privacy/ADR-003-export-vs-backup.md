@@ -1,7 +1,20 @@
 # ADR-003 — User Export vs. Engineering Backup
 
+## Policy 1.9 clarification — export remains independent of local saves
+
+The distinction below between a user-facing logical export and a diagnostic/raw database
+backup remains in force. The logical export continues to use the SPEC-03 encrypted envelope;
+its password, algorithms, integrity checks, and size/iteration limits are retained. An export
+password is never a prerequisite for saving customers, quotes, or history locally.
+
+The former vault-unlock prerequisite for export is removed. Export must operate only on its
+currently supported, explicitly selected data inputs and must not open, read, inspect, convert,
+recover, or migrate inert historical `open3dcalc_pii_vault` data. That vault and other retired
+legacy targets are outside the current deletion scope. Beta restrictions remain unchanged:
+synthetic-only, with no import, export, or backup path.
+
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Proposed (awaiting Themis gate + user final approval)
+**Status:** Superseded for vault access by approved policy 1.9; logical export/backup distinction retained
 **Addresses findings:** R2 (export lógico vs raw), R13 (raw SQLite diagnóstico)
 **Related:** SPEC-01 (manifest), SPEC-03 (export envelope), ADR-002 (quarantine)
 
@@ -106,3 +119,15 @@ here claims the reclassification has already happened.
 ## Status
 
 **Status: Proposed (awaiting Themis gate + user final approval)**
+
+## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+
+ADR-003's distinction between Stable user export and engineering backup remains unchanged. The
+Web-Beta test-only profile exposes neither user export/import nor backup, including the
+encrypted envelope and password prompts. Its three synthetic keys are always `sync: never`
+and `export: never`; Beta data must not enter Stable export bundles or diagnostics. Desktop and
+Stable retain their existing encrypted-export and separately governed backup contracts.
+
+Waves 1–3 are implemented: Beta export/import/backup refusal and UI removal are enforced
+(betaNoExport guard plus dialog removal). No Stable runtime behavior or historical export
+format is changed by this addendum.
