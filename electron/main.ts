@@ -18,11 +18,6 @@ import {
 
 // ESM compatibility: __dirname is not available in ES modules
 import {
-  getCapability,
-  adoptSessionPassphrase,
-  lockCryptoSession,
-} from "./cryptoCapability.js";
-import {
   registerDatabaseStorageHandlers,
   registerDisabledDatabaseImportHandler,
 } from "./databaseIpc.js";
@@ -42,6 +37,11 @@ import {
   resumeErasureIfNeeded,
   erasureStatus,
 } from "./erasure.js";
+import {
+  BETA_EXCLUDED_STORAGE_KEYS,
+  betaElectronPiiRefusal,
+  isBetaElectronRuntime,
+} from "./betaRuntime.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -228,13 +228,23 @@ function setupIpcHandlers(): void {
 
   // Generic storage IPC remains limited to an exact non-PII allowlist. The
   // handlers classify before touching SQLite and do not authorize legacy PII.
-  registerDatabaseStorageHandlers(ipcMain, db, assertTrustedSender);
+  // On Beta (Web-only channel) the consent row is additionally excluded: Beta
+  // consent lives on Web, so Electron must neither read nor write it. The
+  // exclusion is registration-time by construction — the allowlist is a closed
+  // set snapshotted once — while every PII refusal below is per call. Stable
+  // keeps the exact three-argument registration it has always had.
+  if (isBetaElectronRuntime()) {
+    registerDatabaseStorageHandlers(ipcMain, db, assertTrustedSender, {
+      excludedKeys: [...BETA_EXCLUDED_STORAGE_KEYS],
+    });
+  } else {
+    registerDatabaseStorageHandlers(ipcMain, db, assertTrustedSender);
+  }
 
-  // ── pii:new:* — Desktop passwordless new-PII route (Beta12 Phase3) ───
-  // The ONLY path that persists NEW Desktop PII without an app passphrase:
-  // sealed with the OS-keyring-wrapped profile data key, disjoint key
-  // namespace, generic db IPC denies those keys, legacy rows never touched.
-  // Every handler re-checks the OS-keyring gate; refuses without it.
+  // ── pii:new:* — Desktop exact-key plaintext PII route ──────────────────
+  // Only the disjoint pwless namespace is available here. The route validates
+  // trusted senders and the exact key before SQL; generic db IPC denies it.
+  // No keyring, profile key, or passphrase prerequisite gates these writes.
   // The durable withdrawal journal lives in the profile (userData) directory;
   // while a pending/incomplete withdrawal exists the route refuses fail-closed.
   registerPasswordlessPiiHandlers(
@@ -278,6 +288,11 @@ function setupIpcHandlers(): void {
     "db:export",
     async (event, options?: { redact?: boolean }): Promise<string> => {
       try {
+        // Beta is Web-only: the diagnostic copy may contain legacy PII, so it
+        // refuses before the sender check, the erasure lock and the gate.
+        if (isBetaElectronRuntime()) {
+          throw betaElectronPiiRefusal("db:export");
+        }
         assertTrustedSender(event);
         // Diagnostic export can contain legacy PII. An active or invalid
         // erasure journal is a lock, not a grant of additional data access.
@@ -343,10 +358,16 @@ function setupIpcHandlers(): void {
   // be represented by exact PII-only targets. In particular, mixed backups
   // and staging copies must never be swept as whole files.
   ipcMain.handle("erasure:authorize", (event) => {
+    if (isBetaElectronRuntime()) {
+      throw betaElectronPiiRefusal("erasure:authorize");
+    }
     assertTrustedSender(event);
     return authorizeDesktopErasure();
   });
   ipcMain.handle("erasure:claim", (event, token: unknown) => {
+    if (isBetaElectronRuntime()) {
+      throw betaElectronPiiRefusal("erasure:claim");
+    }
     assertTrustedSender(event);
     return claimDesktopErasure(token);
   });
@@ -362,6 +383,9 @@ function setupIpcHandlers(): void {
       rendererReport?: Parameters<typeof runDesktopErasure>[2],
     ) => {
       try {
+        if (isBetaElectronRuntime()) {
+          throw betaElectronPiiRefusal("erasure:start");
+        }
         assertTrustedSender(event);
         return await runDesktopErasure(db, authorizationToken, rendererReport);
       } catch (error) {
@@ -375,6 +399,11 @@ function setupIpcHandlers(): void {
   // Metadata-only journal state for the privacy screen.
   ipcMain.handle("erasure:status", (event) => {
     try {
+      // Beta refuses even the metadata status: the erasure surface is PII
+      // scope, and a Beta renderer must not observe its state.
+      if (isBetaElectronRuntime()) {
+        throw betaElectronPiiRefusal("erasure:status");
+      }
       assertTrustedSender(event);
       return erasureStatus();
     } catch (error) {
@@ -439,52 +468,6 @@ function setupIpcHandlers(): void {
   // opening a dialog, reading the candidate, or touching the live database.
   registerDisabledDatabaseImportHandler(ipcMain, assertTrustedSender);
 
-  // ── crypto:capability (D1.1 S2 — ADR-001 §2.3) ──────────────────────
-  // Reports the current capability decision. Probe results stay in main
-  // memory; no key material or passphrase ever crosses IPC.
-  ipcMain.handle("crypto:capability", (event) => {
-    try {
-      assertTrustedSender(event);
-      return getCapability();
-    } catch (error) {
-      console.error("[crypto:capability] Error:", error);
-      throw error;
-    }
-  });
-
-  // ── crypto:set-passphrase ───────────────────────────────────────────
-  // Adopts the session passphrase into MAIN-process memory only (SPEC-01
-  // `session_passphrase_key`: surface memory, sync never, export never).
-  // It is never echoed back, never persisted, never logged.
-  ipcMain.handle(
-    "crypto:set-passphrase",
-    async (event, passphrase: string): Promise<void> => {
-      try {
-        assertTrustedSender(event);
-        if (typeof passphrase !== "string" || passphrase.length === 0) {
-          throw new Error("Passphrase must be a non-empty string");
-        }
-        adoptSessionPassphrase(passphrase);
-      } catch (error) {
-        console.error("[crypto:set-passphrase] Error:", error);
-        throw error;
-      }
-    },
-  );
-
-  // ── crypto:lock ─────────────────────────────────────────────────────
-  // Zeroizes the session passphrase (irreversible). PII capability
-  // degrades to DENIED until a new passphrase is adopted.
-  ipcMain.handle("crypto:lock", async (event): Promise<void> => {
-    try {
-      assertTrustedSender(event);
-      lockCryptoSession();
-    } catch (error) {
-      console.error("[crypto:lock] Error:", error);
-      throw error;
-    }
-  });
-
   // Temporarily retained only so old renderer builds fail with an explicit
   // disabled error instead of receiving legacy PII or an ambiguous empty scan.
   registerDisabledLegacyPrivacyHandlers(ipcMain);
@@ -541,12 +524,6 @@ app.whenReady().then(async () => {
       await createWindow();
     }
   });
-});
-
-// Zeroize the session passphrase on quit (ADR-001 §2.1 — best-effort
-// within JS limits; the hard guarantee is that nothing was persisted).
-app.on("before-quit", () => {
-  lockCryptoSession();
 });
 
 app.on("window-all-closed", () => {

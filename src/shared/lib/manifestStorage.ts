@@ -25,6 +25,7 @@ import {
   createJSONStorage,
   type PersistStorage,
   type StateStorage,
+  type StorageValue,
 } from "zustand/middleware";
 import {
   checkKey,
@@ -32,6 +33,8 @@ import {
   isPiiKey,
   ManifestError,
 } from "./manifestGate.js";
+import { isBetaChannel } from "@/shared/config/betaChannel";
+import { betaStateStorage, betaTestStorage } from "./betaPersistence.js";
 import { setDemoSuppressedForPiiGate } from "./crypto/piiStoreCapability.js";
 
 /**
@@ -79,7 +82,7 @@ export function isDemoPersistenceSuppressed(): boolean {
  * target in one build and Electron in another, and the gate must reflect the
  * runtime it is actually running in.
  */
-function isElectronRuntime(): boolean {
+export function isElectronRuntime(): boolean {
   return (
     typeof navigator !== "undefined" &&
     typeof navigator.userAgent === "string" &&
@@ -88,15 +91,10 @@ function isElectronRuntime(): boolean {
 }
 
 /**
- * Refuse a plaintext PII write on the web target.
- *
- * Every manifest PII key is `encrypted_at_rest`, and the web build has no OS
- * keyring; the encrypted vault is a separate, passphrase-gated path. A write
- * through THIS choke point is therefore plaintext PII by construction. The
- * denial lives here, below the UI, so a direct `guardedStorage.setItem` /
- * `manifestStorage().setItem` call cannot create a plaintext record even when a
- * component forgets to pre-check. Deny-safely: never throw, log the key NAME
- * only, and never touch the backing store.
+ * Refuse web plaintext PII writes outside the exact policy-approved scope.
+ * Stable policy 1.9 explicitly allows the three localStorage user-content
+ * entries; other PII remains denied below the UI. Denials log key names only
+ * and never touch the backing store.
  *
  * Desktop is out of scope for this slice: its PII path is gated elsewhere and
  * is deliberately left unchanged.
@@ -110,10 +108,142 @@ function denyWebPlaintextPiiWrite(key: string): boolean {
   if (!entry || entry.pii !== true || entry.class !== "user_content") {
     return false;
   }
+  if (
+    entry.persistence === "plaintext_allowed" &&
+    entry.surface === "localStorage" &&
+    entry.platforms.includes("web")
+  ) {
+    return false;
+  }
   console.warn(
     `[manifestStorage] refused plaintext PII write on web for key "${key}"`,
   );
   return true;
+}
+
+const PII_PERSISTED_SCHEMAS: Readonly<
+  Record<string, { field: string; version: number }>
+> = {
+  open3dcalc_customers_v1: { field: "customers", version: 1 },
+  open3dcalc_quotes_v1: { field: "quotes", version: 1 },
+  open3dcalc_history_v2: { field: "entries", version: 2 },
+};
+
+function requiredLocalStorage(key: string): Storage {
+  if (typeof window === "undefined") {
+    throw new Error(`[manifestStorage] localStorage unavailable for "${key}"`);
+  }
+  try {
+    const storage = window.localStorage;
+    if (!storage) throw new Error("localStorage unavailable");
+    return storage;
+  } catch (error) {
+    throw new Error(`[manifestStorage] localStorage unavailable for "${key}"`, {
+      cause: error,
+    });
+  }
+}
+
+function validateStablePiiKey(key: string): { field: string; version: number } {
+  const schema = PII_PERSISTED_SCHEMAS[key];
+  const entry = getKeyEntry(key);
+  if (
+    !schema ||
+    !entry ||
+    entry.pii !== true ||
+    entry.persistence !== "plaintext_allowed" ||
+    entry.surface !== "localStorage" ||
+    !entry.platforms.includes("web")
+  ) {
+    throw new ManifestError(
+      `[manifestStorage] Stable plaintext persistence is not approved for "${key}"`,
+    );
+  }
+  return schema;
+}
+
+/**
+ * Stable Web persistence for the three explicitly approved PII stores.
+ * Hydration must positively read an empty or valid record before writes are
+ * allowed; corrupt or inaccessible bytes remain untouched and writes fail
+ * rather than replacing them with the store's initial state.
+ */
+export function stablePiiPersistStorage<S>(key: string): PersistStorage<S> {
+  let readable = false;
+
+  function validateName(name: string): void {
+    if (name !== key) {
+      throw new Error(`[manifestStorage] unexpected PII key "${name}"`);
+    }
+  }
+
+  return {
+    getItem(name: string): StorageValue<S> | null {
+      validateName(name);
+      try {
+        const schema = validateStablePiiKey(key);
+        const raw = requiredLocalStorage(key).getItem(key);
+        if (raw === null) {
+          readable = true;
+          return null;
+        }
+
+        const parsed: unknown = JSON.parse(raw);
+        if (
+          typeof parsed !== "object" ||
+          parsed === null ||
+          !("state" in parsed) ||
+          typeof parsed.state !== "object" ||
+          parsed.state === null ||
+          Array.isArray(parsed.state) ||
+          !(schema.field in parsed.state) ||
+          !Array.isArray(
+            (parsed.state as Record<string, unknown>)[schema.field],
+          ) ||
+          !("version" in parsed) ||
+          parsed.version !== schema.version
+        ) {
+          throw new TypeError("invalid persisted state envelope");
+        }
+
+        readable = true;
+        return parsed as StorageValue<S>;
+      } catch (error) {
+        readable = false;
+        console.error(`[manifestStorage] failed to hydrate "${key}"`);
+        throw new Error(`[manifestStorage] failed to hydrate "${key}"`, {
+          cause: error,
+        });
+      }
+    },
+
+    setItem(name: string, value: StorageValue<S>): void {
+      validateName(name);
+      if (demoPersistenceSuppressed) return;
+      if (!readable) {
+        throw new Error(
+          `[manifestStorage] refusing write before readable hydration for "${key}"`,
+        );
+      }
+      try {
+        validateStablePiiKey(key);
+        requiredLocalStorage(key).setItem(key, JSON.stringify(value));
+      } catch (error) {
+        console.error(`[manifestStorage] failed to persist "${key}"`);
+        throw new Error(`[manifestStorage] failed to persist "${key}"`, {
+          cause: error,
+        });
+      }
+    },
+
+    removeItem(name: string): void {
+      validateName(name);
+      if (demoPersistenceSuppressed) return;
+      validateStablePiiKey(key);
+      requiredLocalStorage(key).removeItem(key);
+      readable = true;
+    },
+  };
 }
 
 function rawStorage(): StateStorage {
@@ -157,6 +287,9 @@ function gatedStateStorage(): StateStorage {
  * except every key is validated against SPEC-01 first.
  */
 export function manifestStorage<S>(): PersistStorage<S, unknown> | undefined {
+  if (isBetaChannel) {
+    return createJSONStorage<S>(() => betaStateStorage());
+  }
   return createJSONStorage<S>(() => gatedStateStorage());
 }
 
@@ -168,6 +301,7 @@ export function manifestStorage<S>(): PersistStorage<S, unknown> | undefined {
  */
 export const guardedStorage = {
   getItem(key: string): string | null {
+    if (isBetaChannel) return betaTestStorage.getItem(key);
     const backing = rawStorage();
     if (!checkKey(key).allowed) return null;
     // rawStorage() is always the synchronous window.localStorage (or the
@@ -175,6 +309,10 @@ export const guardedStorage = {
     return backing.getItem(key) as string | null;
   },
   setItem(key: string, value: string): void {
+    if (isBetaChannel) {
+      betaTestStorage.setItem(key, value);
+      return;
+    }
     // Demo mode: ephemeral by design — never persist.
     if (demoPersistenceSuppressed) return;
     if (denyWebPlaintextPiiWrite(key)) return;
@@ -183,6 +321,10 @@ export const guardedStorage = {
     backing.setItem(key, value);
   },
   removeItem(key: string): void {
+    if (isBetaChannel) {
+      betaTestStorage.removeItem(key);
+      return;
+    }
     if (demoPersistenceSuppressed) return;
     const backing = rawStorage();
     if (!checkKey(key).allowed) return;
@@ -206,9 +348,14 @@ export const guardedStorage = {
  */
 export const guardedSyncStorage = {
   getItem(key: string): string | null {
+    if (isBetaChannel) return null;
     return guardedStorage.getItem(key);
   },
   setItem(key: string, value: string): void {
+    if (isBetaChannel) {
+      console.warn("[manifestStorage] sync storage is unavailable in Beta");
+      return;
+    }
     if (isPiiKey(key)) {
       const message = `refused plaintext PII write for sync key "${key}"`;
       console.warn(`[manifestStorage] ${message}`);
@@ -223,6 +370,7 @@ export const guardedSyncStorage = {
     guardedStorage.setItem(key, value);
   },
   removeItem(key: string): void {
+    if (isBetaChannel) return;
     guardedStorage.removeItem(key);
   },
 };

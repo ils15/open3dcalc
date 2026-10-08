@@ -20,12 +20,21 @@ import type {
   SnapshotStore,
 } from "./ports.js";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 
 export const ERASURE_JOURNAL_KEY = "open3dcalc_erasure_journal";
 /** Registered SPEC-01 key: class snapshot — the payload is ciphertext. */
 export const ERASURE_SNAPSHOT_KEY = "open3dcalc_erasure_snapshot";
 
 export function webJournalAdapter(): JournalAdapter {
+  if (isBetaChannel) {
+    return {
+      exists: () => false,
+      load: () => null,
+      save: () => undefined,
+      destroy: () => undefined,
+    };
+  }
   return {
     exists(): boolean {
       return guardedStorage.getItem(ERASURE_JOURNAL_KEY) !== null;
@@ -49,6 +58,22 @@ function ageDays(fromIso: string, now: Date): number {
 }
 
 export function webSnapshotStore(): SnapshotStore {
+  if (isBetaChannel) {
+    return {
+      write: async () => undefined,
+      canRollback: async () => ({
+        possible: false,
+        reason: "snapshot_unsupported",
+      }),
+      restore: async () => {
+        throw new Error("Snapshots are unsupported in Beta");
+      },
+      destroy: () => undefined,
+      destroyAll: () => undefined,
+      sweepExpired: () => [],
+    };
+  }
+
   function readEnvelope(): {
     saga_id: string;
     created_at: string;

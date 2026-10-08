@@ -1,4 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+vi.hoisted(() => {
+  Object.defineProperty(globalThis.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 Electron/43.0",
+  });
+});
 import {
   collectSyncData,
   validateBundle,
@@ -420,7 +426,16 @@ describe("exportBundle", () => {
 
   it("produces an unencrypted bundle without a password", async () => {
     seedFullStorage();
+    const desktopUserAgent = navigator.userAgent;
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (compatible; web)",
+    });
     const bundle = await exportBundle();
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: desktopUserAgent,
+    });
 
     expect(bundle.encrypted).toBe(false);
     expect(bundle.version).toBe("1.0");

@@ -10,6 +10,50 @@ import type { LegacyPiiRowsReport } from "./legacyRows.js" with {
 };
 
 /**
+ * Beta-channel gate for the preload bridge.
+ *
+ * Beta is a Web-only channel; Electron must expose no PII privacy surface.
+ * Every PII method below refuses while `VITE_BETA_CHANNEL` is exactly
+ * `"true"`, before any `ipcRenderer.invoke` — the main process refuses the
+ * same channels independently, so a renderer that somehow bypassed this gate
+ * still gets a refusal.
+ *
+ * This MIRRORS `isBetaElectronRuntime` in `electron/betaRuntime.ts` instead
+ * of importing it: this file compiles to CJS (`preload.cjs`) while the helper
+ * is ESM, and a synchronously-required bridge must not depend on a
+ * cross-module-format require. Keep the exact-`"true"` comparison in sync with
+ * the helper — parity is pinned by
+ * `electron/__tests__/betaElectronGating.test.ts`.
+ */
+function isBetaPreloadRuntime(
+  environment: { VITE_BETA_CHANNEL?: string } = process.env,
+): boolean {
+  return environment.VITE_BETA_CHANNEL === "true";
+}
+
+/**
+ * Mirrors `BETA_ELECTRON_PII_REFUSAL` in `electron/betaRuntime.ts` verbatim.
+ * It cannot be imported: this file compiles to CJS (`preload.cjs`) while the
+ * helper is ESM, and a synchronously-required bridge must not depend on a
+ * cross-module-format require. Keep the sentence in sync — parity is pinned by
+ * `electron/__tests__/betaElectronGating.test.ts`.
+ */
+const BETA_ELECTRON_PII_REFUSAL =
+  "Beta channel is Web-only; Electron PII IPC is disabled";
+
+/**
+ * Fail-closed refusal for one PII method on Beta. A rejected promise (rather
+ * than a throw) so the failure surfaces as an async IPC refusal, exactly like
+ * a main-process denial. `Promise<never>` is assignable to every method's
+ * declared return type.
+ */
+function betaPiiUnavailable(channel: string): Promise<never> {
+  return Promise.reject(
+    new Error(`[beta] ${channel} is unavailable: ${BETA_ELECTRON_PII_REFUSAL}`),
+  );
+}
+
+/**
  * Type-safe API exposed to the renderer process via contextBridge.
  *
  * All methods are async — they return Promises that resolve/reject
@@ -35,8 +79,12 @@ const electronAPI = {
     /**
      * Internal diagnostic export; requires the explicit main-process gate.
      * It may contain legacy PII and is blocked while erasure is active/invalid.
+     * Unavailable on Beta (Web-only channel).
      */
-    exportDatabase: (): Promise<string> => ipcRenderer.invoke("db:export"),
+    exportDatabase: (): Promise<string> =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("db:export")
+        : ipcRenderer.invoke("db:export"),
 
     /**
      * Legacy contract retained for compatibility. Main rejects imports while
@@ -142,67 +190,57 @@ const electronAPI = {
     },
   },
 
-  crypto: {
-    /**
-     * Current ADR-001 §2.3 capability decision. Probe results stay in the
-     * main process; no key material or passphrase crosses IPC.
-     */
-    capability: (): Promise<{
-      mode: "safe_storage" | "passphrase" | "denied";
-      piiPersistence: "encrypted_at_rest" | "denied";
-      reason: string;
-    }> => ipcRenderer.invoke("crypto:capability"),
-
-    /**
-     * Adopt the session passphrase into main-process memory only
-     * (SPEC-01 `session_passphrase_key`). Never echoed back, never
-     * persisted, never logged.
-     */
-    setPassphrase: (passphrase: string): Promise<void> =>
-      ipcRenderer.invoke("crypto:set-passphrase", passphrase),
-
-    /** Zeroize the session passphrase (irreversible). */
-    lock: (): Promise<void> => ipcRenderer.invoke("crypto:lock"),
-  },
-
   piiNew: {
     /**
-     * The OS-keyring gate verdict for the passwordless new-PII route. Main
-     * runs the §3.4 backend gate plus the pre-hydration self-test; no key
-     * material or value crosses this call.
+     * Availability of the exact-key Desktop plaintext route. No storage value
+     * or key material crosses this metadata-only call.
+     * Unavailable on Beta (Web-only channel).
      */
     capability: (): Promise<{
       available: boolean;
       backend?: string;
       reason?: string;
-    }> => ipcRenderer.invoke("pii:new:capability"),
+    }> =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("pii:new:capability")
+        : ipcRenderer.invoke("pii:new:capability"),
 
     /**
      * Open a NEW-namespace PII record. Returns null when absent. Legacy keys
      * and non-new rows are refused by main; the renderer never sees them here.
+     * Unavailable on Beta (Web-only channel).
      */
     load: (key: string): Promise<string | null> =>
-      ipcRenderer.invoke("pii:new:load", key),
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("pii:new:load")
+        : ipcRenderer.invoke("pii:new:load", key),
 
     /**
-     * Seal and store a NEW-namespace PII record. The value is encrypted in the
-     * main process BEFORE any SQLite write; a denied gate rejects.
+     * Store a validated plaintext Zustand envelope under an exact new-PII key.
+     * Unavailable on Beta (Web-only channel).
      */
     save: (key: string, value: string): Promise<void> =>
-      ipcRenderer.invoke("pii:new:save", key, value),
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("pii:new:save")
+        : ipcRenderer.invoke("pii:new:save", key, value),
   },
 
   erasure: {
     /** Persist/validate the authorization barrier before renderer-side work. */
     authorize: (): Promise<{ token: string }> =>
-      ipcRenderer.invoke("erasure:authorize"),
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("erasure:authorize")
+        : ipcRenderer.invoke("erasure:authorize"),
 
     /** Consume a one-use authorization and receive its approved plan. */
     claim: (
       token: string,
     ): Promise<{
       targets: Array<{ surface: string; id: string }>;
-    }> => ipcRenderer.invoke("erasure:claim", token),
+    }> =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("erasure:claim")
+        : ipcRenderer.invoke("erasure:claim", token),
 
     /** Continue the main-process saga; renderer report is never proof. */
     start: (
@@ -221,7 +259,10 @@ const electronAPI = {
         rollback_unavailable?: { reason: string; at: string };
       };
       rolledBack: boolean;
-    }> => ipcRenderer.invoke("erasure:start", token, rendererReport),
+    }> =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("erasure:start")
+        : ipcRenderer.invoke("erasure:start", token, rendererReport),
 
     /** Metadata-only status and capability gate. */
     status: (): Promise<{
@@ -230,7 +271,10 @@ const electronAPI = {
       blockerCodes: string[];
       state?: string;
       stores?: Array<{ store: string; state: string; attempts: number }>;
-    }> => ipcRenderer.invoke("erasure:status"),
+    }> =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("erasure:status")
+        : ipcRenderer.invoke("erasure:status"),
 
     /**
      * EXACT new-namespace delete-all (Beta12 follow-up). Erases ONLY the three
@@ -242,18 +286,28 @@ const electronAPI = {
         token: string;
         expiresAt: string;
         targets: Array<{ surface: string; id: string }>;
-      }> => ipcRenderer.invoke("erasure:new-pii:authorize"),
+      }> =>
+        isBetaPreloadRuntime()
+          ? betaPiiUnavailable("erasure:new-pii:authorize")
+          : ipcRenderer.invoke("erasure:new-pii:authorize"),
 
       claim: (
         token: string,
       ): Promise<{ targets: Array<{ surface: string; id: string }> }> =>
-        ipcRenderer.invoke("erasure:new-pii:claim", token),
+        isBetaPreloadRuntime()
+          ? betaPiiUnavailable("erasure:new-pii:claim")
+          : ipcRenderer.invoke("erasure:new-pii:claim", token),
 
-      start: (token: string): Promise<{
+      start: (
+        token: string,
+      ): Promise<{
         request_id: string;
         completed_at: string;
         purged: string[];
-      }> => ipcRenderer.invoke("erasure:new-pii:start", token),
+      }> =>
+        isBetaPreloadRuntime()
+          ? betaPiiUnavailable("erasure:new-pii:start")
+          : ipcRenderer.invoke("erasure:new-pii:start", token),
 
       status: (): Promise<{
         active: boolean;
@@ -261,7 +315,10 @@ const electronAPI = {
         blockerCodes: string[];
         state?: string;
         targets: Array<{ surface: string; id: string }>;
-      }> => ipcRenderer.invoke("erasure:new-pii:status"),
+      }> =>
+        isBetaPreloadRuntime()
+          ? betaPiiUnavailable("erasure:new-pii:status")
+          : ipcRenderer.invoke("erasure:new-pii:status"),
     },
   },
 
@@ -269,6 +326,7 @@ const electronAPI = {
     /**
      * Persist a durable, receipt-scoped withdrawal journal and return its
      * one-use nonce. Only the new-PII targets in the receipt scope are bound.
+     * Unavailable on Beta (Web-only channel).
      */
     request: (input: {
       receiptId: string;
@@ -277,17 +335,24 @@ const electronAPI = {
       token: string;
       expiresAt: string;
       targets: Array<{ surface: string; id: string }>;
-    }> => ipcRenderer.invoke("withdrawal:request", input),
+    }> =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("withdrawal:request")
+        : ipcRenderer.invoke("withdrawal:request", input),
 
     /**
      * Consume the nonce, purge ONLY the linked new-PII rows and complete the
      * withdrawal on a verified postcondition.
+     * Unavailable on Beta (Web-only channel).
      */
     purge: (
       token: string,
     ): Promise<
       { ok: true; purged: string[] } | { ok: false; reason: string }
-    > => ipcRenderer.invoke("withdrawal:purge", token),
+    > =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("withdrawal:purge")
+        : ipcRenderer.invoke("withdrawal:purge", token),
   },
 
   privacy: {
@@ -302,26 +367,35 @@ const electronAPI = {
     // refusal (the desktop re-home's read-only reader is the live one).
     /**
      * Obsolete legacy-key migration. Main rejects this call without modifying rows.
+     * Unavailable on Beta (Web-only channel) — the preload refuses first.
      */
     migrateKey: (
       key: string,
     ): Promise<{ key: string; migrated: boolean; verified: boolean }> =>
-      ipcRenderer.invoke("privacy:migrate-key", key),
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("privacy:migrate-key")
+        : ipcRenderer.invoke("privacy:migrate-key", key),
 
     /**
      * Obsolete per-key elimination. Use the explicit delete-all saga instead.
+     * Unavailable on Beta (Web-only channel) — the preload refuses first.
      */
     eliminateKey: (
       key: string,
     ): Promise<{ key: string; eliminated: boolean }> =>
-      ipcRenderer.invoke("privacy:eliminate-key", key),
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("privacy:eliminate-key")
+        : ipcRenderer.invoke("privacy:eliminate-key", key),
 
     /**
      * Obsolete raw legacy-PII reader. Main rejects this call without reading
      * stored values; the renderer privacy/re-home mounts must be removed next.
+     * Unavailable on Beta (Web-only channel) — the preload refuses first.
      */
     legacyRows: (): Promise<LegacyPiiRowsReport> =>
-      ipcRenderer.invoke("privacy:legacy-rows"),
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("privacy:legacy-rows")
+        : ipcRenderer.invoke("privacy:legacy-rows"),
   },
 } as const;
 

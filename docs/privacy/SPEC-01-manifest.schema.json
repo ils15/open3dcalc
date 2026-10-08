@@ -75,6 +75,15 @@
         "not_personal_data"
       ]
     },
+    "plaintextPiiKey": {
+      "type": "string",
+      "enum": [
+        "open3dcalc_customers_v1",
+        "open3dcalc_quotes_v1",
+        "open3dcalc_history_v2"
+      ],
+      "description": "The complete and exclusive Stable/Desktop plaintext-PII key scope approved by policy 1.9."
+    },
     "retentionPolicy": {
       "type": "string",
       "enum": ["user_controlled", "session_only", "fixed"]
@@ -126,7 +135,44 @@
         "legal_basis": { "$ref": "#/$defs/legalBasis" },
         "owner": { "type": "string", "minLength": 1 },
         "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "pii": { "const": true },
+              "persistence": { "const": "plaintext_allowed" }
+            },
+            "required": ["pii", "persistence"]
+          },
+          "then": {
+            "properties": {
+              "key": { "$ref": "#/$defs/plaintextPiiKey" },
+              "surface": { "const": "localStorage" },
+              "platforms": { "const": ["electron", "web", "pwa"] },
+              "class": { "const": "user_content" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "key": { "$ref": "#/$defs/plaintextPiiKey" }
+            },
+            "required": ["key"]
+          },
+          "then": {
+            "properties": {
+              "pii": { "const": true },
+              "surface": { "const": "localStorage" },
+              "platforms": { "const": ["electron", "web", "pwa"] },
+              "class": { "const": "user_content" },
+              "persistence": { "const": "plaintext_allowed" },
+              "legal_basis": { "const": "contract_performance" }
+            }
+          }
+        }
+      ]
     }
   }
 }

@@ -1,5 +1,27 @@
 # Open3DCalc Privacy Contracts — D1.0
 
+## Current policy — 1.9 (supersedes conflicting D1.0 and Beta addenda)
+
+Stable Web/PWA and Desktop directly save the exact three customer, quote, and history
+manifest keys as plaintext, without a password, vault unlock, or consent/receipt prerequisite.
+This is an approved policy change, not a claim that the former zero-plaintext contract was
+fulfilled. `contract_performance` is provisional and requires qualified legal review; this
+engineering document does not select or validate a legal basis. The encrypted logical export
+contract remains separate and intact; its password never gates local saves.
+
+Web Beta remains a separate test-only channel: only generated synthetic records in its three
+Beta-specific keys, plaintext, no sync/export/import/deletion, and no Stable or historical-data
+access. The Stable/Desktop policy does not broaden Beta's scope.
+
+Bytes already written to `open3dcalc_pii_vault` are inert historical data. No current startup,
+read, inspection, conversion, recovery, migration, or cleanup path may touch them. The vault is
+excluded from current deletion scope; its bytes may remain in the profile. Current deletion
+applies only to current application-owned data within the declared supported scope.
+
+Receipts created under older policies remain historical records and evaluate as
+`policy_mismatch` under policy 1.9. No consent, withdrawal, or receipt action gates current
+local saves. See the dated decision at the start of each superseding ADR/spec below.
+
 **Track:** D1 (Privacy & Data Contracts) — Deliverable 1.0 (documentation only)
 **DRI:** Hermes (backend/data contracts executor)
 **Review gate:** Themis (quality & security gate — 3 review rounds completed, findings R1–R15)
@@ -51,19 +73,21 @@ Those operations are separate from the Copilot's local suggestions.
 
 ## 2. Document index
 
-| File                            | Purpose                                                                                  | Addresses   |
-| ------------------------------- | ---------------------------------------------------------------------------------------- | ----------- |
-| `ADR-001-crypto-capability.md`  | Cryptographic capability model per platform; zero plaintext path for PII                 | R3, R7      |
-| `ADR-002-pii-at-rest-legacy.md` | Default-deny PII at rest; legacy plaintext enters read-only quarantine                   | R3, R11     |
-| `ADR-003-export-vs-backup.md`   | User logical export vs. engineering/diagnostic raw SQLite backup                         | R2, R13     |
-| `SPEC-01-manifest.schema.json`  | Versioned JSON Schema of the per-key/surface/platform data manifest                      | R1, R8      |
-| `SPEC-01-manifest-fixture.json` | Synthetic fixture (no real PII) covering all edge cases                                  | R1, R8      |
-| `SPEC-02-erasure.md`            | Resumable erasure saga: state machine, per-store journal, crash/rollback semantics       | R4, R9, R10 |
-| `SPEC-03-export-envelope.md`    | Normative encrypted export envelope: canonicalization, algorithms, limits, atomic IO     | R12         |
-| `SPEC-04-consent-receipt.md`    | Consent receipt: canonicalization, anti-tamper, exact withdrawal effect                  | R5, R14     |
-| `COMPLIANCE-MATRIX.md`          | Traceability of every finding R1–R15 → document/section → status                         | R1–R15      |
-| `TEST-MATRIX.md`                | Mandatory contract tests for D1.1+ (real browser, real IPC/SQLite, crash, cross-version) | R6          |
-| `OWNERS-RUNBOOK.md`             | DRI, per-contract owners, rollback runbook per D1.1+ slice                               | R6, R15     |
+| File                                      | Purpose                                                                                     | Addresses   |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- |
+| `ADR-001-crypto-capability.md`            | Policy 1.9 direct local plaintext; former at-rest crypto superseded; export crypto retained | R3, R7      |
+| `ADR-002-pii-at-rest-legacy.md`           | Inert historical retention; no inspection, migration, or startup cleanup                    | R3, R11     |
+| `ADR-003-export-vs-backup.md`             | Encrypted logical export vs. diagnostic backup; no vault prerequisite                       | R2, R13     |
+| `SPEC-01-manifest.schema.json`            | Versioned JSON Schema of the per-key/surface/platform data manifest                         | R1, R8      |
+| `SPEC-01-manifest-fixture.json`           | Stable policy 1.9 exact PII scope; synthetic contract fixture                               | R1, R8      |
+| `SPEC-01-beta-test-manifest.schema.json`  | Separate exact-key schema for synthetic-only Web Beta storage                               | Beta D1, D2 |
+| `SPEC-01-beta-test-manifest-fixture.json` | Unchanged three-key, plaintext, synthetic Web Beta fixture                                  | Beta D1, D2 |
+| `SPEC-02-erasure.md`                      | Deletion limited to current owned data; historical vault excluded; Beta refuses             | R4, R9, R10 |
+| `SPEC-03-export-envelope.md`              | Normative encrypted export envelope: canonicalization, algorithms, limits, atomic IO        | R12         |
+| `SPEC-04-consent-receipt.md`              | Historical receipts; no consent/receipt prerequisite for local saves                        | R5, R14     |
+| `COMPLIANCE-MATRIX.md`                    | Traceability of every finding R1–R15 → document/section → status                            | R1–R15      |
+| `TEST-MATRIX.md`                          | Policy 1.9 direct-save, reload, failure, Beta-boundary, and export tests                    | R6          |
+| `OWNERS-RUNBOOK.md`                       | Policy versioning, verification, and rollback rules                                         | R6, R15     |
 
 Reading order for reviewers: README → COMPLIANCE-MATRIX (map of findings) → ADRs → SPECs →
 TEST-MATRIX → OWNERS-RUNBOOK.
@@ -145,3 +169,63 @@ Known gaps that the contracts turn into D1.1+ obligations: PII is persisted in p
 delete-all is not a complete, resumable, cross-surface erasure (R4/R9/R10), consent is a bare
 flag without a tamper-evident receipt (R5/R14), and storage-key allowlists are duplicated
 across stores and `dataSync.ts` (R1/R8).
+
+## 7. Superseded Beta-only addendum and current channel boundary
+
+The Beta-only addendum below is retained for history where it describes Web Beta restrictions.
+Its claims that Stable policy 1.0 / policy 1.8 and consent requirements remain unchanged are
+superseded by policy 1.9 above. This slice changes contracts and adds RED tests only; it does
+not claim that runtime behavior has been implemented or verified.
+
+The Web-Beta profile remains restricted to synthetic test data and these exact browser keys:
+
+- `open3dcalc_beta_test_customers_v1`
+- `open3dcalc_beta_test_quotes_v1`
+- `open3dcalc_beta_test_history_v1`
+
+They are plaintext `localStorage` entries for **Web Beta only**, are never synchronized or
+exported, and are not personal data because only generated synthetic records are permitted.
+The Beta fixture and strict schema are separate from the Stable manifest; they do not add
+Beta keys to `SPEC-01-manifest-fixture.json`. Stable data keys and encrypted export formats
+remain unchanged; the three Stable customer/quote/history declarations are updated under
+policy 1.9 as specified by D06/D07.
+
+The Beta app must not read Stable keys or legacy residue, sweep namespaces, migrate or delete
+data, open IndexedDB/vault, Cache API, SQLite, snapshots, or desktop bridges, or expose import,
+export, backup, consent, password, withdrawal, or erasure gates. The Beta first-run disclosure
+must plainly say “test data only”, “stored unencrypted”, “no password”, “no migration”, “no
+export”, and that the browser profile is disposable. Beta is web-only; Desktop follows the
+policy 1.9 Stable plaintext manifest and remains distinct from Beta.
+
+Wave 1–3 suites and release evidence are enumerated in TEST-MATRIX §11. The Beta
+implementation on this branch passes those contracts; this addendum must not be used to
+claim that a published Beta build already has the test-only behavior until the Wave 3
+release gate (built-Beta same-origin isolation + Themis approval) passes on the release
+workflow.
+
+## 8. SPEC-01 fixture changes in policy 1.9
+
+The Stable fixture keeps `manifest_version: 1.0` and advances `policy_version` from 1.8 to 1.9.
+Only `open3dcalc_customers_v1`, `open3dcalc_quotes_v1`, and `open3dcalc_history_v2` change to
+`pii:true`, `persistence:plaintext_allowed`, and provisional `legal_basis:contract_performance`.
+Their declared destination remains `localStorage` on Electron, Web, and PWA. Other PII
+destinations—including the SQLite domain tables—retain their prior persistence restrictions;
+the exact three-key exception must not be generalized.
+
+Nine former vault, migration, and re-homing entries are retired from the active manifest:
+
+- `open3dcalc_migration_done_v2`
+- `open3dcalc_migration_progress_v2`
+- `open3dcalc_legacy_keep_readonly_v1`
+- `open3dcalc_migration_fingerprint_v1`
+- `open3dcalc_pii_vault`
+- `pii_stage`
+- `legacy_residue`
+- `session_passphrase_key`
+- `open3dcalc_legacy_pii_rehomed_v1`
+
+Retiring these declarations removes them as active policy/write/delete targets; it is not an
+instruction to inspect, migrate, or delete historical bytes already present in user profiles.
+In particular, existing `open3dcalc_pii_vault` data remains inert and outside current deletion
+scope as described above. The schema and runtime validator enforce the same three-key and
+destination boundary.

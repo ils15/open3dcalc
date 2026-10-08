@@ -28,6 +28,16 @@ vi.mock("@/shared/lib/manifestStorage", () => ({
       storageSetItem(key, JSON.stringify(value)),
     removeItem: (key: string) => storageRemoveItem(key),
   }),
+  isElectronRuntime: () => true,
+  stablePiiPersistStorage: () => ({
+    getItem: (key: string) => {
+      const value = storageGetItem(key);
+      return value === null ? null : JSON.parse(value);
+    },
+    setItem: (key: string, value: unknown) =>
+      storageSetItem(key, JSON.stringify(value)),
+    removeItem: (key: string) => storageRemoveItem(key),
+  }),
 }));
 
 vi.mock("@/shared/stores/storeBridge", () => ({

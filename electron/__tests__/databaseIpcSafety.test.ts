@@ -77,14 +77,22 @@ function makeDatabase() {
   return { db, rows, calls };
 }
 
-function register(db: MinimalStorageDb) {
+function register(
+  db: MinimalStorageDb,
+  options?: { excludedKeys: readonly string[] },
+) {
   const handlers = new Map<string, Handler>();
   const ipcMain = {
     handle: vi.fn((channel: string, handler: Handler) => {
       handlers.set(channel, handler);
     }),
   };
-  registerDatabaseStorageHandlers(ipcMain as never, { $client: db }, () => {});
+  registerDatabaseStorageHandlers(
+    ipcMain as never,
+    { $client: db },
+    () => {},
+    options,
+  );
   return { handlers, ipcMain };
 }
 
@@ -95,6 +103,22 @@ beforeEach(() => {
 });
 
 describe("closed Electron database IPC policy", () => {
+  it("can keep Beta non-PII storage while excluding consent state", async () => {
+    const { db, calls } = makeDatabase();
+    const { handlers } = register(db, {
+      excludedKeys: ["open3dcalc_consent_v1"],
+    });
+
+    await expect(
+      handlers.get("db:load")?.(trustedEvent, "open3dcalc_consent_v1"),
+    ).rejects.toThrow(/not permitted/);
+    expect(calls.get).toBe(0);
+    await expect(
+      handlers.get("db:list-keys")?.(trustedEvent),
+    ).resolves.not.toContain("open3dcalc_consent_v1");
+    expect(calls.allArgs.at(-1)).not.toContain("open3dcalc_consent_v1");
+  });
+
   it("fails closed before SQLite when manifest classification is unavailable", async () => {
     const { db, calls } = makeDatabase();
     const { handlers } = register(db);

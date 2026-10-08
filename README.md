@@ -52,22 +52,30 @@ Baixe a versão desktop para Windows ou Linux na [página de releases](https://g
 
 ## 🔒 Privacidade e seus dados
 
+**Política atual (1.9):** no Stable, os dados de clientes, orçamentos e histórico são gravados
+diretamente em texto puro no armazenamento local do navegador e do Desktop. Não é necessária
+senha, desbloqueio de cofre ou consentimento para salvar; use apenas dispositivos e perfis sob
+seu controle. A base legal `contract_performance` é provisória e aguarda revisão jurídica
+qualificada — não é uma conclusão legal. A exportação lógica continua protegida por senha e
+criptografada, mas essa senha serve somente para exportar/importar e nunca condiciona gravações
+locais. A Beta continua Web-only, aceita somente dados sintéticos nas três chaves de teste e
+mantém as restrições de não sincronizar, exportar, importar ou apagar. Dados históricos do
+cofre `open3dcalc_pii_vault` são inertes: não são abertos, lidos, convertidos nem incluídos na
+exclusão atual de dados; seus bytes podem permanecer no perfil.
+
 O Open3DCalc é **local-first** para os dados de cálculo salvos no dispositivo, mas não é correto afirmar que o aplicativo nunca acessa a rede: a versão web/PWA busca recursos e atualizações no serviço de hospedagem, o desktop verifica atualizações publicadas no GitHub Releases e o link do WhatsApp só abre quando acionado pelo usuário — nesse caso, o texto da proposta é enviado ao serviço do WhatsApp. Esses fluxos são separados do assistente local descrito abaixo. A partir da v1.12, a política de privacidade (LGPD) é executada pelo próprio aplicativo:
 
 - **Assistente local (Copilot)** — as dicas por material usam heurísticas locais, a proposta de venda é um template local e os números vêm da calculadora. Não há geração por IA, chamada a provedor de IA, leitura/armazenamento de chave de API nem transferência de dados do projeto ou chaves para serviços de IA. Uma chave eventualmente salva por uma versão beta antiga é ignorada pelo assistente atual. Ao abrir a proposta pelo link do WhatsApp, o texto é compartilhado com o WhatsApp por escolha do usuário.
 
 - **Aba 🔒 Privacidade** — um só lugar para ver e agir sobre seus dados:
-  - **Quarentena de dados legados**: dados antigos gravados em texto puro ficam legíveis, porém bloqueados para novas gravações, até você escolher **migrar** (criptografar e verificar) ou **eliminar**; esses canais legados estão temporariamente pausados no desktop pelo limite de IPC descrito abaixo;
-  - **Consentimento**: um recibo à prova de adulteração, vinculado à versão exata da política que você aceitou — flags de tutorial/onboarding nunca substituem consentimento, e a retirada apaga os dados coletados sob ela;
-  - **Apagar todos os meus dados**: apagamento completo e verificável em todas as superfícies (banco, arquivos, caches, backups internos), com journal recuperável, snapshot criptografado de reversão (7 dias) e recibo listando as cópias externas que o app não alcança (ex.: exports salvos fora do app).
+  - **Dados locais Stable**: gravação direta de clientes, orçamentos e histórico, sem senha nem consentimento como pré-requisito;
+  - **Recibos antigos**: permanecem como registros históricos; sob a política 1.9 são avaliados como `policy_mismatch` e não gateiam gravações;
+  - **Excluir dados atuais**: a ação abrange somente dados atuais que o aplicativo possui e consegue acessar; não promete remover bytes históricos e inertes do cofre.
 - **Exportação sempre criptografada**: o pacote de sincronização/exportação (`.open3dcalc`) sai criptografado com AES-256-GCM a partir de uma senha sua — sem senha, não há export. Pacotes legados antigos continuam importáveis. Os dados marcados como exportáveis pelo usuário — incluindo paleta de cores personalizada e configurações de comparação de modelos — são preservados na exportação e importação.
 - **Backup bruto deixou de ser recurso de usuário**: a cópia bruta do banco SQLite agora é um artefato de diagnóstico interno, bloqueado por padrão (gate de desenvolvimento), com modo de redação de dados pessoais e retenção máxima de 14 dias. Para levar seus dados a outra máquina, use o pacote de exportação criptografado.
-- **Cofre de PII no navegador (fundação pronta, migração ainda não)**: o build web ganhou um destino cifrado para dados pessoais — um IndexedDB (`open3dcalc_pii_vault`) onde cada registro é um envelope AES-256-GCM selado com o mesmo contrato de dados vinculados (AAD) do build desktop, sob uma chave derivada de senha que existe **somente em memória** (não exportável, descartada ao travar). **Não há caminho de texto puro.** Se o perfil estiver travado, se Web Crypto ou IndexedDB não existirem, se o contexto não for seguro, ou se você tiver recusado, o cofre **recusa** a leitura e a gravação com um motivo explícito e tipado — ele não devolve lista vazia, porque uma leitura vazia deixaria o store persistir seu estado inicial (lista vazia) por cima dos seus dados reais, o que é perda de dados disfarçada de cadeado. Os três stores Zustand (`open3dcalc_customers_v1`, `open3dcalc_quotes_v1`, `open3dcalc_history_v2`) **ainda não** foram migrados para o cofre, e ainda não existe tela de desbloqueio no app web: por isso, migrá-los vai exigir `skipHydration` e um `rehydrate()` explícito depois do desbloqueio. A superfície está declarada no manifesto como `sync: never` e `export: never`, de modo que a exportação e a sincronização não conseguem alcançá-la.
-- **Escrita de PII recusa com aviso visível (H-4)**: uma escrita de dado pessoal é conferida **antes** de entrar na memória do store. Se o cofre está travado, a escrita é abortada e a recusa aparece na tela — nome da área afetada e motivo tipado, sem carregar o valor. Isso fecha o modo de falha em que o store mutava em memória, a lista mostrava o registro novo, o cofre recusava a gravação no disco e o dado sumia no recarregar **sem nenhuma mensagem**: a UI dizia "salvo" e a pessoa perdia o que tinha acabado de digitar. A checagem vive em `beginPiiSurfaceWrite()` e a recusa é mostrada por `PiiWriteRefusalNotice`, montado nas superfícies que aceitam entrada de PII (clientes, histórico e orçamentos). Uma sessão de demonstração é a única recusa deliberadamente silenciosa: os dados demo são efêmeros por definição.
-- **Limite temporário de IPC no desktop (rascunho, não release)**: load/save/delete do SQLite aceitam somente chaves não-PII exatas da lista de preferências/catálogo/produtos; chaves PII e desconhecidas são recusadas antes de consultar o banco. A enumeração retorna apenas essa lista segura. A importação bruta de banco está desativada e rejeita a chamada sem abrir arquivo ou substituir o perfil. Os endpoints legados de inspeção, migração, recuperação e eliminação de PII permanecem desativados; registros legados são preservados, mas não podem ser lidos por esses caminhos. Exportação diagnóstica continua exigindo a opção interna existente e também é bloqueada enquanto a exclusão estiver pendente ou inválida. Esses limites não alteram o fluxo de retirada de consentimento nem habilitam gravações passwordless de PII.
-- **Migração de histórico e resíduo legado (W4)**: a retomada da migração do histórico legado deixou de guardar um preimage com PII — a marca de progresso (`open3dcalc_migration_progress_v2`) é **sem valores** (um tipo e uma versão, nunca um registro) e uma retomada relê a fonte legada intacta (**copy-without-delete**: nada é apagado automaticamente). A escolha de **manter somente leitura** é lembrada sem PII (`open3dcalc_legacy_keep_readonly_v1`, apenas uma assinatura de nomes de chave + contagens — re-ofertada assim que o resíduo muda, e reaberta pela tela Privacidade). Um **fingerprint de drift** (`open3dcalc_migration_fingerprint_v1`, só contagens) sinaliza honestamente na tela Privacidade se a fonte legada mudou depois da migração, **sem reconciliar nada automaticamente**. No desktop, os canais IPC de inspeção/migração/recuperação/eliminação legada estão temporariamente desativados: o resíduo permanece retido no SQLite, sem ser hidratado no renderer nem acessado pelo painel. O caminho **web permanece inalterado**.
+- **Dados históricos do cofre:** os bytes antigos de `open3dcalc_pii_vault` ficam inertes. Nenhum fluxo atual os abre, lê, converte, recupera ou remove; eles não pertencem ao escopo de exclusão de dados atuais. Não é prometida a recuperação desses dados.
 
-> Detalhes técnicos: `docs/privacy/` (SPEC-01 manifest de dados, ADR-001 capacidade criptográfica, ADR-002 quarentena, ADR-003 export vs backup, SPEC-02 saga de apagamento, SPEC-03 envelope de exportação, SPEC-04 recibo de consentimento).
+> Detalhes técnicos e escopo de exclusão: `docs/privacy/` (política 1.9; SPEC-01 manifest de dados, ADR-001/002/003 e SPEC-02). O SPEC-03 mantém a criptografia de exportação.
 >
 > 📦 **Beta 5 (web):** evidências de release e a disclosure obrigatória estão em [`docs/privacy/BETA5-RELEASE-EVIDENCE.md`](docs/privacy/BETA5-RELEASE-EVIDENCE.md).
 
@@ -699,6 +707,17 @@ O canal beta publica builds **web-only** (Electron nunca é buildado) num subpat
 
 > 🧾 **Bloqueio por disclosure:** antes de autorizar o corte, o pacote de evidências de release e o
 > checklist do gate devem estar verdes — veja [`docs/privacy/BETA5-RELEASE-EVIDENCE.md`](docs/privacy/BETA5-RELEASE-EVIDENCE.md).
+
+> ⚠️ **Contrato Beta de teste (aprovado; Waves 1–3 implementadas no branch):** a faixa de
+> strip-down é **somente Web Beta e somente dados sintéticos**. O contrato usa apenas
+> `open3dcalc_beta_test_customers_v1`, `open3dcalc_beta_test_quotes_v1` e
+> `open3dcalc_beta_test_history_v1` em `localStorage` sem criptografia; não use dados reais.
+> A Beta não tem senha/cofre, consentimento/recibo, migração de dados antigos, exclusão ou
+> recuperação, importação/exportação ou backup. O perfil do navegador é descartável; apague-o
+> fora do app se precisar limpar os fixtures. Waves 1–3 estão implementadas e verificadas
+> neste branch (inclui gating do Electron, remoção da navegação Privacidade e reset
+> beta-escopado do ErrorBoundary); não afirma que a Beta publicada já mudou até o gate
+> Wave 3 + aprovação Themis. Stable e Desktop permanecem fora desse contrato.
 
 As tags beta são **imutáveis**: nunca reescreva ou delete uma tag já publicada — corte uma nova beta (`beta.N+1`) caso precise ajustar algo. O `beta-deploy.yml` é idempotente, então re-executá-lo na mesma tag apenas refresca a release.
 

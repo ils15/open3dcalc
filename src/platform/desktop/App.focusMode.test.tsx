@@ -161,18 +161,18 @@ describe("desktop App — Focus Mode chrome", () => {
     expect(container.querySelector(GITHUB_LINK)).toBeNull();
   });
 
-  it("keeps the update notice, the indicators, the privacy surface and the tutorial", () => {
+  it("keeps updates, indicators, non-blocking privacy info and tutorial", () => {
     // A pending desktop update must never be hidden by a focus state — same
     // reasoning as the web side, and the reason UpdateNotification stayed
-    // outside the conditional in the App. First use has no consent yet, so the
-    // ConsentModal is the privacy surface that must survive.
+    // outside the conditional in the App. Privacy remains visible without
+    // consent being a save prerequisite.
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "focusMode.enter" }));
 
     expect(screen.getByTestId("update-notification")).toBeInTheDocument();
     expect(screen.getByTestId("demo-indicator")).toBeInTheDocument();
     expect(screen.getByTestId("demo-toast")).toBeInTheDocument();
-    expect(screen.getByTestId("consent-modal")).toBeInTheDocument();
+    expect(screen.getByTestId("privacy-banner")).toBeInTheDocument();
     expect(screen.queryByTestId("legacy-migration-prompt")).toBeNull();
     expect(screen.getByTestId("tutorial")).toBeInTheDocument();
   });

@@ -1,6 +1,13 @@
 import { render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.hoisted(() => {
+  Object.defineProperty(globalThis.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 Electron/43.0",
+  });
+});
+
 import { CostSummaryCard } from "@/shared/components/Results/CostSummaryCard";
 import { useFinancialBreakdown } from "@/shared/hooks/useFinancialBreakdown";
 import { materials } from "@/shared/lib/materials";

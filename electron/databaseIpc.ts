@@ -1,15 +1,12 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 
-import { UnreadablePiiValueError } from "./legacyRecovery.js";
 import { isValidConsentRecordValue } from "./consentRecord.js";
 import {
-  deleteGated,
-  gateLoad,
   readStoredRow,
-  resolveKeyPolicy,
-  saveGated,
+  writeStoredRow,
   type MinimalStorageDb,
-} from "./persistGate.js";
+} from "./storageRows.js";
+import { resolveKeyPolicy } from "./manifestPolicy.js";
 import { isNewPiiNamespaceKey } from "../src/shared/lib/crypto/newPiiNamespace.js";
 
 /**
@@ -64,8 +61,9 @@ export class DatabaseIpcDeniedError extends Error {
 function isPermitted(
   operation: DatabaseStorageOperation,
   key: unknown,
+  allowedKeys: ReadonlySet<string> = OPERATION_KEYS[operation],
 ): key is string {
-  if (typeof key !== "string" || !OPERATION_KEYS[operation].has(key)) {
+  if (typeof key !== "string" || !allowedKeys.has(key)) {
     return false;
   }
 
@@ -90,15 +88,20 @@ function isPermitted(
 function assertPermitted(
   operation: DatabaseStorageOperation,
   key: unknown,
+  allowedKeys: ReadonlySet<string> = OPERATION_KEYS[operation],
 ): asserts key is string {
-  if (!isPermitted(operation, key)) throw new DatabaseIpcDeniedError();
+  if (!isPermitted(operation, key, allowedKeys)) {
+    throw new DatabaseIpcDeniedError();
+  }
 }
 
-function allowedListKeys(): string[] {
-  const keys = [...DATABASE_IPC_SAFE_STORAGE_KEYS];
+function allowedListKeys(
+  allowedKeys: ReadonlySet<string> = SAFE_KEY_SET,
+): string[] {
+  const keys = [...allowedKeys];
   // If the manifest is missing or a key was reclassified, fail before SQLite
   // is queried. A future policy change must not widen this IPC implicitly.
-  for (const key of keys) assertPermitted("load", key);
+  for (const key of keys) assertPermitted("load", key, allowedKeys);
   return keys;
 }
 
@@ -113,7 +116,13 @@ export function registerDatabaseStorageHandlers(
   ipcMain: Pick<IpcMain, "handle">,
   database: DatabaseHandle,
   assertTrustedSender: TrustedSenderAssertion,
+  options?: { excludedKeys: readonly string[] },
 ): void {
+  const excludedKeys = new Set(options?.excludedKeys ?? []);
+  const allowedKeys: Set<string> = new Set(
+    DATABASE_IPC_SAFE_STORAGE_KEYS.filter((key) => !excludedKeys.has(key)),
+  );
+
   ipcMain.handle(
     "db:load",
     async (event, key: unknown): Promise<string | null> => {
@@ -121,15 +130,10 @@ export function registerDatabaseStorageHandlers(
         assertTrustedSender(event);
         // This closed permission check MUST remain above readStoredRow: even a
         // legacy PII value/ciphertext must not be selected before authorization.
-        assertPermitted("load", key);
-        const stored = readStoredRow(database.$client, key);
-        if (stored === null) return null;
-        const outcome = await gateLoad(key, stored);
-        if (outcome.action === "unreadable") {
-          throw new UnreadablePiiValueError(key, outcome.reason);
-        }
-        if (outcome.action === "denied") throw new DatabaseIpcDeniedError();
-        return outcome.value;
+        assertPermitted("load", key, allowedKeys);
+        // Every key in this closed route is proven non-PII by isPermitted, so
+        // it can be read directly without loading the legacy crypto pipeline.
+        return readStoredRow(database.$client, key);
       } catch (error) {
         console.error("[db:load] Error:", error);
         throw error;
@@ -142,8 +146,8 @@ export function registerDatabaseStorageHandlers(
     async (event, key: unknown, value: unknown): Promise<void> => {
       try {
         assertTrustedSender(event);
-        // Deny before saveGated, which may read an existing row for PII keys.
-        assertPermitted("save", key);
+        // Deny before any storage operation; this route owns non-PII keys only.
+        assertPermitted("save", key, allowedKeys);
         if (typeof value !== "string") {
           throw new Error("Value must be a string");
         }
@@ -153,7 +157,7 @@ export function registerDatabaseStorageHandlers(
         if (key === CONSENT_STORAGE_KEY && !isValidConsentRecordValue(value)) {
           throw new DatabaseIpcDeniedError();
         }
-        await saveGated(database.$client, key, value);
+        writeStoredRow(database.$client, key, value);
       } catch (error) {
         console.error("[db:save] Error:", error);
         throw error;
@@ -164,14 +168,13 @@ export function registerDatabaseStorageHandlers(
   ipcMain.handle("db:delete", async (event, key: unknown): Promise<void> => {
     try {
       assertTrustedSender(event);
-      // deleteGated historically permits unknown keys. The narrower IPC policy
-      // runs first, so neither PII nor unknown rows reach its mutation path.
-      assertPermitted("delete", key);
+      // This narrow allowlist excludes both PII and unknown rows.
+      assertPermitted("delete", key, allowedKeys);
       // The consent receipt is preserved: withdrawal annotates it and keeps it
       // as the audit record (SPEC-04 §6.3), so the generic path may not remove
       // it. Full erasure is a separate, gated flow.
       if (key === CONSENT_STORAGE_KEY) throw new DatabaseIpcDeniedError();
-      deleteGated(database.$client, key);
+      database.$client.prepare("DELETE FROM storage WHERE key = ?").run(key);
     } catch (error) {
       console.error("[db:delete] Error:", error);
       throw error;
@@ -181,17 +184,17 @@ export function registerDatabaseStorageHandlers(
   ipcMain.handle("db:list-keys", async (event): Promise<string[]> => {
     try {
       assertTrustedSender(event);
-      const allowedKeys = allowedListKeys();
-      const placeholders = allowedKeys.map(() => "?").join(", ");
+      const listedKeys = allowedListKeys(allowedKeys);
+      const placeholders = listedKeys.map(() => "?").join(", ");
       const rows = database.$client
         .prepare(
           `SELECT key FROM storage WHERE key IN (${placeholders}) ORDER BY key`,
         )
-        .all(...allowedKeys) as Array<{ key: string }>;
+        .all(...listedKeys) as Array<{ key: string }>;
 
       // Defense in depth against an unexpected/mock driver response: never
       // surface a key outside the app-owned non-PII list.
-      return rows.map((row) => row.key).filter((key) => SAFE_KEY_SET.has(key));
+      return rows.map((row) => row.key).filter((key) => allowedKeys.has(key));
     } catch (error) {
       console.error("[db:list-keys] Error:", error);
       throw error;

@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: false }));
+
 vi.mock("./StudioHeader", () => ({ StudioHeader: () => null }));
 vi.mock("./StudioSubHeader", () => ({ StudioSubHeader: () => null }));
 vi.mock("./StudioSidebar", () => ({
@@ -101,35 +103,28 @@ describe("StudioLayout demo export feedback", () => {
   it.each([
     { route: "catalog", control: "Select Cadastros" },
     { route: "marketplace", control: "Select Marketplace" },
-  ])(
-    "uses theme surfaces and reserves dock clearance for $route",
-    ({ control }) => {
-      const { container } = render(<StudioLayout />);
-      act(() => {
-        fireEvent.click(screen.getByRole("button", { name: control }));
-      });
+  ])("keeps the Stable fixed-dock reserve for $route", ({ control }) => {
+    const { container } = render(<StudioLayout />);
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: control }));
+    });
 
-      const root = container.firstElementChild;
-      expect(root).toHaveClass("bg-surface-canvas", "text-text-primary");
-      expect(screen.getByRole("main")).toHaveClass(
-        "pb-24",
-        "sm:pb-24",
-        "lg:pb-24",
-      );
-    },
-  );
+    const root = container.firstElementChild;
+    expect(root).toHaveClass("bg-surface-canvas", "text-text-primary");
+    // Stable retains its original bottom clearance for the fixed dock.
+    const main = screen.getByRole("main");
+    expect(main).toHaveClass("p-4", "sm:p-6", "lg:p-8");
+    expect(main).toHaveClass("pb-24", "sm:pb-24", "lg:pb-24");
+  });
 
-  it("reserves dock clearance on every non-focus route and drops it in focus mode", () => {
+  it("keeps the Stable reserve on every route including focus mode", () => {
     render(<StudioLayout />);
 
-    // The cockpit dock is a fixed, full-width track (`inset-x-0 bottom-4`) on
-    // EVERY non-focus route, not only the cockpit tabs — so the workspace must
-    // reserve clearance everywhere, or the dock obscures the last controls on
-    // the calculator/dashboard routes too.
     const main = screen.getByRole("main");
+    expect(main).toHaveClass("p-4", "sm:p-6", "lg:p-8");
     expect(main).toHaveClass("pb-24", "sm:pb-24", "lg:pb-24");
 
-    // Focus mode removes the dock, so the clearance goes with it.
+    // Stable drops its legacy reserve when focus mode hides the dock.
     act(() => {
       fireEvent.keyDown(window, { key: "f" });
     });

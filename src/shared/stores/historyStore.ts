@@ -4,7 +4,15 @@ import {
   gatedPiiPersistStorage,
   registerPiiPersistStore,
 } from "@/shared/lib/crypto/piiStoreHydration";
+import { isBetaChannel } from "@/shared/config/betaChannel";
+import { betaPlaintextPersistStorage } from "@/shared/lib/betaPersistence";
+import {
+  isElectronRuntime,
+  stablePiiPersistStorage,
+} from "@/shared/lib/manifestStorage";
 import type { HistoryEntry } from "@/shared/types";
+
+const useVaultPersistence = !isBetaChannel && isElectronRuntime();
 
 interface HistoryStore {
   entries: HistoryEntry[];
@@ -195,15 +203,22 @@ export const useHistoryStore = create<HistoryStore>()(
       },
     }),
     {
-      name: "open3dcalc_history_v2",
-      version: 2,
-      storage: gatedPiiPersistStorage<HistoryStore>("open3dcalc_history_v2"),
-      // See customerStore: hydration waits for `rehydratePiiStores()` after
-      // unlock, so a locked store never persists its initial state over the
-      // user's real history.
-      skipHydration: true,
+      name: isBetaChannel
+        ? "open3dcalc_beta_test_history_v1"
+        : "open3dcalc_history_v2",
+      version: isBetaChannel ? 1 : 2,
+      storage: isBetaChannel
+        ? betaPlaintextPersistStorage<HistoryStore>(
+            "open3dcalc_beta_test_history_v1",
+          )
+        : useVaultPersistence
+          ? gatedPiiPersistStorage<HistoryStore>("open3dcalc_history_v2")
+          : stablePiiPersistStorage<HistoryStore>("open3dcalc_history_v2"),
+      skipHydration: useVaultPersistence,
     },
   ),
 );
 
-registerPiiPersistStore("open3dcalc_history_v2", useHistoryStore.persist);
+if (useVaultPersistence) {
+  registerPiiPersistStore("open3dcalc_history_v2", useHistoryStore.persist);
+}

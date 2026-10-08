@@ -1,16 +1,14 @@
 /**
- * SPEC-01 declaration and egress exclusion for the browser PII vault.
+ * Policy 1.9 retires the browser PII vault as an active manifest destination.
+ * Remaining crypto-unit tests below use only a synthetic in-memory IndexedDB
+ * fixture; they do not claim the application opens historical vault bytes.
  *
  * Three separate claims, pinned together because they move together:
  *
- *  1. **The declaration.** The vault is a distinct `indexeddb` surface, not a
- *     `localStorage` key. It was declared only when this task landed — until
- *     then the single largest PII store in the web build (three PII keys'
- *     worth of records, sealed) was an UNDECLARED surface, which is the
- *     `pii_stage` omission one layer out.
- *  2. **The re-consent consequence.** A new declared PII surface is a
- *     privacy-contract change, so `policy_version` moves 1.6 → 1.7 and a
- *     SPEC-04 receipt issued under 1.6 evaluates `policy_mismatch`.
+ *  1. **The declaration.** The former `indexeddb` vault is no longer an active
+ *     manifest destination; existing bytes are inert historical data.
+ *  2. **The re-consent consequence.** Policy 1.9 supersedes policy 1.8, so an
+ *     intact receipt under 1.8 evaluates `policy_mismatch`.
  *  3. **The egress path.** `dataSync` reaches the vault-backed PII ONLY by
  *     reading the three hydrated stores — never by opening IndexedDB, naming
  *     the vault record, or enumerating storage. That guarantee is STRUCTURAL —
@@ -23,12 +21,19 @@
  *     enumeration, no `indexedDB`, and no vault reference).
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+vi.hoisted(() => {
+  Object.defineProperty(globalThis.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 Electron/43.0",
+  });
+});
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import manifestFixture from "../../../../docs/privacy/SPEC-01-manifest-fixture.json";
 import {
   getEntry,
+  isKnownKey,
   loadManifest,
   type ManifestDocument,
 } from "@/shared/lib/dataManifest";
@@ -68,34 +73,17 @@ const PASS = "senha-sintética-de-teste-4242";
 /** A marker that appears ONLY inside sealed PII, never in a real field. */
 const SENTINEL = "zz-placa-sintetica-nao-exportavel-4242";
 
-describe("SPEC-01: the vault is a declared PII indexeddb surface", () => {
-  it("is registered as a distinct surface, not a localStorage key", () => {
-    const entry = getEntry(loadManifest(doc), PII_VAULT_KEY);
-    expect(entry).toMatchObject({
-      key: PII_VAULT_KEY,
-      surface: "indexeddb",
-      // The vault is a browser store. Electron PII lives in `db/`, and this
-      // declaration must not imply a desktop surface that does not exist.
-      platforms: ["web", "pwa"],
-      class: "user_content",
-      pii: true,
-      persistence: "encrypted_at_rest",
-      sync: "never",
-      export: "never",
-      erasure: "erase_on_delete_all",
-      legal_basis: "consent",
-      owner: "hermes",
-    });
+describe("SPEC-01 policy 1.9: the former vault is not an active destination", () => {
+  it("does not declare the historical vault as a current manifest key", () => {
+    expect(getEntry(loadManifest(doc), PII_VAULT_KEY)).toBeUndefined();
+    expect(isKnownKey(loadManifest(doc), PII_VAULT_KEY)).toBe(false);
   });
 
   it("is not one of the plaintext localStorage keys it replaces", () => {
     const vault = getEntry(loadManifest(doc), PII_VAULT_KEY);
-    // The failure this prevents: declaring the vault as a `localStorage`
-    // entry, which would make the inventory say the PII is still in
-    // localStorage — a claim that is both wrong and reassuringly familiar.
-    expect(vault?.surface).not.toBe("localStorage");
-    // The three real PII keys keep their own declarations; this task does not
-    // rewrite them, it adds the surface they will migrate onto.
+    // Historical vault bytes are not inspected or rewritten by this manifest
+    // change; the current Stable destinations remain the three approved keys.
+    expect(vault).toBeUndefined();
     for (const key of [
       CUSTOMERS,
       "open3dcalc_quotes_v1",
@@ -105,56 +93,44 @@ describe("SPEC-01: the vault is a declared PII indexeddb surface", () => {
     }
   });
 
-  it("declares retention that is true, including the absence of a sweeper", () => {
+  it("does not assign active retention or deletion policy to historical vault bytes", () => {
     const vault = getEntry(loadManifest(doc), PII_VAULT_KEY);
-    // The records are the user's own customers/quotes/history, so they live
-    // exactly as long as the user keeps them: no TTL, and none claimed.
-    expect(vault?.retention).toEqual({
-      policy: "user_controlled",
-      max_days: 0,
-    });
-    // There is NO TTL sweeper anywhere, so the purpose has to say so — an
-    // undeclared gap is the `appdata_temp_staging` mistake.
-    expect(vault?.purpose).toMatch(/no ttl sweeper|no ttl/i);
-    // And the honest ceiling: unreadable without the passphrase, which is not
-    // retention, so it is disclosed as a property rather than sold as one.
-    expect(vault?.purpose).toMatch(/passphrase/i);
-    expect(vault?.purpose).toMatch(/never synced|not synced|sync: never/i);
+    expect(vault).toBeUndefined();
   });
 
-  it("declares erase_on_delete_all for the sealed vault", () => {
-    // The declaration has to say the sealed records go on delete-all; the
-    // renderer sweep itself is fail-closed (the broad adapters were removed),
-    // so this pins the manifest contract, not a live execution path.
-    expect(getEntry(loadManifest(doc), PII_VAULT_KEY)?.erasure).toBe(
-      "erase_on_delete_all",
-    );
+  it("does not make historical vault bytes a current delete-all target", () => {
+    expect(getEntry(loadManifest(doc), PII_VAULT_KEY)).toBeUndefined();
     expect(PII_VAULT_KEY.startsWith("open3dcalc_")).toBe(true);
   });
 
-  it("is at schema version 1, the value PII_SCHEMA_VERSION is pinned to", () => {
-    // ADR-001 §3.3 `TODO(hermes)`: `S` is a CONSTANT, not a per-key lookup, so
-    // a PII at-rest entry whose `version` moves off 1 will strand every
-    // existing envelope for that key the day the lookup lands. This entry
-    // starts new, so it starts where the constant points.
-    expect(getEntry(loadManifest(doc), PII_VAULT_KEY)?.version).toBe("1.0");
+  it("keeps the three Stable PII records on their declared localStorage destination", () => {
+    for (const key of [
+      CUSTOMERS,
+      "open3dcalc_quotes_v1",
+      "open3dcalc_history_v2",
+    ]) {
+      expect(getEntry(loadManifest(doc), key)).toMatchObject({
+        surface: "localStorage",
+        platforms: ["electron", "web", "pwa"],
+        persistence: "plaintext_allowed",
+        legal_basis: "contract_performance",
+      });
+    }
   });
 });
 
-describe("SPEC-04: policy_version 1.8 re-consents a 1.6 receipt", () => {
-  it("is 1.8", () => {
-    expect(doc.policy_version).toBe("1.8");
+describe("SPEC-04: policy_version 1.9 supersedes policy 1.8", () => {
+  it("is 1.9", () => {
+    expect(doc.policy_version).toBe("1.9");
   });
 
   it("states why re-consenting is still free — nothing has shipped", async () => {
     // The exemption is a property of the RELEASE STATE, not of the process.
-    // Recorded as an assertion so a later reader cannot mistake 1.8 for a
-    // routine bump and repeat the reasoning at 1.9 when it is no longer free.
-    // 1.7 declared the vault; 1.8 declared `legacy_residue`. Neither had
-    // shipped. See SPEC-04 §6.
+    // Policy 1.9 is the current contract; older receipts remain historical and
+    // are evaluated by version/hash binding, not rewritten.
     const { issueReceipt, evaluateReceipt, receiptDigest } =
       await import("@/shared/lib/consentReceipt");
-    const { receipt } = await issueReceipt([PII_VAULT_KEY], ["rehome_pii"]);
+    const { receipt } = await issueReceipt([CUSTOMERS], ["local_plaintext"]);
     const under1_6 = {
       ...receipt,
       policy_version: "1.6",
@@ -170,13 +146,13 @@ describe("SPEC-04: policy_version 1.8 re-consents a 1.6 receipt", () => {
     expect(evaluation.consentGiven).toBe(false);
     // The old receipt is retained as history for the delta UI, not discarded.
     expect(evaluation.receipt?.policy_version).toBe("1.6");
-    expect(evaluation.currentPolicyVersion).toBe("1.8");
+    expect(evaluation.currentPolicyVersion).toBe("1.9");
   });
 
-  it("a receipt issued under 1.8 validates, so the re-consent path is reachable", async () => {
+  it("a receipt issued under 1.9 validates", async () => {
     const { issueReceipt } = await import("@/shared/lib/consentReceipt");
-    const { receipt } = await issueReceipt([PII_VAULT_KEY], ["rehome_pii"]);
-    expect(receipt.policy_version).toBe("1.8");
+    const { receipt } = await issueReceipt([CUSTOMERS], ["local_plaintext"]);
+    expect(receipt.policy_version).toBe("1.9");
   });
 });
 

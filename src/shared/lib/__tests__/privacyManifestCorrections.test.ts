@@ -1,10 +1,8 @@
 /**
- * Beta5 Wave 0 — SPEC-01 manifest truthfulness (privacy inventory corrections).
+ * SPEC-01 manifest truthfulness across the policy 1.9 inventory update.
  *
- * The Phase-1 inventory confirmed six false or missing declarations in
- * `docs/privacy/SPEC-01-manifest-fixture.json`. These tests pin the corrected
- * classifications so they cannot drift back, and enforce the global invariant
- * that no PII key is ever `plaintext_allowed` (ADR-001 zero-plaintext path).
+ * These tests pin corrected classifications, the exact three-key Stable
+ * plaintext scope, and retirement of the former vault/migration declarations.
  *
  * Follows the existing contract-test pattern of `dataManifest.test.ts`.
  */
@@ -98,15 +96,17 @@ describe("SPEC-01: PII-bearing domain tables are declared", () => {
     expect(purpose).toMatch(/name/i);
   });
 
-  it("every declared PII domain table is in the electron PII table list", async () => {
-    const { PII_DOMAIN_TABLES } =
+  it("declares the four active PII content tables and no retired migration tables", async () => {
+    const { PII_CONTENT_TABLES } =
       await import("../../../../electron/piiDomainTables");
     const declared = domainTables(true);
     expect(declared.length).toBeGreaterThan(0);
     for (const table of declared) {
-      expect([...PII_DOMAIN_TABLES]).toContain(table);
+      expect([...PII_CONTENT_TABLES]).toContain(table);
     }
-    expect(declared.sort()).toEqual([...PII_DOMAIN_TABLES].sort());
+    expect(declared.sort()).toEqual([...PII_CONTENT_TABLES].sort());
+    expect(isKnownKey(manifest, "pii_stage")).toBe(false);
+    expect(isKnownKey(manifest, "legacy_residue")).toBe(false);
   });
 });
 
@@ -190,144 +190,31 @@ describe("SPEC-01: keys with no writer anywhere are not declared", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Correction 3 — open3dcalc_migration_done_v2 embeds raw history
+// Retired vault, migration, and re-homing declarations
 // ---------------------------------------------------------------------------
 
-describe("SPEC-01: open3dcalc_migration_done_v2 is PII-bearing", () => {
-  it("is reclassified as PII and never leaves the device", () => {
-    expect(getEntry(manifest, "open3dcalc_migration_done_v2")).toMatchObject({
-      pii: true,
-      persistence: "encrypted_at_rest",
-      sync: "never",
-      export: "never",
-      legal_basis: "consent",
-      erasure: "erase_on_delete_all",
-    });
+describe("SPEC-01 policy 1.9: retired vault and migration declarations", () => {
+  it.each([
+    "open3dcalc_migration_done_v2",
+    "open3dcalc_migration_progress_v2",
+    "open3dcalc_legacy_keep_readonly_v1",
+    "open3dcalc_migration_fingerprint_v1",
+    "open3dcalc_pii_vault",
+    "pii_stage",
+    "legacy_residue",
+    "session_passphrase_key",
+    "open3dcalc_legacy_pii_rehomed_v1",
+  ])("does not treat %s as an active manifest destination", (key) => {
+    expect(isKnownKey(manifest, key)).toBe(false);
+    expect(doc.keys.some((entry) => entry.key === key)).toBe(false);
   });
 
-  it("is no longer classed as an onboarding flag", () => {
-    // The schema forbids class onboarding_flag with pii:true; the key's value
-    // is a raw history array, not a flag.
-    const cls = getEntry(manifest, "open3dcalc_migration_done_v2")?.class;
-    expect(cls).not.toBe("onboarding_flag");
-    expect(cls).not.toBe("consent_record");
-  });
-
-  it("purpose states it is a legacy compatibility input carrying raw history", () => {
-    const purpose =
-      getEntry(manifest, "open3dcalc_migration_done_v2")?.purpose ?? "";
-    expect(purpose).toMatch(/legacy/i);
-    expect(purpose).toMatch(/history/i);
-  });
-
-  it("purpose discloses the plaintext residue the encrypted_at_rest policy does not describe", () => {
-    // SPEC-01 truthfulness: `persistence: encrypted_at_rest` is the policy for
-    // NEW writes, and the current code never writes this key. Any value an old
-    // build left is PLAINTEXT residue retained by copy-without-delete and
-    // declared as such — the purpose must say all three facts explicitly.
-    const purpose =
-      getEntry(manifest, "open3dcalc_migration_done_v2")?.purpose ?? "";
-    expect(purpose).toMatch(/never writes/i);
-    expect(purpose).toMatch(/plaintext/i);
-    expect(purpose).toMatch(/copy-without-delete/i);
-    expect(purpose).toMatch(/disclos/i);
-  });
-
-  it("keeps open3dcalc_products as non-PII (explicitly out of scope)", () => {
+  it("keeps ordinary product inventory explicitly non-PII", () => {
     expect(getEntry(manifest, "open3dcalc_products")).toMatchObject({
       pii: false,
       persistence: "plaintext_allowed",
       legal_basis: "not_personal_data",
     });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// W4.4 — the recovery marker is never PII in plaintext for new writes
-// ---------------------------------------------------------------------------
-
-describe("SPEC-01: the W4.4 value-free progress marker replaces the PII preimage", () => {
-  it("declares open3dcalc_migration_progress_v2 as a non-PII onboarding flag", () => {
-    expect(
-      getEntry(manifest, "open3dcalc_migration_progress_v2"),
-    ).toMatchObject({
-      key: "open3dcalc_migration_progress_v2",
-      surface: "localStorage",
-      platforms: ["electron", "web", "pwa"],
-      class: "onboarding_flag",
-      pii: false,
-      persistence: "plaintext_allowed",
-      sync: "never",
-      export: "never",
-      erasure: "erase_on_delete_all",
-      legal_basis: "not_personal_data",
-      owner: "hermes",
-    });
-  });
-
-  it("marks the legacy PII marker read-only, pointing at the value-free key", () => {
-    const purpose =
-      getEntry(manifest, "open3dcalc_migration_done_v2")?.purpose ?? "";
-    // The declaration must state the current code never writes it, and name the
-    // value-free key that replaced it.
-    expect(purpose).toMatch(/never writes/i);
-    expect(purpose).toMatch(/read-only/i);
-    expect(purpose).toMatch(/open3dcalc_migration_progress_v2/);
-  });
-
-  it("adds no policy_version bump for the operational non-PII flag", () => {
-    // Adding a non-PII operational marker does not change what is collected or
-    // its legal basis, so the shipped policy version is unchanged.
-    expect(doc.policy_version).toBe("1.8");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// F5 — the new value-free operational keys are declared and pinned non-PII
-// ---------------------------------------------------------------------------
-
-describe("SPEC-01: the new value-free operational keys are pinned non-PII", () => {
-  it.each([
-    "open3dcalc_legacy_keep_readonly_v1",
-    "open3dcalc_migration_fingerprint_v1",
-  ])("%s is a non-PII plaintext onboarding flag", (key) => {
-    const entry = getEntry(manifest, key);
-    expect(entry).toBeDefined();
-    expect(entry).toMatchObject({
-      key,
-      surface: "localStorage",
-      platforms: ["electron", "web", "pwa"],
-      class: "onboarding_flag",
-      pii: false,
-      persistence: "plaintext_allowed",
-      sync: "never",
-      export: "never",
-      erasure: "erase_on_delete_all",
-      legal_basis: "not_personal_data",
-      owner: "hermes",
-    });
-  });
-
-  it("keep-read-only declares it stores only a value-free residue signature", () => {
-    const purpose =
-      getEntry(manifest, "open3dcalc_legacy_keep_readonly_v1")?.purpose ?? "";
-    // The decision must be re-askable the moment the residue changes, so only
-    // the residue SIGNATURE (names + counts) may be persisted.
-    expect(purpose).toMatch(/signature/i);
-    expect(purpose).toMatch(/count/i);
-    expect(purpose).toMatch(/never a record|never a value/i);
-  });
-
-  it("drift fingerprint declares it stores only counts", () => {
-    const purpose =
-      getEntry(manifest, "open3dcalc_migration_fingerprint_v1")?.purpose ?? "";
-    expect(purpose).toMatch(/counts?/i);
-    expect(purpose).toMatch(/never a record|never a value/i);
-  });
-
-  it("both keys pass the S1 gate (a real writer must not be a silent no-op)", () => {
-    expect(checkKey("open3dcalc_legacy_keep_readonly_v1").allowed).toBe(true);
-    expect(checkKey("open3dcalc_migration_fingerprint_v1").allowed).toBe(true);
   });
 });
 
@@ -389,46 +276,52 @@ describe("SPEC-01: the appdata PII-bearing surfaces are declared truthfully", ()
 });
 
 // ---------------------------------------------------------------------------
-// Decision 1 — the policy version was bumped because policy content changed
+// Policy version — policy 1.9 supersedes the former 1.8 contract
 // ---------------------------------------------------------------------------
 
-describe("SPEC-01: policy_version reflects the Beta5 corrections", () => {
-  it("is 1.8, so receipts issued under 1.6 no longer validate", () => {
-    // 1.4 -> 1.5 for the corrections pinned in this file. 1.5 -> 1.6 declares
-    // `pii_stage` as a PII sqlite domain table; see piiStageDeclaration.test.ts
-    // for the re-consent side of that bump. 1.6 -> 1.7 declares
-    // `open3dcalc_pii_vault`; see piiVaultDeclaration.test.ts for that side.
-    // 1.7 -> 1.8 declares `legacy_residue`, the retained legacy ciphertext the
-    // ADR-001 §3.6 recovery copies aside; see SPEC-04 §6.
-    expect(doc.policy_version).toBe("1.8");
+describe("SPEC-01: policy_version reflects the policy 1.9 decision", () => {
+  it("supersedes policy 1.8 without rewriting existing receipt bytes", () => {
+    expect(doc.policy_version).toBe("1.9");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Global invariant — ADR-001 zero-plaintext path
+// Policy 1.9 invariant — exact Stable plaintext scope
 // ---------------------------------------------------------------------------
 
-describe("SPEC-01: no PII key is ever plaintext_allowed", () => {
-  it("holds across the whole fixture", () => {
-    for (const entry of doc.keys) {
-      if (entry.pii) {
-        expect(
-          entry.persistence,
-          `${entry.key} is PII and must not be plaintext_allowed`,
-        ).not.toBe("plaintext_allowed");
-      }
+describe("SPEC-01: plaintext PII is limited to policy 1.9 Stable keys", () => {
+  it("holds across the whole fixture and declared destinations", () => {
+    const allowed = [
+      "open3dcalc_customers_v1",
+      "open3dcalc_quotes_v1",
+      "open3dcalc_history_v2",
+    ].sort();
+    const actual = doc.keys
+      .filter((entry) => entry.pii && entry.persistence === "plaintext_allowed")
+      .map((entry) => entry.key)
+      .sort();
+
+    expect(actual).toEqual(allowed);
+    for (const key of allowed) {
+      expect(getEntry(manifest, key)).toMatchObject({
+        surface: "localStorage",
+        platforms: ["electron", "web", "pwa"],
+        class: "user_content",
+        pii: true,
+        persistence: "plaintext_allowed",
+        legal_basis: "contract_performance",
+      });
     }
+    expect(
+      doc.keys
+        .filter(
+          (entry) => entry.surface === "sqlite_domain_tables" && entry.pii,
+        )
+        .every((entry) => entry.persistence !== "plaintext_allowed"),
+    ).toBe(true);
   });
 
-  it("holds for the newly declared PII keys specifically", () => {
-    for (const key of ["history_entries", "quote_items"]) {
-      const entry = getEntry(manifest, key);
-      expect(entry?.pii).toBe(true);
-      expect(entry?.persistence).not.toBe("plaintext_allowed");
-    }
-  });
-
-  it("reclassified non-PII keys are allowed plaintext", () => {
+  it("keeps reclassified non-PII keys allowed as plaintext", () => {
     for (const key of ["open3dcalc_dashboard_v1", "open3dcalc_products"]) {
       expect(getEntry(manifest, key)?.persistence).toBe("plaintext_allowed");
     }

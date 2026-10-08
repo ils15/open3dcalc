@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { LayoutMode } from "@/shared/stores/layoutStore";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 
 interface StudioSubHeaderProps {
   activeTab: Tab;
@@ -108,12 +109,16 @@ export const StudioSubHeader: React.FC<StudioSubHeaderProps> = ({
       icon: <ShieldCheck className="w-3.5 h-3.5" />,
     },
   ];
+  // Beta owns ONE navigation model (the responsive sidebar/drawer): the top
+  // tab strip would duplicate every destination, so it renders no primary
+  // tabs there — only the calculator mode selector and action controls below.
+  const visibleTabs = isBetaChannel ? [] : primaryTabs;
 
   return (
-    <div className="h-11 bg-surface-raised border-b border-border-subtle px-4 flex items-center justify-between text-xs select-none sticky top-12 z-30">
+    <div className="h-11 min-w-0 bg-surface-raised border-b border-border-subtle px-4 flex items-center justify-between text-xs select-none sticky top-12 z-30">
       {/* Left: Primary tabs & Mode selector */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        {primaryTabs.map((t) => {
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto no-scrollbar">
+        {visibleTabs.map((t) => {
           const isActive = activeTab === t.id;
           return (
             <button

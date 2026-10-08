@@ -21,6 +21,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+vi.hoisted(() => {
+  Object.defineProperty(globalThis.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 Electron/43.0",
+  });
+});
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,

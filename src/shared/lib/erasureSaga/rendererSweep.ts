@@ -15,6 +15,8 @@
  * authorization from the main process.
  */
 
+import { isBetaChannel } from "@/shared/config/betaChannel";
+
 export type Store = "localstorage" | "indexeddb" | "opfs" | "cache_api_sw";
 
 export interface StorePurgeResult {
@@ -30,6 +32,9 @@ export interface StorePurgeResult {
 export async function purgeRendererStores(
   _authorization: unknown,
 ): Promise<Record<Store, StorePurgeResult>> {
+  if (isBetaChannel) {
+    throw new Error("Renderer erasure is unsupported in Beta");
+  }
   void _authorization;
   throw new Error(
     "Renderer erasure is unavailable without a durable, exact PII authorization",

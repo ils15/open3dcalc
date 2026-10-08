@@ -165,27 +165,26 @@ function measuredDebt(): Map<string, number> {
 const measured = measuredDebt();
 
 /**
- * THE FLOOR — the audited inventory, 2026-10-07, 69 files / 2913 occurrences.
+ * THE FLOOR — the audited inventory, 2026-10-08 (Wave4), 69 files / 2826 occurrences.
  *
  * Regenerate after an intentional migration:
  *   node -e '...' (see the PR description) or re-derive with the same regex.
  */
 const FLOOR: Readonly<Record<string, number>> = {
   "src/platform/web/components/studio/StudioCalculatorView.tsx": 422,
-  "src/platform/web/components/studio/StudioQuotesView.tsx": 303,
+  "src/platform/web/components/studio/StudioQuotesView.tsx": 299,
   "src/platform/web/components/studio/StudioSpoolView.tsx": 284,
   "src/platform/web/components/studio/StudioDashboardView.tsx": 234,
   "src/platform/web/components/studio/StudioProductsView.tsx": 228,
   "src/shared/components/Catalog/CatalogTab.tsx": 124,
-  "src/platform/web/components/studio/StudioCustomerView.tsx": 154,
+  "src/platform/web/components/studio/StudioCustomerView.tsx": 150,
   "src/platform/web/components/studio/StudioHistoryView.tsx": 131,
   "src/platform/web/components/studio/StudioPrinterView.tsx": 81,
   "src/platform/web/components/studio/StudioQuoteModal.tsx": 81,
-  "src/shared/components/Privacy/PiiLockedShell.tsx": 73,
   "src/platform/web/components/studio/StudioSubHeader.tsx": 62,
   "src/shared/components/Catalog/FilamentInventory.tsx": 61,
   "src/shared/components/Dashboard/Dashboard.tsx": 60,
-  "src/platform/web/components/studio/StudioCockpitDock.tsx": 53,
+  "src/platform/web/components/studio/StudioCockpitDock.tsx": 46,
   "src/shared/components/AIAssistant/AIAssistantPanels.tsx": 49,
   "src/platform/web/components/studio/StudioSidebar.tsx": 48,
   "src/shared/components/AIAssistant/AIAssistantModal.tsx": 48,
@@ -239,6 +238,7 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/ui/ConsentModal.tsx": 1,
   "src/shared/components/ui/PrivacyBanner.tsx": 1,
   "src/shared/components/ui/QuickStartBanner.tsx": 1,
+  "src/shared/components/Privacy/PrivacyOnboarding.tsx": 1,
   "src/shared/lib/dataSync.test.ts": 1,
 };
 
@@ -303,7 +303,7 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
     expect(files).toBe(69);
-    expect(occurrences).toBe(2913);
+    expect(occurrences).toBe(2826);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

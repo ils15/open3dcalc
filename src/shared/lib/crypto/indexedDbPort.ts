@@ -27,6 +27,8 @@
  * vault calls.
  */
 
+import { isBetaChannel } from "../../config/betaChannel.js";
+
 /** Minimal request: a result plus the two terminal callbacks. */
 export interface VaultIdbRequest<T> {
   result: T;
@@ -117,6 +119,9 @@ export function openVaultIdb(
   storeName: string,
   version: number,
 ): VaultIdb {
+  if (isBetaChannel) {
+    throw new Error("[indexedDbPort] IndexedDB is unavailable in Beta");
+  }
   const handles = new WeakMap<VaultIdbFactory, Promise<VaultIdbDatabase>>();
 
   function open(): Promise<VaultIdbDatabase> {
@@ -177,6 +182,7 @@ export function openVaultIdb(
  * scattered through the vault.
  */
 export function idbFactoryFromGlobal(): VaultIdbFactory | null {
+  if (isBetaChannel) return null;
   const global = (globalThis as { indexedDB?: unknown }).indexedDB;
   return global === undefined || global === null
     ? null

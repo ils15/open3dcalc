@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import { isPersistableCalculationState } from "@/shared/lib/calculationState";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import { persistCalculatorSettings } from "@/shared/stores/calculatorStore.helpers";
@@ -21,6 +22,8 @@ import {
   readPiiPersistedRecord,
 } from "@/shared/lib/crypto/piiStoreHydration";
 import { useHistoryStore } from "@/shared/stores/historyStore";
+import { useCustomerStore } from "@/shared/stores/customerStore";
+import { useQuoteStore } from "@/shared/stores/quoteStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { computeValidatedStoreResults } from "@/shared/stores/calculatorStore.validation";
 import { getSharedCalculation } from "@/shared/lib/calculationLink";
@@ -743,6 +746,20 @@ export function useAppInit(onTabChange: (tab: Tab) => void): void {
   useTutorialTabNavigation(onTabChange);
 
   useEffect(() => {
+    if (isBetaChannel) {
+      // Hydrate exact Beta namespaces in dependency order before any Beta
+      // startup task can observe or mutate customer-linked quote snapshots.
+      const hydrateBetaStores = async (): Promise<void> => {
+        await useCustomerStore.persist.rehydrate();
+        await useHistoryStore.persist.rehydrate();
+        await useQuoteStore.persist.rehydrate();
+      };
+      void hydrateBetaStores().catch((error: unknown) => {
+        console.error("[useAppInit] Beta data hydration failed", error);
+      });
+      return;
+    }
+
     restoreAutoSnapshot();
     migrateLegacyData();
     seedDefaultStudioDataIfEmpty();

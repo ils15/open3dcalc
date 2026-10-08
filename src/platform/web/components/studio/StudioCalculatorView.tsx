@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useSpoolStore, FilamentSpool } from "@/shared/stores/spoolStore";
@@ -498,48 +499,54 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             buttons (~665px of content in a ~326px column), and with no overflow
             handling the row escaped its column by ~340px. That was the single
             largest contributor to the page being 628px wide at a 390px
-            viewport — the dock and the fee tabs were smaller.
+            viewport (the dock stays in document flow with its own scroll
+            container, so it never establishes page width).
 
             `overflow-x-auto` makes this box the scroll container so the pills
             scroll inside it, exactly as the sub-header tab strip already does;
             `md:` restores the original vertical column, where five short labels
-            fit without scrolling. */}
-        <div className="w-full md:w-36 shrink-0 overflow-x-auto bg-[#0c111e] border border-[#1b253b] rounded-xl p-2.5 flex flex-row md:flex-col gap-1 select-none">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 px-2 py-1 hidden md:block">
-            FORMULÁRIO
-          </span>
-          {[
-            { id: "material" as const, label: "1. Insumos & Mat." },
-            { id: "params" as const, label: "2. Parâmetros & Cura" },
-            { id: "extras" as const, label: "3. Extras & Insumos" },
-            { id: "pricing" as const, label: "4. Vendas & Margem" },
-            ...(complexity === "avancado"
-              ? [{ id: "advanced" as const, label: "5. Modo Oficina Pro" }]
-              : []),
-          ].map((sec) => (
-            <button
-              key={sec.id}
-              onClick={() => setActiveSection(sec.id)}
-              className={`flex-1 md:flex-none text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                activeSection === sec.id
-                  ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
-              }`}
-            >
-              {sec.label}
-            </button>
-          ))}
+            fit without scrolling.
+            Beta owns ONE navigation model (the sidebar): this in-calculator
+            sub-nav would compete with it, so it is withheld there. All
+            sections stay rendered below, so nothing is orphaned. */}
+        {!isBetaChannel && (
+          <div className="w-full md:w-36 shrink-0 overflow-x-auto bg-[#0c111e] border border-[#1b253b] rounded-xl p-2.5 flex flex-row md:flex-col gap-1 select-none">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 px-2 py-1 hidden md:block">
+              FORMULÁRIO
+            </span>
+            {[
+              { id: "material" as const, label: "1. Insumos & Mat." },
+              { id: "params" as const, label: "2. Parâmetros & Cura" },
+              { id: "extras" as const, label: "3. Extras & Insumos" },
+              { id: "pricing" as const, label: "4. Vendas & Margem" },
+              ...(complexity === "avancado"
+                ? [{ id: "advanced" as const, label: "5. Modo Oficina Pro" }]
+                : []),
+            ].map((sec) => (
+              <button
+                key={sec.id}
+                onClick={() => setActiveSection(sec.id)}
+                className={`flex-1 md:flex-none min-h-11 text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+                  activeSection === sec.id
+                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
+                }`}
+              >
+                {sec.label}
+              </button>
+            ))}
 
-          {hasInputs && !isDemoMode && (
-            <button
-              onClick={handleReset}
-              className="mt-auto hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 transition-colors"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Limpar</span>
-            </button>
-          )}
-        </div>
+            {hasInputs && !isDemoMode && (
+              <button
+                onClick={handleReset}
+                className="mt-auto hidden md:flex min-h-11 items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Limpar</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Form Body */}
         <div className="flex-1 flex flex-col gap-4">
@@ -561,7 +568,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectDemoTemplate?.("fdm")}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                  className={`min-h-11 px-3 py-1 rounded text-xs font-semibold transition-all ${
                     demoTemplate === "fdm"
                       ? "bg-blue-600 text-white shadow-sm"
                       : "text-slate-400 hover:text-white"
@@ -572,7 +579,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 <button
                   type="button"
                   onClick={() => onSelectDemoTemplate?.("resin")}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+                  className={`min-h-11 px-3 py-1 rounded text-xs font-semibold transition-all ${
                     demoTemplate === "resin"
                       ? "bg-purple-600 text-white shadow-sm"
                       : "text-slate-400 hover:text-white"
@@ -695,7 +702,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               <button
                 type="button"
                 onClick={() => setComplexity("rapido")}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   complexity === "rapido"
                     ? "bg-blue-600 text-white shadow-sm"
                     : "text-slate-400 hover:text-white"
@@ -706,7 +713,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               <button
                 type="button"
                 onClick={() => setComplexity("detalhado")}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   complexity === "detalhado"
                     ? "bg-blue-600 text-white shadow-sm"
                     : "text-slate-400 hover:text-white"
@@ -720,7 +727,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   setComplexity("avancado");
                   setActiveSection("advanced");
                 }}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   complexity === "avancado"
                     ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm font-bold"
                     : "text-slate-400 hover:text-white"

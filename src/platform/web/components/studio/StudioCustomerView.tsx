@@ -18,6 +18,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
@@ -114,6 +115,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
   };
 
   const handleDeleteCustomer = (customerId: string): void => {
+    if (isBetaChannel) return;
     if (beginPiiSurfaceWrite(PII_STORE_KEY.customers) !== null) return;
     removeCustomer(customerId);
   };
@@ -152,7 +154,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
         <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />
       )}
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-2xl p-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -160,10 +162,10 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
               CRM & RELACIONAMENTO COM CLIENTES
             </span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-white">
+          <h1 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
             Carteira de Clientes da Oficina
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
             Gerencie contatos, empresas parceiras e acompanhe o histórico de
             propostas emitidas
           </p>
@@ -173,7 +175,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           <button
             type="button"
             onClick={onOpenQuoteModal}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#131b2e] hover:bg-[#1a253e] border border-[#212d47] text-slate-200 text-xs font-semibold transition-all"
+            className="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-[#131b2e] hover:bg-[#1a253e] border border-[#212d47] text-slate-200 text-xs font-semibold transition-all"
           >
             <FileText className="w-3.5 h-3.5 text-blue-400" />
             <span>Nova Proposta Comercial</span>
@@ -182,7 +184,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/40"
+            className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/40"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Cadastrar Cliente</span>
@@ -271,7 +273,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           </div>
           <button
             onClick={() => onTabChange("calculator")}
-            className="text-[11px] text-amber-400 hover:text-amber-300 font-bold text-left"
+            className="min-h-11 text-[11px] text-amber-400 hover:text-amber-300 font-bold text-left"
           >
             Calcular nova peça →
           </button>
@@ -313,7 +315,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white text-xs font-bold transition-all shadow-md"
+              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white text-xs font-bold transition-all shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Primeiro Cliente</span>
@@ -446,21 +448,23 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     <button
                       type="button"
                       onClick={() => openEditModal(customer)}
-                      className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-[#151c2f] transition-colors"
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-[#151c2f] transition-colors"
                       title="Editar Cliente"
                       aria-label={`Editar ${customer.name}`}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteCustomer(customer.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-950/20 transition-colors"
-                      title="Excluir Cliente"
-                      aria-label={`Excluir ${customer.name}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {!isBetaChannel && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCustomer(customer.id)}
+                        className="flex min-h-11 min-w-11 items-center justify-center p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-950/20 transition-colors"
+                        title="Excluir Cliente"
+                        aria-label={`Excluir ${customer.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -482,7 +486,10 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
             <div className="flex items-center justify-between border-b border-[#1b253b] pb-3">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-400" />
-                <h2 id="studio-customer-dialog-title" className="text-sm font-bold text-white">
+                <h2
+                  id="studio-customer-dialog-title"
+                  className="text-sm font-bold text-white"
+                >
                   {editingCustomer
                     ? "Editar Dados do Cliente"
                     : "Cadastrar Novo Cliente"}
@@ -491,7 +498,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                className="flex min-h-11 min-w-11 items-center justify-center p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
                 aria-label="Fechar formulário de cliente"
               >
                 <X className="w-4 h-4" />
@@ -598,13 +605,13 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="min-h-11 px-3.5 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white font-bold transition-all shadow-md"
+                  className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white font-bold transition-all shadow-md"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>

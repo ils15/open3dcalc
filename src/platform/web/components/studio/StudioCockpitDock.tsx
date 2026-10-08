@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
+import { isBetaChannel } from "@/shared/config/betaChannel";
 
 interface StudioCockpitDockProps {
   onOpenMiniDash: () => void;
@@ -30,36 +31,23 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
   onOpenNewQuote,
 }) => {
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const dockPosition = isBetaChannel
+    ? "relative flex justify-center px-4 sm:px-6 lg:px-8 pt-4 pb-4 sm:pb-6"
+    : "fixed inset-x-0 bottom-4 flex justify-center px-4";
 
   return (
     /*
-     * WIDTH STRATEGY — why this is not `left-1/2 -translate-x-1/2`.
-     *
-     * That centring idiom sizes the dock to its CONTENT, and the content is
-     * 426px: at a 390px viewport the dock spanned -18..408, so the Mini-Dash
-     * pill lost 13px on the left and the Atalhos button lost 13px on the right.
-     * Two controls were partially unreachable, and no media query can fix it —
-     * a fixed 426px box cannot fit a 390px viewport, so hiding the dock would
-     * remove a product feature rather than fix a layout.
-     *
-     * The dock is now an inset full-width track (`inset-x-0` + `px-4`) that
-     * centres whatever fits, and the pill row itself is the scroll container
-     * (`overflow-x-auto` + `max-w-full`). Every control stays present and
-     * reachable by scrolling INSIDE the dock, and the row can never establish
-     * page width again.
-     *
-     * `pointer-events-none` on the track with `pointer-events-auto` on the
-     * children: the track spans the full viewport, so without this its
-     * transparent gutters would swallow clicks on whatever is underneath —
-     * including the fee form's save area the dock was reported as covering.
+     * The dock stays in document flow so it never overlays calculator or form
+     * controls. Its pill row remains the horizontal scroll container on narrow
+     * screens; buttons keep their intrinsic width and remain reachable.
      */
     <div
-      className="fixed inset-x-0 bottom-4 flex justify-center px-4 pointer-events-none select-none"
+      className={`${dockPosition} pointer-events-none select-none`}
       style={{ zIndex: "var(--z-passive)" }}
     >
       {/* Quick actions popup menu if open */}
       {showQuickActions && (
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto bg-[#0d1322] border border-[#212d47] rounded-2xl p-2 shadow-2xl shadow-black/80 flex flex-col gap-1 w-56 max-w-[calc(100vw-2rem)] animate-fade-up">
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-2xl p-2 shadow-2xl shadow-black/80 flex flex-col gap-1 w-56 max-w-[calc(100vw-2rem)] animate-fade-up">
           <div className="flex items-center justify-between px-2 py-1 border-b border-slate-800 text-xs font-bold text-slate-300">
             <span>Ações Rápidas</span>
             <button
@@ -125,11 +113,11 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
       {/* The floating dock pills. `shrink-0` on each pill keeps their intrinsic
           width so the ROW scrolls instead of squashing the labels; the row
           itself is the scroll container and is capped to the viewport. */}
-      <div className="pointer-events-auto flex items-center bg-[#090d18]/90 backdrop-blur-md border border-[#212c45] rounded-full p-1 shadow-2xl shadow-black/80 gap-1.5 overflow-x-auto max-w-full">
+      <div className="pointer-events-auto flex items-center bg-[var(--color-bg-elevated)] backdrop-blur-md border border-[var(--color-border)] rounded-full p-1 shadow-2xl shadow-black/80 gap-1.5 overflow-x-auto max-w-full">
         {/* Mini-dash status indicator */}
         <button
           onClick={onOpenMiniDash}
-          className="shrink-0 flex min-h-11 items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#111728] hover:bg-[#18233c] text-slate-200 border border-[#212c45] transition-all"
+          className="shrink-0 flex min-h-11 items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--color-bg-secondary)] hover:bg-[var(--color-bg-hover)] text-slate-200 border border-[var(--color-border)] transition-all"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span className="text-emerald-400 font-bold">Mini-Dash</span>

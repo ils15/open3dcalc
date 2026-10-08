@@ -1,9 +1,8 @@
 import { create } from "zustand";
-import { guardedStorage } from "@/shared/lib/manifestStorage";
 import type { LegacyPiiPlaintextReport } from "@/shared/lib/legacyPiiPlaintext";
 
 /**
- * Persisted "keep read-only" decision for the legacy plaintext residue.
+ * Retired legacy-residue decision store.
  *
  * T5.2 left the choice session-only: `LegacyMigrationDialog.handleKeepReadOnly`
  * set local state and the prompt reappeared on EVERY new session, because
@@ -18,16 +17,13 @@ import type { LegacyPiiPlaintextReport } from "@/shared/lib/legacyPiiPlaintext";
  * `reopen()` forgets the decision so the choice can be offered again — the
  * Privacy screen path that satisfies "always offer a way back to the choice".
  *
- * The key is declared in SPEC-01 as a non-PII `onboarding_flag`
- * (`open3dcalc_legacy_keep_readonly_v1`): plaintext allowed, never synced,
- * never exported, erased on delete-all.
+ * The Beta test-only contract does not inspect or persist Stable residue. Keep
+ * this compatibility export inert so old UI imports cannot read or mutate a
+ * removed manifest key.
  */
 
-/** The SPEC-01 key holding the persisted keep-read-only decision. */
+/** Retired key name; exported only for source compatibility. */
 export const LEGACY_KEEP_READONLY_KEY = "open3dcalc_legacy_keep_readonly_v1";
-
-const KEEP_READONLY_TYPE = "open3dcalc-legacy-keep-readonly";
-const KEEP_READONLY_VERSION = 1;
 
 /**
  * A value-free signature of the residue: the key NAME and its record COUNT
@@ -40,31 +36,6 @@ export function residueSignature(report: LegacyPiiPlaintextReport): string {
     .join("|");
 }
 
-interface PersistedDecision {
-  type?: unknown;
-  v?: unknown;
-  signature?: unknown;
-}
-
-/** Read the persisted signature, or null when absent/unreadable. */
-function readStoredSignature(): string | null {
-  const raw = guardedStorage.getItem(LEGACY_KEEP_READONLY_KEY);
-  if (raw === null) return null;
-  try {
-    const parsed = JSON.parse(raw) as PersistedDecision;
-    if (
-      parsed.type === KEEP_READONLY_TYPE &&
-      parsed.v === KEEP_READONLY_VERSION &&
-      typeof parsed.signature === "string"
-    ) {
-      return parsed.signature;
-    }
-  } catch {
-    /* a malformed value is treated as "no decision" */
-  }
-  return null;
-}
-
 interface LegacyKeepReadOnlyState {
   /** The signature of the residue the user chose to keep read-only, if any. */
   signature: string | null;
@@ -75,22 +46,9 @@ interface LegacyKeepReadOnlyState {
 }
 
 export const useLegacyKeepReadOnlyStore = create<LegacyKeepReadOnlyState>(
-  (set) => ({
-    signature: readStoredSignature(),
-    keep: (signature) => {
-      guardedStorage.setItem(
-        LEGACY_KEEP_READONLY_KEY,
-        JSON.stringify({
-          type: KEEP_READONLY_TYPE,
-          v: KEEP_READONLY_VERSION,
-          signature,
-        }),
-      );
-      set({ signature });
-    },
-    reopen: () => {
-      guardedStorage.removeItem(LEGACY_KEEP_READONLY_KEY);
-      set({ signature: null });
-    },
+  () => ({
+    signature: null,
+    keep: () => undefined,
+    reopen: () => undefined,
   }),
 );

@@ -17,7 +17,7 @@ import {
   assertNewPiiStorageKey,
   type NewPiiStorageKey,
 } from "../src/shared/lib/crypto/newPiiNamespace.js";
-import { readStoredRow, type MinimalStorageDb } from "./persistGate.js";
+import { readStoredRow, type MinimalStorageDb } from "./storageRows.js";
 
 /** The raw stored bytes for an authorised key, or null when absent. */
 export function readNewPiiRow(
@@ -40,9 +40,9 @@ export function deleteNewPiiRow(
 /**
  * The raw stored bytes of every authorised key, keyed by storage key.
  *
- * Values are the sealed `enc1:profileKey:` envelopes already on disk (never
- * plaintext), so this is a PII-only snapshot of the three new rows: no other
- * row, no other table.
+ * Values are the plaintext Zustand persistence envelopes stored on disk. This
+ * is a sensitive PII-only snapshot of the three new rows: no other row, no
+ * other table.
  */
 export function snapshotNewPiiRows(
   db: MinimalStorageDb,

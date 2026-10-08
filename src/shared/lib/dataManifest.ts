@@ -6,7 +6,8 @@
  * sync / export / erasure / retention policies.
  *
  * Cross-cutting constraints enforced here (TEST-MATRIX §1):
- *  - plaintext_allowed is valid ONLY for pii:false keys (1.2)
+ *  - plaintext PII is limited to the three policy 1.9 Stable keys and their
+ *    declared localStorage destinations (1.2)
  *  - legal_basis not_personal_data is valid ONLY for pii:false keys (1.3)
  *  - onboarding_flag: pii:false, sync:never, export:never (1.4)
  *  - consent_record: pii:false, sync:never, export:never,
@@ -164,6 +165,12 @@ const REQUIRED_FIELDS: (keyof ManifestEntry)[] = [
 ];
 
 const VERSION_PATTERN = /^\d+\.\d+$/;
+const PLAINTEXT_PII_KEYS = new Set([
+  "open3dcalc_customers_v1",
+  "open3dcalc_quotes_v1",
+  "open3dcalc_history_v2",
+]);
+const PLAINTEXT_PII_PLATFORMS: readonly Platform[] = ["electron", "web", "pwa"];
 
 function isOneOf<T extends string>(
   value: unknown,
@@ -273,11 +280,47 @@ export function validateManifestEntry(
 
   const typed = record as unknown as ManifestEntry;
 
-  // TEST-MATRIX 1.2: plaintext PII is never valid.
+  // TEST-MATRIX 1.2: policy 1.9 permits plaintext PII only for the three
+  // declared Stable localStorage keys, across their exact Electron/Web/PWA
+  // destination set. Desktop domain-table destinations remain encrypted.
+  const approvedPlaintextPiiKey = PLAINTEXT_PII_KEYS.has(typed.key);
   if (typed.persistence === "plaintext_allowed" && typed.pii) {
+    if (!approvedPlaintextPiiKey) {
+      throw fieldError(
+        label,
+        "plaintext PII is limited to the three policy 1.9 Stable keys",
+      );
+    }
+    if (
+      typed.surface !== "localStorage" ||
+      typed.platforms.length !== PLAINTEXT_PII_PLATFORMS.length ||
+      !PLAINTEXT_PII_PLATFORMS.every(
+        (platform, index) => typed.platforms[index] === platform,
+      ) ||
+      typed.class !== "user_content" ||
+      typed.legal_basis !== "contract_performance"
+    ) {
+      throw fieldError(
+        label,
+        "policy 1.9 plaintext PII requires user_content on localStorage for electron/web/pwa with provisional contract_performance",
+      );
+    }
+  }
+  if (
+    approvedPlaintextPiiKey &&
+    (typed.pii !== true ||
+      typed.persistence !== "plaintext_allowed" ||
+      typed.surface !== "localStorage" ||
+      typed.platforms.length !== PLAINTEXT_PII_PLATFORMS.length ||
+      !PLAINTEXT_PII_PLATFORMS.every(
+        (platform, index) => typed.platforms[index] === platform,
+      ) ||
+      typed.class !== "user_content" ||
+      typed.legal_basis !== "contract_performance")
+  ) {
     throw fieldError(
       label,
-      "plaintext_allowed is valid only for pii:false keys",
+      "policy 1.9 Stable plaintext PII keys require the exact approved declaration",
     );
   }
   // TEST-MATRIX 1.3.

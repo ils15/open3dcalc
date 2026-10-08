@@ -1,19 +1,17 @@
 /**
- * Desktop-only status surface for the passwordless new-PII route (Beta12
- * Phase3).
+ * Desktop-only status surface for the exact-key plaintext PII route.
  *
  * ## What it is for
  *
  * It is the minimal Desktop UI wiring that actually USES the `pii:new:*` route:
- * on mount it checks the main-process gate and the passwordless record keys.
- * It appears only after a record actually exists on that route, and includes
- * the honest limitation that losing the OS profile, device or key makes those
- * records unrecoverable.
+ * on mount it checks the main-process route and its exact keys. It appears only
+ * after a record actually exists and makes the plaintext-at-rest limitation
+ * explicit.
  *
  * It renders NOTHING on the web build (the preload has no `piiNew` member) and
  * nothing when the gate is unavailable or no route-backed record exists.
- * Advertising "passwordless is on" before the first successful write would be
- * a false promise. The route is fail-closed at persistence regardless.
+ * Advertising persistence before the first successful write would be a false
+ * promise. The route is fail-closed at persistence regardless.
  */
 
 import { useEffect, useState } from "react";

@@ -1,138 +1,101 @@
-# TEST-MATRIX — Mandatory Contract Tests for D1.1+
+# TEST-MATRIX — Policy 1.9 Contracts
 
-**Track:** D1 — Privacy & Data Contracts
-**Status:** Normative for D1.1+ (D1.0 specifies; D1.1+ implements and must pass)
-**Addresses finding:** R6 (DRI/testes)
-**Related:** every SPEC/ADR in this directory
-
-These are **contract tests**: they verify the contracts in this directory against real
-platforms — not mocks. A D1.1+ slice is not done until its rows here pass. Coverage of the
-**critical paths** (crypto, erasure, envelope, consent, quarantine) MUST exceed **80%**
-(measured on the modules implementing the contracts; line/branch coverage via the repo's
-existing tooling).
+**Scope:** Stable/Desktop direct plaintext saves, unchanged Web-Beta restrictions, current-owned-data deletion, and retained encrypted export. This matrix replaces the former local at-rest encryption, vault-lock, consent-gate, and migration test requirements. It does not authorize runtime changes in the contracts/RED-test slice.
 
 ## 0. Global rules
 
-- Real browser (Chromium via Playwright) for web/PWA rows; real Electron (packed or
-  `electron --run-as-node` harness with the real `main.ts` handlers) for desktop rows.
-- No mocking of: Web Crypto, `safeStorage`, SQLite, the filesystem, or IPC. Mocks are
-  allowed only for the UI shell around the contract.
-- Every test names the contract clause it verifies (e.g., `SPEC-02 §5`).
-- Fixtures use synthetic data only (reserved domains, placeholder names) — never real PII.
+- Use synthetic values only (`example.invalid`, generated names and identifiers).
+- Verify behavior at the persistence boundary and through a real save/reload path; a UI-only
+  assertion is insufficient.
+- Assert failures by cause. A RED test is valid only when it fails because the intended
+  policy behavior is absent, not due to setup, malformed fixtures, or unrelated runtime errors.
+- Stable and Desktop local PII saves require no passphrase, consent receipt, vault unlock, or
+  export password. Beta remains synthetic-only and retains all restrictions listed in §3.
+- Keep encrypted export cryptography and its existing compatibility/integrity coverage (§6).
+- Do not open, enumerate, inspect, convert, recover, migrate, or delete inert historical vault
+  bytes. No startup cleanup test may expect such bytes to be removed.
 
-## 1. Manifest schema validation (SPEC-01)
+## 1. Manifest and policy validation (SPEC-01)
 
-| #    | Test                                                                                       | Expected                                 |
-| ---- | ------------------------------------------------------------------------------------------ | ---------------------------------------- |
-| 1.1  | Fixture (`SPEC-01-manifest-fixture.json`) validates against `SPEC-01-manifest.schema.json` | passes                                   |
-| 1.2  | `persistence: plaintext_allowed` + `pii: true`                                             | rejected                                 |
-| 1.3  | `legal_basis: not_personal_data` + `pii: true`                                             | rejected                                 |
-| 1.4  | `class: onboarding_flag` with `sync: opt_in` or `export: user_export`                      | rejected                                 |
-| 1.5  | `class: consent_record` with `export != never`                                             | rejected                                 |
-| 1.6  | `class: snapshot` with `sync != never` or `persistence: plaintext_allowed`                 | rejected                                 |
-| 1.7  | `class: ephemeral_key` with `persistence != memory_only`                                   | rejected                                 |
-| 1.8  | `class: diagnostic` with `export: user_export`                                             | rejected                                 |
-| 1.9  | Unknown `persistence`/`sync`/`export`/`erasure` value                                      | rejected                                 |
-| 1.10 | Missing any required field; extra field; empty `platforms`                                 | rejected                                 |
-| 1.11 | Duplicate `key` across entries                                                             | rejected (uniqueness enforced by loader) |
+| ID  | Setup                                                        | Required result                                                                                                                                                      |
+| --- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1 | Validate the Stable manifest fixture against the schema      | Valid policy 1.9; manifest version and encrypted-entry versions remain frozen                                                                                        |
+| 1.2 | Inspect the three Stable customer/quote/history keys         | Each declares `pii:true`, `persistence:plaintext_allowed`, localStorage, Electron/Web/PWA, and `legal_basis:contract_performance` marked provisional/review-required |
+| 1.3 | Try `plaintext_allowed` for any other PII key or destination | Rejected; only the exact three-key scope and declared destination are accepted                                                                                       |
+| 1.4 | Inspect vault and retired migration targets                  | Not declared as active write, migration, or deletion targets; existing stored bytes are not read or changed                                                          |
+| 1.5 | Validate the Beta fixture/schema                             | Unchanged exact three Web-only synthetic keys; no permissions for sync, export, import, or deletion                                                                  |
+| 1.6 | Validate unrelated manifest constraints                      | Unknown keys/enums, malformed entries, duplicate keys, and invalid snapshot/diagnostic/consent declarations remain rejected                                          |
 
-(1.2–1.11 were verified against the D1.0 schema during production — 13/13 correct
-outcomes; D1.1+ must encode them as automated tests.)
+## 2. Required RED suites — direct saves and channels
 
-## 2. Crypto capability matrix (ADR-001)
+The contract slice adds the following tests first. They are expected to fail until later runtime
+slices implement the policy. Capture the failure reason for each; do not modify runtime code to
+make this phase green.
 
-| #   | Test                                                     | Expected                                                                                                       |
-| --- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| 2.1 | Electron with `safeStorage` available: write PII key     | value in SQLite is `safeStorage` ciphertext; decrypt round-trips                                               |
-| 2.2 | Electron, `safeStorage` unavailable, passphrase provided | PII written encrypted (SPEC-03 params); passphrase never on disk (scan `userData` + logs for passphrase bytes) |
-| 2.3 | Electron, `safeStorage` unavailable, no passphrase       | PII write **refused**; feature degrades to memory-only; non-PII writes unaffected                              |
-| 2.4 | Web, secure context, passphrase                          | PII in `localStorage`/IndexedDB is AES-256-GCM ciphertext                                                      |
-| 2.5 | Web, secure context, no passphrase                       | PII blocked (memory-only at most)                                                                              |
-| 2.6 | Web, insecure context (HTTP on LAN IP)                   | PII blocked; non-PII keys work                                                                                 |
-| 2.7 | Capability probe fails/ambiguous                         | resolves to DENIED (fail-closed), never plaintext                                                              |
+| Suite                       | Required scenario                                                                                                    | RED reason before runtime implementation                                                                                                  |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `betaDirectSave`            | Fresh Web-Beta profile; save a synthetic customer/quote/history record without password, consent, receipt, or unlock | Regression guard for unchanged Beta behavior; this branch already passes the fresh-profile customer save, so it is not required to be RED |
+| `stablePlaintextAcceptance` | Stable Web and Desktop accept only the exact policy 1.9 plaintext manifest declarations                              | Loader/guard still rejects approved plaintext PII or does not recognize policy 1.9                                                        |
+| `saveReloadChannels`        | Real save then fresh-module/profile reload for Stable Web, Desktop, and Web Beta                                     | At least one supported channel does not persist and rehydrate its permitted record directly                                               |
+| `noGatePrerequisites`       | Fresh profile save on Stable and Beta with no password, consent, receipt, or vault unlock                            | A retired local save prerequisite still blocks or diverts the operation                                                                   |
 
-## 3. Deny-path and zero-plaintext (ADR-001/ADR-002)
+Stable/Desktop cases must fail for the unmet direct-save policy or exact manifest rejection.
+The Beta direct-save regression may already be green because its implementation predates this
+Stable policy change. A fixture parse error, missing test dependency, or unrelated UI
+exception is not valid RED evidence.
 
-| #   | Test                                           | Expected                                                                                                |
-| --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 3.1 | Attempt every write path with PII while denied | no PII bytes on any surface (grep SQLite file, `userData`, `localStorage` dump for fixture PII markers) |
-| 3.2 | Logs during PII operations                     | zero PII substrings in log files                                                                        |
-| 3.3 | Crash dump during PII operation                | no PII in crash artifacts                                                                               |
+## 3. Beta restrictions and isolation
 
-## 4. Quarantine (ADR-002)
+| ID  | Setup                                                                                     | Required result                                                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 3.1 | Beta opens with empty profile                                                             | First-run disclosure says test-only, synthetic-only, plaintext/local, disposable profile; no password/consent/migration/export/deletion controls |
+| 3.2 | Attempt Stable-key access, prefix variant, unknown key, or legacy marker                  | Denied without reading, writing, scanning, or altering bytes                                                                                     |
+| 3.3 | Attempt IndexedDB/vault, Cache API, SQLite, desktop bridge, namespace sweep, or migration | No access or mutation; Beta remains Web-only                                                                                                     |
+| 3.4 | Attempt sync, import, export, backup, erasure, withdrawal, recovery, or delete            | Refused before record collection, storage, crypto, filesystem, or dispatch                                                                       |
+| 3.5 | Seed same-origin Stable canaries and exercise Beta                                        | Stable bytes remain inaccessible and byte-identical; only the three Beta fixture keys are touched                                                |
 
-| #   | Test                                    | Expected                                                                                                                     |
-| --- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 4.1 | Seed legacy plaintext PII; startup scan | detected; quarantined; surfaced in privacy screen with counts                                                                |
-| 4.2 | Mutate quarantined record               | rejected (read-only)                                                                                                         |
-| 4.3 | Sync/export with quarantined data       | quarantined data excluded from bundle/envelope                                                                               |
-| 4.4 | Migrate flow (capability available)     | encrypted copy verified readable, then plaintext destroyed; report shows per-surface result                                  |
-| 4.5 | Eliminate flow                          | SPEC-02 saga runs; receipt; quarantine empty                                                                                 |
-| 4.6 | No action                               | stays quarantined across restarts; never auto-resolves; no implicit acceptance path exists (no UI element accepts plaintext) |
+## 4. Stable/Desktop save, reload, and failure behavior
 
-## 5. Export vs backup (ADR-003)
+| ID  | Setup                                                                                             | Required result                                                                                                         |
+| --- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 4.1 | Fresh Stable Web profile; save a synthetic record to each declared customer/quote/history key     | Plaintext bytes are stored directly under the exact key with no password/consent/unlock prerequisite                    |
+| 4.2 | Reload Stable Web with the same storage                                                           | The saved values are hydrated intact; no empty default overwrites existing bytes                                        |
+| 4.3 | Fresh Desktop profile; save and reload each supported PII record through its declared destination | Values persist and reload as plaintext under policy 1.9; no keyring/passphrase prerequisite                             |
+| 4.4 | Local storage read/write unavailable or throws                                                    | The save reports failure truthfully; it does not claim durable success or silently drop the value                       |
+| 4.5 | Malformed stored bytes                                                                            | Do not overwrite with empty defaults; expose a recoverable storage error without inspecting unrelated historical stores |
+| 4.6 | Seed an inert legacy-vault canary before save/startup                                             | No code path opens, enumerates, reads, converts, recovers, migrates, or removes the canary                              |
 
-| #   | Test             | Expected                                                                                                         |
-| --- | ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 5.1 | Production build | no user-facing `db:export` entry; IPC handler refuses without dev gate                                           |
-| 5.2 | Dev flag set     | diagnostic backup possible; file lands locally; no upload/sync path exists (assert no network call during/after) |
-| 5.3 | Redaction mode   | PII columns masked per manifest; verify by scanning output                                                       |
-| 5.4 | Retention        | unredacted diagnostic older than 14 days flagged by runbook check script (OWNERS-RUNBOOK §5)                     |
+## 5. Current-owned-data deletion
 
-## 6. Erasure saga (SPEC-02)
+| ID  | Setup                                                                  | Required result                                                                      |
+| --- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 5.1 | Delete current owned Stable/Desktop records                            | Only declared current data reachable through supported adapters is deleted           |
+| 5.2 | In-scope deletion operation fails                                      | Report failure/partial outcome; never claim complete deletion                        |
+| 5.3 | Seed inert vault, retired migration targets, and external-copy markers | They remain byte-identical and are excluded from the result; no startup cleanup runs |
+| 5.4 | Invoke deletion in Beta                                                | Refuse before any storage, deletion, sweep, or cleanup operation                     |
 
-| #   | Test                                                    | Expected                                                                                                                                             |
-| --- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 6.1 | Happy path                                              | `prepared → snapshot_taken → deleting → committed`; post-condition rescan finds zero PII keys on all 11 stores (§3)                                  |
-| 6.2 | Crash after `snapshot_taken` (kill -9)                  | restart resumes idempotently; already-deleted stores stay done; saga completes; no re-prompt                                                         |
-| 6.3 | Crash mid-store (kill -9 during `deleting`)             | journal shows per-store state; resume from first incomplete store                                                                                    |
-| 6.4 | Store failure (e.g., locked SQLite) before commit point | retries (≤3) then rollback: snapshot restored; state `rolled_back`; user-visible error                                                               |
-| 6.5 | WAL/SHM after erasure                                   | `-wal`/`-shm` empty or removed; no recoverable pages (attempt raw scan of files for PII markers)                                                     |
-| 6.6 | Snapshot lifecycle                                      | encrypted at rest; TTL honored (expired ⇒ destroyed on next load); destroyed after commit (file absent + journal records destruction)                |
-| 6.7 | Ephemeral key lost (passphrase fallback) after failure  | rollback impossible; terminal state `committed` with `rollback_unavailable` annotation; user warned (pre-confirmation warning present in `prepared`) |
-| 6.8 | Post-condition with planted PII (simulate missed store) | rescan fails ⇒ store marked failed ⇒ no commit; never success with PII remaining                                                                     |
-| 6.9 | Receipt                                                 | completion receipt includes `external_copies_notice` (SPEC-02 §7)                                                                                    |
+## 6. Encrypted logical export (E1 retained; SPEC-03)
 
-## 7. Export envelope (SPEC-03)
+| ID  | Setup                                                        | Required result                                                                                                                           |
+| --- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 6.1 | Export with a valid password                                 | Existing envelope format/version, algorithms, KDF parameters, authenticated integrity, and configured size/iteration limits are unchanged |
+| 6.2 | Wrong password, tampered envelope, malformed/oversized input | Reject safely without partial imports, plaintext leakage, or weakening validation                                                         |
+| 6.3 | Save locally with no export password                         | Local Stable/Desktop and synthetic Beta save behavior is independent of export password state                                             |
+| 6.4 | Attempt Beta import/export even with a password supplied     | Refuse before collecting records or performing crypto/file operations                                                                     |
+| 6.5 | Export current supported data                                | No inert historical vault or retired migration bytes are inspected or included                                                            |
 
-| #    | Test                                                                | Expected                                                      |
-| ---- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 7.1  | Round-trip export→import (same version)                             | byte-stable canonical plaintext; digest matches               |
-| 7.2  | Tampered header (any field)                                         | GCM auth fails (AAD binding) ⇒ reject                         |
-| 7.3  | Wrong password                                                      | reject; error indistinguishable from tamper                   |
-| 7.4  | Corrupted ciphertext (flip 1 byte)                                  | reject                                                        |
-| 7.5  | Downgrade/unknown version (`0.9`, `9.9`)                            | reject, no best-effort parse                                  |
-| 7.6  | Unknown header/payload field                                        | reject                                                        |
-| 7.7  | Legacy `1.0` bundle import                                          | accepted (100k iterations honored); re-export produces `1.1`  |
-| 7.8  | Oversized payload (>50k records or >50 MiB)                         | refused on export and import                                  |
-| 7.9  | Path traversal/symlink in staging                                   | rejected; `O_NOFOLLOW` semantics; no write outside staging    |
-| 7.10 | Password handling                                                   | password absent from argv, env, logs, journal (scan all four) |
-| 7.11 | Crash mid-import (kill -9)                                          | next startup discards staging entirely; live stores untouched |
-| 7.12 | Crash mid-export                                                    | no partial final file; temp removed on restart                |
-| 7.13 | Cross-version matrix: export on N, import on N±1 supported versions | per §8 table                                                  |
+## 7. Receipt/version behavior
 
-## 8. Consent receipt (SPEC-04)
+| ID  | Setup                                                                   | Required result                                                                                                                   |
+| --- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 7.1 | Load a receipt created under an earlier policy version                  | Preserve its bytes and evaluate it as `policy_mismatch` under 1.9                                                                 |
+| 7.2 | Save while there is no receipt, an old receipt, or a mismatched receipt | Local save proceeds; receipt status is not a save gate                                                                            |
+| 7.3 | Check legal-basis annotation in the fixture                             | `contract_performance` is visibly provisional and subject to qualified legal review, not asserted as an engineering determination |
 
-| #   | Test                                                                       | Expected                                                                                                                                                                                                               |
-| --- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 8.1 | Consent flow                                                               | receipt stored encrypted; digest valid; `policy_hash` = SHA-256 of canonical current policy                                                                                                                            |
-| 8.2 | Tamper receipt (flip byte)                                                 | digest mismatch ⇒ invalid ⇒ default-deny; re-consent required                                                                                                                                                          |
-| 8.3 | Flags-only state (tutorial/onboarded/migration/quickstart set, no receipt) | consent NOT given; PII gated                                                                                                                                                                                           |
-| 8.4 | Withdrawal                                                                 | consent-basis keys erased per manifest (`erase_on_delete_all` deleted; `retain_anonymized` anonymized); non-consent keys untouched; receipt annotated `withdrawn_at`; completion receipt with `external_copies_notice` |
-| 8.5 | Policy version change                                                      | mismatch detected; re-consent required for delta; old receipt retained                                                                                                                                                 |
-| 8.6 | Receipt sync/export                                                        | never leaves device (absent from bundles/envelopes)                                                                                                                                                                    |
+## 8. Verification gates
 
-## 9. Cross-cutting
-
-| #   | Test                                                                            | Expected                                                                        |
-| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| 9.1 | Critical-path coverage (crypto, erasure, envelope, consent, quarantine modules) | >80% line/branch                                                                |
-| 9.2 | i18n                                                                            | all new user-facing strings via i18n keys (pt-BR + en-US), per repo conventions |
-| 9.3 | No real PII in any test fixture                                                 | grep for real-looking names/emails fails; only synthetic markers                |
-
-## 10. D1.1+ slice gating
-
-A slice may merge only when: (a) its rows above pass in CI, (b) coverage ≥80% on critical
-paths, (c) Themis review passes, and (d) the diff matches the slice's declared scope
-(OWNERS-RUNBOOK §6). Partial passes block the slice — no "follow-up" test debt on
-contract rows.
+- Stable Web app typecheck, Desktop/Electron typecheck, and ESLint pass.
+- All new RED cases fail only for the expected missing policy behavior; unrelated baseline
+  failures are reported separately.
+- The RED phase changes documentation and tests only. No runtime, dependency, build, or
+  deployment workflow change is permitted.

@@ -1,10 +1,9 @@
 /**
- * Phase3 — the Desktop passwordless status surface.
+ * Desktop plaintext-persistence status surface.
  *
- * It must render the honest device-loss limitation ONLY when the OS-keyring
- * gate passes, and render nothing on the web build or when the gate is
- * unavailable. The gate itself is main-process; this spec asserts the UI does
- * not advertise a promise main would refuse.
+ * It must render the plaintext-at-rest limitation only after a route-backed
+ * record exists, and render nothing on the web build or when the route is
+ * unavailable.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -58,10 +57,10 @@ describe("PasswordlessPiiStatus", () => {
     );
   });
 
-  it("does not claim active protection until a passwordless record exists", async () => {
+  it("does not claim stored data exists until a plaintext record exists", async () => {
     const route = installRoute(async () => ({
       available: true,
-      backend: "gnome_libsecret",
+      backend: "plaintext",
     }));
     render(<PasswordlessPiiStatus />);
 
@@ -70,9 +69,9 @@ describe("PasswordlessPiiStatus", () => {
     expect(screen.queryByTestId("passwordless-pii-status")).toBeNull();
   });
 
-  it("shows the device-loss limitation after a passwordless record exists", async () => {
+  it("shows the plaintext limitation after a record exists", async () => {
     const route = installRoute(
-      async () => ({ available: true, backend: "gnome_libsecret" }),
+      async () => ({ available: true, backend: "plaintext" }),
       async () => JSON.stringify({ state: {}, version: 1 }),
     );
     render(<PasswordlessPiiStatus />);
@@ -89,7 +88,7 @@ describe("PasswordlessPiiStatus", () => {
   it("appears after the first route-backed save in the current session", async () => {
     const route = installRoute(async () => ({
       available: true,
-      backend: "gnome_libsecret",
+      backend: "plaintext",
     }));
     render(<PasswordlessPiiStatus />);
 

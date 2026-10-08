@@ -159,7 +159,10 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
               <FileText className="w-4 h-4" />
             </div>
             <div>
-              <h3 id="studio-quote-modal-title" className="font-bold text-sm text-white">
+              <h3
+                id="studio-quote-modal-title"
+                className="font-bold text-sm text-white"
+              >
                 Gerador de Proposta Comercial & Relatório
               </h3>
               <p className="text-[11px] text-slate-400">
@@ -170,7 +173,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             aria-label="Fechar proposta"
           >
             <X className="w-4 h-4" />
@@ -179,7 +182,8 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
 
         {copyError && (
           <p role="alert" className="text-xs text-rose-300">
-            Não foi possível copiar a proposta. Verifique as permissões do navegador.
+            Não foi possível copiar a proposta. Verifique as permissões do
+            navegador.
           </p>
         )}
 

@@ -48,12 +48,16 @@ import {
   type NewPiiErasureTarget,
 } from "../src/shared/lib/crypto/newPiiErasureJournal.js";
 import type { NewPiiStorageKey } from "../src/shared/lib/crypto/newPiiNamespace.js";
-import type { MinimalStorageDb } from "./persistGate.js";
+import type { MinimalStorageDb } from "./storageRows.js";
 import {
   deleteNewPiiRow,
   remainingNewPiiRows,
   snapshotNewPiiRows,
 } from "./newPiiStore.js";
+import {
+  betaElectronPiiRefusal,
+  isBetaElectronRuntime,
+} from "./betaRuntime.js";
 
 /** The default lifetime of an issued nonce. */
 export const NEW_PII_ERASURE_TTL_MS = 10 * 60 * 1000;
@@ -330,6 +334,7 @@ function writeSnapshotOnce(
   const payload: SnapshotPayload = {
     request_id: journal.request_id,
     taken_at: new Date().toISOString(),
+    // These rows are plaintext PII envelopes; the rollback snapshot is sensitive.
     rows: snapshotNewPiiRows(db),
   };
   fs.mkdirSync(dir, { recursive: true });
@@ -448,21 +453,35 @@ export function registerNewPiiErasureHandlers(
   profile: string,
 ): void {
   ipcMain.handle(NEW_PII_ERASURE_CHANNELS.authorize, (event) => {
+    // Beta is Web-only: refuse before the sender check, the journal read and
+    // any nonce minting. Per call, never cached.
+    if (isBetaElectronRuntime()) {
+      throw betaElectronPiiRefusal(NEW_PII_ERASURE_CHANNELS.authorize);
+    }
     assertTrustedSender(event);
     return requestNewPiiErasure(profileDir, profile);
   });
 
   ipcMain.handle(NEW_PII_ERASURE_CHANNELS.claim, (event, token: unknown) => {
+    if (isBetaElectronRuntime()) {
+      throw betaElectronPiiRefusal(NEW_PII_ERASURE_CHANNELS.claim);
+    }
     assertTrustedSender(event);
     return claimNewPiiErasure(profileDir, token);
   });
 
   ipcMain.handle(NEW_PII_ERASURE_CHANNELS.start, (event, token: unknown) => {
+    if (isBetaElectronRuntime()) {
+      throw betaElectronPiiRefusal(NEW_PII_ERASURE_CHANNELS.start);
+    }
     assertTrustedSender(event);
     return runNewPiiErasure(profileDir, database.$client, token);
   });
 
   ipcMain.handle(NEW_PII_ERASURE_CHANNELS.status, (event) => {
+    if (isBetaElectronRuntime()) {
+      throw betaElectronPiiRefusal(NEW_PII_ERASURE_CHANNELS.status);
+    }
     assertTrustedSender(event);
     return newPiiErasureStatus(profileDir);
   });

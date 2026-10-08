@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { guardedStorage } from "@/shared/lib/manifestStorage";
 import type { LegacyPiiPlaintextReport } from "@/shared/lib/legacyPiiPlaintext";
 import {
   LEGACY_KEEP_READONLY_KEY,
@@ -71,25 +70,26 @@ describe("residueSignature", () => {
 });
 
 describe("useLegacyKeepReadOnlyStore", () => {
-  it("persists the decision as a value-free payload", () => {
+  it("does not persist a retired legacy decision", () => {
     const signature = residueSignature(WITH_RESIDUE);
+    window.localStorage.setItem(LEGACY_KEEP_READONLY_KEY, CANARY);
     useLegacyKeepReadOnlyStore.getState().keep(signature);
 
-    expect(useLegacyKeepReadOnlyStore.getState().signature).toBe(signature);
-    const raw = window.localStorage.getItem(LEGACY_KEEP_READONLY_KEY);
-    expect(raw).not.toBeNull();
-    const parsed = JSON.parse(raw as string) as Record<string, unknown>;
-    // ONLY the type, version and the value-free signature — nothing else.
-    expect(Object.keys(parsed).sort()).toEqual(["signature", "type", "v"]);
-    expect(parsed.signature).toBe(signature);
-    expect(raw).not.toContain(CANARY);
+    expect(useLegacyKeepReadOnlyStore.getState().signature).toBeNull();
+    expect(window.localStorage.getItem(LEGACY_KEEP_READONLY_KEY)).toBe(CANARY);
   });
 
-  it("forgets the decision on reopen", () => {
-    useLegacyKeepReadOnlyStore.getState().keep(residueSignature(WITH_RESIDUE));
+  it("does not remove a retired legacy key on reopen", () => {
+    window.localStorage.setItem(LEGACY_KEEP_READONLY_KEY, CANARY);
+    const getItem = vi.spyOn(Storage.prototype, "getItem");
+    useLegacyKeepReadOnlyStore.setState({ signature: "in-memory-only" });
     useLegacyKeepReadOnlyStore.getState().reopen();
 
-    expect(useLegacyKeepReadOnlyStore.getState().signature).toBeNull();
-    expect(guardedStorage.getItem(LEGACY_KEEP_READONLY_KEY)).toBeNull();
+    expect(useLegacyKeepReadOnlyStore.getState().signature).toBe(
+      "in-memory-only",
+    );
+    expect(getItem).not.toHaveBeenCalled();
+    getItem.mockRestore();
+    expect(window.localStorage.getItem(LEGACY_KEEP_READONLY_KEY)).toBe(CANARY);
   });
 });

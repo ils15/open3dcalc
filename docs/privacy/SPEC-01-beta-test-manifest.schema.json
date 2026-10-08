@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://open3dcalc.org/schemas/spec-01-beta-test-manifest.schema.json",
+  "title": "SPEC-01 Web Beta Synthetic-Test Manifest Schema",
+  "type": "object",
+  "required": [
+    "manifest_version",
+    "policy_version",
+    "channel",
+    "erasure",
+    "keys"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "manifest_version": { "const": "1.0" },
+    "policy_version": { "const": "1.0" },
+    "channel": { "const": "web-beta" },
+    "erasure": {
+      "type": "object",
+      "required": ["supported", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "supported": { "const": false },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "keys": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/betaTestEntry" },
+      "allOf": [
+        { "$ref": "#/$defs/oneCustomersKey" },
+        { "$ref": "#/$defs/oneQuotesKey" },
+        { "$ref": "#/$defs/oneHistoryKey" }
+      ]
+    }
+  },
+  "$defs": {
+    "betaTestEntry": {
+      "type": "object",
+      "required": [
+        "key",
+        "surface",
+        "platforms",
+        "channel",
+        "class",
+        "pii",
+        "persistence",
+        "sync",
+        "export",
+        "erasure",
+        "retention",
+        "purpose",
+        "legal_basis",
+        "owner",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "enum": [
+            "open3dcalc_beta_test_customers_v1",
+            "open3dcalc_beta_test_quotes_v1",
+            "open3dcalc_beta_test_history_v1"
+          ]
+        },
+        "surface": { "const": "localStorage" },
+        "platforms": { "const": ["web"] },
+        "channel": { "const": "web-beta" },
+        "class": { "const": "synthetic_test_data" },
+        "pii": { "const": false },
+        "persistence": { "const": "plaintext_allowed" },
+        "sync": { "const": "never" },
+        "export": { "const": "never" },
+        "erasure": { "const": "unsupported" },
+        "retention": {
+          "type": "object",
+          "required": ["policy", "max_days"],
+          "additionalProperties": false,
+          "properties": {
+            "policy": { "const": "user_controlled" },
+            "max_days": { "const": 0 }
+          }
+        },
+        "purpose": { "type": "string", "minLength": 1 },
+        "legal_basis": { "const": "not_personal_data" },
+        "owner": { "const": "hermes" },
+        "version": { "const": "1.0" }
+      }
+    },
+    "oneCustomersKey": {
+      "contains": {
+        "properties": {
+          "key": { "const": "open3dcalc_beta_test_customers_v1" }
+        },
+        "required": ["key"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "oneQuotesKey": {
+      "contains": {
+        "properties": { "key": { "const": "open3dcalc_beta_test_quotes_v1" } },
+        "required": ["key"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "oneHistoryKey": {
+      "contains": {
+        "properties": { "key": { "const": "open3dcalc_beta_test_history_v1" } },
+        "required": ["key"]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    }
+  }
+}
