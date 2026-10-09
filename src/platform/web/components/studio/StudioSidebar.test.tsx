@@ -13,8 +13,6 @@ describe("StudioSidebar", () => {
         onTabChange={vi.fn()}
         collapsed={false}
         onToggleCollapse={vi.fn()}
-        currency="USD"
-        onCurrencyChange={vi.fn()}
       />,
     );
 

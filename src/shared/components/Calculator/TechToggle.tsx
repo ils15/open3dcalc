@@ -34,7 +34,7 @@ export function TechToggle({
             : "px-4"
         } ${
           activeTab === "fdm"
-            ? "bg-[var(--accent-fill)] text-white shadow-md shadow-[var(--color-accent-muted)]"
+            ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-md shadow-[var(--color-accent-muted)]"
             : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
         }`}
       >
@@ -49,7 +49,7 @@ export function TechToggle({
             : "px-4"
         } ${
           activeTab === "resin"
-            ? "bg-[var(--accent-fill)] text-white shadow-md shadow-[var(--color-accent-muted)]"
+            ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-md shadow-[var(--color-accent-muted)]"
             : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
         }`}
       >

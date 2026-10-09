@@ -168,7 +168,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
   );
 
   return (
-    <div className="flex flex-col gap-6 text-text-primary max-w-full pb-16">
+    <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-16">
       {/* Top Notice if in Normal Mode without data */}
       {!isDemoMode && !hasRealData && (
         <div className="bg-surface-overlay border border-accent/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -177,7 +177,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               <Info className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-text-primary">
+              <h2 className="text-base font-bold text-text-primary">
                 Dashboard em Tempo Real (Base Limpa)
               </h2>
               <p className="text-xs text-text-secondary mt-0.5">
@@ -542,7 +542,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         <div className="lg:col-span-2 bg-surface-raised border border-border-subtle rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
                 Desempenho Financeiro
               </h2>
               <span className="text-[11px] text-text-secondary">
@@ -660,7 +660,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h2 className="text-sm font-bold text-text-primary">
+              <h2 className="text-base font-bold text-text-primary">
                 Consumo por Material
               </h2>
               <span className="text-[11px] text-text-secondary">
@@ -737,7 +737,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
       <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5 flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border-subtle pb-3">
           <div>
-            <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-warning" />
               Previsões Financeiras & Projeções (QoQ)
             </h2>

@@ -149,7 +149,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 text-text-primary max-w-full pb-20">
+    <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
       {!isModalOpen && (
         <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />
       )}

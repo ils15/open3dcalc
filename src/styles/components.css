@@ -57,6 +57,15 @@ body {
     color 0.2s ease;
 }
 
+/* Tabular numerals inside mono runs (reference rhythm): prices, metrics and
+   timestamps align digit-for-digit in columns instead of jittering per glyph
+   width. Pure metric change — no colour, no size. */
+code,
+pre,
+.font-mono {
+  font-feature-settings: "tnum" 1;
+}
+
 /* ===================================================================
    SCROLLBAR
    =================================================================== */

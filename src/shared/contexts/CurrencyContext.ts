@@ -31,7 +31,7 @@ export function useCurrency(): CurrencyValue {
   const providedValue = useContext(CurrencyValueContext);
   const currencySetting = useCalculatorStore((state) => state.currency);
   const { i18n } = useTranslation();
-  const currency = resolveCurrency(currencySetting, i18n.language ?? "pt-BR");
+  const currency = resolveCurrency(currencySetting, i18n?.language ?? "pt-BR");
   const format = useCallback(
     (value: number): string => formatCurrency(value, currency),
     [currency],

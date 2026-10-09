@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
+import { StudioCalculatorModeSelector } from "./StudioCalculatorModeSelector";
 import { StudioHeader } from "./StudioHeader";
-import { StudioSubHeader } from "./StudioSubHeader";
 import { StudioSidebar } from "./StudioSidebar";
 import { StudioCockpitDock } from "./StudioCockpitDock";
 import { StudioDashboardView } from "./StudioDashboardView";
@@ -53,7 +53,6 @@ export const StudioLayout: React.FC = () => {
   });
   const prefersReduced = useReducedMotion();
   const [focusMode, setFocusMode] = useState(false);
-  const [currency, setCurrency] = useState("BRL");
 
   // One source of truth for the calculator's active material technology and
   // its matching demo preset.
@@ -165,14 +164,8 @@ export const StudioLayout: React.FC = () => {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             activeTechnology={activeTechnology}
-            showTechnologyStatus={layoutMode === "classic"}
-            currentProjectName={currentProjectName}
-          />
-          <StudioSubHeader
-            activeTab={activeTab}
-            layoutMode={layoutMode}
-            onLayoutChange={setLayoutMode}
             onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+            currentProjectName={currentProjectName}
           />
           <DemoModeIndicator />
           <PrivacyOnboarding />
@@ -192,8 +185,6 @@ export const StudioLayout: React.FC = () => {
             onTabChange={setActiveTab}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            currency={currency}
-            onCurrencyChange={setCurrency}
           />
         )}
 
@@ -251,6 +242,10 @@ export const StudioLayout: React.FC = () => {
 
               {activeTab === "calculator" && (
                 <>
+                  <StudioCalculatorModeSelector
+                    mode={layoutMode}
+                    onModeChange={setLayoutMode}
+                  />
                   {layoutMode === "bento" ? (
                     <BentoSurface />
                   ) : layoutMode === "guided" ? (
@@ -273,7 +268,7 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "catalog" && (
-                <div className="flex max-w-full flex-col gap-6 text-[var(--color-text-primary)]">
+                <div className="flex mx-auto w-full max-w-7xl flex-col gap-6 text-[var(--color-text-primary)]">
                   <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
@@ -305,7 +300,7 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "infill" && (
-                <div className="flex flex-col gap-6 text-text-primary max-w-full pb-20">
+                <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
                   <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />

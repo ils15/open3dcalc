@@ -82,7 +82,7 @@ export function GuidedWizard(): React.ReactElement {
     >
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
+          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
             {t("wizard.title")}
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
@@ -111,7 +111,7 @@ export function GuidedWizard(): React.ReactElement {
             id="wizard-step-heading"
             ref={headingRef}
             tabIndex={-1}
-            className="text-xl font-semibold text-[var(--color-text-primary)] focus:outline-none"
+            className="text-lg font-semibold text-[var(--color-text-primary)] focus:outline-none"
           >
             {t(`wizard.steps.${step}.title`)}
           </h2>

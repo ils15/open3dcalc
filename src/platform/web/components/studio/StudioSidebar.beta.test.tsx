@@ -76,8 +76,6 @@ function renderSidebar() {
       onTabChange={vi.fn()}
       collapsed={false}
       onToggleCollapse={vi.fn()}
-      currency="BRL"
-      onCurrencyChange={vi.fn()}
     />,
   );
 }
@@ -96,8 +94,6 @@ describe("StudioSidebar Beta surface", () => {
         onTabChange={vi.fn()}
         collapsed={false}
         onToggleCollapse={vi.fn()}
-        currency="BRL"
-        onCurrencyChange={vi.fn()}
         modules={[
           {
             id: "privacy" as Tab,
@@ -138,8 +134,6 @@ describe("StudioSidebar Beta touch + scroll (Wave4)", () => {
         onTabChange={vi.fn()}
         collapsed
         onToggleCollapse={vi.fn()}
-        currency="BRL"
-        onCurrencyChange={vi.fn()}
       />,
     );
     const aside = container.querySelector("aside") as HTMLElement;
@@ -147,7 +141,7 @@ describe("StudioSidebar Beta touch + scroll (Wave4)", () => {
     expect(aside.className).not.toMatch(/(^|\s)w-16(\s|$)/);
   });
 
-  it("keeps currency + collapse reachable via internal scroll at short heights", () => {
+  it("keeps the collapse control pinned outside the navigation scroller", () => {
     const { container } = renderSidebar();
     const aside = container.querySelector("aside") as HTMLElement;
     expect(aside.className).not.toMatch(/justify-between|pb-20/);
@@ -159,7 +153,7 @@ describe("StudioSidebar Beta touch + scroll (Wave4)", () => {
     // Bottom bar is pinned outside the scroller so it never scrolls away.
     const bottom = aside.lastElementChild as HTMLElement;
     expect(bottom.className).toMatch(/shrink-0/);
-    expect(screen.getByText("Moeda Base")).toBeInTheDocument();
+    expect(screen.queryByText("Moeda Base")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /recolher painel/i }),
     ).toBeInTheDocument();
