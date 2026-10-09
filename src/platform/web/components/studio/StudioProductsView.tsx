@@ -156,20 +156,20 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
   const formIsBelowCost = formSaleNum < formCostNum;
 
   return (
-    <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-20">
+    <div className="flex flex-col gap-6 text-text-primary max-w-full pb-20">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-raised border border-border-subtle rounded-2xl p-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse" />
-            <span className="text-[10px] font-mono uppercase tracking-wider text-purple-400 font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
+            <span className="text-[10px] font-mono uppercase tracking-wider text-accent font-bold">
               CATÁLOGO DE PRODUTOS & PRONTA ENTREGA
             </span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-text-primary flex items-center gap-2">
             Estoque de Peças Prontas para Venda
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-text-secondary mt-0.5">
             Gerencie o estoque de peças acabadas, calcule preços de venda e
             acompanhe margens de lucro
           </p>
@@ -179,7 +179,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-sunken hover:bg-surface-sunken text-text-secondary border border-border-subtle text-xs font-semibold transition-all"
             title="Exportar inventário para CSV"
           >
             <Download className="w-3.5 h-3.5" />
@@ -189,7 +189,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:ring-2 hover:ring-purple-500/40 text-white text-xs font-bold transition-all shadow-md shadow-purple-950/40 hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shadow-accent/40 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
             <span>Novo Produto</span>
@@ -200,85 +200,85 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Peças */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               TOTAL DE PRODUTOS
             </span>
-            <Package className="w-4 h-4 text-purple-400" />
+            <Package className="w-4 h-4 text-accent" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">
+            <span className="text-2xl font-extrabold text-text-primary">
               {totalProducts}
             </span>
-            <span className="text-xs text-slate-400 ml-1.5">
+            <span className="text-xs text-text-secondary ml-1.5">
               itens cadastrados
             </span>
           </div>
-          <div className="text-[10px] text-slate-400">
+          <div className="text-[10px] text-text-secondary">
             {availableProducts.length} disponíveis • {soldProducts.length}{" "}
             vendidos
           </div>
         </div>
 
         {/* Faturamento Potencial */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               FATURAMENTO POTENCIAL
             </span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <DollarSign className="w-4 h-4 text-positive" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-emerald-400">
+            <span className="text-2xl font-extrabold text-positive">
               {currencySymbol} {potentialRevenue.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-emerald-500/80 font-medium">
+          <div className="text-[10px] text-positive font-medium">
             Valor bruto se todo estoque for vendido
           </div>
         </div>
 
         {/* Custo do Estoque */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               CUSTO TOTAL DE PRODUÇÃO
             </span>
-            <Layers className="w-4 h-4 text-blue-400" />
+            <Layers className="w-4 h-4 text-info" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">
+            <span className="text-2xl font-extrabold text-text-primary">
               {currencySymbol} {stockCostValue.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-slate-400">
+          <div className="text-[10px] text-text-secondary">
             Filamento + energia + desgaste investidos
           </div>
         </div>
 
         {/* Lucro e Margem */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               LUCRO PROJETADO
             </span>
-            <TrendingUp className="w-4 h-4 text-purple-400" />
+            <TrendingUp className="w-4 h-4 text-accent" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-purple-400">
+            <span className="text-2xl font-extrabold text-accent">
               {currencySymbol} {projectedProfit.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-slate-400">
+          <div className="text-[10px] text-text-secondary">
             Margem média prevista de{" "}
-            <span className="text-white font-bold">+{avgMargin}%</span>
+            <span className="text-text-primary font-bold">+{avgMargin}%</span>
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-3">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface-raised border border-border-subtle rounded-2xl p-3">
         {/* Search */}
         <div className="relative w-full sm:w-80">
           <input
@@ -286,13 +286,13 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nome da peça ou filamento..."
-            className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+            className="w-full bg-surface-raised border border-border-subtle rounded-xl pl-9 pr-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
           />
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
             >
               ✕
             </button>
@@ -319,14 +319,14 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                   onClick={() => setStatusFilter(st)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                     isActive
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "bg-[#111728] text-slate-400 hover:text-white hover:bg-[#151e33]"
+                      ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                      : "bg-surface-raised text-text-secondary hover:text-text-primary hover:bg-surface-overlay"
                   }`}
                 >
                   <span>{label}</span>
                   <span
                     className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
-                      isActive ? "bg-black/30" : "bg-slate-800"
+                      isActive ? "bg-surface-sunken" : "bg-surface-sunken"
                     }`}
                   >
                     {count}
@@ -337,14 +337,14 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
           </div>
 
           {/* View Mode Toggle: Lista vs Cards */}
-          <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-xl p-0.5 shrink-0 text-xs">
+          <div className="flex items-center bg-surface-raised border border-border-subtle rounded-xl p-0.5 shrink-0 text-xs">
             <button
               type="button"
               onClick={() => setViewMode("list")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
                 viewMode === "list"
-                  ? "bg-purple-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
               title="Visualização em Lista / Tabela"
             >
@@ -356,8 +356,8 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
               onClick={() => setViewMode("grid")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
                 viewMode === "grid"
-                  ? "bg-purple-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
               title="Visualização em Grade de Cards"
             >
@@ -370,14 +370,14 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
 
       {/* Products Content */}
       {filteredProducts.length === 0 ? (
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-12 text-center flex flex-col items-center justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-3">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-12 text-center flex flex-col items-center justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-accent-subtle border border-accent/20 flex items-center justify-center text-accent mb-3">
             <ShoppingBag className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-white mb-1">
+          <h3 className="text-base font-bold text-text-primary mb-1">
             Nenhum produto encontrado
           </h3>
-          <p className="text-xs text-slate-400 max-w-sm mb-4">
+          <p className="text-xs text-text-secondary max-w-sm mb-4">
             {search || statusFilter !== "all"
               ? "Nenhum item corresponde aos filtros selecionados."
               : "Cadastre peças prontas para venda ou pronta entrega com cálculo de custo, preço sugerido e controle de estoque."}
@@ -386,7 +386,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
             <button
               type="button"
               onClick={openCreateModal}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:ring-2 hover:ring-purple-500/40 text-white text-xs font-bold transition-all shadow-md"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Cadastrar Primeiro Produto</span>
@@ -395,9 +395,9 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
               <button
                 type="button"
                 onClick={() => useDemoModeStore.getState().enter()}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#14122b] hover:bg-[#1b1938] border border-purple-500/40 text-purple-300 text-xs font-semibold transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-accent/40 text-accent text-xs font-semibold transition-all"
               >
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <Sparkles className="w-3.5 h-3.5 text-accent" />
                 <span>Carregar Demonstração</span>
               </button>
             )}
@@ -405,11 +405,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
         </div>
       ) : viewMode === "list" ? (
         /* Modern Studio List / Table View */
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl overflow-hidden shadow-xl">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-[#1b253b] bg-[#090e1a] text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                <tr className="border-b border-border-subtle bg-surface-sunken text-[10px] font-mono uppercase tracking-wider text-text-secondary">
                   <th className="py-3.5 px-4 font-bold text-center w-16">
                     STATUS
                   </th>
@@ -430,7 +430,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                   <th className="py-3.5 px-4 font-bold text-right">AÇÕES</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#172238]">
+              <tbody className="divide-y divide-border-subtle">
                 {filteredProducts.map((p) => {
                   const belowCost = isBelowCost(p);
                   const profitVal = p.salePrice - p.costPrice;
@@ -444,7 +444,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                   return (
                     <tr
                       key={p.id}
-                      className={`hover:bg-[#0f1629] transition-colors group ${p.sold ? "opacity-75" : ""}`}
+                      className={`hover:bg-surface-raised transition-colors group ${p.sold ? "opacity-75" : ""}`}
                     >
                       {/* Checkbox de Vendido / Disponível */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
@@ -458,8 +458,8 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                           <span
                             className={`px-2 py-0.5 rounded-full font-mono text-[9px] font-bold border transition-colors ${
                               p.sold
-                                ? "bg-slate-800 text-slate-400 border-slate-700"
-                                : "bg-emerald-950/60 text-emerald-400 border-emerald-500/40"
+                                ? "bg-surface-sunken text-text-secondary border-border-subtle"
+                                : "bg-positive-subtle text-positive border-positive/40"
                             }`}
                           >
                             {p.sold ? "Vendido" : "Disponível"}
@@ -470,13 +470,13 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                       {/* Nome do Produto */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-white group-hover:text-purple-300 transition-colors">
+                          <span className="font-bold text-text-primary group-hover:text-accent transition-colors">
                             {p.name}
                           </span>
                           {belowCost && (
                             <span
                               title="Alerta: Preço de venda abaixo do custo de fabricação!"
-                              className="text-amber-400 bg-amber-950/50 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1"
+                              className="text-warning bg-warning-subtle border border-warning/30 px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1"
                             >
                               <AlertTriangle className="w-3 h-3 shrink-0" />
                               <span className="font-mono text-[9px]">
@@ -489,24 +489,24 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
 
                       {/* Material */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-md bg-[#131b2e] border border-[#1f2b45] text-[11px] text-slate-300 font-mono">
+                        <span className="px-2 py-0.5 rounded-md bg-surface-overlay border border-border-subtle text-[11px] text-text-secondary font-mono">
                           {p.filamentType || "PLA"}
                         </span>
                       </td>
 
                       {/* Peso */}
-                      <td className="py-3.5 px-4 whitespace-nowrap font-mono text-slate-300">
+                      <td className="py-3.5 px-4 whitespace-nowrap font-mono text-text-secondary">
                         {p.weightGrams} g
                       </td>
 
                       {/* Custo Fabril */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-right font-mono text-slate-300">
+                      <td className="py-3.5 px-4 whitespace-nowrap text-right font-mono text-text-secondary">
                         {currencySymbol}{" "}
                         {p.costPrice.toFixed(2).replace(".", ",")}
                       </td>
 
                       {/* Preço Venda */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-right font-mono font-bold text-emerald-400 text-sm">
+                      <td className="py-3.5 px-4 whitespace-nowrap text-right font-mono font-bold text-positive text-sm">
                         {currencySymbol}{" "}
                         {p.salePrice.toFixed(2).replace(".", ",")}
                       </td>
@@ -516,9 +516,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                         <div className="flex flex-col items-end">
                           <span
                             className={`font-mono font-bold text-xs ${
-                              profitVal >= 0
-                                ? "text-emerald-400"
-                                : "text-rose-400"
+                              profitVal >= 0 ? "text-positive" : "text-critical"
                             }`}
                           >
                             {profitVal >= 0 ? "+" : ""}
@@ -528,8 +526,8 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                           <span
                             className={`text-[10px] font-mono ${
                               marginPct >= 0
-                                ? "text-slate-400"
-                                : "text-rose-400"
+                                ? "text-text-secondary"
+                                : "text-critical"
                             }`}
                           >
                             {marginPct >= 0
@@ -545,7 +543,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => openEditModal(p)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                            className="p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary border border-border-subtle transition-colors"
                             title="Editar Produto"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -554,7 +552,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => setConfirmDeleteId(p.id)}
-                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors"
+                            className="p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical border border-border-subtle hover:border-critical/30 transition-colors"
                             title="Excluir Produto"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -584,13 +582,13 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
             return (
               <div
                 key={p.id}
-                className={`bg-[#0c111e] hover:bg-[#0f1526] border border-[#1b253b] hover:border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative ${
+                className={`bg-surface-raised hover:bg-surface-raised border border-border-subtle hover:border-border-subtle rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative ${
                   p.sold ? "opacity-80" : ""
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="px-2 py-0.5 rounded-md bg-[#131b2e] border border-[#1f2b45] text-[10px] text-slate-300 font-mono">
+                    <span className="px-2 py-0.5 rounded-md bg-surface-overlay border border-border-subtle text-[10px] text-text-secondary font-mono">
                       {p.filamentType || "PLA"} • {p.weightGrams}g
                     </span>
                     <button
@@ -598,20 +596,20 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                       onClick={() => markSold(p.id, !p.sold)}
                       className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full font-bold border transition-colors ${
                         p.sold
-                          ? "bg-slate-800 text-slate-400 border-slate-700"
-                          : "bg-emerald-950/60 text-emerald-400 border-emerald-500/40"
+                          ? "bg-surface-sunken text-text-secondary border-border-subtle"
+                          : "bg-positive-subtle text-positive border-positive/40"
                       }`}
                     >
                       {p.sold ? "Vendido" : "Disponível"}
                     </button>
                   </div>
 
-                  <h3 className="text-sm font-bold text-white group-hover:text-purple-400 transition-colors line-clamp-1">
+                  <h3 className="text-sm font-bold text-text-primary group-hover:text-accent transition-colors line-clamp-1">
                     {p.name}
                   </h3>
 
                   {belowCost && (
-                    <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 mt-2">
+                    <div className="flex items-center gap-1.5 text-xs text-warning bg-warning-subtle border border-warning/30 rounded-lg p-2 mt-2">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                       <span className="text-[11px] font-medium">
                         Preço de venda inferior ao custo fabril
@@ -620,21 +618,21 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                   )}
 
                   {/* Financial Breakdown */}
-                  <div className="bg-[#080d18] border border-[#172238] rounded-xl p-3 mt-3 space-y-1.5 font-mono text-xs">
-                    <div className="flex items-center justify-between text-slate-400">
+                  <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3 mt-3 space-y-1.5 font-mono text-xs">
+                    <div className="flex items-center justify-between text-text-secondary">
                       <span>Custo de Fabricação:</span>
                       <span>
                         {currencySymbol}{" "}
                         {p.costPrice.toFixed(2).replace(".", ",")}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-slate-400">
+                    <div className="flex items-center justify-between text-text-secondary">
                       <span>Lucro Líquido:</span>
                       <span
                         className={
                           profitVal >= 0
-                            ? "text-purple-400 font-bold"
-                            : "text-rose-400 font-bold"
+                            ? "text-accent font-bold"
+                            : "text-critical font-bold"
                         }
                       >
                         {profitVal >= 0 ? "+" : ""}
@@ -642,11 +640,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                         {profitVal.toFixed(2).replace(".", ",")}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-slate-400">
+                    <div className="flex items-center justify-between text-text-secondary">
                       <span>Margem:</span>
                       <span
                         className={
-                          marginPct >= 0 ? "text-emerald-400" : "text-rose-400"
+                          marginPct >= 0 ? "text-positive" : "text-critical"
                         }
                       >
                         +{marginPct}%
@@ -656,12 +654,12 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                 </div>
 
                 {/* Footer and Actions */}
-                <div className="pt-2 border-t border-[#1b253b] flex items-center justify-between">
+                <div className="pt-2 border-t border-border-subtle flex items-center justify-between">
                   <div>
-                    <span className="text-[9px] font-mono uppercase text-slate-500 block">
+                    <span className="text-[9px] font-mono uppercase text-text-muted block">
                       PREÇO DE VENDA
                     </span>
-                    <span className="text-base font-extrabold text-emerald-400 font-mono">
+                    <span className="text-base font-extrabold text-positive font-mono">
                       {currencySymbol}{" "}
                       {p.salePrice.toFixed(2).replace(".", ",")}
                     </span>
@@ -671,7 +669,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => openEditModal(p)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                      className="p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary border border-border-subtle transition-colors"
                       title="Editar Produto"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -680,7 +678,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => setConfirmDeleteId(p.id)}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors"
+                      className="p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical border border-border-subtle hover:border-critical/30 transition-colors"
                       title="Excluir Produto"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -696,16 +694,16 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
       {/* Create / Edit Modal in Studio Dark Theme */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1b253b]">
+          <div className="bg-surface-raised border border-border-subtle rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 text-text-secondary animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Package className="w-4 h-4 text-purple-400" />
+                <h3 className="text-base font-bold text-text-primary flex items-center gap-2">
+                  <Package className="w-4 h-4 text-accent" />
                   {editingProduct
                     ? "Editar Peça / Produto"
                     : "Cadastrar Novo Produto para Pronta Entrega"}
                 </h3>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-text-secondary">
                   Defina os custos fabris e o preço de venda para calcular a
                   margem real
                 </span>
@@ -713,7 +711,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-text-secondary hover:text-text-primary p-1"
               >
                 ✕
               </button>
@@ -724,7 +722,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
               className="flex flex-col gap-3.5"
             >
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                   NOME DO PRODUTO / PEÇA 3D
                 </label>
                 <input
@@ -733,13 +731,13 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Vaso Geométrico Espiral 20cm"
-                  className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 font-semibold"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:border-accent font-semibold"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     FILAMENTO / MATERIAL UTILIZADO
                   </label>
                   <input
@@ -747,12 +745,12 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                     value={filamentType}
                     onChange={(e) => setFilamentType(e.target.value)}
                     placeholder="Ex: PLA Silk Bicolor, PETG..."
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     PESO DA PEÇA (GRAMAS)
                   </label>
                   <input
@@ -766,14 +764,14 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                       )
                     }
                     placeholder="Ex: 120"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:border-accent"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     CUSTO FABRIL (R$)
                   </label>
                   <input
@@ -787,12 +785,12 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                       )
                     }
                     placeholder="Ex: 18.50"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     PREÇO DE VENDA (R$)
                   </label>
                   <input
@@ -806,19 +804,19 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                       )
                     }
                     placeholder="Ex: 45.00"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-purple-500 font-bold text-emerald-400"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:border-accent font-bold text-positive"
                   />
                 </div>
               </div>
 
               {/* Real-time Profit Simulation Box */}
-              <div className="bg-[#080d18] border border-[#192338] p-3 rounded-xl flex items-center justify-between text-xs">
+              <div className="bg-surface-sunken border border-border-subtle p-3 rounded-xl flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">
+                  <span className="text-[10px] font-mono uppercase text-text-secondary block">
                     LUCRO PROJETADO:
                   </span>
                   <span
-                    className={`text-base font-extrabold font-mono ${formProfit >= 0 ? "text-purple-400" : "text-rose-400"}`}
+                    className={`text-base font-extrabold font-mono ${formProfit >= 0 ? "text-accent" : "text-critical"}`}
                   >
                     {formProfit >= 0 ? "+" : ""}
                     {currencySymbol} {formProfit.toFixed(2).replace(".", ",")}
@@ -826,11 +824,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">
+                  <span className="text-[10px] font-mono uppercase text-text-secondary block">
                     MARGEM:
                   </span>
                   <span
-                    className={`text-base font-extrabold font-mono ${formMargin >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+                    className={`text-base font-extrabold font-mono ${formMargin >= 0 ? "text-positive" : "text-critical"}`}
                   >
                     +{formMargin}%
                   </span>
@@ -838,7 +836,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
               </div>
 
               {formIsBelowCost && (
-                <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-950/40 border border-amber-500/30 rounded-xl p-2.5">
+                <div className="flex items-center gap-1.5 text-xs text-warning bg-warning-subtle border border-warning/30 rounded-xl p-2.5">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span className="text-[11px] font-medium">
                     Atenção: O preço de venda está menor que o custo de
@@ -847,18 +845,18 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1b253b]">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={!name.trim()}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:ring-2 hover:ring-purple-500/40 text-white shadow-md disabled:opacity-40 transition-colors"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] shadow-md disabled:opacity-40 transition-colors"
                 >
                   {editingProduct ? "Salvar Alterações" : "Cadastrar Produto"}
                 </button>
@@ -871,11 +869,11 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
       {/* Delete Confirmation Dialog */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 text-slate-200">
-            <h4 className="text-sm font-bold text-white">
+          <div className="bg-surface-raised border border-border-subtle rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 text-text-secondary">
+            <h4 className="text-sm font-bold text-text-primary">
               Excluir Produto do Catálogo?
             </h4>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-text-secondary">
               Esta ação removerá este produto do seu inventário de pronta
               entrega. Deseja prosseguir?
             </p>
@@ -883,7 +881,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteId(null)}
-                className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white"
+                className="px-3 py-1.5 rounded-lg text-xs text-text-secondary hover:text-text-primary"
               >
                 Cancelar
               </button>
@@ -893,7 +891,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
                   if (confirmDeleteId) removeProduct(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}
-                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-rose-700 hover:ring-2 hover:ring-rose-500/40 text-white"
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-critical hover:ring-2 hover:ring-critical/40 text-text-inverse"
               >
                 Excluir
               </button>

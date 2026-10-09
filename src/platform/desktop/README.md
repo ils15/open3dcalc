@@ -49,6 +49,8 @@ npx electron-builder --win --linux  # Both
 ## Beta scope
 
 The approved plaintext synthetic-test profile is Web-Beta-only and does not apply to Electron.
-Desktop continues to use its existing Stable persistence, crypto, consent, export, and erasure
-contracts; no Beta fixture key or Beta build flag may enable the test profile in an Electron
-build. The current documentation/test wave does not change Desktop runtime behavior.
+For Stable/Desktop, the customer, quote, and history stores use the passwordless PII IPC route;
+their physical keys are `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quotes_v1`, and
+`open3dcalc_pwless_history_v1` in the SQLite `storage` key/value table. These are the Desktop
+destinations for the corresponding logical keys in the SPEC-01 fixture, not `localStorage`
+rows. No Beta fixture key or Beta build flag enables the test profile in an Electron build.

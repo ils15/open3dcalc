@@ -39,7 +39,6 @@ vi.mock("@/shared/lib/crypto/piiStoreHydration", () => ({
 }));
 
 import { PrivacyScreen } from "../PrivacyScreen";
-import { PiiLockedShell } from "../PiiLockedShell";
 
 afterEach(() => {
   cleanup();
@@ -49,23 +48,26 @@ afterEach(() => {
 });
 
 describe("Beta privacy reachability", () => {
-  it("does not mount privacy, consent, residue, or deletion controls", () => {
+  it("does not read legacy data, probe the vault, or mount privacy controls", () => {
+    window.localStorage.setItem(
+      "open3dcalc_customers_v1",
+      '{"state":{"customers":[{"id":"synthetic-canary"}]}}',
+    );
+    const getItem = vi.spyOn(Storage.prototype, "getItem");
     const { container } = render(<PrivacyScreen />);
 
     expect(container).toBeEmptyDOMElement();
     expect(residueDisclosureMounted).not.toHaveBeenCalled();
     expect(consentStoreImported).not.toHaveBeenCalled();
     expect(screen.queryByRole("button")).toBeNull();
-  });
-
-  it("does not probe or recover the vault at startup", () => {
-    const { container } = render(<PiiLockedShell />);
-
-    expect(container).toBeEmptyDOMElement();
+    expect(getItem).not.toHaveBeenCalledWith("open3dcalc_customers_v1");
     expect(vaultRuntime.install).not.toHaveBeenCalled();
     expect(vaultRuntime.rehydrate).not.toHaveBeenCalled();
     expect(vaultRuntime.profile).not.toHaveBeenCalled();
     expect(vaultRuntime.access).not.toHaveBeenCalled();
     expect(vaultRuntime.unlock).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem("open3dcalc_customers_v1")).toContain(
+      "synthetic-canary",
+    );
   });
 });

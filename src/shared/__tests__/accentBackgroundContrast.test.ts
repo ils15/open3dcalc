@@ -477,8 +477,8 @@ const WASH_SITE_PIN: Record<string, string[]> = {
  * `platform/web/components/studio/` (CustomerView 6, QuotesView 5,
  * ProductsView 4, SpoolView 3, HistoryView 3, QuoteModal 2, Header 2,
  * DashboardView 2, SubHeader 1, ShortcutsModal 1, PrinterView 1, Layout 1,
- * CockpitDock 1), plus 2 in `shared/components/Catalog/CatalogTab.tsx` and 2 in
- * `shared/components/Privacy/PiiLockedShell.tsx`. Every one is `unidentified`
+ * CockpitDock 1), plus 2 in `shared/components/Catalog/CatalogTab.tsx`.
+ * Every one is `unidentified`
  * (no static id or source marker) and `unpinned`, which is why
  *
  *   - "accounts for every palette SITE against its own pin" fails with 36,

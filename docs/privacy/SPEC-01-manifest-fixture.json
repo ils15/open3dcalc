@@ -101,6 +101,23 @@
       "key": "open3dcalc_customers_v1",
       "surface": "localStorage",
       "platforms": ["electron", "web", "pwa"],
+      "platform_destinations": [
+        {
+          "platform": "electron",
+          "key": "open3dcalc_pwless_customers_v1",
+          "surface": "sqlite_storage_table"
+        },
+        {
+          "platform": "web",
+          "key": "open3dcalc_customers_v1",
+          "surface": "localStorage"
+        },
+        {
+          "platform": "pwa",
+          "key": "open3dcalc_customers_v1",
+          "surface": "localStorage"
+        }
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "plaintext_allowed",
@@ -111,7 +128,7 @@
         "policy": "user_controlled",
         "max_days": 0
       },
-      "purpose": "PROVISIONAL — Customer directory (name, company, email, phone, address, notes) used to issue quotes. Legal basis contract_performance is a policy declaration only and requires qualified legal review; it is not an engineering or legal determination.",
+      "purpose": "PROVISIONAL — Customer directory (name, company, email, phone, address, notes) used to issue quotes. Desktop stores this logical key as open3dcalc_pwless_customers_v1 in SQLite storage; Web/PWA use the listed localStorage key. Legal basis contract_performance is a policy declaration only and requires qualified legal review; it is not an engineering or legal determination.",
       "legal_basis": "contract_performance",
       "owner": "hermes",
       "version": "1.0"
@@ -139,6 +156,23 @@
       "key": "open3dcalc_quotes_v1",
       "surface": "localStorage",
       "platforms": ["electron", "web", "pwa"],
+      "platform_destinations": [
+        {
+          "platform": "electron",
+          "key": "open3dcalc_pwless_quotes_v1",
+          "surface": "sqlite_storage_table"
+        },
+        {
+          "platform": "web",
+          "key": "open3dcalc_quotes_v1",
+          "surface": "localStorage"
+        },
+        {
+          "platform": "pwa",
+          "key": "open3dcalc_quotes_v1",
+          "surface": "localStorage"
+        }
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "plaintext_allowed",
@@ -149,7 +183,7 @@
         "policy": "user_controlled",
         "max_days": 0
       },
-      "purpose": "PROVISIONAL — Quotes including customerSnapshot blobs (name, company, email, phone). Legal basis contract_performance is a policy declaration only and requires qualified legal review; it is not an engineering or legal determination.",
+      "purpose": "PROVISIONAL — Quotes including customerSnapshot blobs (name, company, email, phone). Desktop stores this logical key as open3dcalc_pwless_quotes_v1 in SQLite storage; Web/PWA use the listed localStorage key. Legal basis contract_performance is a policy declaration only and requires qualified legal review; it is not an engineering or legal determination.",
       "legal_basis": "contract_performance",
       "owner": "hermes",
       "version": "1.0"
@@ -215,6 +249,23 @@
       "key": "open3dcalc_history_v2",
       "surface": "localStorage",
       "platforms": ["electron", "web", "pwa"],
+      "platform_destinations": [
+        {
+          "platform": "electron",
+          "key": "open3dcalc_pwless_history_v1",
+          "surface": "sqlite_storage_table"
+        },
+        {
+          "platform": "web",
+          "key": "open3dcalc_history_v2",
+          "surface": "localStorage"
+        },
+        {
+          "platform": "pwa",
+          "key": "open3dcalc_history_v2",
+          "surface": "localStorage"
+        }
+      ],
       "class": "user_content",
       "pii": true,
       "persistence": "plaintext_allowed",
@@ -225,7 +276,7 @@
         "policy": "user_controlled",
         "max_days": 0
       },
-      "purpose": "PROVISIONAL — Calculation history entries; PII-derived because entries can reference product/customer names. Legal basis contract_performance is a policy declaration only and requires qualified legal review; it is not an engineering or legal determination.",
+      "purpose": "PROVISIONAL — Calculation history entries; PII-derived because entries can reference product/customer names. Desktop stores this logical key as open3dcalc_pwless_history_v1 in SQLite storage; Web/PWA use the listed localStorage key. Legal basis contract_performance is a policy declaration only and requires qualified legal review; it is not an engineering or legal determination.",
       "legal_basis": "contract_performance",
       "owner": "hermes",
       "version": "1.0"

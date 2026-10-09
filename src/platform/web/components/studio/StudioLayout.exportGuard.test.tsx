@@ -63,12 +63,6 @@ vi.mock("@/shared/components/DemoMode/DemoModeIndicator", () => ({
 vi.mock("@/shared/components/Privacy/PrivacyOnboarding", () => ({
   PrivacyOnboarding: () => null,
 }));
-vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({
-  LegacyMigrationPrompt: () => null,
-}));
-vi.mock("@/shared/components/Privacy/PiiLockedShell", () => ({
-  PiiLockedShell: () => null,
-}));
 vi.mock("@/shared/hooks/useAppInit", () => ({ useAppInit: () => {} }));
 vi.mock("@/shared/hooks/useReducedMotion", () => ({
   useReducedMotion: () => true,

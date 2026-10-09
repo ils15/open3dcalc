@@ -1,6 +1,6 @@
 # TEST-MATRIX — Policy 1.9 Contracts
 
-**Scope:** Stable/Desktop direct plaintext saves, unchanged Web-Beta restrictions, current-owned-data deletion, and retained encrypted export. This matrix replaces the former local at-rest encryption, vault-lock, consent-gate, and migration test requirements. It does not authorize runtime changes in the contracts/RED-test slice.
+**Scope:** Stable/Desktop direct plaintext saves, Web-Beta app-mediated restrictions, current-owned-data deletion, and retained encrypted export. This matrix replaces the former local at-rest encryption, vault-lock, consent-gate, and startup-migration requirements. Implementation is present on the current branch; final Themis review is pending and no publication is authorized.
 
 ## 0. Global rules
 
@@ -10,27 +10,28 @@
 - Assert failures by cause. A RED test is valid only when it fails because the intended
   policy behavior is absent, not due to setup, malformed fixtures, or unrelated runtime errors.
 - Stable and Desktop local PII saves require no passphrase, consent receipt, vault unlock, or
-  export password. Beta remains synthetic-only and retains all restrictions listed in §3.
+  export password. Beta is intended for synthetic records, but app checks do not validate record
+  content; its namespace restriction is app-mediated and not a same-origin security boundary.
 - Keep encrypted export cryptography and its existing compatibility/integrity coverage (§6).
 - Do not open, enumerate, inspect, convert, recover, migrate, or delete inert historical vault
   bytes. No startup cleanup test may expect such bytes to be removed.
 
 ## 1. Manifest and policy validation (SPEC-01)
 
-| ID  | Setup                                                        | Required result                                                                                                                                                      |
-| --- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1.1 | Validate the Stable manifest fixture against the schema      | Valid policy 1.9; manifest version and encrypted-entry versions remain frozen                                                                                        |
-| 1.2 | Inspect the three Stable customer/quote/history keys         | Each declares `pii:true`, `persistence:plaintext_allowed`, localStorage, Electron/Web/PWA, and `legal_basis:contract_performance` marked provisional/review-required |
-| 1.3 | Try `plaintext_allowed` for any other PII key or destination | Rejected; only the exact three-key scope and declared destination are accepted                                                                                       |
-| 1.4 | Inspect vault and retired migration targets                  | Not declared as active write, migration, or deletion targets; existing stored bytes are not read or changed                                                          |
-| 1.5 | Validate the Beta fixture/schema                             | Unchanged exact three Web-only synthetic keys; no permissions for sync, export, import, or deletion                                                                  |
-| 1.6 | Validate unrelated manifest constraints                      | Unknown keys/enums, malformed entries, duplicate keys, and invalid snapshot/diagnostic/consent declarations remain rejected                                          |
+| ID  | Setup                                                        | Required result                                                                                                                                                 |
+| --- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1 | Validate the Stable manifest fixture against the schema      | Valid policy 1.9; manifest version and encrypted-entry versions remain frozen                                                                                   |
+| 1.2 | Inspect the three Stable customer/quote/history keys         | Each declares `pii:true`, `persistence:plaintext_allowed`, provisional `contract_performance`, Web/PWA `localStorage` and its Desktop alias in SQLite `storage` |
+| 1.3 | Try `plaintext_allowed` for any other PII key or destination | Rejected; only the exact three-key scope and platform-specific destinations are accepted                                                                        |
+| 1.4 | Inspect vault and retired migration targets                  | Not declared as active write, migration, or deletion targets; existing stored bytes are not read or changed                                                     |
+| 1.5 | Validate the Beta fixture/schema                             | Exact three Web-only keys designated for synthetic test data; no permissions for sync, export, import, or deletion                                              |
+| 1.6 | Validate unrelated manifest constraints                      | Unknown keys/enums, malformed entries, duplicate keys, and invalid snapshot/diagnostic/consent declarations remain rejected                                     |
 
-## 2. Required RED suites — direct saves and channels
+## 2. Historical D1.0 RED phase (closed)
 
-The contract slice adds the following tests first. They are expected to fail until later runtime
-slices implement the policy. Capture the failure reason for each; do not modify runtime code to
-make this phase green.
+The following table preserves the original RED-first implementation plan. Its expected-failure
+status applied to the historical contracts-only phase and is not the status of the current
+branch. The current branch has implemented these behaviors; use §8 for final verification.
 
 | Suite                       | Required scenario                                                                                                    | RED reason before runtime implementation                                                                                                  |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -46,24 +47,24 @@ exception is not valid RED evidence.
 
 ## 3. Beta restrictions and isolation
 
-| ID  | Setup                                                                                     | Required result                                                                                                                                  |
-| --- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 3.1 | Beta opens with empty profile                                                             | First-run disclosure says test-only, synthetic-only, plaintext/local, disposable profile; no password/consent/migration/export/deletion controls |
-| 3.2 | Attempt Stable-key access, prefix variant, unknown key, or legacy marker                  | Denied without reading, writing, scanning, or altering bytes                                                                                     |
-| 3.3 | Attempt IndexedDB/vault, Cache API, SQLite, desktop bridge, namespace sweep, or migration | No access or mutation; Beta remains Web-only                                                                                                     |
-| 3.4 | Attempt sync, import, export, backup, erasure, withdrawal, recovery, or delete            | Refused before record collection, storage, crypto, filesystem, or dispatch                                                                       |
-| 3.5 | Seed same-origin Stable canaries and exercise Beta                                        | Stable bytes remain inaccessible and byte-identical; only the three Beta fixture keys are touched                                                |
+| ID  | Setup                                                                                     | Required result                                                                                                                                                           |
+| --- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1 | Beta opens with empty profile                                                             | First-run disclosure says test-only, intended synthetic use, plaintext/local, disposable profile; no password/consent/migration/export/deletion controls                  |
+| 3.2 | Attempt Stable-key access, prefix variant, unknown key, or legacy marker                  | Denied without reading, writing, scanning, or altering bytes                                                                                                              |
+| 3.3 | Attempt IndexedDB/vault, Cache API, SQLite, desktop bridge, namespace sweep, or migration | No access or mutation; Beta remains Web-only                                                                                                                              |
+| 3.4 | Attempt sync, import, export, backup, erasure, withdrawal, recovery, or delete            | Refused before record collection, storage, crypto, filesystem, or dispatch                                                                                                |
+| 3.5 | Seed same-origin Stable canaries and exercise Beta                                        | Beta app paths leave Stable bytes byte-identical and touch only the three Beta keys; this does not prevent same-origin scripts/extensions/DevTools from accessing storage |
 
 ## 4. Stable/Desktop save, reload, and failure behavior
 
-| ID  | Setup                                                                                             | Required result                                                                                                         |
-| --- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| 4.1 | Fresh Stable Web profile; save a synthetic record to each declared customer/quote/history key     | Plaintext bytes are stored directly under the exact key with no password/consent/unlock prerequisite                    |
-| 4.2 | Reload Stable Web with the same storage                                                           | The saved values are hydrated intact; no empty default overwrites existing bytes                                        |
-| 4.3 | Fresh Desktop profile; save and reload each supported PII record through its declared destination | Values persist and reload as plaintext under policy 1.9; no keyring/passphrase prerequisite                             |
-| 4.4 | Local storage read/write unavailable or throws                                                    | The save reports failure truthfully; it does not claim durable success or silently drop the value                       |
-| 4.5 | Malformed stored bytes                                                                            | Do not overwrite with empty defaults; expose a recoverable storage error without inspecting unrelated historical stores |
-| 4.6 | Seed an inert legacy-vault canary before save/startup                                             | No code path opens, enumerates, reads, converts, recovers, migrates, or removes the canary                              |
+| ID  | Setup                                                                                             | Required result                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1 | Fresh Stable Web profile; save a synthetic record to each declared customer/quote/history key     | Plaintext bytes are stored directly under the exact key with no password/consent/unlock prerequisite                            |
+| 4.2 | Reload Stable Web with the same storage                                                           | The saved values are hydrated intact; no empty default overwrites existing bytes                                                |
+| 4.3 | Fresh Desktop profile; save and reload each supported PII record through its declared destination | Values persist and reload as plaintext under `open3dcalc_pwless_*` keys in SQLite `storage`; no keyring/passphrase prerequisite |
+| 4.4 | Local storage read/write unavailable or throws                                                    | The save reports failure truthfully; it does not claim durable success or silently drop the value                               |
+| 4.5 | Malformed stored bytes                                                                            | Do not overwrite with empty defaults; expose a recoverable storage error without inspecting unrelated historical stores         |
+| 4.6 | Seed an inert legacy-vault canary before save/startup                                             | No code path opens, enumerates, reads, converts, recovers, migrates, or removes the canary                                      |
 
 ## 5. Current-owned-data deletion
 
@@ -92,10 +93,10 @@ exception is not valid RED evidence.
 | 7.2 | Save while there is no receipt, an old receipt, or a mismatched receipt | Local save proceeds; receipt status is not a save gate                                                                            |
 | 7.3 | Check legal-basis annotation in the fixture                             | `contract_performance` is visibly provisional and subject to qualified legal review, not asserted as an engineering determination |
 
-## 8. Verification gates
+## 8. Current verification and review gates
 
-- Stable Web app typecheck, Desktop/Electron typecheck, and ESLint pass.
-- All new RED cases fail only for the expected missing policy behavior; unrelated baseline
-  failures are reported separately.
-- The RED phase changes documentation and tests only. No runtime, dependency, build, or
-  deployment workflow change is permitted.
+- Run the full test suite, web and Electron typechecks, ESLint, formatting checks, Stable and
+  Beta builds, and stable-preview browser checks for this branch's final wave; report any
+  unrelated baseline failures separately.
+- Final Themis review is required before promotion. This matrix authorizes no commit, merge,
+  release, or publication; published web Beta remains v2.0.0-beta.13.

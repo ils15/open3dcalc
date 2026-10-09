@@ -54,7 +54,6 @@ import {
   type PiiVaultAccessState,
 } from "@/shared/lib/crypto/piiStoreHydration";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
-import { LEGACY_PII_REHOME_MARKER_KEY } from "@/shared/lib/migration/legacyPiiRehome";
 import {
   MIGRATION_MARKER_KEY,
   MIGRATION_PROGRESS_KEY,
@@ -65,6 +64,9 @@ import {
   detectMigrationDrift,
   type MigrationDrift,
 } from "@/shared/lib/migration/migrationDrift";
+
+/** Historical marker that reports whether the retired re-home ever completed. */
+export const LEGACY_PII_REHOME_MARKER_KEY = "open3dcalc_legacy_pii_rehomed_v1";
 
 /** The re-home disclosure state shown to the user. */
 export type RehomeDisclosureState = "migrated" | "pending" | "incomplete";

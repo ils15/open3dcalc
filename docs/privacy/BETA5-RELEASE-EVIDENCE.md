@@ -203,8 +203,10 @@ conteúdo aprovado está contido nesse merge. Todos os itens humanos do gate (§
 > - **IPC read-only** `privacy:legacy-rows` (`electron/legacyRows.ts`): lê exatamente as três chaves
 >   declaradas, devolve o valor cru apenas para linhas `legacy_plaintext`, reporta `already_encrypted`
 >   (envelope `enc1:`, sem valor) e `absent` — nunca INSERT/UPDATE/DELETE, nunca valores em log.
-> - **Re-home** (`legacyPiiRehome.ts` + `desktopLegacyRows.ts`): uma única implementação. O contrato
->   é idêntico — consent-gated, fail-closed em vault travado, copy-without-delete,
+> - **Re-home** (na Beta 5, `legacyPiiRehome.ts` + `desktopLegacyRows.ts`): uma única implementação.
+>   Esses nomes registram o estado histórico da Beta 5; `legacyPiiRehome.ts` foi removido no
+>   cleanup atual e não representa um módulo disponível no branch. O contrato então era
+>   consent-gated, fail-closed em vault travado, copy-without-delete,
 >   verify-before-complete, idempotente. `fetchLegacy` só é consultado quando o `read` síncrono não
 >   encontra resíduo.
 > - **UX desktop-aware** (`useLegacyPiiResidue` / `useLegacyPiiDisclosure`): os hooks fazem merge das
@@ -272,9 +274,9 @@ The Beta 5 evidence above records the policy, code, release gates, and limitatio
 to that historical release. It is not the current Stable/Desktop at-rest policy. Under approved
 policy 1.9, Stable Web/PWA and Desktop directly save the exact customer, quote, and history
 keys as plaintext without a password, vault unlock, or consent prerequisite; encrypted logical
-export remains unchanged and its password never gates local saves. Web Beta remains
-synthetic-only with its existing no-sync, no-import/export, no-deletion, and no-legacy-access
-restrictions. Historical `open3dcalc_pii_vault` bytes are now inert and excluded from current
+export remains unchanged and its password never gates local saves. Web Beta is intended for
+synthetic test data (not content-validated), with its existing no-sync, no-import/export,
+no-deletion, and no-legacy-access restrictions. Historical `open3dcalc_pii_vault` bytes are now inert and excluded from current
 deletion scope; no inspection, conversion, recovery, migration, or cleanup is promised. The
 `contract_performance` declaration is provisional and requires qualified legal review. This
 notice supersedes only current-policy interpretation; it does not rewrite the release history

@@ -464,10 +464,8 @@ describe("keyboard shortcuts dialog", () => {
 // ─── locale parity ───────────────────────────────────────────────────────
 
 /**
- * Only `tutorial.launcher` has an automatic lock elsewhere, so a key that
- * exists in pt-BR and not in en-US renders as the raw key ("quickActions.open")
- * for every en-US user and breaks nothing. Parity is asserted here instead:
- * EXACT key-set equality in both directions, and no blank value.
+ * Keep this namespace's pt-BR and en-US keys in exact parity, and reject blank
+ * values so untranslated labels cannot silently ship.
  */
 describe("quickActions.* locale parity", () => {
   it("has the same key set in pt-BR and en-US", () => {

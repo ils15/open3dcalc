@@ -7,10 +7,16 @@
 ## 1. Approved policy and consequences
 
 - Stable Web/PWA and Desktop directly persist only the three PII keys declared in SPEC-01
-  policy 1.9: customers, quotes, and history. Do not broaden the key or destination scope.
+  policy 1.9: customers, quotes, and history. Web/PWA use their logical localStorage keys;
+  Desktop uses `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quotes_v1`, and
+  `open3dcalc_pwless_history_v1` in SQLite's `storage` table. Do not broaden the key or
+  destination scope.
 - Stable and Beta local saves have no password, vault-unlock, consent, or receipt prerequisite.
-  Beta remains Web-only, synthetic-only, and restricted to its unchanged three Beta keys; it
-  still refuses sync, import, export, backup, deletion, migration, and legacy access.
+  Beta remains Web-only and restricted by app-mediated storage guards to its unchanged three
+  Beta keys. Synthetic-only is an intended-use restriction: the app does not validate record
+  contents. This is not a security boundary against same-origin scripts, browser extensions,
+  or DevTools. Beta refuses sync, import, export, backup, deletion, migration, and legacy access
+  through its own app paths.
 - `contract_performance` is a provisional fixture annotation requiring qualified legal
   review. Engineering does not choose or certify a legal basis.
 - Encrypted logical export (E1) retains its existing password, algorithms, integrity checks,
@@ -29,7 +35,7 @@
 | Stable manifest                       | Keep `manifest_version` at `1.0`; set `policy_version` to `1.9`                                                                          |
 | Stable customer/quote/history entries | Set `pii:true`, `persistence:plaintext_allowed`, and provisional `legal_basis:contract_performance`; preserve per-entry `version` values |
 | Other PII entries and destinations    | Keep their prior restrictions; no blanket plaintext permission                                                                           |
-| Beta schema and fixture               | No change; preserve the exact three Web-only synthetic keys and restrictions                                                             |
+| Beta schema and fixture               | No change; preserve the exact three Web-only keys designated for synthetic test data and their restrictions                              |
 | SPEC-03 encrypted export              | Freeze format/version, algorithms, KDF parameters, integrity rules, and limits                                                           |
 | Existing receipts                     | Preserve bytes; old policy receipts evaluate as `policy_mismatch` under 1.9                                                              |
 | Historical vault/migration targets    | Retire as active manifest/write/delete targets; never mutate existing stored bytes                                                       |
@@ -47,10 +53,10 @@ For each implementation phase, run and record:
 4. `npm run lint`.
 5. Save/reload checks for Stable Web, Desktop, and Beta; storage failure must not be reported
    as a durable save.
-6. Negative reachability checks proving no historical-vault access and Beta refusal before
-   prohibited operations.
-7. Diff inspection to confirm no runtime changes occur in a documentation/RED-only phase,
-   and no Beta schema/fixture changes occur in this slice.
+6. Negative reachability checks proving no historical-vault startup access and Beta refusal
+   before prohibited app operations.
+7. Diff inspection to confirm changes stay within the approved final-wave scope; Beta schema
+   and fixture updates must match the documented intended-use and same-origin limitations.
 
 A RED test is acceptable only when it fails because the target policy behavior is missing.
 Fixture parse failures, type errors, unrelated component exceptions, and environmental setup

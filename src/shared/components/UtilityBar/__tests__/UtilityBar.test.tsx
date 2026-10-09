@@ -15,13 +15,9 @@ import { Header as DesktopHeader } from "@/platform/desktop/components/Header/He
  * controls it carries are gone from the header, which is the only thing that
  * makes the band worth its 40px.
  *
- * The i18n mock is a real resolver rather than the `t: (k) => k` passthrough the
- * other chrome suites use, for the reason `ContextBreadcrumb.test.tsx:14-22`
- * records: the repository locks pt/en parity for `tutorial.launcher` ONLY
- * (`layoutShell.test.ts:24-34`), so a key present in pt-BR and missing from
- * en-US renders as the raw key in English and fails nothing. A passthrough
- * mock would hide that. Every assertion below therefore reads real copy, in
- * both locales, and a missing key shows up as `utilityBar.label` in the DOM.
+ * The i18n mock is a real resolver rather than the `t: (k) => k` passthrough
+ * used by some chrome suites. Every assertion below therefore reads real copy
+ * in both locales, and a missing key shows up as `utilityBar.label` in the DOM.
  */
 function translate(key: string, locale: Record<string, unknown>): string {
   let node: unknown = locale;

@@ -156,12 +156,12 @@ never committed to live stores. Import applies to live stores only after full va
 and only as an atomic per-store swap (or a journaled apply equivalent to SPEC-02's
 per-store model).
 
-## 10. What D1.0 does NOT deliver
+## 10. Historical D1.0 implementation baseline
 
-D1.0 is the normative text. As of D1.0, `dataSync.ts` produces the `1.0` bundle (100k
-iterations, no AAD binding, no limits, no strict unknown-field rejection) — that is the
-baseline this spec obligates D1.1+ to supersede. TEST-MATRIX §7 defines the mandatory
-contract tests (tamper, wrong password, downgrade, cross-version import, crash mid-import).
+At the D1.0 snapshot, `dataSync.ts` produced the `1.0` bundle (100k iterations, no AAD binding,
+no limits, no strict unknown-field rejection). That historical baseline was the reason for this
+specification; it is not current implementation status. Export contract tests are in
+TEST-MATRIX §6 (tamper, wrong password, downgrade, cross-version import, crash mid-import).
 
 ## 11. Compliance trace
 
@@ -173,13 +173,14 @@ contract tests (tamper, wrong password, downgrade, cross-version import, crash m
   path).
 - Cross-references: ADR-001 (key derivation matches capability model), ADR-003
   (classification), SPEC-01 (`export: user_export` keys only), SPEC-04 (same
-  canonicalization for receipts), TEST-MATRIX §7.
+  canonicalization for receipts), TEST-MATRIX §6.
 
 ## Status
 
-**Status: Proposed (awaiting Themis gate + user final approval)**
+**Status:** Retained by policy 1.9 for encrypted logical export; local-save prerequisites are
+superseded by the policy 1.9 decision above.
 
-## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+## Beta test-only profile addendum (approved scope; implementation on current branch)
 
 SPEC-03 remains the Stable/Desktop encrypted export-envelope contract. The Web-Beta test-only
 profile has no user export, import, sync bundle, raw backup, or export-password flow; neither
@@ -189,5 +190,5 @@ collection or file I/O, and Beta UI does not expose the import/export dialog.
 
 This does not retire or reinterpret any historical encrypted envelope. Stable fixture and
 policy versions, receipt hashes, and encrypted-entry/envelope compatibility remain frozen.
-Waves 1–3 are implemented: Beta export/import refusal and UI removal are enforced
-(betaNoExport); Stable envelope behavior is unchanged.
+Beta export/import refusal and UI removal are implemented (betaNoExport); Stable envelope
+behavior is unchanged. Final Themis review is pending; no publication is authorized or performed.

@@ -16,13 +16,9 @@ import { Header as DesktopHeader } from "@/platform/desktop/components/Header/He
  * claims) and the copy contract (that every key it can ask for actually
  * resolves in BOTH locales).
  *
- * The i18n mock below is a real resolver, not the `t: (k) => k` passthrough the
- * other chrome suites use. That is deliberate: the repository only locks
- * `tutorial.launcher` for pt/en parity (`layoutShell.test.ts:24-34`), so a
- * key that exists in pt-BR and is missing from en-US renders as the raw key in
- * English without failing anything. A passthrough mock would hide that; a real
- * resolver makes every assertion below assert on real copy, so a typo or an
- * untranslated key shows up as `breadcrumb.whatever` in the DOM and fails.
+ * The i18n mock below is a real resolver, not the `t: (k) => k` passthrough
+ * used by some chrome suites. It makes assertions run against translated copy,
+ * so a typo or untranslated breadcrumb key appears as its raw key and fails.
  */
 function translate(key: string, locale: Record<string, unknown>): string {
   let node: unknown = locale;
@@ -241,10 +237,8 @@ describe("contextual breadcrumb", () => {
   });
 
   it("keeps every breadcrumb translation in sync between pt-BR and en-US", () => {
-    // The repository has no general pt/en lock — only `tutorial.launcher` is
-    // pinned (`layoutShell.test.ts:24-34`) — so a key added to one locale and
-    // forgotten in the other ships silently and renders as the raw key. This is
-    // the lock for the block this change introduced.
+    // Keep this component's resource keys in sync in both locales; the generic
+    // locale checks do not replace a focused assertion for this namespace.
     const flatten = (value: unknown, prefix = ""): string[] => {
       if (typeof value !== "object" || value === null) return [prefix];
       return Object.entries(value as Record<string, unknown>).flatMap(

@@ -10,13 +10,18 @@ password is never a prerequisite for saving customers, quotes, or history locall
 The former vault-unlock prerequisite for export is removed. Export must operate only on its
 currently supported, explicitly selected data inputs and must not open, read, inspect, convert,
 recover, or migrate inert historical `open3dcalc_pii_vault` data. That vault and other retired
-legacy targets are outside the current deletion scope. Beta restrictions remain unchanged:
-synthetic-only, with no import, export, or backup path.
+legacy targets are outside the current deletion scope. Beta remains limited to its exact keys,
+intended for synthetic test data (not content-validated), with no import, export, or backup path;
+its app-mediated namespace is not a boundary against same-origin code.
 
 **Track:** D1 — Privacy & Data Contracts
 **Status:** Superseded for vault access by approved policy 1.9; logical export/backup distinction retained
 **Addresses findings:** R2 (export lógico vs raw), R13 (raw SQLite diagnóstico)
 **Related:** SPEC-01 (manifest), SPEC-03 (export envelope), ADR-002 (quarantine)
+
+> **Historical D1.0 proposal below.** The original implementation and release claims describe
+> the D1.0 snapshot, not current runtime status. The policy 1.9 clarification above governs
+> current local saves; only the logical-export/diagnostic-backup distinction remains operative.
 
 ## 1. Context
 
@@ -100,11 +105,11 @@ From D1.1+ onward, `db:export` (or its successor) is **not** a user feature:
   D1.1+ slice that implements this ADR; release notes must state the replacement (SPEC-03
   export) explicitly.
 
-## 4. What D1.0 does NOT deliver
+## 4. D1.0 implementation status (historical)
 
-D1.0 is documentation. As of D1.0, `db:export` remains a user-facing raw copy — that is the
-gap this ADR obligates D1.1+ to close (reclassify, gate, redact, retain, dispose). Nothing
-here claims the reclassification has already happened.
+At the D1.0 snapshot, `db:export` remained a user-facing raw copy — the gap the original ADR
+proposed D1.1+ should close through reclassification, gating, redaction, retention, and
+disposal. This is historical status, not a statement of the current runtime.
 
 ## 5. Compliance trace
 
@@ -118,16 +123,17 @@ here claims the reclassification has already happened.
 
 ## Status
 
-**Status: Proposed (awaiting Themis gate + user final approval)**
+**Status:** Policy 1.9 export/backup distinction retained; D1.0 implementation proposal
+historical.
 
-## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+## Beta test-only profile addendum (approved scope; current branch status)
 
 ADR-003's distinction between Stable user export and engineering backup remains unchanged. The
 Web-Beta test-only profile exposes neither user export/import nor backup, including the
-encrypted envelope and password prompts. Its three synthetic keys are always `sync: never`
-and `export: never`; Beta data must not enter Stable export bundles or diagnostics. Desktop and
+encrypted envelope and password prompts. Its three keys are intended for synthetic data (not
+content-validated) and always `sync: never` and `export: never`; Beta data must not enter Stable export bundles or diagnostics. Desktop and
 Stable retain their existing encrypted-export and separately governed backup contracts.
 
-Waves 1–3 are implemented: Beta export/import/backup refusal and UI removal are enforced
-(betaNoExport guard plus dialog removal). No Stable runtime behavior or historical export
-format is changed by this addendum.
+Beta export/import/backup refusal and UI removal are implemented (betaNoExport guard plus dialog
+removal). No Stable runtime behavior or historical export format is changed by this addendum.
+Final Themis review is pending; no publication is authorized or performed.

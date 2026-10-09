@@ -17,10 +17,8 @@ export const DISABLED_LEGACY_PRIVACY_CHANNELS = [
 
 /**
  * Reject obsolete inspection/recovery/migration IPC without acquiring a
- * database capability. The renderer privacy mounts are removed in the
- * following wave; until then, rejecting is safer and more explicit than
- * returning an empty report that could be mistaken for proof that legacy PII
- * is absent.
+ * database capability. Rejecting is safer and more explicit than returning an
+ * empty report that could be mistaken for proof that legacy PII is absent.
  *
  * On Beta the refusal names the Beta channel instead: the Web-only Beta must
  * not present even a Stable-worded legacy-PII surface. Both branches refuse —

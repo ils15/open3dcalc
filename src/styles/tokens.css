@@ -109,26 +109,6 @@
   --info: #1d4ed8;
   --info-subtle: #eff6ff;
 
-  /* Status ink for a FIXED dark surface. `--positive` / `--warning` /
-     `--critical` are FOREGROUND tokens that flip per theme, so they are only
-     correct on a surface that flips with them. StudioQuotesView paints its
-     cards on a hardcoded `bg-[#0c111e]` in BOTH themes (its own hardcoded
-     palette is out of scope for the shell tokenization), so in light mode it
-     put the light inks on a near-black card: --positive 3.44:1,
-     --warning 2.66:1, --critical 2.91:1 — all under the 4.5:1 AA floor, and
-     the warning/critical pair illegible.
-
-     These three are the dark-surface inks and are deliberately
-     theme-INDEPENDENT, for the same reason `--danger-fill` /
-     `--positive-fill` are: the BACKGROUND is theme-independent here, so the
-     INK must be too. They are the .dark values of the corresponding token,
-     which is the only set that clears AA on a dark surface (9.80 / 11.29 /
-     9.96:1 on #0c111e). Re-declared in BOTH theme blocks so a one-theme edit
-     becomes a visible test failure rather than a silent divergence. */
-  --positive-ink-dark: #34d399;
-  --warning-ink-dark: #fbbf24;
-  --critical-ink-dark: #fda4af;
-
   /* Solid variant FILLS for the confirm dialog (danger / warning).
      Same reasoning as --accent-fill above: these are BACKGROUNDS. What broke
      the dialog is that its backgrounds were raw Tailwind palette utilities
@@ -480,15 +460,6 @@
   --info: #7dd3fc;
   --info-subtle: #102b3b;
 
-  /* Status ink for a FIXED dark surface. Theme-INDEPENDENT by design and
-     identical to the :root values — see the note there. This is the entire
-     point: StudioQuotesView's cards stay `bg-[#0c111e]` in light mode, so the
-     ink must not flip with the theme. Re-declared rather than inherited so a
-     one-theme edit is a visible test failure. */
-  --positive-ink-dark: #34d399;
-  --warning-ink-dark: #fbbf24;
-  --critical-ink-dark: #fda4af;
-
   /* Solid variant FILLS. Identical to :root, NOT derived from the .dark
      semantics above, for the same reason --accent-fill is: the background is
      theme-independent, so only the INK is allowed to differ — and here the ink
@@ -640,9 +611,6 @@
   --color-warning-fill-hover: var(--warning-fill-hover);
   --color-positive-fill: var(--positive-fill);
   --color-positive-fill-fg: var(--positive-fill-fg);
-  --color-positive-ink-dark: var(--positive-ink-dark);
-  --color-warning-ink-dark: var(--warning-ink-dark);
-  --color-critical-ink-dark: var(--critical-ink-dark);
   --color-focus-ring-light: var(--focus-ring-light);
   --color-focus-ring-dark: var(--focus-ring-dark);
 
@@ -712,11 +680,6 @@
   --color-warning-subtle: var(--warning-subtle);
   --color-critical: var(--critical);
   --color-critical-subtle: var(--critical-subtle);
-  /* Fixed-dark-surface status ink (theme-independent). See the note on
-     --positive-ink-dark in the :root palette block. */
-  --color-positive-ink-dark: var(--positive-ink-dark);
-  --color-warning-ink-dark: var(--warning-ink-dark);
-  --color-critical-ink-dark: var(--critical-ink-dark);
   --color-info: var(--info);
   --color-info-subtle: var(--info-subtle);
 

@@ -1,16 +1,13 @@
 /**
- * Read-only access to the legacy plaintext PII rows (Beta5 desktop re-home).
+ * Historical reader for legacy plaintext PII rows; its desktop IPC route is disabled.
+ * There is no current production caller and no startup migration/re-home path.
  *
  * ## Why this exists
  *
- * On desktop the three migrated PII keys live as `storage` rows in SQLite. After
- * Wave 3 the `persistence-bridge` deliberately STOPS hydrating them
- * (`PII_BRIDGE_KEYS`), so a profile that predates the vault unlocks to EMPTY
- * stores while its real records stay in plaintext in `storage` — retained but,
- * from the renderer, inaccessible. The web remediation
- * (`migrateLegacyPlaintextPiiToVault`) reads the residue from `localStorage`;
- * the desktop equivalent needs the RESIDUE VALUES over IPC to copy them into the
- * vault, and no existing handler returns them:
+ * This module documents the historical Beta5 plan where old PII keys remained
+ * in SQLite `storage` rows but were no longer hydrated by `persistence-bridge`.
+ * The former web/desktop migration and re-home consumers have since been removed;
+ * no current handler or startup path copies these values into the vault:
  *
  *  - `privacy:scan-report` / `privacy:quarantine-report` are metadata only
  *    (key NAMES and counts, never values — TEST-MATRIX §3.2);
@@ -18,18 +15,17 @@
  *  - `privacy:recover-key` is ADR-001 §3.6 recovery of a CIPHERTEXT blob, not
  *    the plaintext residue.
  *
- * ## What it does, and refuses to do
+ * ## Historical behavior of this disabled reader
  *
- * `readLegacyPiiRows()` reads EXACTLY the three declared keys — never an
+ * If directly invoked (currently by tests only), `readLegacyPiiRows()` reads EXACTLY the three declared keys — never an
  * arbitrary key supplied by the renderer — and returns the RAW value verbatim
  * for one that is legacy plaintext. A row that is already an ADR-001 envelope
  * (`enc1:`) carries nothing to re-home and is reported `already_encrypted` with
  * no value; an absent row is `absent`. It is READ-ONLY: no INSERT, UPDATE,
  * DELETE or VACUUM is issued.
  *
- * The values are PII and travel to the renderer in memory only. They are never
- * logged here and the renderer MUST NOT persist them (the persistence bridge
- * already refuses these three keys, and the vault is the only destination).
+ * The values are PII. The former IPC route was read-only and did not log them,
+ * but that route is disabled and is not an active data-transfer contract.
  *
  * The key list is a local literal so this module stays importable from the
  * Node main process with no renderer dependency (it must not pull in

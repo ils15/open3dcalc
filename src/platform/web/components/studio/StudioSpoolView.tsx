@@ -262,20 +262,20 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-20">
+    <div className="flex flex-col gap-6 text-text-primary max-w-full pb-20">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-raised border border-border-subtle rounded-2xl p-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-warning animate-pulse"></span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-warning font-bold">
               ESTOQUE DE INSUMOS & RASTREABILIDADE
             </span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight text-text-primary flex items-center gap-2">
             Gestão de Insumos da Oficina
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-text-secondary mt-0.5">
             Controle volumétrico separado de filamentos FDM e resinas líquidas
             (SLA / DLP)
           </p>
@@ -284,7 +284,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
         <button
           type="button"
           onClick={openCreateModal}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md shadow-blue-950/40 self-start md:self-auto"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shadow-accent/40 self-start md:self-auto"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>
@@ -296,7 +296,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
       </div>
 
       {/* Category Switcher: FDM Filaments vs SLA/DLP Resins */}
-      <div className="flex items-center gap-2 bg-[#0c111e] border border-[#1b253b] p-1.5 rounded-2xl w-fit">
+      <div className="flex items-center gap-2 bg-surface-raised border border-border-subtle p-1.5 rounded-2xl w-fit">
         <button
           type="button"
           onClick={() => {
@@ -305,13 +305,13 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
           }}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             categoryTab === "fdm"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-950/50"
-              : "text-slate-400 hover:text-white hover:bg-[#121828]"
+              ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md shadow-accent/50"
+              : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
           }`}
         >
           <Package className="w-4 h-4" />
           <span>Carretéis de Filamento (FDM)</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/30">
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-surface-sunken">
             {spools.filter((s) => !isResin(s.material)).length}
           </span>
         </button>
@@ -324,13 +324,13 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
           }}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             categoryTab === "resin"
-              ? "bg-purple-600 text-white shadow-md shadow-purple-950/50"
-              : "text-slate-400 hover:text-white hover:bg-[#121828]"
+              ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md shadow-accent/50"
+              : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
           }`}
         >
           <Droplet className="w-4 h-4" />
           <span>Garrafas de Resina (SLA / DLP)</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/30">
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-surface-sunken">
             {spools.filter((s) => isResin(s.material)).length}
           </span>
         </button>
@@ -339,80 +339,84 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Bobinas */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               TOTAL DE CARRETÉIS
             </span>
-            <Package className="w-4 h-4 text-blue-400" />
+            <Package className="w-4 h-4 text-info" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">
+            <span className="text-2xl font-extrabold text-text-primary">
               {spools.length}
             </span>
-            <span className="text-xs text-slate-400 ml-1.5">cadastrados</span>
+            <span className="text-xs text-text-secondary ml-1.5">
+              cadastrados
+            </span>
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-text-muted">
             {spools.filter((s) => s.status === "in_stock").length} disponíveis
             para impressão
           </div>
         </div>
 
         {/* Peso Total */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               PESO TOTAL EM ESTOQUE
             </span>
-            <Scale className="w-4 h-4 text-emerald-400" />
+            <Scale className="w-4 h-4 text-positive" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-emerald-400">
+            <span className="text-2xl font-extrabold text-positive">
               {(totalGramsInStock / 1000).toFixed(2)} kg
             </span>
           </div>
-          <div className="text-[10px] text-slate-400">
+          <div className="text-[10px] text-text-secondary">
             {totalGramsInStock} gramas líquidas
           </div>
         </div>
 
         {/* Valor do Estoque */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               VALOR TOTAL DO ESTOQUE
             </span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <DollarSign className="w-4 h-4 text-positive" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">
+            <span className="text-2xl font-extrabold text-text-primary">
               R$ {totalStockValue.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-emerald-400/90 font-medium">
+          <div className="text-[10px] text-positive/90 font-medium">
             Valor de reposição estimado
           </div>
         </div>
 
         {/* Alerta Estoque Baixo */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               ESTOQUE BAIXO (&lt;150g)
             </span>
             <AlertTriangle
-              className={`w-4 h-4 ${lowStockCount > 0 ? "text-amber-400" : "text-slate-500"}`}
+              className={`w-4 h-4 ${lowStockCount > 0 ? "text-warning" : "text-text-muted"}`}
             />
           </div>
           <div className="my-2">
             <span
-              className={`text-2xl font-extrabold ${lowStockCount > 0 ? "text-amber-400" : "text-slate-400"}`}
+              className={`text-2xl font-extrabold ${lowStockCount > 0 ? "text-warning" : "text-text-secondary"}`}
             >
               {lowStockCount}
             </span>
-            <span className="text-xs text-slate-400 ml-1.5">carretéis</span>
+            <span className="text-xs text-text-secondary ml-1.5">
+              carretéis
+            </span>
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-text-muted">
             {lowStockCount > 0
               ? "Recomenda-se reposição de material"
               : "Nível seguro de abastecimento"}
@@ -421,7 +425,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+      <div className="bg-surface-raised border border-border-subtle rounded-xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
           <input
@@ -429,9 +433,9 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
             placeholder="Buscar cor, marca, material ou anotações..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-raised border border-border-subtle rounded-lg pl-8 pr-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
           />
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-text-secondary absolute left-2.5 top-1/2 -translate-y-1/2" />
         </div>
 
         {/* Filters */}
@@ -444,8 +448,8 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                 onClick={() => setSelectedMaterial(type)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                   selectedMaterial === type
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white hover:bg-[#121828]"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
                 }`}
               >
                 {type}
@@ -459,7 +463,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
             onChange={(e) =>
               setSelectedStatus(e.target.value as "all" | SpoolStatus)
             }
-            className="bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-slate-300 font-semibold outline-none cursor-pointer"
+            className="bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-text-secondary font-semibold outline-none cursor-pointer"
           >
             <option value="all">Todos os Status</option>
             <option value="in_stock">Em Estoque</option>
@@ -471,14 +475,14 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
 
       {/* Spools Grid */}
       {filteredSpools.length === 0 ? (
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-12 flex flex-col items-center justify-center text-center">
-          <Package className="w-12 h-12 text-slate-600 mb-3" />
-          <h3 className="text-base font-bold text-white mb-1">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-12 flex flex-col items-center justify-center text-center">
+          <Package className="w-12 h-12 text-text-disabled mb-3" />
+          <h3 className="text-base font-bold text-text-primary mb-1">
             {searchTerm
               ? "Nenhum carretel encontrado"
               : "Nenhum carretel cadastrado no estoque"}
           </h3>
-          <p className="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+          <p className="text-xs text-text-secondary max-w-md mb-6 leading-relaxed">
             {searchTerm
               ? "Tente buscar com outros termos ou limpar os filtros de material."
               : "Cadastre suas bobinas para controlar custos por grama e peso restante com visualização de cores realistas."}
@@ -486,7 +490,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={openCreateModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Primeiro Carretel</span>
@@ -494,9 +498,9 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
             {!isDemoMode && (
               <button
                 onClick={() => useDemoModeStore.getState().enter()}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#14122b] hover:bg-[#1b1938] border border-purple-500/40 text-purple-300 text-xs font-semibold transition-all"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-accent/40 text-accent text-xs font-semibold transition-all"
               >
-                <Sparkles className="w-4 h-4 text-purple-400" />
+                <Sparkles className="w-4 h-4 text-accent" />
                 <span>Carregar Estoque Demo</span>
               </button>
             )}
@@ -514,7 +518,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
             return (
               <div
                 key={spool.id}
-                className="bg-[#0c111e] hover:bg-[#0f1526] border border-[#1b253b] hover:border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative overflow-hidden"
+                className="bg-surface-raised hover:bg-surface-raised border border-border-subtle hover:border-border-subtle rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative overflow-hidden"
               >
                 {/* Visual Spool Top Header */}
                 <div>
@@ -535,8 +539,8 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                             width="12"
                             height="7"
                             rx="1.5"
-                            fill="#1e293b"
-                            stroke="#475569"
+                            fill="var(--color-surface-raised)"
+                            stroke="var(--color-border-strong)"
                             strokeWidth="1.5"
                           />
                           <rect
@@ -544,13 +548,13 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                             y="13"
                             width="8"
                             height="4"
-                            fill="#0f172a"
+                            fill="var(--color-bg-elevated)"
                           />
                           {/* Bottle Neck & Shoulder */}
                           <path
                             d="M22 22 L28 17 L36 17 L42 22 Z"
-                            fill="#0f172a"
-                            stroke="#334155"
+                            fill="var(--color-bg-elevated)"
+                            stroke="var(--color-text-secondary)"
                             strokeWidth="1.5"
                           />
                           {/* Bottle Body */}
@@ -560,8 +564,8 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                             width="28"
                             height="36"
                             rx="4"
-                            fill="#0f172a"
-                            stroke="#334155"
+                            fill="var(--color-bg-elevated)"
+                            stroke="var(--color-text-secondary)"
                             strokeWidth="1.5"
                           />
                           {/* Resin Liquid Level Window */}
@@ -581,7 +585,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                             width="16"
                             height="5"
                             rx="1"
-                            fill="#1e293b"
+                            fill="var(--color-surface-raised)"
                             opacity="0.9"
                           />
                           <circle
@@ -603,15 +607,15 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                             cx="32"
                             cy="32"
                             r="28"
-                            fill="#1e293b"
-                            stroke="#334155"
+                            fill="var(--color-surface-raised)"
+                            stroke="var(--color-text-secondary)"
                             strokeWidth="2.5"
                           />
                           <circle
                             cx="32"
                             cy="32"
                             r="26"
-                            fill="#0f172a"
+                            fill="var(--color-bg-elevated)"
                             opacity="0.6"
                           />
 
@@ -657,17 +661,22 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                             cx="32"
                             cy="32"
                             r="9"
-                            fill="#0f172a"
-                            stroke="#475569"
+                            fill="var(--color-bg-elevated)"
+                            stroke="var(--color-border-strong)"
                             strokeWidth="2"
                           />
-                          <circle cx="32" cy="32" r="4.5" fill="#020617" />
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="4.5"
+                            fill="var(--color-surface-canvas)"
+                          />
                         </svg>
                       )}
 
                       {/* Small swatch badge */}
                       <span
-                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-[#0c111e] shadow-sm flex items-center justify-center text-[8px] font-bold"
+                        className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-border-subtle shadow-sm flex items-center justify-center text-[8px] font-bold"
                         style={{ backgroundColor: hex }}
                         title={`Cor Hex: ${hex}`}
                       />
@@ -676,18 +685,18 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     {/* Spool Titles & Badges */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className="text-[10px] font-mono uppercase font-bold text-slate-400 truncate">
+                        <span className="text-[10px] font-mono uppercase font-bold text-text-secondary truncate">
                           {spool.brand}
                         </span>
                         <span
                           className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
                             spool.status === "in_stock"
                               ? isLow
-                                ? "bg-amber-950/60 text-amber-400 border border-amber-500/40"
-                                : "bg-emerald-950/60 text-emerald-400 border border-emerald-500/40"
+                                ? "bg-warning-subtle text-warning border border-warning/40"
+                                : "bg-positive-subtle text-positive border border-positive/40"
                               : spool.status === "on_the_way"
-                                ? "bg-blue-950/60 text-blue-400 border border-blue-500/40"
-                                : "bg-slate-800 text-slate-400"
+                                ? "bg-accent-subtle text-info border border-accent/40"
+                                : "bg-surface-sunken text-text-secondary"
                           }`}
                         >
                           {spool.status === "in_stock"
@@ -700,17 +709,17 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                         </span>
                       </div>
 
-                      <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors truncate">
+                      <h3 className="text-sm font-bold text-text-primary group-hover:text-info transition-colors truncate">
                         {spool.material} • {spool.color}
                       </h3>
 
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
-                        <span className="font-semibold text-slate-200">
+                      <div className="flex items-center gap-2 text-[11px] text-text-secondary mt-1">
+                        <span className="font-semibold text-text-secondary">
                           R$ {spool.costPerKg.toFixed(2).replace(".", ",")}/
                           {isResin(spool.material) ? "L" : "kg"}
                         </span>
                         <span>•</span>
-                        <span className="font-mono text-slate-400">
+                        <span className="font-mono text-text-secondary">
                           {isResin(spool.material)
                             ? `${spool.diameterMm || 1.12} g/cm³`
                             : `${spool.diameterMm || 1.75}mm`}
@@ -720,40 +729,41 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                   </div>
 
                   {/* Remaining Weight Gauge Bar */}
-                  <div className="bg-[#090d18] rounded-xl p-2.5 border border-[#172238] flex flex-col gap-1.5">
+                  <div className="bg-surface-sunken rounded-xl p-2.5 border border-border-subtle flex flex-col gap-1.5">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400 text-[11px] font-medium">
+                      <span className="text-text-secondary text-[11px] font-medium">
                         {isResin(spool.material)
                           ? "Volume restante:"
                           : "Restante no carretel:"}
                       </span>
-                      <span className="font-mono font-bold text-white">
+                      <span className="font-mono font-bold text-text-primary">
                         {spool.weightGrams}
                         {isResin(spool.material) ? "ml" : "g"}{" "}
-                        <span className="text-slate-500 font-normal">
+                        <span className="text-text-muted font-normal">
                           / {spool.originalWeightGrams}
                           {isResin(spool.material) ? "ml" : "g"}
                         </span>
-                        <span className="ml-1 text-slate-400 font-semibold">
+                        <span className="ml-1 text-text-secondary font-semibold">
                           ({pct}%)
                         </span>
                       </span>
                     </div>
 
-                    <div className="w-full bg-[#131b2e] h-2 rounded-full overflow-hidden border border-[#1f2b45]">
+                    <div className="w-full bg-surface-overlay h-2 rounded-full overflow-hidden border border-border-subtle">
                       <div
                         className="h-full rounded-full transition-all duration-300"
                         style={{
                           width: `${pct}%`,
-                          backgroundColor: pct < 20 ? "#f97316" : hex,
+                          backgroundColor:
+                            pct < 20 ? "var(--color-warning)" : hex,
                         }}
                       />
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                    <div className="flex items-center justify-between text-[10px] text-text-muted pt-0.5">
                       <span>
                         Valor restante:{" "}
-                        <strong className="text-emerald-400">
+                        <strong className="text-positive">
                           R$ {spoolRemainingCost.toFixed(2).replace(".", ",")}
                         </strong>
                       </span>
@@ -763,13 +773,13 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
 
                   {/* Notes & Purchase Store snippet */}
                   {(spool.notes || spool.purchaseStore) && (
-                    <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 truncate">
+                    <div className="mt-2.5 flex items-center justify-between text-[11px] text-text-secondary truncate">
                       {spool.notes && (
                         <span className="truncate italic">"{spool.notes}"</span>
                       )}
                       {spool.purchaseStore && (
-                        <span className="ml-auto flex items-center gap-1 text-[10px] text-slate-500 shrink-0 font-medium">
-                          <Store className="w-3 h-3 text-slate-500" />
+                        <span className="ml-auto flex items-center gap-1 text-[10px] text-text-muted shrink-0 font-medium">
+                          <Store className="w-3 h-3 text-text-muted" />
                           <span>{spool.purchaseStore}</span>
                         </span>
                       )}
@@ -778,11 +788,11 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="flex items-center justify-between pt-2 border-t border-[#1b253b] text-xs">
+                <div className="flex items-center justify-between pt-2 border-t border-border-subtle text-xs">
                   <button
                     type="button"
                     onClick={() => handleUseSpoolInCalc(spool)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 font-semibold text-[11px] transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent-subtle hover:bg-accent-subtle border border-accent/40 text-info font-semibold text-[11px] transition-colors"
                     title="Definir na calculadora como material de trabalho"
                   >
                     <Calculator className="w-3 h-3" />
@@ -797,7 +807,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                         setDeductModalSpool(spool);
                         setGramsToDeduct(50);
                       }}
-                      className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-[#151c2f] transition-colors"
+                      className="p-1.5 text-text-secondary hover:text-warning rounded-lg hover:bg-surface-overlay transition-colors"
                       title="Descontar peso impresso"
                     >
                       <MinusCircle className="w-3.5 h-3.5" />
@@ -806,7 +816,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     <button
                       type="button"
                       onClick={() => openEditModal(spool)}
-                      className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-[#151c2f] transition-colors"
+                      className="p-1.5 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-overlay transition-colors"
                       title="Editar Carretel"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -815,7 +825,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     <button
                       type="button"
                       onClick={() => removeSpool(spool.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-950/20 transition-colors"
+                      className="p-1.5 text-text-secondary hover:text-critical rounded-lg hover:bg-critical-subtle transition-colors"
                       title="Excluir Carretel"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -831,11 +841,11 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
       {/* Modal: Create / Edit Spool */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#0c111e] border border-[#1f2c47] rounded-2xl w-full max-w-xl shadow-2xl p-6 relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-[#1b253b] pb-3">
+          <div className="bg-surface-raised border border-border-subtle rounded-2xl w-full max-w-xl shadow-2xl p-6 relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
               <div className="flex items-center gap-2">
-                <Package className="w-4 h-4 text-blue-400" />
-                <h2 className="text-sm font-bold text-white">
+                <Package className="w-4 h-4 text-info" />
+                <h2 className="text-sm font-bold text-text-primary">
                   {editingSpool
                     ? "Editar Carretel de Filamento"
                     : "Cadastrar Novo Carretel"}
@@ -843,7 +853,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                className="p-1 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-sunken transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -856,7 +866,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
               {/* Row 1: Brand, Material, Color Name */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     FABRICANTE / MARCA *
                   </label>
                   <input
@@ -865,18 +875,18 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
                     placeholder="Ex: Bambu Lab, eSun, Creality"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     MATERIAL *
                   </label>
                   <select
                     value={material}
                     onChange={(e) => setMaterial(e.target.value)}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-2 text-white outline-none focus:border-blue-500 cursor-pointer"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-2 text-text-primary outline-none focus:border-accent cursor-pointer"
                   >
                     <option>PLA Basic</option>
                     <option>PLA Silk</option>
@@ -892,7 +902,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     NOME DA COR *
                   </label>
                   <input
@@ -901,23 +911,23 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     value={color}
                     onChange={(e) => setColor(e.target.value)}
                     placeholder="Ex: Laranja Neon, Azul Safira"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                   />
                 </div>
               </div>
 
               {/* Palette Color Picker Grid */}
-              <div className="bg-[#090d18] border border-[#18233a] rounded-xl p-3">
+              <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-[10px] uppercase font-mono text-slate-400 font-bold block">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary font-bold block">
                     SELECIONAR COR DA PALETA DE FILAMENTOS:
                   </label>
                   <div className="flex items-center gap-2">
                     <span
-                      className="w-4 h-4 rounded-full border border-slate-600"
+                      className="w-4 h-4 rounded-full border border-border-default"
                       style={{ backgroundColor: colorHex }}
                     />
-                    <span className="font-mono text-[10px] text-slate-300 uppercase">
+                    <span className="font-mono text-[10px] text-text-secondary uppercase">
                       {colorHex}
                     </span>
                   </div>
@@ -934,22 +944,22 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                       }}
                       className={`h-7 rounded-lg border flex items-center justify-center transition-all ${
                         colorHex.toLowerCase() === p.hex.toLowerCase()
-                          ? "ring-2 ring-blue-500 scale-105 border-white"
-                          : "border-slate-800 hover:scale-105 opacity-80 hover:opacity-100"
+                          ? "ring-2 ring-accent scale-105 border-border-strong"
+                          : "border-border-subtle hover:scale-105 opacity-80 hover:opacity-100"
                       }`}
                       style={{ backgroundColor: p.hex }}
                       title={p.name}
                     >
                       {colorHex.toLowerCase() === p.hex.toLowerCase() && (
-                        <Check className="w-3.5 h-3.5 text-white filter drop-shadow" />
+                        <Check className="w-3.5 h-3.5 text-text-primary filter drop-shadow" />
                       )}
                     </button>
                   ))}
                 </div>
 
                 {/* Custom Color Input */}
-                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800">
-                  <span className="text-[10px] text-slate-400">
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border-subtle">
+                  <span className="text-[10px] text-text-secondary">
                     Personalizar Hexadecimal:
                   </span>
                   <input
@@ -962,7 +972,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     type="text"
                     value={colorHex}
                     onChange={(e) => setColorHex(e.target.value)}
-                    className="w-24 bg-[#111728] border border-[#1f2b45] rounded px-2 py-0.5 text-xs text-white font-mono uppercase"
+                    className="w-24 bg-surface-raised border border-border-subtle rounded px-2 py-0.5 text-xs text-text-primary font-mono uppercase"
                   />
                 </div>
               </div>
@@ -970,7 +980,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
               {/* Row 2: Weight, Tare, Cost */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     PESO ATUAL (G) *
                   </label>
                   <input
@@ -978,12 +988,12 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     required
                     value={weightGrams}
                     onChange={(e) => setWeightGrams(Number(e.target.value))}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     PESO ORIGINAL (G)
                   </label>
                   <input
@@ -992,12 +1002,12 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     onChange={(e) =>
                       setOriginalWeightGrams(Number(e.target.value))
                     }
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     CUSTO POR KG (R$) *
                   </label>
                   <input
@@ -1005,7 +1015,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     required
                     value={costPerKg}
                     onChange={(e) => setCostPerKg(Number(e.target.value))}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                   />
                 </div>
               </div>
@@ -1013,7 +1023,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
               {/* Row 3: Tare, Diameter, Store, Status */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     TARA CARRETEL (G)
                   </label>
                   <input
@@ -1021,18 +1031,18 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     value={tareGrams}
                     onChange={(e) => setTareGrams(Number(e.target.value))}
                     placeholder="200"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     DIÂMETRO (MM)
                   </label>
                   <select
                     value={diameterMm}
                     onChange={(e) => setDiameterMm(Number(e.target.value))}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-2 text-white outline-none cursor-pointer"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-2 text-text-primary outline-none cursor-pointer"
                   >
                     <option value={1.75}>1.75 mm</option>
                     <option value={2.85}>2.85 mm</option>
@@ -1040,7 +1050,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     FORNECEDOR / LOJA
                   </label>
                   <input
@@ -1048,18 +1058,18 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                     value={purchaseStore}
                     onChange={(e) => setPurchaseStore(e.target.value)}
                     placeholder="Shopee, ML"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     STATUS DO ITEM
                   </label>
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value as SpoolStatus)}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-2 text-white outline-none cursor-pointer"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-2 text-text-primary outline-none cursor-pointer"
                   >
                     <option value="in_stock">Em Estoque</option>
                     <option value="on_the_way">A Caminho</option>
@@ -1070,7 +1080,7 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
 
               {/* Notes */}
               <div>
-                <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                   NOTAS / PARÂMETROS DE IMPRESSÃO
                 </label>
                 <input
@@ -1078,21 +1088,21 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ex: 215°C bico, 60°C mesa, retração 0.8mm"
-                  className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1b253b]">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="px-3.5 py-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-sunken transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white font-bold transition-all shadow-md"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] font-bold transition-all shadow-md"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>
@@ -1108,38 +1118,38 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
       {/* Quick Deduct Grams Modal */}
       {deductModalSpool && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#0c111e] border border-[#1f2c47] rounded-2xl w-full max-w-sm shadow-2xl p-5 flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-[#1b253b] pb-2">
+          <div className="bg-surface-raised border border-border-subtle rounded-2xl w-full max-w-sm shadow-2xl p-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
               <div className="flex items-center gap-2">
-                <MinusCircle className="w-4 h-4 text-amber-400" />
-                <h3 className="text-sm font-bold text-white">
+                <MinusCircle className="w-4 h-4 text-warning" />
+                <h3 className="text-sm font-bold text-text-primary">
                   Descontar Gramas Impressas
                 </h3>
               </div>
               <button
                 onClick={() => setDeductModalSpool(null)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                className="p-1 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-sunken"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-text-secondary">
               Carretel:{" "}
-              <strong className="text-white">
+              <strong className="text-text-primary">
                 {deductModalSpool.brand} • {deductModalSpool.material} (
                 {deductModalSpool.color})
               </strong>
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-text-secondary">
               Peso atual:{" "}
-              <strong className="text-emerald-400">
+              <strong className="text-positive">
                 {deductModalSpool.weightGrams}g
               </strong>
             </p>
 
             <div>
-              <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+              <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                 QUANTIDADE A DESCONTAR (G)
               </label>
               <input
@@ -1148,29 +1158,29 @@ export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
                 max={deductModalSpool.weightGrams}
                 value={gramsToDeduct}
                 onChange={(e) => setGramsToDeduct(Number(e.target.value))}
-                className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white font-bold outline-none focus:border-amber-500"
+                className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary font-bold outline-none focus:border-warning"
               />
             </div>
 
-            <div className="text-[11px] text-slate-400 bg-[#090d18] p-2 rounded-lg border border-[#18233a]">
+            <div className="text-[11px] text-text-secondary bg-surface-sunken p-2 rounded-lg border border-border-subtle">
               Novo saldo:{" "}
-              <strong className="text-white">
+              <strong className="text-text-primary">
                 {Math.max(0, deductModalSpool.weightGrams - gramsToDeduct)}g
               </strong>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1b253b]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
               <button
                 type="button"
                 onClick={() => setDeductModalSpool(null)}
-                className="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white"
+                className="px-3 py-1.5 rounded-lg text-text-secondary hover:text-text-primary"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDeduct}
-                className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md"
+                className="px-4 py-1.5 rounded-lg bg-warning hover:bg-warning text-text-inverse font-bold shadow-md"
               >
                 Confirmar Desconto
               </button>

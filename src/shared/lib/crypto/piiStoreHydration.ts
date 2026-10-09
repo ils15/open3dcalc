@@ -386,12 +386,10 @@ export async function whenPiiWritesSettled(): Promise<void> {
 }
 
 /**
- * Read the persisted record for one migrated key, or null.
+ * Read the persisted record for one PII store key, or null.
  *
- * Fail-closed and non-throwing ON PURPOSE: the legacy migration uses this to
- * confirm the vault holds the full migrated set before it removes its durable
- * recovery marker. A locked or refused vault returns null, and the caller's
- * fail-closed branch treats that as "not durable yet".
+ * Fail-closed and non-throwing ON PURPOSE: callers use this to verify that a
+ * PII store write reached the vault. A locked or refused vault returns null.
  */
 export async function readPiiPersistedRecord(
   key: string,
@@ -408,9 +406,8 @@ export async function readPiiPersistedRecord(
  * Did every write issued so far COMMIT?
  *
  * `whenPiiWritesSettled()` says the writes finished; this says they finished
- * successfully. A caller that must not remove a recovery source until the data
- * is durable asks this, because "settled" includes "rejected" — and a rejected
- * write is exactly the interrupted case the recovery marker exists for.
+ * successfully. Callers that need to verify durability use this because
+ * "settled" includes "rejected".
  */
 export async function didPiiWritesCommit(): Promise<boolean> {
   let allCommitted = true;

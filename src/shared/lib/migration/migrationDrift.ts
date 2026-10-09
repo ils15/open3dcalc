@@ -1,12 +1,11 @@
 /**
  * T4.6 — value-free post-commit migration drift detection.
  *
- * The legacy migration is copy-without-delete: it never erases the plaintext
- * source, so an older client can keep writing to it after the logical commit.
- * That change is invisible by design — the encrypted store already holds what
- * was migrated. Making it visible must never re-read a value into the UI, so
- * the migration records a VALUE-FREE FINGERPRINT (counts only) of the source it
- * committed, and a later scan compares the CURRENT source against it.
+ * The retired legacy migration was copy-without-delete: it left the plaintext
+ * source in place, so an older client could keep writing to it after the
+ * logical commit. It recorded a VALUE-FREE FINGERPRINT (counts only) of the
+ * source it committed. The current disclosure compares the source against that
+ * historical fingerprint without rendering any record values.
  *
  *  - no fingerprint       → nothing to compare: no drift (`detected: false`)
  *  - source unchanged     → no drift
@@ -52,7 +51,7 @@ export interface MigrationDrift {
   sources: string[];
 }
 
-/** The exact value-free payload the migration writes. */
+/** The exact value-free payload format used by the retired migration. */
 export function migrationFingerprintValue(
   history: number,
   products: number | null,

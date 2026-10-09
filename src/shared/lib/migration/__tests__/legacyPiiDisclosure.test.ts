@@ -28,7 +28,7 @@ import {
   MIGRATION_MARKER_KEY,
   MIGRATION_PROGRESS_KEY,
 } from "@/shared/lib/migration/marker";
-import { LEGACY_PII_REHOME_MARKER_KEY } from "@/shared/lib/migration/legacyPiiRehome";
+import { LEGACY_PII_REHOME_MARKER_KEY } from "@/shared/lib/migration/legacyPiiDisclosure";
 import {
   getLegacyPiiDisclosure,
   type LegacyPiiDisclosureOptions,

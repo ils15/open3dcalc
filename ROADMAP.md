@@ -14,9 +14,9 @@
 - Users must be able to export and delete their data.
 - Privacy documentation and a privacy review are required before every release.
 
-## Estado da versão publicada — v2.0.0-beta.11
+## Estado da versão publicada — v2.0.0-beta.13
 
-Tag `v2.0.0-beta.11`: `fa23ac5df7e2373e0fe72b97c03d4994d272e59b`, publicada em 04/10/2026; `/beta/index.web.html` referencia `assets/index.web-BThWn8ek.js`. Merge de código não comprova que a interface esteja montada ou publicada na web.
+Tag `v2.0.0-beta.13`: `d08a4eafcc5fc20d03867a08bd417fae390f6b10`, publicada em 08/10/2026; `/beta/index.web.html` referencia `assets/index.web-BFz5JDpp.js`. Merge de código não comprova que a interface esteja montada ou publicada na web.
 
 - PRs #248–#264 estão na beta.11, exceto #254 (fechado sem merge). #264 corrigiu a saída web após a falha da beta.10 e antes da publicação da beta.11.
 - A web beta monta `StudioLayout`, com sidebar de dez módulos; isso não corresponde aos cinco destinos definidos em 7o.2.
@@ -25,27 +25,28 @@ Tag `v2.0.0-beta.11`: `fa23ac5df7e2373e0fe72b97c03d4994d272e59b`, publicada em 0
 - Os gates PII/export existentes não completam a checklist transversal LGPD das linhas 76–98.
 - Em 7q, IA, frota fora desta fase e vínculo cliente já têm decisão; continuam abertas a unidade de `usefulLife` e a formalização da decisão sobre `Example`. Coverage da beta.11 não foi medida.
 
-## Approved Beta test-only strip-down (planned; not a published behavior)
+## Approved Beta test-only strip-down (implementation on current branch; unpublished)
 
-The owner approved D1–D12 for a Web-Beta-only synthetic-data profile. This entry records the
-Beta target without rewriting the published release history above. The Stable manifest now
+The owner approved D1–D12 for a Web-Beta-only profile intended for synthetic test data. This
+entry records the current branch state without rewriting the published release history above.
+The Stable manifest now
 uses policy 1.9, which supersedes the former policy 1.8 plaintext restriction for its exact
 three-key scope; prior receipt bytes and encrypted-entry versions remain unchanged. Desktop
 follows the Stable policy 1.9 contract and is not part of the Web-Beta profile.
 
-- The target Beta app uses only the three exact `open3dcalc_beta_test_*_v1` localStorage keys,
-  plaintext, for generated synthetic records. Real customer, quote, and history data are
-  prohibited.
+- The Beta app uses only the three exact `open3dcalc_beta_test_*_v1` localStorage keys in
+  plaintext. Synthetic-only is an intended-use restriction: the app does not validate record
+  contents, so real customer, quote, and history data must not be entered.
+- Namespace isolation is app-mediated, not a same-origin security boundary. Same-origin scripts,
+  browser extensions, and DevTools can access browser storage.
 - Beta must not access Stable/legacy keys, migrate or sweep namespaces, open the vault/IndexedDB,
   Cache API, SQLite, snapshots, or the desktop bridge, or expose consent/password, erasure,
   deletion, import/export, sync, or backup paths.
-- The first-run disclosure must say test-only, synthetic-only, stored unencrypted, no password,
-  no migration/export, and disposable browser profile. Desktop is explicitly unaffected.
-- Wave 1 is documentation plus intentionally RED contract/regression tests only. No runtime,
-  i18n runtime strings, workflow, tag, publish, or release operation is part of this wave.
-- Wave 2 implements the guards and UI after review; Wave 3 verifies unit + built-Beta same-origin
-  browser isolation and Themis approval. Until those gates pass, do not claim that published
-  Beta builds satisfy this target or replace the current release gate.
+- The first-run disclosure states test-only, intended synthetic use, stored unencrypted, no
+  password, no migration/export, and disposable browser profile. Desktop is unaffected.
+- Implementation and local verification are complete on
+  `refactor/beta13-prune-legacy-darkmode`; final Themis review is pending. No publication is
+  authorized or performed by this work. The published web Beta remains v2.0.0-beta.13.
 
 ---
 

@@ -173,6 +173,28 @@ describe("dataManifest loader (SPEC-01)", () => {
     ).toBe(true);
   });
 
+  it("SPEC-01 policy 1.9: declares the actual desktop storage destinations", () => {
+    const doc = manifestFixture as ManifestDocument;
+    const expected = {
+      open3dcalc_customers_v1: "open3dcalc_pwless_customers_v1",
+      open3dcalc_quotes_v1: "open3dcalc_pwless_quotes_v1",
+      open3dcalc_history_v2: "open3dcalc_pwless_history_v1",
+    };
+
+    for (const [logicalKey, desktopKey] of Object.entries(expected)) {
+      const entry = doc.keys.find((candidate) => candidate.key === logicalKey);
+      expect(entry?.platform_destinations).toEqual([
+        {
+          platform: "electron",
+          key: desktopKey,
+          surface: "sqlite_storage_table",
+        },
+        { platform: "web", key: logicalKey, surface: "localStorage" },
+        { platform: "pwa", key: logicalKey, surface: "localStorage" },
+      ]);
+    }
+  });
+
   it("SPEC-01: accepts the ui_preference class added for V2.0 (policy 1.4)", () => {
     // The three v2.0 keys (layout / share prefs / marketplace comparison) are
     // ui_preference: device-level ergonomic choices, never synced/exported.
@@ -198,12 +220,41 @@ describe("dataManifest loader (SPEC-01)", () => {
     const approved = validEntry({
       key: "open3dcalc_customers_v1",
       platforms: ["electron", "web", "pwa"],
+      platform_destinations: [
+        {
+          platform: "electron",
+          key: "open3dcalc_pwless_customers_v1",
+          surface: "sqlite_storage_table",
+        },
+        {
+          platform: "web",
+          key: "open3dcalc_customers_v1",
+          surface: "localStorage",
+        },
+        {
+          platform: "pwa",
+          key: "open3dcalc_customers_v1",
+          surface: "localStorage",
+        },
+      ],
       class: "user_content",
       pii: true,
       persistence: "plaintext_allowed",
       legal_basis: "contract_performance",
     });
     expect(() => validateManifestEntry(approved)).not.toThrow();
+    expect(() =>
+      validateManifestEntry({
+        ...approved,
+        platform_destinations: [
+          {
+            platform: "electron",
+            key: "open3dcalc_customers_v1",
+            surface: "localStorage",
+          },
+        ],
+      }),
+    ).toThrow(ManifestError);
 
     expect(() =>
       validateManifestEntry(

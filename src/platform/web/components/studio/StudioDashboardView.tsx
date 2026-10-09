@@ -135,26 +135,32 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
   // Material distribution donut data
   const materialData = isUsingDemo
     ? [
-        { name: "PLA", value: 1235, color: "#3b82f6" },
-        { name: "PETG", value: 280, color: "#10b981" },
-        { name: "PLA Silk", value: 1470, color: "#06b6d4" },
-        { name: "Resina Standard", value: 140, color: "#f97316" },
-        { name: "Nylon (PA)", value: 310, color: "#8b5cf6" },
+        { name: "PLA", value: 1235, color: "var(--color-info)" },
+        { name: "PETG", value: 280, color: "var(--color-positive)" },
+        { name: "PLA Silk", value: 1470, color: "var(--color-info)" },
+        { name: "Resina Standard", value: 140, color: "var(--color-warning)" },
+        { name: "Nylon (PA)", value: 310, color: "var(--color-cost-filament)" },
       ]
     : hasRealData
       ? [
           {
             name: "Filamento FDM",
             value: Math.max(1, Math.round(totalWeight * 700)),
-            color: "#3b82f6",
+            color: "var(--color-info)",
           },
           {
             name: "Outros Materiais",
             value: Math.max(1, Math.round(totalWeight * 300)),
-            color: "#10b981",
+            color: "var(--color-positive)",
           },
         ]
-      : [{ name: "Sem Consumo", value: 1, color: "#334155" }];
+      : [
+          {
+            name: "Sem Consumo",
+            value: 1,
+            color: "var(--color-text-secondary)",
+          },
+        ];
 
   const totalMaterialWeight = materialData.reduce(
     (acc, curr) => acc + curr.value,
@@ -162,19 +168,19 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
   );
 
   return (
-    <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-16">
+    <div className="flex flex-col gap-6 text-text-primary max-w-full pb-16">
       {/* Top Notice if in Normal Mode without data */}
       {!isDemoMode && !hasRealData && (
-        <div className="bg-[#12192d] border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-surface-overlay border border-accent/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center shrink-0 text-blue-400">
+            <div className="w-10 h-10 rounded-xl bg-accent-subtle border border-accent/40 flex items-center justify-center shrink-0 text-info">
               <Info className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">
+              <h2 className="text-sm font-bold text-text-primary">
                 Dashboard em Tempo Real (Base Limpa)
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-text-secondary mt-0.5">
                 Os indicadores mostram os dados reais da sua oficina. Salve
                 novos cálculos para acompanhar seu faturamento, ou ative o Modo
                 Demo para simular uma oficina em produção.
@@ -184,13 +190,13 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => onTabChange("calculator")}
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md"
+              className="px-3.5 py-1.5 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md"
             >
               Criar Primeiro Cálculo
             </button>
             <button
               onClick={() => useDemoModeStore.getState().enter()}
-              className="px-3 py-1.5 rounded-xl bg-[#17132e] hover:bg-[#201c3e] border border-purple-500/40 text-purple-300 text-xs font-semibold transition-all"
+              className="px-3 py-1.5 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-accent/40 text-accent text-xs font-semibold transition-all"
             >
               Ativar Modo Demo
             </button>
@@ -202,15 +208,15 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-blue-400" />
+            <h1 className="text-xl font-bold text-text-primary tracking-tight flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-info" />
               Painel de Gestão & Oficina 3D
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-accent-subtle text-info border border-accent/30">
               {ordersCount} {ordersCount === 1 ? "orçamento" : "orçamentos"}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-text-secondary mt-1">
             Métricas organizadas por espaços de trabalho para acesso rápido e
             zero sobrecarga visual.
           </p>
@@ -219,13 +225,13 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         {/* Right action filters and buttons */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Time filters */}
-          <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-lg p-0.5 text-xs font-medium">
+          <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg p-0.5 text-xs font-medium">
             <button
               onClick={() => setActiveRange("7d")}
               className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeRange === "7d"
-                  ? "bg-blue-600 text-white font-bold"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] font-bold"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               7 Dias
@@ -234,8 +240,8 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               onClick={() => setActiveRange("30d")}
               className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeRange === "30d"
-                  ? "bg-blue-600 text-white font-bold"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] font-bold"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               30 Dias
@@ -244,8 +250,8 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               onClick={() => setActiveRange("month")}
               className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeRange === "month"
-                  ? "bg-blue-600 text-white font-bold"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] font-bold"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               Este Mês
@@ -254,8 +260,8 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               onClick={() => setActiveRange("all")}
               className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeRange === "all"
-                  ? "bg-blue-600 text-white font-bold"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] font-bold"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               Tudo
@@ -264,7 +270,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
 
           <button
             onClick={() => onTabChange("calculator")}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Novo Cálculo</span>
@@ -272,31 +278,31 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
 
           <button
             onClick={() => onTabChange("history")}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111728] hover:bg-[#18233c] border border-[#212c45] text-slate-300 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-colors"
           >
-            <Clock className="w-3.5 h-3.5 text-blue-400" />
+            <Clock className="w-3.5 h-3.5 text-info" />
             <span>Histórico ({ordersCount})</span>
           </button>
 
           <button
             onClick={() => onTabChange("catalog")}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111728] hover:bg-[#18233c] border border-[#212c45] text-slate-300 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-colors"
           >
-            <Printer className="w-3.5 h-3.5 text-indigo-400" />
+            <Printer className="w-3.5 h-3.5 text-accent" />
             <span>Frota</span>
           </button>
 
           <button
             onClick={() => onTabChange("inventory")}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111728] hover:bg-[#18233c] border border-[#212c45] text-slate-300 text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-colors"
           >
-            <Package className="w-3.5 h-3.5 text-amber-400" />
+            <Package className="w-3.5 h-3.5 text-warning" />
             <span>Estoque</span>
           </button>
 
           <button
             onClick={onOpenCopilot}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#111728] hover:bg-[#18233c] border border-amber-500/30 text-amber-400 text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-warning/30 text-warning text-xs font-bold transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>IA Copilot</span>
@@ -310,20 +316,20 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           onClick={() => setActiveWorkspace("overview")}
           className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
             activeWorkspace === "overview"
-              ? "bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30"
-              : "bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400"
+              ? "bg-surface-overlay border-accent/50 shadow-md shadow-accent/40 ring-1 ring-accent/30"
+              : "bg-surface-raised border-border-subtle hover:bg-surface-overlay text-text-secondary"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-info" />
               Visão Geral & Finanças
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 font-semibold">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-accent-subtle text-info font-semibold">
               {ordersCount} pedidos
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1">
+          <span className="text-[11px] text-text-secondary mt-1">
             KPIs, receitas, projeção trimestral e fluxo recente
           </span>
         </button>
@@ -332,20 +338,20 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           onClick={() => setActiveWorkspace("profit")}
           className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
             activeWorkspace === "profit"
-              ? "bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30"
-              : "bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400"
+              ? "bg-surface-overlay border-accent/50 shadow-md shadow-accent/40 ring-1 ring-accent/30"
+              : "bg-surface-raised border-border-subtle hover:bg-surface-overlay text-text-secondary"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+              <DollarSign className="w-3.5 h-3.5 text-positive" />
               Rentabilidade & Preços
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-semibold">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-positive-subtle text-positive font-semibold">
               {Math.round(marginPct)}% margem
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1">
+          <span className="text-[11px] text-text-secondary mt-1">
             Lucro por material, recomendador de preços e ROI
           </span>
         </button>
@@ -354,20 +360,20 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           onClick={() => setActiveWorkspace("ops")}
           className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
             activeWorkspace === "ops"
-              ? "bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30"
-              : "bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400"
+              ? "bg-surface-overlay border-accent/50 shadow-md shadow-accent/40 ring-1 ring-accent/30"
+              : "bg-surface-raised border-border-subtle hover:bg-surface-overlay text-text-secondary"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-info" />
               Operação & Qualidade
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 font-semibold">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-info-subtle text-info font-semibold">
               2 ativas • 1 manutenção
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1">
+          <span className="text-[11px] text-text-secondary mt-1">
             Taxas de sucesso/falha, saúde das máquinas e checklists
           </span>
         </button>
@@ -376,20 +382,20 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           onClick={() => setActiveWorkspace("eng")}
           className={`flex flex-col p-3 rounded-xl border text-left transition-all ${
             activeWorkspace === "eng"
-              ? "bg-[#121c32] border-blue-500/50 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/30"
-              : "bg-[#0d1322] border-[#1b253b] hover:bg-[#111a2d] text-slate-400"
+              ? "bg-surface-overlay border-accent/50 shadow-md shadow-accent/40 ring-1 ring-accent/30"
+              : "bg-surface-raised border-border-subtle hover:bg-surface-overlay text-text-secondary"
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-100 flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-purple-400" />
+            <span className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+              <Sliders className="w-3.5 h-3.5 text-accent" />
               Engenharia & Fatiador
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-400 font-semibold">
+            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-accent-subtle text-accent font-semibold">
               STL Optimizer
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-1">
+          <span className="text-[11px] text-text-secondary mt-1">
             Otimizador volumétrico, estimador de bicos e perda de purga
           </span>
         </button>
@@ -398,131 +404,133 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
       {/* 6 Top Metric Bento Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Faturamento */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               FATURAMENTO
             </span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <DollarSign className="w-4 h-4 text-positive" />
           </div>
           <div className="my-2">
-            <span className="text-xl font-extrabold text-white">
+            <span className="text-xl font-extrabold text-text-primary">
               R$ {revenue.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-text-muted">
             {ordersCount} pedidos faturados
           </div>
         </div>
 
         {/* Lucro Líquido */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               LUCRO LÍQUIDO
             </span>
-            <Percent className="w-4 h-4 text-emerald-400" />
+            <Percent className="w-4 h-4 text-positive" />
           </div>
           <div className="my-2">
-            <span className="text-xl font-extrabold text-emerald-400">
+            <span className="text-xl font-extrabold text-positive">
               R$ {netProfit.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+          <div className="text-[10px] text-positive font-semibold flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />
             <span>{Math.round(marginPct)}% margem líquida</span>
           </div>
         </div>
 
         {/* Custo Fabril */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               CUSTO FABRIL
             </span>
-            <Layers className="w-4 h-4 text-slate-400" />
+            <Layers className="w-4 h-4 text-text-secondary" />
           </div>
           <div className="my-2">
-            <span className="text-xl font-extrabold text-white">
+            <span className="text-xl font-extrabold text-text-primary">
               R$ {cost.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-text-muted">
             Insumos, luz & depreciação
           </div>
         </div>
 
         {/* Horas Máquina */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               HORAS MÁQUINA
             </span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <Clock className="w-4 h-4 text-warning" />
           </div>
           <div className="my-2">
-            <span className="text-xl font-extrabold text-white">
+            <span className="text-xl font-extrabold text-text-primary">
               {Math.floor(machineHours)}h {Math.round((machineHours % 1) * 60)}m
             </span>
           </div>
-          <div className="text-[10px] text-amber-400/90 font-medium">
+          <div className="text-[10px] text-warning font-medium">
             2 impressoras em uso
           </div>
         </div>
 
         {/* Consumo Total */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               CONSUMO TOTAL
             </span>
-            <Package className="w-4 h-4 text-blue-400" />
+            <Package className="w-4 h-4 text-info" />
           </div>
           <div className="my-2">
-            <span className="text-xl font-extrabold text-white">
+            <span className="text-xl font-extrabold text-text-primary">
               {totalWeight.toFixed(2)} kg
             </span>
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-text-muted">
             Filamento e resina gastos
           </div>
         </div>
 
         {/* Ticket Médio */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               TICKET MÉDIO
             </span>
-            <ArrowUpRight className="w-4 h-4 text-purple-400" />
+            <ArrowUpRight className="w-4 h-4 text-accent" />
           </div>
           <div className="my-2">
-            <span className="text-xl font-extrabold text-white">
+            <span className="text-xl font-extrabold text-text-primary">
               R$ {avgTicket.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-slate-500">Por peça produzida</div>
+          <div className="text-[10px] text-text-muted">Por peça produzida</div>
         </div>
       </div>
 
       {/* Monthly Sales Goal Progress Bar */}
-      <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col gap-2">
+      <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col gap-2">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-white">Meta Mensal de Vendas</span>
-            <span className="text-slate-400">
+            <span className="font-bold text-text-primary">
+              Meta Mensal de Vendas
+            </span>
+            <span className="text-text-secondary">
               R$ {revenue.toFixed(2).replace(".", ",")} / R$ 5.000,00
             </span>
           </div>
-          <span className="font-mono font-bold text-blue-400">
+          <span className="font-mono font-bold text-info">
             {revenue >= 5000
               ? "100%"
               : `${Math.min(100, Math.round((revenue / 5000) * 100))}%`}
           </span>
         </div>
-        <div className="w-full bg-[#131b2e] h-2.5 rounded-full overflow-hidden border border-[#1d2740]">
+        <div className="w-full bg-surface-overlay h-2.5 rounded-full overflow-hidden border border-border-subtle">
           <div
-            className="bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+            className="bg-gradient-to-r from-accent via-accent to-positive h-full rounded-full transition-all duration-500"
             style={{ width: `${Math.min(100, (revenue / 5000) * 100)}%` }}
           />
         </div>
@@ -531,27 +539,27 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
       {/* Charts Row: Financial Area Chart (Left) and Donut Material Chart (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Financial Performance Chart */}
-        <div className="lg:col-span-2 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5 flex flex-col justify-between">
+        <div className="lg:col-span-2 bg-surface-raised border border-border-subtle rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
                 Desempenho Financeiro
               </h2>
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[11px] text-text-secondary">
                 Evolução diária de faturamento, lucro e custos
               </span>
             </div>
             <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5 text-blue-400 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>{" "}
+              <span className="flex items-center gap-1.5 text-info font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-accent"></span>{" "}
                 Venda
               </span>
-              <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>{" "}
+              <span className="flex items-center gap-1.5 text-positive font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-positive"></span>{" "}
                 Lucro
               </span>
-              <span className="flex items-center gap-1.5 text-slate-400 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span>{" "}
+              <span className="flex items-center gap-1.5 text-text-secondary font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-text-muted"></span>{" "}
                 Custo
               </span>
             </div>
@@ -571,30 +579,46 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               >
                 <defs>
                   <linearGradient id="colorVenda" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-info)"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-info)"
+                      stopOpacity={0.0}
+                    />
                   </linearGradient>
                   <linearGradient id="colorLucro" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
+                    <stop
+                      offset="5%"
+                      stopColor="var(--color-positive)"
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--color-positive)"
+                      stopOpacity={0.0}
+                    />
                   </linearGradient>
                 </defs>
                 <XAxis
                   dataKey="date"
-                  stroke="#64748b"
+                  stroke="var(--color-text-muted)"
                   fontSize={11}
                   tickLine={false}
                 />
                 <YAxis
-                  stroke="#64748b"
+                  stroke="var(--color-text-muted)"
                   fontSize={11}
                   tickLine={false}
                   tickFormatter={(v) => `R$${v}`}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#0f172a",
-                    borderColor: "#334155",
+                    backgroundColor: "var(--color-bg-elevated)",
+                    borderColor: "var(--color-text-secondary)",
                     borderRadius: "8px",
                     fontSize: "12px",
                   }}
@@ -612,7 +636,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 <Area
                   type="monotone"
                   dataKey="venda"
-                  stroke="#3b82f6"
+                  stroke="var(--color-info)"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorVenda)"
@@ -621,7 +645,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 <Area
                   type="monotone"
                   dataKey="lucro"
-                  stroke="#10b981"
+                  stroke="var(--color-positive)"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorLucro)"
@@ -633,19 +657,19 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         </div>
 
         {/* Right: Material Consumption Donut */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5 flex flex-col justify-between">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h2 className="text-sm font-bold text-white">
+              <h2 className="text-sm font-bold text-text-primary">
                 Consumo por Material
               </h2>
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[11px] text-text-secondary">
                 Total: {totalMaterialWeight}g rastreados
               </span>
             </div>
             <button
               onClick={() => onTabChange("inventory")}
-              className="text-xs text-blue-400 hover:text-blue-300 font-semibold"
+              className="text-xs text-info hover:text-info font-semibold"
             >
               Estoque →
             </button>
@@ -670,8 +694,8 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#0f172a",
-                    borderColor: "#334155",
+                    backgroundColor: "var(--color-bg-elevated)",
+                    borderColor: "var(--color-text-secondary)",
                     borderRadius: "8px",
                     fontSize: "12px",
                   }}
@@ -680,16 +704,16 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-base font-extrabold text-white">
+              <span className="text-base font-extrabold text-text-primary">
                 {totalMaterialWeight}g
               </span>
-              <span className="text-[10px] text-slate-400 uppercase font-mono">
+              <span className="text-[10px] text-text-secondary uppercase font-mono">
                 Consumo
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 text-[11px] text-slate-300 mt-2">
+          <div className="grid grid-cols-2 gap-1.5 text-[11px] text-text-secondary mt-2">
             {materialData.map((mat) => (
               <div
                 key={mat.name}
@@ -700,7 +724,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   style={{ backgroundColor: mat.color }}
                 ></span>
                 <span className="truncate">{mat.name}</span>
-                <span className="text-slate-500 font-mono ml-auto">
+                <span className="text-text-muted font-mono ml-auto">
                   {mat.value}g
                 </span>
               </div>
@@ -710,27 +734,27 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
       </div>
 
       {/* Bottom Section: Previsões Financeiras & Projeções (QoQ) */}
-      <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5 flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1b253b] pb-3">
+      <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5 flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border-subtle pb-3">
           <div>
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
+            <h2 className="text-sm font-bold text-text-primary flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-warning" />
               Previsões Financeiras & Projeções (QoQ)
             </h2>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-text-secondary">
               Modelos preditivos baseados no histórico de horas de impressão e
               margem líquida média
             </span>
           </div>
 
           {/* Sub-tabs */}
-          <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-lg p-0.5 text-xs font-semibold">
+          <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg p-0.5 text-xs font-semibold">
             <button
               onClick={() => setActiveProjectionTab("quarter")}
               className={`px-3 py-1 rounded transition-colors ${
                 activeProjectionTab === "quarter"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               Trimestral (Q4)
@@ -739,8 +763,8 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               onClick={() => setActiveProjectionTab("trend")}
               className={`px-3 py-1 rounded transition-colors ${
                 activeProjectionTab === "trend"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               Tendência Linear
@@ -749,8 +773,8 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               onClick={() => setActiveProjectionTab("cap")}
               className={`px-3 py-1 rounded transition-colors ${
                 activeProjectionTab === "cap"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
             >
               Capacidade Máxima
@@ -759,45 +783,45 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-[#090d18] border border-[#18233a] rounded-xl p-3.5 flex flex-col justify-between">
-            <span className="text-[11px] font-mono uppercase text-slate-400 block mb-1">
+          <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3.5 flex flex-col justify-between">
+            <span className="text-[11px] font-mono uppercase text-text-secondary block mb-1">
               BACKLOG EM CARTEIRA
             </span>
-            <div className="text-xl font-bold text-white mb-1">
+            <div className="text-xl font-bold text-text-primary mb-1">
               {isUsingDemo
                 ? "R$ 486,19"
                 : `R$ ${(revenue * 0.15).toFixed(2).replace(".", ",")}`}
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-text-muted">
               Valor estimado de pedidos em fila de fatiamento e impressão
             </p>
           </div>
 
-          <div className="bg-[#090d18] border border-[#18233a] rounded-xl p-3.5 flex flex-col justify-between">
-            <span className="text-[11px] font-mono uppercase text-slate-400 block mb-1">
+          <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3.5 flex flex-col justify-between">
+            <span className="text-[11px] font-mono uppercase text-text-secondary block mb-1">
               PREVISÃO FECHAMENTO TRIMESTRE
             </span>
-            <div className="text-xl font-bold text-emerald-400 mb-1">
+            <div className="text-xl font-bold text-positive mb-1">
               {isUsingDemo
                 ? "R$ 4.719,00"
                 : `R$ ${(revenue * 1.35).toFixed(2).replace(".", ",")}`}
             </div>
-            <p className="text-[11px] text-emerald-500/80 font-medium">
+            <p className="text-[11px] text-positive font-medium">
               +{isUsingDemo ? "26.2%" : "15%"} de crescimento com taxa atual de
               ocupação
             </p>
           </div>
 
-          <div className="bg-[#090d18] border border-[#18233a] rounded-xl p-3.5 flex flex-col justify-between">
-            <span className="text-[11px] font-mono uppercase text-slate-400 block mb-1">
+          <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3.5 flex flex-col justify-between">
+            <span className="text-[11px] font-mono uppercase text-text-secondary block mb-1">
               PROJEÇÃO ANUAL (RUN-RATE)
             </span>
-            <div className="text-xl font-bold text-purple-400 mb-1">
+            <div className="text-xl font-bold text-accent mb-1">
               {isUsingDemo
                 ? "R$ 37.457,00"
                 : `R$ ${(revenue * 12).toFixed(2).replace(".", ",")}`}
             </div>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-text-muted">
               Projeção mantendo a frota em 65% de capacidade útil
             </p>
           </div>

@@ -313,16 +313,6 @@ function StablePrivacyScreen() {
       <LegacyResidueDisclosure />
 
       {/* ── SPEC-04 consent receipt ─────────────────────────────────── */}
-      {/* Every string below reads `privacy.consent_receipt.*`, NOT
-          `privacy.consent.*`. The two namespaces both exist and both are
-          translated, and they are DIFFERENT screens: `privacy.consent.*` is
-          the first-run ConsentModal (its `title` is literally "Your Data
-          Privacy"). Asking it for a receipt string resolves to nothing and
-          renders the raw key — which is what these six call sites did, in both
-          locales, with a complete pt-BR translation already sitting one
-          namespace over. The heading was wrong the same way, more quietly: it
-          resolved, so it rendered the ConsentModal's heading over a
-          consent-RECEIPT panel. Repointed, not duplicated. */}
       <div className="surface rounded-xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
           {t("privacy.consent_receipt.title")}
