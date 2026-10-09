@@ -57,9 +57,6 @@ vi.mock("@/shared/hooks/useReducedMotion", () => ({
 vi.mock("@/shared/components/Privacy/PrivacyOnboarding", () => ({
   PrivacyOnboarding: () => null,
 }));
-vi.mock("@/shared/components/Privacy/PiiLockedShell", () => ({
-  PiiLockedShell: () => null,
-}));
 vi.mock("@/shared/stores/layoutStore", () => ({
   useLayoutStore: (
     selector: (state: {

@@ -5,14 +5,13 @@
  * the persistence bridge never hydrates the three migrated PII keys, so the
  * residue is in SQLite and only reachable asynchronously through the read-only
  * `privacy:legacy-rows` IPC. A surface that only read `localStorage` would show
- * nothing on desktop: no prompt, and no residue in the disclosure panel — which
- * is exactly the "retained but invisible" defect the re-home closes.
+ * nothing on desktop: no residue in the disclosure panel. This hook only feeds
+ * the historical value-free disclosure; it does not migrate or re-home data.
  *
  * These hooks bridge the two: they start from the sync `localStorage` reader
  * (so the web behaviour and every existing test are unchanged) and, when a
  * desktop source answers, merge the fetched values in. The merge NEVER writes
- * anything and never persists PII — it only feeds detection and the re-home's
- * read path.
+ * anything and never persists PII — it only feeds the residue disclosure.
  */
 
 import { useEffect, useMemo, useState } from "react";

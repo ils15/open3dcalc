@@ -42,15 +42,8 @@ vi.mock("@/shared/components/DemoMode/DemoModeIndicator", () => ({
 vi.mock("@/shared/components/DemoMode/DemoExportBlockedToast", () => ({
   DemoExportBlockedToast: () => <div data-testid="demo-toast" />,
 }));
-vi.mock("@/shared/components/ui/ConsentModal", () => ({
-  ConsentModal: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="consent-modal" /> : null,
-}));
 vi.mock("@/shared/components/ui/PrivacyBanner", () => ({
   PrivacyBanner: () => <div data-testid="privacy-banner" />,
-}));
-vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({
-  LegacyMigrationPrompt: () => <div data-testid="legacy-migration-prompt" />,
 }));
 vi.mock("@/shared/components/ui/Tutorial", () => ({
   Tutorial: () => <div data-testid="tutorial" />,
@@ -173,7 +166,6 @@ describe("desktop App — Focus Mode chrome", () => {
     expect(screen.getByTestId("demo-indicator")).toBeInTheDocument();
     expect(screen.getByTestId("demo-toast")).toBeInTheDocument();
     expect(screen.getByTestId("privacy-banner")).toBeInTheDocument();
-    expect(screen.queryByTestId("legacy-migration-prompt")).toBeNull();
     expect(screen.getByTestId("tutorial")).toBeInTheDocument();
   });
 

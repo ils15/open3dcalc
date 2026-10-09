@@ -16,7 +16,7 @@ import { useTutorialStore } from "@/shared/stores/tutorialStore";
  * and never checked in the stacking order:
  *
  * 1. The exit sat at z-[60], ABOVE the modal tier (z-50), so it painted over
- *    the backdrops of ConfirmDialog, ConsentModal, PrivacyPolicy, DataSyncModal,
+ *    the backdrops of ConfirmDialog, PrivacyPolicy, DataSyncModal,
  *    ComparisonModal, the field customizer and the tutorial. Chrome floating
  *    over a modal's scrim is the visible half; the other half is that it
  *    contradicts the rule the design already reasons about — a modal owns
@@ -263,8 +263,8 @@ afterEach(() => {
 /**
  * Remove `/* … *\/` and `// …`.
  *
- * `[^:]` before the `//` is load-bearing: ConsentModal and PrivacyPolicy both
- * carry `href="https://github.com/…"` on a line the audit reads, and a naive
+ * `[^:]` before the `//` is load-bearing: PrivacyPolicy carries
+ * `href="https://github.com/…"` on a line the audit reads, and a naive
  * strip truncates that line at `https:`. It happens to be harmless there today
  * because those lines hold no z-50, which is exactly the kind of accident that
  * stops being harmless.
@@ -430,12 +430,9 @@ describe("focus mode — the z-50 audit can derive its own inputs", () => {
   });
 
   it("does not read `https://` as the start of a line comment", () => {
-    // ConsentModal and PrivacyPolicy both carry a github link on a line this
-    // audit reads. A naive `//` strip truncates it at `https:`.
-    for (const file of [
-      "src/shared/components/ui/ConsentModal.tsx",
-      "src/shared/components/ui/PrivacyPolicy.tsx",
-    ]) {
+    // PrivacyPolicy carries a github link on a line this audit reads. A naive
+    // `//` strip truncates it at `https:`.
+    for (const file of ["src/shared/components/ui/PrivacyPolicy.tsx"]) {
       const source = fs.readFileSync(resolve(process.cwd(), file), "utf8");
       expect(
         stripComments(source).includes("https://github.com/ils15/open3dcalc"),
@@ -855,9 +852,7 @@ describe("focus mode — a passive surface never buries the exit", () => {
     const covered = [
       "src/shared/components/ui/ComparisonModal.tsx",
       "src/shared/components/ui/ConfirmDialog.tsx",
-      "src/shared/components/ui/ConsentModal.tsx",
       "src/shared/components/ui/DataSyncModal.tsx",
-      "src/shared/components/Privacy/LegacyMigrationDialog.tsx",
       "src/shared/components/ui/PrivacyPolicy.tsx",
       "src/shared/components/Calculator/HistoryTab/HistoryTab.tsx",
       "src/shared/components/Calculator/QuoteSection.tsx",

@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import enUS from "@/shared/i18n/locales/en-US.json";
 import ptBR from "@/shared/i18n/locales/pt-BR.json";
 import i18n from "@/shared/i18n/i18n";
-import { useLegacyKeepReadOnlyStore } from "@/shared/stores/legacyKeepReadOnlyStore";
 import { useConsentStore } from "@/shared/stores/consentStore";
 import { PrivacyScreen } from "../PrivacyScreen";
 
@@ -167,12 +166,10 @@ describe("PrivacyScreen (D1.1 S4)", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "privacy.quarantine.inspectionPaused",
     );
-    expect(screen.queryByText("privacy.quarantine.noQuarantined")).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "privacy.quarantine.migrate" }),
-    ).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "privacy.quarantine.eliminate" }),
+      screen.queryByRole("button", {
+        name: /migrate|eliminate|migrar|eliminar/i,
+      }),
     ).toBeNull();
     expect(hoisted.quarantineReport).not.toHaveBeenCalled();
     expect(hoisted.migrateKey).not.toHaveBeenCalled();
@@ -469,53 +466,12 @@ describe("PrivacyScreen (D1.1 S4)", () => {
   });
 });
 
-/** The removed legacy decision must not surface as a privacy-screen control. */
-describe("PrivacyScreen — retired keep-read-only control", () => {
-  afterEach(() => {
-    useLegacyKeepReadOnlyStore.setState({ signature: null });
-  });
-
-  it("does not render or mutate a retired legacy decision", () => {
-    useLegacyKeepReadOnlyStore.setState({
-      signature: "open3dcalc_customers_v1=1",
-    });
-    render(<PrivacyScreen />);
-
-    expect(
-      screen.queryByText("privacy.migration.keepReadOnlyTitle"),
-    ).toBeNull();
-    expect(
-      screen.queryByRole("button", {
-        name: "privacy.migration.keepReadOnlyReopen",
-      }),
-    ).toBeNull();
-    expect(useLegacyKeepReadOnlyStore.getState().signature).toBe(
-      "open3dcalc_customers_v1=1",
-    );
-  });
-
-  it("renders no control when no legacy decision exists", () => {
-    render(<PrivacyScreen />);
-    expect(
-      screen.queryByRole("button", {
-        name: "privacy.migration.keepReadOnlyReopen",
-      }),
-    ).toBeNull();
-  });
-});
-
 /**
  * D1.1 S8 / SPEC-04 — the consent receipt block is TRANSLATED, not keyed.
  *
- * The defect this pins is not a missing key. Every string the block needs is
- * present and fully written in both locales — under `privacy.consent_receipt.*`
- * — while the call sites asked `privacy.consent.*` for six of them, which
- * resolves to nothing and renders the raw key ("privacy.consent.absent") in
- * the user's face. `privacy.consent.*` is a DIFFERENT, real namespace: the
- * ConsentModal heading, so repointing the block there would have kept showing
- * a key. The assertion is therefore made against the real i18next resources,
- * because a key-echoing `t` (what the specs above use) cannot tell a resolved
- * string from an unresolved one.
+ * The assertion is made against the real i18next resources, because a
+ * key-echoing `t` (what the specs above use) cannot tell a resolved string
+ * from an unresolved one.
  */
 describe("PrivacyScreen (SPEC-04) — the consent receipt block resolves real copy", () => {
   const LOCALES = [
@@ -609,12 +565,12 @@ describe("PrivacyScreen (SPEC-04) — the consent receipt block resolves real co
   );
 
   it.each(LOCALES)(
-    "leaves no unresolved privacy.consent.* key on screen in %s",
-    async (locale, dict) => {
+    "leaves no unresolved privacy.consent_receipt.* key on screen in %s",
+    async (locale) => {
       const { container } = await renderIn(locale, "absent");
 
-      // The six that were wrong, plus the title: none of them may survive as a
-      // literal key now that the block reads `privacy.consent_receipt.*`.
+      // None of the consent-receipt keys may survive as literal translation
+      // keys in the rendered UI.
       for (const key of [
         "absent",
         "flagsNote",
@@ -626,11 +582,9 @@ describe("PrivacyScreen (SPEC-04) — the consent receipt block resolves real co
       ]) {
         expect(
           container.textContent,
-          `privacy.consent.${key} is rendered raw in ${locale}`,
-        ).not.toContain(`privacy.consent.${key}`);
+          `privacy.consent_receipt.${key} is rendered raw in ${locale}`,
+        ).not.toContain(`privacy.consent_receipt.${key}`);
       }
-      // And the block is not reading the ConsentModal namespace either.
-      expect(container.textContent).not.toContain(dict.privacy.consent.title);
     },
   );
 });

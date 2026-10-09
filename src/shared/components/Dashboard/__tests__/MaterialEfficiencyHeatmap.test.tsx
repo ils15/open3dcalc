@@ -426,10 +426,8 @@ describe("MaterialEfficiencyHeatmap — superfície de cor", () => {
 
 describe("MaterialEfficiencyHeatmap — paridade de locale", () => {
   it("9. en-US tem as mesmas chaves que pt-BR em history.heatmap, nenhuma em branco", () => {
-    // Only `tutorial.launcher` has an automatic parity lock, and putting these
-    // under `history.analytics` would break the `toHaveLength(24)` guard in
-    // ProfitAnalyticsModule.test.tsx:298. A new namespace touches neither, so
-    // this comparison is the only net — a key missing in en-US renders raw.
+    // Keep this dedicated heatmap namespace independent from the analytics
+    // resource-count contract while checking both locale dictionaries.
     const pt = ptBR.history.heatmap as Record<string, string>;
     const en = enUS.history.heatmap as Record<string, string>;
 

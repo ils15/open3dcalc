@@ -288,9 +288,8 @@ describe("ProfitAnalyticsModule — guarda de lista vazia do agregador", () => {
 
 describe("ProfitAnalyticsModule — paridade de locale", () => {
   it("4. en-US tem exatamente as mesmas chaves que pt-BR em history.analytics", () => {
-    // Only `tutorial.launcher` has an automatic parity lock. A key missing in
-    // en-US does not fail any test and renders the raw key to the user, so this
-    // comparison is the only net.
+    // Keep the analytics resource keys in exact parity; a missing locale key
+    // would otherwise render as raw text to users of that locale.
     const pt = ptBR.history.analytics as Record<string, string>;
     const en = enUS.history.analytics as Record<string, string>;
 

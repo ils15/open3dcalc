@@ -598,111 +598,8 @@ describe("i18n locales — multi-material disabled explanation", () => {
   });
 });
 
-/**
- * T3.3 — the locked shell / unlock surface. Every string it renders goes
- * through `t("privacy.vault.*")`; a missing key would render the raw key on the
- * one control that stands between a locked user and an empty-looking app.
- * The two `*Detail` strings are interpolated, so their placeholder is asserted
- * rather than the literal, in both locales.
- */
-const VAULT_KEYS = [
-  "ariaLabel",
-  "lockedTitle",
-  "lockedMessage",
-  // MEDIUM-1 — create mode: a new profile has no passphrase yet, so the shell
-  // asks for it twice and warns that it cannot be reset.
-  "createTitle",
-  "createMessage",
-  "passphraseLabel",
-  "passphrasePlaceholder",
-  "createPassphrasePlaceholder",
-  "confirmPassphraseLabel",
-  "confirmPassphrasePlaceholder",
-  "create",
-  "creating",
-  "mismatchError",
-  "irrecoverableNotice",
-  "unlock",
-  "unlocking",
-  "memoryNote",
-  "unlockError",
-  "unavailableTitle",
-  "unavailableMessage",
-  // H-4 — the write-refusal consumer. A missing key would render the raw key
-  // on the surface that exists precisely to make a refused PII write visible.
-  "writeRefusedTitle",
-  "writeRefusedAreaUnknown",
-  // The eye toggle on the passphrase field is an icon-only button, so its
-  // `title` is the entire accessible name — it has to be a real string, not a
-  // hardcoded literal in the component.
-  "showPassphrase",
-  "hidePassphrase",
-] as const;
-
-const VAULT_DETAIL_KEYS = [
-  "unlockErrorDetail",
-  "unavailableDetail",
-  "writeRefusedMessage",
-] as const;
-
-/**
- * T5.2 — the legacy-migration choice dialog. Every string it renders goes
- * through `t("privacy.migration.*")`. The `intro` is interpolated, so its
- * placeholder is asserted rather than the literal. The key sets are compared
- * for EXACT parity, because a key present in only one locale renders as a raw
- * key for every user of that locale.
- */
-const MIGRATION_KEYS = [
-  "title",
-  "intro",
-  "optionMigrate",
-  "optionMigrateHint",
-  "optionKeep",
-  "optionKeepHint",
-  "optionExport",
-  "optionExportHint",
-  "optionDelete",
-  "optionDeleteHint",
-  "optionCancel",
-  "working",
-  "keptReadOnly",
-  "exportBlocked",
-  "deleteUnavailable",
-  "resultMigrated",
-  "resultVaultLocked",
-  "resultNothingToMigrate",
-  "resultIncomplete",
-  "close",
-  "keepReadOnlyTitle",
-  "keepReadOnlyActive",
-  "keepReadOnlyReopen",
-] as const;
-
-describe("i18n locales (privacy.migration.*) — T5.2 choice dialog", () => {
-  it.each([
-    ["pt-BR", ptBR],
-    ["en-US", enUS],
-  ])("resolves every privacy.migration.* key in %s", (_locale, dict) => {
-    for (const key of MIGRATION_KEYS) {
-      const value = resolve(dict, ["privacy", "migration", key]);
-      expect(typeof value, `privacy.migration.${key}`).toBe("string");
-      expect((value as string).length).toBeGreaterThan(0);
-    }
-    const intro = resolve(dict, ["privacy", "migration", "intro"]);
-    expect(intro as string, "privacy.migration.intro").toContain("{{count}}");
-  });
-
-  it("keeps exact key parity between pt-BR and en-US", () => {
-    const ptKeys = Object.keys(
-      resolve(ptBR, ["privacy", "migration"]) as Record<string, unknown>,
-    ).sort();
-    const enKeys = Object.keys(
-      resolve(enUS, ["privacy", "migration"]) as Record<string, unknown>,
-    ).sort();
-    expect(ptKeys).toEqual(enKeys);
-    expect(ptKeys).toEqual([...MIGRATION_KEYS].sort());
-  });
-});
+/** A refused PII write must always have translated, accessible feedback. */
+const VAULT_KEYS = ["writeRefusedTitle", "writeRefusedAreaUnknown"] as const;
 
 /**
  * T5.3 — the legacy-residue disclosure panel. Every string it renders goes
@@ -781,7 +678,7 @@ describe("i18n locales (privacy.residue.*) — T5.3 residue disclosure", () => {
   });
 });
 
-describe("i18n locales (privacy.vault.*) — T3.3 locked shell", () => {
+describe("i18n locales (privacy.vault.*) — write refusal", () => {
   it.each([
     ["pt-BR", ptBR],
     ["en-US", enUS],
@@ -790,11 +687,6 @@ describe("i18n locales (privacy.vault.*) — T3.3 locked shell", () => {
       const value = resolve(dict, ["privacy", "vault", key]);
       expect(typeof value, `privacy.vault.${key}`).toBe("string");
       expect((value as string).length).toBeGreaterThan(0);
-    }
-    for (const key of VAULT_DETAIL_KEYS) {
-      const value = resolve(dict, ["privacy", "vault", key]);
-      expect(typeof value, `privacy.vault.${key}`).toBe("string");
-      expect(value as string, `privacy.vault.${key}`).toContain("{{reason}}");
     }
     // The write-refusal message names the affected data area as well as the
     // typed reason; dropping the placeholder would render literal "{{area}}".
@@ -806,10 +698,13 @@ describe("i18n locales (privacy.vault.*) — T3.3 locked shell", () => {
     expect(refusedMessage, "privacy.vault.writeRefusedMessage").toContain(
       "{{area}}",
     );
+    expect(refusedMessage, "privacy.vault.writeRefusedMessage").toContain(
+      "{{reason}}",
+    );
   });
 
   it("has no orphan privacy.vault keys in either locale", () => {
-    const expected = [...VAULT_KEYS, ...VAULT_DETAIL_KEYS].sort();
+    const expected = [...VAULT_KEYS, "writeRefusedMessage"].sort();
     for (const dict of [ptBR, enUS]) {
       const vault = resolve(dict, ["privacy", "vault"]) as
         Record<string, unknown> | undefined;

@@ -110,10 +110,17 @@ export interface ManifestRetention {
   max_days: number;
 }
 
+export interface PlatformDestination {
+  platform: Platform;
+  key: string;
+  surface: Surface;
+}
+
 export interface ManifestEntry {
   key: string;
   surface: Surface;
   platforms: Platform[];
+  platform_destinations?: PlatformDestination[];
   class: DataClass;
   pii: boolean;
   persistence: PersistenceMode;
@@ -163,6 +170,7 @@ const REQUIRED_FIELDS: (keyof ManifestEntry)[] = [
   "owner",
   "version",
 ];
+const OPTIONAL_FIELDS: (keyof ManifestEntry)[] = ["platform_destinations"];
 
 const VERSION_PATTERN = /^\d+\.\d+$/;
 const PLAINTEXT_PII_KEYS = new Set([
@@ -171,6 +179,59 @@ const PLAINTEXT_PII_KEYS = new Set([
   "open3dcalc_history_v2",
 ]);
 const PLAINTEXT_PII_PLATFORMS: readonly Platform[] = ["electron", "web", "pwa"];
+const PLAINTEXT_PII_DESTINATIONS: Record<string, PlatformDestination[]> = {
+  open3dcalc_customers_v1: [
+    {
+      platform: "electron",
+      key: "open3dcalc_pwless_customers_v1",
+      surface: "sqlite_storage_table",
+    },
+    {
+      platform: "web",
+      key: "open3dcalc_customers_v1",
+      surface: "localStorage",
+    },
+    {
+      platform: "pwa",
+      key: "open3dcalc_customers_v1",
+      surface: "localStorage",
+    },
+  ],
+  open3dcalc_quotes_v1: [
+    {
+      platform: "electron",
+      key: "open3dcalc_pwless_quotes_v1",
+      surface: "sqlite_storage_table",
+    },
+    {
+      platform: "web",
+      key: "open3dcalc_quotes_v1",
+      surface: "localStorage",
+    },
+    {
+      platform: "pwa",
+      key: "open3dcalc_quotes_v1",
+      surface: "localStorage",
+    },
+  ],
+  open3dcalc_history_v2: [
+    {
+      platform: "electron",
+      key: "open3dcalc_pwless_history_v1",
+      surface: "sqlite_storage_table",
+    },
+    {
+      platform: "web",
+      key: "open3dcalc_history_v2",
+      surface: "localStorage",
+    },
+    {
+      platform: "pwa",
+      key: "open3dcalc_history_v2",
+      surface: "localStorage",
+    },
+  ],
+};
 
 function isOneOf<T extends string>(
   value: unknown,
@@ -204,8 +265,33 @@ export function validateManifestEntry(
       throw fieldError(label, `missing required field "${field}"`);
   }
   for (const field of Object.keys(record)) {
-    if (!REQUIRED_FIELDS.includes(field as keyof ManifestEntry)) {
+    if (
+      !REQUIRED_FIELDS.includes(field as keyof ManifestEntry) &&
+      !OPTIONAL_FIELDS.includes(field as keyof ManifestEntry)
+    ) {
       throw fieldError(label, `unknown field "${field}"`);
+    }
+  }
+
+  if ("platform_destinations" in record) {
+    const destinations = record.platform_destinations;
+    if (!Array.isArray(destinations)) {
+      throw fieldError(label, "platform_destinations must be an array");
+    }
+    for (const destination of destinations) {
+      if (typeof destination !== "object" || destination === null) {
+        throw fieldError(label, "platform destination must be an object");
+      }
+      const candidate = destination as Record<string, unknown>;
+      if (
+        Object.keys(candidate).sort().join(",") !== "key,platform,surface" ||
+        typeof candidate.key !== "string" ||
+        candidate.key.length === 0 ||
+        !isOneOf(candidate.platform, PLATFORMS) ||
+        !isOneOf(candidate.surface, SURFACES)
+      ) {
+        throw fieldError(label, "platform destination is malformed");
+      }
     }
   }
 
@@ -305,6 +391,15 @@ export function validateManifestEntry(
         "policy 1.9 plaintext PII requires user_content on localStorage for electron/web/pwa with provisional contract_performance",
       );
     }
+    if (
+      JSON.stringify(typed.platform_destinations) !==
+      JSON.stringify(PLAINTEXT_PII_DESTINATIONS[typed.key])
+    ) {
+      throw fieldError(
+        label,
+        "policy 1.9 plaintext PII requires the exact declared per-platform destinations",
+      );
+    }
   }
   if (
     approvedPlaintextPiiKey &&
@@ -316,11 +411,13 @@ export function validateManifestEntry(
         (platform, index) => typed.platforms[index] === platform,
       ) ||
       typed.class !== "user_content" ||
-      typed.legal_basis !== "contract_performance")
+      typed.legal_basis !== "contract_performance" ||
+      JSON.stringify(typed.platform_destinations) !==
+        JSON.stringify(PLAINTEXT_PII_DESTINATIONS[typed.key]))
   ) {
     throw fieldError(
       label,
-      "policy 1.9 Stable plaintext PII keys require the exact approved declaration",
+      "policy 1.9 Stable plaintext PII keys require the exact approved declaration and per-platform destinations",
     );
   }
   // TEST-MATRIX 1.3.

@@ -29,8 +29,7 @@ import { useNavigationPrefsStore } from "@/shared/stores/navigationPrefsStore";
  *     "activates" without rendering is worse than no tour. `useAppInit` is
  *     stubbed below, so the timer never fires here and the Tutorial stays
  *     inert; this file is about which chrome a focus state takes away, and
- *     the tour is not chrome. There is still no `ConsentModal`; first run is
- *     `PrivacyOnboarding` + `PiiLockedShell`.
+ *     the tour is not chrome. First run is handled by `PrivacyOnboarding`.
  *   - `<main>` no longer reserves `pb-32` for a fixed mobile bar. The Studio
  *     has no such bar, so the reserve it asserted was a page of whitespace
  *     that Focus Mode was, in fact, right to drop. What Focus Mode really
@@ -95,13 +94,6 @@ vi.mock("@/shared/components/DemoMode/DemoExportBlockedToast", () => ({
 vi.mock("@/shared/components/Privacy/PrivacyOnboarding", () => ({
   PrivacyOnboarding: () => <div data-testid="privacy-onboarding" />,
 }));
-vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({
-  LegacyMigrationPrompt: () => <div data-testid="legacy-migration-prompt" />,
-}));
-vi.mock("@/shared/components/Privacy/PiiLockedShell", () => ({
-  PiiLockedShell: () => <div data-testid="pii-locked-shell" />,
-}));
-
 import App from "./App";
 
 /** The four pieces of chrome Focus Mode is supposed to take away. */
@@ -192,8 +184,8 @@ describe("web App — Focus Mode chrome", () => {
     enterFocusMode();
 
     // Everything the Studio mounts inside `{!focusMode && …}` goes with it: the
-    // demo indicator and the three privacy surfaces are siblings of the header
-    // in that block, not chrome that survives it.
+    // demo indicator and privacy onboarding are siblings of the header in that
+    // block, not chrome that survives it.
     //
     // `DemoExportBlockedToast` is the one deliberate exception, and the
     // assertion below is the guarantee THIS PR (#262) delivers: the toast is
@@ -208,8 +200,6 @@ describe("web App — Focus Mode chrome", () => {
     expect(screen.getByTestId("demo-toast")).toBeInTheDocument();
     expect(screen.queryByTestId("demo-indicator")).toBeNull();
     expect(screen.queryByTestId("privacy-onboarding")).toBeNull();
-    expect(screen.queryByTestId("legacy-migration-prompt")).toBeNull();
-    expect(screen.queryByTestId("pii-locked-shell")).toBeNull();
   });
 
   it("centres the workspace while the mode is on and drops the centring after", () => {

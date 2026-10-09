@@ -75,13 +75,6 @@ vi.mock("@/shared/components/DemoMode/DemoExportBlockedToast", () => ({
 vi.mock("@/shared/components/Privacy/PrivacyOnboarding", () => ({
   PrivacyOnboarding: () => null,
 }));
-vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({
-  LegacyMigrationPrompt: () => null,
-}));
-vi.mock("@/shared/components/Privacy/PiiLockedShell", () => ({
-  PiiLockedShell: () => null,
-}));
-
 import App from "./App";
 
 /** The two Studio rails, scoped so their shared labels cannot collide. */
@@ -95,7 +88,9 @@ function rails(container: HTMLElement): Rails {
   const subHeader = header?.nextElementSibling;
   const sidebar = container.querySelector("aside");
   if (!header || !(subHeader instanceof HTMLElement) || !sidebar) {
-    throw new Error("Studio chrome did not render a header, sub-header and sidebar");
+    throw new Error(
+      "Studio chrome did not render a header, sub-header and sidebar",
+    );
   }
   return { sidebar, subHeader };
 }
@@ -198,10 +193,9 @@ describe("web App navigation owner", () => {
 
     const input: ReactElement = <input aria-label="cena" />;
     const { container } = render(input);
-    fireEvent.keyDown(
-      container.querySelector("input") as HTMLInputElement,
-      { key: "1" },
-    );
+    fireEvent.keyDown(container.querySelector("input") as HTMLInputElement, {
+      key: "1",
+    });
 
     expect(currentView()).toBe("view-history");
   });

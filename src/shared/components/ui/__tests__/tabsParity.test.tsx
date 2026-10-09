@@ -35,14 +35,6 @@ vi.mock("@/shared/components/Calculator/Calculator", () => ({
 vi.mock("@/shared/stores/storeBridge", () => ({
   restoreAutoSnapshot: vi.fn(),
 }));
-// The first-run consent modal and the legacy migration prompt are covered by
-// their own suites; stub them so this shell test stays about navigation.
-vi.mock("@/shared/components/ui/ConsentModal", () => ({
-  ConsentModal: () => null,
-}));
-vi.mock("@/shared/components/Privacy/LegacyMigrationPrompt", () => ({
-  LegacyMigrationPrompt: () => null,
-}));
 // Applies the selector, like the calculatorStore mock below. Returning the bare
 // store object made `useHistoryStore(s => s.entries)` yield the store rather than
 // the array, so consumers calling `entries.reduce(...)` threw.
