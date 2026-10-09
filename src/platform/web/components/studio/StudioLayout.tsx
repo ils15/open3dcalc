@@ -32,7 +32,6 @@ import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportB
 import { useAppInit } from "@/shared/hooks/useAppInit";
 import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
 import { PrivacyOnboarding } from "@/shared/components/Privacy/PrivacyOnboarding";
-import { PiiLockedShell } from "@/shared/components/Privacy/PiiLockedShell";
 import { isBetaChannel } from "@/shared/config/betaChannel";
 
 export const StudioLayout: React.FC = () => {
@@ -59,7 +58,7 @@ export const StudioLayout: React.FC = () => {
   const [demoTemplate, setDemoTemplate] = useState<"fdm" | "resin">("fdm");
   const [currentProjectName, setCurrentProjectName] = useState("");
 
-  // Initialize app bootstrap (legacy migrations, PII hydrations, tutorial, URL shared calculations)
+  // Initialize channel-specific data, stable defaults, tutorial, and shared URLs.
   useAppInit(setActiveTab);
 
   // Auto-collapse sidebar on resolutions < 1280px (responsive behavior)
@@ -122,11 +121,9 @@ export const StudioLayout: React.FC = () => {
   }, [focusMode]);
 
   return (
-    /* SHELL SURFACE (Track 1). This root was `bg-[#080c14] text-slate-100` —
-       a hardcoded dark-only palette. That is the app's outer surface on web, so
-       in light mode every token-driven component below (tutorial, dialogs,
-       Select, Toast, Privacy) flipped to light INSIDE a near-black shell: the
-       "dark mode mixing with light mode" report.
+    /* The shell and Studio surfaces use semantic tokens so the app's theme
+       class controls the entire workspace instead of leaving dark-only cards
+       inside a light shell.
 
        The two `--accent-fill*` utilities are written in the ARBITRARY-VALUE
        form on purpose. `--color-accent-fill` and `--color-accent-fill-fg` exist
@@ -139,22 +136,12 @@ export const StudioLayout: React.FC = () => {
        colour utility used in src/ actually resolves against `@theme`, so this
        cannot recur.
 
-       `selection:*` uses `--color-accent-fill`, NOT `--color-accent`. Both are
-       #4f46e5 in light mode, but `--color-accent` flips to #818cf8 in dark —
-       a foreground-weight colour that reaches only 2.98:1 with white ink, i.e.
-       a WCAG failure. `--color-accent-fill` is non-flipping, so the selection
-       pair measures 6.29:1 in BOTH themes. Same rule the token layer already
+       `selection:*` uses `--color-accent-fill`, NOT `--color-accent`. The
+       foreground token flips in dark mode and does not retain enough contrast
+       with white ink, while `--color-accent-fill` is non-flipping, so selection
+       text clears AA in BOTH themes. Same rule the token layer already
        states for the `--*-fill` family: when the background is fixed, the ink
-       must be fixed too.
-
-       Deliberately NOT tokenized here: the eight *view* components
-       (StudioDashboardView, StudioCalculatorView, StudioQuotesView,
-       StudioProductsView, StudioSpoolView, StudioHistoryView,
-       StudioCustomerView, StudioPrinterView) and the inline catalog/infill
-       panels in this file keep their hardcoded dark palette. That is a separate
-       epic. This boundary is asserted by studioShellTheme.test.ts — including
-       that the list above stays complete against the directory — so "the
-       Studio shell is tokenized" is never read as "the Studio is tokenized". */
+       must be fixed too. */
     <div className="min-h-screen bg-surface-canvas text-text-primary flex flex-col font-sans selection:bg-[var(--color-accent-fill)] selection:text-[var(--color-accent-fill-fg)]">
       {/* Global guard feedback must survive focus mode, which removes the chrome. */}
       <DemoExportBlockedToast focusMode={focusMode} />
@@ -186,7 +173,6 @@ export const StudioLayout: React.FC = () => {
           />
           <DemoModeIndicator />
           <PrivacyOnboarding />
-          <PiiLockedShell />
         </>
       )}
 
@@ -309,23 +295,23 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "infill" && (
-                <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-20">
-                  <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-5">
+                <div className="flex flex-col gap-6 text-text-primary max-w-full pb-20">
+                  <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-blue-400 font-bold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-info font-bold">
                         GEOMETRIA & DENSIDADE VOLUMÉTRICA
                       </span>
                     </div>
-                    <h1 className="text-xl font-bold tracking-tight text-white">
+                    <h1 className="text-xl font-bold tracking-tight text-text-primary">
                       Calculadora de Preenchimento (Infill)
                     </h1>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-text-secondary mt-0.5">
                       Simulação de consumo volumétrico, economia de filamento e
                       tempo por padrão de infill
                     </p>
                   </div>
-                  <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-6">
+                  <div className="bg-surface-raised border border-border-subtle rounded-2xl p-6">
                     <InfillCalculator />
                   </div>
                 </div>

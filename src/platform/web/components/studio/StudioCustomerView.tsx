@@ -149,7 +149,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-20">
+    <div className="flex flex-col gap-6 text-text-primary max-w-full pb-20">
       {!isModalOpen && (
         <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />
       )}
@@ -157,8 +157,8 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-2xl p-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-positive animate-pulse"></span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-positive font-bold">
               CRM & RELACIONAMENTO COM CLIENTES
             </span>
           </div>
@@ -175,16 +175,16 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           <button
             type="button"
             onClick={onOpenQuoteModal}
-            className="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-[#131b2e] hover:bg-[#1a253e] border border-[#212d47] text-slate-200 text-xs font-semibold transition-all"
+            className="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-overlay hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-all"
           >
-            <FileText className="w-3.5 h-3.5 text-blue-400" />
+            <FileText className="w-3.5 h-3.5 text-info" />
             <span>Nova Proposta Comercial</span>
           </button>
 
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/40"
+            className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-xl bg-positive hover:ring-2 hover:ring-positive/40 text-text-inverse text-xs font-bold transition-all shadow-md shadow-positive/40"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Cadastrar Cliente</span>
@@ -195,20 +195,22 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Customers */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               TOTAL DE CLIENTES
             </span>
-            <Users className="w-4 h-4 text-emerald-400" />
+            <Users className="w-4 h-4 text-positive" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">
+            <span className="text-2xl font-extrabold text-text-primary">
               {customers.length}
             </span>
-            <span className="text-xs text-slate-400 ml-1.5">cadastrados</span>
+            <span className="text-xs text-text-secondary ml-1.5">
+              cadastrados
+            </span>
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-text-muted">
             {isDemoMode
               ? "Clientes modelo do Estúdio"
               : "Armazenamento local seguro (LGPD)"}
@@ -216,20 +218,22 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
         </div>
 
         {/* Active Customers */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               CLIENTES ATIVOS
             </span>
-            <FileCheck className="w-4 h-4 text-blue-400" />
+            <FileCheck className="w-4 h-4 text-info" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">
+            <span className="text-2xl font-extrabold text-text-primary">
               {activeClients}
             </span>
-            <span className="text-xs text-slate-400 ml-1.5">com pedidos</span>
+            <span className="text-xs text-text-secondary ml-1.5">
+              com pedidos
+            </span>
           </div>
-          <div className="text-[10px] text-blue-400">
+          <div className="text-[10px] text-info">
             {customers.length > 0
               ? `${Math.round((activeClients / customers.length) * 100)}% de taxa de conversão`
               : "0% conversão"}
@@ -237,43 +241,45 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
         </div>
 
         {/* Quotes generated */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               PROPOSTAS VINCULADAS
             </span>
-            <FileText className="w-4 h-4 text-purple-400" />
+            <FileText className="w-4 h-4 text-accent" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-purple-400">
+            <span className="text-2xl font-extrabold text-accent">
               {totalQuotes}
             </span>
-            <span className="text-xs text-slate-400 ml-1.5">orçamentos</span>
+            <span className="text-xs text-text-secondary ml-1.5">
+              orçamentos
+            </span>
           </div>
-          <div className="text-[10px] text-slate-400">
+          <div className="text-[10px] text-text-secondary">
             Propostas nominais geradas
           </div>
         </div>
 
         {/* Quick action card */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               AÇÃO RÁPIDA
             </span>
-            <Sparkles className="w-4 h-4 text-amber-400" />
+            <Sparkles className="w-4 h-4 text-warning" />
           </div>
           <div className="my-2">
-            <span className="text-sm font-bold text-white block">
+            <span className="text-sm font-bold text-text-primary block">
               Envio Direto WhatsApp
             </span>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-text-secondary">
               Envie propostas com 1 clique
             </span>
           </div>
           <button
             onClick={() => onTabChange("calculator")}
-            className="min-h-11 text-[11px] text-amber-400 hover:text-amber-300 font-bold text-left"
+            className="min-h-11 text-[11px] text-warning hover:text-warning font-bold text-left"
           >
             Calcular nova peça →
           </button>
@@ -281,33 +287,33 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
+      <div className="bg-surface-raised border border-border-subtle rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
         <div className="relative flex-1 max-w-md">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nome, empresa, e-mail ou telefone..."
-            className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-surface-raised border border-border-subtle rounded-lg pl-8 pr-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-positive"
           />
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-text-secondary absolute left-2.5 top-1/2 -translate-y-1/2" />
         </div>
 
-        <div className="text-slate-400 text-xs font-semibold">
+        <div className="text-text-secondary text-xs font-semibold">
           Exibindo {filteredCustomers.length} de {customers.length} clientes
         </div>
       </div>
 
       {/* Customers Grid */}
       {filteredCustomers.length === 0 ? (
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-12 flex flex-col items-center justify-center text-center">
-          <Users className="w-12 h-12 text-slate-600 mb-3" />
-          <h3 className="text-base font-bold text-white mb-1">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-12 flex flex-col items-center justify-center text-center">
+          <Users className="w-12 h-12 text-text-disabled mb-3" />
+          <h3 className="text-base font-bold text-text-primary mb-1">
             {search
               ? "Nenhum cliente encontrado"
               : "Nenhum cliente cadastrado ainda"}
           </h3>
-          <p className="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+          <p className="text-xs text-text-secondary max-w-md mb-6 leading-relaxed">
             {search
               ? "Tente buscar por outro termo ou limpe a pesquisa."
               : "Cadastre seus primeiros contatos para emitir orçamentos nominais em PDF e gerenciar propostas no WhatsApp."}
@@ -315,7 +321,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={openCreateModal}
-              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white text-xs font-bold transition-all shadow-md"
+              className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-xl bg-positive hover:ring-2 hover:ring-positive/40 text-text-inverse text-xs font-bold transition-all shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>Cadastrar Primeiro Cliente</span>
@@ -323,9 +329,9 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
             {!isDemoMode && (
               <button
                 onClick={() => useDemoModeStore.getState().enter()}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#14122b] hover:bg-[#1b1938] border border-purple-500/40 text-purple-300 text-xs font-semibold transition-all"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-accent/40 text-accent text-xs font-semibold transition-all"
               >
-                <Sparkles className="w-4 h-4 text-purple-400" />
+                <Sparkles className="w-4 h-4 text-accent" />
                 <span>Carregar Dados de Demonstração</span>
               </button>
             )}
@@ -348,49 +354,49 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
             return (
               <div
                 key={customer.id}
-                className="bg-[#0c111e] hover:bg-[#0f1526] border border-[#1b253b] hover:border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group"
+                className="bg-surface-raised hover:bg-surface-raised border border-border-subtle hover:border-border-subtle rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group"
               >
                 {/* Top card info */}
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--color-positive-fill)] text-[var(--color-positive-fill-fg)] font-bold flex items-center justify-center text-sm shadow-sm">
                         {initials}
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                        <h3 className="text-sm font-bold text-text-primary group-hover:text-positive transition-colors">
                           {customer.name}
                         </h3>
                         {customer.company ? (
-                          <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                            <Building className="w-3 h-3 text-slate-500" />
+                          <span className="text-[11px] text-text-secondary flex items-center gap-1">
+                            <Building className="w-3 h-3 text-text-muted" />
                             <span>{customer.company}</span>
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-500 font-mono">
+                          <span className="text-[10px] text-text-muted font-mono">
                             Pessoa Física
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#141b2c] border border-[#212d48] text-slate-300 font-semibold">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface-overlay border border-border-subtle text-text-secondary font-semibold">
                       {customer.quoteCount || 0} orçamentos
                     </span>
                   </div>
 
                   {/* Contact channels */}
-                  <div className="flex flex-col gap-1.5 text-xs text-slate-300 bg-[#080d18] rounded-xl p-2.5 border border-[#172238]">
+                  <div className="flex flex-col gap-1.5 text-xs text-text-secondary bg-surface-sunken rounded-xl p-2.5 border border-border-subtle">
                     {customer.phone && (
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-slate-400 text-[11px]">
-                          <Phone className="w-3 h-3 text-emerald-400" />
+                        <span className="flex items-center gap-1.5 text-text-secondary text-[11px]">
+                          <Phone className="w-3 h-3 text-positive" />
                           <span>{customer.phone}</span>
                         </span>
                         <button
                           type="button"
                           onClick={() => handleWhatsApp(customer)}
-                          className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-0.5"
+                          className="text-[10px] text-positive hover:text-positive font-bold flex items-center gap-0.5"
                           aria-label={`Enviar mensagem para ${customer.name} no WhatsApp`}
                         >
                           <MessageCircle className="w-3 h-3" />
@@ -400,21 +406,21 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     )}
 
                     {customer.email && (
-                      <div className="flex items-center gap-1.5 text-slate-400 text-[11px] truncate">
-                        <Mail className="w-3 h-3 text-blue-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-text-secondary text-[11px] truncate">
+                        <Mail className="w-3 h-3 text-info shrink-0" />
                         {isDemoMode ? (
                           <button
                             type="button"
                             onClick={() => guardExport()}
                             aria-label={`Enviar e-mail para ${customer.name}`}
-                            className="hover:text-blue-300 truncate transition-colors"
+                            className="hover:text-info truncate transition-colors"
                           >
                             {customer.email}
                           </button>
                         ) : (
                           <a
                             href={`mailto:${customer.email}`}
-                            className="hover:text-blue-300 truncate transition-colors"
+                            className="hover:text-info truncate transition-colors"
                           >
                             {customer.email}
                           </a>
@@ -423,14 +429,14 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     )}
 
                     {customer.address && (
-                      <div className="flex items-center gap-1.5 text-slate-500 text-[11px] truncate">
-                        <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-text-muted text-[11px] truncate">
+                        <MapPin className="w-3 h-3 text-text-muted shrink-0" />
                         <span className="truncate">{customer.address}</span>
                       </div>
                     )}
 
                     {customer.notes && (
-                      <div className="mt-1 pt-1.5 border-t border-slate-800 text-[11px] text-slate-400 italic line-clamp-2">
+                      <div className="mt-1 pt-1.5 border-t border-border-subtle text-[11px] text-text-secondary italic line-clamp-2">
                         "{customer.notes}"
                       </div>
                     )}
@@ -438,8 +444,8 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                 </div>
 
                 {/* Footer with date and actions */}
-                <div className="flex items-center justify-between pt-2 border-t border-[#1b253b] text-xs">
-                  <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                <div className="flex items-center justify-between pt-2 border-t border-border-subtle text-xs">
+                  <span className="text-[10px] text-text-muted flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     <span>Desde {dateFormatted}</span>
                   </span>
@@ -448,7 +454,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     <button
                       type="button"
                       onClick={() => openEditModal(customer)}
-                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-[#151c2f] transition-colors"
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-overlay transition-colors"
                       title="Editar Cliente"
                       aria-label={`Editar ${customer.name}`}
                     >
@@ -458,7 +464,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                       <button
                         type="button"
                         onClick={() => handleDeleteCustomer(customer.id)}
-                        className="flex min-h-11 min-w-11 items-center justify-center p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-950/20 transition-colors"
+                        className="flex min-h-11 min-w-11 items-center justify-center p-1.5 text-text-secondary hover:text-critical rounded-lg hover:bg-critical-subtle transition-colors"
                         title="Excluir Cliente"
                         aria-label={`Excluir ${customer.name}`}
                       >
@@ -480,15 +486,15 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
             role="dialog"
             aria-modal="true"
             aria-labelledby="studio-customer-dialog-title"
-            className="bg-[#0c111e] border border-[#1f2c47] rounded-2xl w-full max-w-lg shadow-2xl p-6 relative flex flex-col gap-4"
+            className="bg-surface-raised border border-border-subtle rounded-2xl w-full max-w-lg shadow-2xl p-6 relative flex flex-col gap-4"
           >
             <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />
-            <div className="flex items-center justify-between border-b border-[#1b253b] pb-3">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-400" />
+                <Users className="w-4 h-4 text-positive" />
                 <h2
                   id="studio-customer-dialog-title"
-                  className="text-sm font-bold text-white"
+                  className="text-sm font-bold text-text-primary"
                 >
                   {editingCustomer
                     ? "Editar Dados do Cliente"
@@ -498,7 +504,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="flex min-h-11 min-w-11 items-center justify-center p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                className="flex min-h-11 min-w-11 items-center justify-center p-1 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-sunken transition-colors"
                 aria-label="Fechar formulário de cliente"
               >
                 <X className="w-4 h-4" />
@@ -508,7 +514,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
             {errorMsg && (
               <div
                 role="alert"
-                className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs"
+                className="p-2.5 rounded-xl bg-critical-subtle border border-critical/40 text-critical text-xs"
               >
                 {errorMsg}
               </div>
@@ -520,7 +526,7 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     NOME COMPLETO *
                   </label>
                   <input
@@ -529,12 +535,12 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ex: João da Silva"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-positive"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     EMPRESA / PROJETO
                   </label>
                   <input
@@ -542,14 +548,14 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
                     placeholder="Ex: Studio Design Ltda"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-positive"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     WHATSAPP / TELEFONE
                   </label>
                   <input
@@ -557,12 +563,12 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="Ex: (11) 98765-4321"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-positive"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                     E-MAIL
                   </label>
                   <input
@@ -570,13 +576,13 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Ex: joao@empresa.com"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-positive"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                   ENDEREÇO / ENTREGA
                 </label>
                 <input
@@ -584,12 +590,12 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Ex: Av. Paulista, 1000 - São Paulo, SP"
-                  className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-500"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-positive"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
                   OBSERVAÇÕES / PREFERÊNCIAS
                 </label>
                 <textarea
@@ -597,21 +603,21 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ex: Cliente prefere PETG e entrega expressa."
-                  className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-white outline-none focus:border-emerald-500 resize-none"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-positive resize-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1b253b] mt-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle mt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="min-h-11 px-3.5 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="min-h-11 px-3.5 py-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-sunken transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white font-bold transition-all shadow-md"
+                  className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-positive hover:ring-2 hover:ring-positive/40 text-text-inverse font-bold transition-all shadow-md"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>

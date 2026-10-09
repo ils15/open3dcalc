@@ -39,25 +39,11 @@ interface StudioQuotesViewProps {
 
 type FeedbackTone = "positive" | "warning" | "critical";
 
-/**
- * Status ink for a FIXED dark surface. Was `var(--color-positive)` /
- * `--color-warning` / `--color-critical`, which are FOREGROUND tokens that flip
- * per theme — but the card they sit on is `bg-[#0c111e]` in BOTH themes, so in
- * light mode they landed light inks on a near-black surface at 3.44:1 /
- * 2.66:1 / 2.91:1, under the 4.5:1 AA floor.
- *
- * `--color-*-ink-dark` is the dark-surface ink and is deliberately
- * theme-INDEPENDENT for the same reason the `--*-fill` tokens are: the
- * background is theme-independent, so the ink has to be too. Measured on
- * #0c111e: 9.80:1 / 11.29:1 / 9.96:1. See the token notes in styles/tokens.css.
- */
+/** Status text and borders pair with theme-reactive semantic surfaces. */
 const FEEDBACK_CLASS: Record<FeedbackTone, string> = {
-  positive:
-    "border-[var(--color-positive-ink-dark)]/40 text-[var(--color-positive-ink-dark)]",
-  warning:
-    "border-[var(--color-warning-ink-dark)]/40 text-[var(--color-warning-ink-dark)]",
-  critical:
-    "border-[var(--color-critical-ink-dark)]/40 text-[var(--color-critical-ink-dark)]",
+  positive: "border-positive/40 text-positive",
+  warning: "border-warning/40 text-warning",
+  critical: "border-critical/40 text-critical",
 };
 
 const STATUS_CONFIG: Record<
@@ -66,27 +52,27 @@ const STATUS_CONFIG: Record<
 > = {
   draft: {
     label: "Rascunho",
-    color: "text-slate-400",
-    bg: "bg-slate-800/80",
-    border: "border-slate-700",
+    color: "text-text-secondary",
+    bg: "bg-surface-sunken",
+    border: "border-border-subtle",
   },
   sent: {
     label: "Enviado",
-    color: "text-blue-400",
-    bg: "bg-blue-950/60",
-    border: "border-blue-500/40",
+    color: "text-info",
+    bg: "bg-accent-subtle",
+    border: "border-accent/40",
   },
   approved: {
     label: "Aprovado",
-    color: "text-emerald-400",
-    bg: "bg-emerald-950/60",
-    border: "border-emerald-500/40",
+    color: "text-positive",
+    bg: "bg-positive-subtle",
+    border: "border-positive/40",
   },
   rejected: {
     label: "Recusado",
-    color: "text-rose-400",
-    bg: "bg-rose-950/60",
-    border: "border-rose-500/40",
+    color: "text-critical",
+    bg: "bg-critical-subtle",
+    border: "border-critical/40",
   },
 };
 
@@ -564,7 +550,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 text-slate-100 max-w-full pb-20">
+    <div className="flex flex-col gap-6 text-text-primary max-w-full pb-20">
       {/* H-4: a locked vault refuses the write at the persistence layer. Without
           this the store mutates in memory, the list shows the new quote, and it
           evaporates on reload with no message. */}
@@ -575,7 +561,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         <div
           role="status"
           aria-live="polite"
-          className={`rounded-xl border bg-[#0c111e] px-4 py-2.5 text-xs font-semibold ${FEEDBACK_CLASS[feedback.tone]}`}
+          className={`rounded-xl border bg-surface-raised px-4 py-2.5 text-xs font-semibold ${FEEDBACK_CLASS[feedback.tone]}`}
         >
           {feedback.message}
         </div>
@@ -584,8 +570,8 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-2xl p-5 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-positive animate-pulse" />
+            <span className="text-[10px] font-mono uppercase tracking-wider text-positive font-bold">
               CENTRAL DE ORÇAMENTOS & PROPOSTAS COMERCIAIS
             </span>
           </div>
@@ -601,7 +587,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         <button
           type="button"
           onClick={openCreateModal}
-          className="flex min-h-11 items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md shadow-blue-950/40 self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
+          className="flex min-h-11 items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shadow-accent/40 self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" />
           <span>Novo Orçamento</span>
@@ -611,81 +597,81 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Quotes */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               TOTAL DE ORÇAMENTOS
             </span>
-            <FileText className="w-4 h-4 text-blue-400" />
+            <FileText className="w-4 h-4 text-info" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-white">
+            <span className="text-2xl font-extrabold text-text-primary">
               {totalQuotesCount}
             </span>
-            <span className="text-xs text-slate-400 ml-1.5">emitidos</span>
+            <span className="text-xs text-text-secondary ml-1.5">emitidos</span>
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-text-muted">
             {pendingQuotes.length} em negociação / rascunho
           </div>
         </div>
 
         {/* Total Aprovado */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               VALOR TOTAL APROVADO
             </span>
-            <Check className="w-4 h-4 text-emerald-400" />
+            <Check className="w-4 h-4 text-positive" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-emerald-400">
+            <span className="text-2xl font-extrabold text-positive">
               R$ {approvedTotal.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-emerald-500/80 font-medium">
+          <div className="text-[10px] text-positive font-medium">
             {approvedQuotes.length} pedidos fechados
           </div>
         </div>
 
         {/* Em Aberto */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               VALOR EM ABERTO
             </span>
-            <Clock className="w-4 h-4 text-amber-400" />
+            <Clock className="w-4 h-4 text-warning" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-amber-400">
+            <span className="text-2xl font-extrabold text-warning">
               R$ {pendingTotal.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-slate-400">
+          <div className="text-[10px] text-text-secondary">
             Potencial de fechamento imediato
           </div>
         </div>
 
         {/* Ticket Médio */}
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
               TICKET MÉDIO
             </span>
-            <DollarSign className="w-4 h-4 text-purple-400" />
+            <DollarSign className="w-4 h-4 text-accent" />
           </div>
           <div className="my-2">
-            <span className="text-2xl font-extrabold text-purple-400">
+            <span className="text-2xl font-extrabold text-accent">
               R$ {avgTicket.toFixed(2).replace(".", ",")}
             </span>
           </div>
-          <div className="text-[10px] text-slate-400">
+          <div className="text-[10px] text-text-secondary">
             Média por pedido gerado
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-3">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface-raised border border-border-subtle rounded-2xl p-3">
         {/* Search */}
         <div className="relative w-full sm:w-80">
           <input
@@ -693,13 +679,13 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por número, título ou cliente..."
-            className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-raised border border-border-subtle rounded-xl pl-9 pr-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
           />
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
             >
               ✕
             </button>
@@ -726,13 +712,13 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     onClick={() => setStatusFilter(st)}
                     className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                       isActive
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "bg-[#111728] text-slate-400 hover:text-white hover:bg-[#151e33]"
+                        ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                        : "bg-surface-raised text-text-secondary hover:text-text-primary hover:bg-surface-overlay"
                     }`}
                   >
                     <span>{label}</span>
                     <span
-                      className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${isActive ? "bg-black/30" : "bg-slate-800"}`}
+                      className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${isActive ? "bg-surface-sunken" : "bg-surface-sunken"}`}
                     >
                       {count}
                     </span>
@@ -743,14 +729,14 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
           </div>
 
           {/* View Mode Toggle: Lista vs Cards */}
-          <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-xl p-0.5 shrink-0 text-xs">
+          <div className="flex items-center bg-surface-raised border border-border-subtle rounded-xl p-0.5 shrink-0 text-xs">
             <button
               type="button"
               onClick={() => setViewMode("list")}
               className={`flex min-h-11 items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
                 viewMode === "list"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
               title="Visualização em Lista / Tabela"
             >
@@ -762,8 +748,8 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               onClick={() => setViewMode("grid")}
               className={`flex min-h-11 items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
                 viewMode === "grid"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                  : "text-text-secondary hover:text-text-primary"
               }`}
               title="Visualização em Grade de Cards"
             >
@@ -776,14 +762,14 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
 
       {/* Quote List or Cards (Modern Studio Views) */}
       {filteredQuotes.length === 0 ? (
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl p-12 text-center flex flex-col items-center justify-center">
-          <div className="w-14 h-14 rounded-2xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-12 text-center flex flex-col items-center justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-accent-subtle border border-accent/20 flex items-center justify-center text-info mb-3">
             <FileText className="w-7 h-7" />
           </div>
-          <h3 className="text-base font-bold text-white mb-1">
+          <h3 className="text-base font-bold text-text-primary mb-1">
             Nenhum orçamento encontrado
           </h3>
-          <p className="text-xs text-slate-400 max-w-sm mb-4">
+          <p className="text-xs text-text-secondary max-w-sm mb-4">
             {search || statusFilter !== "all"
               ? "Nenhum orçamento corresponde aos filtros aplicados."
               : "Gere orçamentos formais com cálculo de peças, prazos e download de PDF comercial."}
@@ -791,7 +777,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md"
+            className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Criar Primeiro Orçamento</span>
@@ -799,11 +785,11 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         </div>
       ) : viewMode === "list" ? (
         /* Modern Studio List / Table View */
-        <div className="bg-[#0c111e] border border-[#1b253b] rounded-2xl overflow-hidden shadow-xl">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-[#1b253b] bg-[#090e1a] text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                <tr className="border-b border-border-subtle bg-surface-sunken text-[10px] font-mono uppercase tracking-wider text-text-secondary">
                   <th className="py-3.5 px-4 font-bold">CÓDIGO</th>
                   <th className="py-3.5 px-4 font-bold">CLIENTE</th>
                   <th className="py-3.5 px-4 font-bold">PROPOSTA & PEÇAS</th>
@@ -815,7 +801,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   <th className="py-3.5 px-4 font-bold text-right">AÇÕES</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#172238]">
+              <tbody className="divide-y divide-border-subtle">
                 {filteredQuotes.map((quote) => {
                   const customer = customers.find(
                     (c) => c.id === quote.customerId,
@@ -832,11 +818,11 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   return (
                     <tr
                       key={quote.id}
-                      className="hover:bg-[#0f1629] transition-colors group"
+                      className="hover:bg-surface-raised transition-colors group"
                     >
                       {/* Código */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="text-xs font-mono font-bold text-blue-400 px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20">
+                        <span className="text-xs font-mono font-bold text-info px-2 py-1 rounded bg-accent-subtle border border-accent/20">
                           #{String(quote.number).padStart(3, "0")}
                         </span>
                       </td>
@@ -844,15 +830,15 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       {/* Cliente */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">
+                          <div className="w-7 h-7 rounded-full bg-surface-sunken border border-border-subtle flex items-center justify-center text-[10px] font-bold text-text-secondary">
                             {customerDisplayName.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-semibold text-white block">
+                            <span className="font-semibold text-text-primary block">
                               {customerDisplayName}
                             </span>
                             {customer?.company && (
-                              <span className="text-[10px] text-slate-400">
+                              <span className="text-[10px] text-text-secondary">
                                 {customer.company}
                               </span>
                             )}
@@ -863,11 +849,11 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       {/* Proposta & Peças */}
                       <td className="py-3.5 px-4">
                         <div className="max-w-xs md:max-w-md">
-                          <span className="font-bold text-slate-200 block truncate group-hover:text-blue-300 transition-colors">
+                          <span className="font-bold text-text-secondary block truncate group-hover:text-info transition-colors">
                             {quote.title}
                           </span>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-400 truncate">
-                            <span className="px-1.5 py-0.2 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-text-secondary truncate">
+                            <span className="px-1.5 py-0.2 rounded bg-surface-sunken text-[10px] text-text-secondary font-mono">
                               {quote.items.length}{" "}
                               {quote.items.length === 1 ? "item" : "itens"}
                             </span>
@@ -881,13 +867,13 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       </td>
 
                       {/* Data */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                      <td className="py-3.5 px-4 whitespace-nowrap text-text-secondary font-mono text-[11px]">
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-slate-500" />
+                          <Calendar className="w-3 h-3 text-text-muted" />
                           <span>{dateStr}</span>
                         </div>
                         {quote.validUntil && (
-                          <span className="text-[10px] text-slate-500 block">
+                          <span className="text-[10px] text-text-muted block">
                             Até{" "}
                             {new Date(quote.validUntil).toLocaleDateString(
                               "pt-BR",
@@ -907,7 +893,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
 
                       {/* Valor Total */}
                       <td className="py-3.5 px-4 whitespace-nowrap text-right">
-                        <span className="text-sm font-extrabold text-emerald-400 font-mono">
+                        <span className="text-sm font-extrabold text-positive font-mono">
                           R$ {quote.total.toFixed(2).replace(".", ",")}
                         </span>
                       </td>
@@ -918,7 +904,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => setViewingQuote(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-accent-subtle hover:bg-accent-subtle text-info border border-accent/30 transition-colors"
                             title="Visualizar Proposta"
                             aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
                           >
@@ -928,7 +914,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => exportQuoteToPdf(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary border border-border-subtle transition-colors"
                             title="Download em PDF Comercial"
                             aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
                           >
@@ -938,7 +924,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => shareWhatsApp(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-500/30 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-positive-subtle hover:bg-positive-subtle text-positive border border-positive/30 transition-colors"
                             title="Enviar no WhatsApp"
                             aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                           >
@@ -948,7 +934,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => openEditModal(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary border border-border-subtle transition-colors"
                             title="Editar Orçamento"
                             aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                           >
@@ -959,7 +945,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             <button
                               type="button"
                               onClick={() => setConfirmDeleteId(quote.id)}
-                              className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-500/30 transition-colors"
+                              className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical border border-border-subtle hover:border-critical/30 transition-colors"
                               title="Excluir Orçamento"
                               aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                             >
@@ -988,12 +974,12 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             return (
               <div
                 key={quote.id}
-                className="bg-[#0c111e] hover:bg-[#0f1526] border border-[#1b253b] hover:border-slate-700/60 rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative"
+                className="bg-surface-raised hover:bg-surface-raised border border-border-subtle hover:border-border-subtle rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative"
               >
                 {/* Header: Number, Status, Date */}
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-xs font-mono font-bold text-blue-400 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                    <span className="text-xs font-mono font-bold text-info px-2 py-0.5 rounded bg-accent-subtle border border-accent/20">
                       #{String(quote.number).padStart(3, "0")}
                     </span>
                     <span
@@ -1003,14 +989,14 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     </span>
                   </div>
 
-                  <h3 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1">
+                  <h3 className="text-sm font-bold text-text-primary group-hover:text-info transition-colors line-clamp-1">
                     {quote.title}
                   </h3>
 
                   {/* Customer row */}
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1 truncate">
-                    <Users className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    <span className="truncate text-slate-300 font-medium">
+                  <div className="flex items-center gap-1.5 text-xs text-text-secondary mt-1 truncate">
+                    <Users className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                    <span className="truncate text-text-secondary font-medium">
                       {customer
                         ? customer.name
                         : quote.customerSnapshot?.name ||
@@ -1019,13 +1005,13 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   </div>
 
                   {/* Items summary */}
-                  <div className="bg-[#080d18] border border-[#172238] rounded-xl p-2.5 mt-3 flex flex-col gap-1.5">
-                    <div className="text-[11px] text-slate-400 flex items-center justify-between">
+                  <div className="bg-surface-sunken border border-border-subtle rounded-xl p-2.5 mt-3 flex flex-col gap-1.5">
+                    <div className="text-[11px] text-text-secondary flex items-center justify-between">
                       <span>
                         {quote.items.length}{" "}
                         {quote.items.length === 1 ? "item" : "itens"} no pedido
                       </span>
-                      <span className="font-mono text-slate-500">
+                      <span className="font-mono text-text-muted">
                         {new Date(quote.createdAt).toLocaleDateString("pt-BR")}
                       </span>
                     </div>
@@ -1034,12 +1020,12 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       {quote.items.slice(0, 2).map((item, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between text-xs text-slate-300 truncate"
+                          className="flex items-center justify-between text-xs text-text-secondary truncate"
                         >
                           <span className="truncate text-[11px]">
                             {item.quantity}x {item.name}
                           </span>
-                          <span className="font-mono text-slate-400 text-[10px] ml-2">
+                          <span className="font-mono text-text-secondary text-[10px] ml-2">
                             R${" "}
                             {(item.quantity * item.unitPrice)
                               .toFixed(2)
@@ -1048,7 +1034,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                         </div>
                       ))}
                       {quote.items.length > 2 && (
-                        <span className="text-[10px] text-slate-500 italic block">
+                        <span className="text-[10px] text-text-muted italic block">
                           +{quote.items.length - 2} outro(s) item(ns)...
                         </span>
                       )}
@@ -1057,12 +1043,12 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                 </div>
 
                 {/* Total and Action Buttons */}
-                <div className="pt-2 border-t border-[#1b253b] flex flex-col gap-2.5">
+                <div className="pt-2 border-t border-border-subtle flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase text-slate-500">
+                    <span className="text-[10px] font-mono uppercase text-text-muted">
                       VALOR TOTAL:
                     </span>
-                    <span className="text-base font-extrabold text-emerald-400 font-mono">
+                    <span className="text-base font-extrabold text-positive font-mono">
                       R$ {quote.total.toFixed(2).replace(".", ",")}
                     </span>
                   </div>
@@ -1071,7 +1057,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => setViewingQuote(quote)}
-                      className="flex-1 flex min-h-11 items-center justify-center gap-1 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 font-semibold text-xs border border-blue-500/30 transition-colors"
+                      className="flex-1 flex min-h-11 items-center justify-center gap-1 py-1.5 rounded-lg bg-accent-subtle hover:bg-accent-subtle text-info font-semibold text-xs border border-accent/30 transition-colors"
                       title="Visualizar detalhes da proposta"
                       aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
                     >
@@ -1082,7 +1068,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => exportQuoteToPdf(quote)}
-                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary transition-colors border border-border-subtle"
                       title="Download em PDF"
                       aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
                     >
@@ -1092,7 +1078,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => shareWhatsApp(quote)}
-                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 transition-colors border border-emerald-500/30"
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-positive-subtle hover:bg-positive-subtle text-positive transition-colors border border-positive/30"
                       title="Compartilhar no WhatsApp"
                       aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                     >
@@ -1102,7 +1088,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => openEditModal(quote)}
-                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700"
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary transition-colors border border-border-subtle"
                       title="Editar Orçamento"
                       aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                     >
@@ -1113,7 +1099,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       <button
                         type="button"
                         onClick={() => setConfirmDeleteId(quote.id)}
-                        className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors border border-slate-700 hover:border-rose-500/30"
+                        className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical transition-colors border border-border-subtle hover:border-critical/30"
                         title="Excluir Orçamento"
                         aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
                       >
@@ -1135,28 +1121,28 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="studio-quote-form-title"
-            className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in max-h-[90vh] overflow-y-auto"
+            className="bg-surface-raised border border-border-subtle rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col gap-4 text-text-secondary animate-scale-in max-h-[90vh] overflow-y-auto"
           >
             <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
-            <div className="flex items-center justify-between pb-3 border-b border-[#1b253b]">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
               <div>
                 <h3
                   id="studio-quote-form-title"
-                  className="text-base font-bold text-white flex items-center gap-2"
+                  className="text-base font-bold text-text-primary flex items-center gap-2"
                 >
-                  <FileText className="w-4 h-4 text-blue-400" />
+                  <FileText className="w-4 h-4 text-info" />
                   {editingQuote
                     ? `Editar Orçamento #${String(editingQuote.number).padStart(3, "0")}`
                     : "Novo Orçamento Comercial"}
                 </h3>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-text-secondary">
                   Preencha os itens e condições de fornecimento
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-text-secondary hover:text-text-primary p-1"
                 aria-label="Fechar proposta"
               >
                 ✕
@@ -1166,7 +1152,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             <form onSubmit={handleSaveQuote} className="flex flex-col gap-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     TÍTULO DA PROPOSTA
                   </label>
                   <input
@@ -1175,12 +1161,12 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Ex: Lote de suportes para robótica"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500 font-semibold"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:border-accent font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     CLIENTE VINCULADO
                   </label>
                   <select
@@ -1192,7 +1178,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       );
                       if (c) setCustomerName(c.name);
                     }}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:border-accent"
                   >
                     <option value="">Selecione um cliente cadastrado...</option>
                     {customers.map((c) => (
@@ -1207,7 +1193,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               {/* Status and Validity */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     STATUS
                   </label>
                   <select
@@ -1215,7 +1201,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     onChange={(e) =>
                       setStatus(e.target.value as Quote["status"])
                     }
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none"
                   >
                     <option value="draft">Rascunho</option>
                     <option value="sent">Enviado</option>
@@ -1225,19 +1211,19 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     VALIDADE DA PROPOSTA
                   </label>
                   <input
                     type="date"
                     value={validUntil}
                     onChange={(e) => setValidUntil(e.target.value)}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     DESCONTO GLOBAL (%)
                   </label>
                   <input
@@ -1246,21 +1232,21 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     max="100"
                     value={globalDiscount}
                     onChange={(e) => setGlobalDiscount(Number(e.target.value))}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none"
                   />
                 </div>
               </div>
 
               {/* Items List */}
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs pb-1 border-b border-[#1b253b]">
-                  <span className="font-bold text-white">
+                <div className="flex items-center justify-between text-xs pb-1 border-b border-border-subtle">
+                  <span className="font-bold text-text-primary">
                     ITENS DO ORÇAMENTO
                   </span>
                   <button
                     type="button"
                     onClick={addItemToForm}
-                    className="flex items-center gap-1 text-blue-400 hover:text-blue-300 font-bold text-xs"
+                    className="flex items-center gap-1 text-info hover:text-info font-bold text-xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Adicionar Peça</span>
@@ -1271,7 +1257,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   {items.map((it, idx) => (
                     <div
                       key={idx}
-                      className="bg-[#0e1424] border border-[#1e2a44] p-2.5 rounded-xl grid grid-cols-12 gap-2 items-center text-xs"
+                      className="bg-surface-raised border border-border-subtle p-2.5 rounded-xl grid grid-cols-12 gap-2 items-center text-xs"
                     >
                       <div className="col-span-5">
                         <input
@@ -1282,12 +1268,12 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             updateItemInForm(idx, "name", e.target.value)
                           }
                           placeholder="Nome da peça 3D..."
-                          className="w-full bg-transparent border-b border-slate-700 px-1 py-1 text-xs text-white outline-none focus:border-blue-400"
+                          className="w-full bg-transparent border-b border-border-subtle px-1 py-1 text-xs text-text-primary outline-none focus:border-info"
                         />
                       </div>
                       <div className="col-span-2">
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[10px] text-text-muted">
                             Qtd:
                           </span>
                           <input
@@ -1297,13 +1283,13 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             onChange={(e) =>
                               updateItemInForm(idx, "quantity", e.target.value)
                             }
-                            className="w-full bg-[#111728] border border-slate-700 rounded px-1.5 py-1 text-xs text-white text-center outline-none"
+                            className="w-full bg-surface-raised border border-border-subtle rounded px-1.5 py-1 text-xs text-text-primary text-center outline-none"
                           />
                         </div>
                       </div>
                       <div className="col-span-3">
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[10px] text-text-muted">
                             R$:
                           </span>
                           <input
@@ -1313,12 +1299,12 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             onChange={(e) =>
                               updateItemInForm(idx, "unitPrice", e.target.value)
                             }
-                            className="w-full bg-[#111728] border border-slate-700 rounded px-1.5 py-1 text-xs text-white text-right outline-none"
+                            className="w-full bg-surface-raised border border-border-subtle rounded px-1.5 py-1 text-xs text-text-primary text-right outline-none"
                           />
                         </div>
                       </div>
                       <div className="col-span-2 flex items-center justify-end gap-1">
-                        <span className="font-mono text-emerald-400 text-xs font-bold">
+                        <span className="font-mono text-positive text-xs font-bold">
                           R${" "}
                           {(it.quantity * it.unitPrice)
                             .toFixed(2)
@@ -1327,7 +1313,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                         <button
                           type="button"
                           onClick={() => removeItemFromForm(idx)}
-                          className="text-slate-500 hover:text-rose-400 p-1"
+                          className="text-text-muted hover:text-critical p-1"
                         >
                           ✕
                         </button>
@@ -1340,7 +1326,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               {/* Conditions and Notes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     CONDIÇÕES DE PAGAMENTO
                   </label>
                   <input
@@ -1348,13 +1334,13 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     value={paymentTerms}
                     onChange={(e) => setPaymentTerms(e.target.value)}
                     placeholder="Ex: 50% entrada + 50% na entrega"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="studio-quote-delivery"
-                    className="text-[10px] text-slate-400 uppercase font-mono block mb-1"
+                    className="text-[10px] text-text-secondary uppercase font-mono block mb-1"
                   >
                     {t("quotes.deliveryEstimate")}
                   </label>
@@ -1364,13 +1350,13 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     value={deliveryEstimate}
                     onChange={(e) => setDeliveryEstimate(e.target.value)}
                     placeholder="Ex: 10 dias úteis"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="studio-quote-notes"
-                    className="text-[10px] text-slate-400 uppercase font-mono block mb-1"
+                    className="text-[10px] text-text-secondary uppercase font-mono block mb-1"
                   >
                     {t("quotes.footerNote")}
                   </label>
@@ -1380,41 +1366,41 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Ex: Frete por conta do estúdio"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary outline-none"
                   />
                 </div>
               </div>
 
               {/* Total Summary Footer */}
-              <div className="bg-[#080d18] border border-[#192338] p-3 rounded-xl flex items-center justify-between text-xs">
-                <span className="text-slate-400">
+              <div className="bg-surface-sunken border border-border-subtle p-3 rounded-xl flex items-center justify-between text-xs">
+                <span className="text-text-secondary">
                   Subtotal:{" "}
-                  <strong className="text-slate-200">
+                  <strong className="text-text-secondary">
                     R$ {formSubtotal.toFixed(2).replace(".", ",")}
                   </strong>
                   {globalDiscount > 0 && ` (-${globalDiscount}% desc)`}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-text-secondary">
                     Total Final:
                   </span>
-                  <span className="text-lg font-extrabold text-emerald-400 font-mono">
+                  <span className="text-lg font-extrabold text-positive font-mono">
                     R$ {formTotal.toFixed(2).replace(".", ",")}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1b253b]">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 transition-colors"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary bg-surface-sunken hover:bg-surface-sunken transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:ring-2 hover:ring-blue-500/40 transition-colors shadow-md"
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-[var(--color-accent-fill-fg)] bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 transition-colors shadow-md"
                 >
                   {editingQuote ? "Salvar Alterações" : "Criar Orçamento"}
                 </button>
@@ -1431,17 +1417,17 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="studio-quote-view-title"
-            className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-xl w-full p-6 shadow-2xl flex flex-col gap-4 text-slate-200 animate-scale-in"
+            className="bg-surface-raised border border-border-subtle rounded-2xl max-w-xl w-full p-6 shadow-2xl flex flex-col gap-4 text-text-secondary animate-scale-in"
           >
             <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
-            <div className="flex items-center justify-between pb-3 border-b border-[#1b253b]">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
               <div>
-                <span className="text-[10px] font-mono text-blue-400 font-bold uppercase">
+                <span className="text-[10px] font-mono text-info font-bold uppercase">
                   ORÇAMENTO #{String(viewingQuote.number).padStart(3, "0")}
                 </span>
                 <h3
                   id="studio-quote-view-title"
-                  className="text-base font-bold text-white"
+                  className="text-base font-bold text-text-primary"
                 >
                   {viewingQuote.title}
                 </h3>
@@ -1449,15 +1435,15 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => setViewingQuote(null)}
-                className="text-slate-400 hover:text-white p-1"
+                className="text-text-secondary hover:text-text-primary p-1"
               >
                 ✕
               </button>
             </div>
 
             {/* Status Switcher Quick Bar */}
-            <div className="flex items-center justify-between p-2 rounded-xl bg-[#090e1a] border border-[#1b253b] text-xs">
-              <span className="text-slate-400 text-[11px] font-medium">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-surface-sunken border border-border-subtle text-xs">
+              <span className="text-text-secondary text-[11px] font-medium">
                 Alterar Status:
               </span>
               <div className="flex items-center gap-1">
@@ -1477,7 +1463,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
                         viewingQuote.status === st
                           ? `${STATUS_CONFIG[st].bg} ${STATUS_CONFIG[st].color} border ${STATUS_CONFIG[st].border}`
-                          : "text-slate-500 hover:text-slate-300"
+                          : "text-text-muted hover:text-text-secondary"
                       }`}
                     >
                       {STATUS_CONFIG[st].label}
@@ -1489,19 +1475,19 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
 
             {/* Items table */}
             <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-mono uppercase text-slate-400 font-bold">
+              <span className="text-[10px] font-mono uppercase text-text-secondary font-bold">
                 PEÇAS & PRODUTOS:
               </span>
-              <div className="bg-[#080d18] border border-[#192338] rounded-xl p-3 space-y-2">
+              <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3 space-y-2">
                 {viewingQuote.items.map((it, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between text-xs border-b border-slate-800/60 pb-1.5 last:border-none last:pb-0"
+                    className="flex items-center justify-between text-xs border-b border-border-subtle pb-1.5 last:border-none last:pb-0"
                   >
-                    <span className="text-slate-200">
+                    <span className="text-text-secondary">
                       {it.quantity}x {it.name}
                     </span>
-                    <span className="font-mono text-emerald-400 font-bold">
+                    <span className="font-mono text-positive font-bold">
                       R${" "}
                       {(it.quantity * it.unitPrice)
                         .toFixed(2)
@@ -1513,31 +1499,31 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             </div>
 
             {/* Total and Notes */}
-            <div className="flex items-center justify-between pt-2 border-t border-[#1b253b]">
+            <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
               <div>
-                <span className="text-[10px] text-slate-500 uppercase font-mono block">
+                <span className="text-[10px] text-text-muted uppercase font-mono block">
                   CONDIÇÕES:
                 </span>
-                <span className="text-xs text-slate-300">
+                <span className="text-xs text-text-secondary">
                   {viewingQuote.paymentTerms || "A combinar"}
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-[10px] text-slate-500 uppercase font-mono block">
+                <span className="text-[10px] text-text-muted uppercase font-mono block">
                   TOTAL DA PROPOSTA:
                 </span>
-                <span className="text-xl font-extrabold text-emerald-400 font-mono">
+                <span className="text-xl font-extrabold text-positive font-mono">
                   R$ {viewingQuote.total.toFixed(2).replace(".", ",")}
                 </span>
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1b253b]">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
               <button
                 type="button"
                 onClick={() => shareWhatsApp(viewingQuote)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-400 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/30 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-positive bg-positive-subtle hover:bg-positive-subtle border border-positive/30 transition-colors"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span>WhatsApp</span>
@@ -1545,7 +1531,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => exportQuoteToPdf(viewingQuote)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:ring-2 hover:ring-blue-500/40 transition-colors shadow-md"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-[var(--color-accent-fill-fg)] bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 transition-colors shadow-md"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download PDF</span>
@@ -1563,18 +1549,18 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             aria-modal="true"
             aria-labelledby="studio-quote-delete-title"
             aria-describedby="studio-quote-delete-description"
-            className="bg-[#0c1220] border border-[#21304f] rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 text-slate-200"
+            className="bg-surface-raised border border-border-subtle rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 text-text-secondary"
           >
             <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
             <h4
               id="studio-quote-delete-title"
-              className="text-sm font-bold text-white"
+              className="text-sm font-bold text-text-primary"
             >
               Excluir Orçamento?
             </h4>
             <p
               id="studio-quote-delete-description"
-              className="text-xs text-slate-400"
+              className="text-xs text-text-secondary"
             >
               Esta ação removerá permanentemente este orçamento. Deseja
               prosseguir?
@@ -1583,7 +1569,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteId(null)}
-                className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white"
+                className="px-3 py-1.5 rounded-lg text-xs text-text-secondary hover:text-text-primary"
               >
                 Cancelar
               </button>
@@ -1599,7 +1585,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   removeQuote(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-700 hover:ring-2 hover:ring-rose-500/40 text-white"
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-critical hover:ring-2 hover:ring-critical/40 text-text-inverse"
               >
                 Excluir
               </button>

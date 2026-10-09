@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Sparkles, X, Send, Bot } from 'lucide-react';
+import React, { useState } from "react";
+import { Sparkles, X, Send, Bot } from "lucide-react";
 
 interface StudioCopilotModalProps {
   isOpen: boolean;
@@ -10,12 +10,14 @@ interface StudioCopilotModalProps {
 export const StudioCopilotModal: React.FC<StudioCopilotModalProps> = ({
   isOpen,
   onClose,
-  projectName = 'Exemplo de peça 3D',
+  projectName = "Exemplo de peça 3D",
 }) => {
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<
+    Array<{ role: "user" | "assistant"; text: string }>
+  >([
     {
-      role: 'assistant',
+      role: "assistant",
       text: `Olá! Sou o Copilot IA do Open3DCalc Studio. Analisei o projeto "${projectName}":\n\n• **Consumo estimado:** 55g em TPU 95A com custo fabril de R$ 18,18.\n• **Margem recomendada:** 100% gera R$ 42,27 (R$ 20,20/h de máquina).\n• **Dica de Fatiamento:** Para TPU flexível, reduza a velocidade para 30-40 mm/s e desative retração excessiva para evitar entupimento no direct-drive.\n\nComo posso ajudar sua produção agora?`,
     },
   ]);
@@ -25,12 +27,12 @@ export const StudioCopilotModal: React.FC<StudioCopilotModalProps> = ({
   const handleSend = () => {
     if (!input.trim()) return;
     const userMsg = input.trim();
-    setInput('');
+    setInput("");
     setMessages((prev) => [
       ...prev,
-      { role: 'user', text: userMsg },
+      { role: "user", text: userMsg },
       {
-        role: 'assistant',
+        role: "assistant",
         text: `Entendido sobre "${userMsg}". Recomendo conferir a temperatura de bico a 220°C para TPU com mesa a 50°C. O custo estimado por hora na sua impressora Creality K1 Max fica em torno de R$ 2,35/h considerando energia e depreciação.`,
       },
     ]);
@@ -38,26 +40,28 @@ export const StudioCopilotModal: React.FC<StudioCopilotModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#0b0f19] border border-[#1e2a44] rounded-2xl w-full max-w-xl shadow-2xl flex flex-col h-[520px] text-slate-100 animate-fade-up">
+      <div className="bg-surface-overlay border border-border-subtle rounded-2xl w-full max-w-xl shadow-2xl flex flex-col h-[520px] text-text-primary animate-fade-up">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-800">
+        <div className="flex items-center justify-between p-4 border-b border-border-subtle">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
+            <div className="p-1.5 rounded-lg bg-warning-subtle text-warning">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
+              <h3 className="font-bold text-sm text-text-primary flex items-center gap-1.5">
                 Copilot IA de Impressão 3D
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-warning-subtle text-warning border border-warning/30">
                   Local Studio
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-400">Consultoria técnica de parâmetros, custos e fatiamento</p>
+              <p className="text-[11px] text-text-secondary">
+                Consultoria técnica de parâmetros, custos e fatiamento
+              </p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-sunken transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -68,18 +72,18 @@ export const StudioCopilotModal: React.FC<StudioCopilotModalProps> = ({
           {messages.map((m, i) => (
             <div
               key={i}
-              className={`flex gap-2.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {m.role === 'assistant' && (
-                <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+              {m.role === "assistant" && (
+                <div className="w-6 h-6 rounded-full bg-warning-subtle text-warning flex items-center justify-center shrink-0 mt-0.5">
                   <Bot className="w-3.5 h-3.5" />
                 </div>
               )}
               <div
                 className={`p-3 rounded-xl max-w-[85%] whitespace-pre-line leading-relaxed ${
-                  m.role === 'user'
-                    ? 'bg-blue-600 text-white rounded-tr-none'
-                    : 'bg-[#101726] border border-[#1e2a44] text-slate-200 rounded-tl-none'
+                  m.role === "user"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] rounded-tr-none"
+                    : "bg-surface-raised border border-border-subtle text-text-secondary rounded-tl-none"
                 }`}
               >
                 {m.text}
@@ -89,18 +93,18 @@ export const StudioCopilotModal: React.FC<StudioCopilotModalProps> = ({
         </div>
 
         {/* Input */}
-        <div className="p-3 border-t border-slate-800 flex items-center gap-2 bg-[#090d18] rounded-b-2xl">
+        <div className="p-3 border-t border-border-subtle flex items-center gap-2 bg-surface-sunken rounded-b-2xl">
           <input
             type="text"
             placeholder="Pergunte sobre tempo de impressão, infill, margem ou defeito..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            className="flex-1 bg-[#101726] border border-[#1e2a44] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-amber-500 transition-colors"
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            className="flex-1 bg-surface-raised border border-border-subtle rounded-xl px-3 py-2 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-warning transition-colors"
           />
           <button
             onClick={handleSend}
-            className="p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-colors"
+            className="p-2 rounded-xl bg-warning hover:bg-warning text-text-inverse font-bold transition-colors"
           >
             <Send className="w-4 h-4" />
           </button>

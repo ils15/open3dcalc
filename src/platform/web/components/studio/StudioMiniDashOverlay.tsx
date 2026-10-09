@@ -1,11 +1,6 @@
-import React from 'react';
-import { 
-  X, 
-  Printer, 
-  AlertTriangle, 
-  ArrowUpRight 
-} from 'lucide-react';
-import { Tab } from '@/shared/components/AppShell/tabs';
+import React from "react";
+import { X, Printer, AlertTriangle, ArrowUpRight } from "lucide-react";
+import { Tab } from "@/shared/components/AppShell/tabs";
 
 interface StudioMiniDashOverlayProps {
   isOpen: boolean;
@@ -22,16 +17,18 @@ export const StudioMiniDashOverlay: React.FC<StudioMiniDashOverlayProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[#0b0f19] border border-[#1e2a44] rounded-2xl w-full max-w-lg shadow-2xl p-5 flex flex-col gap-4 text-slate-100 animate-fade-up">
+      <div className="bg-surface-overlay border border-border-subtle rounded-2xl w-full max-w-lg shadow-2xl p-5 flex flex-col gap-4 text-text-primary animate-fade-up">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-border-subtle pb-3">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <h3 className="font-bold text-sm text-white">Mini-Dash & Visão Rápida da Oficina</h3>
+            <span className="w-2.5 h-2.5 rounded-full bg-positive animate-pulse"></span>
+            <h3 className="font-bold text-sm text-text-primary">
+              Mini-Dash & Visão Rápida da Oficina
+            </h3>
           </div>
-          <button 
+          <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-sunken transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -39,65 +36,97 @@ export const StudioMiniDashOverlay: React.FC<StudioMiniDashOverlayProps> = ({
 
         {/* 3 Main KPIs */}
         <div className="grid grid-cols-3 gap-2.5">
-          <div className="bg-[#101726] border border-[#1e2a44] rounded-xl p-3">
-            <span className="text-[10px] text-slate-400 uppercase font-mono block">FATURAMENTO</span>
-            <span className="text-sm font-extrabold text-white block mt-1">R$ 3.737,94</span>
-            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5 mt-0.5">
+          <div className="bg-surface-raised border border-border-subtle rounded-xl p-3">
+            <span className="text-[10px] text-text-secondary uppercase font-mono block">
+              FATURAMENTO
+            </span>
+            <span className="text-sm font-extrabold text-text-primary block mt-1">
+              R$ 3.737,94
+            </span>
+            <span className="text-[10px] text-positive font-semibold flex items-center gap-0.5 mt-0.5">
               <ArrowUpRight className="w-2.5 h-2.5" /> 9 orçamentos
             </span>
           </div>
 
-          <div className="bg-[#101726] border border-[#1e2a44] rounded-xl p-3">
-            <span className="text-[10px] text-slate-400 uppercase font-mono block">LUCRO LÍQUIDO</span>
-            <span className="text-sm font-extrabold text-emerald-400 block mt-1">R$ 1.980,05</span>
-            <span className="text-[10px] text-slate-400">Margem 53%</span>
+          <div className="bg-surface-raised border border-border-subtle rounded-xl p-3">
+            <span className="text-[10px] text-text-secondary uppercase font-mono block">
+              LUCRO LÍQUIDO
+            </span>
+            <span className="text-sm font-extrabold text-positive block mt-1">
+              R$ 1.980,05
+            </span>
+            <span className="text-[10px] text-text-secondary">Margem 53%</span>
           </div>
 
-          <div className="bg-[#101726] border border-[#1e2a44] rounded-xl p-3">
-            <span className="text-[10px] text-slate-400 uppercase font-mono block">MÁQUINAS</span>
-            <span className="text-sm font-extrabold text-blue-400 block mt-1">2 / 6</span>
-            <span className="text-[10px] text-emerald-400 font-semibold">imprimindo</span>
+          <div className="bg-surface-raised border border-border-subtle rounded-xl p-3">
+            <span className="text-[10px] text-text-secondary uppercase font-mono block">
+              MÁQUINAS
+            </span>
+            <span className="text-sm font-extrabold text-info block mt-1">
+              2 / 6
+            </span>
+            <span className="text-[10px] text-positive font-semibold">
+              imprimindo
+            </span>
           </div>
         </div>
 
         {/* Alerts & Quick Status */}
         <div className="flex flex-col gap-2">
-          <span className="text-[11px] font-mono uppercase text-slate-400 font-bold">ALERTAS DO ESTÚDIO</span>
-          
-          <div 
-            onClick={() => { onClose(); onTabChange('inventory'); }}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 cursor-pointer hover:bg-amber-500/20 transition-colors"
+          <span className="text-[11px] font-mono uppercase text-text-secondary font-bold">
+            ALERTAS DO ESTÚDIO
+          </span>
+
+          <div
+            onClick={() => {
+              onClose();
+              onTabChange("inventory");
+            }}
+            className="flex items-center justify-between p-2.5 rounded-xl bg-warning-subtle border border-warning/30 text-xs text-warning cursor-pointer hover:bg-warning-subtle transition-colors"
           >
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>2 carretéis com estoque abaixo de 150g (TPU Laranja e Resina Azul)</span>
+              <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
+              <span>
+                2 carretéis com estoque abaixo de 150g (TPU Laranja e Resina
+                Azul)
+              </span>
             </div>
-            <span className="text-amber-400 font-bold text-[10px] underline">Ver Estoque</span>
+            <span className="text-warning font-bold text-[10px] underline">
+              Ver Estoque
+            </span>
           </div>
 
-          <div 
-            onClick={() => { onClose(); onTabChange('catalog'); }}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-[#101726] border border-[#1e2a44] text-xs text-slate-300 cursor-pointer hover:bg-[#151f33] transition-colors"
+          <div
+            onClick={() => {
+              onClose();
+              onTabChange("catalog");
+            }}
+            className="flex items-center justify-between p-2.5 rounded-xl bg-surface-raised border border-border-subtle text-xs text-text-secondary cursor-pointer hover:bg-surface-overlay transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Printer className="w-4 h-4 text-indigo-400 shrink-0" />
+              <Printer className="w-4 h-4 text-accent shrink-0" />
               <span>Ender 3 V3 SE em manutenção (lubrificação do eixo Z)</span>
             </div>
-            <span className="text-blue-400 font-bold text-[10px] underline">Ver Frota</span>
+            <span className="text-info font-bold text-[10px] underline">
+              Ver Frota
+            </span>
           </div>
         </div>
 
         {/* Buttons */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+        <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
           <button
-            onClick={() => { onClose(); onTabChange('dashboard'); }}
-            className="text-xs text-blue-400 hover:underline font-semibold"
+            onClick={() => {
+              onClose();
+              onTabChange("dashboard");
+            }}
+            className="text-xs text-info hover:underline font-semibold"
           >
             Ir para Dashboard Completo →
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold"
+            className="px-4 py-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-primary text-xs font-semibold"
           >
             Fechar
           </button>

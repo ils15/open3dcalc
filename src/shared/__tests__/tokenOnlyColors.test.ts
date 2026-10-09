@@ -12,7 +12,7 @@ import { resolve } from "node:path";
  * whole branch exists to fix ("modo escuro ta misturando com modo claro").
  *
  * WHY THIS IS A FLOOR AND NOT A ZERO ASSERTION
- * The epic is NOT finished — 2913 occurrences remain across 69 files. A guard
+ * The epic is NOT finished — 848 occurrences remain across 62 files. A guard
  * that asserted zero would be red on arrival and would block every pull request
  * until someone finished an epic that is explicitly out of scope here. So this
  * file pins the CURRENT inventory per file and fails on any DEVIATION from it:
@@ -48,14 +48,15 @@ import { resolve } from "node:path";
  *     used here, and none is fixed in this change.
  *   - PrivacyScreen: migrated its amber, red, emerald and white utility literals
  *     to the existing semantic warning/danger/success/accent-fill tokens.
+ *   - Studio dark-mode surfaces: migrated the eight Studio views, inline Infill
+ *     panel, and four overlays/modals to semantic surface, text, status and
+ *     accent tokens. Removed the static dark palette from both themes and
+ *     replaced the failing small `text-slate-500` copy with AA-safe text tokens.
  *
  * WHAT IS STILL DEFERRED, AND WHY (the honest debt list)
- *   - The 8 Studio*View components (~1600 occurrences) — a declared epic.
- *     `studioShellTheme.test.ts` asserts that boundary positively.
  *   - CatalogTab's remaining 124 — a rewrite of mixed sites in a SHARED
  *     component would put the Electron target, which currently looks correct,
  *     at risk. Bounded batches only.
- *   - PiiLockedShell (70) — largest single shared file; not a safe bounded pass.
  *   - slicerOptimizer.ts (18) — DEAD MODULE: none of its four exported symbols
  *     (`SlicerOptimizationProfile`, `SLICER_OPTIMIZATION_PROFILES`,
  *     `SlicerOptimizationAnalysis`, `analyzeSlicerParameters`) has an importer
@@ -165,22 +166,20 @@ function measuredDebt(): Map<string, number> {
 const measured = measuredDebt();
 
 /**
- * THE FLOOR — the audited inventory, 2026-10-08 (Wave4), 69 files / 2826 occurrences.
+ * THE FLOOR — the audited inventory after the Studio migration, 2026-10-08,
+ * 62 files / 848 occurrences.
  *
  * Regenerate after an intentional migration:
  *   node -e '...' (see the PR description) or re-derive with the same regex.
  */
 const FLOOR: Readonly<Record<string, number>> = {
-  "src/platform/web/components/studio/StudioCalculatorView.tsx": 422,
-  "src/platform/web/components/studio/StudioQuotesView.tsx": 299,
-  "src/platform/web/components/studio/StudioSpoolView.tsx": 284,
-  "src/platform/web/components/studio/StudioDashboardView.tsx": 234,
-  "src/platform/web/components/studio/StudioProductsView.tsx": 228,
+  "src/platform/web/components/studio/StudioCalculatorView.tsx": 3,
+  "src/platform/web/components/studio/StudioQuotesView.tsx": 3,
+  "src/platform/web/components/studio/StudioSpoolView.tsx": 27,
+  "src/platform/web/components/studio/StudioProductsView.tsx": 2,
   "src/shared/components/Catalog/CatalogTab.tsx": 124,
-  "src/platform/web/components/studio/StudioCustomerView.tsx": 150,
-  "src/platform/web/components/studio/StudioHistoryView.tsx": 131,
-  "src/platform/web/components/studio/StudioPrinterView.tsx": 81,
-  "src/platform/web/components/studio/StudioQuoteModal.tsx": 81,
+  "src/platform/web/components/studio/StudioCustomerView.tsx": 1,
+  "src/platform/web/components/studio/StudioQuoteModal.tsx": 1,
   "src/platform/web/components/studio/StudioSubHeader.tsx": 62,
   "src/shared/components/Catalog/FilamentInventory.tsx": 61,
   "src/shared/components/Dashboard/Dashboard.tsx": 60,
@@ -188,15 +187,14 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/AIAssistant/AIAssistantPanels.tsx": 49,
   "src/platform/web/components/studio/StudioSidebar.tsx": 48,
   "src/shared/components/AIAssistant/AIAssistantModal.tsx": 48,
-  "src/platform/web/components/studio/StudioMiniDashOverlay.tsx": 43,
+  "src/platform/web/components/studio/StudioMiniDashOverlay.tsx": 1,
   "src/platform/web/components/studio/StudioHeader.tsx": 7,
-  "src/platform/web/components/studio/StudioCopilotModal.tsx": 32,
+  "src/platform/web/components/studio/StudioCopilotModal.tsx": 1,
   "src/shared/components/SpoolShelf/SpoolCard.tsx": 28,
   "src/shared/components/Results/CostDistributionBars.tsx": 26,
   "src/shared/components/Calculator/QuoteSection.tsx": 22,
-  "src/platform/web/components/studio/StudioShortcutsModal.tsx": 20,
+  "src/platform/web/components/studio/StudioShortcutsModal.tsx": 1,
   "src/shared/components/Calculator/surfaces/BentoSurface.tsx": 20,
-  "src/platform/web/components/studio/StudioLayout.tsx": 9,
   "src/utils/slicerOptimizer.ts": 18,
   "src/shared/components/AppShell/QuickStatusPill.tsx": 16,
   "src/shared/components/StlPreview/StlPreview.tsx": 15,
@@ -219,7 +217,6 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/ui/ComparisonModal.tsx": 3,
   "src/shared/components/ui/Tutorial.tsx": 3,
   "src/shared/components/BetaBadge/BetaBadge.tsx": 2,
-  "src/shared/components/Calculator/InfillCalculator.tsx": 2,
   "src/shared/components/Calculator/TechToggle.tsx": 2,
   "src/shared/components/SpoolShelf/SpoolThumb.tsx": 2,
   "src/shared/components/StlPreview/EstimationModeSection.tsx": 2,
@@ -232,10 +229,8 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/AppShell/ManageVisibilityButton.tsx": 1,
   "src/shared/components/Calculator/surfaces/bento/BentoHeader.tsx": 1,
   "src/shared/components/Catalog/PrinterTagEditor.tsx": 1,
-  "src/shared/components/Privacy/LegacyMigrationDialog.tsx": 1,
   "src/shared/components/Privacy/LegacyResidueDisclosure.tsx": 1,
   "src/shared/components/ui/ConfirmDialog.tsx": 1,
-  "src/shared/components/ui/ConsentModal.tsx": 1,
   "src/shared/components/ui/PrivacyBanner.tsx": 1,
   "src/shared/components/ui/QuickStartBanner.tsx": 1,
   "src/shared/components/Privacy/PrivacyOnboarding.tsx": 1,
@@ -302,8 +297,8 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
   it("reports the audited inventory so the header can be checked by eye", () => {
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
-    expect(files).toBe(69);
-    expect(occurrences).toBe(2826);
+    expect(files).toBe(62);
+    expect(occurrences).toBe(848);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

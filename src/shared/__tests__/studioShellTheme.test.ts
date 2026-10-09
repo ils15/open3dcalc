@@ -46,10 +46,9 @@ function stripComments(source: string): string {
  * REGRESSION GUARD for the "modo escuro ta misturando com modo claro" report.
  *
  * The defect was structural, not a colour-picking mistake: the Studio shell
- * painted a hardcoded dark-only palette while every token-driven component
- * inside it flipped with the theme, so light mode produced light components on
- * a near-black surface. A screenshot catches that once; these assertions make it
- * impossible to reintroduce silently.
+ * was token-driven while its views and overlays painted a hardcoded dark-only
+ * palette, so light mode produced dark cards inside a light shell. A screenshot
+ * catches that once; these assertions make it impossible to reintroduce silently.
  *
  * WHAT IS PINNED, AND WHY EACH ONE CANNOT BE SATISFIED BY ACCIDENT
  *
@@ -64,11 +63,9 @@ function stripComments(source: string): string {
  *    script that the CSP silently blocks still looks correct in source.
  *
  * SCOPE — READ BEFORE TREATING A RED TEST AS A BUG
- * The five shell call sites below are Track 1 and are tokenized. The eight
- * Studio *view* components and the inline catalog/infill panels keep their
- * hardcoded dark palette on purpose; that is a separate epic. The "views are
- * still on their own palette" block states that boundary explicitly so nobody
- * reads "the Studio shell is tokenized" as "the Studio is tokenized".
+ * The shell, eight Studio views, Infill panel and four Studio overlays/modals
+ * use theme tokens. The shell-call-site checks below retain the earlier guard;
+ * the migration checks at the end pin the expanded component set.
  */
 
 // Two roots. `../..` from src/shared/__tests__ lands on src/, which is where
@@ -376,67 +373,12 @@ describe("the entry documents set the theme class before first paint", () => {
 });
 
 /* ------------------------------------------------------------------ *
- * 5. Status ink on the fixed dark surface stays legible in BOTH themes.
+ * 5. The scope boundary, stated so it cannot be over-read.
  * ------------------------------------------------------------------ */
 
-describe("StudioQuotesView status ink on its fixed dark surface", () => {
-  const QUOTES_SURFACE = "#0c111e";
-
-  // Reuses the shared helper rather than re-deriving the block regex: tokens.css
-  // is commented heavily, and a looser pattern here silently resolves to a
-  // declaration in a COMMENT instead of failing.
-  const readValue = (block: string, token: string): string => {
-    const value = tokenInBlock(tokensCss, block, token);
-    expect(value, `--${token} must be a literal in ${block}`).not.toBeNull();
-    return value!;
-  };
-
-  it.each(["positive", "warning", "critical"])(
-    "%s ink is theme-INDEPENDENT, because the surface is",
-    (tone) => {
-      // The quotes cards are `bg-[#0c111e]` in BOTH themes, so a flipping ink
-      // is the defect: --positive lands at 3.44:1 and --warning at 2.66:1 there.
-      expect(
-        readValue(".dark", `${tone}-ink-dark`),
-        `--${tone}-ink-dark must not differ between themes while its surface is hardcoded dark`,
-      ).toBe(readValue(":root", `${tone}-ink-dark`));
-    },
-  );
-
-  it.each(["positive", "warning", "critical"])(
-    "%s ink clears AA on the quotes card surface",
-    (tone) => {
-      const ratio = contrastRatio(
-        readValue(":root", `${tone}-ink-dark`),
-        QUOTES_SURFACE,
-      );
-      expect(
-        ratio,
-        `--${tone}-ink-dark on ${QUOTES_SURFACE} is ${ratio.toFixed(2)}:1 and needs >= ${AA_NORMAL_TEXT}:1`,
-      ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
-    },
-  );
-
-  it("consumes the fixed-dark ink rather than the flipping foreground token", () => {
-    const quotes = read(`${STUDIO}/StudioQuotesView.tsx`);
-    expect(quotes).toContain("--color-positive-ink-dark");
-    expect(quotes).toContain("--color-warning-ink-dark");
-    expect(quotes).toContain("--color-critical-ink-dark");
-    for (const tone of ["positive", "warning", "critical"]) {
-      expect(
-        quotes,
-        `--color-${tone} is a per-theme FOREGROUND token; on a fixed dark surface it falls below AA in light mode`,
-      ).not.toContain(`--color-${tone})]`);
-    }
-  });
-});
-
-/* ------------------------------------------------------------------ *
- * 6. The scope boundary, stated so it cannot be over-read.
- * ------------------------------------------------------------------ */
-
-describe("Track 1 scope: the shell is tokenized, the views are not (yet)", () => {
-  const VIEWS = [
+describe("Studio views and overlays use theme tokens", () => {
+  const MIGRATED_FILES = [
+    "StudioLayout",
     "StudioDashboardView",
     "StudioCalculatorView",
     "StudioQuotesView",
@@ -444,21 +386,80 @@ describe("Track 1 scope: the shell is tokenized, the views are not (yet)", () =>
     "StudioSpoolView",
     "StudioHistoryView",
     "StudioCustomerView",
-    // The eighth. This list was originally written from memory and silently
-    // omitted StudioPrinterView, which carries 10 hex literals of its own — a
-    // boundary assertion that forgets a file is a boundary that quietly does
-    // not apply to it. Completeness is asserted below rather than trusted.
     "StudioPrinterView",
+    "StudioMiniDashOverlay",
+    "StudioShortcutsModal",
+    "StudioCopilotModal",
+    "StudioQuoteModal",
   ];
 
-  it.each(VIEWS)("%s still carries its own hardcoded palette", (view) => {
-    const source = read(`${STUDIO}/${view}.tsx`);
+  it.each(MIGRATED_FILES)("%s contains no hardcoded hex color", (file) => {
+    let source = stripComments(read(`${STUDIO}/${file}.tsx`));
+    // Spool swatch presets are product data, not UI paint. Keep their physical
+    // colors while guarding all rendered surfaces, borders, text, and chart ink.
+    if (file === "StudioSpoolView") {
+      source = source
+        .replace(/hex:\s*"#[0-9a-f]{6}"/gi, "hex: <swatch-data>")
+        .replace(
+          /(?:useState|setColorHex)\("#[0-9a-f]{6}"\)/gi,
+          "colorHex(<swatch-data>)",
+        )
+        .replace(
+          /spool\.colorHex \|\| "#[0-9a-f]{6}"/gi,
+          "spool.colorHex || <swatch-data>",
+        );
+    }
     expect(
       source,
-      `${view} was expected to still be on its hardcoded dark palette. Tokenizing ` +
-        `the views is a separate epic — if that epic has landed, this boundary ` +
-        `assertion must be replaced, not deleted.`,
-    ).toMatch(/-\[#[0-9a-f]{3,8}\]/i);
+      `${file} must use semantic theme tokens instead of hardcoded hex colors`,
+    ).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(
+      source,
+      `${file} must not use static Tailwind color palettes`,
+    ).not.toMatch(
+      /\b(?:bg|text|border|ring|from|to|via|placeholder|shadow|divide)-(?:slate|gray|zinc|neutral|blue|indigo|purple|green|red|yellow|amber|orange|emerald|cyan|teal|pink|rose)-\d{2,3}\b/i,
+    );
+  });
+
+  it.each(["light", "dark"])(
+    "small muted text clears WCAG AA on semantic surfaces in %s mode",
+    (theme) => {
+      const block = theme === "dark" ? ".dark" : ":root";
+      const foreground = tokenInBlock(tokensCss, block, "text-muted");
+      expect(
+        foreground,
+        `--text-muted must resolve in ${theme} mode`,
+      ).not.toBeNull();
+      for (const surface of [
+        "surface-canvas",
+        "surface-raised",
+        "surface-overlay",
+        "surface-sunken",
+        "surface-input",
+      ]) {
+        const background = tokenInBlock(tokensCss, block, surface);
+        expect(
+          background,
+          `--${surface} must resolve in ${theme} mode`,
+        ).not.toBeNull();
+        expect(
+          contrastRatio(foreground!, background!),
+          `--text-muted on --${surface} in ${theme} mode must be >= ${AA_NORMAL_TEXT}:1`,
+        ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
+      }
+    },
+  );
+
+  it("maps the Infill panel surface through semantic tokens", () => {
+    const layout = read(`${STUDIO}/StudioLayout.tsx`);
+    const calculator = read(
+      "shared/components/Calculator/InfillCalculator.tsx",
+    );
+    expect(layout).not.toMatch(/bg-\[#/i);
+    expect(layout).toContain("bg-surface-raised");
+    expect(calculator).not.toMatch(
+      /(?:bg|text|border)-(?:slate|blue|indigo|purple|green|red|amber|emerald|cyan|teal|rose)-\d{2,3}/i,
+    );
   });
 
   it("lists every Studio*View component that exists, not a remembered subset", () => {
@@ -471,10 +472,9 @@ describe("Track 1 scope: the shell is tokenized, the views are not (yet)", () =>
       .map((f) => f.replace(/\.tsx$/, ""))
       .sort();
     expect(
-      [...VIEWS].sort(),
-      "the VIEWS list has drifted from the Studio*View files on disk. A new " +
-        "view must be added here so the boundary either covers it or is " +
-        "deliberately extended to it.",
+      MIGRATED_FILES.filter((file) => file.endsWith("View")).sort(),
+      "the migrated view list has drifted from Studio*View files on disk. A new " +
+        "view must be added here so it cannot retain a hardcoded palette.",
     ).toEqual(onDisk);
   });
 });

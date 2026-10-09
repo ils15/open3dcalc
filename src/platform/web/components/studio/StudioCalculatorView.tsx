@@ -487,7 +487,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 text-slate-100 max-w-full pb-20 items-start">
+    <div className="flex flex-col lg:flex-row gap-6 text-text-primary max-w-full pb-20 items-start">
       {/* Left Sub-nav & Main Form */}
       <div className="flex-1 min-w-0 flex flex-col md:flex-row gap-4 w-full">
         {/* Sub-Nav menu.
@@ -510,8 +510,8 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             sub-nav would compete with it, so it is withheld there. All
             sections stay rendered below, so nothing is orphaned. */}
         {!isBetaChannel && (
-          <div className="w-full md:w-36 shrink-0 overflow-x-auto bg-[#0c111e] border border-[#1b253b] rounded-xl p-2.5 flex flex-row md:flex-col gap-1 select-none">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 px-2 py-1 hidden md:block">
+          <div className="w-full md:w-36 shrink-0 overflow-x-auto bg-surface-raised border border-border-subtle rounded-xl p-2.5 flex flex-row md:flex-col gap-1 select-none">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-text-muted px-2 py-1 hidden md:block">
               FORMULÁRIO
             </span>
             {[
@@ -528,8 +528,8 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 onClick={() => setActiveSection(sec.id)}
                 className={`flex-1 md:flex-none min-h-11 text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                   activeSection === sec.id
-                    ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
+                    ? "bg-accent-subtle text-info border border-accent/30"
+                    : "text-text-secondary hover:text-text-secondary hover:bg-surface-raised"
                 }`}
               >
                 {sec.label}
@@ -539,7 +539,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             {hasInputs && !isDemoMode && (
               <button
                 onClick={handleReset}
-                className="mt-auto hidden md:flex min-h-11 items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 transition-colors"
+                className="mt-auto hidden md:flex min-h-11 items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:text-critical hover:bg-critical-subtle transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Limpar</span>
@@ -552,26 +552,26 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
         <div className="flex-1 flex flex-col gap-4">
           {/* Demo Mode Notice */}
           {isDemoMode && (
-            <div className="bg-[#151329] border border-purple-500/40 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="bg-surface-raised border border-accent/40 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
                 <div>
-                  <span className="font-bold text-purple-200 block">
+                  <span className="font-bold text-accent block">
                     Modo Demo Ativo (Templates Pré-Carregados)
                   </span>
-                  <span className="text-[11px] text-purple-300/80">
+                  <span className="text-[11px] text-accent">
                     Alterne entre os dois templates para simular cálculos:
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-1 bg-[#0f0c1e] p-0.5 rounded-lg border border-purple-500/30">
+              <div className="flex items-center gap-1 bg-surface-sunken p-0.5 rounded-lg border border-accent/30">
                 <button
                   type="button"
                   onClick={() => onSelectDemoTemplate?.("fdm")}
                   className={`min-h-11 px-3 py-1 rounded text-xs font-semibold transition-all ${
                     demoTemplate === "fdm"
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                      : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
                   🖨️ Template Filamento (FDM)
@@ -581,8 +581,8 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   onClick={() => onSelectDemoTemplate?.("resin")}
                   className={`min-h-11 px-3 py-1 rounded text-xs font-semibold transition-all ${
                     demoTemplate === "resin"
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                      : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
                   💧 Template Resina (MSLA)
@@ -598,36 +598,36 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               onClick={() => handleTechSwitch("fdm")}
               className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all relative overflow-hidden group ${
                 tech === "fdm"
-                  ? "bg-blue-950/30 border-blue-500 shadow-md shadow-blue-950/40 ring-1 ring-blue-500/40"
-                  : "bg-[#0c111e] border-[#1b253b] hover:border-slate-700 opacity-75 hover:opacity-100"
+                  ? "bg-accent-subtle border-accent shadow-md shadow-accent/40 ring-1 ring-accent/40"
+                  : "bg-surface-raised border-border-subtle hover:border-border-subtle opacity-75 hover:opacity-100"
               }`}
             >
               <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                   tech === "fdm"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "bg-slate-800 text-slate-400"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                    : "bg-surface-sunken text-text-secondary"
                 }`}
               >
                 <Printer className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">
+                  <span className="text-xs font-bold text-text-primary group-hover:text-info transition-colors">
                     Insumo Filamento (FDM)
                   </span>
                   {tech === "fdm" && (
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-accent-subtle text-info border border-accent/30">
                       ATIVO
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                <p className="text-[11px] text-text-secondary mt-0.5 leading-snug">
                   Carretéis termoplásticos (PLA, PETG, ABS, TPU) • Medição em
                   Gramas (g)
                 </p>
-                <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-400 font-mono">
-                  <span className="flex items-center gap-1 text-amber-400">
+                <div className="flex items-center gap-2 mt-2 text-[10px] text-text-secondary font-mono">
+                  <span className="flex items-center gap-1 text-warning">
                     <Zap className="w-3 h-3" /> ~200W (Mesa + Bico)
                   </span>
                   <span>•</span>
@@ -641,36 +641,36 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               onClick={() => handleTechSwitch("resin")}
               className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all relative overflow-hidden group ${
                 tech === "resin"
-                  ? "bg-purple-950/30 border-purple-500 shadow-md shadow-purple-950/40 ring-1 ring-purple-500/40"
-                  : "bg-[#0c111e] border-[#1b253b] hover:border-slate-700 opacity-75 hover:opacity-100"
+                  ? "bg-accent-subtle border-accent shadow-md shadow-accent/40 ring-1 ring-accent/40"
+                  : "bg-surface-raised border-border-subtle hover:border-border-subtle opacity-75 hover:opacity-100"
               }`}
             >
               <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                   tech === "resin"
-                    ? "bg-purple-600 text-white shadow-sm"
-                    : "bg-slate-800 text-slate-400"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                    : "bg-surface-sunken text-text-secondary"
                 }`}
               >
                 <Droplet className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
+                  <span className="text-xs font-bold text-text-primary group-hover:text-accent transition-colors">
                     Insumo Resina (SLA / MSLA / DLP)
                   </span>
                   {tech === "resin" && (
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-accent-subtle text-accent border border-accent/30">
                       ATIVO
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                <p className="text-[11px] text-text-secondary mt-0.5 leading-snug">
                   Garrafas UV 405nm • Medição em Volume (ml) • Densidade &
                   Pós-Cura
                 </p>
-                <div className="flex items-center gap-2 mt-2 text-[10px] text-slate-400 font-mono">
-                  <span className="flex items-center gap-1 text-purple-400">
+                <div className="flex items-center gap-2 mt-2 text-[10px] text-text-secondary font-mono">
+                  <span className="flex items-center gap-1 text-accent">
                     <Zap className="w-3 h-3" /> ~60W LCD + Estação UV
                   </span>
                   <span>•</span>
@@ -681,14 +681,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           </div>
 
           {/* 🌟 NÍVEL DE COMPLEXIDADE DO FORMULÁRIO (RÁPIDO vs DETALHADO vs AVANÇADO) */}
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-[#0c111e] border border-[#1b253b] rounded-xl p-2.5 px-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-raised border border-border-subtle rounded-xl p-2.5 px-3">
             <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-blue-400" />
+              <Sliders className="w-4 h-4 text-info" />
               <div>
-                <span className="text-xs font-bold text-white block">
+                <span className="text-xs font-bold text-text-primary block">
                   Nível de Cálculo & Detalhamento:
                 </span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-text-secondary">
                   {complexity === "rapido"
                     ? "Visão expressa e simplificada"
                     : complexity === "detalhado"
@@ -698,14 +698,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 bg-[#111728] p-1 rounded-lg border border-[#1f2c47]">
+            <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-lg border border-border-subtle">
               <button
                 type="button"
                 onClick={() => setComplexity("rapido")}
                 className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   complexity === "rapido"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                    : "text-text-secondary hover:text-text-primary"
                 }`}
               >
                 ⚡ Rápido
@@ -715,8 +715,8 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 onClick={() => setComplexity("detalhado")}
                 className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   complexity === "detalhado"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                    : "text-text-secondary hover:text-text-primary"
                 }`}
               >
                 🔍 Detalhado
@@ -729,8 +729,8 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 }}
                 className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
                   complexity === "avancado"
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm font-bold"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-gradient-to-r from-accent to-accent text-text-primary shadow-sm font-bold"
+                    : "text-text-secondary hover:text-text-primary"
                 }`}
               >
                 ⚙️ Avançado / Pro
@@ -739,9 +739,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           </div>
 
           {/* Piece Identification & Insumo Stock Integration */}
-          <div className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="bg-surface-raised border border-border-subtle rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="w-full sm:flex-1 relative">
-              <label className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1">
+              <label className="text-[10px] font-mono uppercase font-bold text-text-secondary block mb-1">
                 IDENTIFICAÇÃO DA PEÇA / ARQUIVO 3D
               </label>
               <div className="relative">
@@ -750,9 +750,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   value={projectName}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="Ex: Suporte para headset, miniatura articulada, engrenagem..."
-                  className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-medium"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent font-medium"
                 />
-                <Edit3 className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                <Edit3 className="w-3.5 h-3.5 text-text-muted absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
             </div>
 
@@ -760,7 +760,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               <button
                 type="button"
                 onClick={() => setShowInsumoPicker(!showInsumoPicker)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 text-xs font-semibold transition-all whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent-subtle hover:bg-accent-subtle border border-accent/30 text-info text-xs font-semibold transition-all whitespace-nowrap"
                 title="Puxar material e custo direto do seu estoque cadastrado"
               >
                 <Package className="w-3.5 h-3.5" />
@@ -771,7 +771,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 <button
                   type="button"
                   onClick={() => onTabChange("inventory")}
-                  className="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                  className="p-2 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary transition-colors"
                   title="Abrir Gestão de Insumos"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -782,29 +782,29 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
           {/* Insumo Stock Quick Picker Popover */}
           {showInsumoPicker && (
-            <div className="bg-[#0e1424] border border-blue-500/40 rounded-xl p-3 shadow-2xl flex flex-col gap-2 animate-fade-up">
-              <div className="flex items-center justify-between text-xs pb-1.5 border-b border-[#1f2c47]">
-                <span className="font-bold text-white flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-blue-400" />
+            <div className="bg-surface-raised border border-accent/40 rounded-xl p-3 shadow-2xl flex flex-col gap-2 animate-fade-up">
+              <div className="flex items-center justify-between text-xs pb-1.5 border-b border-border-subtle">
+                <span className="font-bold text-text-primary flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-info" />
                   Selecione do Estoque (
                   {tech === "resin" ? "Garrafas de Resina" : "Carretéis FDM"}):
                 </span>
                 <button
                   onClick={() => setShowInsumoPicker(false)}
-                  className="text-slate-400 hover:text-white text-xs px-1"
+                  className="text-text-secondary hover:text-text-primary text-xs px-1"
                 >
                   ✕
                 </button>
               </div>
 
               {availableInsumos.length === 0 ? (
-                <div className="text-center py-4 text-xs text-slate-400">
+                <div className="text-center py-4 text-xs text-text-secondary">
                   Nenhum insumo de {tech === "resin" ? "resina" : "filamento"}{" "}
                   encontrado em estoque.{" "}
                   {onTabChange && (
                     <button
                       onClick={() => onTabChange("inventory")}
-                      className="text-blue-400 underline font-bold ml-1"
+                      className="text-info underline font-bold ml-1"
                     >
                       Cadastrar em Insumos
                     </button>
@@ -817,19 +817,22 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                       key={spool.id}
                       type="button"
                       onClick={() => handleSelectInsumoFromStock(spool)}
-                      className="text-left bg-[#131b2e] hover:bg-[#18233c] border border-[#22304e] hover:border-blue-500/50 p-2 rounded-lg flex items-center gap-2.5 transition-all group"
+                      className="text-left bg-surface-overlay hover:bg-surface-overlay border border-border-subtle hover:border-accent/50 p-2 rounded-lg flex items-center gap-2.5 transition-all group"
                     >
                       <span
-                        className="w-4 h-4 rounded-full border border-black/40 shrink-0 shadow-sm"
-                        style={{ backgroundColor: spool.colorHex || "#3b82f6" }}
+                        className="w-4 h-4 rounded-full border border-border-subtle shrink-0 shadow-sm"
+                        style={{
+                          backgroundColor:
+                            spool.colorHex || "var(--color-info)",
+                        }}
                       />
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-white group-hover:text-blue-400 truncate">
+                        <div className="text-xs font-bold text-text-primary group-hover:text-info truncate">
                           {spool.brand} {spool.material}
                         </div>
-                        <div className="text-[10px] text-slate-400 flex items-center justify-between">
+                        <div className="text-[10px] text-text-secondary flex items-center justify-between">
                           <span>{spool.color}</span>
-                          <span className="font-mono text-emerald-400 font-bold">
+                          <span className="font-mono text-positive font-bold">
                             R$ {spool.costPerKg.toFixed(2)}/
                             {tech === "resin" ? "L" : "kg"}
                           </span>
@@ -849,14 +852,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               the FDM and the Resin branch. */}
           <div
             data-tutorial="material"
-            className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3"
+            className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
-            <div className="flex items-center justify-between border-b border-[#1b253b] pb-2">
-              <h2 className="text-xs font-bold text-slate-100 flex items-center gap-2">
-                <Box className="w-3.5 h-3.5 text-blue-400" />
+            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
+              <h2 className="text-xs font-bold text-text-primary flex items-center gap-2">
+                <Box className="w-3.5 h-3.5 text-info" />
                 1. INSUMO & CONSUMO DE MATERIAL
               </h2>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-accent-subtle text-info border border-accent/20 font-bold">
                 {tech === "resin"
                   ? "🧪 Resina Fotopolímero"
                   : "🧵 Filamento Termoplástico"}
@@ -866,7 +869,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             {tech === "resin" ? (
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     TIPO DE RESINA (UV 405nm)
                   </label>
                   <input
@@ -874,34 +877,34 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                     value={filamentType}
                     onChange={(e) => setFilamentType(e.target.value)}
                     placeholder="Ex: Resina Standard Cinza, ABS-Like..."
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-semibold outline-none focus:border-purple-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary font-semibold outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     CUSTO / LITRO (R$/L)
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1.5 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
                     <input
                       type="number"
                       value={costPerKg || ""}
                       onChange={(e) => setCostPerKg(Number(e.target.value))}
                       placeholder="180"
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1 flex items-center justify-between">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1 flex items-center justify-between">
                     <span>DENSIDADE</span>
-                    <span className="text-purple-400 font-bold">
+                    <span className="text-accent font-bold">
                       {resinDensity} g/cm³
                     </span>
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
                     <input
                       type="number"
                       step="0.01"
@@ -911,20 +914,20 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                       onChange={(e) =>
                         handleDensityChange(Number(e.target.value))
                       }
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
-                    <span className="text-slate-500 text-[10px] ml-1">
+                    <span className="text-text-muted text-[10px] ml-1">
                       g/ml
                     </span>
                   </div>
                 </div>
 
-                <div className="sm:col-span-4 bg-[#0a0e19] border border-[#18233a] p-3 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div className="sm:col-span-4 bg-surface-sunken border border-border-subtle p-3 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                       VOLUME USADO NO FATIADOR (ml)
                     </label>
-                    <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
+                    <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
                       <input
                         type="number"
                         step="1"
@@ -933,17 +936,17 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                           handleVolumeChange(Number(e.target.value))
                         }
                         placeholder="0"
-                        className="bg-transparent text-white font-bold text-sm outline-none w-full"
+                        className="bg-transparent text-text-primary font-bold text-sm outline-none w-full"
                       />
-                      <span className="text-purple-400 font-bold ml-1">ml</span>
+                      <span className="text-accent font-bold ml-1">ml</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                       PESO EQUIVALENTE CALCULADO (g)
                     </label>
-                    <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
+                    <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
                       <input
                         type="number"
                         step="0.5"
@@ -952,11 +955,13 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                           handleGramsChange(Number(e.target.value))
                         }
                         placeholder="0"
-                        className="bg-transparent text-emerald-400 font-bold text-sm outline-none w-full"
+                        className="bg-transparent text-positive font-bold text-sm outline-none w-full"
                       />
-                      <span className="text-slate-400 font-bold ml-1">g</span>
+                      <span className="text-text-secondary font-bold ml-1">
+                        g
+                      </span>
                       {materialCost > 0 && (
-                        <span className="ml-auto font-mono text-emerald-400 font-bold text-xs whitespace-nowrap">
+                        <span className="ml-auto font-mono text-positive font-bold text-xs whitespace-nowrap">
                           R$ {materialCost.toFixed(2).replace(".", ",")}
                         </span>
                       )}
@@ -967,7 +972,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     TIPO DE FILAMENTO
                   </label>
                   <input
@@ -975,12 +980,12 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                     value={filamentType}
                     onChange={(e) => setFilamentType(e.target.value)}
                     placeholder="Ex: PLA Basic Preto, PETG Branco..."
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-semibold outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary font-semibold outline-none focus:border-accent"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     DIÂMETRO
                   </label>
                   <select
@@ -988,7 +993,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                     onChange={(e) =>
                       setFilamentDiameter(Number(e.target.value))
                     }
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-secondary outline-none"
                   >
                     <option value={1.75}>1.75 mm (Padrão)</option>
                     <option value={2.85}>2.85 mm</option>
@@ -996,44 +1001,44 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     CUSTO / KG (R$/kg)
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1.5 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
                     <input
                       type="number"
                       value={costPerKg || ""}
                       onChange={(e) => setCostPerKg(Number(e.target.value))}
                       placeholder="110"
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
                 </div>
 
-                <div className="sm:col-span-4 bg-[#0a0e19] border border-[#18233a] p-3 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="sm:col-span-4 bg-surface-sunken border border-border-subtle p-3 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="w-full sm:w-1/2">
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                       PESO ESTIMADO DO FATIADOR (g)
                     </label>
-                    <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
+                    <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
                       <input
                         type="number"
                         step="1"
                         value={weightGrams || ""}
                         onChange={(e) => setWeightGrams(Number(e.target.value))}
                         placeholder="0"
-                        className="bg-transparent text-white font-bold text-sm outline-none w-full"
+                        className="bg-transparent text-text-primary font-bold text-sm outline-none w-full"
                       />
-                      <span className="text-blue-400 font-bold ml-1">g</span>
+                      <span className="text-info font-bold ml-1">g</span>
                     </div>
                   </div>
 
                   <div className="text-right w-full sm:w-auto">
-                    <span className="text-[10px] text-slate-400 uppercase font-mono block">
+                    <span className="text-[10px] text-text-secondary uppercase font-mono block">
                       CUSTO DE MATERIAL
                     </span>
-                    <span className="text-base font-extrabold text-emerald-400 font-mono">
+                    <span className="text-base font-extrabold text-positive font-mono">
                       R$ {materialCost.toFixed(2).replace(".", ",")}
                     </span>
                   </div>
@@ -1049,14 +1054,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               are all in this card. */}
           <div
             data-tutorial="print"
-            className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3"
+            className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
-            <div className="flex items-center justify-between border-b border-[#1b253b] pb-2">
-              <h2 className="text-xs font-bold text-slate-100 flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
+              <h2 className="text-xs font-bold text-text-primary flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-warning" />
                 2. TEMPO DE MÁQUINA, CURA & ENERGIA
               </h2>
-              <span className="text-[11px] text-amber-400 font-bold">
+              <span className="text-[11px] text-warning font-bold">
                 {hours > 0 || minutes > 0
                   ? `Impressão: ${hours}h ${minutes}m`
                   : "Definir tempo"}
@@ -1065,64 +1070,64 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                   TEMPO DE IMPRESSÃO
                 </label>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2 py-1.5 text-xs flex-1">
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2 py-1.5 text-xs flex-1">
                     <input
                       type="number"
                       value={hours || ""}
                       onChange={(e) => setHours(Number(e.target.value))}
                       placeholder="0"
-                      className="bg-transparent text-white font-semibold outline-none w-full text-center"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full text-center"
                     />
-                    <span className="text-slate-500 font-bold ml-1">h</span>
+                    <span className="text-text-muted font-bold ml-1">h</span>
                   </div>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2 py-1.5 text-xs flex-1">
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2 py-1.5 text-xs flex-1">
                     <input
                       type="number"
                       value={minutes || ""}
                       onChange={(e) => setMinutes(Number(e.target.value))}
                       placeholder="0"
-                      className="bg-transparent text-white font-semibold outline-none w-full text-center"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full text-center"
                     />
-                    <span className="text-slate-500 font-bold ml-1">m</span>
+                    <span className="text-text-muted font-bold ml-1">m</span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                   {tech === "resin"
                     ? "POTÊNCIA LCD (UV)"
                     : "POTÊNCIA FDM (MESA+BICO)"}
                 </label>
-                <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs justify-between">
+                <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs justify-between">
                   <input
                     type="number"
                     value={powerWatts || ""}
                     onChange={(e) => setPowerWatts(Number(e.target.value))}
                     placeholder={tech === "resin" ? "60" : "200"}
-                    className="bg-transparent text-white font-semibold outline-none w-full"
+                    className="bg-transparent text-text-primary font-semibold outline-none w-full"
                   />
-                  <span className="text-slate-500 font-bold ml-1">W</span>
+                  <span className="text-text-muted font-bold ml-1">W</span>
                 </div>
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                   TARIFA ENERGIA (R$/kWh)
                 </label>
-                <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs justify-between">
+                <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs justify-between">
                   <input
                     type="number"
                     step="0.05"
                     value={kwhRate}
                     onChange={(e) => setKwhRate(Number(e.target.value))}
-                    className="bg-transparent text-white font-semibold outline-none w-full"
+                    className="bg-transparent text-text-primary font-semibold outline-none w-full"
                   />
-                  <span className="text-slate-500 font-bold ml-1 text-[10px]">
+                  <span className="text-text-muted font-bold ml-1 text-[10px]">
                     R$/kWh
                   </span>
                 </div>
@@ -1130,70 +1135,70 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             </div>
 
             {tech === "resin" && (
-              <div className="bg-[#120f26] border border-purple-500/30 rounded-xl p-3 flex flex-col gap-2 mt-1">
-                <div className="flex items-center justify-between text-xs text-purple-300 font-bold">
+              <div className="bg-surface-raised border border-accent/30 rounded-xl p-3 flex flex-col gap-2 mt-1">
+                <div className="flex items-center justify-between text-xs text-accent font-bold">
                   <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <Sparkles className="w-3.5 h-3.5 text-accent" />
                     Pós-Cura UV & Estação de Lavagem (Wash & Cure)
                   </span>
-                  <span className="text-[11px] font-mono text-purple-400">
+                  <span className="text-[11px] font-mono text-accent">
                     +{cureTimeMinutes + washTimeMinutes} min de pós-processo
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                       TEMPO DE CURA UV
                     </label>
-                    <div className="flex items-center bg-[#0d091e] border border-purple-500/30 rounded-lg px-2.5 py-1.5 text-xs">
+                    <div className="flex items-center bg-surface-sunken border border-accent/30 rounded-lg px-2.5 py-1.5 text-xs">
                       <input
                         type="number"
                         value={cureTimeMinutes}
                         onChange={(e) =>
                           setCureTimeMinutes(Number(e.target.value))
                         }
-                        className="bg-transparent text-white font-semibold outline-none w-full"
+                        className="bg-transparent text-text-primary font-semibold outline-none w-full"
                       />
-                      <span className="text-purple-400 font-bold ml-1 text-[10px]">
+                      <span className="text-accent font-bold ml-1 text-[10px]">
                         min
                       </span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                       TEMPO DE LAVAGEM (IPA)
                     </label>
-                    <div className="flex items-center bg-[#0d091e] border border-purple-500/30 rounded-lg px-2.5 py-1.5 text-xs">
+                    <div className="flex items-center bg-surface-sunken border border-accent/30 rounded-lg px-2.5 py-1.5 text-xs">
                       <input
                         type="number"
                         value={washTimeMinutes}
                         onChange={(e) =>
                           setWashTimeMinutes(Number(e.target.value))
                         }
-                        className="bg-transparent text-white font-semibold outline-none w-full"
+                        className="bg-transparent text-text-primary font-semibold outline-none w-full"
                       />
-                      <span className="text-purple-400 font-bold ml-1 text-[10px]">
+                      <span className="text-accent font-bold ml-1 text-[10px]">
                         min
                       </span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                       POTÊNCIA ESTAÇÃO CURA
                     </label>
-                    <div className="flex items-center bg-[#0d091e] border border-purple-500/30 rounded-lg px-2.5 py-1.5 text-xs">
+                    <div className="flex items-center bg-surface-sunken border border-accent/30 rounded-lg px-2.5 py-1.5 text-xs">
                       <input
                         type="number"
                         value={cureStationWatts}
                         onChange={(e) =>
                           setCureStationWatts(Number(e.target.value))
                         }
-                        className="bg-transparent text-white font-semibold outline-none w-full"
+                        className="bg-transparent text-text-primary font-semibold outline-none w-full"
                       />
-                      <span className="text-purple-400 font-bold ml-1 text-[10px]">
+                      <span className="text-accent font-bold ml-1 text-[10px]">
                         W
                       </span>
                     </div>
@@ -1204,75 +1209,75 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           </div>
 
           {/* Section 3: Custos Extras */}
-          <div className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-[#1b253b] pb-2">
-              <h2 className="text-xs font-bold text-slate-100 flex items-center gap-2">
-                <Layers className="w-3.5 h-3.5 text-purple-400" />
+          <div className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
+              <h2 className="text-xs font-bold text-text-primary flex items-center gap-2">
+                <Layers className="w-3.5 h-3.5 text-accent" />
                 3. CUSTOS EXTRAS & INSUMOS AUXILIARES
               </h2>
-              <span className="text-[11px] text-purple-400 font-bold">
+              <span className="text-[11px] text-accent font-bold">
                 Total Extras: R$ {extraCosts.toFixed(2).replace(".", ",")}
               </span>
             </div>
 
             {tech === "resin" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0f1d] p-3 rounded-xl border border-[#1b253b]">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-surface-raised p-3 rounded-xl border border-border-subtle">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     ÁLCOOL ISOPROPÍLICO (IPA)
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1.5 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
                     <input
                       type="number"
                       step="0.5"
                       value={ipaCost}
                       onChange={(e) => setIpaCost(Number(e.target.value))}
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     EPIS (LUVAS + FILTRO)
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1.5 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
                     <input
                       type="number"
                       step="0.5"
                       value={ppeCost}
                       onChange={(e) => setPpeCost(Number(e.target.value))}
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     DESGASTE FILME FEP
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1.5 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
                     <input
                       type="number"
                       step="0.5"
                       value={fepCost}
                       onChange={(e) => setFepCost(Number(e.target.value))}
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0a0f1d] p-3 rounded-xl border border-[#1b253b]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-surface-raised p-3 rounded-xl border border-border-subtle">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     ADESIVO / COLA DE MESA (R$)
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1.5 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
                     <input
                       type="number"
                       step="0.1"
@@ -1280,17 +1285,17 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                       onChange={(e) =>
                         setBedAdhesionCost(Number(e.target.value))
                       }
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     DESGASTE DE BICO / NOZZLE (R$)
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1.5 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
                     <input
                       type="number"
                       step="0.1"
@@ -1298,7 +1303,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                       onChange={(e) =>
                         setNozzleWearCost(Number(e.target.value))
                       }
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
                 </div>
@@ -1307,7 +1312,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                   HARDWARE / PARAFUSOS (R$)
                 </label>
                 <input
@@ -1315,12 +1320,12 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   value={hardwareCost || ""}
                   onChange={(e) => setHardwareCost(Number(e.target.value))}
                   placeholder="0"
-                  className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                   EMBALAGEM & CAIXA (R$)
                 </label>
                 <input
@@ -1329,12 +1334,12 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   value={packagingCost || ""}
                   onChange={(e) => setPackagingCost(Number(e.target.value))}
                   placeholder="0"
-                  className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                   ACABAMENTO / PINTURA (R$)
                 </label>
                 <input
@@ -1342,7 +1347,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   value={finishingCost || ""}
                   onChange={(e) => setFinishingCost(Number(e.target.value))}
                   placeholder="0"
-                  className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
                 />
               </div>
             </div>
@@ -1361,14 +1366,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               sales channel, quantity discount table). This anchor did not move. */}
           <div
             data-tutorial="sales"
-            className="bg-[#0c111e] border border-[#1b253b] rounded-xl p-4 flex flex-col gap-3"
+            className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
-            <div className="flex items-center justify-between border-b border-[#1b253b] pb-2">
-              <h2 className="text-xs font-bold text-slate-100 flex items-center gap-2">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
+              <h2 className="text-xs font-bold text-text-primary flex items-center gap-2">
+                <DollarSign className="w-3.5 h-3.5 text-positive" />
                 4. PRECIFICAÇÃO COMERCIAL & MARGEM
               </h2>
-              <span className="text-[11px] text-emerald-400 font-bold">
+              <span className="text-[11px] text-positive font-bold">
                 {totalCost > 0
                   ? `+${effectiveMargin}% Margem`
                   : "Aguardando Custo"}
@@ -1378,10 +1383,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             <div className="flex flex-col gap-3">
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="text-slate-300 font-semibold">
+                  <span className="text-text-secondary font-semibold">
                     Margem de Lucro Desejada:
                   </span>
-                  <span className="text-emerald-400 font-bold">
+                  <span className="text-positive font-bold">
                     +{marginPercent}%
                   </span>
                 </div>
@@ -1396,33 +1401,33 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   }}
                   className="w-full accent-emerald-500 cursor-pointer"
                 />
-                <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+                <div className="flex justify-between text-[10px] text-text-muted font-mono mt-1">
                   <span>10% (Mínimo)</span>
                   <span>100% (Padrão 2x)</span>
                   <span>250% (Alta Margem)</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#1b253b]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border-subtle">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     VALOR HORA DE TRABALHO
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1.5 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
                     <input
                       type="number"
                       value={hourlyRate}
                       onChange={(e) => setHourlyRate(Number(e.target.value))}
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     MÃO DE OBRA CALCULADA
                   </label>
-                  <div className="bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-bold">
+                  <div className="bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-secondary font-bold">
                     R$ {laborCost.toFixed(2).replace(".", ",")}
                   </div>
                 </div>
@@ -1432,35 +1437,35 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
           {/* 🌟 SECTION 5: PARÂMETROS AVANÇADOS (Modo Oficina Pro) */}
           {complexity === "avancado" && (
-            <div className="bg-[#0e1224] border border-purple-500/40 rounded-xl p-4 flex flex-col gap-4 animate-fade-in">
-              <div className="flex items-center justify-between border-b border-[#212b48] pb-2">
+            <div className="bg-surface-raised border border-accent/40 rounded-xl p-4 flex flex-col gap-4 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-border-subtle pb-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                  <div className="w-6 h-6 rounded-lg bg-accent-subtle border border-accent/30 flex items-center justify-center text-accent">
                     <Sliders className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h2 className="text-xs font-bold text-white">
+                    <h2 className="text-xs font-bold text-text-primary">
                       5. MODO OFICINA PRO • PARÂMETROS AVANÇADOS
                     </h2>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-text-secondary">
                       Perda de purga multi-filamento, taxas de marketplaces e
                       atacado
                     </span>
                   </div>
                 </div>
-                <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
+                <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-accent-subtle text-accent font-bold border border-accent/30">
                   PRO ATIVO
                 </span>
               </div>
 
               {/* Multi-cor e Suportes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#0a0e1c] p-3 rounded-xl border border-[#1c2644]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-surface-sunken p-3 rounded-xl border border-border-subtle">
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-slate-300 font-semibold">
+                    <span className="text-text-secondary font-semibold">
                       Suportes de Fatiamento (%):
                     </span>
-                    <span className="text-blue-400 font-mono font-bold">
+                    <span className="text-info font-mono font-bold">
                       +{supportPercent}%
                     </span>
                   </div>
@@ -1473,17 +1478,17 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                     onChange={(e) => setSupportPercent(Number(e.target.value))}
                     className="w-full accent-blue-500 cursor-pointer"
                   />
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-text-muted">
                     Material adicional consumido na estrutura de suporte
                   </span>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-slate-300 font-semibold">
+                    <span className="text-text-secondary font-semibold">
                       Purga Multi-Cor (AMS / MMU):
                     </span>
-                    <span className="text-purple-400 font-mono font-bold">
+                    <span className="text-accent font-mono font-bold">
                       +{multiColorPurgePercent}%
                     </span>
                   </div>
@@ -1498,22 +1503,22 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                     }
                     className="w-full accent-purple-500 cursor-pointer"
                   />
-                  <span className="text-[10px] text-slate-500">
+                  <span className="text-[10px] text-text-muted">
                     Perda por torre de purga e trocas de filamento
                   </span>
                 </div>
               </div>
 
               {/* Canal de Venda e Taxas de Marketplace */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#0a0e1c] p-3 rounded-xl border border-[#1c2644]">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-surface-sunken p-3 rounded-xl border border-border-subtle">
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     CANAL DE VENDA (MARKETPLACE)
                   </label>
                   <select
                     value={selectedMarketplaceId}
                     onChange={(e) => setSelectedMarketplaceId(e.target.value)}
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-slate-200 outline-none"
+                    className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-secondary outline-none"
                   >
                     {marketplaces.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -1525,10 +1530,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     ALÍQUOTA DE IMPOSTO FISCAL (%)
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
                     <input
                       type="number"
                       step="0.5"
@@ -1536,21 +1541,21 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                       max="30"
                       value={taxPercent}
                       onChange={(e) => setTaxPercent(Number(e.target.value))}
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
-                    <span className="text-slate-500 font-bold ml-1">%</span>
+                    <span className="text-text-muted font-bold ml-1">%</span>
                   </div>
-                  <span className="text-[9px] text-slate-500">
+                  <span className="text-[9px] text-text-muted">
                     Ex: Simples 6%, MEI 0%
                   </span>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                     OVERHEAD FIXO OFICINA (R$/h)
                   </label>
-                  <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-slate-500 mr-1 font-bold">R$</span>
+                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                    <span className="text-text-muted mr-1 font-bold">R$</span>
                     <input
                       type="number"
                       step="0.5"
@@ -1558,18 +1563,18 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                       onChange={(e) =>
                         setWorkshopHourlyOverhead(Number(e.target.value))
                       }
-                      className="bg-transparent text-white font-semibold outline-none w-full"
+                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
                     />
                   </div>
-                  <span className="text-[9px] text-slate-500">
+                  <span className="text-[9px] text-text-muted">
                     Rateio aluguel, luz e softwares
                   </span>
                 </div>
               </div>
 
               {/* Tabela de Preços por Quantidade (Atacado) */}
-              <div className="bg-[#0a0e1c] p-3 rounded-xl border border-[#1c2644]">
-                <span className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-2">
+              <div className="bg-surface-sunken p-3 rounded-xl border border-border-subtle">
+                <span className="text-[10px] font-mono uppercase text-text-secondary font-bold block mb-2">
                   TABELA DE DESCONTOS PROGRESSIVOS POR QUANTIDADE (ATACADO)
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
@@ -1585,19 +1590,19 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                     return (
                       <div
                         key={tier.qty}
-                        className="bg-[#111728] border border-[#1e2a44] p-2 rounded-lg"
+                        className="bg-surface-raised border border-border-subtle p-2 rounded-lg"
                       >
-                        <span className="text-[10px] text-slate-400 font-semibold block">
+                        <span className="text-[10px] text-text-secondary font-semibold block">
                           {tier.label}
                         </span>
-                        <span className="text-xs font-bold text-white block mt-0.5">
+                        <span className="text-xs font-bold text-text-primary block mt-0.5">
                           R${" "}
                           {tierUnitSell > 0
                             ? tierUnitSell.toFixed(2).replace(".", ",")
                             : "0,00"}
                           /un
                         </span>
-                        <span className="text-[10px] text-emerald-400 font-mono block">
+                        <span className="text-[10px] text-positive font-mono block">
                           Lucro: R${" "}
                           {tierProfit > 0
                             ? tierProfit.toFixed(2).replace(".", ",")
@@ -1622,25 +1627,25 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           points back to Section 4 for scenarios. This anchor did not move. */}
       <div
         data-tutorial="results"
-        className="w-full lg:w-80 shrink-0 bg-[#0c111e] border border-[#1b253b] rounded-2xl p-4 flex flex-col gap-4 sticky top-28 shadow-xl"
+        className="w-full lg:w-80 shrink-0 bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col gap-4 sticky top-28 shadow-xl"
       >
         {/* Suggested Price Header */}
-        <div className="text-center py-2 border-b border-[#1b253b]">
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-1">
+        <div className="text-center py-2 border-b border-border-subtle">
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-positive uppercase tracking-wider mb-1">
             <span>PREÇO SUGERIDO</span>
             <button
               onClick={() => setIsEditingPrice(!isEditingPrice)}
               title="Ajustar preço manualmente"
-              className="text-slate-400 hover:text-white"
+              className="text-text-secondary hover:text-text-primary"
             >
               <Edit3 className="w-3 h-3" />
             </button>
             {totalCost > 0 ? (
-              <span className="ml-2 text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 border border-emerald-500/30">
+              <span className="ml-2 text-[10px] px-1.5 py-0.2 rounded bg-positive-subtle border border-positive/30">
                 +{effectiveMargin}% LUCRO
               </span>
             ) : (
-              <span className="ml-2 text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">
+              <span className="ml-2 text-[10px] px-1.5 py-0.2 rounded bg-surface-sunken text-text-secondary border border-border-subtle">
                 SEM DADOS
               </span>
             )}
@@ -1648,7 +1653,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
           {isEditingPrice ? (
             <div className="flex items-center justify-center gap-1.5 my-1">
-              <span className="text-slate-400 font-bold text-lg">R$</span>
+              <span className="text-text-secondary font-bold text-lg">R$</span>
               <input
                 type="number"
                 step="0.5"
@@ -1659,39 +1664,39 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 }
                 onChange={(e) => setCustomSellPrice(Number(e.target.value))}
                 placeholder="0,00"
-                className="w-32 bg-[#111728] border border-emerald-500 rounded px-2 py-1 text-2xl font-extrabold text-white text-center outline-none"
+                className="w-32 bg-surface-raised border border-positive rounded px-2 py-1 text-2xl font-extrabold text-text-primary text-center outline-none"
               />
             </div>
           ) : (
-            <div className="text-3xl font-extrabold text-white tracking-tight">
+            <div className="text-3xl font-extrabold text-text-primary tracking-tight">
               R$ {sellPriceFormatted}
             </div>
           )}
         </div>
 
         {/* Cost vs Profit Row */}
-        <div className="grid grid-cols-2 gap-2 text-center py-2 bg-[#090d18] rounded-xl p-2.5 border border-[#192338]">
+        <div className="grid grid-cols-2 gap-2 text-center py-2 bg-surface-sunken rounded-xl p-2.5 border border-border-subtle">
           <div>
-            <span className="text-[10px] text-slate-400 uppercase font-mono block">
+            <span className="text-[10px] text-text-secondary uppercase font-mono block">
               CUSTO DE PRODUÇÃO
             </span>
-            <span className="text-sm font-bold text-white block">
+            <span className="text-sm font-bold text-text-primary block">
               R$ {totalCostFormatted}
             </span>
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-text-muted">
               {totalCost > 0 && weightGrams > 0
                 ? `R$ ${(totalCost / (weightGrams * extraMaterialFactor)).toFixed(2).replace(".", ",")}/g`
                 : "R$ 0,00"}
             </span>
           </div>
-          <div className="border-l border-slate-800">
-            <span className="text-[10px] text-slate-400 uppercase font-mono block">
+          <div className="border-l border-border-subtle">
+            <span className="text-[10px] text-text-secondary uppercase font-mono block">
               LUCRO BRUTO
             </span>
-            <span className="text-sm font-bold text-emerald-400 block">
+            <span className="text-sm font-bold text-positive block">
               R$ {profitFormatted}
             </span>
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-text-muted">
               {effectiveProfit > 0 && totalTimeHours > 0
                 ? `R$ ${(effectiveProfit / totalTimeHours).toFixed(2).replace(".", ",")}/h`
                 : "R$ 0,00/h"}
@@ -1702,21 +1707,21 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
         {/* Deduction Warning if Marketplace Active in Advanced Mode */}
         {complexity === "avancado" &&
           (marketplaceFeeAmount > 0 || taxAmount > 0) && (
-            <div className="bg-[#12162a] border border-purple-500/30 p-2.5 rounded-xl text-[11px] flex flex-col gap-1">
-              <div className="flex items-center justify-between text-slate-300 font-semibold">
+            <div className="bg-surface-raised border border-accent/30 p-2.5 rounded-xl text-[11px] flex flex-col gap-1">
+              <div className="flex items-center justify-between text-text-secondary font-semibold">
                 <span>LUCRO LÍQUIDO NO BOLSO:</span>
-                <span className="font-mono text-emerald-400 font-bold">
+                <span className="font-mono text-positive font-bold">
                   R$ {netProfitAfterDeductions.toFixed(2).replace(".", ",")}
                 </span>
               </div>
-              <div className="text-[10px] text-slate-400 flex items-center justify-between">
+              <div className="text-[10px] text-text-secondary flex items-center justify-between">
                 <span>Taxa {activeMarketplace.name}:</span>
                 <span>
                   -R$ {marketplaceFeeAmount.toFixed(2).replace(".", ",")}
                 </span>
               </div>
               {taxAmount > 0 && (
-                <div className="text-[10px] text-slate-400 flex items-center justify-between">
+                <div className="text-[10px] text-text-secondary flex items-center justify-between">
                   <span>Imposto ({taxPercent}%):</span>
                   <span>-R$ {taxAmount.toFixed(2).replace(".", ",")}</span>
                 </div>
@@ -1726,92 +1731,91 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
         {/* Cost Breakdown */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+          <div className="flex items-center justify-between text-xs font-bold text-text-secondary">
             <span>COMPOSIÇÃO DE CUSTOS</span>
-            <Layers className="w-3.5 h-3.5 text-slate-500" />
+            <Layers className="w-3.5 h-3.5 text-text-muted" />
           </div>
 
           <div className="flex flex-col gap-1.5 text-[11px]">
-            <div className="flex items-center justify-between text-slate-300">
+            <div className="flex items-center justify-between text-text-secondary">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-blue-500" />{" "}
+                <span className="w-2 h-2 rounded-sm bg-accent" />{" "}
                 {tech === "resin" ? "Resina Líquida" : "Filamento FDM"}
               </span>
               <span className="font-mono">
                 {totalCost > 0
                   ? `${Math.round((materialCost / totalCost) * 100)}%`
                   : "0%"}{" "}
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   R$ {materialCost.toFixed(2).replace(".", ",")}
                 </span>
               </span>
             </div>
-            <div className="flex items-center justify-between text-slate-300">
+            <div className="flex items-center justify-between text-text-secondary">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-amber-500" /> Energia
+                <span className="w-2 h-2 rounded-sm bg-warning" /> Energia
                 Elétrica {tech === "resin" && "(LCD + Cura)"}
               </span>
               <span className="font-mono">
                 {totalCost > 0
                   ? `${Math.round((energyCost / totalCost) * 100)}%`
                   : "0%"}{" "}
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   R$ {energyCost.toFixed(2).replace(".", ",")}
                 </span>
               </span>
             </div>
-            <div className="flex items-center justify-between text-slate-300">
+            <div className="flex items-center justify-between text-text-secondary">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-purple-500" /> Insumos
+                <span className="w-2 h-2 rounded-sm bg-accent" /> Insumos
                 Auxiliares {tech === "resin" ? "(IPA/EPI)" : "(Cola/Bico)"}
               </span>
               <span className="font-mono">
                 {totalCost > 0
                   ? `${Math.round((specificConsumables / totalCost) * 100)}%`
                   : "0%"}{" "}
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   R$ {specificConsumables.toFixed(2).replace(".", ",")}
                 </span>
               </span>
             </div>
-            <div className="flex items-center justify-between text-slate-300">
+            <div className="flex items-center justify-between text-text-secondary">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-slate-500" /> Depreciação
-                Máquina
+                <span className="w-2 h-2 rounded-sm bg-text-muted" />{" "}
+                Depreciação Máquina
               </span>
               <span className="font-mono">
                 {totalCost > 0
                   ? `${Math.round((machineDeprec / totalCost) * 100)}%`
                   : "0%"}{" "}
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   R$ {machineDeprec.toFixed(2).replace(".", ",")}
                 </span>
               </span>
             </div>
-            <div className="flex items-center justify-between text-slate-300">
+            <div className="flex items-center justify-between text-text-secondary">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-rose-500" /> Manutenção
+                <span className="w-2 h-2 rounded-sm bg-critical" /> Manutenção
                 Máquina
               </span>
               <span className="font-mono">
                 {totalCost > 0
                   ? `${Math.round((machineMaint / totalCost) * 100)}%`
                   : "0%"}{" "}
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   R$ {machineMaint.toFixed(2).replace(".", ",")}
                 </span>
               </span>
             </div>
-            <div className="flex items-center justify-between text-slate-300">
+            <div className="flex items-center justify-between text-text-secondary">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-emerald-500" /> Mão de
-                Obra
+                <span className="w-2 h-2 rounded-sm bg-positive" /> Mão de Obra
               </span>
               <span className="font-mono">
                 {totalCost > 0
                   ? `${Math.round((laborCost / totalCost) * 100)}%`
                   : "0%"}{" "}
-                <span className="text-slate-400">
+                <span className="text-text-secondary">
                   R$ {laborCost.toFixed(2).replace(".", ",")}
                 </span>
               </span>
@@ -1826,14 +1830,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             step's two promises both resolve inside the spotlight. */}
         <div
           data-tutorial="export"
-          className="flex flex-col gap-2 pt-2 border-t border-[#1b253b]"
+          className="flex flex-col gap-2 pt-2 border-t border-border-subtle"
         >
           {/* 🌟 DOWNLOAD PDF BUTTON */}
           <button
             type="button"
             onClick={handleDownloadPdf}
             disabled={isExportingPdf}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-950/50 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-accent to-accent hover:from-info hover:to-accent text-text-primary font-bold text-xs shadow-lg shadow-accent/50 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
           >
             {isExportingPdf ? (
               <>
@@ -1851,9 +1855,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           <button
             type="button"
             onClick={onOpenQuoteModal}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-[#141d33] hover:bg-[#1a2642] border border-blue-500/30 text-blue-300 font-semibold text-xs transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-surface-overlay hover:bg-surface-overlay border border-accent/30 text-info font-semibold text-xs transition-colors"
           >
-            <FileText className="w-3.5 h-3.5 text-blue-400" />
+            <FileText className="w-3.5 h-3.5 text-info" />
             <span>Emitir Orçamento Comercial Formal</span>
           </button>
 
@@ -1861,16 +1865,16 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             <button
               type="button"
               onClick={handleSaveBudget}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#111728] hover:bg-[#162035] border border-[#1f2b45] text-slate-300 font-semibold text-xs transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary font-semibold text-xs transition-colors"
             >
               {savedSuccess ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Salvo!</span>
+                  <Check className="w-3.5 h-3.5 text-positive" />
+                  <span className="text-positive">Salvo!</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-3.5 h-3.5 text-slate-400" />
+                  <Save className="w-3.5 h-3.5 text-text-secondary" />
                   <span>Salvar Projeto</span>
                 </>
               )}
@@ -1879,16 +1883,16 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             <button
               type="button"
               onClick={handleCopyLink}
-              className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#111728] hover:bg-[#162035] border border-[#1f2b45] text-slate-300 font-semibold text-xs transition-colors"
+              className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary font-semibold text-xs transition-colors"
             >
               {copiedLink ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400">Copiado!</span>
+                  <Check className="w-3.5 h-3.5 text-positive" />
+                  <span className="text-positive">Copiado!</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-3.5 h-3.5 text-slate-400" />
+                  <Copy className="w-3.5 h-3.5 text-text-secondary" />
                   <span>Copiar Link</span>
                 </>
               )}
@@ -1898,9 +1902,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           <button
             type="button"
             onClick={onOpenCopilot}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] text-slate-400 hover:text-purple-300 hover:bg-purple-950/20 transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] text-text-secondary hover:text-accent hover:bg-accent-subtle transition-colors"
           >
-            <Sparkles className="w-3 h-3 text-purple-400" />
+            <Sparkles className="w-3 h-3 text-accent" />
             <span>Consultar IA Copilot para Otimização de Custos</span>
           </button>
         </div>

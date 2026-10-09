@@ -150,22 +150,22 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="studio-quote-modal-title"
-        className="bg-[#0b0f19] border border-[#1e2a44] rounded-2xl w-full max-w-2xl shadow-2xl p-6 flex flex-col gap-4 text-slate-100 max-h-[92vh] overflow-y-auto"
+        className="bg-surface-overlay border border-border-subtle rounded-2xl w-full max-w-2xl shadow-2xl p-6 flex flex-col gap-4 text-text-primary max-h-[92vh] overflow-y-auto"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="flex items-center justify-between border-b border-border-subtle pb-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-lg bg-positive-subtle border border-positive/30 flex items-center justify-center text-positive">
               <FileText className="w-4 h-4" />
             </div>
             <div>
               <h3
                 id="studio-quote-modal-title"
-                className="font-bold text-sm text-white"
+                className="font-bold text-sm text-text-primary"
               >
                 Gerador de Proposta Comercial & Relatório
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-text-secondary">
                 Emissão de orçamentos e relatórios técnicos de impressão 3D
               </p>
             </div>
@@ -173,7 +173,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-sunken transition-colors"
             aria-label="Fechar proposta"
           >
             <X className="w-4 h-4" />
@@ -181,22 +181,22 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
         </div>
 
         {copyError && (
-          <p role="alert" className="text-xs text-rose-300">
+          <p role="alert" className="text-xs text-critical">
             Não foi possível copiar a proposta. Verifique as permissões do
             navegador.
           </p>
         )}
 
         {/* Customer Select Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#090d18] border border-[#18233a] rounded-xl p-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-surface-sunken border border-border-subtle rounded-xl p-3">
           <div>
-            <label className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-1">
+            <label className="text-[10px] font-mono uppercase text-text-secondary font-bold block mb-1">
               VINCULAR CLIENTE CADASTRADO
             </label>
             <select
               value={selectedCustomerId}
               onChange={(e) => handleSelectCustomer(e.target.value)}
-              className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-xs text-white outline-none cursor-pointer"
+              className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none cursor-pointer"
             >
               <option value="">Novo Cliente / Não cadastrado</option>
               {customers.map((c) => (
@@ -208,7 +208,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-1">
+            <label className="text-[10px] font-mono uppercase text-text-secondary font-bold block mb-1">
               NOME DO CLIENTE NA PROPOSTA
             </label>
             <input
@@ -216,7 +216,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
               placeholder="Ex: João da Silva"
-              className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-emerald-500 font-medium"
+              className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-1.5 text-xs text-text-primary outline-none focus:border-positive font-medium"
             />
           </div>
         </div>
@@ -224,129 +224,131 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
         {/* Commercial Terms Configuration */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div>
-            <label className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-1">
+            <label className="text-[10px] font-mono uppercase text-text-secondary font-bold block mb-1">
               PRAZO DE FABRICAÇÃO
             </label>
             <input
               type="text"
               value={deliveryDays}
               onChange={(e) => setDeliveryDays(e.target.value)}
-              className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-white outline-none"
+              className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-text-primary outline-none"
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-1">
+            <label className="text-[10px] font-mono uppercase text-text-secondary font-bold block mb-1">
               CONDIÇÃO PAGAMENTO
             </label>
             <input
               type="text"
               value={paymentTerms}
               onChange={(e) => setPaymentTerms(e.target.value)}
-              className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-white outline-none"
+              className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-text-primary outline-none"
             />
           </div>
 
           <div>
-            <label className="text-[10px] font-mono uppercase text-slate-400 font-bold block mb-1">
+            <label className="text-[10px] font-mono uppercase text-text-secondary font-bold block mb-1">
               VALIDADE PROPOSTA
             </label>
             <input
               type="text"
               value={proposalValidity}
               onChange={(e) => setProposalValidity(e.target.value)}
-              className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg px-2.5 py-1.5 text-white outline-none"
+              className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-text-primary outline-none"
             />
           </div>
         </div>
 
         {/* Live Proposal Preview */}
-        <div className="border border-[#1e2a44] bg-[#070b14] rounded-xl p-4 flex flex-col gap-3 font-sans">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold tracking-wider">
+        <div className="border border-border-subtle bg-surface-sunken rounded-xl p-4 flex flex-col gap-3 font-sans">
+          <div className="flex items-center justify-between border-b border-border-subtle pb-2">
+            <span className="text-[10px] font-mono uppercase text-positive font-bold tracking-wider">
               PRÉVIA DO ORÇAMENTO COMERCIAL
             </span>
-            <span className="text-[11px] font-mono text-slate-400">
+            <span className="text-[11px] font-mono text-text-secondary">
               Emitido em {new Date().toLocaleDateString("pt-BR")}
             </span>
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <span className="text-sm font-bold text-white block">
+              <span className="text-sm font-bold text-text-primary block">
                 {projectName}
               </span>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-text-secondary">
                 Cliente:{" "}
-                <strong className="text-slate-200">{clientName}</strong>
+                <strong className="text-text-secondary">{clientName}</strong>
               </span>
             </div>
             <div className="text-left sm:text-right">
-              <span className="text-[10px] text-slate-400 uppercase font-mono block">
+              <span className="text-[10px] text-text-secondary uppercase font-mono block">
                 VALOR SUGERIDO
               </span>
-              <span className="text-xl font-extrabold text-emerald-400">
+              <span className="text-xl font-extrabold text-positive">
                 R$ {formattedSellPrice}
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs bg-[#0c1220] p-2.5 rounded-lg border border-[#19243a]">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs bg-surface-raised p-2.5 rounded-lg border border-border-subtle">
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-mono block">
+              <span className="text-[10px] text-text-secondary uppercase font-mono block">
                 Material
               </span>
-              <span className="font-semibold text-white truncate block">
+              <span className="font-semibold text-text-primary truncate block">
                 {material}
               </span>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-mono block">
+              <span className="text-[10px] text-text-secondary uppercase font-mono block">
                 Peso
               </span>
-              <span className="font-semibold text-white">{weightGrams}g</span>
+              <span className="font-semibold text-text-primary">
+                {weightGrams}g
+              </span>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-mono block">
+              <span className="text-[10px] text-text-secondary uppercase font-mono block">
                 Tempo
               </span>
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-text-primary">
                 {hours}h {minutes}m
               </span>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-mono block">
+              <span className="text-[10px] text-text-secondary uppercase font-mono block">
                 Custo
               </span>
-              <span className="font-semibold text-slate-300">
+              <span className="font-semibold text-text-secondary">
                 R$ {formattedCost}
               </span>
             </div>
             <div>
-              <span className="text-[10px] text-emerald-400 uppercase font-mono block font-bold">
+              <span className="text-[10px] text-positive uppercase font-mono block font-bold">
                 Lucro (+{marginPercent}%)
               </span>
-              <span className="font-bold text-emerald-400">
+              <span className="font-bold text-positive">
                 R$ {formattedProfit}
               </span>
             </div>
           </div>
 
           {/* Formatted Text Box */}
-          <div className="bg-[#090d18] border border-[#192338] rounded-lg p-2.5 text-[11px] font-mono text-slate-300 whitespace-pre-line leading-relaxed max-h-36 overflow-y-auto">
+          <div className="bg-surface-sunken border border-border-subtle rounded-lg p-2.5 text-[11px] font-mono text-text-secondary whitespace-pre-line leading-relaxed max-h-36 overflow-y-auto">
             {quoteText}
           </div>
         </div>
 
         {/* Action Buttons: 4 export methods */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border-subtle text-xs">
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#111728] hover:bg-[#1a253e] border border-[#202c46] text-slate-200 font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary font-semibold transition-colors"
             >
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <Check className="w-3.5 h-3.5 text-positive" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -355,10 +357,10 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
 
             <button
               onClick={handleDownloadCsv}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#111728] hover:bg-[#1a253e] border border-[#202c46] text-slate-200 font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary font-semibold transition-colors"
               title="Exportar planilha CSV para Excel / Sheets"
             >
-              <Table className="w-3.5 h-3.5 text-purple-400" />
+              <Table className="w-3.5 h-3.5 text-accent" />
               <span>Exportar CSV</span>
             </button>
           </div>
@@ -366,7 +368,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#111728] hover:bg-[#1a253e] border border-blue-500/40 text-blue-300 font-bold transition-all shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-raised hover:bg-surface-overlay border border-accent/40 text-info font-bold transition-all shadow-sm"
               title="Imprimir ou salvar como PDF no navegador"
             >
               <Printer className="w-3.5 h-3.5" />
@@ -375,7 +377,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
 
             <button
               onClick={handleWhatsApp}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:ring-2 hover:ring-emerald-500/40 text-white font-bold transition-all shadow-md shadow-emerald-950/50"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-positive hover:ring-2 hover:ring-positive/40 text-text-inverse font-bold transition-all shadow-md shadow-positive/50"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Enviar no WhatsApp</span>

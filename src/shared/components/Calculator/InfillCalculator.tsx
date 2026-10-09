@@ -187,7 +187,7 @@ export function InfillCalculator() {
               <p className="text-[10px] sm:text-xs text-[var(--color-text-secondary)] mb-1">
                 {t("infillCalculator.solidVolume")}
               </p>
-              <p className="text-lg sm:text-xl font-bold text-purple-400">
+              <p className="text-lg sm:text-xl font-bold text-accent">
                 {solidVolumeCm3.toFixed(1)} cm³
               </p>
             </div>
@@ -223,7 +223,7 @@ export function InfillCalculator() {
                     return (
                       <tr
                         key={c.infill}
-                        className={`border-b border-[var(--color-border)] ${c.infill === parseFloat(infillPercent) ? "bg-purple-600/10" : ""}`}
+                        className={`border-b border-[var(--color-border)] ${c.infill === parseFloat(infillPercent) ? "bg-accent-subtle" : ""}`}
                       >
                         <td className="py-2 px-3 font-semibold">{c.infill}%</td>
                         <td className="text-right py-2 px-3">
