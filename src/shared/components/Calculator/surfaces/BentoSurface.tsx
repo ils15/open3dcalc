@@ -91,8 +91,8 @@ export function BentoSurface(): React.ReactElement {
     />
   );
   const header = (
-    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0 flex-1">
+    <div className="flex min-w-0 flex-wrap flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-64 flex-1">
         <BentoHeader
           projectName={productName}
           finalPrice={
@@ -146,43 +146,43 @@ export function BentoSurface(): React.ReactElement {
 
         {/* KPI Mini-Banner */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
+            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
               Tempo Estimado
             </span>
-            <strong className="text-white text-xs font-bold">
+            <strong className="text-[var(--color-text-primary)] text-xs font-bold">
               {breakdown.time.estimatedHours.toFixed(1)}h
             </strong>
           </div>
-          <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
+            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
               Peso da Peça
             </span>
-            <strong className="text-white text-xs font-bold">
+            <strong className="text-[var(--color-text-primary)] text-xs font-bold">
               {result.unitWeight.toFixed(1)}g
             </strong>
           </div>
-          <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
+            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
               Custo Fabril
             </span>
-            <strong className="text-slate-300 text-xs font-bold">
+            <strong className="text-[var(--color-text-secondary)] text-xs font-bold">
               {format(result.totalCost)}
             </strong>
           </div>
-          <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
+            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
               Preço Sugerido
             </span>
-            <strong className="text-emerald-400 text-xs font-bold">
+            <strong className="text-[var(--color-success)] text-xs font-bold">
               {format(breakdown.displaySellPrice)}
             </strong>
           </div>
-          <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)] col-span-2 sm:col-span-1">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)] col-span-2 sm:col-span-1">
+            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
               Lucro Líquido
             </span>
-            <strong className="text-blue-400 text-xs font-bold">
+            <strong className="text-[var(--color-accent)] text-xs font-bold">
               {format(breakdown.displayProfit)}
             </strong>
           </div>

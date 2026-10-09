@@ -38,7 +38,7 @@ export function BentoHeader({
               value={projectName}
               onChange={(e) => setProductName(e.target.value)}
               placeholder={t("bento.unnamedProject")}
-              className="w-full bg-[var(--color-bg-elevated,#070b14)] border border-[var(--border-subtle)] rounded-xl px-3.5 py-2 text-base font-bold text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+              className="w-full bg-[var(--color-bg-input)] border border-[var(--border-subtle)] rounded-xl px-3.5 py-2 text-base font-bold text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             />
             <Edit3 className="w-4 h-4 text-[var(--text-muted)] absolute right-3 pointer-events-none" />
           </div>

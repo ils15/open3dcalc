@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import { StudioHeader } from "./StudioHeader";
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: "pt-BR" },
+  }),
 }));
 
 vi.mock("@/shared/hooks/useDemoMode", () => ({
@@ -23,6 +26,7 @@ describe("StudioHeader theme surfaces", () => {
           activeTab={activeTab}
           onTabChange={vi.fn()}
           activeTechnology="fdm"
+          onOpenQuoteModal={vi.fn()}
         />,
       );
 

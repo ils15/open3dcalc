@@ -64,6 +64,21 @@ import { resolve } from "node:path";
  *     is floored and reported instead — the same dead-on-arrival disposition
  *     as the desktop theme-persistence override removed in PR #275.
  *
+ * WHAT WAS MIGRATED IN PR #280 (Studio shell, Frota-pattern pass)
+ *   - StudioSubHeader (18 -> 0), StudioSidebar (48 -> 0), StudioCockpitDock
+ *     (46 -> 0), StudioHeader (7 -> 0): the whole top-bar/nav shell now renders
+ *     only `var(--color-*)` semantic tokens — navy hexes (`#1a2337`,
+ *     `#111728`, `#212c45`, `#121828`), slate steps, blue fills and raw
+ *     `text-white` ink are gone, so the shell flips with light/dark instead of
+ *     staying hardcoded dark.
+ *   - TechToggle (2 -> 0) and BentoHeader (1 -> 0): calculator inputs/buttons
+ *     on the same token contract (`--accent-fill-fg` ink, no `#070b14`
+ *     fallback).
+ *   - BentoSurface (20 -> 0): the KPI mini-banner carried the worst light-mode
+ *     defect of the set — `text-white`/`text-slate-300` values and 15 hex
+ *     fallbacks (`var(--x,#0b1120)`), rendering white ink on a white canvas.
+ *     Now `--color-*` surface/text/success/accent tokens only.
+ *
  * SCOPE
  * `src/shared/**`, `src/platform/web/components/studio/**`, `src/utils/**`
  * Paths are repository-root-relative.
@@ -166,8 +181,8 @@ function measuredDebt(): Map<string, number> {
 const measured = measuredDebt();
 
 /**
- * THE FLOOR — the audited inventory after the Studio migration, 2026-10-08,
- * 62 files / 848 occurrences.
+ * THE FLOOR — audited after the PR #280 Studio-shell migration, 2026-10-09,
+ * 55 files / 662 occurrences.
  *
  * Regenerate after an intentional migration:
  *   node -e '...' (see the PR description) or re-derive with the same regex.
@@ -180,21 +195,16 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/Catalog/CatalogTab.tsx": 124,
   "src/platform/web/components/studio/StudioCustomerView.tsx": 1,
   "src/platform/web/components/studio/StudioQuoteModal.tsx": 1,
-  "src/platform/web/components/studio/StudioSubHeader.tsx": 18,
   "src/shared/components/Catalog/FilamentInventory.tsx": 61,
   "src/shared/components/Dashboard/Dashboard.tsx": 60,
-  "src/platform/web/components/studio/StudioCockpitDock.tsx": 46,
   "src/shared/components/AIAssistant/AIAssistantPanels.tsx": 49,
-  "src/platform/web/components/studio/StudioSidebar.tsx": 48,
   "src/shared/components/AIAssistant/AIAssistantModal.tsx": 48,
   "src/platform/web/components/studio/StudioMiniDashOverlay.tsx": 1,
-  "src/platform/web/components/studio/StudioHeader.tsx": 7,
   "src/platform/web/components/studio/StudioCopilotModal.tsx": 1,
   "src/shared/components/SpoolShelf/SpoolCard.tsx": 28,
   "src/shared/components/Results/CostDistributionBars.tsx": 26,
   "src/shared/components/Calculator/QuoteSection.tsx": 22,
   "src/platform/web/components/studio/StudioShortcutsModal.tsx": 1,
-  "src/shared/components/Calculator/surfaces/BentoSurface.tsx": 20,
   "src/utils/slicerOptimizer.ts": 18,
   "src/shared/components/AppShell/QuickStatusPill.tsx": 16,
   "src/shared/components/StlPreview/StlPreview.tsx": 15,
@@ -217,7 +227,6 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/ui/ComparisonModal.tsx": 3,
   "src/shared/components/ui/Tutorial.tsx": 3,
   "src/shared/components/BetaBadge/BetaBadge.tsx": 2,
-  "src/shared/components/Calculator/TechToggle.tsx": 2,
   "src/shared/components/SpoolShelf/SpoolThumb.tsx": 2,
   "src/shared/components/StlPreview/EstimationModeSection.tsx": 2,
   "src/shared/components/ui/DataSyncModal.tsx": 2,
@@ -227,7 +236,6 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/stores/colorPalette.ts": 2,
   "src/shared/components/AppShell/KeyboardShortcutsDialog.tsx": 1,
   "src/shared/components/AppShell/ManageVisibilityButton.tsx": 1,
-  "src/shared/components/Calculator/surfaces/bento/BentoHeader.tsx": 1,
   "src/shared/components/Catalog/PrinterTagEditor.tsx": 1,
   "src/shared/components/Privacy/LegacyResidueDisclosure.tsx": 1,
   "src/shared/components/ui/ConfirmDialog.tsx": 1,
@@ -297,8 +305,8 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
   it("reports the audited inventory so the header can be checked by eye", () => {
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
-    expect(files).toBe(62);
-    expect(occurrences).toBe(804);
+    expect(files).toBe(55);
+    expect(occurrences).toBe(662);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

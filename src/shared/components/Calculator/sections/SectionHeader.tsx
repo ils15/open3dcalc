@@ -27,13 +27,13 @@ export function SectionHeader({
   const heading = (
     <>
       {step !== undefined && <StepBadge step={step} size="md" />}
-      <Icon className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
+      <Icon className="w-4 h-4 text-[var(--accent)] shrink-0" />
       <div className="flex-1 min-w-0">
-        <h2 className="text-xs font-bold text-[var(--text-primary)] truncate">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] truncate">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-[10px] text-[var(--text-muted)] truncate">
+          <p className="text-xs text-[var(--text-muted)] truncate">
             {subtitle}
           </p>
         )}

@@ -13,10 +13,10 @@ import type { ReactElement } from "react";
  * previous assertions were testing a contract that no longer exists.
  *
  * The App opens on the calculator and the sidebar is the single owner for
- * module navigation. The sub-header keeps calculator presentation controls
- * only; the old duplicate module-tab strip must not return. This spec drives
- * the real `StudioSidebar` / `StudioSubHeader` / `StudioHeader` and stubs the
- * other destination views so the assertion stays about routing.
+ * module navigation. Calculator presentation controls live with calculator
+ * content; global chrome owns navigation/status/actions. This spec drives the
+ * real Studio shell and stubs the other destination views to keep assertions
+ * focused on routing.
  * The stub pattern mirrors `StudioLayout.exportGuard.test.tsx`, the sibling
  * suite for the same component.
  *
@@ -77,19 +77,16 @@ import App from "./App";
 /** The two Studio rails, scoped so their shared labels cannot collide. */
 interface Rails {
   sidebar: HTMLElement;
-  subHeader: HTMLElement;
+  header: HTMLElement;
 }
 
 function rails(container: HTMLElement): Rails {
   const header = container.querySelector("header");
-  const subHeader = header?.nextElementSibling;
   const sidebar = container.querySelector("aside");
-  if (!header || !(subHeader instanceof HTMLElement) || !sidebar) {
-    throw new Error(
-      "Studio chrome did not render a header, sub-header and sidebar",
-    );
+  if (!header || !sidebar) {
+    throw new Error("Studio chrome did not render a header and sidebar");
   }
-  return { sidebar, subHeader };
+  return { sidebar, header };
 }
 
 /**
@@ -125,36 +122,41 @@ describe("web App navigation owner", () => {
     expect(currentView()).toBe("view-history");
   });
 
-  it("keeps module destinations in the sidebar, not the sub-header", () => {
+  it("keeps navigation in the sidebar and calculator mode with its content", () => {
     const { container } = render(<App />);
-    const { sidebar, subHeader } = rails(container);
+    const { sidebar, header } = rails(container);
 
     expect(
       within(sidebar).getByRole("button", { name: "Orçamentos" }),
     ).toBeInTheDocument();
     expect(
-      within(subHeader).queryByRole("button", { name: "Orçamentos" }),
+      within(header).queryByRole("button", { name: "Orçamentos" }),
     ).not.toBeInTheDocument();
     expect(
-      within(subHeader).getByRole("button", { name: "Clássico" }),
+      within(header).queryByRole("button", { name: "Clássico" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("main")).getByRole("button", {
+        name: "Clássico",
+      }),
     ).toBeInTheDocument();
   });
 
   it("marks the selected module only in the sidebar", async () => {
     const { container } = render(<App />);
-    const { sidebar, subHeader } = rails(container);
+    const { sidebar, header } = rails(container);
 
     fireEvent.click(within(sidebar).getByRole("button", { name: "Clientes" }));
     expect(await screen.findByTestId("view-customers")).toBeInTheDocument();
 
     expect(
       within(sidebar).getByRole("button", { name: "Clientes" }).className,
-    ).toContain("bg-blue-600/20");
+    ).toContain("bg-[var(--color-accent-wash)]");
     expect(
       within(sidebar).getByRole("button", { name: "Calculadora" }).className,
-    ).not.toContain("bg-blue-600/20");
+    ).not.toContain("bg-[var(--color-accent-wash)]");
     expect(
-      within(subHeader).queryByRole("button", { name: "Clientes" }),
+      within(header).queryByRole("button", { name: "Clientes" }),
     ).not.toBeInTheDocument();
   });
 

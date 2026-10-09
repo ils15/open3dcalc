@@ -13,8 +13,6 @@ function renderSidebar(collapsed = false) {
       onTabChange={vi.fn()}
       collapsed={collapsed}
       onToggleCollapse={vi.fn()}
-      currency="BRL"
-      onCurrencyChange={vi.fn()}
     />,
   );
 }
@@ -52,7 +50,7 @@ describe("StudioSidebar Stable layout", () => {
     expect(sidebarTop.firstElementChild).toHaveClass("h-12");
     const sidebarBottom = aside.lastElementChild as HTMLElement;
     expect(sidebarBottom).toHaveClass("p-3", "shrink-0");
-    expect(screen.getByText("Moeda Base")).toBeInTheDocument();
+    expect(screen.queryByText("Moeda Base")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /recolher painel/i }),
     ).toBeInTheDocument();
