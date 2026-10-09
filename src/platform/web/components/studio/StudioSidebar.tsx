@@ -147,30 +147,24 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
     },
   ];
 
-  // Touch targets (44px) are Beta-only: Stable keeps its exact pre-Wave4
-  // heights so its layout is unchanged. Beta applies `min-h-11`/`min-w-11`
-  // for WCAG touch compliance; Stable omits them.
-  const betaTouchH = isBetaChannel ? "min-h-11" : "";
-  // Collapsed rail must clear 44px: w-16 (64px) minus px-3 gutters (24px)
-  // leaves ~40px buttons (measured 39px). Beta widens to 68px (44+24) so
-  // every collapsed target meets the floor; Stable keeps w-16 unchanged.
-  const railWidth = collapsed ? (isBetaChannel ? "w-[68px]" : "w-16") : "w-56";
-  const sidebarTopClassName = isBetaChannel
-    ? "flex-1 min-h-0 overflow-y-auto"
-    : undefined;
-  const sidebarBottomClassName = `p-3 border-t border-[#1a2337]${isBetaChannel ? " shrink-0" : ""}`;
+  // The sidebar is now the only module navigation at every breakpoint, so its
+  // collapsed rail and all destinations must remain usable as 44px targets.
+  const navTarget = "min-h-11 min-w-11";
+  const railWidth = collapsed ? "w-[68px]" : "w-56";
+  const sidebarTopClassName = "flex-1 min-h-0 overflow-y-auto";
+  const sidebarBottomClassName = "shrink-0 p-3 border-t border-[#1a2337]";
 
   return (
-    /* Beta moves the dock into document flow and uses an internal sidebar
+    /* Beta keeps the dock in document flow and uses an internal sidebar
        scroller so currency + collapse stay reachable at short heights. Stable
-       retains its original dock-clearance inset and non-scrolling sidebar.
+       keeps the fixed dock and reserves its page clearance in the dock itself.
        The workspace starts below the 48px header + 44px subheader; subtract
        both in Beta so its pinned bottom controls remain inside the viewport. */
     <aside
       className={
         isBetaChannel
           ? `bg-surface-raised border-r border-border-subtle flex flex-col select-none shrink-0 transition-all duration-200 z-30 sticky top-0 h-[calc(100vh-92px)] ${railWidth}`
-          : `bg-surface-raised border-r border-border-subtle flex flex-col justify-between select-none shrink-0 transition-all duration-200 z-30 sticky top-0 h-screen pb-20 ${railWidth}`
+          : `bg-surface-raised border-r border-border-subtle flex flex-col select-none shrink-0 transition-all duration-200 z-30 h-full min-h-0 overflow-hidden ${railWidth}`
       }
     >
       {/* Top branding and navigation; Beta makes this block internally scrollable. */}
@@ -211,7 +205,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   type="button"
                   onClick={() => onTabChange(m.id)}
                   title={m.label}
-                  className={`w-full flex ${betaTouchH} items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
+                  aria-label={m.label}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
                     isActive
                       ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-sm"
                       : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
@@ -260,7 +256,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                     target="_blank"
                     rel="noreferrer"
                     title={r.label}
-                    className={`w-full flex ${betaTouchH} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-[#121828] transition-colors`}
+                    aria-label={r.label}
+                    className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-[#121828] transition-colors`}
                   >
                     {r.icon}
                     {!collapsed && (
@@ -278,7 +275,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   key={i}
                   onClick={() => r.tab && onTabChange(r.tab)}
                   title={r.label}
-                  className={`w-full flex ${betaTouchH} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  aria-label={r.label}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     isActive
                       ? "text-blue-400 bg-blue-500/10"
                       : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
@@ -314,7 +313,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   <button
                     key={curr}
                     onClick={() => onCurrencyChange(curr)}
-                    className={`flex-1 ${betaTouchH} px-2 py-1 text-[11px] font-bold rounded text-center transition-colors ${
+                    aria-label={`Moeda base ${curr}`}
+                    aria-pressed={isCurr}
+                    className={`flex-1 ${navTarget} px-2 py-1 text-[11px] font-bold rounded text-center transition-colors ${
                       isCurr
                         ? "bg-blue-600 text-white shadow-sm"
                         : "text-slate-400 hover:text-white"
@@ -336,7 +337,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           aria-label={
             collapsed ? "Expandir painel de navegação" : "Recolher painel"
           }
-          className={`w-full flex ${betaTouchH} items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-[#121828] border border-slate-800 transition-colors`}
+          className={`w-full flex ${navTarget} items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-[#121828] border border-slate-800 transition-colors`}
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />

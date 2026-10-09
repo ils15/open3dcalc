@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   MessageCircle,
-  Sparkles,
   Maximize2,
   Minimize2,
   Calculator,
@@ -22,18 +21,16 @@ import { guardExport } from "@/shared/lib/demoExportGuard";
 interface StudioHeaderProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
-  onOpenCopilot: () => void;
-  demoTemplate: "fdm" | "resin";
-  onSelectDemoTemplate: (template: "fdm" | "resin") => void;
+  activeTechnology: "fdm" | "resin";
+  showTechnologyStatus?: boolean;
   currentProjectName?: string;
 }
 
 export const StudioHeader: React.FC<StudioHeaderProps> = ({
   activeTab,
   onTabChange,
-  onOpenCopilot,
-  demoTemplate,
-  onSelectDemoTemplate,
+  activeTechnology,
+  showTechnologyStatus = true,
   currentProjectName,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -167,34 +164,19 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       {/* Right: Actions. `shrink-0` keeps these at their natural size so the
           breadcrumb is what gives way when the header is tight. */}
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-        {/* Template selector ONLY visible in Demo Mode */}
-        {isDemoMode && (
-          <div className="hidden sm:flex items-center gap-1 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg p-0.5 text-xs">
-            <span className="text-[10px] font-mono text-[var(--color-text-muted)] font-bold px-1.5 uppercase">
-              Demo:
-            </span>
-            <button
-              type="button"
-              onClick={() => onSelectDemoTemplate("fdm")}
-              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
-                demoTemplate === "fdm"
-                  ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-sm"
-                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-              }`}
-            >
-              🖨️ Filamento (FDM)
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectDemoTemplate("resin")}
-              className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
-                demoTemplate === "resin"
-                  ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] shadow-sm"
-                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-              }`}
-            >
-              💧 Resina (MSLA)
-            </button>
+        {/* Read-only demo technology status. Selection lives in the calculator. */}
+        {isDemoMode && activeTab === "calculator" && showTechnologyStatus && (
+          <div
+            role="status"
+            aria-label="Tecnologia ativa"
+            title={
+              activeTechnology === "resin"
+                ? "Tecnologia ativa: Resina (MSLA)"
+                : "Tecnologia ativa: Filamento (FDM)"
+            }
+            className="flex min-h-11 items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-2 text-[11px] font-semibold text-[var(--color-text-secondary)]"
+          >
+            {activeTechnology === "resin" ? "Resina" : "FDM"}
           </div>
         )}
 
@@ -210,17 +192,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         >
           <MessageCircle className="w-3.5 h-3.5" />
           <span className="hidden xs:inline">Proposta WhatsApp</span>
-        </button>
-
-        {/* Copilot IA button */}
-        <button
-          type="button"
-          onClick={onOpenCopilot}
-          className="flex min-h-11 min-w-11 items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-warning-fill)] hover:bg-[var(--color-warning-fill-hover)] text-[var(--color-warning-fill-fg)] font-bold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
-          title="Abrir Copilot IA"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Copilot IA</span>
         </button>
 
         {/* Fullscreen toggle */}

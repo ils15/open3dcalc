@@ -180,7 +180,7 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/Catalog/CatalogTab.tsx": 124,
   "src/platform/web/components/studio/StudioCustomerView.tsx": 1,
   "src/platform/web/components/studio/StudioQuoteModal.tsx": 1,
-  "src/platform/web/components/studio/StudioSubHeader.tsx": 62,
+  "src/platform/web/components/studio/StudioSubHeader.tsx": 18,
   "src/shared/components/Catalog/FilamentInventory.tsx": 61,
   "src/shared/components/Dashboard/Dashboard.tsx": 60,
   "src/platform/web/components/studio/StudioCockpitDock.tsx": 46,
@@ -298,7 +298,7 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
     expect(files).toBe(62);
-    expect(occurrences).toBe(848);
+    expect(occurrences).toBe(804);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

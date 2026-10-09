@@ -97,7 +97,7 @@ describe("StudioLayout demo export feedback", () => {
   it.each([
     { route: "catalog", control: "Select Cadastros" },
     { route: "marketplace", control: "Select Marketplace" },
-  ])("keeps the Stable fixed-dock reserve for $route", ({ control }) => {
+  ])("keeps the dock-safe scroll viewport on the $route", ({ control }) => {
     const { container } = render(<StudioLayout />);
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: control }));
@@ -105,23 +105,23 @@ describe("StudioLayout demo export feedback", () => {
 
     const root = container.firstElementChild;
     expect(root).toHaveClass("bg-surface-canvas", "text-text-primary");
-    // Stable retains its original bottom clearance for the fixed dock.
+    expect(root).toHaveClass("h-dvh", "overflow-hidden");
     const main = screen.getByRole("main");
     expect(main).toHaveClass("p-4", "sm:p-6", "lg:p-8");
-    expect(main).toHaveClass("pb-24", "sm:pb-24", "lg:pb-24");
+    expect(main).toHaveClass("min-h-0", "overflow-y-auto");
+    expect(main).not.toHaveClass("pb-24");
   });
 
-  it("keeps the Stable reserve on every route including focus mode", () => {
+  it("keeps the Stable dock-safe shell while focus mode hides the dock", () => {
     render(<StudioLayout />);
 
     const main = screen.getByRole("main");
     expect(main).toHaveClass("p-4", "sm:p-6", "lg:p-8");
-    expect(main).toHaveClass("pb-24", "sm:pb-24", "lg:pb-24");
+    expect(main).toHaveClass("min-h-0", "overflow-y-auto");
 
-    // Stable drops its legacy reserve when focus mode hides the dock.
     act(() => {
       fireEvent.keyDown(window, { key: "f" });
     });
-    expect(screen.getByRole("main")).not.toHaveClass("pb-24");
+    expect(screen.getByRole("main")).toHaveClass("min-h-0", "overflow-y-auto");
   });
 });

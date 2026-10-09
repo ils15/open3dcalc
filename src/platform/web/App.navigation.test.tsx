@@ -12,14 +12,11 @@ import type { ReactElement } from "react";
  * `useState`. There is no shared owner to hand anything to any more, so the
  * previous assertions were testing a contract that no longer exists.
  *
- * What is worth keeping is the user-visible guarantee behind the old name:
- * the App opens on the calculator, and every navigation affordance in the
- * Studio chrome actually moves the workspace. So this spec drives the REAL
- * `StudioSidebar` / `StudioSubHeader` / `StudioHeader` (they are
- * presentational — props in, events out) and stubs the other destination
- * views so the assertion stays about routing. The calculator itself is
- * deliberately left real: it is the default destination, so stubbing it would
- * take the whole calculator subtree out of the suite's reach for nothing.
+ * The App opens on the calculator and the sidebar is the single owner for
+ * module navigation. The sub-header keeps calculator presentation controls
+ * only; the old duplicate module-tab strip must not return. This spec drives
+ * the real `StudioSidebar` / `StudioSubHeader` / `StudioHeader` and stubs the
+ * other destination views so the assertion stays about routing.
  * The stub pattern mirrors `StudioLayout.exportGuard.test.tsx`, the sibling
  * suite for the same component.
  *
@@ -128,42 +125,37 @@ describe("web App navigation owner", () => {
     expect(currentView()).toBe("view-history");
   });
 
-  it("moves the workspace when a sub-header tab is picked", async () => {
-    const { container } = render(<App />);
-
-    // The sub-header is the horizontal twin of the sidebar; it must reach the
-    // same owner, otherwise the two rails would disagree about where the
-    // workspace is. Scoped because both rails carry the same labels.
-    fireEvent.click(
-      within(rails(container).subHeader).getByRole("button", {
-        name: "Orçamentos",
-      }),
-    );
-
-    expect(await screen.findByTestId("view-quotes")).toBeInTheDocument();
-  });
-
-  it("keeps the sidebar and the sub-header in sync on the same destination", async () => {
+  it("keeps module destinations in the sidebar, not the sub-header", () => {
     const { container } = render(<App />);
     const { sidebar, subHeader } = rails(container);
 
-    fireEvent.click(within(sidebar).getByTitle("Clientes"));
+    expect(
+      within(sidebar).getByRole("button", { name: "Orçamentos" }),
+    ).toBeInTheDocument();
+    expect(
+      within(subHeader).queryByRole("button", { name: "Orçamentos" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(subHeader).getByRole("button", { name: "Clássico" }),
+    ).toBeInTheDocument();
+  });
+
+  it("marks the selected module only in the sidebar", async () => {
+    const { container } = render(<App />);
+    const { sidebar, subHeader } = rails(container);
+
+    fireEvent.click(within(sidebar).getByRole("button", { name: "Clientes" }));
     expect(await screen.findByTestId("view-customers")).toBeInTheDocument();
 
-    // Both rails now mark Clientes as current…
-    expect(within(sidebar).getByTitle("Clientes").className).toContain(
-      "bg-blue-600/20",
-    );
     expect(
-      within(subHeader).getByRole("button", { name: "Clientes" }).className,
-    ).toContain("bg-[#18233c]");
-    // …and both released the calculator, so the highlight is not duplicated.
-    expect(within(sidebar).getByTitle("Calculadora").className).not.toContain(
-      "bg-blue-600/20",
-    );
+      within(sidebar).getByRole("button", { name: "Clientes" }).className,
+    ).toContain("bg-blue-600/20");
     expect(
-      within(subHeader).getByRole("button", { name: "Calculadora" }).className,
-    ).not.toContain("bg-[#18233c]");
+      within(sidebar).getByRole("button", { name: "Calculadora" }).className,
+    ).not.toContain("bg-blue-600/20");
+    expect(
+      within(subHeader).queryByRole("button", { name: "Clientes" }),
+    ).not.toBeInTheDocument();
   });
 
   it("switches destination from the keyboard shortcuts", async () => {

@@ -115,7 +115,7 @@ vi.mock("react-i18next", () => ({
  *
  * The web App kept a compact icon rail under a new rule: `StudioSidebar`
  * collapses below 1280px instead of swapping in a third sidebar at `md`. That
- * is what 2.1 now verifies — an icon-only rail that stays nameable, and the
+ * is what 2.1 now verifies — a 44px icon rail that stays nameable, and the
  * resources hub that 2.3 used to assert against the removed
  * `SecondaryNavigation`.
  */
@@ -157,7 +157,7 @@ describe("Phase 2 — Tablet Optimization", () => {
 
       const { aside, modules } = rail(container);
       // Width is pinned by layout, so the module labels cannot survive here.
-      expect(aside.className).toContain("w-16");
+      expect(aside.className).toContain("w-[68px]");
       expect(modules.textContent).not.toContain("Calculadora");
     });
 
@@ -165,8 +165,8 @@ describe("Phase 2 — Tablet Optimization", () => {
       setViewportWidth(DEFAULT_WIDTH);
       const { container } = render(<App />);
 
-      // The icon-only rail carries no text, so `title` is what names each
-      // button for a screen reader and for a pointer user.
+      // The collapsed rail carries no visible labels, so each destination keeps
+      // a programmatic name and a hover title.
       const { modules } = rail(container);
       const buttons = Array.from(modules.querySelectorAll("button"));
       expect(buttons.length).toBeGreaterThan(0);
@@ -218,7 +218,7 @@ describe("Phase 2 — Tablet Optimization", () => {
       setViewportWidth(DEFAULT_WIDTH);
       fireEvent(window, new Event("resize"));
 
-      expect(rail(container).aside.className).toContain("w-16");
+      expect(rail(container).aside.className).toContain("w-[68px]");
     });
   });
 

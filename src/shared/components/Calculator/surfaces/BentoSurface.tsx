@@ -91,7 +91,7 @@ export function BentoSurface(): React.ReactElement {
     />
   );
   const header = (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
         <BentoHeader
           projectName={productName}
@@ -103,9 +103,16 @@ export function BentoSurface(): React.ReactElement {
           hasResults={results !== null}
         />
       </div>
-      <div className="flex shrink-0 items-center gap-2 sm:justify-end">
-        <TechToggle />
-        <LevelToggle />
+      <div
+        data-testid="bento-header-controls"
+        className="flex min-w-0 max-w-full flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end"
+      >
+        <div className="w-full min-w-0 max-w-full sm:w-auto">
+          <TechToggle wrapOnNarrow />
+        </div>
+        <div className="w-full min-w-0 max-w-full sm:w-auto">
+          <LevelToggle wrapOnNarrow />
+        </div>
       </div>
     </div>
   );
@@ -114,10 +121,10 @@ export function BentoSurface(): React.ReactElement {
     return (
       <section
         aria-label={t("bento.regionLabel")}
-        className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 sm:py-6"
+        className="mx-auto w-full min-w-0 max-w-7xl px-3 py-4 sm:px-5 sm:py-6"
       >
         <h1 className="sr-only">{t("bento.title")}</h1>
-        <div className="space-y-4 sm:space-y-5">
+        <div className="min-w-0 space-y-4 sm:space-y-5">
           {calculationNotice}
           {header}
         </div>
@@ -130,34 +137,54 @@ export function BentoSurface(): React.ReactElement {
   return (
     <section
       aria-label={t("bento.regionLabel")}
-      className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 sm:py-6"
+      className="mx-auto w-full min-w-0 max-w-7xl px-3 py-4 sm:px-5 sm:py-6"
     >
       <h1 className="sr-only">{t("bento.title")}</h1>
-      <div className="space-y-4 sm:space-y-5">
+      <div className="min-w-0 space-y-4 sm:space-y-5">
         {calculationNotice}
         {header}
 
         {/* KPI Mini-Banner */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
           <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">Tempo Estimado</span>
-            <strong className="text-white text-xs font-bold">{breakdown.time.estimatedHours.toFixed(1)}h</strong>
+            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+              Tempo Estimado
+            </span>
+            <strong className="text-white text-xs font-bold">
+              {breakdown.time.estimatedHours.toFixed(1)}h
+            </strong>
           </div>
           <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">Peso da Peça</span>
-            <strong className="text-white text-xs font-bold">{result.unitWeight.toFixed(1)}g</strong>
+            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+              Peso da Peça
+            </span>
+            <strong className="text-white text-xs font-bold">
+              {result.unitWeight.toFixed(1)}g
+            </strong>
           </div>
           <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">Custo Fabril</span>
-            <strong className="text-slate-300 text-xs font-bold">{format(result.totalCost)}</strong>
+            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+              Custo Fabril
+            </span>
+            <strong className="text-slate-300 text-xs font-bold">
+              {format(result.totalCost)}
+            </strong>
           </div>
           <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">Preço Sugerido</span>
-            <strong className="text-emerald-400 text-xs font-bold">{format(breakdown.displaySellPrice)}</strong>
+            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+              Preço Sugerido
+            </span>
+            <strong className="text-emerald-400 text-xs font-bold">
+              {format(breakdown.displaySellPrice)}
+            </strong>
           </div>
           <div className="p-3 rounded-xl bg-[var(--surface-overlay,#0b1120)] border border-[var(--border-subtle,#1e293b)] col-span-2 sm:col-span-1">
-            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">Lucro Líquido</span>
-            <strong className="text-blue-400 text-xs font-bold">{format(breakdown.displayProfit)}</strong>
+            <span className="text-[10px] uppercase font-mono text-[var(--text-muted,#94a3b8)] block">
+              Lucro Líquido
+            </span>
+            <strong className="text-blue-400 text-xs font-bold">
+              {format(breakdown.displayProfit)}
+            </strong>
           </div>
         </div>
 

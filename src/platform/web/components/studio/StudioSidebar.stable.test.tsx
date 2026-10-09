@@ -19,42 +19,39 @@ function renderSidebar(collapsed = false) {
   );
 }
 
-describe("StudioSidebar Stable layout unchanged", () => {
-  it("omits Beta-only touch sizing so Stable heights are untouched", () => {
+describe("StudioSidebar Stable layout", () => {
+  it("keeps Stable navigation targets at least 44px", () => {
     renderSidebar();
     const btn = screen.getByRole("button", { name: "Calculadora" });
-    expect(btn.className).not.toMatch(/min-h-11/);
+    expect(btn).toHaveClass("min-h-11", "min-w-11");
     const toggle = screen.getByRole("button", {
       name: /recolher painel|expandir painel/i,
     });
-    expect(toggle.className).not.toMatch(/min-h-11/);
+    expect(toggle).toHaveClass("min-h-11", "min-w-11");
   });
 
-  it("keeps the Stable collapsed rail at w-16", () => {
+  it("keeps the Stable collapsed rail wide enough for 44px targets", () => {
     const { container } = renderSidebar(true);
     const aside = container.querySelector("aside") as HTMLElement;
-    expect(aside.className).toMatch(/(^|\s)w-16(\s|$)/);
-    expect(aside.className).not.toMatch(/w-\[68px\]/);
+    expect(aside.className).toMatch(/(^|\s)w-\[68px\](\s|$)/);
   });
 
-  it("preserves the Stable dock clearance and original sidebar structure", () => {
+  it("scrolls navigation inside the Stable dock-safe workspace", () => {
     const { container } = renderSidebar();
     const aside = container.querySelector("aside") as HTMLElement;
     expect(aside.className).toBe(
-      "bg-surface-raised border-r border-border-subtle flex flex-col justify-between select-none shrink-0 transition-all duration-200 z-30 sticky top-0 h-screen pb-20 w-56",
+      "bg-surface-raised border-r border-border-subtle flex flex-col select-none shrink-0 transition-all duration-200 z-30 h-full min-h-0 overflow-hidden w-56",
     );
-    expect(aside.className).toMatch(/(^|\s)justify-between(\s|$)/);
-    expect(aside.className).toMatch(/(^|\s)pb-20(\s|$)/);
-    expect(aside.className).toMatch(/(^|\s)h-screen(\s|$)/);
-    expect(aside.querySelector(".flex-1.min-h-0.overflow-y-auto")).toBeNull();
+    expect(aside.className).toMatch(/(^|\s)h-full(\s|$)/);
+    expect(aside.className).toMatch(/(^|\s)overflow-hidden(\s|$)/);
+    expect(
+      aside.querySelector(".flex-1.min-h-0.overflow-y-auto"),
+    ).not.toBeNull();
     const sidebarTop = aside.firstElementChild as HTMLElement;
-    expect(sidebarTop.hasAttribute("class")).toBe(false);
-    expect(sidebarTop.className).toBe("");
+    expect(sidebarTop).toHaveClass("flex-1", "min-h-0", "overflow-y-auto");
     expect(sidebarTop.firstElementChild).toHaveClass("h-12");
     const sidebarBottom = aside.lastElementChild as HTMLElement;
-    expect(sidebarBottom).toHaveClass("p-3");
-    expect(sidebarBottom).not.toHaveClass("shrink-0");
-    expect(aside.lastElementChild).not.toHaveClass("shrink-0");
+    expect(sidebarBottom).toHaveClass("p-3", "shrink-0");
     expect(screen.getByText("Moeda Base")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /recolher painel/i }),
