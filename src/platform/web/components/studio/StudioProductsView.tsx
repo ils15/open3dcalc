@@ -156,7 +156,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
   const formIsBelowCost = formSaleNum < formCostNum;
 
   return (
-    <div className="flex flex-col gap-6 text-text-primary max-w-full pb-20">
+    <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-raised border border-border-subtle rounded-2xl p-5">
         <div>

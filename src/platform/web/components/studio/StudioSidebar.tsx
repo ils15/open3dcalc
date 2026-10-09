@@ -26,8 +26,6 @@ interface StudioSidebarProps {
   onTabChange: (tab: Tab) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
-  currency: string;
-  onCurrencyChange: (c: string) => void;
   /** Optional per-module decoration (static hint and/or live count). */
   modules?: StudioModule[];
 }
@@ -47,8 +45,6 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   onTabChange,
   collapsed,
   onToggleCollapse,
-  currency,
-  onCurrencyChange,
   modules,
 }) => {
   const allModules: StudioModule[] = [
@@ -152,7 +148,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   const navTarget = "min-h-11 min-w-11";
   const railWidth = collapsed ? "w-[68px]" : "w-56";
   const sidebarTopClassName = "flex-1 min-h-0 overflow-y-auto";
-  const sidebarBottomClassName = "shrink-0 p-3 border-t border-[#1a2337]";
+  const sidebarBottomClassName =
+    "shrink-0 p-3 border-t border-[var(--color-border)]";
 
   return (
     /* Beta keeps the dock in document flow and uses an internal sidebar
@@ -169,16 +166,16 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
     >
       {/* Top branding and navigation; Beta makes this block internally scrollable. */}
       <div className={sidebarTopClassName}>
-        <div className="h-12 border-b border-[#1a2337] px-4 flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 shrink-0">
+        <div className="h-12 border-b border-[var(--color-border)] px-4 flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent-fill)] flex items-center justify-center text-[var(--color-accent-fill-fg)] shadow-md shadow-[var(--color-accent-muted)] shrink-0">
             <Box className="w-4 h-4" />
           </div>
           {!collapsed && (
             <div className="flex items-center gap-1.5 overflow-hidden">
-              <span className="font-extrabold text-sm text-slate-100 tracking-tight">
+              <span className="font-extrabold text-sm text-[var(--color-text-primary)] tracking-tight">
                 Open3DCalc
               </span>
-              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30">
+              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-[var(--color-accent-wash)] text-[var(--color-accent)] font-bold border border-[var(--color-border-accent)]">
                 v2.5
               </span>
             </div>
@@ -188,7 +185,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
         {/* Modules Section */}
         <div className="px-3 py-3">
           {!collapsed && (
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 px-2 mb-2">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-2">
               MÓDULOS
             </p>
           )}
@@ -209,12 +206,16 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   aria-current={isActive ? "page" : undefined}
                   className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
                     isActive
-                      ? "bg-blue-600/20 text-blue-400 border border-blue-500/30 shadow-sm"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
+                      ? "bg-[var(--color-accent-wash)] text-[var(--color-accent)] border border-[var(--color-border-accent)] shadow-sm"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
                   }`}
                 >
                   <span
-                    className={isActive ? "text-blue-400" : "text-slate-400"}
+                    className={
+                      isActive
+                        ? "text-[var(--color-accent)]"
+                        : "text-[var(--color-text-secondary)]"
+                    }
                   >
                     {m.icon}
                   </span>
@@ -222,12 +223,12 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                     <div className="flex-1 flex items-center justify-between overflow-hidden text-left">
                       <span className="truncate">{m.label}</span>
                       {m.badge && (
-                        <span className="text-[9px] font-mono text-slate-400 bg-slate-800/80 px-1 py-0.2 rounded border border-slate-700/60">
+                        <span className="text-[9px] font-mono text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] px-1 py-0.2 rounded border border-[var(--color-border)]">
                           {m.badge}
                         </span>
                       )}
                       {m.countBadge && (
-                        <span className="text-[10px] font-bold text-blue-400 bg-blue-500/20 px-1.5 py-0.2 rounded-full border border-blue-500/30">
+                        <span className="text-[10px] font-bold text-[var(--color-accent)] bg-[var(--color-accent-wash)] px-1.5 py-0.2 rounded-full border border-[var(--color-border-accent)]">
                           {m.countBadge}
                         </span>
                       )}
@@ -240,9 +241,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
         </div>
 
         {/* Resources Section */}
-        <div className="px-3 py-2 border-t border-[#1a2337]/60">
+        <div className="px-3 py-2 border-t border-[var(--color-border-subtle)]">
           {!collapsed && (
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 px-2 mb-2">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-2">
               RECURSOS
             </p>
           )}
@@ -257,13 +258,13 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                     rel="noreferrer"
                     title={r.label}
                     aria-label={r.label}
-                    className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-[#121828] transition-colors`}
+                    className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors`}
                   >
                     {r.icon}
                     {!collapsed && (
                       <div className="flex-1 flex items-center justify-between text-left">
                         <span className="truncate">{r.label}</span>
-                        <ExternalLink className="w-3 h-3 text-slate-600" />
+                        <ExternalLink className="w-3 h-3 text-[var(--color-text-muted)]" />
                       </div>
                     )}
                   </a>
@@ -279,15 +280,15 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   aria-current={isActive ? "page" : undefined}
                   className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     isActive
-                      ? "text-blue-400 bg-blue-500/10"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-[#121828]"
+                      ? "text-[var(--color-accent)] bg-[var(--color-accent-wash)]"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
                   }`}
                 >
                   {r.icon}
                   {!collapsed && (
                     <div className="flex-1 flex items-center justify-between text-left">
                       <span className="truncate">{r.label}</span>
-                      <ExternalLink className="w-3 h-3 text-slate-600" />
+                      <ExternalLink className="w-3 h-3 text-[var(--color-text-muted)]" />
                     </div>
                   )}
                 </button>
@@ -297,38 +298,8 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
         </div>
       </div>
 
-      {/* Bottom: Currency and Collapse toggle (pinned on Beta). */}
+      {/* Bottom: Collapse toggle (pinned on Beta). */}
       <div className={sidebarBottomClassName}>
-        {!collapsed && (
-          <div className="mb-3 px-1">
-            <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1.5">
-              <span>Moeda Base</span>
-              <span className="font-bold text-slate-300">{currency}</span>
-            </div>
-            <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-lg p-0.5 w-full">
-              {["BRL", "USD", "EUR"].map((curr) => {
-                const sym = curr === "BRL" ? "R$" : curr === "USD" ? "$" : "€";
-                const isCurr = currency === curr;
-                return (
-                  <button
-                    key={curr}
-                    onClick={() => onCurrencyChange(curr)}
-                    aria-label={`Moeda base ${curr}`}
-                    aria-pressed={isCurr}
-                    className={`flex-1 ${navTarget} px-2 py-1 text-[11px] font-bold rounded text-center transition-colors ${
-                      isCurr
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    {sym}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         <button
           type="button"
           onClick={onToggleCollapse}
@@ -337,7 +308,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           aria-label={
             collapsed ? "Expandir painel de navegação" : "Recolher painel"
           }
-          className={`w-full flex ${navTarget} items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-[#121828] border border-slate-800 transition-colors`}
+          className={`w-full flex ${navTarget} items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border)] transition-colors`}
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />

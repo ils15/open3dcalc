@@ -483,7 +483,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 text-text-primary max-w-full pb-20 items-start">
+    <div className="flex flex-col lg:flex-row gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20 items-start">
       {/* Left Sub-nav & Main Form */}
       <div className="flex-1 min-w-0 flex flex-col md:flex-row gap-4 w-full">
         {/* Sub-Nav menu.
@@ -856,9 +856,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             data-tutorial="material"
             className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
-            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
-              <h2 className="text-xs font-bold text-text-primary flex items-center gap-2">
-                <Box className="w-3.5 h-3.5 text-info" />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
+              <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+                <Box className="w-4 h-4 text-info" />
                 1. INSUMO & CONSUMO DE MATERIAL
               </h2>
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-accent-subtle text-info border border-accent/20 font-bold">
@@ -1058,9 +1058,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             data-tutorial="print"
             className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
-            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
-              <h2 className="text-xs font-bold text-text-primary flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-warning" />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
+              <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+                <Clock className="w-4 h-4 text-warning" />
                 2. TEMPO DE MÁQUINA, CURA & ENERGIA
               </h2>
               <span className="text-[11px] text-warning font-bold">
@@ -1212,9 +1212,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
           {/* Section 3: Custos Extras */}
           <div className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
-              <h2 className="text-xs font-bold text-text-primary flex items-center gap-2">
-                <Layers className="w-3.5 h-3.5 text-accent" />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
+              <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+                <Layers className="w-4 h-4 text-accent" />
                 3. CUSTOS EXTRAS & INSUMOS AUXILIARES
               </h2>
               <span className="text-[11px] text-accent font-bold">
@@ -1370,9 +1370,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             data-tutorial="sales"
             className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
-            <div className="flex items-center justify-between border-b border-border-subtle pb-2">
-              <h2 className="text-xs font-bold text-text-primary flex items-center gap-2">
-                <DollarSign className="w-3.5 h-3.5 text-positive" />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
+              <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-positive" />
                 4. PRECIFICAÇÃO COMERCIAL & MARGEM
               </h2>
               <span className="text-[11px] text-positive font-bold">
@@ -1440,16 +1440,16 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           {/* 🌟 SECTION 5: PARÂMETROS AVANÇADOS (Modo Oficina Pro) */}
           {complexity === "avancado" && (
             <div className="bg-surface-raised border border-accent/40 rounded-xl p-4 flex flex-col gap-4 animate-fade-in">
-              <div className="flex items-center justify-between border-b border-border-subtle pb-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-accent-subtle border border-accent/30 flex items-center justify-center text-accent">
                     <Sliders className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h2 className="text-xs font-bold text-text-primary">
+                    <h2 className="text-base sm:text-lg font-semibold text-text-primary">
                       5. MODO OFICINA PRO • PARÂMETROS AVANÇADOS
                     </h2>
-                    <span className="text-[10px] text-text-secondary">
+                    <span className="text-xs text-text-secondary">
                       Perda de purga multi-filamento, taxas de marketplaces e
                       atacado
                     </span>

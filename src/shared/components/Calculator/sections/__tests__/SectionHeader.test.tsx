@@ -12,23 +12,27 @@ const stubIcon = StubIcon as unknown as LucideIcon;
 
 /**
  * Markup captured from the component BEFORE the `metric` prop existed
- * (rendered, not deduced). Without a metric the header must keep producing
- * exactly this string — a diff here means the no-metric path regressed.
+ * (rendered, not deduced), UPDATED to the reference typographic scale:
+ * the card heading renders at the section level (h2 text-lg font-semibold,
+ * the "1." sections of the Example/CatalogTab hierarchy) with a text-xs
+ * subtitle, and the icon proportioned to the larger title. Without a metric
+ * the header must keep producing exactly this string — a diff here means the
+ * no-metric path regressed.
  */
 const BASELINE_WITH_STEP =
   '<div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-[var(--border-default)]">' +
   '<span aria-hidden="true" data-testid="step-badge" class="flex shrink-0 items-center justify-center rounded-full font-semibold leading-none h-5 w-5 text-[10px] bg-[var(--color-bg-elevated)]">3</span>' +
-  '<svg data-testid="stub-icon" class="w-3.5 h-3.5 text-[var(--accent)] shrink-0"></svg>' +
+  '<svg data-testid="stub-icon" class="w-4 h-4 text-[var(--accent)] shrink-0"></svg>' +
   '<div class="flex-1 min-w-0">' +
-  '<h2 class="text-xs font-bold text-[var(--text-primary)] truncate">Test Title</h2>' +
-  '<p class="text-[10px] text-[var(--text-muted)] truncate">Subtitle text</p>' +
+  '<h2 class="text-lg font-semibold text-[var(--text-primary)] truncate">Test Title</h2>' +
+  '<p class="text-xs text-[var(--text-muted)] truncate">Subtitle text</p>' +
   "</div></div>";
 
 const BASELINE_BARE =
   '<div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-[var(--border-default)]">' +
-  '<svg data-testid="stub-icon" class="w-3.5 h-3.5 text-[var(--accent)] shrink-0"></svg>' +
+  '<svg data-testid="stub-icon" class="w-4 h-4 text-[var(--accent)] shrink-0"></svg>' +
   '<div class="flex-1 min-w-0">' +
-  '<h2 class="text-xs font-bold text-[var(--text-primary)] truncate">Material</h2>' +
+  '<h2 class="text-lg font-semibold text-[var(--text-primary)] truncate">Material</h2>' +
   "</div></div>";
 
 describe("SectionHeader", () => {
@@ -78,6 +82,15 @@ describe("SectionHeader", () => {
     );
 
     expect(container.innerHTML).toBe(BASELINE_BARE);
+  });
+
+  it("renders the title at the section scale (h2 text-lg, fina weight) per the Example/CatalogTab reference", () => {
+    render(<SectionHeader Icon={Wrench} title="Material" />);
+
+    const h2 = screen.getByRole("heading", { level: 2 });
+    expect(h2.className).toContain("text-lg");
+    expect(h2.className).toContain("font-semibold");
+    expect(h2.className).not.toContain("text-xs");
   });
 
   it("renders the metric to the right of the title", () => {

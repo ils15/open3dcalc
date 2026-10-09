@@ -13,14 +13,7 @@ import { StudioCockpitDock } from "@/platform/web/components/studio/StudioCockpi
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
 function renderSubHeader() {
-  return render(
-    <StudioSubHeader
-      activeTab="calculator"
-      layoutMode="classic"
-      onLayoutChange={vi.fn()}
-      onOpenQuoteModal={vi.fn()}
-    />,
-  );
+  return render(<StudioSubHeader onOpenQuoteModal={vi.fn()} />);
 }
 
 function renderSidebar() {
@@ -30,8 +23,6 @@ function renderSidebar() {
       onTabChange={vi.fn()}
       collapsed={false}
       onToggleCollapse={vi.fn()}
-      currency="BRL"
-      onCurrencyChange={vi.fn()}
     />,
   );
 }

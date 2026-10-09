@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  act,
+} from "@testing-library/react";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -78,6 +84,15 @@ describe("GuidedWizard — structure", () => {
     ).toBeInTheDocument();
     expect(prevButton()).toBeDisabled();
   });
+
+  it("renders the step heading at the section scale (h2 text-lg) shared with the Classic sections", () => {
+    render(<GuidedWizard />);
+    const heading = screen.getByRole("heading", {
+      name: "wizard.steps.1.title",
+    });
+    expect(heading.className).toContain("text-lg");
+    expect(heading.className).not.toContain("text-xl");
+  });
 });
 
 describe("GuidedWizard — advancing with validation", () => {
@@ -98,7 +113,9 @@ describe("GuidedWizard — advancing with validation", () => {
     fireEvent.click(nextButton());
 
     expect(useWizardStore.getState().step).toBe(1);
-    expect(screen.getByRole("alert")).toHaveTextContent("wizard.errors.positive");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "wizard.errors.positive",
+    );
   });
 
   it("clears the error once the field is fixed", () => {

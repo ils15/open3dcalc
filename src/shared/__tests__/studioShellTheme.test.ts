@@ -86,6 +86,7 @@ const shell = {
   layout: read(`${STUDIO}/StudioLayout.tsx`),
   header: read(`${STUDIO}/StudioHeader.tsx`),
   subHeader: read(`${STUDIO}/StudioSubHeader.tsx`),
+  calculatorMode: read(`${STUDIO}/StudioCalculatorModeSelector.tsx`),
   sidebar: read(`${STUDIO}/StudioSidebar.tsx`),
 };
 
@@ -101,7 +102,16 @@ const SHELL_SURFACES: ReadonlyArray<readonly [string, string, string]> = [
   // [label, source, marker that pins the element]
   ["StudioLayout root", shell.layout, "min-h-screen"],
   ["StudioHeader", shell.header, "sticky top-0 z-40"],
-  ["StudioSubHeader", shell.subHeader, "sticky top-12 z-30"],
+  [
+    "StudioSubHeader global action",
+    shell.subHeader,
+    "bg-[var(--color-accent-fill)]",
+  ],
+  [
+    "StudioCalculatorModeSelector",
+    shell.calculatorMode,
+    "bg-[var(--color-bg-elevated)]",
+  ],
   [
     "StudioSidebar",
     shell.sidebar,
