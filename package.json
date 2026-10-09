@@ -44,7 +44,7 @@
     "@types/canvas-confetti": "^1.9.0",
     "better-sqlite3": "^13.0.3",
     "canvas-confetti": "^1.9.4",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "^0.45.3",
     "electron-updater": "^6.8.9",
     "framer-motion": "^13.4.0",
     "html2canvas": "^1.4.1",
