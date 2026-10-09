@@ -48,7 +48,8 @@ cross-surface post-condition scan. Such guarantees must not be inferred from the
 
 ## 4. Beta refusal
 
-Web Beta remains synthetic-only and has no user deletion, erasure saga, withdrawal purge,
+Web Beta is intended for synthetic test data (the app does not validate contents; same-origin
+code can still access browser storage) and has no user deletion, erasure saga, withdrawal purge,
 recovery, namespace sweep, or cleanup operation. A Beta deletion request must be refused
 before storage access or mutation. Beta's three exact test keys are not granted deletion
 permission by this Stable/Desktop policy.

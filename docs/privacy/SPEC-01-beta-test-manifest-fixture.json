@@ -19,7 +19,7 @@
       "export": "never",
       "erasure": "unsupported",
       "retention": { "policy": "user_controlled", "max_days": 0 },
-      "purpose": "Synthetic customer records for disposable Beta testing only; never use real customer data.",
+      "purpose": "Intended for synthetic customer records in disposable Beta testing only; never use real customer data. The app does not validate record contents, and same-origin code can access browser storage.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
       "version": "1.0"
@@ -36,7 +36,7 @@
       "export": "never",
       "erasure": "unsupported",
       "retention": { "policy": "user_controlled", "max_days": 0 },
-      "purpose": "Synthetic quote records for disposable Beta testing only; never use real customer data.",
+      "purpose": "Intended for synthetic quote records in disposable Beta testing only; never use real customer data. The app does not validate record contents, and same-origin code can access browser storage.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
       "version": "1.0"
@@ -53,7 +53,7 @@
       "export": "never",
       "erasure": "unsupported",
       "retention": { "policy": "user_controlled", "max_days": 0 },
-      "purpose": "Synthetic calculation history for disposable Beta testing only; never use real customer data.",
+      "purpose": "Intended for synthetic calculation history in disposable Beta testing only; never use real customer data. The app does not validate record contents, and same-origin code can access browser storage.",
       "legal_basis": "not_personal_data",
       "owner": "hermes",
       "version": "1.0"

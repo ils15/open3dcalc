@@ -11,14 +11,19 @@ that the data is recoverable.
 
 Current Stable/Desktop customer, quote, and history saves use the exact plaintext scope in
 SPEC-01 policy 1.9 and require no local at-rest keyring, passphrase, vault, or consent gate.
-Web Beta remains limited to its separate synthetic-only keys and does not inspect legacy
-data. All sections below are retained as historical context only where they conflict with
+Web Beta remains limited to its separate keys, intended for synthetic test data; its app does
+not validate record contents or isolate browser storage from same-origin code. It does not
+inspect legacy data. All sections below are retained as historical context only where they conflict with
 this superseding decision. SPEC-03 encrypted export remains unchanged.
 
 **Track:** D1 — Privacy & Data Contracts
 **Status:** Superseded by approved policy 1.9; historical-data handling is inert retention
 **Addresses findings:** R3 (PII at-rest), R11 (legacy plaintext quarantine)
 **Related:** ADR-001 (crypto capability), SPEC-01 (manifest), SPEC-02 (erasure)
+
+> **Historical D1.0 material below.** Sections 1–4 describe the former quarantine, migration,
+> and default-deny proposal. They are not active requirements under policy 1.9; the supersession
+> decision above governs current behavior.
 
 ## 1. Context
 
@@ -133,18 +138,19 @@ and the two explicit exits. Nothing here claims current compliance.
 
 ## Status
 
-**Status: Proposed (awaiting Themis gate + user final approval)**
+**Status:** D1.0 quarantine and migration proposal superseded by policy 1.9; historical vault
+bytes remain outside current deletion scope.
 
-## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+## Beta test-only profile addendum (approved scope; current branch status)
 
-ADR-002's default-deny and legacy-quarantine rules continue to govern Stable/Desktop user
-data. The Web-Beta test-only profile is a separate synthetic-data exception: only generated
-fixtures may be stored plaintext, and the three Beta-specific keys are isolated from Stable
-keys. Beta must neither inspect nor read, migrate, disclose, quarantine, recover, sweep, or
-delete Stable/legacy PII keys. A Beta key must never be used for real customer, quote, or
-history information.
+ADR-002's default-deny and legacy-quarantine rules are historical and superseded for current
+Stable/Desktop local saves by policy 1.9. The Web-Beta profile is intended for synthetic test
+data and restricted to its three Beta-specific keys; record content is not validated and
+same-origin code can access browser storage. Beta app paths must not inspect, read, migrate,
+disclose, quarantine, recover, sweep, or delete Stable/legacy PII keys. Real customer, quote,
+or history information must not be entered.
 
 This is not permission for plaintext personal data and does not relax Stable policy. The
 Beta guard fails closed on Stable keys, unknown keys, unreadable fixtures, and
-legacy-access attempts (betaFreshNamespace and betaIsolation suites). Waves 1–3 are
-implemented; Stable enforcement is unchanged.
+legacy-access attempts (betaFreshNamespace and betaIsolation suites). Final Themis review is
+pending; no publication is authorized or performed.

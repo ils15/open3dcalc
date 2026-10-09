@@ -1,50 +1,63 @@
-# Open3DCalc Privacy Contracts — D1.0
+# Open3DCalc Privacy Contracts
 
 ## Current policy — 1.9 (supersedes conflicting D1.0 and Beta addenda)
 
 Stable Web/PWA and Desktop directly save the exact three customer, quote, and history
 manifest keys as plaintext, without a password, vault unlock, or consent/receipt prerequisite.
-This is an approved policy change, not a claim that the former zero-plaintext contract was
-fulfilled. `contract_performance` is provisional and requires qualified legal review; this
-engineering document does not select or validate a legal basis. The encrypted logical export
-contract remains separate and intact; its password never gates local saves.
+Web/PWA use their listed `localStorage` keys; Desktop maps them to the corresponding
+`open3dcalc_pwless_*` keys in SQLite's `storage` table (SPEC-01). This is an approved policy
+change, not a claim that the former zero-plaintext contract was fulfilled. `contract_performance`
+is provisional and requires qualified legal review; this engineering document does not select
+or validate a legal basis. The encrypted logical export contract remains separate and intact;
+its password never gates local saves.
 
-Web Beta remains a separate test-only channel: only generated synthetic records in its three
-Beta-specific keys, plaintext, no sync/export/import/deletion, and no Stable or historical-data
-access. The Stable/Desktop policy does not broaden Beta's scope.
+Web Beta remains a separate test-only channel intended for generated synthetic records in its
+three Beta-specific keys, plaintext, with no sync/export/import/deletion. The app restricts its
+own storage operations to that namespace but does not validate whether record contents are
+synthetic; this is an intended-use restriction, not a security boundary. Same-origin scripts,
+browser extensions, and DevTools can access browser storage, so namespace isolation is
+app-mediated and does not protect against code running in the same origin. Stable/Desktop
+policy does not broaden Beta's scope.
 
-Bytes already written to `open3dcalc_pii_vault` are inert historical data. No current startup,
-read, inspection, conversion, recovery, migration, or cleanup path may touch them. The vault is
-excluded from current deletion scope; its bytes may remain in the profile. Current deletion
-applies only to current application-owned data within the declared supported scope.
+Bytes already written to `open3dcalc_pii_vault` are inert historical data. Current production
+startup and user-facing flows have no call site that reads, inspects, converts, recovers,
+migrates, or cleans up those vault records; startup also does not read retired migration markers
+or legacy history/product sources. The vault is excluded from current deletion scope; its bytes
+may remain in the profile. Current deletion applies only to current application-owned data
+within the declared supported scope.
 
 Receipts created under older policies remain historical records and evaluate as
 `policy_mismatch` under policy 1.9. No consent, withdrawal, or receipt action gates current
 local saves. See the dated decision at the start of each superseding ADR/spec below.
 
-**Track:** D1 (Privacy & Data Contracts) — Deliverable 1.0 (documentation only)
+**Historical D1.0 metadata:** Track D1 (Privacy & Data Contracts), documentation deliverable
 **DRI:** Hermes (backend/data contracts executor)
-**Review gate:** Themis (quality & security gate — 3 review rounds completed, findings R1–R15)
-**Final approver:** The user (repo owner). Themis sanctions production; only the user approves adoption.
-**Base:** `main` @ `4783d69` (includes PR #105)
+**Historical review:** Themis completed 3 document-review rounds (findings R1–R15)
+**Historical base:** `main` @ `4783d69` (includes PR #105)
 
 ---
 
-## 1. Scope of D1.0
+## Historical D1.0 record — documentation deliverable
 
-D1.0 produces **normative documentation and machine-validated contracts only**. It deliberately
-does **not** change runtime behavior.
+> The sections below preserve the D1.0 project's original charter and codebase snapshot as
+> historical context. Their former phase gates and blocked-work language are not current
+> requirements; policy 1.9 and the current implementation status above take precedence.
 
-In scope (this deliverable):
+## 1. D1.0 scope (historical)
+
+D1.0 produced **normative documentation and machine-validated contracts only**. It deliberately
+did **not** change runtime behavior at that time.
+
+In scope for that deliverable:
 
 - Architecture Decision Records (ADR-001 … ADR-003)
 - Normative specifications (SPEC-01 … SPEC-04)
 - Versioned JSON Schema for the data manifest + a synthetic fixture
 - Compliance matrix tracing every Themis finding (R1–R15) to a document and section
-- Contract test matrix for D1.1+ (tests are _specified_ here, _implemented_ in D1.1+)
+- Contract test matrix for D1.1+ (tests were _specified_ here for later implementation)
 - Owners and rollback runbook
 
-Out of scope (explicitly **blocked** until this deliverable is approved — see §5):
+Out of scope for that historical deliverable:
 
 - Any runtime code change (stores, Electron main/preload, services)
 - Any application test change
@@ -52,13 +65,11 @@ Out of scope (explicitly **blocked** until this deliverable is approved — see 
 - D1.1+ implementation slices
 - D5 (whatever later track depends on these contracts)
 
-The only files added by D1.0 live under `docs/privacy/`. This is enforced by the diff-check
-gate in §4 (finding R15).
+The D1.0 diff-check gate described in §4 required its changes to stay under `docs/privacy/`.
 
 ## Current beta runtime disclosure
 
-This section describes the current application behavior; it does not change the
-historical scope or normative status of D1.0. The in-app Copilot uses
+This section describes the current application behavior. The in-app Copilot uses
 material-based local heuristics, locally assembled proposal templates, and
 numbers calculated by the app. It does not perform generative AI, call an AI
 provider, read or store an API key, or transfer project/calculator data or keys
@@ -80,8 +91,8 @@ Those operations are separate from the Copilot's local suggestions.
 | `ADR-003-export-vs-backup.md`             | Encrypted logical export vs. diagnostic backup; no vault prerequisite                       | R2, R13     |
 | `SPEC-01-manifest.schema.json`            | Versioned JSON Schema of the per-key/surface/platform data manifest                         | R1, R8      |
 | `SPEC-01-manifest-fixture.json`           | Stable policy 1.9 exact PII scope; synthetic contract fixture                               | R1, R8      |
-| `SPEC-01-beta-test-manifest.schema.json`  | Separate exact-key schema for synthetic-only Web Beta storage                               | Beta D1, D2 |
-| `SPEC-01-beta-test-manifest-fixture.json` | Unchanged three-key, plaintext, synthetic Web Beta fixture                                  | Beta D1, D2 |
+| `SPEC-01-beta-test-manifest.schema.json`  | Separate exact-key schema for app-mediated Web Beta storage (synthetic intended use)        | Beta D1, D2 |
+| `SPEC-01-beta-test-manifest-fixture.json` | Three-key, plaintext Web Beta fixture; content is not validated as synthetic                | Beta D1, D2 |
 | `SPEC-02-erasure.md`                      | Deletion limited to current owned data; historical vault excluded; Beta refuses             | R4, R9, R10 |
 | `SPEC-03-export-envelope.md`              | Normative encrypted export envelope: canonicalization, algorithms, limits, atomic IO        | R12         |
 | `SPEC-04-consent-receipt.md`              | Historical receipts; no consent/receipt prerequisite for local saves                        | R5, R14     |
@@ -92,19 +103,19 @@ Those operations are separate from the Copilot's local suggestions.
 Reading order for reviewers: README → COMPLIANCE-MATRIX (map of findings) → ADRs → SPECs →
 TEST-MATRIX → OWNERS-RUNBOOK.
 
-## 3. Roles
+## 3. D1.0 roles (historical)
 
-- **DRI (Hermes):** owns the correctness, internal consistency, and cross-references of this
-  document set. Any contradiction between documents MUST be treated as a D1.0 defect and MUST block approval.
-- **Themis (gate):** reviewed this deliverable over 3 rounds. Themis approval of the _documents_
-  is recorded via the compliance matrix; Themis remains the quality gate for every D1.1+ slice.
-- **User (final approver):** the only authority who can (a) accept these contracts as binding
-  for D1.1+, and (b) unblock D1.1+/runtime/D5. Until the user approves, everything downstream
-  stays blocked.
+- **DRI (Hermes):** owned the correctness, internal consistency, and cross-references of that
+  document set. Contradictions were treated as D1.0 defects during that review.
+- **Themis (gate):** reviewed the D1.0 documents over 3 rounds. The current implementation
+  still requires its final gate before promotion.
+- **User (final approver):** approved policy 1.9; promotion and publication remain separate
+  decisions.
 
-## 4. Objective exit criteria for D1.0
+## 4. D1.0 exit criteria (historical)
 
-D1.0 is complete when **all** of the following are verifiably true:
+The original D1.0 deliverable was considered complete when **all** of the following were
+verifiably true:
 
 1. **Coverage:** Every finding R1–R15 from the 3 Themis review rounds is addressed by at least
    one document/section and traced in `COMPLIANCE-MATRIX.md` with status `Addressed`.
@@ -134,18 +145,17 @@ D1.0 is complete when **all** of the following are verifiably true:
 7. **ADR status:** every ADR terminates with `Status: Proposed (awaiting Themis gate + user
 final approval)`.
 
-## 5. Block declaration (binding until approval)
+## 5. Historical D1.0 block declaration (closed)
 
-> **D1.1+, all runtime work, and D5 are BLOCKED** until the user grants final approval of this
-> document set. Themis sanction (3 rounds, R1–R15 addressed) authorizes _production of the
-> documents_, not adoption of the contracts. No code, test, dependency, or workflow change
-> derived from these contracts MUST NOT land before approval. Upon approval, implementation follows
-> the slice plan in `OWNERS-RUNBOOK.md` §4 and the mandatory tests in `TEST-MATRIX.md`.
+> At the time this declaration was written, D1.1+, runtime work, and D5 were blocked pending
+> final user approval. That historical block is closed: policy 1.9 has been approved and the
+> runtime work is being verified under the current review gate. This paragraph grants no
+> commit, merge, release, or publication authorization.
 
-## 6. Current-state facts these contracts build on
+## 6. D1.0 base-commit facts (historical snapshot)
 
-These facts were verified against the codebase at the D1.0 base commit and are the _inputs_ the
-contracts normatively govern (they are not claims that the contracts are already implemented):
+These facts were verified against the codebase at the D1.0 base commit. They are historical
+inputs to the original contracts, not statements of current implementation status:
 
 - **localStorage keys (web/PWA/desktop renderer):** `open3dcalc_consent_v1`,
   `open3dcalc_customers_v1`, `open3dcalc_quotes_v1`, `open3dcalc_history_v2`,
@@ -164,27 +174,27 @@ contracts normatively govern (they are not claims that the contracts are already
   (`customerSnapshot` JSON blob) are the primary PII classes; history/dashboard are
   PII-derived.
 
-Known gaps that the contracts turn into D1.1+ obligations: PII is persisted in plaintext
+Known gaps at the D1.0 base commit (historical): PII was persisted in plaintext
 (R3/R11), `db:export` is a raw PII-bearing SQLite copy exposed in the user flow (R2/R13),
-delete-all is not a complete, resumable, cross-surface erasure (R4/R9/R10), consent is a bare
-flag without a tamper-evident receipt (R5/R14), and storage-key allowlists are duplicated
-across stores and `dataSync.ts` (R1/R8).
+delete-all was not a complete, resumable, cross-surface erasure (R4/R9/R10), consent was a bare
+flag without a tamper-evident receipt (R5/R14), and storage-key allowlists were duplicated
+across stores and `dataSync.ts` (R1/R8). These are not current implementation claims.
 
-## 7. Superseded Beta-only addendum and current channel boundary
+## 7. Superseded Beta-only addendum (historical) and current channel boundary
 
-The Beta-only addendum below is retained for history where it describes Web Beta restrictions.
-Its claims that Stable policy 1.0 / policy 1.8 and consent requirements remain unchanged are
-superseded by policy 1.9 above. This slice changes contracts and adds RED tests only; it does
-not claim that runtime behavior has been implemented or verified.
+The Beta-only addendum below is retained as a historical record. Its claims that Stable policy
+1.0 / policy 1.8 and consent requirements remain unchanged are superseded by policy 1.9 above.
+The old Wave 1 RED-only status is also superseded by the current branch status stated below.
 
-The Web-Beta profile remains restricted to synthetic test data and these exact browser keys:
+The Web-Beta profile is intended for synthetic test data and uses these exact browser keys:
 
 - `open3dcalc_beta_test_customers_v1`
 - `open3dcalc_beta_test_quotes_v1`
 - `open3dcalc_beta_test_history_v1`
 
-They are plaintext `localStorage` entries for **Web Beta only**, are never synchronized or
-exported, and are not personal data because only generated synthetic records are permitted.
+They are plaintext `localStorage` entries for **Web Beta only** and are never synchronized or
+exported. Synthetic-only is an intended-use restriction; the app does not inspect record
+contents to prove they are generated synthetic data.
 The Beta fixture and strict schema are separate from the Stable manifest; they do not add
 Beta keys to `SPEC-01-manifest-fixture.json`. Stable data keys and encrypted export formats
 remain unchanged; the three Stable customer/quote/history declarations are updated under
@@ -197,20 +207,21 @@ must plainly say “test data only”, “stored unencrypted”, “no password�
 export”, and that the browser profile is disposable. Beta is web-only; Desktop follows the
 policy 1.9 Stable plaintext manifest and remains distinct from Beta.
 
-Wave 1–3 suites and release evidence are enumerated in TEST-MATRIX §11. The Beta
-implementation on this branch passes those contracts; this addendum must not be used to
-claim that a published Beta build already has the test-only behavior until the Wave 3
-release gate (built-Beta same-origin isolation + Themis approval) passes on the release
-workflow.
+Beta storage isolation is enforced by the app's own adapters and guards, not by browser-origin
+security: same-origin scripts, extensions, and DevTools can still access `localStorage`. The
+current implementation is on this branch; final Themis review is pending and no Beta
+publication has been authorized. The published web Beta remains v2.0.0-beta.13.
 
 ## 8. SPEC-01 fixture changes in policy 1.9
 
 The Stable fixture keeps `manifest_version: 1.0` and advances `policy_version` from 1.8 to 1.9.
 Only `open3dcalc_customers_v1`, `open3dcalc_quotes_v1`, and `open3dcalc_history_v2` change to
 `pii:true`, `persistence:plaintext_allowed`, and provisional `legal_basis:contract_performance`.
-Their declared destination remains `localStorage` on Electron, Web, and PWA. Other PII
-destinations—including the SQLite domain tables—retain their prior persistence restrictions;
-the exact three-key exception must not be generalized.
+Their renderer-facing `surface` remains `localStorage`; `platform_destinations` declares the
+physical Electron aliases `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quotes_v1`, and
+`open3dcalc_pwless_history_v1` in SQLite's `storage` table, while Web/PWA use the logical keys
+in `localStorage`. Other PII destinations—including SQLite domain tables—retain their prior
+persistence restrictions; the exact three-key exception must not be generalized.
 
 Nine former vault, migration, and re-homing entries are retired from the active manifest:
 

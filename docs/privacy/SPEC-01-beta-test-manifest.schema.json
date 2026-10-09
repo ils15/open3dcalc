@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://open3dcalc.org/schemas/spec-01-beta-test-manifest.schema.json",
   "title": "SPEC-01 Web Beta Synthetic-Test Manifest Schema",
+  "description": "Declares the app-mediated Web Beta storage namespace. Synthetic-only is an intended-use restriction: this schema validates keys and policy metadata, not whether stored record contents are synthetic. Same-origin code can still access browser storage.",
   "type": "object",
   "required": [
     "manifest_version",
@@ -69,7 +70,10 @@
         "surface": { "const": "localStorage" },
         "platforms": { "const": ["web"] },
         "channel": { "const": "web-beta" },
-        "class": { "const": "synthetic_test_data" },
+        "class": {
+          "const": "synthetic_test_data",
+          "description": "Intended-use label only; no content-level synthetic-data validation is performed."
+        },
         "pii": { "const": false },
         "persistence": { "const": "plaintext_allowed" },
         "sync": { "const": "never" },

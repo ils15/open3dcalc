@@ -16,6 +16,7 @@
   "$defs": {
     "surface": {
       "type": "string",
+      "description": "Manifest's renderer-facing surface. When physical storage differs by platform, platform_destinations records the actual key and surface.",
       "enum": [
         "localStorage",
         "sqlite_storage_table",
@@ -33,6 +34,16 @@
     "platform": {
       "type": "string",
       "enum": ["electron", "web", "pwa"]
+    },
+    "platformDestination": {
+      "type": "object",
+      "required": ["platform", "key", "surface"],
+      "additionalProperties": false,
+      "properties": {
+        "platform": { "$ref": "#/$defs/platform" },
+        "key": { "type": "string", "minLength": 1 },
+        "surface": { "$ref": "#/$defs/surface" }
+      }
     },
     "persistenceMode": {
       "type": "string",
@@ -82,7 +93,7 @@
         "open3dcalc_quotes_v1",
         "open3dcalc_history_v2"
       ],
-      "description": "The complete and exclusive Stable/Desktop plaintext-PII key scope approved by policy 1.9."
+      "description": "The complete and exclusive Stable/Desktop plaintext-PII logical key scope approved by policy 1.9. Physical per-platform destinations are declared in platform_destinations."
     },
     "retentionPolicy": {
       "type": "string",
@@ -110,6 +121,12 @@
       "properties": {
         "key": { "type": "string", "minLength": 1 },
         "surface": { "$ref": "#/$defs/surface" },
+        "platform_destinations": {
+          "type": "array",
+          "description": "Physical per-platform destinations when a logical manifest key maps to a different platform-specific key or surface.",
+          "items": { "$ref": "#/$defs/platformDestination" },
+          "uniqueItems": true
+        },
         "platforms": {
           "type": "array",
           "items": { "$ref": "#/$defs/platform" },
@@ -151,7 +168,8 @@
               "surface": { "const": "localStorage" },
               "platforms": { "const": ["electron", "web", "pwa"] },
               "class": { "const": "user_content" }
-            }
+            },
+            "required": ["platform_destinations"]
           }
         },
         {
@@ -169,6 +187,93 @@
               "class": { "const": "user_content" },
               "persistence": { "const": "plaintext_allowed" },
               "legal_basis": { "const": "contract_performance" }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "key": { "const": "open3dcalc_customers_v1" } },
+            "required": ["key"]
+          },
+          "then": {
+            "properties": {
+              "platform_destinations": {
+                "const": [
+                  {
+                    "platform": "electron",
+                    "key": "open3dcalc_pwless_customers_v1",
+                    "surface": "sqlite_storage_table"
+                  },
+                  {
+                    "platform": "web",
+                    "key": "open3dcalc_customers_v1",
+                    "surface": "localStorage"
+                  },
+                  {
+                    "platform": "pwa",
+                    "key": "open3dcalc_customers_v1",
+                    "surface": "localStorage"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "key": { "const": "open3dcalc_quotes_v1" } },
+            "required": ["key"]
+          },
+          "then": {
+            "properties": {
+              "platform_destinations": {
+                "const": [
+                  {
+                    "platform": "electron",
+                    "key": "open3dcalc_pwless_quotes_v1",
+                    "surface": "sqlite_storage_table"
+                  },
+                  {
+                    "platform": "web",
+                    "key": "open3dcalc_quotes_v1",
+                    "surface": "localStorage"
+                  },
+                  {
+                    "platform": "pwa",
+                    "key": "open3dcalc_quotes_v1",
+                    "surface": "localStorage"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "key": { "const": "open3dcalc_history_v2" } },
+            "required": ["key"]
+          },
+          "then": {
+            "properties": {
+              "platform_destinations": {
+                "const": [
+                  {
+                    "platform": "electron",
+                    "key": "open3dcalc_pwless_history_v1",
+                    "surface": "sqlite_storage_table"
+                  },
+                  {
+                    "platform": "web",
+                    "key": "open3dcalc_history_v2",
+                    "surface": "localStorage"
+                  },
+                  {
+                    "platform": "pwa",
+                    "key": "open3dcalc_history_v2",
+                    "surface": "localStorage"
+                  }
+                ]
+              }
             }
           }
         }

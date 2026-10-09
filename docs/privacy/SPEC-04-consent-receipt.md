@@ -5,8 +5,8 @@
 The receipt issuance, consent prerequisite, and withdrawal-as-a-condition-of-saving rules in
 this specification are superseded for current local saves in both Stable and Beta. Neither
 channel requires consent, a receipt, or withdrawal state before accepting a save. Stable and
-Desktop follow SPEC-01's exact plaintext policy; Beta remains limited to synthetic-only test
-data and its existing restrictions. This does not authorize inspection or conversion of
+Desktop follows SPEC-01's exact plaintext policy; Beta is intended for synthetic test data but
+does not validate record contents, and retains its other restrictions. This does not authorize inspection or conversion of
 historical vault bytes, which remain inert and outside current deletion scope.
 
 Receipts issued under earlier policy versions remain untouched historical records. Under
@@ -20,6 +20,10 @@ saves.
 **Status:** Superseded for save prerequisites by approved policy 1.9; historical receipts retained
 **Addresses findings:** R5 (consent), R14 (receipt canonicalização)
 **Related:** SPEC-01 (manifest), SPEC-02 (erasure), ADR-002 (quarantine)
+
+> **Historical D1.0 material below.** Sections 1–8 preserve the former consent-receipt and
+> withdrawal proposal, including default-deny language. Policy 1.9 above supersedes it for
+> current local saves; old receipts remain historical records and do not gate saves.
 
 ## 1. Goal
 
@@ -223,12 +227,11 @@ designed, not when the omission is noticed.
   per-key manifest lookup a `version` bump re-labels every existing envelope's
   `S` and strands it. See ADR-001 §3.3 `TODO(hermes)`.
 
-## 7. What D1.0 does NOT deliver
+## 7. Historical D1.0 implementation baseline
 
-D1.0 is the normative text. As of D1.0, consent is a bare boolean flag
-(`open3dcalc_consent_v1`) with no receipt, no hash, no withdrawal semantics — that is the
-gap this spec obligates D1.1+ to close. TEST-MATRIX §8 defines the mandatory contract
-tests (tamper detection, withdrawal effect per manifest key, policy version change).
+At the D1.0 snapshot, consent was a bare boolean flag (`open3dcalc_consent_v1`) with no receipt,
+hash, or withdrawal semantics. That is historical rationale, not a current save gate. Receipt
+and policy-version test coverage is in TEST-MATRIX §7.
 
 ## 8. Compliance trace
 
@@ -238,21 +241,23 @@ tests (tamper detection, withdrawal effect per manifest key, policy version chan
   tamper-evident, invalid ⇒ re-consent).
 - Cross-references: SPEC-01 (`consent_record` class constraints; `legal_basis` per key),
   SPEC-02 (erasure saga executes withdrawal), ADR-001 (receipt at-rest encryption),
-  ADR-002 (banner dismissal ≠ acceptance), TEST-MATRIX §8.
+  ADR-002 (historical banner-dismissal proposal), TEST-MATRIX §7.
 
 ## Status
 
-**Status: Proposed (awaiting Themis gate + user final approval)**
+**Status:** Superseded for current local-save prerequisites by policy 1.9; historical receipt
+format and interpretation remain relevant to previously issued records.
 
-## Beta test-only profile addendum (approved scope; Waves 1–3 implemented)
+## Beta test-only profile addendum (approved scope; implementation on current branch)
 
-SPEC-04 remains the receipt-backed Stable/Desktop consent contract. The Web-Beta test-only
-profile asks for no consent and issues no receipt because it is limited to generated synthetic
-test records and does not process real personal data. Its first-run disclosure is informational
-only and must not become a consent gate, password prompt, withdrawal control, or privacy-receipt
-surface. Beta consent and receipt APIs are not reachable from the Beta app.
+SPEC-04 remains the historical receipt contract for records issued under earlier policies.
+Current Stable/Desktop and Web-Beta local saves require no consent receipt. The Web-Beta profile
+is intended for synthetic test data and issues no receipt; the app does not validate record
+contents, and same-origin code can still access browser storage. Its first-run disclosure is
+informational only and is not a consent gate, password prompt, withdrawal control, or
+privacy-receipt surface. Beta consent and receipt APIs are not reachable from the Beta app.
 
-This addendum does not change the Stable receipt format, policy hash, policy version, or
-historical consent/withdrawal guarantees. Waves 1–3 are implemented: Beta first-run
-disclosure and reachability removals are enforced (betaFirstRun, betaReachability);
-Stable consent enforcement is unchanged.
+This addendum does not change the retained receipt format or historical receipt interpretation.
+Beta first-run disclosure and reachability removals are implemented on the current branch;
+final Themis review is pending and no publication is authorized or performed. Stable saves
+follow policy 1.9 and are not gated on receipt state.
