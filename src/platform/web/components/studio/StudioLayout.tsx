@@ -193,7 +193,7 @@ export const StudioLayout: React.FC = () => {
           ref={mainRef}
           className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${
             isBetaChannel ? "" : "min-h-0 overflow-y-auto overscroll-y-contain"
-          } ${focusMode ? "max-w-7xl mx-auto" : ""}`}
+          } ${focusMode ? "max-w-[84rem] mx-auto" : ""}`}
         >
           {/* Focus mode exit banner. The exit button uses the arbitrary-value
               form for `--accent-fill*` — see the note on the shell root: those

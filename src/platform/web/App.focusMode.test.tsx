@@ -211,7 +211,7 @@ describe("web App — Focus Mode chrome", () => {
 
     enterFocusMode();
 
-    expect(main!.className).toContain("max-w-7xl");
+    expect(main!.className).toContain("max-w-[84rem]");
     expect(main!.className).toContain("mx-auto");
   });
 

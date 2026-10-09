@@ -32,7 +32,7 @@ test("Studio PR #280 layout, theme, currency and mode behavior", async () => {
   const themeSurfaces = new Map();
 
   for (const theme of ["light", "dark"]) {
-    for (const width of [1440, 390]) {
+    for (const width of [1920, 1440, 390]) {
       const context = await browser.newContext({
         viewport: { width, height: width === 390 ? 844 : 900 },
         colorScheme: theme,
@@ -72,6 +72,26 @@ test("Studio PR #280 layout, theme, currency and mode behavior", async () => {
         );
         await modeGroup.getByRole("button", { name: "Clássico" }).click();
 
+        const complexityGroup = page.getByRole("group", {
+          name: "Nível de cálculo",
+        });
+        const quickMode = complexityGroup.getByRole("button", {
+          name: "Rápido",
+        });
+        const detailedMode = complexityGroup.getByRole("button", {
+          name: "Detalhado",
+        });
+        const proMode = complexityGroup.getByRole("button", {
+          name: "Avançado / Pro",
+        });
+        await detailedMode.click();
+        assert.equal(await detailedMode.getAttribute("aria-pressed"), "true");
+        assert.equal(await quickMode.getAttribute("aria-pressed"), "false");
+        await proMode.click();
+        assert.equal(await proMode.getAttribute("aria-pressed"), "true");
+        await quickMode.click();
+        assert.equal(await quickMode.getAttribute("aria-pressed"), "true");
+
         const currency = page.getByRole("combobox", { name: "Moeda base" });
         await currency.selectOption("USD");
         await page.waitForFunction(() => {
@@ -99,9 +119,16 @@ test("Studio PR #280 layout, theme, currency and mode behavior", async () => {
               element.classList.contains("lg:flex-row"),
           );
           if (!grid) throw new Error("Centered calculator grid missing");
+          const modeSelector = mainElement
+            .querySelector('[aria-label="Modo da calculadora"]')
+            ?.closest("section");
+          if (!(modeSelector instanceof globalThis.HTMLElement)) {
+            throw new Error("Calculator mode selector missing");
+          }
 
           const mainRect = mainElement.getBoundingClientRect();
           const gridRect = grid.getBoundingClientRect();
+          const modeRect = modeSelector.getBoundingClientRect();
           const style = globalThis.getComputedStyle(mainElement);
           const paddingLeft = Number.parseFloat(style.paddingLeft);
           const paddingRight = Number.parseFloat(style.paddingRight);
@@ -117,6 +144,8 @@ test("Studio PR #280 layout, theme, currency and mode behavior", async () => {
               gridRect.left + gridRect.width / 2 - contentCenter,
             ),
             gridWidth: gridRect.width,
+            modeSelectorWidth: modeRect.width,
+            calculatorModeWidthDelta: Math.abs(gridRect.width - modeRect.width),
             headerBackground: globalThis.getComputedStyle(
               globalThis.document.querySelector("header"),
             ).backgroundColor,
@@ -139,12 +168,42 @@ test("Studio PR #280 layout, theme, currency and mode behavior", async () => {
         );
         assert.ok(metrics.gridWidth > 0, "calculator grid is visible");
         assert.ok(
+          metrics.gridWidth <= 1280,
+          `calculator exceeded 7xl max width: ${metrics.gridWidth}px`,
+        );
+        assert.ok(
+          metrics.calculatorModeWidthDelta <= 2,
+          `mode selector and calculator widths differ by ${metrics.calculatorModeWidthDelta}px`,
+        );
+        assert.ok(
           metrics.centeredDelta <= 2,
           `grid is off-center by ${metrics.centeredDelta}px`,
         );
         assert.equal(metrics.modeInsideMain, true);
         assert.equal(metrics.themeClass, theme);
         themeSurfaces.set(theme, metrics.headerBackground);
+
+        if (width === 1920) {
+          await page.getByRole("button", { name: "Modo Foco" }).click();
+          const focusWidth = await page.evaluate(() => {
+            const mainElement = globalThis.document.querySelector("main");
+            const grid = Array.from(
+              mainElement?.querySelectorAll("div") ?? [],
+            ).find(
+              (element) =>
+                element.classList.contains("max-w-7xl") &&
+                element.classList.contains("lg:flex-row"),
+            );
+            return grid?.getBoundingClientRect().width ?? 0;
+          });
+          assert.ok(
+            focusWidth > 1152 && focusWidth <= 1280,
+            `1920px focus-mode calculator width should use the wider 7xl lane, got ${focusWidth}px`,
+          );
+          await page
+            .getByRole("button", { name: "Sair do Modo Foco (Esc)" })
+            .click();
+        }
 
         await page.screenshot({
           path: `${screenshotDir}/studio-${width}-${theme}.png`,
