@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: false }));
@@ -84,5 +84,49 @@ describe("StudioCockpitDock Stable layout", () => {
     // itself add palette debt to the token floor.
     expect(html).not.toMatch(/bg-\[#[0-9a-f]{3,8}\]/i);
     expect(html).toMatch(/var\(--color-/);
+  });
+
+  it("reserves document space after the fixed dock for the last controls", () => {
+    render(
+      <StudioCockpitDock
+        onOpenMiniDash={vi.fn()}
+        onToggleFocusMode={vi.fn()}
+        onOpenShortcuts={vi.fn()}
+        onTabChange={vi.fn()}
+        onOpenCopilot={vi.fn()}
+        onOpenNewQuote={vi.fn()}
+      />,
+    );
+
+    const clearance = screen.getByTestId("cockpit-dock-clearance");
+    expect(clearance).toHaveAttribute("aria-hidden", "true");
+    expect(clearance).toHaveClass("h-[calc(6rem+env(safe-area-inset-bottom))]");
+    expect(clearance.querySelector("button")).toBeNull();
+  });
+
+  it("keeps the global dock actions unique and reachable from quick actions", () => {
+    const onOpenCopilot = vi.fn();
+    render(
+      <StudioCockpitDock
+        onOpenMiniDash={vi.fn()}
+        onToggleFocusMode={vi.fn()}
+        onOpenShortcuts={vi.fn()}
+        onTabChange={vi.fn()}
+        onOpenCopilot={onOpenCopilot}
+        onOpenNewQuote={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByRole("button", { name: /Mini-Dash/ })).toHaveLength(
+      1,
+    );
+    expect(screen.getAllByRole("button", { name: "Modo Foco" })).toHaveLength(
+      1,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Ações Rápidas/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Assistente IA de Impressão" }),
+    );
+    expect(onOpenCopilot).toHaveBeenCalledOnce();
   });
 });

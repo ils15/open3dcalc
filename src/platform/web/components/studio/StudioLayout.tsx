@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
@@ -36,6 +36,7 @@ import { isBetaChannel } from "@/shared/config/betaChannel";
 
 export const StudioLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("calculator");
+  const mainRef = useRef<HTMLElement>(null);
   // `layoutMode` is SHARED state, not local. It used to be a local `useState`,
   // which meant `useLayoutStore` kept reporting its `"classic"` default no matter
   // what the user picked here — so `useAppInit`'s first-visit tutorial guard
@@ -54,9 +55,18 @@ export const StudioLayout: React.FC = () => {
   const [focusMode, setFocusMode] = useState(false);
   const [currency, setCurrency] = useState("BRL");
 
-  // Demo mode templates: 'fdm' or 'resin'
-  const [demoTemplate, setDemoTemplate] = useState<"fdm" | "resin">("fdm");
+  // One source of truth for the calculator's active material technology and
+  // its matching demo preset.
+  const [activeTechnology, setActiveTechnology] = useState<"fdm" | "resin">(
+    "fdm",
+  );
   const [currentProjectName, setCurrentProjectName] = useState("");
+
+  useEffect(() => {
+    if (typeof mainRef.current?.scrollTo === "function") {
+      mainRef.current.scrollTo(0, 0);
+    }
+  }, [activeTab, layoutMode]);
 
   // Initialize channel-specific data, stable defaults, tutorial, and shared URLs.
   useAppInit(setActiveTab);
@@ -142,7 +152,9 @@ export const StudioLayout: React.FC = () => {
        text clears AA in BOTH themes. Same rule the token layer already
        states for the `--*-fill` family: when the background is fixed, the ink
        must be fixed too. */
-    <div className="min-h-screen bg-surface-canvas text-text-primary flex flex-col font-sans selection:bg-[var(--color-accent-fill)] selection:text-[var(--color-accent-fill-fg)]">
+    <div
+      className={`${isBetaChannel ? "min-h-screen" : "h-dvh overflow-hidden"} bg-surface-canvas text-text-primary flex flex-col font-sans selection:bg-[var(--color-accent-fill)] selection:text-[var(--color-accent-fill-fg)]`}
+    >
       {/* Global guard feedback must survive focus mode, which removes the chrome. */}
       <DemoExportBlockedToast focusMode={focusMode} />
 
@@ -152,23 +164,14 @@ export const StudioLayout: React.FC = () => {
           <StudioHeader
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            onOpenCopilot={() => setIsCopilotOpen(true)}
-            demoTemplate={demoTemplate}
-            onSelectDemoTemplate={setDemoTemplate}
+            activeTechnology={activeTechnology}
+            showTechnologyStatus={layoutMode === "classic"}
             currentProjectName={currentProjectName}
           />
           <StudioSubHeader
             activeTab={activeTab}
-            onTabChange={setActiveTab}
             layoutMode={layoutMode}
             onLayoutChange={setLayoutMode}
-            currency={currency}
-            onCurrencyChange={setCurrency}
-            focusMode={focusMode}
-            onToggleFocusMode={() => setFocusMode(!focusMode)}
-            onOpenMiniDash={() => setIsMiniDashOpen(true)}
-            onOpenCopilot={() => setIsCopilotOpen(true)}
-            onOpenShortcuts={() => setIsShortcutsOpen(true)}
             onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
           />
           <DemoModeIndicator />
@@ -177,7 +180,11 @@ export const StudioLayout: React.FC = () => {
       )}
 
       {/* Main Workspace with Sidebar */}
-      <div className="flex-1 flex w-full relative">
+      <div
+        className={`flex-1 flex w-full relative ${
+          isBetaChannel ? "" : "min-h-0 overflow-hidden"
+        }`}
+      >
         {/* Left Navigation Sidebar */}
         {!focusMode && (
           <StudioSidebar
@@ -192,7 +199,10 @@ export const StudioLayout: React.FC = () => {
 
         {/* Main Content Area */}
         <main
-          className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${!isBetaChannel && !focusMode ? "pb-24 sm:pb-24 lg:pb-24" : ""} ${focusMode ? "max-w-7xl mx-auto" : ""}`}
+          ref={mainRef}
+          className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${
+            isBetaChannel ? "" : "min-h-0 overflow-y-auto overscroll-y-contain"
+          } ${focusMode ? "max-w-7xl mx-auto" : ""}`}
         >
           {/* Focus mode exit banner. The exit button uses the arbitrary-value
               form for `--accent-fill*` — see the note on the shell root: those
@@ -249,8 +259,8 @@ export const StudioLayout: React.FC = () => {
                     <StudioCalculatorView
                       onOpenCopilot={() => setIsCopilotOpen(true)}
                       onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
-                      demoTemplate={demoTemplate}
-                      onSelectDemoTemplate={setDemoTemplate}
+                      activeTechnology={activeTechnology}
+                      onTechnologyChange={setActiveTechnology}
                       onProjectNameChange={setCurrentProjectName}
                       onTabChange={setActiveTab}
                     />

@@ -16,16 +16,8 @@ function renderSubHeader() {
   return render(
     <StudioSubHeader
       activeTab="calculator"
-      onTabChange={vi.fn()}
       layoutMode="classic"
       onLayoutChange={vi.fn()}
-      currency="BRL"
-      onCurrencyChange={vi.fn()}
-      focusMode={false}
-      onToggleFocusMode={vi.fn()}
-      onOpenMiniDash={vi.fn()}
-      onOpenCopilot={vi.fn()}
-      onOpenShortcuts={vi.fn()}
       onOpenQuoteModal={vi.fn()}
     />,
   );

@@ -22,9 +22,7 @@ describe("StudioHeader theme surfaces", () => {
         <StudioHeader
           activeTab={activeTab}
           onTabChange={vi.fn()}
-          onOpenCopilot={vi.fn()}
-          demoTemplate="fdm"
-          onSelectDemoTemplate={vi.fn()}
+          activeTechnology="fdm"
         />,
       );
 

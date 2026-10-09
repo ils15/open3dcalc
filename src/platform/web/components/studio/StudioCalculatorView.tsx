@@ -34,15 +34,14 @@ import { guardExport } from "@/shared/lib/demoExportGuard";
 export interface StudioCalculatorViewProps {
   onOpenCopilot: () => void;
   onOpenQuoteModal: () => void;
-  demoTemplate?: "fdm" | "resin";
-  onSelectDemoTemplate?: (template: "fdm" | "resin") => void;
+  activeTechnology: "fdm" | "resin";
+  onTechnologyChange: (technology: "fdm" | "resin") => void;
   onProjectNameChange?: (name: string) => void;
   onTabChange?: (tab: Tab) => void;
 }
 
 const DEMO_PRESETS = {
   fdm: {
-    tech: "fdm" as const,
     projectName: "Suporte Articulado FDM",
     filamentType: "PLA Basic Preto",
     costPerKg: 110,
@@ -61,7 +60,6 @@ const DEMO_PRESETS = {
     hourlyRate: 25,
   },
   resin: {
-    tech: "resin" as const,
     projectName: "Miniatura Colecionável Resina",
     filamentType: "Resina Standard Cinza",
     costPerKg: 180, // R$/L
@@ -87,7 +85,6 @@ const DEMO_PRESETS = {
 };
 
 const CLEAN_INITIAL = {
-  tech: "fdm" as const,
   projectName: "",
   filamentType: "PLA Basic",
   costPerKg: 120,
@@ -118,9 +115,7 @@ export const StudioCalculatorView: React.FC<StudioCalculatorViewProps> = (
   props,
 ) => {
   const isDemoMode = useIsDemoMode();
-  const formKey = isDemoMode
-    ? `demo-${props.demoTemplate ?? "fdm"}`
-    : "user-clean";
+  const formKey = isDemoMode ? `demo-${props.activeTechnology}` : "user-clean";
 
   return (
     <StudioCalculatorForm key={formKey} isDemoMode={isDemoMode} {...props} />
@@ -134,20 +129,21 @@ interface StudioCalculatorFormProps extends StudioCalculatorViewProps {
 const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
   onOpenCopilot,
   onOpenQuoteModal,
-  demoTemplate = "fdm",
-  onSelectDemoTemplate,
+  activeTechnology,
+  onTechnologyChange,
   onProjectNameChange,
   onTabChange,
   isDemoMode,
 }) => {
-  const initial = isDemoMode ? DEMO_PRESETS[demoTemplate] : CLEAN_INITIAL;
+  const initial = isDemoMode ? DEMO_PRESETS[activeTechnology] : CLEAN_INITIAL;
 
   // Stores
   const calcStore = useCalculatorStore();
   const spools = useSpoolStore((s) => s.spools);
 
-  // Core Tech Switcher (FDM vs Resin)
-  const [tech, setTech] = useState<"fdm" | "resin">(initial.tech);
+  // Technology is owned by StudioLayout so the demo preset and material
+  // selector cannot drift apart.
+  const tech = activeTechnology;
   const [projectName, setProjectName] = useState(initial.projectName);
   const [activeSection, setActiveSection] = useState<
     "material" | "params" | "extras" | "pricing" | "advanced"
@@ -242,7 +238,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
   });
 
   const handleTechSwitch = (newTech: "fdm" | "resin") => {
-    setTech(newTech);
+    onTechnologyChange(newTech);
     calcStore.setActiveTab(newTech);
     setCustomSellPrice(null);
 
@@ -567,25 +563,27 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               <div className="flex items-center gap-1 bg-surface-sunken p-0.5 rounded-lg border border-accent/30">
                 <button
                   type="button"
-                  onClick={() => onSelectDemoTemplate?.("fdm")}
+                  onClick={() => onTechnologyChange("fdm")}
+                  aria-pressed={activeTechnology === "fdm"}
                   className={`min-h-11 px-3 py-1 rounded text-xs font-semibold transition-all ${
-                    demoTemplate === "fdm"
+                    activeTechnology === "fdm"
                       ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
                       : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
-                  🖨️ Template Filamento (FDM)
+                  <span aria-hidden="true">🖨️ </span>Template Filamento (FDM)
                 </button>
                 <button
                   type="button"
-                  onClick={() => onSelectDemoTemplate?.("resin")}
+                  onClick={() => onTechnologyChange("resin")}
+                  aria-pressed={activeTechnology === "resin"}
                   className={`min-h-11 px-3 py-1 rounded text-xs font-semibold transition-all ${
-                    demoTemplate === "resin"
+                    activeTechnology === "resin"
                       ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
                       : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
-                  💧 Template Resina (MSLA)
+                  <span aria-hidden="true">💧 </span>Template Resina (MSLA)
                 </button>
               </div>
             </div>
@@ -596,6 +594,8 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             <button
               type="button"
               onClick={() => handleTechSwitch("fdm")}
+              aria-label="Insumo Filamento (FDM)"
+              aria-pressed={tech === "fdm"}
               className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all relative overflow-hidden group ${
                 tech === "fdm"
                   ? "bg-accent-subtle border-accent shadow-md shadow-accent/40 ring-1 ring-accent/40"
@@ -639,6 +639,8 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             <button
               type="button"
               onClick={() => handleTechSwitch("resin")}
+              aria-label="Insumo Resina (SLA / MSLA / DLP)"
+              aria-pressed={tech === "resin"}
               className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all relative overflow-hidden group ${
                 tech === "resin"
                   ? "bg-accent-subtle border-accent shadow-md shadow-accent/40 ring-1 ring-accent/40"

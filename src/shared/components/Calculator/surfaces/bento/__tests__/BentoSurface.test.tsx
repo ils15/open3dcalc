@@ -492,4 +492,18 @@ describe("BentoSurface", () => {
       "Precificação",
     ]);
   });
+
+  it("allows the Bento header controls to wrap within a narrow viewport", () => {
+    useLayoutStore.setState({ layoutMode: "bento" });
+
+    render(<CalculatorSurface />);
+
+    const region = screen.getByRole("region", {
+      name: "Calculadora em Bento Grid",
+    });
+    const controls = screen.getByTestId("bento-header-controls");
+
+    expect(region).toHaveClass("min-w-0");
+    expect(controls).toHaveClass("min-w-0", "max-w-full", "flex-wrap");
+  });
 });
