@@ -49,14 +49,14 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 }) => {
   const allModules: StudioModule[] = [
     {
-      id: "calculator" as Tab,
-      label: "Calculadora",
-      icon: <Calculator className="w-4 h-4" />,
-    },
-    {
       id: "dashboard" as Tab,
       label: "Dashboard",
       icon: <BarChart3 className="w-4 h-4" />,
+    },
+    {
+      id: "calculator" as Tab,
+      label: "Calculadora",
+      icon: <Calculator className="w-4 h-4" />,
     },
     {
       id: "infill" as Tab,

@@ -149,10 +149,27 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
     "material" | "params" | "extras" | "pricing" | "advanced"
   >("material");
 
-  // Complexity level: Rápido vs Detalhado vs Avançado / Oficina Pro
-  const [complexity, setComplexity] = useState<
-    "rapido" | "detalhado" | "avancado"
-  >("detalhado");
+  // Keep the Studio selector on the same persisted level as Classic/Bento.
+  const complexity =
+    calcStore.calcLevel === "basic"
+      ? "rapido"
+      : calcStore.calcLevel === "intermediate"
+        ? "detalhado"
+        : "avancado";
+  const setComplexity = (level: "rapido" | "detalhado" | "avancado") => {
+    calcStore.setCalcLevel(
+      level === "rapido"
+        ? "basic"
+        : level === "detalhado"
+          ? "intermediate"
+          : "advanced",
+    );
+    if (level !== "avancado") {
+      setActiveSection((current) =>
+        current === "advanced" ? "pricing" : current,
+      );
+    }
+  };
 
   // Common input states
   const [filamentType, setFilamentType] = useState(initial.filamentType);
@@ -521,7 +538,12 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             ].map((sec) => (
               <button
                 key={sec.id}
-                onClick={() => setActiveSection(sec.id)}
+                onClick={() => {
+                  setActiveSection(sec.id);
+                  document
+                    .getElementById(`studio-section-${sec.id}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
                 className={`flex-1 md:flex-none min-h-11 text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                   activeSection === sec.id
                     ? "bg-accent-subtle text-info border border-accent/30"
@@ -683,14 +705,14 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           </div>
 
           {/* 🌟 NÍVEL DE COMPLEXIDADE DO FORMULÁRIO (RÁPIDO vs DETALHADO vs AVANÇADO) */}
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-raised border border-border-subtle rounded-xl p-2.5 px-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-raised border border-border-subtle rounded-xl p-3">
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-info" />
               <div>
                 <span className="text-xs font-bold text-text-primary block">
                   Nível de Cálculo & Detalhamento:
                 </span>
-                <span className="text-[10px] text-text-secondary">
+                <span className="text-[10px] text-text-secondary leading-snug">
                   {complexity === "rapido"
                     ? "Visão expressa e simplificada"
                     : complexity === "detalhado"
@@ -700,42 +722,57 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-1 bg-surface-raised p-1 rounded-lg border border-border-subtle">
+            <div
+              role="group"
+              aria-label="Nível de cálculo"
+              className="grid w-full grid-cols-3 gap-1.5 rounded-xl border border-border-subtle bg-surface-sunken p-1.5 sm:flex sm:w-auto"
+            >
               <button
                 type="button"
                 onClick={() => setComplexity("rapido")}
-                className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                aria-pressed={complexity === "rapido"}
+                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-w-[6rem] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
                   complexity === "rapido"
-                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                    : "text-text-secondary hover:text-text-primary"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md"
+                    : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
               >
-                ⚡ Rápido
+                <Zap className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span>Rápido</span>
               </button>
               <button
                 type="button"
                 onClick={() => setComplexity("detalhado")}
-                className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                aria-pressed={complexity === "detalhado"}
+                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-w-[7rem] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
                   complexity === "detalhado"
-                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                    : "text-text-secondary hover:text-text-primary"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md"
+                    : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
               >
-                🔍 Detalhado
+                <Sliders className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span>Detalhado</span>
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setComplexity("avancado");
                   setActiveSection("advanced");
+                  window.requestAnimationFrame(() => {
+                    document
+                      .getElementById("studio-section-advanced")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  });
                 }}
-                className={`min-h-11 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                aria-pressed={complexity === "avancado"}
+                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-w-[9rem] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
                   complexity === "avancado"
-                    ? "bg-gradient-to-r from-accent to-accent text-text-primary shadow-sm font-bold"
-                    : "text-text-secondary hover:text-text-primary"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md"
+                    : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
               >
-                ⚙️ Avançado / Pro
+                <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span>Avançado / Pro</span>
               </button>
             </div>
           </div>
@@ -853,8 +890,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               (TIPO DE FILAMENTO, PESO ESTIMADO DO FATIADOR, CUSTO / KG) in both
               the FDM and the Resin branch. */}
           <div
+            id="studio-section-material"
             data-tutorial="material"
-            className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
+            className="scroll-mt-24 bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
               <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
@@ -1055,8 +1093,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               IMPRESSÃO, POTÊNCIA FDM (MESA+BICO) and TARIFA ENERGIA (R$/kWh)
               are all in this card. */}
           <div
+            id="studio-section-params"
             data-tutorial="print"
-            className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
+            className="scroll-mt-24 bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
               <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
@@ -1211,7 +1250,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           </div>
 
           {/* Section 3: Custos Extras */}
-          <div className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3">
+          <div
+            id="studio-section-extras"
+            className="scroll-mt-24 bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
+          >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
               <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
                 <Layers className="w-4 h-4 text-accent" />
@@ -1222,137 +1264,165 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               </span>
             </div>
 
-            {tech === "resin" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-surface-raised p-3 rounded-xl border border-border-subtle">
-                <div>
-                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
-                    ÁLCOOL ISOPROPÍLICO (IPA)
-                  </label>
-                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={ipaCost}
-                      onChange={(e) => setIpaCost(Number(e.target.value))}
-                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
-                    EPIS (LUVAS + FILTRO)
-                  </label>
-                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={ppeCost}
-                      onChange={(e) => setPpeCost(Number(e.target.value))}
-                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
-                    DESGASTE FILME FEP
-                  </label>
-                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={fepCost}
-                      onChange={(e) => setFepCost(Number(e.target.value))}
-                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
-                    />
-                  </div>
-                </div>
+            {complexity === "rapido" ? (
+              <div className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-sunken p-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-text-secondary">
+                  Os custos extras salvos continuam incluídos na estimativa: R${" "}
+                  {extraCosts.toFixed(2).replace(".", ",")}.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setComplexity("detalhado")}
+                  className="min-h-11 shrink-0 rounded-lg border border-border-subtle px-3 py-2 text-xs font-semibold text-text-primary hover:bg-surface-raised"
+                >
+                  Editar custos no modo Detalhado
+                </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-surface-raised p-3 rounded-xl border border-border-subtle">
-                <div>
-                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
-                    ADESIVO / COLA DE MESA (R$)
-                  </label>
-                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={bedAdhesionCost}
-                      onChange={(e) =>
-                        setBedAdhesionCost(Number(e.target.value))
-                      }
-                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
-                    />
-                  </div>
-                </div>
+              <>
+                {tech === "resin" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-surface-raised p-3 rounded-xl border border-border-subtle">
+                    <div>
+                      <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
+                        ÁLCOOL ISOPROPÍLICO (IPA)
+                      </label>
+                      <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                        <span className="text-text-muted mr-1.5 font-bold">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          step="0.5"
+                          value={ipaCost}
+                          onChange={(e) => setIpaCost(Number(e.target.value))}
+                          className="bg-transparent text-text-primary font-semibold outline-none w-full"
+                        />
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
-                    DESGASTE DE BICO / NOZZLE (R$)
-                  </label>
-                  <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
-                    <span className="text-text-muted mr-1.5 font-bold">R$</span>
+                    <div>
+                      <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
+                        EPIS (LUVAS + FILTRO)
+                      </label>
+                      <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                        <span className="text-text-muted mr-1.5 font-bold">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          step="0.5"
+                          value={ppeCost}
+                          onChange={(e) => setPpeCost(Number(e.target.value))}
+                          className="bg-transparent text-text-primary font-semibold outline-none w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
+                        DESGASTE FILME FEP
+                      </label>
+                      <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                        <span className="text-text-muted mr-1.5 font-bold">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          step="0.5"
+                          value={fepCost}
+                          onChange={(e) => setFepCost(Number(e.target.value))}
+                          className="bg-transparent text-text-primary font-semibold outline-none w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-surface-raised p-3 rounded-xl border border-border-subtle">
+                    <div>
+                      <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
+                        ADESIVO / COLA DE MESA (R$)
+                      </label>
+                      <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                        <span className="text-text-muted mr-1.5 font-bold">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={bedAdhesionCost}
+                          onChange={(e) =>
+                            setBedAdhesionCost(Number(e.target.value))
+                          }
+                          className="bg-transparent text-text-primary font-semibold outline-none w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
+                        DESGASTE DE BICO / NOZZLE (R$)
+                      </label>
+                      <div className="flex items-center bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs">
+                        <span className="text-text-muted mr-1.5 font-bold">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={nozzleWearCost}
+                          onChange={(e) =>
+                            setNozzleWearCost(Number(e.target.value))
+                          }
+                          className="bg-transparent text-text-primary font-semibold outline-none w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
+                      HARDWARE / PARAFUSOS (R$)
+                    </label>
                     <input
                       type="number"
-                      step="0.1"
-                      value={nozzleWearCost}
-                      onChange={(e) =>
-                        setNozzleWearCost(Number(e.target.value))
-                      }
-                      className="bg-transparent text-text-primary font-semibold outline-none w-full"
+                      value={hardwareCost || ""}
+                      onChange={(e) => setHardwareCost(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
+                      EMBALAGEM & CAIXA (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={packagingCost || ""}
+                      onChange={(e) => setPackagingCost(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
+                      ACABAMENTO / PINTURA (R$)
+                    </label>
+                    <input
+                      type="number"
+                      value={finishingCost || ""}
+                      onChange={(e) => setFinishingCost(Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
                     />
                   </div>
                 </div>
-              </div>
+              </>
             )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
-                  HARDWARE / PARAFUSOS (R$)
-                </label>
-                <input
-                  type="number"
-                  value={hardwareCost || ""}
-                  onChange={(e) => setHardwareCost(Number(e.target.value))}
-                  placeholder="0"
-                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
-                  EMBALAGEM & CAIXA (R$)
-                </label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={packagingCost || ""}
-                  onChange={(e) => setPackagingCost(Number(e.target.value))}
-                  placeholder="0"
-                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
-                  ACABAMENTO / PINTURA (R$)
-                </label>
-                <input
-                  type="number"
-                  value={finishingCost || ""}
-                  onChange={(e) => setFinishingCost(Number(e.target.value))}
-                  placeholder="0"
-                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 text-xs text-text-primary outline-none"
-                />
-              </div>
-            </div>
           </div>
 
           {/* Section 4: Precificação Comercial & Lucro */}
@@ -1367,8 +1437,9 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               step now names only what this section shows (margin, hourly rate,
               sales channel, quantity discount table). This anchor did not move. */}
           <div
+            id="studio-section-pricing"
             data-tutorial="sales"
-            className="bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
+            className="scroll-mt-24 bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
               <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
@@ -1439,7 +1510,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
 
           {/* 🌟 SECTION 5: PARÂMETROS AVANÇADOS (Modo Oficina Pro) */}
           {complexity === "avancado" && (
-            <div className="bg-surface-raised border border-accent/40 rounded-xl p-4 flex flex-col gap-4 animate-fade-in">
+            <div
+              id="studio-section-advanced"
+              className="scroll-mt-24 bg-surface-raised border border-accent/40 rounded-xl p-4 flex flex-col gap-4 animate-fade-in"
+            >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-accent-subtle border border-accent/30 flex items-center justify-center text-accent">
