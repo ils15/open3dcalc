@@ -22,10 +22,38 @@ describe("StudioSidebar Stable layout", () => {
     renderSidebar();
     const btn = screen.getByRole("button", { name: "Calculadora" });
     expect(btn).toHaveClass("min-h-11", "min-w-11");
+    expect(btn.className).not.toMatch(/2xl:min-h-|2xl:min-w-/);
     const toggle = screen.getByRole("button", {
       name: /recolher painel|expandir painel/i,
     });
     expect(toggle).toHaveClass("min-h-11", "min-w-11");
+  });
+
+  it("keeps navigation typography identical when changing the active module", () => {
+    const { rerender } = renderSidebar();
+    const calculatorButton = screen.getByRole("button", {
+      name: "Calculadora",
+    });
+    const inactiveFontClass = screen
+      .getByRole("button", { name: "Dashboard" })
+      .className.split(" ")
+      .find((className) => className === "text-xs");
+
+    expect(calculatorButton).toHaveClass("text-xs");
+    expect(calculatorButton.className).not.toMatch(/2xl:text-/);
+
+    rerender(
+      <StudioSidebar
+        activeTab={"dashboard" as Tab}
+        onTabChange={vi.fn()}
+        collapsed={false}
+        onToggleCollapse={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Calculadora" })).toHaveClass(
+      inactiveFontClass ?? "text-xs",
+    );
   });
 
   it("keeps the Stable collapsed rail wide enough for 44px targets", () => {

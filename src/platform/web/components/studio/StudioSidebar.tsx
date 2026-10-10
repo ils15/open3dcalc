@@ -145,12 +145,11 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
   // The sidebar is now the only module navigation at every breakpoint, so its
   // collapsed rail and all destinations must remain usable as 44px targets.
-  const navTarget =
-    activeTab === "calculator"
-      ? "min-h-11 min-w-11 2xl:min-h-8 2xl:min-w-8"
-      : "min-h-11 min-w-11";
-  const navText =
-    activeTab === "calculator" ? "text-xs 2xl:text-[11px]" : "text-xs";
+  // Keep navigation typography and hit targets stable when switching modules.
+  // The former Calculator-specific 2xl rules made every sidebar label shrink
+  // and reduced its target height only on wide screens.
+  const navTarget = "min-h-11 min-w-11";
+  const navText = "text-xs";
   const railWidth = collapsed ? "w-[68px]" : "w-36";
   const sidebarTopClassName = "flex-1 min-h-0 overflow-y-auto";
   const sidebarBottomClassName =
