@@ -100,9 +100,13 @@ const electronAPI = {
       available: boolean;
       version?: string;
       releaseNotes?: string;
+      manual?: boolean;
     }> => ipcRenderer.invoke("update:check"),
 
-    /** Start downloading the available update. */
+    /**
+     * Start downloading the available update. When the update is manual
+     * (macOS, unsigned build) this opens the release page instead.
+     */
     download: (): Promise<void> => ipcRenderer.invoke("update:download"),
 
     /** Quit the app and install the downloaded update. */
@@ -143,11 +147,15 @@ const electronAPI = {
 
     /** Listen for update-available events. */
     onAvailable: (
-      callback: (data: { version: string; releaseNotes?: string }) => void,
+      callback: (data: {
+        version: string;
+        releaseNotes?: string;
+        manual?: boolean;
+      }) => void,
     ): (() => void) => {
       const handler = (
         _event: Electron.IpcRendererEvent,
-        data: { version: string; releaseNotes?: string },
+        data: { version: string; releaseNotes?: string; manual?: boolean },
       ) => callback(data);
       ipcRenderer.on("update:available", handler);
       return () => ipcRenderer.removeListener("update:available", handler);

@@ -174,14 +174,21 @@
           "target": "dmg",
           "arch": [
             "x64",
-            "arm64",
-            "universal"
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
           ]
         }
       ],
       "category": "public.app-category.utilities",
       "hardenedRuntime": true,
-      "artifactName": "${productName}-${version}.${ext}"
+      "identity": "-",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "dmg": {
       "contents": [
