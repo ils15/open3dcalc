@@ -144,6 +144,8 @@ Every phase and change must complete this checklist:
 - [ ] Até a decisão explícita sobre downgrade, não reescrever destrutivamente chaves anteriores e manter caminho de exportação/backup. Se uma migração exigida não puder ser não destrutiva, adiar a mudança de schema para depois da v2.0.
 - [ ] Bloquear Beta 5 e 2.0.0 se qualquer fixture de versão anterior falhar, houver perda de dados ou permanecer migração destrutiva sem recuperação.
 
+**Evidência parcial (09/10/2026):** comparação do source da `v1.14.0` com `main` confirmou que os stores Stable de clientes, orçamentos e histórico conservam suas chaves e versões persistidas. `src/shared/lib/__tests__/saveReloadChannels.test.ts` agora exercita fixtures sintéticas v1.14 desses três stores na Stable Web, incluindo hidratação, escrita e recarga. Isso cobre somente esses stores nesse canal e **não fecha** o gate transversal nem substitui a matriz completa de fixtures e superfícies.
+
 ### 🔴 Phase 1: Usability & Tutorials
 
 **Problem:** Current tutorials and onboarding are not good. We need a smoother experience that teaches users how to use the calculator without getting in the way.
