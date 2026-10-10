@@ -399,7 +399,7 @@ describe("Calculator layout order and responsive results state", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps the one results tree and focus order aligned on desktop", async () => {
+  it("keeps the one results tree and keyboard order aligned on desktop", async () => {
     availableWidth = 1100;
     mockResizeObserver();
     const user = userEvent.setup();
@@ -410,8 +410,8 @@ describe("Calculator layout order and responsive results state", () => {
     const children = Array.from(layout.children);
     expect(children.map((child) => child.getAttribute("data-testid"))).toEqual([
       "calculator-section-nav",
-      "results-sidebar",
       "calculator-inputs",
+      "results-sidebar",
     ]);
 
     const sidebar = screen.getByTestId("results-sidebar");
@@ -428,14 +428,24 @@ describe("Calculator layout order and responsive results state", () => {
     expect(layout.className).toContain("calculator-layout--three-region");
     expect(sidebar.className).not.toContain("order-");
     expect(inputs.className).not.toContain("order-");
+    expect(
+      screen.getByTestId("input-control").compareDocumentPosition(sidebar) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(screen.getAllByTestId("results-panel-instance")).toHaveLength(1);
     expect(screen.queryByTestId("inline-results")).not.toBeInTheDocument();
 
     await user.tab();
     expect(screen.getByTestId("nav-control")).toHaveFocus();
+    await user.tab();
+    expect(screen.getByTestId("input-control")).toHaveFocus();
+    await user.tab();
+    expect(screen.getByTestId("sidebar-settings-toggle")).toHaveFocus();
+    await user.keyboard("{Enter}");
+    await user.tab();
     for (const mode of ["compact", "tabs", "dock", "expanded"]) {
-      await user.tab();
       expect(screen.getByTestId(`sidebar-mode-${mode}`)).toHaveFocus();
+      if (mode !== "expanded") await user.tab();
     }
     await user.tab();
     expect(screen.getByTestId("sidebar-compact-chart")).toHaveFocus();
@@ -489,6 +499,7 @@ describe("Calculator layout order and responsive results state", () => {
     );
     expect(screen.getByRole("textbox", { name: "Price draft" })).toHaveFocus();
 
+    await user.click(screen.getByTestId("sidebar-settings-toggle"));
     await user.click(screen.getByTestId("sidebar-mode-tabs"));
     const barsTab = screen.getByRole("tab", { name: "results.sidebar.bars" });
     await user.click(barsTab);
@@ -580,7 +591,7 @@ describe("Calculator layout order and responsive results state", () => {
   });
 
   it.each([
-    { width: 1007, mode: "inline-results" },
+    { width: 911, mode: "inline-results" },
     { width: 900, mode: "inline-results" },
     { width: 768, mode: "inline-results" },
     { width: 390, mode: "inline-results" },
@@ -591,14 +602,23 @@ describe("Calculator layout order and responsive results state", () => {
 
     const layout = screen.getByTestId("calculator-layout");
     expect(layout).toHaveAttribute("data-layout-mode", mode);
+    expect(
+      Array.from(layout.children).map((child) =>
+        child.getAttribute("data-testid"),
+      ),
+    ).toEqual([
+      "calculator-section-nav",
+      "calculator-inputs",
+      "results-sidebar",
+    ]);
     expect(screen.getByTestId("results-sidebar").className).toContain(
-      "col-start-2 row-start-1",
+      "col-start-1 row-start-2",
     );
     expect(screen.getByTestId("results-sidebar").className).toContain(
       "scroll-mt-24",
     );
     expect(screen.getByTestId("calculator-inputs").className).toContain(
-      "row-start-2",
+      "row-start-1",
     );
     expect(screen.getAllByTestId("results-panel-instance")).toHaveLength(1);
     expect(screen.getByTestId("results-sidebar").className).not.toContain(

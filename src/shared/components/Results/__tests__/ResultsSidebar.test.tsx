@@ -36,6 +36,7 @@ describe("ResultsSidebar", () => {
     const user = userEvent.setup();
     render(<ResultsSidebar />);
 
+    await user.click(screen.getByTestId("sidebar-settings-toggle"));
     await user.click(screen.getByTestId("sidebar-mode-tabs"));
 
     expect(useLayoutStore.getState().sidebarMode).toBe("tabs");
@@ -66,6 +67,7 @@ describe("ResultsSidebar", () => {
     const user = userEvent.setup();
     render(<ResultsSidebar />);
 
+    await user.click(screen.getByTestId("sidebar-settings-toggle"));
     await user.click(screen.getByTestId("sidebar-mode-tabs"));
 
     const panel = screen.getByTestId("results-sidebar-scroll-region");
@@ -99,6 +101,7 @@ describe("ResultsSidebar", () => {
       "chart",
     );
 
+    await user.click(screen.getByTestId("sidebar-settings-toggle"));
     await user.click(screen.getByTestId("sidebar-compact-bars"));
 
     expect(screen.getByTestId("sidebar-compact-bars")).toHaveAttribute(
@@ -118,8 +121,10 @@ describe("ResultsSidebar", () => {
     expect(useLayoutStore.getState().sidebarMode).toBe("compact");
   });
 
-  it("does not claim a tabpanel relationship outside the tabs mode", () => {
+  it("does not claim a tabpanel relationship outside the tabs mode", async () => {
     render(<ResultsSidebar />);
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("sidebar-settings-toggle"));
 
     // Compact mode uses a pressed-button group, not a tablist.
     const panel = screen.getByTestId("results-sidebar-scroll-region");

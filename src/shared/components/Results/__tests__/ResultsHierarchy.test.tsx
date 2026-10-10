@@ -131,6 +131,9 @@ describe("ResultsPanel hierarchy", () => {
       screen.getByText(i18n.t("calc.sellPriceCustom")),
     ).toBeInTheDocument();
 
+    if (!screen.getByTestId("results-sidebar-settings").hasAttribute("open")) {
+      await user.click(screen.getByTestId("sidebar-settings-toggle"));
+    }
     const userMode = screen.getByTestId("sidebar-mode-tabs");
     await user.click(userMode);
     const barsTab = screen.getByTestId("sidebar-tab-bars");
@@ -154,7 +157,7 @@ describe("ResultsPanel hierarchy", () => {
     );
   });
 
-  it("keeps response, cost, diagnostics and actions in semantic order", () => {
+  it("keeps response, cost, diagnostics and actions in semantic order without duplicate totals", () => {
     render(<ResultsPanel variant="sidebar" />);
 
     const hierarchy = screen.getByTestId("results-hierarchy");
@@ -165,11 +168,11 @@ describe("ResultsPanel hierarchy", () => {
     expect(order).toEqual([
       "price-hero",
       "suggested-price-tool",
-      "profit-summary",
       "cost-distribution-card",
       "diagnostic-details",
       "results-actions",
     ]);
+    expect(screen.queryByTestId("profit-summary")).not.toBeInTheDocument();
   });
 
   it("keeps the calculation error as the first hierarchy child", () => {

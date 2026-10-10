@@ -17,33 +17,35 @@ const resultsSidebarSource = readRelative("../../Results/ResultsSidebar.tsx");
 
 describe("Calculator — effective-width results layout", () => {
   it("uses content minima rather than a viewport breakpoint", () => {
-    expect(CALCULATOR_THREE_REGION_MIN_REM).toBe(63);
+    expect(CALCULATOR_THREE_REGION_MIN_REM).toBe(58);
     expect(calculatorSource).toContain("new ResizeObserver");
     expect(calculatorSource).toContain("entry.contentRect.width");
-    expect(calculatorCssSource).toContain("minmax(32rem, 3.8fr)");
-    expect(calculatorCssSource).toMatch(/minmax\(\s*18rem\s*,\s*1\.9fr\s*\)/);
+    expect(calculatorCssSource).toContain("7rem minmax(32rem, 1fr) 18rem");
     expect(calculatorSource).not.toMatch(/2xl:grid-cols|w-\[336px\]/);
   });
 
-  it("expands only the Calculator measurement area into free desktop width", () => {
+  it("expands the calculator into free desktop width without clipping its left rail", () => {
     expect(calculatorSource).toContain('import "./Calculator.css"');
     expect(calculatorSource).toContain("calculator-viewport-measure");
     expect(calculatorCssSource).toContain("@media (min-width: 90rem)");
+    expect(calculatorCssSource).toContain("width: min(144rem, 100%)");
+    expect(calculatorCssSource).toContain("margin-inline: auto");
+    expect(calculatorCssSource).toContain("max-width: 14ch");
     expect(calculatorCssSource).toContain(
-      "width: min(144rem, calc(100vw - 24.5rem))",
+      "grid-template-columns: 7rem minmax(32rem, 1fr) 28rem",
     );
-    expect(calculatorCssSource).toContain("margin-inline-start: -4.375rem");
-    expect(calculatorCssSource).toContain("minmax(32rem, 3.8fr)");
+    expect(calculatorCssSource).not.toContain("margin-inline-start: -");
+    expect(calculatorCssSource).toContain("7rem minmax(32rem, 1fr) 18rem");
     expect(calculatorCssSource).not.toContain(
       "grid-template-columns: 8.125rem 33.8125rem 20.5625rem",
     );
   });
 
   it.each([
-    { width: 1007, rootFontSize: 16, expected: false },
-    { width: 1008, rootFontSize: 16, expected: true },
-    { width: 1133, rootFontSize: 18, expected: false },
-    { width: 1134, rootFontSize: 18, expected: true },
+    { width: 927, rootFontSize: 16, expected: false },
+    { width: 928, rootFontSize: 16, expected: true },
+    { width: 1025, rootFontSize: 18, expected: false },
+    { width: 1044, rootFontSize: 18, expected: true },
     { width: Number.NaN, rootFontSize: 16, expected: false },
   ])(
     "requires the region minimum for $width CSS px at $rootFontSize px/rem",

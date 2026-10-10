@@ -121,6 +121,24 @@ describe("StudioCalculatorModeSelector (calculator-context pills)", () => {
     expect(active.className).toContain("text-[var(--color-accent-fill-fg)]");
   });
 
+  it("offers a compact mode selector for the global toolbar", () => {
+    render(
+      <StudioCalculatorModeSelector
+        compact
+        mode="classic"
+        onModeChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Modo")).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Modo da calculadora" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clássico" })).toHaveClass(
+      "min-h-8",
+    );
+  });
+
   it("renders the Orçamento action on the token accent fill", () => {
     const onOpenQuoteModal = vi.fn();
     render(<StudioSubHeader onOpenQuoteModal={onOpenQuoteModal} />);

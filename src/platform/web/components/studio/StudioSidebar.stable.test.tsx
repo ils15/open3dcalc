@@ -38,7 +38,7 @@ describe("StudioSidebar Stable layout", () => {
     const { container } = renderSidebar();
     const aside = container.querySelector("aside") as HTMLElement;
     expect(aside.className).toBe(
-      "bg-surface-raised border-r border-border-subtle flex flex-col select-none shrink-0 transition-all duration-200 z-30 h-full min-h-0 overflow-hidden w-56",
+      "bg-surface-raised border-r border-border-subtle flex flex-col select-none shrink-0 transition-all duration-200 z-30 h-full min-h-0 overflow-hidden w-36",
     );
     expect(aside.className).toMatch(/(^|\s)h-full(\s|$)/);
     expect(aside.className).toMatch(/(^|\s)overflow-hidden(\s|$)/);
@@ -47,7 +47,7 @@ describe("StudioSidebar Stable layout", () => {
     ).not.toBeNull();
     const sidebarTop = aside.firstElementChild as HTMLElement;
     expect(sidebarTop).toHaveClass("flex-1", "min-h-0", "overflow-y-auto");
-    expect(sidebarTop.firstElementChild).toHaveClass("h-12");
+    expect(sidebarTop.firstElementChild).toHaveClass("h-10");
     const sidebarBottom = aside.lastElementChild as HTMLElement;
     expect(sidebarBottom).toHaveClass("p-3", "shrink-0");
     expect(screen.queryByText("Moeda Base")).not.toBeInTheDocument();

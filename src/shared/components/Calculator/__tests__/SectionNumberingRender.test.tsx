@@ -53,7 +53,7 @@ describe("numbered sections in the DOM", () => {
     );
 
     const rail = Array.from(container.querySelectorAll("nav")).find((n) =>
-      n.className.includes("w-[134px]"),
+      n.className.includes("w-28"),
     )!;
     const items = Array.from(rail.querySelectorAll("button"));
 
@@ -104,7 +104,7 @@ describe("numbered sections in the DOM", () => {
       <SectionNav activeSection="material" onSectionClick={() => {}} />,
     );
     const rail = Array.from(container.querySelectorAll("nav")).find((n) =>
-      n.className.includes("w-[134px]"),
+      n.className.includes("w-28"),
     )!;
     const print = Array.from(rail.querySelectorAll("button")).find((b) =>
       b.textContent.includes("calc.sectionShort.print"),

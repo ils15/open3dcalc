@@ -82,15 +82,15 @@ export function CostBreakdownCard({
     >
       <div
         data-testid="cost-distribution-card"
-        className="surface-elevated min-w-0 rounded-xl p-3 sm:p-5"
+        className="cost-distribution-card surface-elevated min-w-0 rounded-xl"
       >
-        <div className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2 sm:mb-4">
+        <div className="cost-distribution-heading text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2 sm:mb-4">
           {t("calc.costDistribution")}
         </div>
 
         <div
           data-testid="cost-distribution-compact"
-          className="mb-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-sunken)] p-3"
+          className="cost-distribution-summary mb-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-sunken)]"
           aria-label={compactLabel}
         >
           <p className="text-xs font-semibold text-[var(--text-primary)]">

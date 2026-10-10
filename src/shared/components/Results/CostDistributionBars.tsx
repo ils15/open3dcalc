@@ -37,11 +37,11 @@ export function CostDistributionBars({
     <div
       data-testid="compact-cost-bars"
       aria-label={t("calc.costDistribution")}
-      className="bg-[#0f172a] border border-[#1e293b] rounded-2xl p-4 text-slate-200 shadow-xl space-y-4"
+      className="compact-cost-bars bg-[#0f172a] border border-[#1e293b] rounded-2xl text-slate-200 shadow-xl"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-        <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+        <span className="compact-cost-bars-heading text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
           COMPOSIÇÃO DE CUSTOS
         </span>
         <div className="flex items-center gap-1 text-slate-500">
@@ -63,7 +63,7 @@ export function CostDistributionBars({
             <div
               key={`${segment.category}-${segment.name}`}
               data-testid={`compact-cost-bar-${segment.category}`}
-              className="flex items-center justify-between gap-2 py-0.5 text-slate-300"
+              className="compact-cost-bar grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 py-0.5 text-slate-300"
             >
               <div className="flex items-center gap-2 truncate">
                 <span
@@ -72,16 +72,18 @@ export function CostDistributionBars({
                     backgroundColor: CATEGORY_COLOR_TOKEN[segment.category],
                   }}
                 />
-                <span className="truncate text-slate-300">{segment.name}</span>
+                <span className="compact-cost-bar-name truncate text-slate-300">
+                  {segment.name}
+                </span>
               </div>
 
-              <div className="flex items-center gap-2.5 shrink-0 font-mono text-[11px]">
+              <div className="compact-cost-bar-values flex items-center gap-2.5 shrink-0 font-mono text-[11px]">
                 <span className="text-slate-400">{pct}%</span>
                 <span className="font-semibold text-white">
                   {formattedValue}
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <div className="col-span-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
                 <div
                   role="img"
                   aria-label={`${segment.name}: ${segment.pct.toFixed(1)}%`}

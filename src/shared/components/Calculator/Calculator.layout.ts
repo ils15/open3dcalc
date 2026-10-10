@@ -1,8 +1,8 @@
 /**
- * Minimum effective content width for three useful tracks:
- * 8rem rail + 32rem form + 18rem results + 3rem of gaps, with 2rem spare.
+ * Minimum effective content width for the compact three-column layout:
+ * 7rem section rail + 32rem form + 18rem results + 1rem in grid gaps.
  */
-export const CALCULATOR_THREE_REGION_MIN_REM = 63;
+export const CALCULATOR_THREE_REGION_MIN_REM = 58;
 
 export function hasCalculatorRailSpace(
   availableWidthPx: number,

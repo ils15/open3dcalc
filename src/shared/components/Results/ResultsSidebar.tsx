@@ -6,6 +6,7 @@ import {
   ListChecks,
   PanelBottom,
   Rows3,
+  Settings2,
   type LucideIcon,
 } from "lucide-react";
 import { useLayoutStore, type SidebarMode } from "@/shared/stores/layoutStore";
@@ -14,6 +15,7 @@ import {
   type ResultsCompactView,
   type ResultsSidebarTab,
 } from "./ResultsPanel";
+import "./ResultsSidebar.css";
 
 export interface ResultsSidebarProps {
   readonly onExportBlocked?: (message: string) => void;
@@ -79,93 +81,110 @@ export function ResultsSidebar({
       data-testid="results-sidebar-shell"
       data-sidebar-mode={sidebarMode}
       data-presentation={presentation}
-      className="flex min-h-0 h-full flex-col gap-3"
+      className="results-sidebar-shell flex min-h-0 h-full flex-col gap-3"
     >
-      <div className="min-w-0 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div
-            role="group"
+      <div className="results-sidebar-settings min-w-0">
+        <details
+          data-testid="results-sidebar-settings"
+          className="group relative mb-1"
+        >
+          <summary
+            data-testid="sidebar-settings-toggle"
             aria-label={t("results.sidebar.modeLabel")}
-            className="grid min-w-0 flex-1 grid-cols-4 gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-overlay)] p-1"
+            className="ml-auto flex min-h-7 w-fit cursor-pointer list-none items-center justify-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-overlay)] px-2 text-[10px] font-semibold text-[var(--text-secondary)] outline-none transition-colors hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
-            {MODE_OPTIONS.map(({ mode, labelKey, icon: Icon }) => {
-              const active = sidebarMode === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  data-testid={`sidebar-mode-${mode}`}
-                  data-sidebar-mode={mode}
-                  aria-label={t(labelKey)}
-                  aria-pressed={active}
-                  title={t(labelKey)}
-                  onClick={() => setSidebarMode(mode)}
-                  className={`${controlClass(active)} min-w-0 px-1.5`}
-                >
-                  <Icon className="size-3.5 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{t(labelKey)}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+            <Settings2 className="size-3" aria-hidden="true" />
+            <span>{t("results.sidebar.modeLabel")}</span>
+          </summary>
+          <div className="mt-1 w-full space-y-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] p-2 shadow-xl">
+            <div className="results-sidebar-mode-container min-w-0">
+              <div
+                role="group"
+                aria-label={t("results.sidebar.modeLabel")}
+                className="results-sidebar-mode-options grid min-w-0 grid-cols-4 gap-1 rounded-xl border border-[var(--border-default)] bg-[var(--surface-overlay)] p-1"
+              >
+                {MODE_OPTIONS.map(({ mode, labelKey, icon: Icon }) => {
+                  const active = sidebarMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      data-testid={`sidebar-mode-${mode}`}
+                      data-sidebar-mode={mode}
+                      aria-label={t(labelKey)}
+                      aria-pressed={active}
+                      title={t(labelKey)}
+                      onClick={() => setSidebarMode(mode)}
+                      className={`${controlClass(active)} results-sidebar-mode-button min-w-0 px-1.5 text-[11px]`}
+                    >
+                      <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+                      <span className="results-sidebar-mode-label whitespace-nowrap">
+                        {t(labelKey)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        {sidebarMode === "compact" && (
-          <div
-            role="group"
-            aria-label={t("results.sidebar.viewLabel")}
-            className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-sunken)] p-1"
-          >
-            {(["chart", "bars"] as const).map((view) => {
-              const active = compactView === view;
-              return (
-                <button
-                  key={view}
-                  type="button"
-                  data-testid={`sidebar-compact-${view}`}
-                  aria-pressed={active}
-                  onClick={() => setCompactView(view)}
-                  className={controlClass(active)}
-                >
-                  <BarChart3 className="size-3.5" aria-hidden="true" />
-                  {t(
-                    view === "chart"
-                      ? "results.sidebar.chart"
-                      : "results.sidebar.bars",
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
+            {sidebarMode === "compact" && (
+              <div
+                role="group"
+                aria-label={t("results.sidebar.viewLabel")}
+                className="grid grid-cols-2 gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-sunken)] p-1"
+              >
+                {(["chart", "bars"] as const).map((view) => {
+                  const active = compactView === view;
+                  return (
+                    <button
+                      key={view}
+                      type="button"
+                      data-testid={`sidebar-compact-${view}`}
+                      aria-pressed={active}
+                      onClick={() => setCompactView(view)}
+                      className={controlClass(active)}
+                    >
+                      <BarChart3 className="size-3.5" aria-hidden="true" />
+                      {t(
+                        view === "chart"
+                          ? "results.sidebar.chart"
+                          : "results.sidebar.bars",
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-        {sidebarMode === "tabs" && (
-          <div
-            role="tablist"
-            aria-label={t("results.sidebar.viewLabel")}
-            className="grid grid-cols-3 gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-sunken)] p-1"
-          >
-            {TAB_OPTIONS.map(({ tab, labelKey, icon: Icon }) => {
-              const active = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  role="tab"
-                  id={`results-sidebar-tab-${tab}`}
-                  data-testid={`sidebar-tab-${tab}`}
-                  aria-selected={active}
-                  aria-controls="results-sidebar-panel"
-                  onClick={() => setActiveTab(tab)}
-                  className={controlClass(active)}
-                >
-                  <Icon className="size-3.5" aria-hidden="true" />
-                  {t(labelKey)}
-                </button>
-              );
-            })}
+            {sidebarMode === "tabs" && (
+              <div
+                role="tablist"
+                aria-label={t("results.sidebar.viewLabel")}
+                className="grid grid-cols-3 gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--surface-sunken)] p-1"
+              >
+                {TAB_OPTIONS.map(({ tab, labelKey, icon: Icon }) => {
+                  const active = activeTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      id={`results-sidebar-tab-${tab}`}
+                      data-testid={`sidebar-tab-${tab}`}
+                      aria-selected={active}
+                      aria-controls="results-sidebar-panel"
+                      onClick={() => setActiveTab(tab)}
+                      className={controlClass(active)}
+                    >
+                      <Icon className="size-3.5" aria-hidden="true" />
+                      {t(labelKey)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </details>
       </div>
 
       <div

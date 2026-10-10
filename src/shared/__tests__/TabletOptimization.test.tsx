@@ -206,14 +206,14 @@ describe("Phase 2 — Tablet Optimization", () => {
       const { container } = render(<App />);
 
       const { aside, modules } = rail(container);
-      expect(aside.className).toContain("w-56");
+      expect(aside.className).toContain("w-36");
       expect(modules.textContent).toContain("Calculadora");
     });
 
     it("collapses again when the window shrinks past the breakpoint", () => {
       setViewportWidth(1600);
       const { container } = render(<App />);
-      expect(rail(container).aside.className).toContain("w-56");
+      expect(rail(container).aside.className).toContain("w-36");
 
       setViewportWidth(DEFAULT_WIDTH);
       fireEvent(window, new Event("resize"));

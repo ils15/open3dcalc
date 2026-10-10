@@ -58,7 +58,7 @@ describe("PriceHeroCard — display", () => {
   it("shows the sell price and an edit affordance", () => {
     renderCard();
 
-    expect(screen.getByText("calc.sellPrice")).toBeInTheDocument();
+    expect(screen.getByText("calc.suggestedSellPrice")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "calc.sellPriceEdit" }),
     ).toBeInTheDocument();

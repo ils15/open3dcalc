@@ -199,7 +199,7 @@ export function SlicerProfileFields({
           <Info className="w-3.5 h-3.5 text-[var(--color-text-muted)] cursor-help" />
         </Tooltip>
       </div>
-      <div className="grid grid-cols-2 @form:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 @form:grid-cols-3 @form4:grid-cols-4 gap-3">
         {visible.map((config) => (
           <SlicerProfileField
             key={config.key}

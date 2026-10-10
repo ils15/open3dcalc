@@ -14,7 +14,6 @@ import {
   Box,
   Check,
   RotateCcw,
-  Zap,
   Package,
   ExternalLink,
   Download,
@@ -23,7 +22,6 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
-import { isBetaChannel } from "@/shared/config/betaChannel";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useSpoolStore, FilamentSpool } from "@/shared/stores/spoolStore";
@@ -500,258 +498,133 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20 items-start">
+    <div className="studio-calculator-layout flex w-full flex-col items-start gap-4 pb-20 text-text-primary xl:flex-row">
       {/* Left Sub-nav & Main Form */}
-      <div className="flex-1 min-w-0 flex flex-col md:flex-row gap-4 w-full">
-        {/* Sub-Nav menu.
-            LAYOUT-ONLY FIX (VIS-003a), deliberately touching nothing else in
-            this file: the deferred colour epic owns this component's palette
-            and none of its literals were altered.
+      <div className="flex w-full min-w-0 flex-1 flex-col gap-2 xl:flex-row">
+        {/* Calculator sections complement the global module navigation. */}
+        <nav
+          aria-label="Seções do formulário"
+          className="flex w-full shrink-0 flex-row gap-1 overflow-x-auto rounded-lg border border-border-subtle bg-surface-raised p-1.5 select-none md:w-20 md:flex-col md:overflow-visible"
+        >
+          <span className="hidden px-1 py-1 text-[9px] font-mono font-bold uppercase tracking-wider text-text-muted md:block">
+            FORMULÁRIO
+          </span>
+          {[
+            { id: "material" as const, label: "1. Material" },
+            { id: "params" as const, label: "2. Parâmetros" },
+            { id: "extras" as const, label: "3. Custos Extras" },
+            { id: "pricing" as const, label: "4. Vendas & Margem" },
+            ...(complexity === "avancado"
+              ? [{ id: "advanced" as const, label: "5. Completo" }]
+              : []),
+          ].map((sec) => (
+            <button
+              key={sec.id}
+              onClick={() => {
+                setActiveSection(sec.id);
+                document
+                  .getElementById(`studio-section-${sec.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className={`min-h-9 flex-1 rounded-md px-2 py-1 text-left text-[10px] font-semibold transition-all whitespace-nowrap md:flex-none md:px-1.5 ${
+                activeSection === sec.id
+                  ? "bg-accent-subtle text-info border border-accent/30"
+                  : "text-text-secondary hover:text-text-secondary hover:bg-surface-raised"
+              }`}
+            >
+              {sec.label}
+            </button>
+          ))}
 
-            On mobile this is a horizontal row of five `whitespace-nowrap`
-            buttons (~665px of content in a ~326px column), and with no overflow
-            handling the row escaped its column by ~340px. That was the single
-            largest contributor to the page being 628px wide at a 390px
-            viewport (the dock stays in document flow with its own scroll
-            container, so it never establishes page width).
-
-            `overflow-x-auto` makes this box the scroll container so the pills
-            scroll inside it, exactly as the sub-header tab strip already does;
-            `md:` restores the original vertical column, where five short labels
-            fit without scrolling.
-            Beta owns ONE navigation model (the sidebar): this in-calculator
-            sub-nav would compete with it, so it is withheld there. All
-            sections stay rendered below, so nothing is orphaned. */}
-        {!isBetaChannel && (
-          <div className="w-full md:w-36 shrink-0 overflow-x-auto bg-surface-raised border border-border-subtle rounded-xl p-2.5 flex flex-row md:flex-col gap-1 select-none">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-text-muted px-2 py-1 hidden md:block">
-              FORMULÁRIO
-            </span>
-            {[
-              { id: "material" as const, label: "1. Insumos & Mat." },
-              { id: "params" as const, label: "2. Parâmetros & Cura" },
-              { id: "extras" as const, label: "3. Extras & Insumos" },
-              { id: "pricing" as const, label: "4. Vendas & Margem" },
-              ...(complexity === "avancado"
-                ? [{ id: "advanced" as const, label: "5. Modo Oficina Pro" }]
-                : []),
-            ].map((sec) => (
-              <button
-                key={sec.id}
-                onClick={() => {
-                  setActiveSection(sec.id);
-                  document
-                    .getElementById(`studio-section-${sec.id}`)
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-                className={`flex-1 md:flex-none min-h-11 text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                  activeSection === sec.id
-                    ? "bg-accent-subtle text-info border border-accent/30"
-                    : "text-text-secondary hover:text-text-secondary hover:bg-surface-raised"
-                }`}
-              >
-                {sec.label}
-              </button>
-            ))}
-
-            {hasInputs && !isDemoMode && (
-              <button
-                onClick={handleReset}
-                className="mt-auto hidden md:flex min-h-11 items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:text-critical hover:bg-critical-subtle transition-colors"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Limpar</span>
-              </button>
-            )}
-          </div>
-        )}
+          {hasInputs && !isDemoMode && (
+            <button
+              onClick={handleReset}
+              className="mt-auto hidden min-h-9 items-center gap-1 px-1.5 py-1 text-[10px] font-medium text-text-secondary transition-colors hover:bg-critical-subtle hover:text-critical md:flex"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Limpar</span>
+            </button>
+          )}
+        </nav>
 
         {/* Form Body */}
-        <div className="calculator-controls studio-calculator-controls flex-1 flex flex-col gap-4">
-          {/* Demo Mode Notice */}
-          {isDemoMode && (
-            <div className="bg-surface-raised border border-accent/40 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                <div>
-                  <span className="font-bold text-accent block">
-                    Modo Demo Ativo (Templates Pré-Carregados)
-                  </span>
-                  <span className="text-[11px] text-accent">
-                    Alterne entre os dois templates para simular cálculos:
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 bg-surface-sunken p-0.5 rounded-lg border border-accent/30">
-                <button
-                  type="button"
-                  onClick={() => onTechnologyChange("fdm")}
-                  aria-pressed={activeTechnology === "fdm"}
-                  className={`min-h-11 px-3 py-1 rounded text-xs font-semibold transition-all ${
-                    activeTechnology === "fdm"
-                      ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                      : "text-text-secondary hover:text-text-primary"
-                  }`}
-                >
-                  <span aria-hidden="true">🖨️ </span>Template Filamento (FDM)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onTechnologyChange("resin")}
-                  aria-pressed={activeTechnology === "resin"}
-                  className={`min-h-11 px-3 py-1 rounded text-xs font-semibold transition-all ${
-                    activeTechnology === "resin"
-                      ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                      : "text-text-secondary hover:text-text-primary"
-                  }`}
-                >
-                  <span aria-hidden="true">💧 </span>Template Resina (MSLA)
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 🌟 SELETOR PRINCIPAL DE TIPO DE INSUMO (FDM vs RESINA) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => handleTechSwitch("fdm")}
-              aria-label="Insumo Filamento (FDM)"
-              aria-pressed={tech === "fdm"}
-              className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all relative overflow-hidden group ${
-                tech === "fdm"
-                  ? "bg-accent-subtle border-accent shadow-md shadow-accent/40 ring-1 ring-accent/40"
-                  : "bg-surface-raised border-border-subtle hover:border-border-subtle opacity-75 hover:opacity-100"
-              }`}
+        <div className="calculator-controls studio-calculator-controls flex min-w-0 flex-1 flex-col gap-3">
+          <div className="studio-calculator-toolbar flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+            <div
+              role="group"
+              aria-label="Tecnologia de impressão"
+              className="inline-flex w-fit max-w-full items-center gap-0.5 rounded-lg border border-border-subtle bg-surface-sunken p-1"
             >
-              <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+              <button
+                type="button"
+                onClick={() => handleTechSwitch("fdm")}
+                aria-label="Insumo Filamento (FDM)"
+                aria-pressed={tech === "fdm"}
+                className={`flex min-h-9 items-center gap-1.5 rounded-md px-3 text-[11px] font-semibold transition-colors ${
                   tech === "fdm"
                     ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                    : "bg-surface-sunken text-text-secondary"
+                    : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
               >
-                <Printer className="w-5 h-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-text-primary group-hover:text-info transition-colors">
-                    Insumo Filamento (FDM)
-                  </span>
-                  {tech === "fdm" && (
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-accent-subtle text-info border border-accent/30">
-                      ATIVO
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-text-secondary mt-0.5 leading-snug">
-                  Carretéis termoplásticos (PLA, PETG, ABS, TPU) • Medição em
-                  Gramas (g)
-                </p>
-                <div className="flex items-center gap-2 mt-2 text-[10px] text-text-secondary font-mono">
-                  <span className="flex items-center gap-1 text-warning">
-                    <Zap className="w-3 h-3" /> ~200W (Mesa + Bico)
-                  </span>
-                  <span>•</span>
-                  <span>Ø 1.75 mm</span>
-                </div>
-              </div>
-            </button>
+                <Printer className="size-3.5" aria-hidden="true" />
+                <span>Impressão FDM</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => handleTechSwitch("resin")}
-              aria-label="Insumo Resina (SLA / MSLA / DLP)"
-              aria-pressed={tech === "resin"}
-              className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all relative overflow-hidden group ${
-                tech === "resin"
-                  ? "bg-accent-subtle border-accent shadow-md shadow-accent/40 ring-1 ring-accent/40"
-                  : "bg-surface-raised border-border-subtle hover:border-border-subtle opacity-75 hover:opacity-100"
-              }`}
-            >
-              <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+              <button
+                type="button"
+                onClick={() => handleTechSwitch("resin")}
+                aria-label="Insumo Resina (SLA / MSLA / DLP)"
+                aria-pressed={tech === "resin"}
+                className={`flex min-h-9 items-center gap-1.5 rounded-md px-3 text-[11px] font-semibold transition-colors ${
                   tech === "resin"
                     ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                    : "bg-surface-sunken text-text-secondary"
+                    : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
               >
-                <Droplet className="w-5 h-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-text-primary group-hover:text-accent transition-colors">
-                    Insumo Resina (SLA / MSLA / DLP)
-                  </span>
-                  {tech === "resin" && (
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-accent-subtle text-accent border border-accent/30">
-                      ATIVO
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-text-secondary mt-0.5 leading-snug">
-                  Garrafas UV 405nm • Medição em Volume (ml) • Densidade &
-                  Pós-Cura
-                </p>
-                <div className="flex items-center gap-2 mt-2 text-[10px] text-text-secondary font-mono">
-                  <span className="flex items-center gap-1 text-accent">
-                    <Zap className="w-3 h-3" /> ~60W LCD + Estação UV
-                  </span>
-                  <span>•</span>
-                  <span>Lavagem & Cura</span>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          {/* 🌟 NÍVEL DE COMPLEXIDADE DO FORMULÁRIO (RÁPIDO vs DETALHADO vs AVANÇADO) */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-raised border border-border-subtle rounded-xl p-3">
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-info" />
-              <div>
-                <span className="text-xs font-bold text-text-primary block">
-                  Nível de Cálculo & Detalhamento:
-                </span>
-                <span className="text-[10px] text-text-secondary leading-snug">
-                  {complexity === "rapido"
-                    ? "Visão expressa e simplificada"
-                    : complexity === "detalhado"
-                      ? "Parâmetros completos de produção"
-                      : "Oficina Pro (Multi-cor, comissões de marketplaces e atacado)"}
-                </span>
-              </div>
+                <Droplet className="size-3.5" aria-hidden="true" />
+                <span>Impressão em Resina</span>
+              </button>
             </div>
 
+            {/* Complexity options share the technology row like the reference. */}
             <div
               role="group"
               aria-label="Nível de cálculo"
-              className="grid w-full grid-cols-3 gap-1.5 rounded-xl border border-border-subtle bg-surface-sunken p-1.5 sm:flex sm:w-auto"
+              className="grid w-full grid-cols-3 gap-0.5 rounded-lg border border-border-subtle bg-surface-sunken p-1 xl:w-auto"
             >
               <button
                 type="button"
                 onClick={() => setComplexity("rapido")}
                 aria-pressed={complexity === "rapido"}
-                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-w-[6rem] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
+                className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md px-2 xl:min-w-[8.5rem] xl:px-2.5 ${
                   complexity === "rapido"
-                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
                     : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
               >
-                <Zap className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span>Rápido</span>
+                <span className="text-[11px] font-semibold leading-tight">
+                  Rápido
+                </span>
+                <span className="hidden text-[8px] leading-tight opacity-80 sm:block">
+                  Apenas o essencial para um orçamento rápido
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => setComplexity("detalhado")}
                 aria-pressed={complexity === "detalhado"}
-                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-w-[7rem] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
+                className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md px-2 xl:min-w-[8.5rem] xl:px-2.5 ${
                   complexity === "detalhado"
                     ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md"
                     : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
               >
-                <Sliders className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span>Detalhado</span>
+                <span className="text-[11px] font-semibold leading-tight">
+                  Detalhado
+                </span>
+                <span className="hidden text-[8px] leading-tight opacity-80 sm:block">
+                  Mais opções de custo para precisão
+                </span>
               </button>
               <button
                 type="button"
@@ -765,20 +638,25 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   });
                 }}
                 aria-pressed={complexity === "avancado"}
-                className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold leading-tight transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:min-w-[9rem] sm:flex-row sm:gap-2 sm:px-3 sm:text-xs ${
+                className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md px-2 xl:min-w-[8.5rem] xl:px-2.5 ${
                   complexity === "avancado"
                     ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md"
                     : "text-text-secondary hover:bg-surface-raised hover:text-text-primary"
                 }`}
               >
                 <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span>Avançado / Pro</span>
+                <span className="text-[11px] font-semibold leading-tight">
+                  Completo
+                </span>
+                <span className="hidden text-[8px] leading-tight opacity-80 sm:block">
+                  Controle total sobre todos os parâmetros
+                </span>
               </button>
             </div>
           </div>
 
           {/* Piece Identification & Insumo Stock Integration */}
-          <div className="bg-surface-raised border border-border-subtle rounded-xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="bg-surface-raised border border-border-subtle rounded-xl p-2.5 flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="w-full sm:flex-1 relative">
               <label className="text-[10px] font-mono uppercase font-bold text-text-secondary block mb-1">
                 IDENTIFICAÇÃO DA PEÇA / ARQUIVO 3D
@@ -789,7 +667,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   value={projectName}
                   onChange={(e) => handleNameChange(e.target.value)}
                   placeholder="Ex: Suporte para headset, miniatura articulada, engrenagem..."
-                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent font-medium"
+                  className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent font-medium"
                 />
                 <Edit3 className="w-3.5 h-3.5 text-text-muted absolute right-3 top-1/2 -translate-y-1/2" />
               </div>
@@ -799,7 +677,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
               <button
                 type="button"
                 onClick={() => setShowInsumoPicker(!showInsumoPicker)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent-subtle hover:bg-accent-subtle border border-accent/30 text-info text-xs font-semibold transition-all whitespace-nowrap"
+                className="flex min-h-9 items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-accent-subtle hover:bg-accent-subtle border border-accent/30 text-info text-[11px] font-semibold transition-all whitespace-nowrap"
                 title="Puxar material e custo direto do seu estoque cadastrado"
               >
                 <Package className="w-3.5 h-3.5" />
@@ -810,7 +688,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                 <button
                   type="button"
                   onClick={() => onTabChange("inventory")}
-                  className="p-2 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary transition-colors"
+                  className="flex min-h-9 min-w-9 items-center justify-center rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary transition-colors"
                   title="Abrir Gestão de Insumos"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -892,10 +770,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           <div
             id="studio-section-material"
             data-tutorial="material"
-            className="scroll-mt-24 bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
+            className="scroll-mt-20 bg-surface-raised border border-border-subtle rounded-xl p-3 flex flex-col gap-2"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
-              <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-semibold text-text-primary flex items-center gap-2">
                 <Box className="w-4 h-4 text-info" />
                 1. INSUMO & CONSUMO DE MATERIAL
               </h2>
@@ -962,7 +840,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   </div>
                 </div>
 
-                <div className="sm:col-span-4 bg-surface-sunken border border-border-subtle p-3 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div className="sm:col-span-4 bg-surface-sunken border border-border-subtle p-2 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-2 items-center">
                   <div>
                     <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                       VOLUME USADO NO FATIADOR (ml)
@@ -1056,7 +934,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                   </div>
                 </div>
 
-                <div className="sm:col-span-4 bg-surface-sunken border border-border-subtle p-3 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="sm:col-span-4 bg-surface-sunken border border-border-subtle p-2 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-2">
                   <div className="w-full sm:w-1/2">
                     <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                       PESO ESTIMADO DO FATIADOR (g)
@@ -1095,10 +973,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           <div
             id="studio-section-params"
             data-tutorial="print"
-            className="scroll-mt-24 bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
+            className="scroll-mt-20 bg-surface-raised border border-border-subtle rounded-xl p-3 flex flex-col gap-2"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
-              <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-semibold text-text-primary flex items-center gap-2">
                 <Clock className="w-4 h-4 text-warning" />
                 2. TEMPO DE MÁQUINA, CURA & ENERGIA
               </h2>
@@ -1252,10 +1130,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           {/* Section 3: Custos Extras */}
           <div
             id="studio-section-extras"
-            className="scroll-mt-24 bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
+            className="scroll-mt-20 bg-surface-raised border border-border-subtle rounded-xl p-3 flex flex-col gap-2"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
-              <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-semibold text-text-primary flex items-center gap-2">
                 <Layers className="w-4 h-4 text-accent" />
                 3. CUSTOS EXTRAS & INSUMOS AUXILIARES
               </h2>
@@ -1281,7 +1159,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
             ) : (
               <>
                 {tech === "resin" ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-surface-raised p-3 rounded-xl border border-border-subtle">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-surface-raised p-2 rounded-xl border border-border-subtle">
                     <div>
                       <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                         ÁLCOOL ISOPROPÍLICO (IPA)
@@ -1337,7 +1215,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-surface-raised p-3 rounded-xl border border-border-subtle">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-surface-raised p-2 rounded-xl border border-border-subtle">
                     <div>
                       <label className="text-[10px] text-text-secondary uppercase font-mono block mb-1">
                         ADESIVO / COLA DE MESA (R$)
@@ -1439,10 +1317,10 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           <div
             id="studio-section-pricing"
             data-tutorial="sales"
-            className="scroll-mt-24 bg-surface-raised border border-border-subtle rounded-xl p-4 flex flex-col gap-3"
+            className="scroll-mt-20 bg-surface-raised border border-border-subtle rounded-xl p-3 flex flex-col gap-2"
           >
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
-              <h2 className="text-base sm:text-lg font-semibold text-text-primary flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-semibold text-text-primary flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-positive" />
                 4. PRECIFICAÇÃO COMERCIAL & MARGEM
               </h2>
@@ -1512,7 +1390,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           {complexity === "avancado" && (
             <div
               id="studio-section-advanced"
-              className="scroll-mt-24 bg-surface-raised border border-accent/40 rounded-xl p-4 flex flex-col gap-4 animate-fade-in"
+              className="scroll-mt-20 bg-surface-raised border border-accent/40 rounded-xl p-3 flex flex-col gap-3 animate-fade-in"
             >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center justify-between border-b border-border-subtle pb-2">
                 <div className="flex items-center gap-2">
@@ -1520,7 +1398,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
                     <Sliders className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-text-primary">
+                    <h2 className="text-sm sm:text-base font-semibold text-text-primary">
                       5. MODO OFICINA PRO • PARÂMETROS AVANÇADOS
                     </h2>
                     <span className="text-xs text-text-secondary">
@@ -1703,7 +1581,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
           points back to Section 4 for scenarios. This anchor did not move. */}
       <div
         data-tutorial="results"
-        className="w-full lg:w-80 shrink-0 bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col gap-4 sticky top-28 shadow-xl"
+        className="w-full shrink-0 bg-surface-raised border border-border-subtle rounded-xl p-3 flex flex-col gap-3 shadow-lg lg:sticky lg:top-16 lg:w-72"
       >
         {/* Suggested Price Header */}
         <div className="text-center py-2 border-b border-border-subtle">

@@ -70,7 +70,7 @@ export function FailureSection({
         <div
           className={`space-y-4 transition-all duration-300 ${failureEnabled ? "" : "opacity-40 pointer-events-none"}`}
         >
-          <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 gap-3">
             <Select
               label={t("calc.failure.mode")}
               value={failureMode === "none" ? "percent" : failureMode}
@@ -97,17 +97,17 @@ export function FailureSection({
               prefix={failureMode === "fixed" ? currencySymbol : undefined}
               tooltip={t("tooltip.risk")}
             />
+            <InputGroup
+              label={t("calc.failure.riskMultiplier")}
+              value={riskMultiplier}
+              onChange={(v) =>
+                setFailureField({ riskMultiplier: parseFloat(v) || 0 })
+              }
+              type="number"
+              step="0.1"
+              tooltip={t("calc.failure.riskMultiplierTooltip")}
+            />
           </div>
-          <InputGroup
-            label={t("calc.failure.riskMultiplier")}
-            value={riskMultiplier}
-            onChange={(v) =>
-              setFailureField({ riskMultiplier: parseFloat(v) || 0 })
-            }
-            type="number"
-            step="0.1"
-            tooltip={t("calc.failure.riskMultiplierTooltip")}
-          />
         </div>
       </div>
     </div>

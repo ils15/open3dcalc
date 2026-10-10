@@ -36,11 +36,11 @@ export function InputGroup({
   const id = useId();
 
   return (
-    <div className={`flex flex-col gap-2 ${className}`}>
-      <div className="flex items-start gap-2 min-h-[2.5rem]">
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      <div className="flex items-center gap-2">
         <label
           htmlFor={id}
-          className={`text-[12px] font-semibold uppercase tracking-wider ${error ? "text-[var(--critical)]" : "text-[var(--text-secondary)]"}`}
+          className={`text-xs font-medium ${error ? "text-[var(--critical)]" : "text-[var(--text-secondary)]"}`}
         >
           {label}
         </label>
@@ -112,7 +112,7 @@ export function SelectGroup({
     <div className="flex flex-col gap-2">
       <label
         htmlFor={id}
-        className="text-[12px] sm:text-[12px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]"
+        className="text-xs font-medium text-[var(--text-secondary)]"
       >
         {label}
       </label>

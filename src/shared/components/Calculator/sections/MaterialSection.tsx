@@ -306,17 +306,19 @@ export function MaterialSection({
               </div>
             </>
           ) : (
-            <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 gap-3">
-              <Select
-                label={t("calc.filamentType")}
-                value={store.fdmMaterial.type}
-                onChange={(v) =>
-                  store.setFdmMaterial({ ...store.fdmMaterial, type: v })
-                }
-                options={catalogMaterials
-                  .filter((m) => m.type === "fdm")
-                  .map((m) => ({ label: m.name, value: m.name }))}
-              />
+            <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 @form4:grid-cols-4 gap-3">
+              <div className="@form4:col-span-2">
+                <Select
+                  label={t("calc.filamentType")}
+                  value={store.fdmMaterial.type}
+                  onChange={(v) =>
+                    store.setFdmMaterial({ ...store.fdmMaterial, type: v })
+                  }
+                  options={catalogMaterials
+                    .filter((m) => m.type === "fdm")
+                    .map((m) => ({ label: m.name, value: m.name }))}
+                />
+              </div>
               <div className="relative">
                 <InputGroup
                   label={t("calc.costPerKg")}
@@ -344,7 +346,7 @@ export function MaterialSection({
                        wash pair. Ink is --color-text-primary for the same
                        reason as the QuoteSection button — accent ink on the
                        30% wash is 3.52:1 light / 4.49:1 dark. */
-                    className={`min-h-[44px] absolute right-2 top-7 text-[10px] px-2 py-1 rounded-md transition-colors ${
+                    className={`calculator-spool-selector min-h-[44px] absolute right-2 top-7 text-[10px] px-2 py-1 rounded-md transition-colors ${
                       showSpoolSelector
                         ? "bg-[var(--color-accent-wash-strong)] text-[var(--color-text-primary)] border border-[var(--color-accent)]/40"
                         : "bg-[var(--color-accent-wash)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-wash-strong)]"
@@ -462,7 +464,7 @@ export function MaterialSection({
                   tooltip={t("tooltip.density")}
                 />
               )}
-              <div className="w-full min-w-0 @form:col-span-2 @form3:col-span-3">
+              <div className="w-full min-w-0 @form:col-span-2 @form3:col-span-3 @form4:col-span-4">
                 <StlPreview
                   onFileParsed={handleStlParsed}
                   onClear={handleStlClear}
@@ -598,17 +600,19 @@ export function MaterialSection({
             })()}
         </>
       ) : (
-        <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-          <Select
-            label={t("calc.resinType")}
-            value={store.resinMaterial.type}
-            onChange={(v) =>
-              store.setResinMaterial({ ...store.resinMaterial, type: v })
-            }
-            options={catalogMaterials
-              .filter((m) => m.type === "resin")
-              .map((m) => ({ label: m.name, value: m.name }))}
-          />
+        <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 @form4:grid-cols-4 gap-3">
+          <div className="@form4:col-span-2">
+            <Select
+              label={t("calc.resinType")}
+              value={store.resinMaterial.type}
+              onChange={(v) =>
+                store.setResinMaterial({ ...store.resinMaterial, type: v })
+              }
+              options={catalogMaterials
+                .filter((m) => m.type === "resin")
+                .map((m) => ({ label: m.name, value: m.name }))}
+            />
+          </div>
           <InputGroup
             label={t("calc.costPerLiter")}
             value={store.resinMaterial.costPerLiter}
@@ -656,7 +660,7 @@ export function MaterialSection({
               tooltip={t("tooltip.wasteMargin")}
             />
           )}
-          <div className="w-full min-w-0 @form:col-span-2">
+          <div className="w-full min-w-0 @form:col-span-2 @form3:col-span-3 @form4:col-span-4">
             <StlPreview
               onFileParsed={handleStlParsed}
               onClear={handleStlClear}

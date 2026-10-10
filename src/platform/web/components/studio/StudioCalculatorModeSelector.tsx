@@ -6,6 +6,7 @@ import type { LayoutMode } from "@/shared/stores/layoutStore";
 interface StudioCalculatorModeSelectorProps {
   mode: LayoutMode;
   onModeChange: (mode: LayoutMode) => void;
+  compact?: boolean;
 }
 
 const MODES: ReadonlyArray<{
@@ -13,16 +14,20 @@ const MODES: ReadonlyArray<{
   label: string;
   icon: ReactElement;
 }> = [
-  { mode: "classic", label: "Clássico", icon: <Layers aria-hidden="true" /> },
+  {
+    mode: "classic",
+    label: "Clássico",
+    icon: <Layers className="size-4" aria-hidden="true" />,
+  },
   {
     mode: "bento",
     label: "Bento",
-    icon: <LayoutGrid aria-hidden="true" />,
+    icon: <LayoutGrid className="size-4" aria-hidden="true" />,
   },
   {
     mode: "guided",
     label: "Guiado",
-    icon: <ListOrdered aria-hidden="true" />,
+    icon: <ListOrdered className="size-4" aria-hidden="true" />,
   },
 ];
 
@@ -30,21 +35,54 @@ const MODES: ReadonlyArray<{
 export function StudioCalculatorModeSelector({
   mode,
   onModeChange,
+  compact = false,
 }: StudioCalculatorModeSelectorProps): ReactElement {
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="shrink-0 text-[10px] font-medium text-[var(--color-text-muted)]">
+          Modo
+        </span>
+        <div
+          role="group"
+          aria-label="Modo da calculadora"
+          className="flex items-center gap-0.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-0.5"
+        >
+          {MODES.map(({ mode: option, label, icon }) => {
+            const isActive = mode === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => onModeChange(option)}
+                className={`flex min-h-8 items-center justify-center gap-1 rounded-md px-2 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                  isActive
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                {icon}
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <section className="mx-auto mb-4 flex w-full max-w-7xl flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-      <div>
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-          Visualização da calculadora
+    <section className="mx-auto mb-4 flex w-full max-w-7xl flex-col gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-3.5">
+      <div className="min-w-0">
+        <h2 className="text-xs font-semibold text-[var(--color-text-primary)] sm:text-sm">
+          Layout
         </h2>
-        <p className="mt-0.5 text-[11px] text-[var(--color-text-secondary)]">
-          Escolha o fluxo que combina com seu cálculo.
-        </p>
       </div>
       <div
         role="group"
         aria-label="Modo da calculadora"
-        className="grid w-full grid-cols-3 gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-1.5 sm:flex sm:w-auto"
+        className="grid w-full grid-cols-3 gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-1 sm:flex sm:w-auto sm:gap-1.5 sm:p-1.5"
       >
         {MODES.map(({ mode: option, label, icon }) => {
           const isActive = mode === option;
@@ -54,7 +92,7 @@ export function StudioCalculatorModeSelector({
               type="button"
               aria-pressed={isActive}
               onClick={() => onModeChange(option)}
-              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2.5 text-[10px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:min-w-[6.5rem] sm:flex-row sm:gap-2 sm:px-4 sm:text-xs ${
+              className={`flex min-h-10 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1.5 text-[10px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:min-h-12 sm:min-w-[6.5rem] sm:flex-row sm:gap-2 sm:px-4 sm:text-xs ${
                 isActive
                   ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md"
                   : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"

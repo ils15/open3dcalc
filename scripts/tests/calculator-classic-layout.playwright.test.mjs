@@ -52,25 +52,37 @@ test("Classic rail matches Example anchors at desktop and stays safe on mobile",
       page,
       '[data-testid="calculator-section-nav"] nav:visible button',
     );
+    const sectionNavRail = await bounds(
+      page,
+      '[data-testid="calculator-section-nav"] nav:visible',
+    );
     const firstInput = await bounds(
       page,
       '[data-testid="calculator-inputs"] input.w-full',
     );
     const resultsPanel = await bounds(page, "#results-sidebar-panel");
+    const materialGridColumns = await page
+      .locator('#section-material .grid[class*="@form3:grid-cols-3"]')
+      .first()
+      .evaluate(
+        (element) =>
+          element.ownerDocument.defaultView
+            .getComputedStyle(element)
+            .gridTemplateColumns.trim()
+            .split(/\s+/).length,
+      );
     t.diagnostic(
-      `1440x900 CSS px: section-nav button x=${sectionNav.x.toFixed(1)} w=${sectionNav.width.toFixed(1)}, first input x=${firstInput.x.toFixed(1)} w=${firstInput.width.toFixed(1)}, results x=${resultsPanel.x.toFixed(1)} w=${resultsPanel.width.toFixed(1)}`,
+      `1440x900 CSS px: section rail x=${sectionNavRail.x.toFixed(1)} w=${sectionNavRail.width.toFixed(1)}, button w=${sectionNav.width.toFixed(1)}, first input x=${firstInput.x.toFixed(1)} w=${firstInput.width.toFixed(1)}, material columns=${materialGridColumns}, results w=${resultsPanel.width.toFixed(1)}`,
     );
 
-    closeTo(sectionNav.x, 234, 8, "section nav x");
-    closeTo(sectionNav.width, 123, 6, "section nav width");
-    closeTo(firstInput.x, 401, 8, "first form input x");
-    closeTo(firstInput.width, 499, 25, "first form input width");
-    closeTo(resultsPanel.x, 954, 8, "results panel x");
-    closeTo(resultsPanel.width, 320, 16, "results panel width");
+    closeTo(sectionNavRail.width, 112, 2, "section nav rail width");
+    assert.ok(firstInput.x >= sectionNavRail.right);
+    assert.equal(materialGridColumns, 3, "material fields use three columns");
     assert.ok(
-      resultsPanel.right <= 1274 + 8,
-      "results rail stays in its content lane",
+      resultsPanel.width >= 400,
+      "results lane remains comfortably wide",
     );
+    assert.ok(resultsPanel.right <= 1440, "results rail stays in the viewport");
     const desktopOverflow = await page.evaluate(() => ({
       scrollWidth: globalThis.document.documentElement.scrollWidth,
       viewportWidth: globalThis.innerWidth,
@@ -102,6 +114,23 @@ test("Classic rail matches Example anchors at desktop and stays safe on mobile",
     assert.ok(
       anchorTop >= 76 && anchorTop <= 108,
       `results anchor should clear the sticky header; received top=${anchorTop}px`,
+    );
+
+    await page.setViewportSize({ width: 2560, height: 1200 });
+    const ultraWideMaterialColumns = await page
+      .locator('#section-material .grid[class*="@form4:grid-cols-4"]')
+      .first()
+      .evaluate(
+        (element) =>
+          element.ownerDocument.defaultView
+            .getComputedStyle(element)
+            .gridTemplateColumns.trim()
+            .split(/\s+/).length,
+      );
+    assert.equal(
+      ultraWideMaterialColumns,
+      4,
+      "ultrawide material form uses four columns",
     );
   } finally {
     await desktop.context.close();

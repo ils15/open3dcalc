@@ -119,7 +119,7 @@ describe("StudioLayout demo export feedback", () => {
     render(<StudioLayout />);
 
     const main = screen.getByRole("main");
-    expect(main).toHaveClass("p-4", "sm:p-6", "lg:p-8");
+    expect(main).toHaveClass("p-2", "sm:p-2.5", "lg:p-1.5");
     expect(main).toHaveClass("min-h-0", "overflow-y-auto");
 
     act(() => {

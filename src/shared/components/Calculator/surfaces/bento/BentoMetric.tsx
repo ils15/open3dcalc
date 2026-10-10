@@ -41,9 +41,11 @@ export function BentoMetric({
 }: BentoMetricProps): React.ReactElement {
   return (
     <div className="min-w-0 rounded-xl bg-[var(--surface-sunken)] p-3">
-      <dt className="text-xs font-medium text-[var(--text-secondary)]">{label}</dt>
+      <dt className="text-xs font-medium text-[var(--text-secondary)]">
+        {label}
+      </dt>
       <dd
-        aria-label={`${label}: ${value}`}
+        aria-label={`${label}: ${value.replace(/\u00a0/g, " ")}`}
         className={`mt-1 break-words text-sm font-bold ${TONE_CLASS[tone]} ${valueClassName}`}
       >
         {value}

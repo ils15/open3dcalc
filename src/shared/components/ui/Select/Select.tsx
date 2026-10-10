@@ -254,10 +254,10 @@ export function Select({
 
   return (
     <div className={`relative flex flex-col gap-1.5 ${className}`}>
-      <div className="min-h-[2.5rem] flex items-start">
+      <div className="flex items-center">
         <label
           htmlFor={`${id}-trigger`}
-          className="text-[12px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]"
+          className="text-xs font-medium text-[var(--text-secondary)]"
         >
           {label}
         </label>

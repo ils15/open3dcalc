@@ -10,7 +10,6 @@ import { CalculationErrorState } from "./CalculationErrorState";
 import { CostBreakdownCard } from "./CostBreakdownCard";
 import { DiagnosticDetailsCard } from "./DiagnosticDetailsCard";
 import { PriceHeroCard } from "./PriceHeroCard";
-import { ProfitSummaryCard } from "./ProfitSummaryCard";
 import { ResultsActions } from "./ResultsActions";
 import { SuggestedPriceTool } from "@/shared/components/Calculator/SuggestedPriceTool";
 
@@ -45,9 +44,9 @@ function getFailureRatePercent(params: PrintParameters): number | null {
 /**
  * Results hierarchy shared by Classic and Bento.
  *
- * The order is intentional: commercial response, profit/cost, compact cost
- * evidence, secondary diagnostics, then grouped actions. All calculation work
- * remains in useFinancialBreakdown; this component only arranges presentation.
+ * The order is intentional: price and profit/cost summary, price simulation,
+ * compact cost evidence, secondary diagnostics, then grouped actions. All
+ * calculation work remains in useFinancialBreakdown; this only arranges UI.
  */
 export function ResultsPanel({
   variant,
@@ -194,12 +193,6 @@ export function ResultsPanel({
         initialProfit={breakdown.displayProfit}
         initialSellPrice={breakdown.displaySellPrice}
         onApply={(scenario) => setSellOverride(scenario.sellPrice)}
-      />
-      <ProfitSummaryCard
-        totalCost={results.totalCost}
-        profit={breakdown.displayProfit}
-        profitPerHour={results.profitPerHour ?? 0}
-        showProfitPerHour={false}
       />
       {compactDistribution}
 

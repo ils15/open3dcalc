@@ -133,8 +133,11 @@ describe("web App navigation owner", () => {
       within(header).queryByRole("button", { name: "Orçamentos" }),
     ).not.toBeInTheDocument();
     expect(
-      within(header).queryByRole("button", { name: "Clássico" }),
-    ).not.toBeInTheDocument();
+      within(header).getByRole("group", { name: "Modo da calculadora" }),
+    ).toBeInTheDocument();
+    expect(
+      within(header).getByRole("button", { name: "Clássico" }),
+    ).toBeInTheDocument();
     expect(
       within(screen.getByRole("main")).getByRole("button", {
         name: "Clássico",

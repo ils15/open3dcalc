@@ -34,7 +34,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
   return (
     <>
       {/* Tablet section nav — icons only */}
-      <nav className="hidden md:flex lg:hidden flex-col gap-1 w-14 shrink-0 sticky top-[76px] h-[calc(100vh-76px)] overflow-y-auto px-1 py-2">
+      <nav className="calculator-section-nav hidden md:flex lg:hidden flex-col gap-1 w-14 shrink-0 sticky top-0 h-[calc(100vh-40px)] overflow-y-auto px-1 py-2">
         {visibleSections.map((s) => {
           const keys = SECTION_ENABLES[s.id] || [];
           const anyEnabled =
@@ -71,8 +71,8 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
       </nav>
 
       {/* Desktop sidebar — icon + label + cost toggle dot */}
-      <nav className="hidden lg:flex flex-col gap-0.5 w-[134px] xl:w-[142px] shrink-0 sticky top-[76px] h-[calc(100vh-76px)] overflow-y-auto px-2">
-        <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 ml-2">
+      <nav className="calculator-section-nav hidden lg:flex flex-col gap-0.5 w-28 shrink-0 sticky top-0 h-[calc(100vh-40px)] overflow-y-auto">
+        <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 ml-1">
           {t("sections.title")}
         </div>
         {visibleSections.map((s) => {
@@ -90,7 +90,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
                     .getElementById(`section-${s.id}`)
                     ?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className={`w-full py-2.5 px-3 rounded-xl flex items-center gap-2.5 min-h-[44px] transition-all text-left focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
+                className={`w-full py-2.5 px-1.5 rounded-xl flex items-center gap-1.5 min-h-[44px] transition-all text-left focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
                   activeSection === s.id
                     ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-semibold border border-[var(--color-accent)]/20"
                     : `text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-transparent ${
@@ -100,10 +100,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
                 title={t(s.label)}
               >
                 {step !== undefined && <StepBadge step={step} size="sm" />}
-                <s.Icon
-                  className={`w-4 h-4 shrink-0 ${activeSection === s.id ? "text-[var(--color-accent)]" : ""}`}
-                />
-                <span className="text-[11px] font-medium leading-tight">
+                <span className="min-w-0 truncate text-[10px] font-medium leading-tight">
                   {t(s.shortKey)}
                 </span>
               </button>

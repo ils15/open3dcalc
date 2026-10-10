@@ -24,6 +24,8 @@ import {
 } from "@/shared/contexts/CurrencyContext";
 import type { CurrencySetting } from "@/shared/lib/currency";
 import { StudioSubHeader } from "./StudioSubHeader";
+import { StudioCalculatorModeSelector } from "./StudioCalculatorModeSelector";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 
 interface StudioHeaderProps {
   activeTab: Tab;
@@ -45,6 +47,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   const { currencySetting } = useCurrencyPreference();
   const { currency: resolvedCurrency } = useCurrency();
   const setCurrency = useSetCurrency();
+  const layoutMode = useLayoutStore((state) => state.layoutMode);
+  const setLayoutMode = useLayoutStore((state) => state.setLayoutMode);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -140,7 +144,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 flex min-h-16 flex-col items-stretch justify-center gap-1 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-2 text-xs text-[var(--color-text-primary)] select-none sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4 sm:py-1">
+    <header className="sticky top-0 z-40 flex min-h-16 flex-col items-stretch justify-center gap-1 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-2 text-xs text-[var(--color-text-primary)] select-none sm:min-h-9 sm:flex-row sm:items-center sm:justify-between sm:gap-2 sm:px-3 sm:py-0">
       {/* Global navigation and page hierarchy stay in the shell on every module. */}
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <nav aria-label="Navegação global" className="shrink-0">
@@ -148,7 +152,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             type="button"
             onClick={() => onTabChange("dashboard")}
             aria-label="Ir para o Dashboard"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:min-h-8 sm:min-w-8"
           >
             <Home className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -158,15 +162,25 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           aria-hidden="true"
         />
         <div className="min-w-0 flex-1">
-          <h1 className="flex min-w-0 items-center gap-1.5 truncate text-sm font-bold tracking-tight text-[var(--color-text-primary)] sm:text-base">
+          <h1 className="flex min-w-0 items-center gap-1.5 truncate text-sm font-bold leading-tight tracking-tight text-[var(--color-text-primary)]">
             {breadcrumb.icon}
             <span className="truncate">{breadcrumb.title}</span>
           </h1>
-          <p className="hidden truncate text-[11px] leading-tight text-[var(--color-text-secondary)] lg:block">
+          <p className="hidden truncate text-[9px] leading-none text-[var(--color-text-secondary)] lg:block">
             {breadcrumb.subtitle}
           </p>
         </div>
       </div>
+
+      {activeTab === "calculator" && (
+        <div className="hidden 2xl:flex shrink-0 items-center">
+          <StudioCalculatorModeSelector
+            compact
+            mode={layoutMode}
+            onModeChange={setLayoutMode}
+          />
+        </div>
+      )}
 
       {/* The selector writes to the persisted calculator preference; all
           calculator surfaces subscribe through useCurrency(). */}
@@ -180,7 +194,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                 ? "Tecnologia ativa: Resina (MSLA)"
                 : "Tecnologia ativa: Filamento (FDM)"
             }
-            className="flex min-h-11 items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-1.5 text-[10px] font-semibold text-[var(--color-text-secondary)] sm:px-2 sm:text-[11px]"
+            className="flex min-h-11 items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-1.5 text-[10px] font-semibold text-[var(--color-text-secondary)] sm:min-h-8 sm:px-2 sm:text-[11px]"
           >
             {activeTechnology === "resin" ? "Resina" : "FDM"}
           </div>
@@ -197,7 +211,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           onChange={(event) =>
             setCurrency(event.currentTarget.value as CurrencySetting)
           }
-          className="min-h-11 w-[4.5rem] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-1.5 text-xs font-semibold text-[var(--color-text-primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:w-24 sm:px-2"
+          className="min-h-11 w-[4.5rem] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-1.5 text-xs font-semibold text-[var(--color-text-primary)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:min-h-8 sm:w-20 sm:px-2"
         >
           <option value="auto">Auto</option>
           <option value="BRL">BRL</option>
@@ -223,7 +237,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={handleWhatsApp}
-          className="flex min-h-11 min-w-11 items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-positive-fill)] hover:opacity-90 text-[var(--color-positive-fill-fg)] font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
+          className="flex min-h-11 min-w-11 items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-positive-fill)] hover:opacity-90 text-[var(--color-positive-fill-fg)] font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:min-h-8 sm:min-w-8 sm:px-2 sm:py-1"
           title="Gerar proposta rápida para WhatsApp"
           aria-label="Proposta WhatsApp"
         >
@@ -235,7 +249,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={toggleFullscreen}
-          className="min-h-11 min-w-11 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          className="min-h-11 min-w-11 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:min-h-8 sm:min-w-8 sm:p-1"
           title="Alternar Tela Cheia"
         >
           {isFullscreen ? (

@@ -178,21 +178,23 @@ export function SuggestedPriceTool({
   return (
     <section
       data-testid="suggested-price-tool"
-      className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] p-3 sm:p-4"
+      className="suggested-price-tool rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)]"
     >
       <button
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((current) => !current)}
-        className="flex min-h-11 w-full flex-wrap items-center justify-between gap-2 rounded-lg text-left text-sm font-semibold text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="suggested-price-toggle flex min-h-11 w-full flex-wrap items-center justify-between gap-2 rounded-lg text-left text-sm font-semibold text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
       >
         <span className="flex min-w-0 items-center gap-2">
           <BadgeDollarSign
             aria-hidden="true"
             className="h-4 w-4 shrink-0 text-[var(--accent)]"
           />
-          <span>{t("calc.suggestedPrice.open")}</span>
+          <span className="suggested-price-label">
+            {t("calc.suggestedPrice.open")}
+          </span>
         </span>
         <ChevronDown
           aria-hidden="true"

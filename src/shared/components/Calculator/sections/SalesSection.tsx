@@ -158,9 +158,9 @@ export function SalesSection({ step }: { step?: number }) {
         {(isFieldVisible("sales", "marketplace") ||
           isFieldVisible("sales", "taxPercent") ||
           isFieldVisible("sales", "marketplaceFeePercent")) && (
-          <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 @form4:grid-cols-4 gap-3">
             {isFieldVisible("sales", "marketplace") && (
-              <div>
+              <div className="@form4:col-span-2">
                 <Select
                   label={t("calc.marketplace")}
                   value={store.selectedMarketplace.id}

@@ -1,23 +1,330 @@
-/* Match the calculator's wider three-column desktop composition. */
+/* Compact three-column calculator: narrow navigation and results rails leave
+   the form the majority of the available desktop width. */
 .calculator-layout--three-region {
-  grid-template-columns: minmax(8rem, 0.85fr) minmax(32rem, 3.8fr) minmax(
-      18rem,
-      1.9fr
-    );
-  column-gap: 1.5rem;
+  grid-template-columns: 7rem minmax(32rem, 1fr) 18rem;
+  column-gap: 0.5rem;
+}
+
+/* Desktop density follows the Studio reference: thin controls, concise cards,
+   and more of the quote visible without sacrificing mobile touch targets. */
+@media (min-width: 64rem) {
+  .calculator-density .calculator-density-controls {
+    padding-right: 1.25rem;
+  }
+
+  .calculator-density
+    .calculator-density-controls
+    > :not([hidden])
+    ~ :not([hidden]) {
+    margin-top: 0.5rem;
+  }
+
+  .calculator-density .calculator-density-toolbar {
+    padding-block: 0;
+  }
+
+  .calculator-density .calculator-density-toolbar button {
+    min-height: 2.125rem;
+    font-size: 0.75rem;
+  }
+
+  .calculator-density
+    .calculator-density-toolbar
+    [data-tutorial="level-toggle"] {
+    margin-left: auto;
+  }
+
+  .calculator-density .quick-start-banner {
+    padding: 0.375rem 0.625rem;
+    border-radius: 0.625rem;
+  }
+
+  .calculator-density .quick-start-banner button {
+    min-height: 2rem;
+    padding-block: 0.375rem;
+    padding-inline: 0.625rem;
+    border-radius: 0.5rem;
+  }
+
+  .calculator-density .quick-start-banner > button {
+    min-width: 2rem;
+    padding: 0.25rem;
+  }
+
+  .calculator-density .quick-start-banner p:first-child {
+    font-size: 0.75rem;
+  }
+
+  .calculator-density .calculator-product-name {
+    padding: 0.125rem 0.75rem;
+  }
+
+  .calculator-density .calculator-product-name label {
+    margin-bottom: 0.125rem;
+    font-size: 0.5625rem;
+    line-height: 0.75rem;
+  }
+
+  .calculator-density .calculator-product-name input {
+    min-height: 2rem;
+    padding-block: 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
+  .calculator-density
+    .calculator-density-controls
+    .calculator-product-name
+    + .calculator-section-list {
+    margin-top: 1.25rem;
+  }
+
+  .calculator-density .calculator-section-nav button {
+    min-height: 2rem;
+    padding-block: 0.375rem;
+  }
+
+  .calculator-density .calculator-section-list {
+    gap: 0.5rem;
+  }
+
+  .calculator-density .calculator-section-list > [data-tutorial] > .surface,
+  .calculator-density .calculator-section-list .surface.rounded-xl {
+    padding: 0.75rem;
+  }
+
+  .calculator-density .calculator-section-list .grid {
+    gap: 0.5rem;
+  }
+
+  .calculator-density .calculator-section-list .flex.flex-col.gap-1\.5 {
+    gap: 0.25rem;
+  }
+
+  .calculator-density .calculator-section-list h2 {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    text-transform: uppercase;
+  }
+
+  .calculator-density .calculator-section-list h2 + p,
+  .calculator-density .calculator-controls label {
+    line-height: 1rem;
+  }
+
+  .calculator-density .calculator-section-list h2 + p {
+    font-size: 0.625rem;
+  }
+
+  .calculator-density .calculator-section-list label {
+    font-size: 0.5625rem;
+    font-weight: 600;
+    letter-spacing: 0.035em;
+    line-height: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .calculator-density .calculator-section-list [data-testid="step-badge"] {
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-accent);
+    font-size: 0.625rem;
+  }
+
+  .calculator-density
+    .calculator-section-list
+    [data-testid="step-badge"]::after {
+    content: ".";
+  }
+
+  .calculator-density
+    .calculator-section-list
+    [data-testid="step-badge"]
+    + svg {
+    order: -1;
+  }
+
+  .calculator-density .calculator-section-list [data-tutorial="stl-dropzone"] {
+    min-height: 5rem;
+    height: 5rem;
+    gap: 0.25rem;
+    padding: 0.5rem;
+  }
+
+  .calculator-density
+    .calculator-section-list
+    [data-tutorial="stl-dropzone"]
+    svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .calculator-density
+    .calculator-section-list
+    [data-tutorial="stl-dropzone"]
+    p {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+  }
+
+  .calculator-density
+    .calculator-section-list
+    [data-tutorial="stl-samples"]
+    button {
+    min-height: 2rem;
+    padding-block: 0.375rem;
+    font-size: 0.6875rem;
+  }
+
+  .calculator-density
+    .calculator-section-list
+    [data-tutorial="stl-samples"]
+    > p {
+    font-size: 0.625rem;
+  }
+
+  .calculator-density
+    .calculator-controls
+    :is(
+      input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
+          [type="color"]
+        ),
+      select,
+      textarea
+    ) {
+    min-height: 2rem;
+    font-size: 0.8125rem;
+  }
+
+  /* Numeric values are short; don't let them stretch across a whole grid
+     column on ultrawide forms. The surrounding field keeps its grid position. */
+  .calculator-density .calculator-section-list input[type="number"] {
+    max-width: 14ch;
+  }
+
+  .calculator-density
+    .calculator-controls
+    .flex.items-center:has(
+      > input:not([type="range"]):not([type="checkbox"]):not(
+          [type="radio"]
+        ):not([type="color"])
+    ) {
+    min-height: 2rem;
+  }
+
+  .calculator-density
+    .calculator-controls
+    .flex.items-center:has(
+      > input:not([type="range"]):not([type="checkbox"]):not(
+          [type="radio"]
+        ):not([type="color"])
+    )
+    > input {
+    min-height: 1.75rem;
+  }
+
+  .calculator-density
+    .calculator-section-list
+    [data-tutorial="stl-samples"]
+    button,
+  .calculator-density .results-sidebar-shell button {
+    min-height: 2rem;
+  }
+
+  .calculator-density .results-sidebar-shell {
+    gap: 0;
+  }
+
+  .calculator-density .results-sidebar-settings details {
+    margin-bottom: 0;
+  }
+
+  .calculator-density .results-sidebar-settings summary {
+    min-height: 1.25rem;
+    font-size: 0.5625rem;
+    line-height: 1;
+  }
+
+  .calculator-density .results-sidebar-shell .price-hero-card {
+    gap: 0.5rem;
+    padding: 0.625rem;
+    line-height: 1.25;
+  }
+
+  .calculator-density .price-hero-commercial-context,
+  .calculator-density .price-hero-fees {
+    gap: 0.25rem;
+    font-size: 0.5rem;
+    line-height: 1.15;
+  }
+
+  .calculator-density .price-hero-commercial-context > span {
+    white-space: nowrap;
+  }
+
+  .calculator-density .price-hero-value {
+    font-size: 2rem;
+    line-height: 1.1;
+  }
+
+  .calculator-density .price-hero-metrics {
+    gap: 0.25rem;
+  }
+
+  .calculator-density .price-hero-metric {
+    padding: 0.375rem;
+    border-radius: 0.5rem;
+  }
+
+  .calculator-density .price-hero-metric-label {
+    margin-bottom: 0;
+    font-size: 0.5rem;
+    line-height: 1.15;
+  }
+
+  .calculator-density .price-hero-metric-value {
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .calculator-density .price-hero-metric-detail {
+    margin-top: 0.125rem;
+    font-size: 0.5rem;
+    line-height: 1.15;
+  }
+
+  .calculator-density .suggested-price-tool,
+  .calculator-density .cost-distribution-card {
+    padding: 0.625rem;
+  }
+
+  .calculator-density .cost-distribution-summary,
+  .calculator-density .compact-cost-bars {
+    padding: 0.5rem;
+  }
 }
 
 @media (min-width: 90rem) {
   .calculator-viewport-measure {
-    width: min(144rem, calc(100vw - 24.5rem));
-    margin-inline-start: -4.375rem;
+    width: min(144rem, 100%);
+    margin-inline: auto;
+  }
+
+  /* The red-marked result rail should use its lane instead of leaving a
+     narrow card floating in an oversized right-side gutter. */
+  .calculator-results-sidebar {
+    margin-inline-start: 0;
+  }
+
+  .calculator-density .calculator-spool-selector {
+    right: auto;
+    /* Button text is 10px (a smaller `ch`); 20ch equals the 14ch input cap. */
+    left: calc(20ch + 2.5rem);
   }
 
   .calculator-layout--three-region {
-    grid-template-columns: 8.125rem minmax(32rem, 1fr) minmax(18rem, 20.5625rem);
-  }
-
-  .calculator-results-sidebar {
-    margin-inline-start: 0.5625rem;
+    grid-template-columns: 7rem minmax(32rem, 1fr) 28rem;
   }
 }

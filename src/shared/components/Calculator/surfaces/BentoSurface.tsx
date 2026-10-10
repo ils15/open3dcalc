@@ -168,7 +168,10 @@ export function BentoSurface(): React.ReactElement {
             <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
               Custo Fabril
             </span>
-            <strong className="text-[var(--color-text-secondary)] text-xs font-bold">
+            <strong
+              aria-label={`Custo total: ${format(result.totalCost).replace(/\u00a0/g, " ")}`}
+              className="text-[var(--color-text-secondary)] text-xs font-bold"
+            >
               {format(result.totalCost)}
             </strong>
           </div>
@@ -184,7 +187,10 @@ export function BentoSurface(): React.ReactElement {
             <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
               Lucro Líquido
             </span>
-            <strong className="text-[var(--color-accent)] text-xs font-bold">
+            <strong
+              aria-label={`Lucro líquido: ${format(breakdown.displayProfit).replace(/\u00a0/g, " ")}`}
+              className="text-[var(--color-accent)] text-xs font-bold"
+            >
               {format(breakdown.displayProfit)}
             </strong>
           </div>

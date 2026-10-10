@@ -45,7 +45,8 @@ export function LevelToggle({
             aria-label={label}
             aria-pressed={isActive}
             onClick={() => setCalcLevel(level)}
-            className={`min-h-[44px] min-w-[44px] rounded-lg py-1.5 text-[13px] font-semibold ${transitionClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-overlay)] ${
+            aria-describedby={`calc-level-${level}-description`}
+            className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-[13px] font-semibold ${transitionClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-overlay)] ${
               wrapOnNarrow ? "flex-1 px-2 sm:flex-none sm:px-3.5" : "px-3.5"
             } ${
               isActive
@@ -53,12 +54,10 @@ export function LevelToggle({
                 : "text-[var(--text-secondary)] hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)]"
             }`}
           >
-            <div className="flex flex-col items-center gap-0.5">
-              <span>{label}</span>
-              <span className="hidden text-[10px] leading-tight whitespace-nowrap opacity-70 sm:block">
-                {t(LEVEL_DESCRIPTIONS[level])}
-              </span>
-            </div>
+            {label}
+            <span id={`calc-level-${level}-description`} className="sr-only">
+              {t(LEVEL_DESCRIPTIONS[level])}
+            </span>
           </button>
         );
       })}

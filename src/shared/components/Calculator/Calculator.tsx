@@ -138,8 +138,8 @@ export function Calculator() {
           }
           className={`grid pb-[72px] lg:pb-0 ${
             hasThreeRegionSpace
-              ? "calculator-layout--three-region"
-              : "grid-cols-[auto_minmax(0,1fr)] gap-4 xl:gap-6"
+              ? "calculator-layout--three-region calculator-density"
+              : "grid-cols-1 gap-4 md:grid-cols-[auto_minmax(0,1fr)] xl:gap-6"
           }`}
         >
           <div
@@ -152,35 +152,20 @@ export function Calculator() {
             />
           </div>
           <div
-            id="section-results"
-            data-tutorial="results"
-            data-testid="results-sidebar"
-            className={`min-w-0 ${
-              hasThreeRegionSpace
-                ? "calculator-results-sidebar col-start-3 row-start-1 flex flex-col gap-5 sticky top-[76px] self-start h-[calc(100vh-120px)] max-h-[calc(100vh-120px)] overflow-hidden scroll-mt-24"
-                : "col-start-2 row-start-1 scroll-mt-24"
-            }`}
-          >
-            <div
-              data-tutorial="results-sidebar"
-              className="flex min-h-0 h-full flex-col gap-5"
-            >
-              <ResultsSidebar
-                onExportBlocked={notifyBlockedExport}
-                presentation={hasThreeRegionSpace ? "sidebar" : "inline"}
-              />
-            </div>
-          </div>
-          <div
             data-testid="calculator-inputs"
-            className={`calculator-controls col-start-2 min-w-0 @container space-y-5 ${
-              hasThreeRegionSpace ? "row-start-1" : "row-start-2"
+            className={`calculator-controls min-w-0 @container space-y-4 lg:space-y-2 calculator-density-controls ${
+              hasThreeRegionSpace
+                ? "col-start-2 row-start-1"
+                : "col-start-1 row-start-1 md:col-start-2"
             }`}
           >
-            <QuickStartBanner />
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 py-1">
-              <TechToggle />
-              <LevelToggle />
+            <div className="lg:hidden">
+              <QuickStartBanner />
+            </div>
+            <div className="calculator-density-toolbar flex flex-wrap items-center justify-between gap-2 sm:gap-3 py-1">
+              <TechToggle wrapOnNarrow />
+              <QuickStartBanner compact />
+              <LevelToggle wrapOnNarrow />
             </div>
             <ProductName />
             <SectionRenderer
@@ -195,6 +180,26 @@ export function Calculator() {
               catalogPrinters={catalogPrinters}
               handlePrinterSelect={handlePrinterSelect}
             />
+          </div>
+          <div
+            id="section-results"
+            data-tutorial="results"
+            data-testid="results-sidebar"
+            className={`min-w-0 ${
+              hasThreeRegionSpace
+                ? "calculator-results-sidebar col-start-3 row-start-1 flex flex-col gap-5 sticky top-0 self-start h-[calc(100vh-120px)] max-h-[calc(100vh-120px)] overflow-hidden scroll-mt-24"
+                : "col-start-1 row-start-2 scroll-mt-24 md:col-start-2"
+            }`}
+          >
+            <div
+              data-tutorial="results-sidebar"
+              className="flex min-h-0 h-full flex-col gap-5"
+            >
+              <ResultsSidebar
+                onExportBlocked={notifyBlockedExport}
+                presentation={hasThreeRegionSpace ? "sidebar" : "inline"}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -104,7 +104,7 @@ export function SectionRenderer(props: SectionRendererProps) {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="calculator-section-list flex flex-col gap-3">
       {visibleSections.map((s) => {
         switch (s.id) {
           case "material":

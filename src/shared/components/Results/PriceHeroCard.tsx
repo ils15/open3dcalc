@@ -73,20 +73,20 @@ export function PriceHeroCard({
   return (
     <div
       data-testid="price-hero"
-      className="bg-[var(--surface-raised)] border border-[var(--border-default)] rounded-2xl p-4 text-[var(--text-primary)] shadow-xl space-y-4"
+      className="price-hero-card border border-[var(--positive)]/40 bg-[var(--positive-subtle)]/20 rounded-2xl text-[var(--text-primary)] shadow-xl"
     >
       {/* Header: PREÇO SUGERIDO + Badge Lucro */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--positive)]">
-            {t("calc.sellPrice")}
+      <div className="price-hero-header flex flex-wrap items-center justify-between gap-x-1.5 gap-y-1">
+        <div className="flex min-w-0 items-center gap-0.5">
+          <span className="price-hero-title whitespace-nowrap text-[9px] font-mono font-bold uppercase tracking-wide text-[var(--positive)]">
+            {t("calc.suggestedSellPrice")}
           </span>
           {!isEditingPrice && (
             <button
               type="button"
               onClick={openPriceEditor}
               aria-label={t("calc.sellPriceEdit")}
-              className="p-1 rounded-md text-[var(--positive)] hover:text-[var(--positive)] hover:bg-[var(--positive-subtle)] transition-colors"
+              className="price-hero-edit shrink-0 rounded-md p-0.5 text-[var(--positive)] hover:text-[var(--positive)] hover:bg-[var(--positive-subtle)] transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -96,12 +96,12 @@ export function PriceHeroCard({
         {overrideCalc ? (
           <>
             {/* contrast-site: price-hero-margin-label */}
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30">
+            <span className="price-hero-badge whitespace-nowrap text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/30">
               {t("calc.sellPriceCustom")}
             </span>
           </>
         ) : (
-          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--positive-subtle)] text-[var(--positive)] border border-[var(--positive)]/40">
+          <span className="price-hero-badge whitespace-nowrap text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-[var(--positive-subtle)] text-[var(--positive)] border border-[var(--positive)]/40">
             +{targetMarkup.toFixed(0)}% LUCRO
           </span>
         )}
@@ -110,7 +110,7 @@ export function PriceHeroCard({
       {/* Commercial context: target markup vs. the real margin actually earned */}
       <div
         data-testid="commercial-context"
-        className="flex items-center justify-center gap-3 text-[10px] font-mono text-[var(--text-muted)]"
+        className="price-hero-commercial-context flex items-center justify-center gap-3 text-[10px] font-mono text-[var(--text-muted)]"
       >
         <span>
           {t("calc.markupTarget")}: <strong>{targetMarkup.toFixed(0)}%</strong>
@@ -193,7 +193,7 @@ export function PriceHeroCard({
         <div className="text-center py-1">
           <span
             data-testid="price-hero-value"
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)] font-mono"
+            className="price-hero-value text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)] font-mono"
           >
             {fmtCurrency(breakdown.displaySellPrice)}
           </span>
@@ -204,17 +204,31 @@ export function PriceHeroCard({
       {!overrideCalc && (
         <div
           data-testid="fee-breakdown"
-          className="flex items-center justify-center gap-3 text-[10px] font-mono text-[var(--text-muted)]"
+          className="price-hero-fees flex items-center justify-center gap-3 text-[10px] font-mono text-[var(--text-muted)]"
         >
-          <span>
-            {t("bento.fields.taxAmount")}: {fmtCurrency(fees.taxAmount)}
+          <span className="price-hero-fee-item">
+            <span className="price-hero-fee-label">
+              {t("bento.fields.taxAmount")}
+            </span>
+            <strong className="price-hero-fee-value">
+              {fmtCurrency(fees.taxAmount)}
+            </strong>
           </span>
-          <span>
-            {t("bento.fields.marketplaceFeeAmount")}:{" "}
-            {fmtCurrency(fees.marketplaceFee)}
+          <span className="price-hero-fee-item">
+            <span className="price-hero-fee-label">
+              {t("bento.fields.marketplaceFeeAmount")}
+            </span>
+            <strong className="price-hero-fee-value">
+              {fmtCurrency(fees.marketplaceFee)}
+            </strong>
           </span>
-          <span>
-            {t("bento.fields.totalFees")}: {fmtCurrency(fees.total)}
+          <span className="price-hero-fee-item">
+            <span className="price-hero-fee-label">
+              {t("bento.fields.totalFees")}
+            </span>
+            <strong className="price-hero-fee-value">
+              {fmtCurrency(fees.total)}
+            </strong>
           </span>
         </div>
       )}
@@ -226,27 +240,27 @@ export function PriceHeroCard({
       )}
 
       {/* Two Metric Sub-Boxes: Custo de Produção & Lucro Líquido */}
-      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[var(--border-default)]">
-        <div className="p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center">
-          <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-0.5">
+      <div className="price-hero-metrics grid grid-cols-2 gap-2 pt-1 border-t border-[var(--border-default)]">
+        <div className="price-hero-metric p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center">
+          <span className="price-hero-metric-label text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-0.5">
             CUSTO DE PRODUÇÃO
           </span>
-          <span className="text-sm font-bold font-mono text-[var(--text-primary)] block">
+          <span className="price-hero-metric-value text-sm font-bold font-mono text-[var(--text-primary)] block">
             {fmtCurrency(totalCost)}
           </span>
-          <span className="text-[10px] text-[var(--text-muted)] font-mono block mt-0.5">
+          <span className="price-hero-metric-detail text-[10px] text-[var(--text-muted)] font-mono block mt-0.5">
             {fmtCurrency(costPerGram)}/g
           </span>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center">
-          <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-0.5">
+        <div className="price-hero-metric p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center">
+          <span className="price-hero-metric-label text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-0.5">
             LUCRO LÍQUIDO
           </span>
-          <span className="text-sm font-bold font-mono text-[var(--positive)] block">
+          <span className="price-hero-metric-value text-sm font-bold font-mono text-[var(--positive)] block">
             {fmtCurrency(breakdown.displayProfit)}
           </span>
-          <span className="text-[10px] text-[var(--text-muted)] font-mono block mt-0.5">
+          <span className="price-hero-metric-detail text-[10px] text-[var(--text-muted)] font-mono block mt-0.5">
             {fmtCurrency(profitPerHour)}/h máquina
           </span>
         </div>

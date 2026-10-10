@@ -24,8 +24,8 @@ export function OpsSection({ step }: { step?: number }) {
         step={step}
         subtitle={t("calc.sectionDesc.ops")}
       />
-      <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-        <div>
+      <div className="grid grid-cols-1 @form:grid-cols-2 @form4:grid-cols-4 gap-3">
+        <div className="@form4:col-span-2">
           <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2 mb-3">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
               {t("calc.ppe")}
@@ -66,7 +66,7 @@ export function OpsSection({ step }: { step?: number }) {
             />
           )}
         </div>
-        <div>
+        <div className="@form4:col-span-2">
           <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2 mb-3">
             <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
               {t("calc.software")}
@@ -81,7 +81,7 @@ export function OpsSection({ step }: { step?: number }) {
             />
           </div>
           {(isFDM ? store.fdmSoft.enabled : store.resinSoft.enabled) && (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 @form4:grid-cols-2 gap-3">
               <InputGroup
                 label={t("calc.slicerCost")}
                 value={

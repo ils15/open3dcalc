@@ -39,8 +39,8 @@ export function HardwareSection({ step }: { step?: number }) {
       />
       {isFDM && (
         <>
-          <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-            <div className="space-y-4">
+          <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 @form4:grid-cols-4 gap-3">
+            <div className="space-y-4 @form3:col-span-2 @form4:col-span-3">
               <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-2">
                 <span className="text-xs font-semibold text-[var(--color-info)]">
                   {t("calc.nozzle")}
@@ -56,7 +56,7 @@ export function HardwareSection({ step }: { step?: number }) {
                 />
               </div>
               {store.fdmHardware.nozzleEnabled && (
-                <>
+                <div className="grid grid-cols-1 @form3:grid-cols-2 gap-3">
                   <InputGroup
                     label={t("calc.nozzleCost")}
                     value={store.fdmHardware.nozzleCost}
@@ -87,7 +87,7 @@ export function HardwareSection({ step }: { step?: number }) {
                     unit="kg"
                     tooltip={t("tooltip.nozzleLife")}
                   />
-                </>
+                </div>
               )}
             </div>
             <div className="space-y-4">
@@ -333,7 +333,7 @@ export function HardwareSection({ step }: { step?: number }) {
                 {t("calc.resinHardware")}
               </span>
             </div>
-            <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 @form:grid-cols-2 @form4:grid-cols-4 gap-3">
               <InputGroup
                 label={t("calc.lcdCost")}
                 value={store.resinHardware.lcdCost}

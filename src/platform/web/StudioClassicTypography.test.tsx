@@ -107,11 +107,15 @@ describe("Studio calculator mode selector placement", () => {
     const modeGroup = within(main).getByRole("group", {
       name: "Modo da calculadora",
     });
-    expect(
-      screen
-        .getByRole("banner")
-        .querySelector('[aria-label="Modo da calculadora"]'),
-    ).toBeNull();
+    const headerModeGroup = within(screen.getByRole("banner")).getByRole(
+      "group",
+      { name: "Modo da calculadora" },
+    );
+    expect(headerModeGroup.parentElement?.parentElement).toHaveClass(
+      "hidden",
+      "2xl:flex",
+    );
+    expect(modeGroup.parentElement?.parentElement).toHaveClass("2xl:hidden");
     expect(
       within(modeGroup).getByRole("button", { name: "Clássico" }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -129,6 +133,9 @@ describe("Studio calculator mode selector placement", () => {
         name: "Clássico",
       }),
     ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      within(headerModeGroup).getByRole("button", { name: "Bento" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 });
 

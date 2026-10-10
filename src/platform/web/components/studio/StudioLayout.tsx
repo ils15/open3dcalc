@@ -189,7 +189,11 @@ export const StudioLayout: React.FC = () => {
         {/* Main Content Area */}
         <main
           ref={mainRef}
-          className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${
+          className={`flex-1 min-w-0 ${
+            activeTab === "calculator"
+              ? "p-2 sm:p-2.5 lg:p-1.5 lg:pr-5 lg:pt-5"
+              : "p-4 sm:p-6 lg:p-8"
+          } ${
             isBetaChannel ? "" : "min-h-0 overflow-y-auto overscroll-y-contain"
           } ${focusMode ? "max-w-[84rem] mx-auto" : ""}`}
         >
@@ -240,10 +244,12 @@ export const StudioLayout: React.FC = () => {
 
               {activeTab === "calculator" && (
                 <>
-                  <StudioCalculatorModeSelector
-                    mode={layoutMode}
-                    onModeChange={setLayoutMode}
-                  />
+                  <div className="2xl:hidden">
+                    <StudioCalculatorModeSelector
+                      mode={layoutMode}
+                      onModeChange={setLayoutMode}
+                    />
+                  </div>
                   <CalculatorSurface
                     onManagePrinters={() => setActiveTab("catalog")}
                   />
