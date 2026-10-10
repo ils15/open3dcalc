@@ -1,12 +1,10 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: true }));
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-
-import { PrivacyOnboarding } from "@/shared/components/Privacy/PrivacyOnboarding";
 import { StudioSubHeader } from "@/platform/web/components/studio/StudioSubHeader";
 import { StudioSidebar } from "@/platform/web/components/studio/StudioSidebar";
 import { StudioCockpitDock } from "@/platform/web/components/studio/StudioCockpitDock";
@@ -112,54 +110,6 @@ describe("Wave4 Beta shell: dock in normal flow", () => {
     ).toBeInTheDocument();
     expect(screen.getByTitle(/Modo Foco/)).toBeInTheDocument();
     expect(screen.getByTitle(/Atalhos/)).toBeInTheDocument();
-  });
-});
-
-describe("Wave4 Beta first-run notice: proper dialog", () => {
-  it("uses role=dialog with an accessible name (honest copy preserved)", () => {
-    render(<PrivacyOnboarding />);
-    const dialog = screen.getByRole("dialog", {
-      name: "privacy.betaFirstRun.title",
-    });
-    expect(dialog).toHaveAttribute("aria-modal", "true");
-    // Honest Beta copy keys must all still render — no legal text changes.
-    for (const key of [
-      "privacy.betaFirstRun.testOnly",
-      "privacy.betaFirstRun.syntheticOnly",
-      "privacy.betaFirstRun.plaintextLocal",
-      "privacy.betaFirstRun.noPassword",
-      "privacy.betaFirstRun.noMigration",
-      "privacy.betaFirstRun.noExport",
-      "privacy.betaFirstRun.disposable",
-    ]) {
-      expect(within(dialog).getByText(key)).toBeInTheDocument();
-    }
-  });
-
-  it("dismisses with Escape and restores focus", () => {
-    render(<button type="button">outside</button>);
-    const outside = screen.getByRole("button", { name: "outside" });
-    outside.focus();
-    expect(document.activeElement).toBe(outside);
-    // Mount the dialog AFTER outside has focus so it can capture + restore it.
-    render(<PrivacyOnboarding />);
-    const dialog = screen.getByRole("dialog");
-    const close = within(dialog).getByRole("button", { name: "common.close" });
-    expect(document.activeElement).toBe(close);
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).toBeNull();
-    // Focus returns to the element that had it before the dialog opened.
-    expect(document.activeElement).toBe(outside);
-  });
-
-  it("traps Tab inside the dialog while open", () => {
-    render(<PrivacyOnboarding />);
-    const dialog = screen.getByRole("dialog");
-    const close = within(dialog).getByRole("button", { name: "common.close" });
-    expect(document.activeElement).toBe(close);
-    // Single focusable control: Tab cycles back to itself (trap holds).
-    fireEvent.keyDown(document, { key: "Tab" });
-    expect(document.activeElement).toBe(close);
   });
 });
 

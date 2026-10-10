@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { LEGACY_PII_PLAINTEXT_KEYS } from "@/shared/lib/legacyPiiPlaintext";
 import { fetchDesktopLegacyPiiRows } from "../desktopLegacyRows";
 
-function report(status: "absent" | "already_encrypted" | "legacy_plaintext") {
+function report(
+  status: "absent" | "unsupported_legacy_format" | "legacy_plaintext",
+) {
   return {
     scannedAt: new Date().toISOString(),
     rows: LEGACY_PII_PLAINTEXT_KEYS.map((key) => ({
@@ -54,7 +56,7 @@ describe("fetchDesktopLegacyPiiRows", () => {
     });
   });
 
-  it.each(["absent", "already_encrypted"] as const)(
+  it.each(["absent", "unsupported_legacy_format"] as const)(
     "reports positively established %s rows as absent",
     async (status) => {
       vi.stubGlobal("electronAPI", {

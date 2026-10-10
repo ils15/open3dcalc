@@ -2,10 +2,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DataSyncModal } from "../DataSyncModal";
 
-const { mockImportData, mockExportData, mockIsEncrypted } = vi.hoisted(() => ({
+const { mockImportData, mockExportData } = vi.hoisted(() => ({
   mockImportData: vi.fn(),
   mockExportData: vi.fn(),
-  mockIsEncrypted: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -15,7 +14,6 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/shared/lib/dataSync", () => ({
   exportData: (...args: unknown[]) => mockExportData(...args),
   importData: (...args: unknown[]) => mockImportData(...args),
-  isEncrypted: (...args: unknown[]) => mockIsEncrypted(...args),
 }));
 
 vi.mock("framer-motion", () => ({
@@ -47,12 +45,10 @@ describe("DataSyncModal import confirmation", () => {
   beforeEach(() => {
     mockImportData.mockReset();
     mockExportData.mockReset();
-    mockIsEncrypted.mockReset().mockResolvedValue(false);
     mockImportData.mockResolvedValue({
       imported: 5,
       conflicts: 0,
       errors: 0,
-      piiRefused: [],
     });
   });
 
@@ -62,7 +58,6 @@ describe("DataSyncModal import confirmation", () => {
     fireEvent.click(screen.getByRole("button", { name: "sync.import.button" }));
     expect(mockImportData).toHaveBeenCalledTimes(1);
     expect(mockImportData).toHaveBeenCalledWith(expect.any(File), {
-      password: undefined,
       mode: "merge",
     });
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -98,7 +93,6 @@ describe("DataSyncModal import confirmation", () => {
 
     expect(mockImportData).toHaveBeenCalledTimes(1);
     expect(mockImportData).toHaveBeenCalledWith(expect.any(File), {
-      password: undefined,
       mode: "replace",
     });
   });

@@ -6,8 +6,8 @@ import {
   NEW_PII_CHANNELS,
   registerPasswordlessPiiHandlers,
 } from "../newPiiIpc.js";
-import type { MinimalStorageDb } from "../persistGate.js";
-import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/crypto/newPiiNamespace.js";
+import type { MinimalStorageDb } from "../storageRows.js";
+import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/localData/newPiiNamespace.js";
 
 type Handler = (...args: unknown[]) => unknown;
 

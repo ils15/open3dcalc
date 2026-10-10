@@ -1,21 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { isBetaChannel } from "@/shared/config/betaChannel";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   CheckCircle,
   Download,
-  Lock,
   RefreshCw,
-  Unlock,
   Upload,
   X,
 } from "lucide-react";
 import {
   exportData,
   importData,
-  isEncrypted,
   type DataSyncExportResult,
   type DataSyncImportResult,
 } from "@/shared/lib/dataSync";
@@ -33,7 +29,6 @@ interface DataSyncModalProps {
 
 export function DataSyncModal({ open, onRequestClose }: DataSyncModalProps) {
   const { t } = useTranslation();
-  if (isBetaChannel) return null;
 
   return (
     <AnimatePresence>
@@ -79,8 +74,6 @@ function DataSyncModalContent({
   const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Export state
-  const [exportPassword, setExportPassword] = useState("");
-  const [showExportPassword, setShowExportPassword] = useState(false);
   const [exportPhase, setExportPhase] = useState<Phase>("idle");
   const [exportResult, setExportResult] = useState<DataSyncExportResult | null>(
     null,
@@ -88,18 +81,13 @@ function DataSyncModalContent({
 
   // Import state
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [fileEncrypted, setFileEncrypted] = useState(false);
-  const [importPassword, setImportPassword] = useState("");
-  const [showImportPassword, setShowImportPassword] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>("merge");
   const [confirmReplace, setConfirmReplace] = useState(false);
   const [importPhase, setImportPhase] = useState<Phase>("idle");
   const [importResult, setImportResult] = useState<DataSyncImportResult | null>(
     null,
   );
-  const [importError, setImportError] = useState<
-    "invalid" | "wrongPassword" | null
-  >(null);
+  const [importError, setImportError] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -155,9 +143,7 @@ function DataSyncModalContent({
     setExportPhase("working");
     setExportResult(null);
     try {
-      const result = await exportData({
-        password: exportPassword || undefined,
-      });
+      const result = await exportData();
       setExportResult(result);
       setExportPhase("success");
     } catch {
@@ -165,21 +151,12 @@ function DataSyncModalContent({
     }
   };
 
-  const handleFileChange = async (file: File | null) => {
+  const handleFileChange = (file: File | null) => {
     setImportFile(file);
     setImportPhase("idle");
     setImportResult(null);
-    setImportError(null);
+    setImportError(false);
     setConfirmReplace(false);
-    if (!file) {
-      setFileEncrypted(false);
-      return;
-    }
-    try {
-      setFileEncrypted(await isEncrypted(file));
-    } catch {
-      setFileEncrypted(false);
-    }
   };
 
   const handleImport = async () => {
@@ -192,19 +169,13 @@ function DataSyncModalContent({
     setConfirmReplace(false);
     setImportPhase("working");
     setImportResult(null);
-    setImportError(null);
+    setImportError(false);
     try {
-      const result = await importData(importFile, {
-        password: fileEncrypted && importPassword ? importPassword : undefined,
-        mode: importMode,
-      });
+      const result = await importData(importFile, { mode: importMode });
       setImportResult(result);
       setImportPhase("success");
-    } catch (error) {
-      const err = error as { code?: "INVALID_FILE" | "WRONG_PASSWORD" };
-      setImportError(
-        err?.code === "WRONG_PASSWORD" ? "wrongPassword" : "invalid",
-      );
+    } catch {
+      setImportError(true);
       setImportPhase("error");
     }
   };
@@ -274,10 +245,6 @@ function DataSyncModalContent({
         >
           {activeTab === "export" ? (
             <ExportTab
-              exportPassword={exportPassword}
-              setExportPassword={setExportPassword}
-              showExportPassword={showExportPassword}
-              setShowExportPassword={setShowExportPassword}
               phase={exportPhase}
               result={exportResult}
               onExport={handleExport}
@@ -285,12 +252,7 @@ function DataSyncModalContent({
           ) : (
             <ImportTab
               file={importFile}
-              fileEncrypted={fileEncrypted}
               onFileChange={handleFileChange}
-              importPassword={importPassword}
-              setImportPassword={setImportPassword}
-              showImportPassword={showImportPassword}
-              setShowImportPassword={setShowImportPassword}
               mode={importMode}
               setMode={handleModeChange}
               confirmReplace={confirmReplace}
@@ -354,24 +316,12 @@ function TabButton({ id, active, label, onSelect }: TabButtonProps) {
 }
 
 interface ExportTabProps {
-  exportPassword: string;
-  setExportPassword: (v: string) => void;
-  showExportPassword: boolean;
-  setShowExportPassword: React.Dispatch<React.SetStateAction<boolean>>;
   phase: Phase;
   result: DataSyncExportResult | null;
   onExport: () => void;
 }
 
-function ExportTab({
-  exportPassword,
-  setExportPassword,
-  showExportPassword,
-  setShowExportPassword,
-  phase,
-  result,
-  onExport,
-}: ExportTabProps) {
+function ExportTab({ phase, result, onExport }: ExportTabProps) {
   const { t } = useTranslation();
 
   return (
@@ -382,45 +332,10 @@ function ExportTab({
         {t("sync.export.description")}
       </p>
 
-      <div className="space-y-1.5">
-        <label
-          htmlFor="sync-export-password"
-          className="block text-xs font-medium text-[var(--color-text-secondary)]"
-        >
-          {t("sync.export.password")}
-        </label>
-        <div className="relative">
-          <input
-            id="sync-export-password"
-            type={showExportPassword ? "text" : "password"}
-            value={exportPassword}
-            onChange={(e) => setExportPassword(e.target.value)}
-            placeholder={t("sync.export.passwordPlaceholder")}
-            className="w-full pr-10 px-3.5 py-2.5 rounded-xl text-sm bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-          />
-          <button
-            type="button"
-            onClick={() => setShowExportPassword((v) => !v)}
-            aria-label={
-              showExportPassword
-                ? t("sync.export.passwordHide", "Ocultar senha")
-                : t("sync.export.passwordShow", "Mostrar senha")
-            }
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-          >
-            {showExportPassword ? (
-              <Unlock className="w-4 h-4" />
-            ) : (
-              <Lock className="w-4 h-4" />
-            )}
-          </button>
-        </div>
-      </div>
-
       <div className="space-y-3">
         <button
           onClick={onExport}
-          disabled={phase === "working" || !exportPassword}
+          disabled={phase === "working"}
           className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-[var(--accent-fill)] text-[var(--accent-fill-fg)] hover:bg-[var(--accent-fill-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           <Download className="w-4 h-4" />
@@ -453,16 +368,6 @@ function ExportTab({
           </p>
         )}
 
-        {phase === "success" && result && result.piiIncluded === false && (
-          <p
-            role="status"
-            className="flex items-start justify-center gap-2 text-xs text-[var(--color-warning)] leading-relaxed"
-          >
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-            {t("sync.export.piiExcluded")}
-          </p>
-        )}
-
         {phase === "error" && (
           <p
             role="alert"
@@ -479,12 +384,7 @@ function ExportTab({
 
 interface ImportTabProps {
   file: File | null;
-  fileEncrypted: boolean;
   onFileChange: (file: File | null) => void;
-  importPassword: string;
-  setImportPassword: (v: string) => void;
-  showImportPassword: boolean;
-  setShowImportPassword: React.Dispatch<React.SetStateAction<boolean>>;
   mode: ImportMode;
   setMode: (m: ImportMode) => void;
   confirmReplace: boolean;
@@ -492,7 +392,7 @@ interface ImportTabProps {
   onCancelReplace: () => void;
   phase: Phase;
   result: DataSyncImportResult | null;
-  error: "invalid" | "wrongPassword" | null;
+  error: boolean;
   onImport: () => void;
   dragOver: boolean;
   setDragOver: (v: boolean) => void;
@@ -501,12 +401,7 @@ interface ImportTabProps {
 
 function ImportTab({
   file,
-  fileEncrypted,
   onFileChange,
-  importPassword,
-  setImportPassword,
-  showImportPassword,
-  setShowImportPassword,
   mode,
   setMode,
   confirmReplace,
@@ -575,43 +470,6 @@ function ImportTab({
         className="sr-only"
         aria-label={t("sync.import.selectFile")}
       />
-
-      {fileEncrypted && (
-        <div className="space-y-1.5">
-          <label
-            htmlFor="sync-import-password"
-            className="block text-xs font-medium text-[var(--color-text-secondary)]"
-          >
-            {t("sync.import.password")}
-          </label>
-          <div className="relative">
-            <input
-              id="sync-import-password"
-              type={showImportPassword ? "text" : "password"}
-              value={importPassword}
-              onChange={(e) => setImportPassword(e.target.value)}
-              placeholder={t("sync.import.passwordPlaceholder")}
-              className="w-full pr-10 px-3.5 py-2.5 rounded-xl text-sm bg-[var(--color-bg-primary)] border border-[var(--color-border)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-            />
-            <button
-              type="button"
-              onClick={() => setShowImportPassword((v) => !v)}
-              aria-label={
-                showImportPassword
-                  ? t("sync.import.passwordHide", "Ocultar senha")
-                  : t("sync.import.passwordShow", "Mostrar senha")
-              }
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-            >
-              {showImportPassword ? (
-                <Unlock className="w-4 h-4" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Import mode selector */}
       <fieldset>
@@ -713,27 +571,13 @@ function ImportTab({
           </div>
         )}
 
-        {phase === "success" &&
-          result &&
-          (result.piiRefused?.length ?? 0) > 0 && (
-            <p
-              role="status"
-              className="flex items-start gap-2 text-xs text-[var(--color-warning)] leading-relaxed"
-            >
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              {t("sync.import.piiRefused")}
-            </p>
-          )}
-
         {phase === "error" && error && (
           <p
             role="alert"
             className="flex items-center gap-2 text-sm text-[var(--color-danger)]"
           >
             <AlertTriangle className="w-4 h-4 shrink-0" />
-            {error === "wrongPassword"
-              ? t("sync.import.wrongPassword")
-              : t("sync.import.invalidFile")}
+            {t("sync.import.invalidFile")}
           </p>
         )}
       </div>

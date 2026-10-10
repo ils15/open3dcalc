@@ -14,16 +14,115 @@ async function dismissFirstRun(page) {
     name: "Entendi e quero continuar",
   });
   if (await consent.isVisible()) await consent.click();
-
-  const passphrase = page.locator("#pii-vault-passphrase");
-  if (await passphrase.isVisible()) {
-    await passphrase.fill("Playwright-only-123!");
-    await page
-      .locator("#pii-vault-passphrase-confirm")
-      .fill("Playwright-only-123!");
-    await page.getByRole("button", { name: "Criar e desbloquear" }).click();
-  }
 }
+
+test("Classic calculator expands on ultrawide desktops without document overflow", async () => {
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    colorScheme: "dark",
+  });
+  const errors = [];
+
+  try {
+    const page = await context.newPage();
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(url, { waitUntil: "networkidle" });
+    await dismissFirstRun(page);
+    await page.getByTestId("calculator-measure").waitFor();
+
+    const desktopWidth = await page
+      .getByTestId("calculator-measure")
+      .evaluate((element) => element.getBoundingClientRect().width);
+
+    await page.setViewportSize({ width: 1568, height: 900 });
+    await page.waitForFunction(
+      () =>
+        (globalThis.document
+          .querySelector('[data-testid="calculator-measure"]')
+          ?.getBoundingClientRect().width ?? 0) > 1100,
+    );
+    const screenshotWidth = await page
+      .getByTestId("calculator-measure")
+      .evaluate((element) => element.getBoundingClientRect().width);
+
+    await page.setViewportSize({ width: 2560, height: 1200 });
+    await page.waitForFunction(
+      () =>
+        (globalThis.document
+          .querySelector('[data-testid="calculator-measure"]')
+          ?.getBoundingClientRect().width ?? 0) > 1700,
+    );
+
+    const wideLayout = await page.evaluate(() => ({
+      viewportWidth: globalThis.window.innerWidth,
+      documentWidth: globalThis.document.documentElement.scrollWidth,
+      measureWidth: globalThis.document
+        .querySelector('[data-testid="calculator-measure"]')
+        ?.getBoundingClientRect().width,
+    }));
+
+    assert.ok(
+      screenshotWidth > desktopWidth + 100,
+      `Calculator should expand at 1568px: 1440px=${desktopWidth}px, 1568px=${screenshotWidth}px`,
+    );
+    assert.ok(
+      wideLayout.measureWidth > screenshotWidth + 800,
+      `Calculator should grow at 2560px: 1568px=${screenshotWidth}px, 2560px=${wideLayout.measureWidth}px`,
+    );
+    assert.ok(
+      wideLayout.documentWidth <= wideLayout.viewportWidth,
+      `2560px viewport overflow: document width=${wideLayout.documentWidth}px`,
+    );
+    assert.deepEqual(errors, [], "browser console and page errors");
+
+    for (const colorScheme of ["light", "dark"]) {
+      await page.emulateMedia({ colorScheme });
+      await page.waitForFunction(
+        (theme) =>
+          globalThis.document.documentElement.classList.contains(theme),
+        colorScheme,
+      );
+      const themedDocumentWidth = await page.evaluate(
+        () => globalThis.document.documentElement.scrollWidth,
+      );
+      assert.ok(
+        themedDocumentWidth <= 2560,
+        `${colorScheme} theme document overflow: ${themedDocumentWidth}px`,
+      );
+    }
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForFunction(() => {
+      const sidebar = globalThis.document.querySelector("aside");
+      return (
+        sidebar && Math.abs(sidebar.getBoundingClientRect().width - 68) < 0.5
+      );
+    });
+    const mobileLayout = await page.evaluate(() => {
+      const main = globalThis.document.querySelector("main");
+      return {
+        viewportWidth: globalThis.window.innerWidth,
+        documentWidth: globalThis.document.documentElement.scrollWidth,
+        mainScrollWidth: main?.scrollWidth ?? 0,
+        mainClientWidth: main?.clientWidth ?? 0,
+      };
+    });
+    assert.ok(
+      mobileLayout.documentWidth <= mobileLayout.viewportWidth,
+      `390px classic calculator overflow: ${mobileLayout.documentWidth}px`,
+    );
+    assert.ok(
+      mobileLayout.mainScrollWidth <= mobileLayout.mainClientWidth,
+      `390px classic calculator content overflow: ${mobileLayout.mainScrollWidth}px > ${mobileLayout.mainClientWidth}px`,
+    );
+    assert.deepEqual(errors, [], "browser console and page errors");
+  } finally {
+    await context.close();
+  }
+});
 
 test("Bento fits at 390px and the fixed dock never covers focusable content", async () => {
   const context = await browser.newContext({

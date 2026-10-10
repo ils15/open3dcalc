@@ -1,7 +1,7 @@
 /**
  * Exact new-namespace storage-row helpers (Beta12 follow-up) — main-only.
  *
- * The passwordless new-PII records live in the generic `storage` table, one row
+ * The local customer-data records live in the generic `storage` table, one row
  * per authorised key. Every helper here is an EXACT-key operation: the key is
  * asserted against the `newPiiNamespace` allowlist BEFORE any SQL is prepared,
  * so a legacy key, a domain table, or an invented prefix-only name can never
@@ -16,7 +16,7 @@ import {
   NEW_PII_STORAGE_KEYS,
   assertNewPiiStorageKey,
   type NewPiiStorageKey,
-} from "../src/shared/lib/crypto/newPiiNamespace.js";
+} from "../src/shared/lib/localData/newPiiNamespace.js";
 import { readStoredRow, type MinimalStorageDb } from "./storageRows.js";
 
 /** The raw stored bytes for an authorised key, or null when absent. */

@@ -18,7 +18,6 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
-import { isBetaChannel } from "@/shared/config/betaChannel";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { Quote, QuoteFormData } from "@/shared/types";
@@ -26,7 +25,7 @@ import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefus
 import {
   PII_STORE_KEY,
   beginPiiSurfaceWrite,
-} from "@/shared/lib/crypto/piiStoreHydration";
+} from "@/shared/lib/localPiiPersistence";
 import { downloadBlob } from "@/shared/lib/download";
 import { guardExport } from "@/shared/lib/demoExportGuard";
 import { jsPDF } from "jspdf";
@@ -253,8 +252,8 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     e.preventDefault();
     if (!title.trim() || items.length === 0) return;
 
-    // H-4: refuse BEFORE the quote enters memory. With a locked vault the store
-    // mutates in memory, the UI would say "saved", the vault would reject the
+    // H-4: refuse BEFORE the quote enters memory. If Desktop storage is not
+    // ready, the store could mutate in memory, the UI would say "saved", and
     // write, and the quote would evaporate on reload with no message at all.
     if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null) return;
 
@@ -551,8 +550,8 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
 
   return (
     <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
-      {/* H-4: a locked vault refuses the write at the persistence layer. Without
-          this the store mutates in memory, the list shows the new quote, and it
+      {/* H-4: unavailable Desktop storage refuses the write at the persistence
+          layer. Without this the store mutates in memory, the list shows the new quote, and it
           evaporates on reload with no message. */}
       {!isFormOpen && !viewingQuote && confirmDeleteId === null && (
         <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
@@ -941,17 +940,15 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
 
-                          {!isBetaChannel && (
-                            <button
-                              type="button"
-                              onClick={() => setConfirmDeleteId(quote.id)}
-                              className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical border border-border-subtle hover:border-critical/30 transition-colors"
-                              title="Excluir Orçamento"
-                              aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteId(quote.id)}
+                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical border border-border-subtle hover:border-critical/30 transition-colors"
+                            title="Excluir Orçamento"
+                            aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1095,17 +1092,15 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
 
-                    {!isBetaChannel && (
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDeleteId(quote.id)}
-                        className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical transition-colors border border-border-subtle hover:border-critical/30"
-                        title="Excluir Orçamento"
-                        aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(quote.id)}
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical transition-colors border border-border-subtle hover:border-critical/30"
+                      title="Excluir Orçamento"
+                      aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1542,7 +1537,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
       )}
 
       {/* Delete Confirmation Dialog */}
-      {confirmDeleteId && !isBetaChannel && (
+      {confirmDeleteId && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div
             role="alertdialog"
@@ -1576,12 +1571,8 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => {
-                  if (
-                    isBetaChannel ||
-                    beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null
-                  ) {
+                  if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null)
                     return;
-                  }
                   removeQuote(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}

@@ -9,10 +9,10 @@ import {
 import {
   NEW_PII_STORAGE_KEYS,
   assertNewPiiStorageKey,
-} from "../../src/shared/lib/crypto/newPiiNamespace.js";
+} from "../../src/shared/lib/localData/newPiiNamespace.js";
 import { registerDatabaseStorageHandlers } from "../databaseIpc.js";
 import { requestNewPiiErasure } from "../newPiiErasure.js";
-import type { MinimalStorageDb } from "../persistGate.js";
+import type { MinimalStorageDb } from "../storageRows.js";
 
 type Handler = (...args: unknown[]) => unknown;
 

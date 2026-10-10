@@ -599,7 +599,10 @@ describe("i18n locales — multi-material disabled explanation", () => {
 });
 
 /** A refused PII write must always have translated, accessible feedback. */
-const VAULT_KEYS = ["writeRefusedTitle", "writeRefusedAreaUnknown"] as const;
+const LOCAL_DATA_KEYS = [
+  "writeRefusedTitle",
+  "writeRefusedAreaUnknown",
+] as const;
 
 /**
  * T5.3 — the legacy-residue disclosure panel. Every string it renders goes
@@ -616,11 +619,6 @@ const RESIDUE_KEYS = [
   "residueTotal",
   "residueKey",
   "residueKeptNote",
-  "vaultHeading",
-  "vaultHydrated",
-  "vaultLocked",
-  "vaultUnavailable",
-  "vaultUnavailableDetail",
   "rehomeHeading",
   "rehomeMigrated",
   "rehomePending",
@@ -639,7 +637,6 @@ const RESIDUE_KEYS = [
 const RESIDUE_PLACEHOLDERS: Record<string, readonly string[]> = {
   residueTotal: ["{{count}}"],
   residueKey: ["{{key}}", "{{count}}"],
-  vaultUnavailableDetail: ["{{reason}}"],
   markerNote: ["{{key}}"],
   legacyMarkerPlaintext: ["{{key}}"],
   driftWarning: ["{{sources}}"],
@@ -678,37 +675,37 @@ describe("i18n locales (privacy.residue.*) — T5.3 residue disclosure", () => {
   });
 });
 
-describe("i18n locales (privacy.vault.*) — write refusal", () => {
+describe("i18n locales (privacy.localData.*) — write refusal", () => {
   it.each([
     ["pt-BR", ptBR],
     ["en-US", enUS],
-  ])("resolves every privacy.vault.* key in %s", (_locale, dict) => {
-    for (const key of VAULT_KEYS) {
-      const value = resolve(dict, ["privacy", "vault", key]);
-      expect(typeof value, `privacy.vault.${key}`).toBe("string");
+  ])("resolves every privacy.localData.* key in %s", (_locale, dict) => {
+    for (const key of LOCAL_DATA_KEYS) {
+      const value = resolve(dict, ["privacy", "localData", key]);
+      expect(typeof value, `privacy.localData.${key}`).toBe("string");
       expect((value as string).length).toBeGreaterThan(0);
     }
     // The write-refusal message names the affected data area as well as the
     // typed reason; dropping the placeholder would render literal "{{area}}".
     const refusedMessage = resolve(dict, [
       "privacy",
-      "vault",
+      "localData",
       "writeRefusedMessage",
     ]) as string;
-    expect(refusedMessage, "privacy.vault.writeRefusedMessage").toContain(
+    expect(refusedMessage, "privacy.localData.writeRefusedMessage").toContain(
       "{{area}}",
     );
-    expect(refusedMessage, "privacy.vault.writeRefusedMessage").toContain(
+    expect(refusedMessage, "privacy.localData.writeRefusedMessage").toContain(
       "{{reason}}",
     );
   });
 
-  it("has no orphan privacy.vault keys in either locale", () => {
-    const expected = [...VAULT_KEYS, "writeRefusedMessage"].sort();
+  it("has no orphan privacy.localData write-refusal keys in either locale", () => {
+    const expected = [...LOCAL_DATA_KEYS, "writeRefusedMessage"].sort();
     for (const dict of [ptBR, enUS]) {
-      const vault = resolve(dict, ["privacy", "vault"]) as
+      const localData = resolve(dict, ["privacy", "localData"]) as
         Record<string, unknown> | undefined;
-      expect(Object.keys(vault ?? {}).sort()).toEqual(expected);
+      expect(Object.keys(localData ?? {}).sort()).toEqual(expected);
     }
   });
 });

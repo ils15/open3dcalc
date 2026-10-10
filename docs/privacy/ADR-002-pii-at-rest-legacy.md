@@ -11,10 +11,10 @@ that the data is recoverable.
 
 Current Stable/Desktop customer, quote, and history saves use the exact plaintext scope in
 SPEC-01 policy 1.9 and require no local at-rest keyring, passphrase, vault, or consent gate.
-Web Beta remains limited to its separate keys, intended for synthetic test data; its app does
-not validate record contents or isolate browser storage from same-origin code. It does not
-inspect legacy data. All sections below are retained as historical context only where they conflict with
-this superseding decision. SPEC-03 encrypted export remains unchanged.
+By owner decision on 2026-10-10, Web Beta now shares the same three plaintext user-content keys
+and migrates valid records from its retired `open3dcalc_beta_test_*` keys. Same-origin code can
+access browser storage. All sections below are retained as historical context only where they
+conflict with this superseding decision. Export behavior remains separate.
 
 **Track:** D1 — Privacy & Data Contracts
 **Status:** Superseded by approved policy 1.9; historical-data handling is inert retention
@@ -141,14 +141,12 @@ and the two explicit exits. Nothing here claims current compliance.
 **Status:** D1.0 quarantine and migration proposal superseded by policy 1.9; historical vault
 bytes remain outside current deletion scope.
 
-## Beta test-only profile addendum (approved scope; current branch status)
+## Superseded historical Beta test-only profile addendum
 
-ADR-002's default-deny and legacy-quarantine rules are historical and superseded for current
-Stable/Desktop local saves by policy 1.9. The Web-Beta profile is intended for synthetic test
-data and restricted to its three Beta-specific keys; record content is not validated and
-same-origin code can access browser storage. Beta app paths must not inspect, read, migrate,
-disclose, quarantine, recover, sweep, or delete Stable/legacy PII keys. Real customer, quote,
-or history information must not be entered.
+This addendum records the earlier test-only profile scope and is no longer current. Beta now
+uses the same current user-content keys as Stable. The default-deny lifecycle below remains
+historical for retired encrypted or migration stores; it does not block direct local saves or
+the explicit Beta test-key migration described above.
 
 This is not permission for plaintext personal data and does not relax Stable policy. The
 Beta guard fails closed on Stable keys, unknown keys, unreadable fixtures, and

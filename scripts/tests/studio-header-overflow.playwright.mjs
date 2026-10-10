@@ -18,15 +18,6 @@ async function openCatalog(page) {
   });
   if (await consent.isVisible()) await consent.click();
 
-  const passphrase = page.locator("#pii-vault-passphrase");
-  if (await passphrase.isVisible()) {
-    await passphrase.fill("Playwright-only-123!");
-    await page
-      .locator("#pii-vault-passphrase-confirm")
-      .fill("Playwright-only-123!");
-    await page.getByRole("button", { name: "Criar e desbloquear" }).click();
-  }
-
   await page.getByRole("button", { name: "Cadastros" }).first().click();
   await page.waitForFunction(() =>
     globalThis.document

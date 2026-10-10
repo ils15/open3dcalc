@@ -1342,28 +1342,18 @@
     }
   },
   "privacy": {
-    "betaFirstRun": {
-      "title": "Perfil de teste Beta",
-      "testOnly": "Este é um perfil descartável apenas para testes, separado do aplicativo estável.",
-      "syntheticOnly": "Use somente dados sintéticos; nunca informe dados reais de clientes.",
-      "plaintextLocal": "Clientes, orçamentos e histórico de cálculos ficam sem criptografia neste navegador.",
-      "noPassword": "Este perfil de teste não exige senha nem consentimento.",
-      "noMigration": "Os dados do perfil estável não são lidos nem migrados para o Beta.",
-      "noExport": "Importação, exportação, sincronização e exclusão não estão disponíveis no Beta.",
-      "disposable": "Ao terminar, limpe este perfil descartável do navegador fora do aplicativo."
-    },
     "banner": {
-      "text": "Seus dados ficam apenas no seu navegador. Nada do que você digita — dados de clientes, orçamentos ou logs — é enviado para servidores. Você tem controle total: exporte, importe ou apague seus dados quando quiser.",
+      "text": "Seus dados ficam localmente no perfil do navegador ou do aplicativo Desktop, sem criptografia adicional do Open3DCalc. Quem acessar esse perfil poderá lê-los. O que você digita não é enviado aos nossos servidores.",
       "dismiss": "Entendi"
     },
     "policy": {
       "title": "Política de Privacidade",
       "section8Title": "8. Exportação e Portabilidade de Dados",
-      "section8Intro": "O Open3DCalc suporta exportação e importação local de dados por meio de pacotes criptografados .open3dcalc:",
-      "section8Item1": "Exportação/importação local via pacotes .open3dcalc criptografados",
+      "section8Intro": "O Open3DCalc suporta exportação e importação local de dados por meio de arquivos JSON .open3dcalc sem criptografia:",
+      "section8Item1": "Exportação/importação local em JSON legível; proteja o arquivo como faria com qualquer documento que contém dados de clientes",
       "section8Item2": "Todo o processamento de dados acontece exclusivamente no lado do cliente (client-side)",
       "section8Item3": "Nenhum dado é transmitido a qualquer servidor durante a exportação ou importação",
-      "section8Item4": "Você pode criptografar os pacotes com sua própria senha",
+      "section8Item4": "Os arquivos não têm senha nem criptografia; qualquer pessoa com acesso ao arquivo pode ler seu conteúdo",
       "section8Lgpd": "Em conformidade com o Art. 18 da LGPD (direito à portabilidade dos dados), você pode exportar seus dados a qualquer momento e importá-los em outro dispositivo."
     },
     "quarantine": {
@@ -1380,19 +1370,19 @@
       "working": "Apagando… isso pode levar alguns instantes.",
       "done": "Apagamento concluído e verificado. Todos os armazenamentos foram limpos.",
       "externalCopies": "Cópias externas que o aplicativo não pode apagar:",
-      "confirm": "Apagar TODOS os seus dados? Um snapshot criptografado permite reverter por até 7 dias em caso de falha. Depois de concluído, a remoção é definitiva. Continuar?",
+      "confirm": "Apagar TODOS os seus dados? Uma cópia temporária pode ser usada para reverter uma falha durante a operação. Depois de concluído, a remoção é definitiva. Continuar?",
       "unavailable": "A exclusão total está indisponível até que o aplicativo possa verificar um plano exato de alvos contendo apenas dados pessoais. Nenhuma exclusão será iniciada nesta tela.",
       "blockersLabel": "Motivos do bloqueio:",
-      "newPiiTitle": "Apagar registros locais sem senha",
+      "newPiiTitle": "Apagar registros locais",
       "newPiiDescription": "Apaga apenas os registros de clientes, orçamentos e histórico em texto puro que esta versão guardou no perfil local do Desktop. Não toca em registros de versões anteriores, tabelas do banco de dados nem backups.",
-      "newPiiButton": "Apagar registros locais sem senha",
+      "newPiiButton": "Apagar registros locais",
       "newPiiWorking": "Apagando… isso pode levar alguns instantes.",
-      "newPiiDone": "Os registros locais sem senha foram apagados e verificados.",
-      "newPiiUnavailable": "O apagamento local sem senha está indisponível agora — nenhum apagamento será iniciado.",
+      "newPiiDone": "Os registros locais foram apagados e verificados.",
+      "newPiiUnavailable": "O apagamento local está indisponível agora — nenhum apagamento será iniciado.",
       "newPiiConfirm": "Apagar os registros locais em texto puro (clientes, orçamentos, histórico) guardados neste perfil do Desktop? Isso não pode ser desfeito. Registros de versões anteriores, tabelas do banco e backups não são afetados.",
       "newPiiFailed": "O apagamento não foi concluído — nenhuma exclusão é declarada. Verifique o aplicativo e tente novamente.",
       "legacyScopeTitle": "Exclusão total do dispositivo (indisponível)",
-      "legacyScopeNote": "Apagar TODOS os dados — versões anteriores, tabelas do banco e backups — permanece indisponível até existir um plano exato e verificável de alvos. O apagamento sem senha acima é a única exclusão disponível nesta versão."
+      "legacyScopeNote": "Apagar TODOS os dados — versões anteriores, tabelas do banco e backups — permanece indisponível até existir um plano exato e verificável de alvos. A exclusão local acima é a única disponível nesta versão."
     },
     "consent_receipt": {
       "title": "Consentimento",
@@ -1400,37 +1390,32 @@
       "absent": "Nenhum consentimento válido registrado — os recursos que dependem de consentimento permanecem bloqueados.",
       "grant": "Consentir com a política atual",
       "withdraw": "Retirar consentimento",
-      "withdrawConfirm": "Retirar o consentimento? Isso registra a retirada e remove os dados de consentimento que este dispositivo consegue alcançar localmente. NÃO apaga dados mantidos em armazenamentos criptografados ou em outras superfícies, que podem permanecer. Os recursos que dependem de consentimento serão bloqueados.",
+      "withdrawConfirm": "Retirar o consentimento? Isso registra a retirada e remove os dados de consentimento que este dispositivo consegue alcançar localmente. NÃO apaga dados mantidos em outras superfícies, que podem permanecer. Os recursos que dependem de consentimento serão bloqueados.",
       "withdrawScopeNote": "A retirada remove os dados de base consensual alcançáveis localmente e bloqueia os recursos que dependem de consentimento. Um apagamento verificado de todo o dispositivo não está disponível nesta versão, então alguns dados armazenados podem permanecer.",
       "withdrawFailed": "A retirada não foi concluída — nada foi apagado. Verifique o aplicativo e tente novamente.",
       "withdrawRetry": "Tentar retirar novamente",
       "flagsNote": "Flags de tutorial, onboarding ou banner nunca substituem o consentimento — apenas o recibo conta (SPEC-04 §2)."
     },
-    "vault": {
+    "localData": {
       "writeRefusedTitle": "Entradas novas não foram salvas",
-      "writeRefusedMessage": "Não foi possível salvar em {{area}}: o perfil está bloqueado ou a proteção de dados está indisponível ({{reason}}). A entrada NÃO foi salva e será perdida ao recarregar. Desbloqueie o perfil para salvar.",
+      "writeRefusedMessage": "Não foi possível salvar em {{area}}: o armazenamento local ainda não está pronto ({{reason}}). A entrada NÃO foi salva. Tente novamente.",
       "writeRefusedAreaUnknown": "dados pessoais"
     },
     "passwordless": {
       "title": "Novos dados são armazenados localmente",
-      "message": "Novos clientes, orçamentos e histórico são armazenados em texto puro no banco de dados local deste perfil do Desktop. Não é necessária senha do aplicativo nem chaveiro do sistema; registros de versões antigas permanecem intactos.",
+      "message": "Novos clientes, orçamentos e histórico são armazenados em formato legível no banco de dados local deste perfil do Desktop, sem camada adicional de proteção. Registros de versões antigas permanecem intactos.",
       "limitation": "Qualquer pessoa com acesso a este perfil do sistema ou ao banco de dados pode ler esses registros. Se o perfil ou dispositivo for perdido, não há cópia na nuvem nem chave de recuperação."
     },
     "residue": {
       "title": "Dados legados em texto puro",
-      "subtitle": "Transparência sobre o resíduo de dados pessoais gravado em texto puro por versões antigas, o estado do cofre criptografado e o estado da migração. Somente nomes de chave e contagens são mostrados — nunca valores.",
+      "subtitle": "Transparência sobre dados pessoais deixados por versões antigas e o estado da migração para o formato local atual. Somente nomes de chave e contagens são mostrados — nunca valores.",
       "residueHeading": "Resíduo em texto puro",
       "residueNone": "Nenhum resíduo em texto puro encontrado nas três chaves legadas.",
       "residueTotal": "{{count}} registro(s) em texto puro no total.",
       "residueKey": "{{key}} · {{count}} registro(s)",
       "residueKeptNote": "O texto puro nunca é apagado automaticamente: as chaves acima continuam no armazenamento local até uma eliminação explícita.",
-      "vaultHeading": "Estado do cofre criptografado",
-      "vaultHydrated": "Desbloqueado e hidratado",
-      "vaultLocked": "Bloqueado — informe a senha para acessar",
-      "vaultUnavailable": "Indisponível neste ambiente",
-      "vaultUnavailableDetail": "Motivo: {{reason}}",
-      "rehomeHeading": "Migração para o cofre",
-      "rehomeMigrated": "Migrado para o cofre criptografado (ou nada a migrar)",
+      "rehomeHeading": "Migração V1 → V2",
+      "rehomeMigrated": "Migrado para o formato local atual (ou nada a migrar)",
       "rehomePending": "Pendente — há resíduo em texto puro ainda não migrado",
       "rehomeIncomplete": "Incompleto — uma migração anterior foi interrompida",
       "historyHeading": "Marcador de migração do histórico",
@@ -2480,14 +2465,10 @@
     "export": {
       "tab": "Exportar",
       "title": "Exportar Dados",
-      "description": "Exporte todos os seus dados localmente. Nenhum dado é enviado a servidores.",
-      "encrypt": "Criptografar dados com senha",
-      "password": "Senha para criptografia",
-      "passwordPlaceholder": "Digite uma senha (opcional)",
+      "description": "Exporte seus dados locais em JSON, sem senha. O arquivo fica legível; guarde-o em um local seguro. Nenhum dado é enviado a servidores.",
       "button": "Exportar Dados",
       "success": "Dados exportados com sucesso",
-      "downloading": "Preparando download...",
-      "piiExcluded": "Clientes, orçamentos e histórico NÃO foram incluídos: eles são protegidos pelo cofre criptografado e estavam indisponíveis no momento da exportação. Desbloqueie o cofre e exporte novamente para incluí-los."
+      "downloading": "Preparando download..."
     },
     "import": {
       "tab": "Importar",
@@ -2496,8 +2477,6 @@
       "selectFile": "Selecionar arquivo",
       "dragDrop": "Arraste e solte o arquivo aqui ou clique para selecionar",
       "acceptedFormats": "Formato aceito: .open3dcalc",
-      "password": "Senha de descriptografia",
-      "passwordPlaceholder": "Digite a senha do arquivo",
       "mode": "Modo de importação",
       "modeMerge": "Mesclar (recomendado)",
       "modeReplace": "Substituir tudo",
@@ -2507,16 +2486,14 @@
       "button": "Importar Dados",
       "success": "Dados importados com sucesso",
       "importing": "Importando dados...",
-      "invalidFile": "Arquivo inválido ou corrompido",
-      "wrongPassword": "Senha incorreta",
-      "piiRefused": "Clientes, orçamentos e histórico NÃO foram importados: o cofre criptografado estava bloqueado ou indisponível. Desbloqueie o cofre e importe novamente; nada foi gravado em texto simples.",
+      "invalidFile": "Arquivo inválido, corrompido ou em formato incompatível",
       "results": {
         "imported": "{{count}} itens importados",
         "conflicts": "{{count}} conflitos resolvidos",
         "errors": "{{count}} erros encontrados"
       }
     },
-    "lgpd_notice": "A exportação e a importação são processadas localmente em um arquivo criptografado. O app pode acessar a rede para atualizações; links externos compartilham conteúdo quando você os abre. Consulte nossa Política de Privacidade.",
+    "lgpd_notice": "A exportação e a importação são processadas localmente. Os arquivos não são criptografados e podem ser lidos por quem tiver acesso a eles. O app pode acessar a rede para atualizações; links externos compartilham conteúdo quando você os abre. Consulte nossa Política de Privacidade.",
     "privacy_link": "Política de Privacidade"
   },
   "gcodePreview": {
@@ -2796,11 +2773,9 @@
     "recovery": {
       "ariaLabel": "Não foi possível abrir alguns dados armazenados",
       "title": "Não foi possível abrir alguns dos seus dados",
-      "message": "Estas partes do seu perfil estão armazenadas, mas não puderam ser descriptografadas, então não são exibidas agora. Nada foi apagado — os dados continuam no disco, e o restante do seu perfil está funcionando normalmente.",
+      "message": "Alguns dados do perfil usam um formato antigo que esta versão não consegue abrir. Nada foi apagado — os dados continuam no dispositivo, e o restante do perfil está funcionando normalmente.",
       "detail": "Indisponível: {{reason}}",
-      "recoverable": "Pode ser recuperado",
-      "unrecoverable": "Não pode ser recuperado",
-      "unavailable": "A recuperação automática está indisponível nesta versão. Nada foi alterado e os dados permanecem no disco."
+      "unavailable": "A conversão desse formato antigo não está disponível. Nada foi alterado e os dados permanecem no dispositivo."
     },
     "manifestUnavailable": {
       "ariaLabel": "Dados salvos indisponíveis",

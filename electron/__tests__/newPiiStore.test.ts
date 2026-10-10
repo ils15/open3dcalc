@@ -7,11 +7,11 @@ import {
   remainingNewPiiRows,
   snapshotNewPiiRows,
 } from "../newPiiStore.js";
-import type { MinimalStorageDb } from "../persistGate.js";
+import type { MinimalStorageDb } from "../storageRows.js";
 import {
   NEW_PII_STORAGE_KEYS,
   type NewPiiStorageKey,
-} from "../../src/shared/lib/crypto/newPiiNamespace.js";
+} from "../../src/shared/lib/localData/newPiiNamespace.js";
 
 const [CUSTOMERS, QUOTES] = NEW_PII_STORAGE_KEYS;
 const PLAINTEXT_ENVELOPE = '{"state":{"synthetic":"value"},"version":1}';

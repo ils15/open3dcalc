@@ -39,8 +39,7 @@ describe("PiiUnavailableBanner — recovery is permanently disabled", () => {
     latchUnavailableClasses([
       {
         key: "open3dcalc_customers_v1",
-        reason: "legacy_unbound_encryption",
-        recoverable: true,
+        reason: "unsupported_legacy_data",
       },
     ]);
     // If the component still reached for the removed channel, this spy would
@@ -52,7 +51,7 @@ describe("PiiUnavailableBanner — recovery is permanently disabled", () => {
 
     const text = document.body.textContent ?? "";
     expect(text).toContain("open3dcalc_customers_v1");
-    expect(text).toContain("legacy_unbound_encryption");
+    expect(text).toContain("unsupported_legacy_data");
     expect(text).toContain("persistence.recovery.unavailable");
 
     expect(

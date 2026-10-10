@@ -2,17 +2,15 @@
  * Erasure snapshot payload capture/restore (SPEC-02 §5).
  *
  * Extracted from `erasure.ts` so the payload builder is unit-testable: that
- * module imports `electron` directly (app/safeStorage) and therefore cannot be
+ * module imports Electron directly and therefore cannot be
  * imported from a node test. Nothing here touches Electron APIs — only the
  * SQLite client — so the real implementation is exercised directly by
  * `piiDomainTables.test.ts` and `piiStageResidue.test.ts` rather than
  * re-implemented in the test bodies.
  *
  * The table loop iterates `PII_ERASURE_TABLES` — the PII domain tables plus the
- * `pii_stage` preimage table — the single source of truth shared with the §3
- * purge, the §6 rescan and the ADR-003 §2.2.2 backup redaction. `pii_stage` is
- * in it because a staged row IS a preimage: a snapshot that omitted it would
- * make a rollback unrecoverable for exactly the transaction that is mid-flight.
+ * `pii_stage` and `legacy_residue` tables. They remain included so erasure and
+ * rollback also cover rows left by older app versions.
  *
  * One detail is worth reading before changing the restore: it is a MERGE, not a
  * replace — see `restoreSnapshotPayload`.
@@ -73,7 +71,7 @@ export function snapshotPayload(db: PayloadDb): string {
  *
  * `updated_at` is stamped with the restore time rather than restored verbatim:
  * the payload captures (key, value) only, and a rollback genuinely does change
- * the row's write time. The sealed preimages in `pii_stage` keep their own
+ * the row's write time. The preimages in `pii_stage` keep their own
  * `created_at`, because there the column IS part of the captured row.
  *
  * KNOWN LIMITATION (pre-existing, recorded not fixed) — this restore is NOT
@@ -82,9 +80,9 @@ export function snapshotPayload(db: PayloadDb): string {
  * caller cannot tell which from the return value. The resume rule (§2) means a
  * second run converges — the merge upserts by key, so re-running finishes the
  * job — but a crash between the two runs leaves the profile in an intermediate
- * state that no single code path observes. The stage state machine
- * (`electron/piiStage.ts`) wraps every one of its own writes for exactly this
- * reason; this one predates it and is left alone here.
+ * state that no single code path observes. The former stage state machine
+ * handled its writes separately; this compatibility code remains for existing
+ * journal and data contracts.
  */
 export function restoreSnapshotPayload(db: PayloadDb, payload: string): void {
   const parsed = JSON.parse(payload) as {

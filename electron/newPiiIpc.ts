@@ -11,7 +11,7 @@ import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import {
   assertNewPiiStorageKey,
   NewPiiKeyRefusedError,
-} from "../src/shared/lib/crypto/newPiiNamespace.js";
+} from "../src/shared/lib/localData/newPiiNamespace.js";
 import {
   readStoredRow,
   writeStoredRow,
@@ -85,7 +85,7 @@ function isPlaintextEnvelope(value: unknown): value is string {
   }
 }
 
-/** Register trusted, exact-key plaintext storage with durable erasure locks. */
+/** Register trusted, exact-key local storage with durable erasure locks. */
 export function registerPasswordlessPiiHandlers(
   ipcMain: Pick<IpcMain, "handle">,
   database: DatabaseHandle,
@@ -154,7 +154,7 @@ export function registerPasswordlessPiiHandlers(
         throw new NewPiiRouteRefusedError("invalid_plaintext_envelope");
       }
 
-      // Do not clobber a legacy, encrypted, or malformed row under an exact key.
+      // Do not clobber an unsupported legacy or malformed row under an exact key.
       const current = readStoredRow(database.$client, key);
       if (current !== null && !isPlaintextEnvelope(current)) {
         throw new NewPiiRouteRefusedError("non_plaintext_record_shape");

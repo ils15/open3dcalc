@@ -49,7 +49,7 @@ npx electron-builder --win --linux  # Both
 ## Beta scope
 
 The approved plaintext synthetic-test profile is Web-Beta-only and does not apply to Electron.
-For Stable/Desktop, the customer, quote, and history stores use the passwordless PII IPC route;
+For Stable/Desktop, the customer, quote, and history stores use the local PII IPC route;
 their physical keys are `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quotes_v1`, and
 `open3dcalc_pwless_history_v1` in the SQLite `storage` key/value table. These are the Desktop
 destinations for the corresponding logical keys in the SPEC-01 fixture, not `localStorage`

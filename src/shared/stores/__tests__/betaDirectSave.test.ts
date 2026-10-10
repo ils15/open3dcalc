@@ -2,12 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: true }));
 
-const BETA_CUSTOMERS_KEY = "open3dcalc_beta_test_customers_v1";
+async function resetProfile(): Promise<void> {
+  vi.resetModules();
+  const { resetManifestForTests } = await import("@/shared/lib/manifestGate");
+  resetManifestForTests(undefined);
+}
 
-describe("betaDirectSave", () => {
-  beforeEach(() => {
+describe("Beta real local user data", () => {
+  beforeEach(async () => {
     window.localStorage.clear();
-    vi.resetModules();
+    await resetProfile();
   });
 
   afterEach(() => {
@@ -15,72 +19,69 @@ describe("betaDirectSave", () => {
     vi.restoreAllMocks();
   });
 
-  it("saves synthetic customer data on a fresh profile without password or consent", async () => {
-    const { resetManifestForTests } = await import("@/shared/lib/manifestGate");
-    resetManifestForTests(undefined);
-    const { useCustomerStore } = await import("../customerStore");
+  it("saves and reloads customers through the shared local key", async () => {
+    const { useCustomerStore } = await import("@/shared/stores/customerStore");
+    const email = "maria@example.invalid";
+    const name = "Maria Cliente";
 
-    await useCustomerStore.persist.rehydrate();
-    const customerId = useCustomerStore.getState().addCustomer({
-      name: "Synthetic Customer",
-      company: "Example Workshop",
-      email: "customer@example.invalid",
+    useCustomerStore.getState().addCustomer({
+      name,
+      company: "Oficina 3D",
+      email,
       phone: "555-0100",
-      address: "1 Example Way",
-      notes: "synthetic test record",
+      address: "Rua Um, 10",
+      notes: "Cliente real do perfil local",
     });
 
-    const persisted = JSON.parse(
-      window.localStorage.getItem(BETA_CUSTOMERS_KEY) ?? "{}",
-    ) as { state?: { customers?: Array<{ id: string; email?: string }> } };
-    expect(persisted.state?.customers).toContainEqual(
-      expect.objectContaining({
-        id: customerId,
-        email: "customer@example.invalid",
-      }),
-    );
-    expect(window.localStorage.getItem("open3dcalc_consent_v1")).toBeNull();
-    expect(window.localStorage.getItem("open3dcalc_pii_vault")).toBeNull();
-  });
-});
+    const raw = window.localStorage.getItem("open3dcalc_customers_v1");
+    expect(raw).toContain(name);
+    expect(raw).toContain(email);
+    expect(
+      window.localStorage.getItem("open3dcalc_beta_test_customers_v1"),
+    ).toBeNull();
 
-describe("saveReloadChannels", () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-    vi.resetModules();
+    await resetProfile();
+    const reopened = await import("@/shared/stores/customerStore");
+    expect(reopened.useCustomerStore.getState().customers).toEqual([
+      expect.objectContaining({ name, email }),
+    ]);
   });
 
-  afterEach(() => {
-    window.localStorage.clear();
-    vi.restoreAllMocks();
-  });
-
-  it("reloads a Beta synthetic customer from its exact test key", async () => {
-    const gateBeforeSave = await import("@/shared/lib/manifestGate");
-    gateBeforeSave.resetManifestForTests(undefined);
-    const { useCustomerStore: firstStore } = await import("../customerStore");
-    await firstStore.persist.rehydrate();
-    firstStore.getState().addCustomer({
-      name: "Reloaded Synthetic",
-      company: "Example Workshop",
-      email: "reload@example.invalid",
-      phone: "555-0101",
-      address: "2 Example Way",
-      notes: "synthetic reload fixture",
+  it("migrates Beta V1 history into the shared V2 key before store hydration", async () => {
+    const legacy = JSON.stringify({
+      state: {
+        entries: [
+          {
+            id: "history-v1-01",
+            timestamp: 1,
+            type: "fdm",
+            name: "Suporte de teste",
+            summary: "PLA, 20g",
+            totalCost: 2,
+            sellPrice: 5,
+            profit: 3,
+            result: { totalCost: 2 },
+          },
+        ],
+      },
+      version: 1,
     });
+    window.localStorage.setItem("open3dcalc_beta_test_history_v1", legacy);
 
-    vi.resetModules();
-    const gateAfterReload = await import("@/shared/lib/manifestGate");
-    gateAfterReload.resetManifestForTests(undefined);
-    const { useCustomerStore: reloadedStore } =
-      await import("../customerStore");
-    await reloadedStore.persist.rehydrate();
+    const { useHistoryStore } = await import("@/shared/stores/historyStore");
 
-    expect(reloadedStore.getState().customers).toEqual([
+    expect(useHistoryStore.getState().entries).toEqual([
       expect.objectContaining({
-        name: "Reloaded Synthetic",
-        email: "reload@example.invalid",
+        id: "history-v1-01",
+        name: "Suporte de teste",
       }),
     ]);
+    const current = JSON.parse(
+      window.localStorage.getItem("open3dcalc_history_v2") ?? "null",
+    ) as { version: number };
+    expect(current.version).toBe(2);
+    expect(
+      window.localStorage.getItem("open3dcalc_beta_test_history_v1"),
+    ).toBeNull();
   });
 });

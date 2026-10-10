@@ -141,22 +141,22 @@ describe("dataManifest loader (SPEC-01)", () => {
     }
   });
 
-  it("SPEC-01 policy 1.9: declares only the approved Stable plaintext PII scope", () => {
+  it("SPEC-01 policy 1.9: declares the shared customer, quote, and history keys", () => {
     const doc = manifestFixture as ManifestDocument;
     const approvedKeys = [
       "open3dcalc_customers_v1",
       "open3dcalc_quotes_v1",
       "open3dcalc_history_v2",
     ];
-    const plaintextPiiEntries = doc.keys.filter(
-      (entry) => entry.pii && entry.persistence === "plaintext_allowed",
+    const currentSharedPiiEntries = doc.keys.filter((entry) =>
+      approvedKeys.includes(entry.key),
     );
 
     expect(doc.policy_version).toBe("1.9");
-    expect(plaintextPiiEntries.map((entry) => entry.key).sort()).toEqual(
+    expect(currentSharedPiiEntries.map((entry) => entry.key).sort()).toEqual(
       [...approvedKeys].sort(),
     );
-    for (const entry of plaintextPiiEntries) {
+    for (const entry of currentSharedPiiEntries) {
       expect(entry).toMatchObject({
         surface: "localStorage",
         platforms: ["electron", "web", "pwa"],
@@ -166,10 +166,15 @@ describe("dataManifest loader (SPEC-01)", () => {
     }
     expect(
       doc.keys
+        .filter((entry) => entry.pii)
+        .every((entry) => entry.persistence === "plaintext_allowed"),
+    ).toBe(true);
+    expect(
+      doc.keys
         .filter(
           (entry) => entry.surface === "sqlite_domain_tables" && entry.pii,
         )
-        .every((entry) => entry.persistence === "encrypted_at_rest"),
+        .every((entry) => entry.persistence === "plaintext_allowed"),
     ).toBe(true);
   });
 
@@ -213,10 +218,10 @@ describe("dataManifest loader (SPEC-01)", () => {
   });
 
   // -----------------------------------------------------------------------
-  // TEST-MATRIX 1.2–1.3 — only exact policy 1.9 plaintext PII scope is allowed
+  // TEST-MATRIX 1.2–1.3 — shared user-data destinations are explicit
   // -----------------------------------------------------------------------
 
-  it("TEST-MATRIX 1.2: accepts only the three Stable localStorage PII keys", () => {
+  it("TEST-MATRIX 1.2: pins shared data destinations and permits declared local PII", () => {
     const approved = validEntry({
       key: "open3dcalc_customers_v1",
       platforms: ["electron", "web", "pwa"],
@@ -259,13 +264,14 @@ describe("dataManifest loader (SPEC-01)", () => {
     expect(() =>
       validateManifestEntry(
         validEntry({
-          key: "unapproved_pii_key",
+          key: "declared_customer_archive",
+          class: "user_content",
           pii: true,
           persistence: "plaintext_allowed",
           legal_basis: "contract_performance",
         }),
       ),
-    ).toThrow(ManifestError);
+    ).not.toThrow();
     expect(() =>
       validateManifestEntry({
         ...approved,
@@ -286,7 +292,7 @@ describe("dataManifest loader (SPEC-01)", () => {
         validEntry({
           pii: true,
           legal_basis: "not_personal_data",
-          persistence: "encrypted_at_rest",
+          persistence: "plaintext_allowed",
         }),
       ),
     ).toThrow(ManifestError);
@@ -317,13 +323,13 @@ describe("dataManifest loader (SPEC-01)", () => {
     ).toThrow(ManifestError);
   });
 
-  it("TEST-MATRIX 1.6: REJECTS snapshot with sync != never or plaintext_allowed", () => {
+  it("TEST-MATRIX 1.6: REJECTS snapshots with sync/export enabled and allows local plaintext", () => {
     expect(() =>
       validateManifestEntry(
         validEntry({
           class: "snapshot",
           pii: true,
-          persistence: "encrypted_at_rest",
+          persistence: "plaintext_allowed",
           sync: "opt_in",
           export: "never",
           legal_basis: "consent",
@@ -341,7 +347,7 @@ describe("dataManifest loader (SPEC-01)", () => {
           legal_basis: "consent",
         }),
       ),
-    ).toThrow(ManifestError);
+    ).not.toThrow();
   });
 
   it("TEST-MATRIX 1.7: REJECTS ephemeral_key with persistence != memory_only", () => {
@@ -349,7 +355,7 @@ describe("dataManifest loader (SPEC-01)", () => {
       validateManifestEntry(
         validEntry({
           class: "ephemeral_key",
-          persistence: "encrypted_at_rest",
+          persistence: "plaintext_allowed",
           sync: "never",
           export: "never",
         }),
@@ -377,6 +383,9 @@ describe("dataManifest loader (SPEC-01)", () => {
     }
     expect(() =>
       validateManifestEntry(validEntry({ surface: "floppy_disk" })),
+    ).toThrow(ManifestError);
+    expect(() =>
+      validateManifestEntry(validEntry({ persistence: "encrypted_at_rest" })),
     ).toThrow(ManifestError);
   });
 

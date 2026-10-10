@@ -4,17 +4,17 @@
 
 The receipt issuance, consent prerequisite, and withdrawal-as-a-condition-of-saving rules in
 this specification are superseded for current local saves in both Stable and Beta. Neither
-channel requires consent, a receipt, or withdrawal state before accepting a save. Stable and
-Desktop follows SPEC-01's exact plaintext policy; Beta is intended for synthetic test data but
-does not validate record contents, and retains its other restrictions. This does not authorize inspection or conversion of
-historical vault bytes, which remain inert and outside current deletion scope.
+channel requires consent, a receipt, or withdrawal state before accepting a save. Stable,
+Desktop, and Web Beta follow SPEC-01's exact plaintext user-content policy; Beta's former
+synthetic-only restriction is superseded by the owner decision of 2026-10-10. This does not
+authorize inspection or conversion of historical vault bytes, which remain inert and outside
+current deletion scope.
 
 Receipts issued under earlier policy versions remain untouched historical records. Under
 policy 1.9 they evaluate as `policy_mismatch`; they are not silently rewritten and do not
 gate saves. The retained `contract_performance` declaration for the three Stable PII keys is
 provisional and requires qualified legal review; this specification does not make a legal
-determination. The encrypted export password remains independent of receipt state and local
-saves.
+determination. Current JSON export/import does not require or use a password.
 
 **Track:** D1 — Privacy & Data Contracts
 **Status:** Superseded for save prerequisites by approved policy 1.9; historical receipts retained
@@ -248,14 +248,11 @@ and policy-version test coverage is in TEST-MATRIX §7.
 **Status:** Superseded for current local-save prerequisites by policy 1.9; historical receipt
 format and interpretation remain relevant to previously issued records.
 
-## Beta test-only profile addendum (approved scope; implementation on current branch)
+## Superseded historical Beta test-only profile addendum
 
-SPEC-04 remains the historical receipt contract for records issued under earlier policies.
-Current Stable/Desktop and Web-Beta local saves require no consent receipt. The Web-Beta profile
-is intended for synthetic test data and issues no receipt; the app does not validate record
-contents, and same-origin code can still access browser storage. Its first-run disclosure is
-informational only and is not a consent gate, password prompt, withdrawal control, or
-privacy-receipt surface. Beta consent and receipt APIs are not reachable from the Beta app.
+This addendum records the former synthetic-only profile. Beta saves still require no consent
+receipt, but now support real local user data in the shared Stable keys. Same-origin code can
+access browser storage. The first-run notice is informational and not a consent gate.
 
 This addendum does not change the retained receipt format or historical receipt interpretation.
 Beta first-run disclosure and reachability removals are implemented on the current branch;

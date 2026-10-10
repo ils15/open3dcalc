@@ -4,7 +4,7 @@
  *
  * Journal: a metadata-only localStorage key registered in the SPEC-01
  * manifest as an infrastructure surface (class diagnostic). Snapshots:
- * encrypted blobs in localStorage (the web payload is bounded by the
+ * readable local data in localStorage (the web payload is bounded by the
  * SPEC-03 limits; OPFS is the growth path if snapshots outgrow the ~5 MiB
  * per-key quota — documented boundary).
  *
@@ -14,16 +14,12 @@
  */
 
 import { SNAPSHOT_TTL_DAYS, type SagaJournal } from "./types.js";
-import type {
-  JournalAdapter,
-  SnapshotCapability,
-  SnapshotStore,
-} from "./ports.js";
+import type { JournalAdapter, SnapshotStore } from "./ports.js";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { isBetaChannel } from "@/shared/config/betaChannel";
 
 export const ERASURE_JOURNAL_KEY = "open3dcalc_erasure_journal";
-/** Registered SPEC-01 key: class snapshot — the payload is ciphertext. */
+/** Registered SPEC-01 key: temporary local rollback data. */
 export const ERASURE_SNAPSHOT_KEY = "open3dcalc_erasure_snapshot";
 
 export function webJournalAdapter(): JournalAdapter {
@@ -78,7 +74,8 @@ export function webSnapshotStore(): SnapshotStore {
     saga_id: string;
     created_at: string;
     ttl_days: number;
-    ct_base64: string;
+    payload?: string;
+    ct_base64?: string;
   } | null {
     const raw = guardedStorage.getItem(ERASURE_SNAPSHOT_KEY);
     if (raw === null) return null;
@@ -87,48 +84,52 @@ export function webSnapshotStore(): SnapshotStore {
         saga_id: string;
         created_at: string;
         ttl_days: number;
-        ct_base64: string;
+        payload?: string;
+        ct_base64?: string;
       };
     } catch {
       return null;
     }
   }
   return {
-    async write(sagaId, payload, capability: SnapshotCapability) {
-      const ciphertext = await capability.encrypt(
-        new TextEncoder().encode(payload),
-      );
-      // One fixed SPEC-01 key: the envelope carries the meta + ciphertext.
+    async write(sagaId, payload) {
+      const previous = readEnvelope();
+      if (previous && typeof previous.payload !== "string") {
+        throw new Error("legacy snapshot format is unsupported");
+      }
+      // One fixed SPEC-01 key: the record carries metadata and readable data.
       guardedStorage.setItem(
         ERASURE_SNAPSHOT_KEY,
         JSON.stringify({
           saga_id: sagaId,
           created_at: new Date().toISOString(),
           ttl_days: SNAPSHOT_TTL_DAYS,
-          ct_base64: toBase64(ciphertext),
+          payload,
         }),
       );
     },
-    async canRollback(sagaId, capability, now) {
+    async canRollback(sagaId, now) {
       const env = readEnvelope();
       if (env === null || env.saga_id !== sagaId) {
         return { possible: false, reason: "snapshot_missing" };
       }
+      if (typeof env.payload !== "string") {
+        return { possible: false, reason: "legacy_snapshot_unsupported" };
+      }
       if (ageDays(env.created_at, now) > SNAPSHOT_TTL_DAYS) {
         return { possible: false, reason: "snapshot_expired" };
       }
-      if (!(await capability.canDecrypt())) {
-        return { possible: false, reason: "key_unavailable" };
-      }
       return { possible: true };
     },
-    async restore(sagaId, capability) {
+    async restore(sagaId) {
       const env = readEnvelope();
       if (env === null || env.saga_id !== sagaId) {
         throw new Error("snapshot missing");
       }
-      const bytes = fromBase64(env.ct_base64);
-      return new TextDecoder().decode(await capability.decrypt(bytes));
+      if (typeof env.payload !== "string") {
+        throw new Error("legacy snapshot format is unsupported");
+      }
+      return env.payload;
     },
     destroy(sagaId) {
       const env = readEnvelope();
@@ -148,17 +149,4 @@ export function webSnapshotStore(): SnapshotStore {
       return [];
     },
   };
-}
-
-function toBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
-}
-
-function fromBase64(b64: string): Uint8Array {
-  const binary = atob(b64);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
-  return out;
 }

@@ -40,24 +40,24 @@ the application makes no promise that they can be recovered.
 4. It reports completion only when all in-scope operations succeed. On failure it reports an
    error/partial outcome and must not imply that excluded or external copies were removed.
 
-The operation does not require unlocking the retired vault, a passphrase, consent, a receipt,
-or access to an encrypted rollback snapshot. This contract does not promise crash recovery,
+The operation does not require a passphrase, consent, a receipt, or access to a rollback
+snapshot. Rollback snapshots are stored as readable local data. This contract does not promise crash recovery,
 rollback, restoration, secure physical overwrite, WAL compaction, cache-wide cleanup, or a
 cross-surface post-condition scan. Such guarantees must not be inferred from the word
 “delete”.
 
-## 4. Beta refusal
+## 4. Superseded Beta refusal
 
-Web Beta is intended for synthetic test data (the app does not validate contents; same-origin
-code can still access browser storage) and has no user deletion, erasure saga, withdrawal purge,
-recovery, namespace sweep, or cleanup operation. A Beta deletion request must be refused
-before storage access or mutation. Beta's three exact test keys are not granted deletion
-permission by this Stable/Desktop policy.
+This section records the earlier test-only restriction and is superseded by the owner decision
+of 2026-10-10. Beta now stores real user records in the same local keys as Stable and supports
+ordinary per-record deletion actions. A complete all-data erasure workflow remains a separate
+release-readiness item; do not infer it from per-record deletion. Retired
+`open3dcalc_beta_test_*` copies are migrated before hydration.
 
 ## 5. External copies and disclosure
 
 The UI and release documentation must distinguish the supported current deletion scope from
-copies the application does not control. Users must be told that encrypted exports, external
+copies the application does not control. Users must be told that exported JSON, external
 backups, and inert historical vault bytes can remain. A current deletion success is not a
 claim about those excluded copies.
 

@@ -13,19 +13,11 @@ export default defineConfig(
       // Vitest's own default for this pool is `testTimeout: 5000`; it was
       // previously left unconfigured here, so the budget was implicit.
       //
-      // Why this number: the slowest measured test in the Electron/secret
-      // family (electron/__tests__/{cryptoCapability,legacyRecovery,
-      // legacyScan,osKeyring,persistGate,piiDomainTables,piiStage,
-      // piiStageResidue}.test.ts) runs 2564-3331ms, i.e. 51-67% of that 5000ms
-      // budget. 10s is ~3x the worst observation and above the 2x margin floor
-      // (6662ms), which leaves room for a loaded CI runner.
+      // A 10s budget leaves room for a loaded CI runner while keeping
+      // unexpectedly slow tests bounded.
       //
       // Scope, deliberately: `hookTimeout` and `teardownTimeout` are NOT set
-      // here. The Electron family registers no beforeAll/afterAll, so the slow
-      // work is test bodies, and teardown is not a hot spot — configuring a
-      // knob with no consumer is noise. The 6781ms crypto self-test already
-      // declares its own 180_000ms budget at the call site
-      // (crypto.selftest.test.ts), so it needs no global margin.
+      // here. Tests are bounded at the body level; teardown is not a hot spot.
       //
       // This is honest margin, NOT a flake fix: the reported flake did not
       // reproduce in 5 runs under load 2.99. Upstream vitest-dev/vitest#9751
@@ -44,8 +36,7 @@ export default defineConfig(
         "Example/**",
         // Browser-mode specs run in a real Chromium via `vitest.browser.config.ts`
         // (`npm run test:browser`) and would fail here: jsdom has no IndexedDB
-        // and reports `window.isSecureContext` as `undefined`, which the vault's
-        // gate correctly treats as a denial. They match the default include glob,
+        // and reports `window.isSecureContext` as `undefined`. They match the default include glob,
         // so they must be excluded explicitly; the browser config's own `include`
         // is the other half of the split. Both extensions are excluded so a
         // future `*.browser.test.tsx` cannot fall into the jsdom suite.
@@ -89,13 +80,6 @@ export default defineConfig(
           // bytes, not source: measuring them double-counts the .ts above and
           // reports coverage for code nobody wrote.
           "electron/dist/**",
-          // The crypto self-test harness is executed by the REAL Electron
-          // binary in a separate process; vitest's v8 coverage only observes
-          // the vitest process, so it can only ever report this file as 0%.
-          // The harness itself is exercised by
-          // electron/__tests__/crypto.selftest.test.ts (which asserts on its
-          // JSON report), not by importing it.
-          "electron/selftest/**",
           // Not instrumentable by the v8 provider: rolldown's parser rejects
           // the import-attributes syntax above, so the provider always drops
           // this file with a "Failed to parse ... Excluding it from coverage"

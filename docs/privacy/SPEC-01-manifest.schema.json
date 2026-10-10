@@ -47,7 +47,7 @@
     },
     "persistenceMode": {
       "type": "string",
-      "enum": ["none", "memory_only", "encrypted_at_rest", "plaintext_allowed"]
+      "enum": ["none", "memory_only", "plaintext_allowed"]
     },
     "syncMode": {
       "type": "string",

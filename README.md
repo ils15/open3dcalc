@@ -53,30 +53,29 @@ Baixe a versão desktop para Windows ou Linux na [página de releases](https://g
 ## 🔒 Privacidade e seus dados
 
 **Política atual (1.9):** no Stable, os dados de clientes, orçamentos e histórico são gravados
-diretamente em texto puro no armazenamento local do navegador e do Desktop. Não é necessária
-senha, desbloqueio de cofre ou consentimento para salvar; use apenas dispositivos e perfis sob
+diretamente em texto legível no armazenamento local do navegador e do Desktop. Não é necessária
+senha ou consentimento para salvar; use apenas dispositivos e perfis sob
 seu controle. A base legal `contract_performance` é provisória e aguarda revisão jurídica
-qualificada — não é uma conclusão legal. A exportação lógica continua protegida por senha e
-criptografada, mas essa senha serve somente para exportar/importar e nunca condiciona gravações
-locais. A Beta continua Web-only, destinada ao uso com dados sintéticos nas três chaves de
-teste (sem validação do conteúdo) e mantém as restrições de não sincronizar, exportar, importar
-ou apagar. Dados históricos do
-cofre `open3dcalc_pii_vault` são inertes: não são abertos, lidos, convertidos nem incluídos na
-exclusão atual de dados; seus bytes podem permanecer no perfil.
+qualificada — não é uma conclusão legal. A Beta Web usa as mesmas chaves e os mesmos dados locais
+da versão Stable; não é um perfil separado nem exige senha para salvar. Os registros legados da
+namespace `open3dcalc_beta_test_*` são copiados/mesclados para as chaves compartilhadas antes da
+hidratação. Dados históricos do antigo armazenamento protegido `open3dcalc_pii_vault` são
+inertes: não são abertos, lidos, convertidos nem incluídos na exclusão atual; seus bytes podem
+permanecer no perfil e não podem ser recuperados por esta versão.
 
 O Open3DCalc é **local-first** para os dados de cálculo salvos no dispositivo, mas não é correto afirmar que o aplicativo nunca acessa a rede: a versão web/PWA busca recursos e atualizações no serviço de hospedagem, o desktop verifica atualizações publicadas no GitHub Releases e o link do WhatsApp só abre quando acionado pelo usuário — nesse caso, o texto da proposta é enviado ao serviço do WhatsApp. Esses fluxos são separados do assistente local descrito abaixo. A partir da v1.12, a política de privacidade (LGPD) é executada pelo próprio aplicativo:
 
 - **Assistente local (Copilot)** — as dicas por material usam heurísticas locais, a proposta de venda é um template local e os números vêm da calculadora. Não há geração por IA, chamada a provedor de IA, leitura/armazenamento de chave de API nem transferência de dados do projeto ou chaves para serviços de IA. Uma chave eventualmente salva por uma versão beta antiga é ignorada pelo assistente atual. Ao abrir a proposta pelo link do WhatsApp, o texto é compartilhado com o WhatsApp por escolha do usuário.
 
 - **Aba 🔒 Privacidade** — um só lugar para ver e agir sobre seus dados:
-  - **Dados locais Stable**: gravação direta de clientes, orçamentos e histórico, sem senha nem consentimento como pré-requisito;
+  - **Dados locais**: gravação direta de clientes, orçamentos e histórico, sem senha nem consentimento como pré-requisito;
   - **Recibos antigos**: permanecem como registros históricos; sob a política 1.9 são avaliados como `policy_mismatch` e não gateiam gravações;
-  - **Excluir dados atuais**: a ação abrange somente dados atuais que o aplicativo possui e consegue acessar; não promete remover bytes históricos e inertes do cofre.
-- **Exportação sempre criptografada**: o pacote de sincronização/exportação (`.open3dcalc`) sai criptografado com AES-256-GCM a partir de uma senha sua — sem senha, não há export. Pacotes legados antigos continuam importáveis. Os dados marcados como exportáveis pelo usuário — incluindo paleta de cores personalizada e configurações de comparação de modelos — são preservados na exportação e importação.
-- **Backup bruto deixou de ser recurso de usuário**: a cópia bruta do banco SQLite agora é um artefato de diagnóstico interno, bloqueado por padrão (gate de desenvolvimento), com modo de redação de dados pessoais e retenção máxima de 14 dias. Para levar seus dados a outra máquina, use o pacote de exportação criptografado.
-- **Dados históricos do cofre:** os bytes antigos de `open3dcalc_pii_vault` ficam inertes. Nenhum fluxo atual os abre, lê, converte, recupera ou remove; eles não pertencem ao escopo de exclusão de dados atuais. Não é prometida a recuperação desses dados.
+  - **Excluir dados atuais**: a ação abrange somente dados atuais que o aplicativo possui e consegue acessar; não promete remover bytes históricos e inertes do antigo armazenamento protegido.
+- **Exportação local em JSON legível**: os arquivos `.open3dcalc` incluem clientes, orçamentos, histórico e demais dados locais sem senha. Qualquer pessoa com acesso ao arquivo pode lê-lo; guarde-o em um local seguro. Exportação e importação permitem usar dados reais e migrar backups JSON legíveis entre versões. Backups antigos protegidos por senha não são mais importáveis.
+- **Backup bruto deixou de ser recurso de usuário**: a cópia bruta do banco SQLite agora é um artefato de diagnóstico interno, bloqueado por padrão (gate de desenvolvimento), com modo de redação de dados pessoais e retenção máxima de 14 dias. Para levar seus dados a outra máquina, use a exportação local JSON.
+- **Dados históricos protegidos:** os bytes antigos de `open3dcalc_pii_vault` ficam inertes. Nenhum fluxo atual os abre, lê, converte, recupera ou remove; eles não pertencem ao escopo de exclusão de dados atuais e não podem ser recuperados por esta versão.
 
-> Detalhes técnicos e escopo de exclusão: `docs/privacy/` (política 1.9; SPEC-01 manifest de dados, ADR-001/002/003 e SPEC-02). O SPEC-03 mantém a criptografia de exportação.
+> Detalhes técnicos e escopo de exclusão: `docs/privacy/`. O armazenamento e as exportações atuais são legíveis; formatos protegidos antigos estão documentados apenas como histórico.
 >
 > 📦 **Beta 5 (web):** evidências de release e a disclosure obrigatória estão em [`docs/privacy/BETA5-RELEASE-EVIDENCE.md`](docs/privacy/BETA5-RELEASE-EVIDENCE.md).
 
@@ -533,13 +532,9 @@ npm run test:run
 # Com cobertura
 npm run test:run -- --coverage
 
-# Harness de browser (PII vault em Chromium real) — requer o Chromium do
+# Teste de isolamento de armazenamento em Chromium real — requer o Chromium do
 # Playwright: `npx playwright install chromium` (no CI: `--with-deps`)
 npm run test:browser
-
-# Probe de keyring do build empacotado (Electron real, app.asar) — requer
-# `docker` para as linhas de container; `xvfb` é o fallback headless
-npm run test:packaged
 
 # Studio/Cadastros no browser — requer o servidor web já em execução
 npm run test:studio-header:playwright
@@ -564,7 +559,7 @@ baseline; um arquivo do baseline que começa a passar só gera aviso.
 Isso existe porque `main` carrega vermelho herdado do refactor W6 do StudioLayout e de
 dois registros de pin adiados. A medição de referência é **12 arquivos / 52 testes** em
 `main@09d8947`; o reparo do Studio reduziu para **9 arquivos / 36 testes** — os três
-arquivos a mais eram o guard de exportação demo e o shell do cofre, corrigidos aqui.
+arquivos a mais eram o guard de exportação demo e o probe criptográfico empacotado, agora removido.
 Um gate que exige zero falhas nesse estado travou o repositório três vezes no mesmo dia
 — um push precisou de `--no-verify` e dois merges de bypass de administrador.
 
@@ -574,9 +569,7 @@ inteiro e imprime um aviso alto — é exceção, não fluxo. Para regerar o bas
 editar à mão) e a regra completa, veja
 [BRANCH-POLICY.md](BRANCH-POLICY.md#6-local-pre-push-gate-is-did-not-get-worse-ci-is-the-authority).
 
-`npm run test:browser` roda os specs `*.browser.test.ts` e `*.browser.test.tsx` num **Chromium real** (via Playwright) — o runtime que a web/PWA realmente usa, com `indexedDB` e Web Crypto verdadeiros. É **pré-requisito** instalar o browser uma vez: `npx playwright install chromium` (no CI o job instala com `npx playwright install --with-deps chromium`, que também puxa as libs de sistema do Chromium headless). Esse glob é **excluído** da suíte jsdom (`npm run test:run`), então as duas suítes não se sobrepõem.
-
-`npm run test:packaged` empacota um shell Electron mínimo (`electron-builder.probe.yml`) e roda o probe de keyring (`electron/selftest/packaged-probe.ts`) de dentro de um `app.asar` real, verificando que o gate §3.4 (ADR-001) se comporta como o ADR declara. Por padrão empacota e roda no host; `npm run test:packaged -- --no-build --image host` reusa o pacote e é o spelling explícito de "sem container", e `-- --image ubuntu:24.04` (ou outra imagem) roda dentro de um container. **Pré-requisitos:** `docker` para as linhas de container (o runner do CI já traz Docker) e `xvfb` como fallback headless quando a execução direta não produz relatório (no CI o job instala com `apt-get install -y xvfb`). O relatório é _value-free_ — sem PII, sem key material e sem paths — e o comando só sai com código 0 quando um relatório foi produzido e **todos** os invariantes se mantêm. Roda no job `test-packaged` do CI contra host + `ubuntu:24.04` / `debian:12` / `rockylinux:9`.
+`npm run test:browser` roda o teste de isolamento do perfil Beta num **Chromium real** (via Playwright), separado da suíte jsdom porque usa APIs reais do navegador. Instale o browser uma vez com `npx playwright install chromium` (no CI o job usa `npx playwright install --with-deps chromium`).
 
 ---
 
@@ -642,7 +635,6 @@ npm run db:migrate
 | `npm run test:run`                         | Run tests once (CI mode)                                                     |
 | `npm run test:browser`                     | Run `*.browser.test.ts` / `*.browser.test.tsx` in real Chromium (Playwright) |
 | `npm run test:studio-layout-ux:playwright` | Check Bento mobile overflow and fixed-dock clearance in Chromium             |
-| `npm run test:packaged`                    | Packaged Electron keyring probe (real `app.asar`); Docker for containers     |
 | `npm run lint`                             | ESLint check across entire project                                           |
 | `npm run typecheck`                        | TypeScript check (`tsc --noEmit -p tsconfig.app.json`)                       |
 | `npm run typecheck:electron`               | TypeScript check for Electron main process                                   |
@@ -713,19 +705,13 @@ O canal beta publica builds **web-only** (Electron nunca é buildado) num subpat
 > 🧾 **Bloqueio por disclosure:** antes de autorizar o corte, o pacote de evidências de release e o
 > checklist do gate devem estar verdes — veja [`docs/privacy/BETA5-RELEASE-EVIDENCE.md`](docs/privacy/BETA5-RELEASE-EVIDENCE.md).
 
-> ⚠️ **Contrato Beta de teste (aprovado; implementação concluída neste branch, gate final pendente):** a faixa de
-> strip-down é **somente Web Beta e destinada a dados sintéticos**. O app usa apenas
-> `open3dcalc_beta_test_customers_v1`, `open3dcalc_beta_test_quotes_v1` e
-> `open3dcalc_beta_test_history_v1` em `localStorage` sem criptografia; não use dados reais.
-> “Sintético” é uma restrição de uso pretendido, não uma validação do conteúdo dos registros.
-> O isolamento do namespace é mediado pelo app, não uma fronteira de segurança contra scripts
-> da mesma origem, extensões ou DevTools, que podem acessar o armazenamento do navegador.
-> A Beta não tem senha/cofre, consentimento/recibo, migração de dados antigos, exclusão ou
-> recuperação, importação/exportação ou backup. O perfil do navegador é descartável; apague-o
-> fora do app se precisar limpar os fixtures. A implementação foi mesclada na `main` pelo PR #279
-> e está na Beta web `v2.0.0-beta.15`. A revisão final da Themis e a aprovação explícita do
-> responsável/revisão legal continuam pendentes para promoção Stable. Stable e Desktop permanecem
-> fora do contrato Beta.
+> **Decisão do produto (2026-10-10):** a Beta Web aceita dados reais e usa os mesmos registros
+> locais da versão Stable, em formato legível no armazenamento do navegador. Não há senha nem proteção adicional
+> para salvar; scripts executados na mesma origem e pessoas com acesso ao perfil do navegador
+> também podem acessar esses dados. Os antigos registros `open3dcalc_beta_test_*` são migrados
+> para as chaves compartilhadas antes da hidratação. A Beta continua Web-only. Exportação e
+> importação JSON de dados reais estão disponíveis; mantenha arquivos exportados em local seguro,
+> pois o aplicativo não os protege com senha.
 
 As tags beta são **imutáveis**: nunca reescreva ou delete uma tag já publicada — corte uma nova beta (`beta.N+1`) caso precise ajustar algo. O `beta-deploy.yml` é idempotente, então re-executá-lo na mesma tag apenas refresca a release.
 

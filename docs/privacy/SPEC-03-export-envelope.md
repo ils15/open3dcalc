@@ -1,21 +1,23 @@
-# SPEC-03 — Export Envelope (Normative)
+# SPEC-03 — Historical Encrypted Export Envelope (Retired)
 
-## Policy 1.9 retention — export cryptography is unchanged
+## Owner decision 2026-10-10 — plaintext export is current
 
-This specification's encrypted logical-export contract is retained unchanged: password
-handling, envelope format and version, algorithms, integrity verification, validation rules,
-and size/iteration limits remain normative. The export password is used only for export and
-import operations and never gates direct local saves on Stable Web/PWA, Desktop, or Beta. The
-export path must not unlock, inspect, read, convert, or migrate the inert historical
-`open3dcalc_pii_vault`; that data is excluded from current deletion scope. Beta continues to
-refuse import/export entirely.
+New `.open3dcalc` files are plain JSON and include real local user data. Export/import are
+available in Beta as well as Stable and Desktop; no password or encryption is used. The file
+is readable by anyone with access to it, so the UI must say so. The v1.1 encrypted envelope
+and every password/key/decryption path have been removed. Older encrypted exports are not
+importable. Readable v1.0 JSON exports remain supported for migration between app versions.
 
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Retained under policy 1.9 for encrypted export only; local at-rest crypto is governed by SPEC-01
+**Status:** Retired; no current implementation or compatibility reader.
 **Addresses findings:** R12 (envelope normativo completo), R2 (export lógico vs raw)
 **Related:** ADR-001 (crypto), ADR-003 (export vs backup), SPEC-01 (manifest)
 
-## 1. Goal
+> **Historical material below.** The former encrypted format is retained only as an audit
+> record. None of its algorithms, limits, password requirements, or implementation steps are
+> current requirements. The active readable JSON format is implemented in `src/shared/lib/dataSync.ts`.
+
+## 1. Historical goal (retired)
 
 The user export is a single, fully-specified, encrypted envelope. Any two implementations
 of this spec (across app versions and platforms) must produce interoperable envelopes and
@@ -177,18 +179,10 @@ TEST-MATRIX §6 (tamper, wrong password, downgrade, cross-version import, crash 
 
 ## Status
 
-**Status:** Retained by policy 1.9 for encrypted logical export; local-save prerequisites are
-superseded by the policy 1.9 decision above.
+**Status:** Superseded for new exports by the owner decision above. The historical v1.1 reader is retained temporarily for import compatibility.
 
-## Beta test-only profile addendum (approved scope; implementation on current branch)
+## Historical status
 
-SPEC-03 remains the Stable/Desktop encrypted export-envelope contract. The Web-Beta test-only
-profile has no user export, import, sync bundle, raw backup, or export-password flow; neither
-the vault password nor the separate export-envelope password is part of Beta. Beta data is
-never included in sync or export. The Beta runtime guard refuses export/import before data
-collection or file I/O, and Beta UI does not expose the import/export dialog.
-
-This does not retire or reinterpret any historical encrypted envelope. Stable fixture and
-policy versions, receipt hashes, and encrypted-entry/envelope compatibility remain frozen.
-Beta export/import refusal and UI removal are implemented (betaNoExport); Stable envelope
-behavior is unchanged. Final Themis review is pending; no publication is authorized or performed.
+The sections below document the former encrypted format for migration/reference only. New
+exports do not use this envelope. Any temporary legacy importer must be removed if the owner
+chooses to remove decryption support as well.

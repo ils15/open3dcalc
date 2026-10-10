@@ -22,7 +22,7 @@ import { MobileNav } from "./components/MobileNav";
 import { SidebarFooter } from "./components/SidebarFooter";
 import { Footer } from "./components/Footer";
 import { DesktopResourceLinks } from "./components/DesktopResourceLinks";
-import { rehydratePiiStores } from "@/shared/lib/crypto/piiStoreHydration";
+import { rehydratePiiStores } from "@/shared/lib/localPiiPersistence";
 import { isBetaChannel } from "@/shared/config/betaChannel";
 import { installNewPiiStorageForDesktop } from "./overrides/newPiiStorage";
 
@@ -33,7 +33,7 @@ export { TABS } from "@/shared/components/AppShell/tabs";
 const DESKTOP_RESOURCE_TABS = ["wiki", "changelog"] as const;
 
 // The Desktop build uses the dedicated exact-key plaintext route for new PII.
-// Legacy vault records are not migrated or rehomed by this cutover.
+// Legacy records in unsupported formats are not read or changed by this cutover.
 installNewPiiStorageForDesktop();
 
 function App(): React.ReactElement {

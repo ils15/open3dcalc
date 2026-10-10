@@ -5,28 +5,29 @@
 As of policy 1.9, the former local at-rest encryption capability model in this ADR is
 superseded. Stable Web/PWA and Desktop save the three exact customer/quote/history keys
 declared by SPEC-01 directly as plaintext. Local saves do not require a passphrase, OS
-keyring, crypto capability, vault unlock, or consent. Web Beta is governed by its separate
-exact-key fixture and intended for synthetic data, but the app does not validate record
-contents or isolate storage from same-origin code.
+keyring, crypto capability, vault unlock, or consent. Web Beta's former synthetic-test manifest
+is retained as historical context only. By owner decision on 2026-10-10, Beta now uses the same
+plaintext customer/quote/history keys as Stable and migrates valid retired
+`open3dcalc_beta_test_*` records before hydration. Same-origin code can access browser storage.
 
 This supersession applies to every local persistence path and startup gate below. Those
 sections are historical rationale only, not active requirements or evidence that the former
-design is implemented. They do not authorize opening, reading, inspecting, converting,
-recovering, migrating, or deleting bytes already in `open3dcalc_pii_vault`; that historical
-store is inert and excluded from current deletion scope. SPEC-03's encrypted export envelope,
-including its password, algorithms, integrity checks, and limits, is explicitly retained.
-The export password never gates a local save. `contract_performance` is provisional and
-requires qualified legal review; this ADR makes no legal determination.
+design is implemented. The historical `open3dcalc_pii_vault` is inert; its bytes are not
+opened or converted by current saves. The 2026-10-10 owner decision retires all encryption,
+key, and password paths: new `.open3dcalc` files are plain JSON, and older encrypted exports
+are unsupported.
+`contract_performance` is provisional and requires qualified legal review; this ADR makes no
+legal determination.
 
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Superseded for local at-rest storage by approved policy 1.9; SPEC-03 export crypto retained
+**Status:** Superseded for active encryption by approved policy 1.9 and the 2026-10-10 owner decision; old design retained as history
 **Addresses findings:** R3 (PII at-rest), R7 (web/PWA crypto)
 **Related:** ADR-002 (legacy plaintext quarantine), SPEC-01 (manifest), SPEC-03 (export envelope)
 
 > **Historical D1.0 material below.** Sections 1–6 preserve the former capability design and
-> its proposed requirements. They are superseded for current local storage by the policy 1.9
-> decision above; do not read their blocking language as current behavior. SPEC-03 export crypto
-> remains retained as stated above.
+> its proposed requirements. They are superseded for current storage/export behavior by the
+> decisions above; do not read their blocking language as current behavior. There is no legacy
+> export decryption reader.
 
 ## 1. Context
 
@@ -582,16 +583,11 @@ close. Nothing in this document claims that behavior is already implemented.
 **Status:** D1.0 local at-rest capability proposal superseded by policy 1.9; SPEC-03 export
 crypto provisions retained.
 
-## Beta test-only profile addendum (approved scope; implementation on current branch)
+## Superseded historical Beta test-only profile addendum
 
-The crypto capability and envelope contract in this ADR continues to govern Stable and
-Desktop. The separate Web-Beta profile is intended for generated synthetic values under the
-three `open3dcalc_beta_test_*_v1` keys; it uses plaintext localStorage and has no vault,
-passphrase session, Web Crypto capability, unlock shell, or password gate. No real customer,
-quote, or history data may be entered into that profile. The app does not inspect values to
-prove they are synthetic, and same-origin scripts, extensions, and DevTools can access the
-browser storage. This intended-use restriction is not a security boundary. It is not an
-exception for user data and must not leak into Stable or Desktop builds.
+This addendum records the former Beta test-only scope and is no longer current. Beta's real
+local user data now shares the Stable plaintext keys; no passphrase or at-rest vault is required
+for Web Beta saves.
 
 This addendum does not alter Stable crypto behavior or any stored envelope, schema version,
 hash, or compatibility rule. The Beta crypto/vault/password path is excluded from the current

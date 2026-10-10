@@ -12,7 +12,7 @@ import { consentErasurePlan } from "@/shared/lib/consentReceipt";
 import {
   isWithdrawalPending,
   setWithdrawalPending,
-} from "@/shared/lib/crypto/piiStoreCapability";
+} from "@/shared/lib/localDataLifecycle";
 
 /**
  * Consent store (D1.1 S8) — SPEC-04.
