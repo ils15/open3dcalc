@@ -1,26 +1,25 @@
 /**
  * Typographic scale lock for the Studio's Classic surface.
  *
- * The owner spec brings the Example/CatalogTab typographic hierarchy into the
- * Studio: page header (h1 text-xl) > major section cards (h2 text-lg, "fina"
- * semibold weight) > cards (text-base) > items (text-sm). The Classic surface's
- * section headers were the outlier (text-xs font-bold), visually disconnected
- * from the Guided step headings and the CatalogTab sections.
+ * The shared calculator's section headings stay at the h2 text-lg scale in
+ * Studio, and its three complexity levels progressively reveal fields.
  *
- * Rendered from the REAL render root (App → StudioLayout →
- * StudioCalculatorView, no Studio mocks) so the assertion covers what the app
- * actually shows. Harness mirrors App.tutorialAnchors.test.tsx.
+ * Rendered from the real render root (App → StudioLayout → CalculatorSurface,
+ * no Studio mocks) so these assertions cover what users actually see.
  */
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "./App";
+import i18n from "@/shared/i18n/i18n";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useConsentStore } from "@/shared/stores/consentStore";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 
 beforeEach(async () => {
   localStorage.clear();
   useLayoutStore.setState({ layoutMode: "classic" });
+  useCalculatorStore.setState({ calcLevel: "basic", activeTab: "fdm" });
   await useConsentStore.getState().giveConsent();
 });
 
@@ -49,27 +48,53 @@ vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
 }));
 
-describe("Studio Classic surface — section card header scale", () => {
-  it("renders the section headers at the h2 text-lg scale (Example/CatalogTab reference)", () => {
+describe("Studio Classic surface — shared calculator parity", () => {
+  it("renders shared section headers at the h2 text-lg scale", () => {
     render(<App />);
 
-    // The classic calculator must be on screen — otherwise the query below
-    // could match some other surface.
-    expect(
-      screen.getByText(/INSUMO & CONSUMO DE MATERIAL/i),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("calculator-inputs")).toBeInTheDocument();
+    const heading = screen
+      .getByTestId("calculator-inputs")
+      .querySelector("#section-material h2");
+    if (!heading) throw new Error("shared material section heading missing");
+    expect(heading.tagName).toBe("H2");
+    expect(heading.className).toContain("text-lg");
+    expect(heading.className).toContain("font-semibold");
+    expect(heading.className).not.toContain("text-xs");
+  });
 
-    const sectionTitles = [
-      "1. INSUMO & CONSUMO DE MATERIAL",
-      "2. TEMPO DE MÁQUINA, CURA & ENERGIA",
-    ];
+  it("progressively reveals fields in Rápido, Detalhado, and Completo", () => {
+    render(<App />);
 
-    for (const title of sectionTitles) {
-      const heading = screen.getByRole("heading", { name: title });
-      expect(heading.tagName).toBe("H2");
-      expect(heading.className).toContain("text-lg");
-      expect(heading.className).toContain("font-semibold");
-      expect(heading.className).not.toContain("text-xs");
+    const levelButton = (key: string) =>
+      screen.getByRole("button", { name: i18n.t(key) });
+
+    expect(levelButton("calc.quick")).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelector("#section-failure")).toBeNull();
+    expect(document.querySelector("#section-hardware")).toBeNull();
+
+    fireEvent.click(levelButton("calc.detailed"));
+    expect(levelButton("calc.detailed")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(document.querySelector("#section-failure")).toBeInTheDocument();
+    expect(document.querySelector("#section-hardware")).toBeNull();
+    expect(document.querySelector("#section-machine")).toBeNull();
+
+    fireEvent.click(levelButton("calc.complete"));
+    expect(levelButton("calc.complete")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    for (const section of [
+      "hardware",
+      "machine",
+      "fixedCost",
+      "labor",
+      "ops",
+    ]) {
+      expect(document.querySelector(`#section-${section}`)).toBeInTheDocument();
     }
   });
 });

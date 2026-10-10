@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { StudioCalculatorModeSelector } from "./StudioCalculatorModeSelector";
 import { StudioHeader } from "./StudioHeader";
 import { StudioSidebar } from "./StudioSidebar";
 import { StudioCockpitDock } from "./StudioCockpitDock";
 import { StudioDashboardView } from "./StudioDashboardView";
-import { StudioCalculatorView } from "./StudioCalculatorView";
 import { StudioSpoolView } from "./StudioSpoolView";
 import { StudioMiniDashOverlay } from "./StudioMiniDashOverlay";
 import { StudioCopilotModal } from "./StudioCopilotModal";
@@ -25,8 +25,7 @@ import { MarketplaceBrowseTab } from "@/shared/components/Catalog/MarketplaceBro
 import { WikiPage } from "@/shared/components/Wiki/WikiPage";
 import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
 import { PrivacyScreen } from "@/shared/components/Privacy/PrivacyScreen";
-import { BentoSurface } from "@/shared/components/Calculator/surfaces/BentoSurface";
-import { GuidedSurface } from "@/shared/components/Calculator/surfaces/GuidedSurface";
+import { CalculatorSurface } from "@/shared/components/Calculator/surfaces/CalculatorSurface";
 import { DemoModeIndicator } from "@/shared/components/DemoMode/DemoModeIndicator";
 import { DemoExportBlockedToast } from "@/shared/components/DemoMode/DemoExportBlockedToast";
 import { useAppInit } from "@/shared/hooks/useAppInit";
@@ -54,12 +53,11 @@ export const StudioLayout: React.FC = () => {
   const prefersReduced = useReducedMotion();
   const [focusMode, setFocusMode] = useState(false);
 
-  // One source of truth for the calculator's active material technology and
-  // its matching demo preset.
-  const [activeTechnology, setActiveTechnology] = useState<"fdm" | "resin">(
-    "fdm",
-  );
-  const [currentProjectName, setCurrentProjectName] = useState("");
+  // Header actions and every calculator surface share these values. Reading
+  // them from the calculator store keeps technology and project name in sync
+  // when the user moves between Classic, Bento, and Guided.
+  const activeTechnology = useCalculatorStore((state) => state.activeTab);
+  const currentProjectName = useCalculatorStore((state) => state.productName);
 
   useEffect(() => {
     if (typeof mainRef.current?.scrollTo === "function") {
@@ -246,20 +244,7 @@ export const StudioLayout: React.FC = () => {
                     mode={layoutMode}
                     onModeChange={setLayoutMode}
                   />
-                  {layoutMode === "bento" ? (
-                    <BentoSurface />
-                  ) : layoutMode === "guided" ? (
-                    <GuidedSurface />
-                  ) : (
-                    <StudioCalculatorView
-                      onOpenCopilot={() => setIsCopilotOpen(true)}
-                      onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
-                      activeTechnology={activeTechnology}
-                      onTechnologyChange={setActiveTechnology}
-                      onProjectNameChange={setCurrentProjectName}
-                      onTabChange={setActiveTab}
-                    />
-                  )}
+                  <CalculatorSurface />
                 </>
               )}
 

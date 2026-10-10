@@ -567,7 +567,7 @@ const StudioCalculatorForm: React.FC<StudioCalculatorFormProps> = ({
         )}
 
         {/* Form Body */}
-        <div className="studio-calculator-controls flex-1 flex flex-col gap-4">
+        <div className="calculator-controls studio-calculator-controls flex-1 flex flex-col gap-4">
           {/* Demo Mode Notice */}
           {isDemoMode && (
             <div className="bg-surface-raised border border-accent/40 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">

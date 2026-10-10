@@ -173,7 +173,7 @@ export function Calculator() {
           </div>
           <div
             data-testid="calculator-inputs"
-            className={`col-start-2 min-w-0 @container space-y-5 ${
+            className={`calculator-controls col-start-2 min-w-0 @container space-y-5 ${
               hasThreeRegionSpace ? "row-start-1" : "row-start-2"
             }`}
           >
