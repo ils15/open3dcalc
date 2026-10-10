@@ -486,10 +486,10 @@ Every phase and change must complete this checklist:
 **Pendente de interface:**
 
 - [ ] `SocialShareModal` com pré-visualização e contadores.
-- [ ] `MarketplaceComparison` com tabela ordenada, melhor resultado e ação para usar o marketplace.
+- [x] `MarketplaceComparison` com tabela ordenada, melhor resultado e ação para usar marketplace built-in ou perfil personalizado em Rápido, Detalhado, Completo, Bento e Guiado.
 - [ ] `SuggestedPriceTool` com cenários e ação para aplicar o preço.
 - [ ] Textos e rótulos completos em pt-BR e en-US, incluindo a diferença entre margem sobre preço e markup sobre custo.
-- [ ] Painel de premissas para explicitar as diferenças de taxa fixa e percentual.
+- [x] Painel de premissas explicita que o comparador considera taxa fixa, mas o cálculo principal ainda aplica apenas a percentual; taxas de categoria, promoções e frete do canal não são presumidos.
 
 **Referência de precificação:** [NovaLab 3D — `precificar-impressao-marketplaces`](https://www.novalab3d.app/documentacao).
 

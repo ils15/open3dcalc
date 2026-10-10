@@ -15,6 +15,7 @@ import {
 import { BentoCard } from "./BentoCard";
 import { BentoField } from "./BentoField";
 import { BentoMetric } from "./BentoMetric";
+import { MarketplaceComparison } from "../../MarketplaceComparison";
 
 export interface BentoPricingCardProps {
   readonly result: CalculationResult;
@@ -276,6 +277,14 @@ export function BentoPricingCard({
           tone={profit < 0 ? "negative" : "revenue"}
         />
       </dl>
+      <MarketplaceComparison
+        totalCost={result.totalCost}
+        marginPercent={sales.profitMarginPercent}
+        taxPercent={sales.taxPercent}
+        marketplaces={catalogMarketplaces}
+        selectedMarketplaceId={selectedMarketplace.id}
+        onUseMarketplace={setSelectedMarketplace}
+      />
     </BentoCard>
   );
 }

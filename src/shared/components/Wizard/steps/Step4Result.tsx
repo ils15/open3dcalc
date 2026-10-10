@@ -1,5 +1,9 @@
 import { useTranslation } from "react-i18next";
+import { useShallow } from "zustand/react/shallow";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
+import { MarketplaceComparison } from "@/shared/components/Calculator/MarketplaceComparison";
 import type { CalculationResult } from "@/shared/types";
 
 export interface Step4ResultProps {
@@ -13,6 +17,23 @@ export function Step4Result({
 }: Step4ResultProps): React.ReactElement {
   const { t } = useTranslation();
   const { format } = useCurrency();
+  const catalogMarketplaces = useCatalogStore((state) => state.marketplaces);
+  const {
+    activeTab,
+    fdmSales,
+    resinSales,
+    selectedMarketplace,
+    setSelectedMarketplace,
+  } = useCalculatorStore(
+    useShallow((state) => ({
+      activeTab: state.activeTab,
+      fdmSales: state.fdmSales,
+      resinSales: state.resinSales,
+      selectedMarketplace: state.selectedMarketplace,
+      setSelectedMarketplace: state.setSelectedMarketplace,
+    })),
+  );
+  const sales = activeTab === "fdm" ? fdmSales : resinSales;
 
   return (
     <div className="space-y-6">
@@ -38,6 +59,16 @@ export function Step4Result({
           value={format(results?.profit ?? 0)}
         />
       </div>
+      {results && (
+        <MarketplaceComparison
+          totalCost={results.totalCost}
+          marginPercent={sales.profitMarginPercent}
+          taxPercent={sales.taxPercent}
+          marketplaces={catalogMarketplaces}
+          selectedMarketplaceId={selectedMarketplace.id}
+          onUseMarketplace={setSelectedMarketplace}
+        />
+      )}
       <div className="flex flex-col items-center gap-2 text-center">
         <p className="text-sm text-[var(--color-text-secondary)]">
           {t("wizard.result.ctaHint")}

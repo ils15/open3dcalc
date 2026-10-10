@@ -52,7 +52,12 @@ interface MockStore {
     marketplaceFeePercent: number;
     profitMarginPercent: number;
   };
-  results: { profit: number; sellPrice: number; extrasCost?: number } | null;
+  results: {
+    totalCost?: number;
+    profit: number;
+    sellPrice: number;
+    extrasCost?: number;
+  } | null;
   setQuantity: ReturnType<typeof vi.fn>;
   setInfillPercent: ReturnType<typeof vi.fn>;
   setFdmExtras: ReturnType<typeof vi.fn>;
@@ -94,7 +99,7 @@ const createMockStore = (overrides: Partial<MockStore> = {}): MockStore => ({
     marketplaceFeePercent: 0,
     profitMarginPercent: 50,
   },
-  results: { profit: 25, sellPrice: 100 },
+  results: { totalCost: 50, profit: 25, sellPrice: 100 },
   setQuantity: mockSetQuantity,
   setInfillPercent: mockSetInfillPercent,
   setFdmExtras: mockSetFdmExtras,
@@ -235,6 +240,21 @@ describe("SalesSection", () => {
     ).not.toBeInTheDocument();
   });
 
+  it.each([
+    ["basic", "Rápido"],
+    ["intermediate", "Detalhado"],
+    ["advanced", "Completo"],
+  ])("exposes marketplace comparison in %s mode (%s)", (calcLevel) => {
+    mockStore = createMockStore({ calcLevel });
+    render(<SalesSection />);
+
+    expect(
+      screen.getByRole("button", {
+        name: /calc.marketplaceComparison.open/,
+      }),
+    ).toBeVisible();
+  });
+
   it("allows a manual marketplace percentage in detailed mode", () => {
     mockStore = createMockStore({ calcLevel: "intermediate" });
     render(<SalesSection />);
@@ -267,7 +287,7 @@ describe("SalesSection", () => {
 
   it("shows the computed extras total beside the section title", () => {
     mockStore = createMockStore({
-      results: { profit: 25, sellPrice: 100, extrasCost: 12 },
+      results: { totalCost: 50, profit: 25, sellPrice: 100, extrasCost: 12 },
     });
     render(<SalesSection />);
     expect(screen.getByTestId("section-metric")).toHaveTextContent(
