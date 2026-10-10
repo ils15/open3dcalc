@@ -46,12 +46,19 @@ test("Bento fits at 390px and the fixed dock never covers focusable content", as
       .getByRole("region", { name: "Calculadora em Bento Grid" })
       .waitFor();
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForFunction(() => {
+      const sidebar = globalThis.document.querySelector("aside");
+      return (
+        sidebar && Math.abs(sidebar.getBoundingClientRect().width - 68) < 0.5
+      );
+    });
 
     const layout = await page.evaluate(() => {
       const main = globalThis.document.querySelector("main");
-      const dock = Array.from(
-        globalThis.document.querySelectorAll("div.fixed"),
-      ).find((el) => el.querySelector('[aria-label="Modo Foco"]'));
+      const dockButton = globalThis.document.querySelector(
+        '[aria-label="Modo Foco"]',
+      );
+      const dock = dockButton?.parentElement?.parentElement;
       if (!main || !dock)
         throw new Error("Main content or cockpit dock missing");
 
@@ -86,6 +93,9 @@ test("Bento fits at 390px and the fixed dock never covers focusable content", as
         viewportWidth: globalThis.window.innerWidth,
         documentWidth: globalThis.document.documentElement.scrollWidth,
         mainRect: main.getBoundingClientRect().toJSON(),
+        mainScrollWidth: main.scrollWidth,
+        mainClientWidth: main.clientWidth,
+        dockPosition: globalThis.getComputedStyle(dock).position,
         dockClearanceHeight: globalThis.document
           .querySelector('[data-testid="cockpit-dock-clearance"]')
           ?.getBoundingClientRect().height,
@@ -99,10 +109,21 @@ test("Bento fits at 390px and the fixed dock never covers focusable content", as
       `390px viewport overflow: document width=${layout.documentWidth}px`,
     );
     assert.ok(
+      layout.mainScrollWidth <= layout.mainClientWidth,
+      `390px calculator content overflow: main scrollWidth=${layout.mainScrollWidth}px, clientWidth=${layout.mainClientWidth}px`,
+    );
+    assert.ok(
       layout.mainRect.bottom <= layout.atTop.dockRect.top,
       "The main scroll viewport must end before the fixed dock starts",
     );
-    assert.ok(layout.dockClearanceHeight >= 96);
+    if (layout.dockPosition === "fixed") {
+      assert.ok(layout.dockClearanceHeight >= 96);
+    } else {
+      assert.ok(
+        layout.mainRect.bottom <= layout.atTop.dockRect.top,
+        "the in-flow mobile dock must stay outside the main scroll viewport",
+      );
+    }
     assert.deepEqual(
       layout.atTop.overlaps,
       [],
