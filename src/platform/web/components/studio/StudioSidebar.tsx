@@ -157,11 +157,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
     "shrink-0 p-3 border-t border-[var(--color-border)]";
 
   return (
-    /* Beta keeps the dock in document flow and uses an internal sidebar
-       scroller so currency + collapse stay reachable at short heights. Stable
-       keeps the fixed dock and reserves its page clearance in the dock itself.
-       The workspace starts below the 48px header + 44px subheader; subtract
-       both in Beta so its pinned bottom controls remain inside the viewport. */
+    /* The dock stays in document flow, so it cannot cover the last navigation
+       or calculator action. Beta's shorter viewport pins its sidebar controls
+       below the 48px header + 44px subheader using an internal scroller. */
     <aside
       className={
         isBetaChannel

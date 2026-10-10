@@ -1,12 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: false }));
-
 import { StudioCockpitDock } from "./StudioCockpitDock";
 
-describe("StudioCockpitDock Stable layout", () => {
-  it("preserves the fixed dock and bottom inset", () => {
+describe("StudioCockpitDock layout", () => {
+  it("keeps the dock in document flow instead of covering page content", () => {
     const { container } = render(
       <StudioCockpitDock
         onOpenMiniDash={vi.fn()}
@@ -18,8 +16,8 @@ describe("StudioCockpitDock Stable layout", () => {
       />,
     );
 
-    expect(container.firstElementChild).toHaveClass(/\bfixed\b/);
-    expect(container.firstElementChild).toHaveClass(/\bbottom-4\b/);
+    expect(container.firstElementChild).toHaveClass(/\brelative\b/);
+    expect(container.firstElementChild).not.toHaveClass(/\bfixed\b/);
   });
 
   it("keeps the dock's primary controls at least 44px tall", () => {
@@ -40,7 +38,7 @@ describe("StudioCockpitDock Stable layout", () => {
     }
   });
 
-  it("keeps the Stable fixed-track spacing", () => {
+  it("keeps responsive in-flow spacing", () => {
     const { container } = render(
       <StudioCockpitDock
         onOpenMiniDash={vi.fn()}
@@ -53,10 +51,11 @@ describe("StudioCockpitDock Stable layout", () => {
     );
 
     const root = container.firstElementChild as HTMLElement;
-    expect(root.className).toMatch(/\bfixed\b/);
-    expect(root.className).toMatch(/inset-x-0/);
+    expect(root.className).toMatch(/\brelative\b/);
+    expect(root.className).not.toMatch(/\bfixed\b/);
     expect(root.className).toMatch(/px-4/);
-    expect(root.className).toMatch(/bottom-4/);
+    expect(root.className).toMatch(/pt-4/);
+    expect(root.className).toMatch(/pb-4/);
   });
 
   it("keeps every dock action reachable with theme tokens (no hardcoded navy)", () => {
@@ -86,7 +85,7 @@ describe("StudioCockpitDock Stable layout", () => {
     expect(html).toMatch(/var\(--color-/);
   });
 
-  it("reserves document space after the fixed dock for the last controls", () => {
+  it("does not add a spacer because the dock itself reserves document space", () => {
     render(
       <StudioCockpitDock
         onOpenMiniDash={vi.fn()}
@@ -98,10 +97,7 @@ describe("StudioCockpitDock Stable layout", () => {
       />,
     );
 
-    const clearance = screen.getByTestId("cockpit-dock-clearance");
-    expect(clearance).toHaveAttribute("aria-hidden", "true");
-    expect(clearance).toHaveClass("h-[calc(6rem+env(safe-area-inset-bottom))]");
-    expect(clearance.querySelector("button")).toBeNull();
+    expect(screen.queryByTestId("cockpit-dock-clearance")).toBeNull();
   });
 
   it("keeps the global dock actions unique and reachable from quick actions", () => {

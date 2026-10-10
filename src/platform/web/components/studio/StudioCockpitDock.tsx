@@ -11,7 +11,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
-import { isBetaChannel } from "@/shared/config/betaChannel";
 
 interface StudioCockpitDockProps {
   onOpenMiniDash: () => void;
@@ -31,14 +30,11 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
   onOpenNewQuote,
 }) => {
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const dockPosition = isBetaChannel
-    ? "relative flex justify-center px-4 sm:px-6 lg:px-8 pt-4 pb-4 sm:pb-6"
-    : "fixed inset-x-0 bottom-4 flex justify-center px-4";
 
   return (
     <>
       <div
-        className={`${dockPosition} pointer-events-none select-none`}
+        className="relative flex justify-center px-4 sm:px-6 lg:px-8 pt-4 pb-4 sm:pb-6 pointer-events-none select-none"
         style={{ zIndex: "var(--z-passive)" }}
       >
         {/* Quick actions popup menu if open */}
@@ -106,7 +102,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
           </div>
         )}
 
-        {/* The floating dock pills. `shrink-0` on each pill keeps their intrinsic
+        {/* The dock pills. `shrink-0` on each pill keeps their intrinsic
           width so the ROW scrolls instead of squashing the labels; the row
           itself is the scroll container and is capped to the viewport. */}
         <div className="pointer-events-auto flex items-center bg-[var(--color-bg-elevated)] backdrop-blur-md border border-[var(--color-border)] rounded-full p-1 shadow-[var(--shadow-lg)] gap-1.5 overflow-x-auto max-w-full">
@@ -167,13 +163,6 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
           </button>
         </div>
       </div>
-      {!isBetaChannel && (
-        <div
-          data-testid="cockpit-dock-clearance"
-          aria-hidden="true"
-          className="h-[calc(6rem+env(safe-area-inset-bottom))] shrink-0"
-        />
-      )}
     </>
   );
 };

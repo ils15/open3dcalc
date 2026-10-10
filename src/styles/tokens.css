@@ -317,7 +317,8 @@
                          new task, so it must not hide the way out.
        --z-passive       PASSIVE transients — toasts, non-scrim popovers,
                          bounded listboxes, the privacy banner, and the web
-                         Studio's floating `StudioCockpitDock`. Above a
+                         Studio's quick-actions popover in the in-flow
+                         `StudioCockpitDock`. Above a
                          viewer, so a notice is never lost behind a full-bleed
                          overlay; below the exit, per rule 1. This is the step
                          the scrim tier used to do double duty for, and that

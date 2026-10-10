@@ -352,7 +352,7 @@ export const StudioLayout: React.FC = () => {
         </main>
       </div>
 
-      {/* Floating Bottom Cockpit Dock */}
+      {/* In-flow bottom cockpit dock */}
       {!focusMode && (
         <StudioCockpitDock
           onOpenMiniDash={() => setIsMiniDashOpen(true)}
