@@ -1,8 +1,8 @@
 /**
  * SPEC-01 manifest truthfulness across the policy 1.9 inventory update.
  *
- * These tests pin corrected classifications, the exact three-key Stable
- * plaintext scope, and retirement of the former vault/migration declarations.
+ * These tests pin corrected classifications, readable local user-data
+ * declarations, and retirement of the former vault/migration declarations.
  *
  * Follows the existing contract-test pattern of `dataManifest.test.ts`.
  */
@@ -69,7 +69,7 @@ describe("SPEC-01: PII-bearing domain tables are declared", () => {
         platforms: ["electron"],
         class: "user_content",
         pii: true,
-        persistence: "encrypted_at_rest",
+        persistence: "plaintext_allowed",
         sync: "never",
         export: "user_export",
         erasure: "erase_on_delete_all",
@@ -163,7 +163,7 @@ describe("SPEC-01: keys with no writer anywhere are not declared", () => {
       platforms: ["web", "pwa"],
       class: "snapshot",
       pii: true,
-      persistence: "encrypted_at_rest",
+      persistence: "plaintext_allowed",
       sync: "never",
       export: "never",
       legal_basis: "contract_performance",
@@ -237,8 +237,8 @@ describe("SPEC-01: the appdata PII-bearing surfaces are declared truthfully", ()
       erasure: "erase_on_delete_all",
     });
     // A whole-database copy is PII; it must never be plaintext_allowed.
-    expect(entry?.persistence).not.toBe("plaintext_allowed");
-    expect(entry?.purpose).toMatch(/db:import/i);
+    expect(entry?.persistence).toBe("plaintext_allowed");
+    expect(entry?.purpose).toMatch(/import/i);
   });
 
   it("the diagnostic backup is a SEPARATE declaration, not the old key reused", () => {
@@ -256,13 +256,11 @@ describe("SPEC-01: the appdata PII-bearing surfaces are declared truthfully", ()
     expect(entry?.retention).toEqual({ policy: "fixed", max_days: 14 });
   });
 
-  it("appdata_diagnostic_backup declares a non-plaintext at-rest policy", () => {
+  it("appdata_diagnostic_backup truthfully declares readable plaintext", () => {
     const entry = getEntry(manifest, "appdata_diagnostic_backup");
     expect(entry?.platforms).toEqual(["electron"]);
     expect(entry?.pii).toBe(true);
-    // redact:false is a straight unredacted copy today; the manifest declares
-    // the REQUIRED policy, and the purpose discloses the gap.
-    expect(entry?.persistence).not.toBe("plaintext_allowed");
+    expect(entry?.persistence).toBe("plaintext_allowed");
     expect(entry?.export).toBe("diagnostic_only");
   });
 
@@ -270,7 +268,7 @@ describe("SPEC-01: the appdata PII-bearing surfaces are declared truthfully", ()
     const purpose =
       getEntry(manifest, "appdata_diagnostic_backup")?.purpose ?? "";
     expect(purpose).toMatch(/unredacted/i);
-    expect(purpose).toMatch(/copyFile/i);
+    expect(purpose).toMatch(/not encrypted/i);
     expect(purpose).toMatch(/14/i);
   });
 });
@@ -286,10 +284,10 @@ describe("SPEC-01: policy_version reflects the policy 1.9 decision", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Policy 1.9 invariant — exact Stable plaintext scope
+// Policy 1.9 invariant — readable storage is declared accurately
 // ---------------------------------------------------------------------------
 
-describe("SPEC-01: plaintext PII is limited to policy 1.9 Stable keys", () => {
+describe("SPEC-01: PII storage declarations are readable and explicit", () => {
   it("holds across the whole fixture and declared destinations", () => {
     const allowed = [
       "open3dcalc_customers_v1",
@@ -301,7 +299,13 @@ describe("SPEC-01: plaintext PII is limited to policy 1.9 Stable keys", () => {
       .map((entry) => entry.key)
       .sort();
 
-    expect(actual).toEqual(allowed);
+    expect(actual).toEqual(
+      doc.keys
+        .filter((entry) => entry.pii)
+        .map((entry) => entry.key)
+        .sort(),
+    );
+    expect(actual).toEqual(expect.arrayContaining(allowed));
     for (const key of allowed) {
       expect(getEntry(manifest, key)).toMatchObject({
         surface: "localStorage",
@@ -314,10 +318,8 @@ describe("SPEC-01: plaintext PII is limited to policy 1.9 Stable keys", () => {
     }
     expect(
       doc.keys
-        .filter(
-          (entry) => entry.surface === "sqlite_domain_tables" && entry.pii,
-        )
-        .every((entry) => entry.persistence !== "plaintext_allowed"),
+        .filter((entry) => entry.pii)
+        .every((entry) => entry.persistence === "plaintext_allowed"),
     ).toBe(true);
   });
 

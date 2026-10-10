@@ -6,7 +6,7 @@ import { useHistoryStore } from "@/shared/stores/historyStore";
 import {
   PII_STORE_KEY,
   beginPiiSurfaceWrite,
-} from "@/shared/lib/crypto/piiStoreHydration";
+} from "@/shared/lib/localPiiPersistence";
 import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefusalNotice";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
@@ -253,7 +253,7 @@ function QuoteFormModal({
     }
     setError(null);
 
-    // H-4: block a locked/unavailable vault BEFORE the quote enters memory, so
+    // H-4: block until Desktop storage is ready BEFORE the quote enters memory, so
     // the form keeps the user's input and the notice says nothing was saved.
     if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null) return;
 

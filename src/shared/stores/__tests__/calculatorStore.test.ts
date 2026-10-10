@@ -5,10 +5,6 @@ import {
   initialState,
   buildSnapshot,
 } from "./calculatorStore.test-utils";
-import {
-  resetPiiStoreGateForTests,
-  setDemoSuppressedForPiiGate,
-} from "@/shared/lib/crypto/piiStoreCapability";
 
 // ── Hoisted mocks (executed by vitest BEFORE imports) ──────────────
 const { mockAddEntry, mockDeductWeight } = vi.hoisted(() => ({
@@ -44,11 +40,6 @@ describe("CalculatorStore core", () => {
   beforeEach(() => {
     vi.clearAllTimers();
     localStorage.clear();
-    // addToHistory is gated on the PII vault (H-4). These specs prove the
-    // store's delegation/derivation, not persistence, so they run as an
-    // ephemeral demo session — the one state the gate deliberately allows.
-    resetPiiStoreGateForTests();
-    setDemoSuppressedForPiiGate(true);
     useCalculatorStore.setState(initialState, true);
     mockAddEntry.mockClear();
     mockDeductWeight.mockClear();

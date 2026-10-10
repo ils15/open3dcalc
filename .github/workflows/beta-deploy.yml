@@ -23,12 +23,11 @@ name: Beta deploy
 # copy on the default branch is used. BETA_TAG (job env) resolves the tag for
 # both trigger paths and every step reads the tag from it.
 #
-# Release safety: `npm run test:browser` (the real-browser PII vault harness,
-# Chromium + IndexedDB + Web Crypto) runs BEFORE the publish step, so a beta tag
-# does not publish if the vault harness fails. The step mirrors the standalone
+# Release safety: `npm run test:browser` (the real-browser Beta storage
+# isolation test) runs BEFORE the publish step, so a beta tag does not publish
+# if profile isolation fails. The step mirrors the standalone
 # `test-browser` job in ci-cd.yml — same Playwright browser cache and
-# `npx playwright install --with-deps chromium` — and was the follow-up recorded
-# in docs/privacy/BETA5-RELEASE-EVIDENCE.md §6.
+# `npx playwright install --with-deps chromium`.
 
 "on":
   push:
@@ -54,7 +53,7 @@ jobs:
   beta-deploy:
     name: Publish web beta to /beta/
     runs-on: ubuntu-latest
-    # 15 min covered install + build:web + publish. The browser vault harness
+    # 15 min covered install + build:web + publish. The browser isolation test
     # (Chromium install ~1-2 min, plus the specs — ci-cd.yml budgets it 15 min
     # alone) is now on the critical path, so the budget is raised to keep a slow
     # Chromium download from turning a healthy publish into a timeout.
@@ -110,9 +109,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # ── Browser vault harness (release gate) ──────────────────────────────
-      # The publish below is unreachable while this harness is red: a beta tag
-      # must not ship a vault that fails against a REAL browser. Mirrors the
+      # ── Browser storage isolation test (release gate) ─────────────────────
+      # The publish below is unreachable while this test is red: a beta tag
+      # must not ship if profile isolation fails in a REAL browser. Mirrors the
       # `test-browser` job in ci-cd.yml (same cache key, same install command).
       - name: ⚡ Cache Playwright browsers
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -132,7 +131,7 @@ jobs:
         # download when the cache above already holds the revision.
         run: npx playwright install --with-deps chromium
 
-      - name: 🌐 Browser vault harness
+      - name: 🌐 Browser storage isolation test
         run: npm run test:browser
 
       - name: Build web (beta channel)

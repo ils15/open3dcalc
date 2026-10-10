@@ -8,9 +8,9 @@ import {
   consentErasurePlan,
   anonymizeRecord,
 } from "@/shared/lib/consentReceipt";
-import { canonicalJson } from "@/shared/lib/crypto/envelope";
+import { canonicalJson } from "@/shared/lib/canonicalJson";
 import manifestFixture from "../../../../docs/privacy/SPEC-01-manifest-fixture.json";
-import { createExportEnvelope } from "@/shared/lib/exportEnvelope";
+import { exportBundle } from "@/shared/lib/dataSync";
 
 // ---------------------------------------------------------------------------
 // D1.1 S8 — consent receipt contract tests (TEST-MATRIX §8, SPEC-04).
@@ -194,24 +194,20 @@ describe("§8.5 policy version change — re-consent required", () => {
 });
 
 describe("§8.6 receipts never leave the device", () => {
-  it("the SPEC-03 export envelope never contains receipt material", async () => {
-    const payload = {
-      settings: {},
-      history: [],
-      customers: [],
-      quotes: [],
-      catalog: { printers: [], materials: [], marketplaces: [] },
-      filaments: [],
-      theme: "dark",
-      dashboard: {},
-      sections: {},
-    };
-    const envelope = await createExportEnvelope(
-      payload,
-      "senha-sintética-3131",
+  it("plain user exports omit consent receipt material", async () => {
+    window.localStorage.setItem(
+      "open3dcalc_consent_v1",
+      JSON.stringify({
+        receipt_id: "synthetic-receipt-id",
+        receipt_digest: "synthetic-receipt-digest",
+        withdrawn_at: "synthetic-timestamp",
+      }),
     );
-    expect(envelope).not.toContain("receipt_id");
-    expect(envelope).not.toContain("receipt_digest");
-    expect(envelope).not.toContain("withdrawn_at");
+    const bundle = await exportBundle();
+    const json = JSON.stringify(bundle);
+
+    expect(json).not.toContain("receipt_id");
+    expect(json).not.toContain("receipt_digest");
+    expect(json).not.toContain("withdrawn_at");
   });
 });

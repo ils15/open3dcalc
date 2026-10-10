@@ -114,8 +114,7 @@ jobs:
           path: coverage/
 
   test-browser:
-    # The PII vault against a REAL browser: Chromium + IndexedDB + Web Crypto,
-    # via `vitest.browser.config.ts` and `npm run test:browser`.
+    # Beta storage isolation against a REAL browser via Playwright.
     #
     # A separate job on purpose. `*.browser.test.ts` is EXCLUDED from the jsdom
     # run (jsdom has no IndexedDB and reports `isSecureContext: undefined`), so
@@ -125,7 +124,7 @@ jobs:
     # packages) from eating the jsdom suite's 15-minute budget.
     #
     # Headless is pinned in the config (`browser.headless: true`), so no xvfb is
-    # needed: the specs open no window and assert on storage and ciphertext.
+    # needed.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -166,84 +165,8 @@ jobs:
         # ubuntu-latest (the runner has passwordless sudo). It is a no-op
         # download when the cache above already holds the revision.
         run: npx playwright install --with-deps chromium
-      - name: 🌐 Browser vault tests
+      - name: 🌐 Browser storage isolation tests
         run: npm run test:browser
-      - name: 🔔 Notify failure
-        if: failure()
-        shell: bash
-        env:
-          REPO: ${{ github.repository }}
-          REF: ${{ github.ref_name }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          echo "❌ CI/CD failed: $REPO@$REF"
-          echo "  https://github.com/$REPO/actions/runs/$RUN_ID"
-
-  test-packaged:
-    # The §3.4 keyring gate observed from INSIDE a packaged Electron bundle:
-    # `app.asar`, compiled main, packaged runtime — the question the dev
-    # self-test could not answer. `npm run test:packaged` packages a minimal
-    # probe shell and asserts the gate's verdict is internally consistent.
-    #
-    # One matrix row per Linux target. The `host` row is ubuntu-latest itself;
-    # the other three mount the SAME packaged directory into a distro container
-    # (the runner ships Docker) so the shell is proven to LOAD across distro
-    # families — that is the whole point of the matrix.
-    #
-    # What this job does NOT prove, stated so nobody reads more into it: the
-    # containers have no D-Bus and no keyring, so every row lands on
-    # `denied` / `encryption_unavailable`. The keyring-AVAILABLE path, macOS and
-    # Windows keychains, and a real libsecret/kwallet backend are uncovered —
-    # see docs/privacy/BETA5-RELEASE-EVIDENCE.md §5/§6.
-    #
-    # fail-fast: false on purpose: a red ubuntu row must not hide whether
-    # debian/rocky loaded, because "loads on all three" is the claim.
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        # `host` is the explicit spelling of "no container" (handled by the
-        # probe script) so the baseline runner is a matrix row like any other.
-        image: [host, "ubuntu:24.04", "debian:12", "rockylinux:9"]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-        with:
-          node-version: 22
-          cache: npm
-      - name: ⚡ Cache node_modules
-        id: npm-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: node_modules
-          key: npm-${{ hashFiles('package-lock.json') }}-${{ runner.os }}
-          restore-keys: |
-            npm-${{ runner.os }}-
-      - if: steps.npm-cache.outputs.cache-hit != 'true'
-        run: npm ci
-      - if: steps.npm-cache.outputs.cache-hit == 'true'
-        run: echo "  ✓ node_modules restored from cache"
-      - name: Ensure xvfb (headless fallback)
-        # The probe tries direct headless first and only reaches for xvfb-run if
-        # that fails; install it so the fallback exists on the runner too.
-        run: |
-          if ! command -v xvfb-run >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y xvfb
-          fi
-      - name: Build the packaged probe shell
-        # No native rebuild: the probe imports no native module, and
-        # electron-builder's @electron/rebuild would rewrite better-sqlite3
-        # against the Electron ABI in place (`npmRebuild: false` in
-        # electron-builder.probe.yml makes that explicit).
-        run: |
-          npx tsc -p electron/tsconfig.json
-          npx electron-builder --linux --dir --config electron-builder.probe.yml --publish never
-      - name: 🔐 Packaged keyring probe (${{ matrix.image }})
-        run: npm run test:packaged -- --no-build --image "${{ matrix.image }}"
       - name: 🔔 Notify failure
         if: failure()
         shell: bash

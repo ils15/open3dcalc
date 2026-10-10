@@ -28,7 +28,7 @@ import {
   runNewPiiErasure,
 } from "../newPiiErasure.js";
 import type { MinimalStorageDb } from "../storageRows.js";
-import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/crypto/newPiiNamespace.js";
+import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/localData/newPiiNamespace.js";
 
 const [CUSTOMERS, QUOTES, HISTORY] = NEW_PII_STORAGE_KEYS;
 const PLAINTEXT_ENVELOPE = JSON.stringify({

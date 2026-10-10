@@ -8,11 +8,6 @@ import path from "node:path";
 const mocks = vi.hoisted(() => ({
   userDataDir: { value: "" },
   getDbPath: vi.fn(() => "/synthetic/profile.sqlite3"),
-  safeStorage: {
-    isEncryptionAvailable: vi.fn(() => true),
-    encryptString: vi.fn((value: string) => Buffer.from(value)),
-    decryptString: vi.fn((value: Buffer) => value.toString()),
-  },
 }));
 
 vi.mock("electron", () => ({
@@ -22,7 +17,6 @@ vi.mock("electron", () => ({
       throw new Error(`unexpected path: ${name}`);
     },
   },
-  safeStorage: mocks.safeStorage,
 }));
 
 vi.mock("../../db/database.js", () => ({ getDbPath: mocks.getDbPath }));
@@ -33,7 +27,6 @@ import {
   erasureStatus,
   resumeErasureIfNeeded,
   runDesktopErasure,
-  safeStorageSnapshotCapability,
   verifySqliteDomainTables,
 } from "../erasure.js";
 import { buildStorePlan } from "../../src/shared/lib/erasureSaga/types.js";
@@ -122,7 +115,6 @@ describe("desktop durable erasure preflight", () => {
 
     expect(dbReads).toBe(0);
     expect(mocks.getDbPath).not.toHaveBeenCalled();
-    expect(mocks.safeStorage.isEncryptionAvailable).not.toHaveBeenCalled();
     expect(fs.existsSync(path.join(mocks.userDataDir.value, "erasure"))).toBe(
       false,
     );
@@ -149,7 +141,7 @@ describe("desktop durable erasure preflight", () => {
         confirmed_at: "2026-10-05T23:59:00.000Z",
         scope: "delete_all",
       },
-      rollback_window: { ttl_days: 7, key_source: "safeStorage" },
+      rollback_window: { ttl_days: 7 },
       stores: buildStorePlan("electron"),
     } as const;
     const raw = JSON.stringify(journal, null, 2);
@@ -182,7 +174,7 @@ describe("desktop durable erasure preflight", () => {
     expect(get).toHaveBeenCalledOnce();
   });
 
-  it("preserves an unknown-scope journal and refuses before DB/snapshot/vault setup", async () => {
+  it("preserves an unknown-scope journal and refuses before DB/snapshot setup", async () => {
     const sagaDir = path.join(mocks.userDataDir.value, "erasure");
     fs.mkdirSync(sagaDir, { recursive: true });
     const journalPath = path.join(sagaDir, "erasure-journal.json");
@@ -196,7 +188,7 @@ describe("desktop durable erasure preflight", () => {
           confirmed_at: "2026-10-06T00:00:00.000Z",
           scope: "withdraw_consent",
         },
-        rollback_window: { ttl_days: 7, key_source: "safeStorage" },
+        rollback_window: { ttl_days: 7 },
         stores: [
           { store: "localstorage", state: "pending", attempts: 0 },
           { store: "sqlite_domain_tables", state: "pending", attempts: 0 },
@@ -223,7 +215,6 @@ describe("desktop durable erasure preflight", () => {
     expect(fs.readFileSync(journalPath, "utf8")).toBe(raw);
     expect(dbReads).toBe(0);
     expect(mocks.getDbPath).not.toHaveBeenCalled();
-    expect(mocks.safeStorage.isEncryptionAvailable).not.toHaveBeenCalled();
     expect(fs.existsSync(path.join(sagaDir, "erasure-snapshots"))).toBe(false);
     expect(warn).toHaveBeenCalledWith(DIAGNOSTIC);
     expect(warn).not.toHaveBeenCalledWith(
@@ -232,7 +223,7 @@ describe("desktop durable erasure preflight", () => {
   });
 });
 
-describe("desktop erasure status and snapshot capability", () => {
+describe("desktop erasure status and readable rollback snapshots", () => {
   function writeJournal(value: unknown): void {
     const sagaDir = path.join(mocks.userDataDir.value, "erasure");
     fs.mkdirSync(sagaDir, { recursive: true });
@@ -253,7 +244,7 @@ describe("desktop erasure status and snapshot capability", () => {
         confirmed_at: "2026-10-05T23:59:00.000Z",
         scope: "delete_all",
       },
-      rollback_window: { ttl_days: 7, key_source: "safeStorage" },
+      rollback_window: { ttl_days: 7 },
       stores: buildStorePlan("electron"),
     };
   }
@@ -312,19 +303,6 @@ describe("desktop erasure status and snapshot capability", () => {
     const result = await resumeErasureIfNeeded(inaccessibleDb());
     expect(result).toMatchObject({ resumed: false, journal });
     expect(result.receipt).toBeUndefined();
-  });
-
-  it("exposes a safeStorage snapshot capability that round-trips bytes", async () => {
-    const capability = safeStorageSnapshotCapability();
-    expect(capability.keySource).toBe("safeStorage");
-    await expect(capability.canDecrypt()).resolves.toBe(true);
-
-    const bytes = new Uint8Array([1, 2, 3, 4]);
-    const cipher = await capability.encrypt(bytes);
-    await expect(capability.decrypt(cipher)).resolves.toEqual(bytes);
-
-    mocks.safeStorage.isEncryptionAvailable.mockReturnValueOnce(false);
-    await expect(capability.canDecrypt()).resolves.toBe(false);
   });
 
   it("counts remaining rows and treats an absent table as already clean", async () => {

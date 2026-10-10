@@ -4,9 +4,8 @@
  * `main.tsx` starts the SQLite persistence bridge and only renders `<App/>`
  * once it resolves. That ordering is the point — stores must hydrate from
  * durable data, not stale localStorage — but the promise had no `.catch`, so
- * every failure the bridge can raise (a `CryptoDeniedError("quarantined_
- * read_only")` refusal on a PII key, a manifest that will not load, a SQLite
- * error on the very first `listKeys`) left the user staring at an empty window
+ * every failure the bridge can raise (a local storage refusal, a manifest
+ * that will not load, a SQLite error on the very first `listKeys`) left the user staring at an empty window
  * with nothing in it: no message, no way out, and no record that the app had
  * decided not to start.
  *
@@ -33,19 +32,6 @@ vi.mock("@/platform/desktop/hooks/useTheme", () => ({
 vi.mock("@/platform/desktop/App", () => ({
   default: () => <div data-testid="desktop-app">App</div>,
 }));
-// `CryptoDeniedError` is a MAIN-process class and its module imports
-// `electron` for safeStorage. Only the class is needed here, so the module is
-// real and the native binding is stubbed — the alternative was hand-building
-// `{ name, reason }`, which asserts against a shape the class does not have
-// and so cannot fail when the real one drifts.
-vi.mock("electron", () => ({
-  safeStorage: {
-    isEncryptionAvailable: () => true,
-    encryptString: () => Buffer.from("synthetic"),
-    decryptString: () => "synthetic",
-  },
-}));
-import { CryptoDeniedError } from "../../../../electron/cryptoCapability.js";
 // The entry also imports the real i18n bundle, which reads `document` and
 // `localStorage`; both exist in jsdom, so it is left alone on purpose — the
 // error surface resolves copy through it.
@@ -61,6 +47,12 @@ vi.mock("react-i18next", () => ({
 }));
 
 const ROOT_ID = "root";
+
+function storageUnavailable(reason: string): Error & { reason: string } {
+  return Object.assign(new Error(`local storage unavailable (${reason})`), {
+    reason,
+  });
+}
 
 /** The real `document` element the entry renders into. */
 function rootElement(): HTMLElement {
@@ -102,14 +94,8 @@ describe("desktop entry — the persistence bridge has a rejection path", () => 
   });
 
   it("renders an accessible failure surface instead of a blank window", async () => {
-    // The refusal that actually happens in the field: a PII key holding legacy
-    // plaintext is quarantined read-only, so the write is refused and the
-    // bridge rethrows (ADR-002 §2.2.1, persistGate.ts). The REAL error class,
-    // not a hand-built stand-in — a fabricated `{name, reason}` object passes
-    // whatever the renderer happens to read and would have kept the missing
-    // `reason` field invisible here, which is exactly where it was.
     hoisted.initPersistenceBridge.mockRejectedValue(
-      new CryptoDeniedError("quarantined_read_only"),
+      storageUnavailable("legacy_data_unavailable"),
     );
     vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -143,20 +129,11 @@ describe("desktop entry — the persistence bridge has a rejection path", () => 
   });
 
   it.each([
-    ["quarantined_read_only", "a PII key is quarantined read-only"],
-    ["no_capability", "the crypto capability table resolved DENIED"],
-    ["write_path_disabled", "the ADR-001 rollback flag is off"],
-    ["locked", "the session passphrase was zeroized"],
-  ])("distinguishes the %s denial from every other cause", async (reason) => {
-    // The detail line promises support-diagnosable detail, so it has to carry
-    // the REASON and not the class name. `CryptoDeniedError` took a reason and
-    // only interpolated it into the message, so reading `error.reason` found
-    // nothing and all four denials above rendered identically as
-    // "CryptoDeniedError" — indistinguishable for the person this exists to
-    // help, while still looking like it was working.
-    hoisted.initPersistenceBridge.mockRejectedValue(
-      new CryptoDeniedError(reason),
-    );
+    "database_unavailable",
+    "manifest_unavailable",
+    "legacy_data_unavailable",
+  ])("shows the storage failure reason %s", async (reason) => {
+    hoisted.initPersistenceBridge.mockRejectedValue(storageUnavailable(reason));
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     await import("../main");
@@ -166,11 +143,7 @@ describe("desktop entry — the persistence bridge has a rejection path", () => 
     expect(detail, `the ${reason} code must reach the surface`).toContain(
       reason,
     );
-    expect(
-      detail,
-      "the class name is not a diagnosis — four different denials must not " +
-        "all render as CryptoDeniedError",
-    ).not.toContain("CryptoDeniedError");
+    expect(detail).not.toContain("CryptoDeniedError");
   });
 
   it("mounts a production subscriber for the bridge's db-error event", async () => {

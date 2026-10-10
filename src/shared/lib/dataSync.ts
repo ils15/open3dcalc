@@ -1,28 +1,6 @@
-/**
- * dataSync.ts — Encrypted export/import for cross-device sync (Issue #55).
- *
- * 100% client-side: no server involved. User data leaves the device only
- * inside an export bundle (optionally encrypted with AES-256-GCM), keeping
- * LGPD compliance since nothing transits through a third party.
- *
- * Encryption spec:
- *  - Algorithm:  AES-256-GCM (window.crypto.subtle)
- *  - Key derivation: PBKDF2, 100.000 iterations, SHA-256
- *  - Salt: 16 random bytes per export
- *  - IV:   12 random bytes per export
- *  - Checksum: SHA-256 of the plaintext JSON (integrity)
- *
- * Zero external dependencies — browser-native Web Crypto only.
- */
+/** Local JSON export/import for user data. Files and local storage are readable. */
 
 import { guardedSyncStorage } from "@/shared/lib/manifestStorage";
-import { isBetaChannel } from "@/shared/config/betaChannel";
-import { getPiiStoreAccessState } from "@/shared/lib/crypto/piiStoreHydration";
-import {
-  createExportEnvelope,
-  readExportEnvelope,
-  EnvelopeError,
-} from "./exportEnvelope";
 import { downloadBlob } from "./download";
 import { APP_VERSION } from "@/shared/version";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
@@ -43,17 +21,6 @@ import { marketplaces } from "@/shared/lib/marketplace";
 
 export const SYNC_FORMAT = "open3dcalc-export" as const;
 export const SYNC_VERSION = "1.0" as const;
-
-const PBKDF2_ITERATIONS = 100_000;
-const KEY_LENGTH_BITS = 256;
-const SALT_BYTES = 16;
-const IV_BYTES = 12;
-
-function refuseBetaSync(): void {
-  if (isBetaChannel) {
-    throw new Error("Sync, import, and export are unavailable in Beta");
-  }
-}
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -95,19 +62,8 @@ export interface ExportBundle {
   exportedAt: string; // ISO timestamp
   appVersion: string;
   platform: "web" | "electron";
-  encrypted: boolean;
-  salt?: string; // base64 — PBKDF2 salt (encrypted bundles)
-  iv?: string; // base64 — AES-GCM IV (encrypted bundles)
   checksum?: string; // base64 — SHA-256 of plaintext data
   data: SyncData;
-}
-
-export interface EncryptedBundle extends Omit<ExportBundle, "data"> {
-  encrypted: true;
-  data: string; // base64 — encrypted SyncData
-  salt: string;
-  iv: string;
-  checksum: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -131,19 +87,6 @@ const KEYS = {
 } as const;
 
 /**
- * Whether the vault-backed PII stores are hydrated and therefore safe to sync.
- *
- * `true` only once the vault is unlocked AND all three stores rehydrated. When
- * false the stores are empty (a locked store never hydrates), so an export
- * without this check would be silently empty and an import would silently
- * vanish. Callers surface the state instead of guessing.
- */
-export function isPiiSyncAvailable(): boolean {
-  if (isBetaChannel) return false;
-  return getPiiStoreAccessState().status === "hydrated";
-}
-
-/**
  * Persist-wrapper versions for the NON-PII keys that are still plain JSON in
  * `localStorage`. The PII keys are no longer read or written here.
  */
@@ -163,13 +106,6 @@ function bytesToBase64(bytes: Uint8Array): string {
   for (let i = 0; i < bytes.length; i++)
     binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
-}
-
-function base64ToBytes(b64: string): Uint8Array {
-  const binary = atob(b64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
 }
 
 /* ------------------------------------------------------------------ */
@@ -287,17 +223,11 @@ function isCustomItem(item: unknown): boolean {
 /* ------------------------------------------------------------------ */
 
 /**
- * Collect all syncable data into a SyncData object.
- *
- * PII (history/customers/quotes) is read from the hydrated stores, which are
- * the encrypted vault's in-memory projection — never from a plaintext
- * `localStorage` literal, which is what made the post-Wave-3 export silently
- * empty (HIGH-2a). Non-PII keys keep reading `localStorage` through the
- * guarded sync storage. Missing/corrupt non-PII values fall back to their
- * empty default so an export never fails because of one bad key.
+ * Collect every supported category. Customers, quotes and history come from
+ * the app's ordinary local stores. Missing/corrupt JSON preferences fall back
+ * to empty defaults.
  */
 export function collectSyncData(): SyncData {
-  refuseBetaSync();
   const settings = readPlainJSON<Record<string, unknown>>(KEYS.settings, {});
 
   const history = useHistoryStore.getState().entries;
@@ -437,21 +367,10 @@ function isSyncData(value: unknown): value is SyncData {
   );
 }
 
-function isCurrentEnvelopeSyncData(value: unknown): value is SyncData {
-  return (
-    isSyncData(value) &&
-    Array.isArray(value.products) &&
-    Array.isArray(value.colorPalette) &&
-    Array.isArray(value.modelComparison)
-  );
-}
-
 /**
  * Validate a bundle's format and version. Acts as a TS type guard.
  */
-export function validateBundle(
-  data: unknown,
-): data is ExportBundle | EncryptedBundle {
+export function validateBundle(data: unknown): data is ExportBundle {
   if (!data || typeof data !== "object") return false;
   const b = data as Record<string, unknown>;
   if (b.version !== SYNC_VERSION) return false;
@@ -459,15 +378,6 @@ export function validateBundle(
   if (typeof b.exportedAt !== "string") return false;
   if (typeof b.appVersion !== "string") return false;
   if (b.platform !== "web" && b.platform !== "electron") return false;
-  if (typeof b.encrypted !== "boolean") return false;
-  if (b.encrypted) {
-    return (
-      typeof b.data === "string" &&
-      typeof b.salt === "string" &&
-      typeof b.iv === "string" &&
-      typeof b.checksum === "string"
-    );
-  }
   return isSyncData(b.data);
 }
 
@@ -588,12 +498,6 @@ export interface ApplySyncDataResult {
   imported: string[];
   /** Categories where id collisions were resolved. */
   conflicts: string[];
-  /**
-   * PII categories refused because the encrypted vault was not hydrated.
-   * They were NOT written anywhere — no plaintext, no half-applied memory —
-   * and the caller must surface the refusal instead of reporting success.
-   */
-  refused: string[];
 }
 
 /**
@@ -607,10 +511,8 @@ export interface ApplySyncDataResult {
  *  - replace: collections and plain values are fully replaced by the
  *             imported data (built-in catalog items are still preserved).
  *
- * PII categories are written to the hydrated stores (which persist to the
- * encrypted vault), never to `localStorage` (HIGH-1). A refused vault (locked
- * or incapable) leaves those categories untouched and lists them in `refused`
- * rather than accepting an import that would silently vanish (HIGH-2b).
+ * Customer, quote and history categories are written through their ordinary
+ * store persistence adapters.
  *
  * Empty imported categories are ignored in merge mode so a device without
  * data cannot wipe another device's data.
@@ -619,11 +521,8 @@ export function applySyncData(
   data: SyncData,
   mode: "merge" | "replace",
 ): ApplySyncDataResult {
-  refuseBetaSync();
   const imported: string[] = [];
   const conflicts: string[] = [];
-  const refused: string[] = [];
-  const piiWritable = isPiiSyncAvailable();
 
   if (hasContent(data.settings) || mode === "replace") {
     writeJSON(KEYS.settings, data.settings);
@@ -631,77 +530,65 @@ export function applySyncData(
   }
 
   if (data.history.length > 0 || mode === "replace") {
-    if (!piiWritable) {
-      refused.push("history");
+    const localEntries = useHistoryStore.getState().entries;
+    if (mode === "replace") {
+      useHistoryStore.setState({ entries: data.history as HistoryEntry[] });
     } else {
-      const localEntries = useHistoryStore.getState().entries;
-      if (mode === "replace") {
-        useHistoryStore.setState({ entries: data.history as HistoryEntry[] });
-      } else {
-        const { merged, conflicts: c } = mergeById(localEntries, data.history);
-        useHistoryStore.setState({ entries: merged as HistoryEntry[] });
-        if (c > 0) conflicts.push("history");
-      }
-      imported.push("history");
+      const { merged, conflicts: c } = mergeById(localEntries, data.history);
+      useHistoryStore.setState({ entries: merged as HistoryEntry[] });
+      if (c > 0) conflicts.push("history");
     }
+    imported.push("history");
   }
 
   if (data.customers.length > 0 || mode === "replace") {
-    if (!piiWritable) {
-      refused.push("customers");
+    const localCustomers = useCustomerStore.getState().customers;
+    if (mode === "replace") {
+      useCustomerStore.setState({
+        customers: data.customers as Customer[],
+      });
     } else {
-      const localCustomers = useCustomerStore.getState().customers;
-      if (mode === "replace") {
-        useCustomerStore.setState({
-          customers: data.customers as Customer[],
-        });
-      } else {
-        const { merged, conflicts: c } = mergeById(
-          localCustomers,
-          data.customers,
-        );
-        useCustomerStore.setState({ customers: merged as Customer[] });
-        if (c > 0) conflicts.push("customers");
-      }
-      imported.push("customers");
+      const { merged, conflicts: c } = mergeById(
+        localCustomers,
+        data.customers,
+      );
+      useCustomerStore.setState({ customers: merged as Customer[] });
+      if (c > 0) conflicts.push("customers");
     }
+    imported.push("customers");
   }
 
   if (data.quotes.length > 0 || mode === "replace") {
-    if (!piiWritable) {
-      refused.push("quotes");
+    const quoteState = useQuoteStore.getState();
+    const localNext =
+      typeof quoteState.nextNumber === "number" ? quoteState.nextNumber : 1;
+    const importedNext =
+      typeof data.quotesNextNumber === "number" ? data.quotesNextNumber : 1;
+    if (mode === "replace") {
+      const minimumNext = data.quotes.reduce<number>((maximum, quote) => {
+        const number = (quote as { number?: unknown } | null)?.number;
+        return typeof number === "number"
+          ? Math.max(maximum, number + 1)
+          : maximum;
+      }, 1);
+      useQuoteStore.setState({
+        quotes: data.quotes as Quote[],
+        nextNumber: Math.max(importedNext, minimumNext),
+      });
     } else {
-      const quoteState = useQuoteStore.getState();
-      const localNext =
-        typeof quoteState.nextNumber === "number" ? quoteState.nextNumber : 1;
-      const importedNext =
-        typeof data.quotesNextNumber === "number" ? data.quotesNextNumber : 1;
-      if (mode === "replace") {
-        const minimumNext = data.quotes.reduce<number>((maximum, quote) => {
-          const number = (quote as { number?: unknown } | null)?.number;
-          return typeof number === "number"
-            ? Math.max(maximum, number + 1)
-            : maximum;
-        }, 1);
-        useQuoteStore.setState({
-          quotes: data.quotes as Quote[],
-          nextNumber: Math.max(importedNext, minimumNext),
-        });
-      } else {
-        // A merge must avoid collisions with quote numbers from either device.
-        const nextNumber = Math.max(localNext, importedNext) + 1;
-        const { merged, conflicts: c } = mergeById(
-          quoteState.quotes,
-          data.quotes,
-        );
-        useQuoteStore.setState({
-          quotes: merged as Quote[],
-          nextNumber,
-        });
-        if (c > 0) conflicts.push("quotes");
-      }
-      imported.push("quotes");
+      // A merge must avoid collisions with quote numbers from either device.
+      const nextNumber = Math.max(localNext, importedNext) + 1;
+      const { merged, conflicts: c } = mergeById(
+        quoteState.quotes,
+        data.quotes,
+      );
+      useQuoteStore.setState({
+        quotes: merged as Quote[],
+        nextNumber,
+      });
+      if (c > 0) conflicts.push("quotes");
     }
+    imported.push("quotes");
   }
 
   const catalogResult = applyCatalog(data.catalog, mode);
@@ -795,7 +682,7 @@ export function applySyncData(
 
   synchronizeActiveStores(data, mode);
 
-  return { imported, conflicts, refused };
+  return { imported, conflicts };
 }
 
 const CALCULATOR_SETTING_KEYS = [
@@ -838,11 +725,10 @@ function synchronizeActiveStores(
   data: SyncData,
   mode: "merge" | "replace",
 ): void {
-  // The three PII stores are written directly by `applySyncData` (their
-  // in-memory state IS the imported result) and persist to the vault on their
-  // own. Rehydrating them here would re-read a vault write that is still in
-  // flight and could revert the import to stale data — so they are deliberately
-  // not rehydrated. Products and model comparison are still plaintext stores.
+  // The three PII stores are written directly by `applySyncData`; their
+  // in-memory state IS the imported result. Rehydrating them here would
+  // overwrite that state with the just-imported local storage snapshot.
+  // Products and model comparison are rehydrated separately.
   useProductInventory.persist.rehydrate();
   useModelComparison.persist.rehydrate();
   useColorPalette.setState({
@@ -922,70 +808,8 @@ function synchronizeActiveStores(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Crypto helpers (Web Crypto API)                                    */
+/*  SHA-256 integrity checksum helper (Web Crypto digest API)            */
 /* ------------------------------------------------------------------ */
-
-/**
- * Derive an AES-256-GCM key from a password using PBKDF2 (100k iterations,
- * SHA-256) with the given salt.
- */
-export async function deriveKey(
-  password: string,
-  salt: Uint8Array,
-): Promise<CryptoKey> {
-  const material = await window.crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(password),
-    "PBKDF2",
-    false,
-    ["deriveKey"],
-  );
-  return window.crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: salt as BufferSource,
-      iterations: PBKDF2_ITERATIONS,
-      hash: "SHA-256",
-    },
-    material,
-    { name: "AES-GCM", length: KEY_LENGTH_BITS },
-    false,
-    ["encrypt", "decrypt"],
-  );
-}
-
-/**
- * Encrypt a string with AES-256-GCM using a fresh random 12-byte IV.
- */
-export async function encryptData(
-  data: string,
-  key: CryptoKey,
-): Promise<{ iv: Uint8Array; ciphertext: ArrayBuffer }> {
-  const iv = window.crypto.getRandomValues(new Uint8Array(IV_BYTES));
-  const ciphertext = await window.crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    key,
-    new TextEncoder().encode(data),
-  );
-  return { iv, ciphertext };
-}
-
-/**
- * Decrypt AES-256-GCM ciphertext. Throws on wrong key or tampered data
- * (GCM authentication failure).
- */
-export async function decryptData(
-  ciphertext: ArrayBuffer,
-  key: CryptoKey,
-  iv: Uint8Array,
-): Promise<string> {
-  const decrypted = await window.crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: iv as BufferSource },
-    key,
-    ciphertext,
-  );
-  return new TextDecoder().decode(decrypted);
-}
 
 /** SHA-256 checksum of a string, returned base64. */
 export async function hashData(data: string): Promise<string> {
@@ -1011,16 +835,12 @@ function detectPlatform(): "web" | "electron" {
 }
 
 /**
- * Create an export bundle from all localStorage data.
- *
- * With a password the bundle is encrypted (AES-256-GCM + PBKDF2); without
- * one it is stored as plain JSON with a SHA-256 checksum for integrity.
+ * Create a readable JSON export bundle. The checksum detects accidental
+ * corruption; it does not protect file contents.
  */
 export async function exportBundle(
-  password?: string,
   platform?: "web" | "electron",
-): Promise<ExportBundle | EncryptedBundle> {
-  refuseBetaSync();
+): Promise<ExportBundle> {
   const syncData = collectSyncData();
   const plaintext = JSON.stringify(syncData);
 
@@ -1032,50 +852,23 @@ export async function exportBundle(
     platform: platform ?? detectPlatform(),
   };
 
-  if (password) {
-    const salt = window.crypto.getRandomValues(new Uint8Array(SALT_BYTES));
-    const key = await deriveKey(password, salt);
-    const { iv, ciphertext } = await encryptData(plaintext, key);
-    return {
-      ...base,
-      encrypted: true,
-      data: bytesToBase64(new Uint8Array(ciphertext)),
-      salt: bytesToBase64(salt),
-      iv: bytesToBase64(iv),
-      checksum: await hashData(plaintext),
-    };
-  }
-
   return {
     ...base,
-    encrypted: false,
     data: syncData,
     checksum: await hashData(plaintext),
   };
 }
 
-function isEncryptedBundle(
-  bundle: ExportBundle | EncryptedBundle,
-): bundle is EncryptedBundle {
-  return (
-    bundle.encrypted === true &&
-    typeof bundle.salt === "string" &&
-    typeof bundle.iv === "string" &&
-    typeof bundle.checksum === "string" &&
-    typeof bundle.data === "string"
-  );
-}
-
 /**
- * Validate, decrypt (when needed), verify the checksum and apply a bundle
- * to localStorage. Shared by `importBundle` (merge) and `importData` (UI).
+ * Validate, verify the checksum and apply a bundle
+ * into the app's local stores. Shared by `importBundle` (merge) and
+ * `importData` (UI).
  *
- * Throws PT-BR user-facing errors for: invalid format, missing/wrong
- * password, corrupted data and checksum mismatch.
+ * Throws PT-BR user-facing errors for invalid format, corrupted data and
+ * checksum mismatch. Legacy encrypted bundles are not supported.
  */
 async function applyImport(
-  bundle: ExportBundle | EncryptedBundle,
-  password: string | undefined,
+  bundle: ExportBundle,
   mode: "merge" | "replace",
 ): Promise<ApplySyncDataResult> {
   if (!validateBundle(bundle)) {
@@ -1084,53 +877,13 @@ async function applyImport(
     );
   }
 
-  let syncData: SyncData;
-
-  if (isEncryptedBundle(bundle)) {
-    if (!password) {
-      throw new Error(
-        "Este arquivo está criptografado. Informe a senha para importar.",
-      );
-    }
-    let plaintext: string;
-    try {
-      const salt = base64ToBytes(bundle.salt);
-      const iv = base64ToBytes(bundle.iv);
-      const key = await deriveKey(password, salt);
-      const ciphertext = base64ToBytes(bundle.data);
-      plaintext = await decryptData(ciphertext.buffer as ArrayBuffer, key, iv);
-    } catch {
-      throw new Error(
-        "Senha incorreta ou arquivo corrompido. Não foi possível descriptografar os dados.",
-      );
-    }
-    const checksum = await hashData(plaintext);
+  const syncData = bundle.data;
+  if (bundle.checksum) {
+    const checksum = await hashData(JSON.stringify(syncData));
     if (checksum !== bundle.checksum) {
       throw new Error(
         "Integridade dos dados comprometida: o checksum não confere. O arquivo pode estar corrompido.",
       );
-    }
-    try {
-      syncData = JSON.parse(plaintext) as SyncData;
-    } catch {
-      throw new Error(
-        "Dados corrompidos: não foi possível interpretar o conteúdo descriptografado.",
-      );
-    }
-    if (!isSyncData(syncData)) {
-      throw new Error(
-        "Conteúdo do arquivo inválido: a estrutura de dados não é reconhecida.",
-      );
-    }
-  } else {
-    syncData = bundle.data;
-    if (bundle.checksum) {
-      const checksum = await hashData(JSON.stringify(syncData));
-      if (checksum !== bundle.checksum) {
-        throw new Error(
-          "Integridade dos dados comprometida: o checksum não confere. O arquivo pode estar corrompido.",
-        );
-      }
     }
   }
 
@@ -1138,16 +891,14 @@ async function applyImport(
 }
 
 /**
- * Import a bundle (merge mode): validates format, decrypts when needed,
- * verifies the checksum and applies the data. Non-PII keys land in
- * `localStorage`; PII keys land in the hydrated vault-backed stores.
+ * Import a readable bundle (merge mode): validates format, verifies the
+ * checksum and applies the data. Non-PII keys land in
+ * `localStorage` or the platform's local database adapter.
  */
 export async function importBundle(
-  bundle: ExportBundle | EncryptedBundle,
-  password?: string,
+  bundle: ExportBundle,
 ): Promise<ApplySyncDataResult> {
-  refuseBetaSync();
-  return applyImport(bundle, password, "merge");
+  return applyImport(bundle, "merge");
 }
 
 /* ------------------------------------------------------------------ */
@@ -1157,37 +908,21 @@ export async function importBundle(
 export interface DataSyncExportResult {
   fileName: string;
   sizeBytes: number;
-  /**
-   * Whether the vault-backed PII stores were available and their data was
-   * included. `false` means customers/quotes/history were NOT in the file
-   * because the vault was locked or incapable — the UI must say so rather
-   * than let the user believe an empty-PII export was complete (HIGH-2a).
-   */
-  piiIncluded: boolean;
 }
 
 export interface DataSyncImportResult {
   imported: number;
   conflicts: number;
   errors: number;
-  /**
-   * PII categories refused because the vault was not hydrated. Nothing was
-   * written for them (no plaintext, no partial state) — the UI must surface
-   * the refusal (HIGH-1 / HIGH-2b).
-   */
-  piiRefused: string[];
 }
 
 export interface DataSyncError extends Error {
-  code?: "INVALID_FILE" | "WRONG_PASSWORD" | "PASSWORD_REQUIRED";
+  code?: "INVALID_FILE";
 }
 
-function dataSyncError(
-  code: "INVALID_FILE" | "WRONG_PASSWORD" | "PASSWORD_REQUIRED",
-  message: string,
-): DataSyncError {
+function dataSyncError(message: string): DataSyncError {
   const err = new Error(message) as DataSyncError;
-  err.code = code;
+  err.code = "INVALID_FILE";
   return err;
 }
 
@@ -1208,133 +943,57 @@ function syncFileName(date = new Date()): string {
 }
 
 /**
- * UI wrapper: build a bundle from localStorage, trigger the browser
- * download and return file metadata for the success message.
+ * UI wrapper: create a plain JSON bundle, trigger the browser download and
+ * return file metadata for the success message.
  */
-/**
- * UI wrapper (SPEC-03 §1/§2): build the collected payload and produce the
- * always-encrypted v1.1 export envelope, then trigger the browser download.
- * A password is mandatory — there is no plaintext user export.
- */
-export async function exportData(options: {
-  password?: string;
-}): Promise<DataSyncExportResult> {
-  refuseBetaSync();
-  if (!options.password) {
-    throw dataSyncError(
-      "PASSWORD_REQUIRED",
-      "O pacote de exportação é sempre criptografado: informe uma senha.",
-    );
-  }
-  const piiIncluded = isPiiSyncAvailable();
-  const payload = collectSyncData();
-  const envelope = await createExportEnvelope(payload, options.password);
-  const blob = new Blob([envelope], { type: "application/json" });
+export async function exportData(): Promise<DataSyncExportResult> {
+  const bundle = await exportBundle();
+  const blob = new Blob([JSON.stringify(bundle, null, 2)], {
+    type: "application/json",
+  });
   const fileName = syncFileName();
   triggerDownload(blob, fileName);
-  return { fileName, sizeBytes: blob.size, piiIncluded };
+  return { fileName, sizeBytes: blob.size };
 }
 
 /**
  * UI wrapper: read a bundle File, import it (merge or replace) and return
  * the applied/conflict counts. Errors carry a `code` so the UI can show the
- * right message ('WRONG_PASSWORD' | 'INVALID_FILE').
+ * right message ('INVALID_FILE').
  *
- * Accepts both the SPEC-03 v1.1 envelope (full validation, §5) and the
- * legacy `1.0` bundle (§8 — honored for import only; re-export produces
- * v1.1).
+ * Accepts readable v1.0 bundles only. Legacy encrypted exports are unsupported;
+ * readable v1.0 files remain importable, including those with the old
+ * `encrypted: false` marker.
  */
 export async function importData(
   file: File,
-  options: { password?: string; mode: "merge" | "replace" },
+  options: { mode: "merge" | "replace" },
 ): Promise<DataSyncImportResult> {
-  refuseBetaSync();
   const fileText = await file.text();
   let parsed: unknown;
   try {
     parsed = JSON.parse(fileText);
   } catch {
     throw dataSyncError(
-      "INVALID_FILE",
       "Formato de arquivo de exportação inválido ou não suportado.",
     );
   }
 
-  // SPEC-03 v1.1 envelope path (§5 — validate strictly, then apply).
-  if (
-    typeof parsed === "object" &&
-    parsed !== null &&
-    (parsed as Record<string, unknown>).version === "1.1" &&
-    (parsed as Record<string, unknown>).format === SYNC_FORMAT
-  ) {
-    if (!options.password) {
-      throw dataSyncError(
-        "WRONG_PASSWORD",
-        "Este pacote é criptografado: informe a senha de exportação.",
-      );
-    }
-    try {
-      const payload = await readExportEnvelope(fileText, options.password);
-      if (!isCurrentEnvelopeSyncData(payload)) {
-        throw dataSyncError(
-          "INVALID_FILE",
-          "Conteúdo do arquivo inválido: a estrutura de dados não é reconhecida.",
-        );
-      }
-      const result = applySyncData(payload, options.mode);
-      return {
-        imported: result.imported.length,
-        conflicts: result.conflicts.length,
-        errors: 0,
-        piiRefused: result.refused,
-      };
-    } catch (error) {
-      if (error instanceof EnvelopeError) {
-        const code =
-          error.code === "AUTH_FAILED" ? "WRONG_PASSWORD" : "INVALID_FILE";
-        throw dataSyncError(code, error.message);
-      }
-      throw error;
-    }
-  }
-
-  // Legacy 1.0 bundle path (§8 — unchanged semantics).
   if (!validateBundle(parsed)) {
     throw dataSyncError(
-      "INVALID_FILE",
-      "Formato de arquivo de exportação inválido ou não suportado.",
+      "Este arquivo não é um backup JSON legível compatível.",
     );
   }
   try {
-    const result = await applyImport(parsed, options.password, options.mode);
+    const result = await applyImport(parsed, options.mode);
     return {
       imported: result.imported.length,
       conflicts: result.conflicts.length,
       errors: 0,
-      piiRefused: result.refused,
     };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro desconhecido ao importar.";
-    const code = /senha|criptografad/i.test(message)
-      ? "WRONG_PASSWORD"
-      : "INVALID_FILE";
-    throw dataSyncError(code, message);
-  }
-}
-
-/**
- * UI wrapper: peek at a bundle File to tell whether it is encrypted,
- * without decrypting it.
- */
-export async function isEncrypted(file: File): Promise<boolean> {
-  refuseBetaSync();
-  try {
-    const parsed = JSON.parse(await file.text()) as Record<string, unknown>;
-    // SPEC-03 v1.1 envelopes are always encrypted.
-    if (parsed.version === "1.1" && parsed.format === SYNC_FORMAT) return true;
-    return parsed.encrypted === true;
-  } catch {
-    return false;
+    throw dataSyncError(message);
   }
 }

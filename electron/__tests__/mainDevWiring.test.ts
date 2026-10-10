@@ -101,11 +101,6 @@ vi.mock("electron", () => {
       }),
     },
     shell: { openExternal: vi.fn() },
-    safeStorage: {
-      isEncryptionAvailable: vi.fn(() => false),
-      encryptString: vi.fn((value: string) => Buffer.from(value)),
-      decryptString: vi.fn((value: Buffer) => value.toString()),
-    },
   };
 });
 
@@ -121,12 +116,6 @@ vi.mock("../update.js", () => ({
   installUpdate: vi.fn(),
   skipVersion: vi.fn(),
   getUpdateStatus: vi.fn(() => ({ status: "idle" })),
-}));
-
-vi.mock("../cryptoCapability.js", () => ({
-  getCapability: vi.fn(() => ({ available: false, reason: "synthetic" })),
-  adoptSessionPassphrase: vi.fn(),
-  lockCryptoSession: vi.fn(),
 }));
 
 vi.mock("../databaseIpc.js", () => ({

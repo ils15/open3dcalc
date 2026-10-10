@@ -64,7 +64,7 @@ async function measureVisibleTargets(locator) {
   );
 }
 
-test("Studio and locked-vault controls provide 44px touch targets", async () => {
+test("Studio and labeled-section controls provide 44px touch targets", async () => {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     colorScheme: "light",
@@ -79,10 +79,10 @@ test("Studio and locked-vault controls provide 44px touch targets", async () => 
       dock: await measureVisibleTargets(
         page.locator(".fixed.inset-x-0.bottom-4 button"),
       ),
-      vaultInputs: await measureVisibleTargets(
+      sectionInputs: await measureVisibleTargets(
         page.locator("section[aria-label] input"),
       ),
-      vaultButtons: await measureVisibleTargets(
+      sectionButtons: await measureVisibleTargets(
         page.locator("section[aria-label] button"),
       ),
     };

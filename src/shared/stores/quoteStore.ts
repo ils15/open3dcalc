@@ -1,18 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  gatedPiiPersistStorage,
-  registerPiiPersistStore,
-} from "@/shared/lib/crypto/piiStoreHydration";
-import { isBetaChannel } from "@/shared/config/betaChannel";
-import { betaPlaintextPersistStorage } from "@/shared/lib/betaPersistence";
+import { registerPiiPersistStore } from "@/shared/lib/localPiiPersistence";
 import {
   isElectronRuntime,
   stablePiiPersistStorage,
 } from "@/shared/lib/manifestStorage";
 import type { Quote, QuoteItem, QuoteFormData } from "@/shared/types";
 
-const useVaultPersistence = !isBetaChannel && isElectronRuntime();
+const deferDesktopHydration = isElectronRuntime();
 
 function generateId(): string {
   return `quote_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -222,22 +217,14 @@ export const useQuoteStore = create<QuoteStore>()(
       },
     }),
     {
-      name: isBetaChannel
-        ? "open3dcalc_beta_test_quotes_v1"
-        : "open3dcalc_quotes_v1",
+      name: "open3dcalc_quotes_v1",
       version: 1,
-      storage: isBetaChannel
-        ? betaPlaintextPersistStorage<QuoteStore>(
-            "open3dcalc_beta_test_quotes_v1",
-          )
-        : useVaultPersistence
-          ? gatedPiiPersistStorage<QuoteStore>("open3dcalc_quotes_v1")
-          : stablePiiPersistStorage<QuoteStore>("open3dcalc_quotes_v1"),
-      skipHydration: useVaultPersistence,
+      storage: stablePiiPersistStorage<QuoteStore>("open3dcalc_quotes_v1"),
+      skipHydration: deferDesktopHydration,
     },
   ),
 );
 
-if (useVaultPersistence) {
+if (deferDesktopHydration) {
   registerPiiPersistStore("open3dcalc_quotes_v1", useQuoteStore.persist);
 }

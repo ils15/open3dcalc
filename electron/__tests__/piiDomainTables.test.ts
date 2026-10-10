@@ -34,35 +34,26 @@ import {
   restoreSnapshotPayload,
   type PayloadDb,
 } from "../erasurePayload.js";
-import { buildScanReport, summarizeReport } from "../legacyScan.js";
-import {
-  PII_CONTENT_TABLES,
-  PII_DOMAIN_TABLES,
-  PII_LEGACY_PLAINTEXT_TABLES,
-  type PiiDomainTableCounts,
-} from "../piiDomainTables.js";
+import { PII_CONTENT_TABLES } from "../piiDomainTables.js";
 import {
   createDiagnosticBackup,
   DiagnosticGateError,
 } from "../diagnosticBackup.js";
 import { resetDiagnosticGateForTests } from "../diagnosticGate.js";
-import type { MinimalStorageDb } from "../persistGate.js";
+import type { MinimalStorageDb } from "../storageRows.js";
 import type { StoreAdapterLike } from "@/shared/lib/erasureSaga/types";
 
 /** Synthetic PII marker — never real personal data. */
 const MARKER = "Fernanda Sintética <fernanda@exemplo.teste>";
 
 /**
- * Every PII-bearing table declared on the SPEC-01 `sqlite_domain_tables`
- * surface. Declared here as a test constant so the behavioral tests below run
- * against the CURRENT shipped code (not a helper this change introduces) and
- * therefore fail before the fix.
+ * Active and retired PII-bearing table coverage expected by erasure. Declared
+ * here as a test constant so the behavioral tests pin the shipped cleanup
+ * inventory directly.
  *
- * `pii_stage` is here even though it is not in db/schema/index.ts: it is created
- * by migration `0004_pii_stage.sql` and is a declared PII surface as of
- * `policy_version` 1.6. A table that is PII-bearing but reachable only through a
- * migration rather than the drizzle schema is exactly the shape of omission the
- * Wave 0 `history_entries` defect had.
+ * `pii_stage` and `legacy_residue` are included only for compatibility with
+ * profile files created by retired versions; the current app does not read or
+ * write them.
  */
 const EXPECTED_PII_TABLES = [
   "customers",
@@ -175,17 +166,16 @@ afterEach(() => {
 // The canonical list
 // ---------------------------------------------------------------------------
 
-describe("PII_DOMAIN_TABLES (single source of truth)", () => {
-  it("covers every PII-bearing normalized table in db/schema", async () => {
+describe("PII erasure table coverage", () => {
+  it("covers active content and retained legacy tables", async () => {
     expect([...(await shippedPiiTables())].sort()).toEqual([
       ...EXPECTED_PII_TABLES,
     ]);
   });
 
   it("keeps active PII content tables aligned with the manifest", async () => {
-    // Current content tables remain declared. The old vault staging and
-    // recovery-residue tables are retired and intentionally absent from the
-    // manifest, even though the legacy cleanup adapters remain covered below.
+    // Active content tables are declared. Retired migration tables are kept
+    // only in the cleanup inventory for compatibility with older profiles.
     const { default: fixture } =
       await import("../../docs/privacy/SPEC-01-manifest-fixture.json");
     const declared = fixture.keys
@@ -255,77 +245,6 @@ describe("sqliteDomainTablesAdapter (SPEC-02 §3 row 2, §6 post-condition)", ()
     const adapter = sqliteDomainTablesAdapter(asStorageDb());
     await expect(adapter.purge()).resolves.toBeTypeOf("number");
     expect(await adapter.rescan()).toEqual([]);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// The privacy scan report (ADR-002 §2.3) must SEE the table
-// ---------------------------------------------------------------------------
-
-describe("buildScanReport / summarizeReport over the domain tables", () => {
-  it("carries a history_entries count in the report", () => {
-    const report = buildScanReport([], {
-      customers: 1,
-      quotes: 1,
-      quote_items: 1,
-      history_entries: 7,
-      pii_stage: 0,
-    });
-    expect(report.domainTables.history_entries).toBe(7);
-  });
-
-  it("names history_entries in the summary string (metadata only)", () => {
-    const report = buildScanReport([], {
-      customers: 1,
-      quotes: 1,
-      quote_items: 1,
-      history_entries: 7,
-      pii_stage: 0,
-    });
-    const summary = summarizeReport(report);
-    expect(summary).toContain("history_entries=7");
-    expect(summary).not.toContain(MARKER);
-  });
-
-  it("reports a nonempty history_entries table as plaintext-domain residue", () => {
-    // Mirrors the main-process gate: domainRows > 0 ⇒ the profile is not clean.
-    const report = buildScanReport([], {
-      customers: 1,
-      quotes: 1,
-      quote_items: 1,
-      history_entries: 1,
-      pii_stage: 0,
-    });
-    const domainRows = PII_LEGACY_PLAINTEXT_TABLES.reduce(
-      (a, table) => a + (report.domainTables[table] ?? 0),
-      0,
-    );
-    expect(domainRows).toBeGreaterThan(0);
-  });
-
-  it("a pii_stage row alone is NOT plaintext-domain residue (it is a sealed envelope)", () => {
-    // The gate sums `PII_LEGACY_PLAINTEXT_TABLES`, not every declared domain
-    // table. A stage row is always an `enc1:` envelope, so counting it would
-    // make every in-flight re-homing warn "legacy plaintext PII detected" —
-    // the same class of lie as the `history_entries` omission, in the other
-    // direction. Pinned here because the exclusion is a deletion: summing
-    // `Object.values(report.domainTables)` again would compile and pass.
-    const report = buildScanReport([], {
-      customers: 0,
-      quotes: 0,
-      quote_items: 0,
-      history_entries: 0,
-      pii_stage: 3,
-    });
-    const domainRows = PII_LEGACY_PLAINTEXT_TABLES.reduce(
-      (a, table) => a + (report.domainTables[table] ?? 0),
-      0,
-    );
-    expect(report.domainTables.pii_stage).toBe(3);
-    expect(domainRows).toBe(0);
-    // The table is still named in the report — counted for erasure, excluded
-    // from the plaintext verdict.
-    expect(summarizeReport(report)).toContain("pii_stage=3");
   });
 });
 
@@ -628,38 +547,5 @@ describe("sqliteDomainTablesAdapter T4.5 — cleanup gated on COUNT > 0", () => 
       ).c;
       expect(count, `${table} must be empty after purge`).toBe(0);
     }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// T4.5 DoD — every table's count is reported, a nonzero count is a finding
-// ---------------------------------------------------------------------------
-
-describe("scan report (T4.5 DoD) — every declared table's count is named", () => {
-  it("names EVERY declared table, including the ones at zero", () => {
-    // "every table's count appears in the scan report": the summary enumerates
-    // the canonical list rather than only the nonzero rows, so a table at 0 is
-    // still visible and a table added later cannot go unreported.
-    const zeroCounts = Object.fromEntries(
-      PII_DOMAIN_TABLES.map((table) => [table, 0]),
-    ) as PiiDomainTableCounts;
-    const summary = summarizeReport(buildScanReport([], zeroCounts));
-    for (const table of PII_DOMAIN_TABLES) {
-      expect(summary).toContain(`${table}=0`);
-    }
-  });
-
-  it("surfaces a nonzero domain count as a finding, not a silent clear", () => {
-    const counts = Object.fromEntries(
-      PII_DOMAIN_TABLES.map((table) => [table, 0]),
-    ) as PiiDomainTableCounts;
-    counts.history_entries = 2;
-    const summary = summarizeReport(buildScanReport([], counts));
-    expect(summary).toContain("history_entries=2");
-    const domainRows = PII_LEGACY_PLAINTEXT_TABLES.reduce(
-      (total, table) => total + counts[table],
-      0,
-    );
-    expect(domainRows).toBeGreaterThan(0);
   });
 });

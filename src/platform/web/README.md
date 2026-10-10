@@ -27,22 +27,19 @@ Auto-deployed to GitHub Pages on push to `main`:
 
 Manual: `npm run build:web` + upload `dist-web/` to any static host.
 
-## Approved Beta test-only profile (Waves 1–3 implemented on this branch)
+## Beta local user data
 
-The approved strip-down is Web-Beta-only and permits plaintext localStorage for exactly
-three synthetic test-data keys: `open3dcalc_beta_test_customers_v1`,
-`open3dcalc_beta_test_quotes_v1`, and `open3dcalc_beta_test_history_v1`. Never enter real
-customer, quote, or history information. The Beta profile has no consent/password gate,
-vault, migration, erasure/reset, import/export, sync, or backup; use a disposable browser
-profile and clear it outside the app. Stable keys stay isolated even though Stable and Beta
-share an origin (same-origin isolation is verified by the Wave 3 browser suite). Waves 1–3
-are implemented and tested on this branch; Stable and Desktop contracts are unchanged.
-Desktop is not a Beta target.
+Web Beta supports real customer, quote, and history data in the same plaintext localStorage keys
+as Stable Web. Saving does not require a password. On first hydration, valid
+records from the retired `open3dcalc_beta_test_*` keys are copied/merged to the shared keys; the
+retired copies are removed only after a successful write. Local browser data is accessible to
+scripts running on the same origin and to anyone with access to that browser profile. Beta is
+Web-only; this does not make every data-management surface release-ready. Same-origin scripts,
+browser extensions, and anyone with access to the browser profile can read the data. Local
+persistence does not send it to a server.
 
-This documents the released Beta behavior only. The product direction for the next candidate
-has since changed: real data, encrypted local persistence, and an explicit V1→V2 migration are
-required. That work is not shipped yet; do not enter real data in the current Beta. See the
-repository [ADR-004](../../../docs/privacy/ADR-004-real-data-v2.md) and
-[SPEC-01 V2 Candidate](../../../docs/privacy/SPEC-01-v2-candidate.md)/
-[SPEC-05](../../../docs/privacy/SPEC-05-v1-to-v2-migration.md) for the approved target and
-release gates.
+The published `v2.0.0-beta.15` was released with the earlier synthetic-test disclosure. The
+current branch changes the product direction to real local data without app-level encryption;
+do not treat a merged commit as a deployed release. See the repository [ADR-004](../../../docs/privacy/ADR-004-real-data-v2.md),
+[SPEC-01 V2 Candidate](../../../docs/privacy/SPEC-01-v2-candidate.md), and
+[SPEC-05](../../../docs/privacy/SPEC-05-v1-to-v2-migration.md) for the target and release gates.

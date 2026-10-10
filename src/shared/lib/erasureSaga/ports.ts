@@ -16,28 +16,13 @@ export interface JournalAdapter {
   destroy(): void;
 }
 
-export interface SnapshotCapability {
-  /** Encrypt bytes with the current capability. Throws when unavailable. */
-  encrypt(plaintext: Uint8Array): Promise<Uint8Array>;
-  /** Decrypt a snapshot produced by `encrypt`. Throws when key unavailable. */
-  decrypt(ciphertext: Uint8Array): Promise<Uint8Array>;
-  /** Whether the capability can currently decrypt (key availability). */
-  canDecrypt(): Promise<boolean>;
-  keySource: "safeStorage" | "passphrase";
-}
-
 export interface SnapshotStore {
-  write(
-    sagaId: string,
-    payload: string,
-    capability: SnapshotCapability,
-  ): Promise<void>;
+  write(sagaId: string, payload: string): Promise<void>;
   canRollback(
     sagaId: string,
-    capability: SnapshotCapability,
     now: Date,
   ): Promise<{ possible: boolean; reason?: string }>;
-  restore(sagaId: string, capability: SnapshotCapability): Promise<string>;
+  restore(sagaId: string): Promise<string>;
   destroy(sagaId: string): void;
   destroyAll(): void;
   /** TTL sweep — destroys expired snapshots, returns their ids. */

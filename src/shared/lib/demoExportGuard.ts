@@ -11,7 +11,6 @@
  * automaticamente sem precisar de wiring manual handler-a-handler.
  */
 import i18n from "i18next";
-import { isBetaChannel } from "@/shared/config/betaChannel";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 
 const BLOCKED_MESSAGE_KEY = "demo.export.blockedTitle";
@@ -39,20 +38,17 @@ export function isDemoExportBlocked(): boolean {
 
 /** Mensagem explicativa — a mesma chave usada pelo hook React (UX idêntica). */
 export function blockedExportMessage(): string {
-  const messageKey = isBetaChannel
-    ? "privacy.betaFirstRun.noExport"
-    : BLOCKED_MESSAGE_KEY;
-  return i18n.isInitialized ? i18n.t(messageKey) : messageKey;
+  return i18n.isInitialized ? i18n.t(BLOCKED_MESSAGE_KEY) : BLOCKED_MESSAGE_KEY;
 }
 
 /**
- * Choke point de toda exportação/compartilhamento. Retorna `true` no modo demo
- * ou Beta; nesses casos publica a mensagem explicativa nos sinks registrados,
+ * Choke point de toda exportação/compartilhamento. Retorna `true` no modo demo;
+ * nesse caso publica a mensagem explicativa nos sinks registrados,
  * para o usuário receber feedback em vez de um no-op silencioso. Retorna
  * `false` quando a exportação pode seguir normalmente.
  */
 export function guardExport(): boolean {
-  if (!isBetaChannel && !isDemoExportBlocked()) {
+  if (!isDemoExportBlocked()) {
     return false;
   }
   const message = blockedExportMessage();

@@ -12,10 +12,6 @@
  * 2. `guardedStorage` — a `localStorage`-shaped object for the handful of
  *    stores that call `localStorage` directly. Same API, gate-checked.
  *
- * The PII vault's capability gate lives next door, in
- * `crypto/piiStoreCapability.ts`; only the demo flag below is mirrored into
- * it, so there is still one switch and one decision for "may PII be written?".
- *
  * Gate semantics (see manifestGate): known keys pass through untouched;
  * unknown keys throw in dev and deny-safely in production. Values are never
  * logged — only key names (TEST-MATRIX 3.2).
@@ -34,8 +30,6 @@ import {
   ManifestError,
 } from "./manifestGate.js";
 import { isBetaChannel } from "@/shared/config/betaChannel";
-import { betaStateStorage, betaTestStorage } from "./betaPersistence.js";
-import { setDemoSuppressedForPiiGate } from "./crypto/piiStoreCapability.js";
 
 /**
  * Ephemeral demo-data mode (onboarding Fase 0).
@@ -53,21 +47,11 @@ let demoPersistenceSuppressed = false;
 /**
  * Engage/release write suppression. Called only by demoModeStore.
  *
- * The flag is ALSO mirrored into the PII gate's decision state, so a demo
- * session suppresses the encrypted vault through the same single switch this
- * module already owns. Two independent predicates would be two choke points: a
- * demo session would stop localStorage writes while still sealing PII into
- * IndexedDB, and a demo session is defined as holding nothing at all. A mirror
- * of one boolean cannot drift the way two separately-owned predicates can.
- *
- * The gate's own state lives in `crypto/piiStoreCapability.ts` rather than
- * here because the Electron main process compiles that directory with no DOM,
- * and a vault reaching into a zustand-and-`window` module would drag a
- * renderer dependency into the main bundle.
+ * Every local adapter checks this single switch before persisting, keeping demo
+ * sessions in memory without writing to browser storage or SQLite.
  */
 export function setDemoPersistenceSuppressed(value: boolean): void {
   demoPersistenceSuppressed = value;
-  setDemoSuppressedForPiiGate(value);
 }
 
 /** True while a demo session owns the stores (writes are no-ops). */
@@ -76,7 +60,7 @@ export function isDemoPersistenceSuppressed(): boolean {
 }
 
 /**
- * Is this the desktop renderer, where PII has a durable OS-backed path?
+ * Is this the Desktop renderer, where user-content stores use the SQLite adapter?
  *
  * Read at CALL time, never cached at module scope: a renderer can be the web
  * target in one build and Electron in another, and the gate must reflect the
@@ -102,9 +86,8 @@ export function isElectronRuntime(): boolean {
 function denyWebPlaintextPiiWrite(key: string): boolean {
   if (isElectronRuntime()) return false;
   const entry = getKeyEntry(key);
-  // Only NEW user PII is refused here. Sealed saga artifacts (class
-  // `snapshot`) are ciphertext written by the erasure store, not a
-  // user-facing PII write, and must keep working.
+  // Only current user-content persistence is allowed through its dedicated
+  // adapters. Rollback snapshots use their separately declared manifest key.
   if (!entry || entry.pii !== true || entry.class !== "user_content") {
     return false;
   }
@@ -127,6 +110,38 @@ const PII_PERSISTED_SCHEMAS: Readonly<
   open3dcalc_customers_v1: { field: "customers", version: 1 },
   open3dcalc_quotes_v1: { field: "quotes", version: 1 },
   open3dcalc_history_v2: { field: "entries", version: 2 },
+};
+
+/**
+ * The retired disposable-Beta namespace may contain records from earlier
+ * previews. Copy a valid record to its Stable/V2 key on first read, then leave
+ * the destination as the sole source of truth. Values are never discarded if
+ * the destination is already present or the old envelope is malformed.
+ */
+export const LEGACY_BETA_USER_CONTENT_KEYS = [
+  "open3dcalc_beta_test_customers_v1",
+  "open3dcalc_beta_test_quotes_v1",
+  "open3dcalc_beta_test_history_v1",
+] as const;
+
+const LEGACY_BETA_PII_KEYS: Readonly<
+  Record<string, { key: string; field: string; version: number }>
+> = {
+  open3dcalc_customers_v1: {
+    key: "open3dcalc_beta_test_customers_v1",
+    field: "customers",
+    version: 1,
+  },
+  open3dcalc_quotes_v1: {
+    key: "open3dcalc_beta_test_quotes_v1",
+    field: "quotes",
+    version: 1,
+  },
+  open3dcalc_history_v2: {
+    key: "open3dcalc_beta_test_history_v1",
+    field: "entries",
+    version: 1,
+  },
 };
 
 function requiredLocalStorage(key: string): Storage {
@@ -162,8 +177,56 @@ function validateStablePiiKey(key: string): { field: string; version: number } {
   return schema;
 }
 
+function parsePersistedArray(
+  raw: string,
+  field: string,
+  version: number,
+): { state: Record<string, unknown>; version: number } {
+  const parsed: unknown = JSON.parse(raw);
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    !("state" in parsed) ||
+    typeof parsed.state !== "object" ||
+    parsed.state === null ||
+    Array.isArray(parsed.state) ||
+    !Array.isArray((parsed.state as Record<string, unknown>)[field]) ||
+    !("version" in parsed) ||
+    parsed.version !== version
+  ) {
+    throw new TypeError("invalid persisted state envelope");
+  }
+  return parsed as { state: Record<string, unknown>; version: number };
+}
+
+function mergeById(
+  current: readonly unknown[],
+  legacy: readonly unknown[],
+): unknown[] {
+  const ids = new Set(
+    current.flatMap((item) =>
+      item &&
+      typeof item === "object" &&
+      "id" in item &&
+      typeof item.id === "string"
+        ? [item.id]
+        : [],
+    ),
+  );
+  return [
+    ...current,
+    ...legacy.filter((item) => {
+      if (!item || typeof item !== "object" || !("id" in item)) return true;
+      if (typeof item.id !== "string") return true;
+      if (ids.has(item.id)) return false;
+      ids.add(item.id);
+      return true;
+    }),
+  ];
+}
+
 /**
- * Stable Web persistence for the three explicitly approved PII stores.
+ * Web persistence for the three user-content stores shared by Stable and Beta.
  * Hydration must positively read an empty or valid record before writes are
  * allowed; corrupt or inaccessible bytes remain untouched and writes fail
  * rather than replacing them with the store's initial state.
@@ -182,7 +245,39 @@ export function stablePiiPersistStorage<S>(key: string): PersistStorage<S> {
       validateName(name);
       try {
         const schema = validateStablePiiKey(key);
-        const raw = requiredLocalStorage(key).getItem(key);
+        const storage = requiredLocalStorage(key);
+        let raw = storage.getItem(key);
+        const legacy = isBetaChannel ? LEGACY_BETA_PII_KEYS[key] : undefined;
+        const legacyRaw = legacy ? storage.getItem(legacy.key) : null;
+        if (legacy && legacyRaw !== null) {
+          const oldRecord = parsePersistedArray(
+            legacyRaw,
+            legacy.field,
+            legacy.version,
+          );
+          const currentRecord =
+            raw === null
+              ? null
+              : parsePersistedArray(raw, schema.field, schema.version);
+          const state = {
+            ...oldRecord.state,
+            ...currentRecord?.state,
+            [schema.field]: mergeById(
+              (currentRecord?.state[schema.field] as unknown[] | undefined) ??
+                [],
+              oldRecord.state[legacy.field] as unknown[],
+            ),
+          };
+          const migrated = JSON.stringify({ state, version: schema.version });
+          storage.setItem(key, migrated);
+          raw = migrated;
+          try {
+            storage.removeItem(legacy.key);
+          } catch {
+            // The validated destination is durable; a stale source copy is
+            // safer than failing startup after a successful copy.
+          }
+        }
         if (raw === null) {
           readable = true;
           return null;
@@ -287,9 +382,6 @@ function gatedStateStorage(): StateStorage {
  * except every key is validated against SPEC-01 first.
  */
 export function manifestStorage<S>(): PersistStorage<S, unknown> | undefined {
-  if (isBetaChannel) {
-    return createJSONStorage<S>(() => betaStateStorage());
-  }
   return createJSONStorage<S>(() => gatedStateStorage());
 }
 
@@ -301,7 +393,6 @@ export function manifestStorage<S>(): PersistStorage<S, unknown> | undefined {
  */
 export const guardedStorage = {
   getItem(key: string): string | null {
-    if (isBetaChannel) return betaTestStorage.getItem(key);
     const backing = rawStorage();
     if (!checkKey(key).allowed) return null;
     // rawStorage() is always the synchronous window.localStorage (or the
@@ -309,10 +400,6 @@ export const guardedStorage = {
     return backing.getItem(key) as string | null;
   },
   setItem(key: string, value: string): void {
-    if (isBetaChannel) {
-      betaTestStorage.setItem(key, value);
-      return;
-    }
     // Demo mode: ephemeral by design — never persist.
     if (demoPersistenceSuppressed) return;
     if (denyWebPlaintextPiiWrite(key)) return;
@@ -321,10 +408,6 @@ export const guardedStorage = {
     backing.setItem(key, value);
   },
   removeItem(key: string): void {
-    if (isBetaChannel) {
-      betaTestStorage.removeItem(key);
-      return;
-    }
     if (demoPersistenceSuppressed) return;
     const backing = rawStorage();
     if (!checkKey(key).allowed) return;
@@ -336,15 +419,9 @@ export const guardedStorage = {
  * Sync-scoped sibling of `guardedStorage` that refuses to WRITE a
  * manifest-declared PII key as plaintext.
  *
- * The cross-device sync path is the one surface that used to (re)write the
- * three vault-backed PII keys (`open3dcalc_history_v2`, `open3dcalc_customers_v1`,
- * `open3dcalc_quotes_v1`) straight into `localStorage`. After Wave 3 those
- * records live only in the encrypted vault, so a sync write there is both
- * wrong (plaintext PII) and useless (the stores do not read it). This wrapper
- * closes that write at the choke point: a declared `pii:true` key is denied —
- * loudly in development, safely in production — while every non-PII key is
- * delegated to `guardedStorage` unchanged. Reads and removes are NOT changed;
- * the guarantee this layer owes is "no plaintext PII write", not "no read".
+ * User-content stores have dedicated persistence adapters. This wrapper keeps
+ * declared PII keys out of the generic sync-storage write path, while every
+ * non-PII key is delegated to `guardedStorage` unchanged.
  */
 export const guardedSyncStorage = {
   getItem(key: string): string | null {

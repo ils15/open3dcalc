@@ -1,4 +1,10 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 
@@ -16,15 +22,13 @@ import { useCustomerStore } from "@/shared/stores/customerStore";
 import { resetManifestForTests } from "@/shared/lib/manifestGate";
 import {
   getLastPiiWriteRefusal,
-  resetPiiStoreHydrationForTests,
-} from "@/shared/lib/crypto/piiStoreHydration";
+  resetLocalPiiPersistenceForTests,
+} from "@/shared/lib/localPiiPersistence";
 
-beforeEach(async () => {
+beforeEach(() => {
   window.localStorage.clear();
   resetManifestForTests(undefined);
-  resetPiiStoreHydrationForTests();
-  await useCustomerStore.persist.rehydrate();
-  await useQuoteStore.persist.rehydrate();
+  resetLocalPiiPersistenceForTests();
   useQuoteStore.setState({
     quotes: [],
     nextNumber: 1,
@@ -36,12 +40,13 @@ beforeEach(async () => {
 
 afterEach(() => {
   cleanup();
+  resetLocalPiiPersistenceForTests();
   window.localStorage.clear();
   vi.restoreAllMocks();
 });
 
-describe("StudioQuotesView Beta deletion boundary", () => {
-  it("does not offer deletion for PII-bearing quote records", async () => {
+describe("StudioQuotesView Beta user-data controls", () => {
+  it("lets the user confirm deletion of a quote from the local profile", async () => {
     useCustomerStore.setState({
       customers: [
         {
@@ -76,17 +81,22 @@ describe("StudioQuotesView Beta deletion boundary", () => {
     });
     render(<StudioQuotesView />);
 
-    expect(
-      screen.queryByRole("button", {
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", {
         name: /Excluir orçamento #001 de Example Customer/i,
       }),
-    ).toBeNull();
-    expect(screen.queryByRole("alertdialog")).toBeNull();
+    );
+    const confirmation = screen.getByRole("alertdialog");
+    await user.click(
+      within(confirmation).getByRole("button", { name: "Excluir" }),
+    );
+    expect(useQuoteStore.getState().quotes).toHaveLength(0);
   });
 });
 
 describe("StudioQuotesView Beta real save (no gate mock)", () => {
-  it("saves a synthetic quote through the REAL Beta write gate", async () => {
+  it("saves a quote directly to the shared local profile", async () => {
     const user = userEvent.setup();
     render(<StudioQuotesView />);
 
@@ -99,7 +109,10 @@ describe("StudioQuotesView Beta real save (no gate mock)", () => {
     expect(getLastPiiWriteRefusal()).toBeNull();
     expect(screen.queryByText(/privacy\.vault\.writeRefusedTitle/)).toBeNull();
     expect(await screen.findByText("quotes.saveSuccess")).toBeInTheDocument();
-    const raw = window.localStorage.getItem("open3dcalc_beta_test_quotes_v1");
+    const raw = window.localStorage.getItem("open3dcalc_quotes_v1");
     expect(raw).toContain("Orçamento de Impressão 3D");
+    expect(
+      window.localStorage.getItem("open3dcalc_beta_test_quotes_v1"),
+    ).toBeNull();
   });
 });

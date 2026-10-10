@@ -23,7 +23,7 @@ import {
   sqliteWalShmAdapter,
   tempStagingAdapter,
 } from "../erasureStores.js";
-import type { MinimalStorageDb } from "../persistGate.js";
+import type { MinimalStorageDb } from "../storageRows.js";
 
 const dirs: string[] = [];
 

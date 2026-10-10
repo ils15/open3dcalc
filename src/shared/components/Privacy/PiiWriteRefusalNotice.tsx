@@ -6,16 +6,16 @@ import {
   PII_STORE_KEY,
   getLastPiiWriteRefusal,
   subscribePiiWriteRefusals,
-} from "@/shared/lib/crypto/piiStoreHydration";
+} from "@/shared/lib/localPiiPersistence";
 
 /**
  * H-4 — the consumer `getLastPiiWriteRefusal()` was missing.
  *
- * A locked or incapable vault refuses every PII write at the persistence layer,
- * and ONLY records a typed refusal (`getLastPiiWriteRefusal`). Before this
+ * An unavailable local persistence route records a typed refusal
+ * (`getLastPiiWriteRefusal`). Before this
  * component that refusal had no production reader, so a user could add a
  * customer/quote/history entry, see it appear, and lose it on reload — the one
- * invariant this PR must never break: a locked store must never look healthy.
+ * invariant this component protects: a refused save must never look healthy.
  *
  * The surfaces that accept a PII entry mount this next to the control. It
  * subscribes to the gate (a refusal is recorded outside React, inside a store
@@ -50,11 +50,10 @@ export function PiiWriteRefusalNotice({
   );
 
   if (refusal === null) return null;
-  if (refusal.reason === "demo_session") return null;
   if (storeKey !== undefined && refusal.key !== storeKey) return null;
 
   const area = t(
-    AREA_LABEL_KEY[refusal.key] ?? "privacy.vault.writeRefusedAreaUnknown",
+    AREA_LABEL_KEY[refusal.key] ?? "privacy.localData.writeRefusedAreaUnknown",
   );
 
   return (
@@ -65,10 +64,10 @@ export function PiiWriteRefusalNotice({
       <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
       <div className="min-w-0">
         <strong className="block text-sm font-bold">
-          {t("privacy.vault.writeRefusedTitle")}
+          {t("privacy.localData.writeRefusedTitle")}
         </strong>
         <p className="text-xs sm:text-[13px]">
-          {t("privacy.vault.writeRefusedMessage", {
+          {t("privacy.localData.writeRefusedMessage", {
             area,
             reason: refusal.reason,
           })}

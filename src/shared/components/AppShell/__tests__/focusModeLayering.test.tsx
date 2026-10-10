@@ -874,10 +874,6 @@ describe("focus mode — a passive surface never buries the exit", () => {
       "src/platform/web/components/studio/StudioQuotesView.tsx",
       "src/platform/web/components/studio/StudioShortcutsModal.tsx",
       "src/platform/web/components/studio/StudioSpoolView.tsx",
-      // Wave4 Beta first-run notice: an owning modal surface (scrim +
-      // focus trap + Escape, rule 2) so it correctly sits above the exit
-      // while up, with the exit one Escape away.
-      "src/shared/components/Privacy/PrivacyOnboarding.tsx",
     ].sort();
     expect(
       found.sort(),

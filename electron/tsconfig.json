@@ -21,25 +21,12 @@
     "main.ts",
     "update.ts",
     "preload.cts",
-    "cryptoCapability.ts",
-    "selftest/crypto-selftest.ts",
-    "selftest/packaged-probe.ts",
-    "../src/shared/lib/crypto/**/*.ts",
     "../db/**/*.ts",
-    "persistGate.ts",
-    "piiStage.ts",
-    "legacyScan.ts",
     "legacyRows.ts",
-    "quarantine.ts",
     "manifestSource.ts",
     "diagnosticBackup.ts",
     "diagnosticGate.ts",
     "../src/shared/lib/dataManifest.ts"
   ],
-  "exclude": [
-    "dist",
-    "../node_modules",
-    "../db/__tests__/**",
-    "../src/shared/lib/crypto/__tests__/**"
-  ]
+  "exclude": ["dist", "../node_modules", "../db/__tests__/**"]
 }

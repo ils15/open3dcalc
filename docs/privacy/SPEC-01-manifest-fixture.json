@@ -139,7 +139,7 @@
       "platforms": ["electron"],
       "class": "user_content",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
@@ -147,7 +147,7 @@
         "policy": "user_controlled",
         "max_days": 0
       },
-      "purpose": "Normalized customer records mirrored from the customer store into the desktop database.",
+      "purpose": "Retained legacy normalized customer table. Current app writes customer records to the plaintext key-value row declared as open3dcalc_customers_v1; any historical rows in this table are not encrypted or read by the current customer store.",
       "legal_basis": "consent",
       "owner": "demeter",
       "version": "1.0"
@@ -194,7 +194,7 @@
       "platforms": ["electron"],
       "class": "user_content",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
@@ -202,7 +202,7 @@
         "policy": "user_controlled",
         "max_days": 0
       },
-      "purpose": "Normalized quote records (with customerSnapshot JSON) in the desktop database.",
+      "purpose": "Retained legacy normalized quote table. Current app writes quotes to the plaintext key-value row declared as open3dcalc_quotes_v1; any historical rows in this table are not encrypted or read by the current quote store.",
       "legal_basis": "consent",
       "owner": "demeter",
       "version": "1.0"
@@ -213,7 +213,7 @@
       "platforms": ["electron"],
       "class": "user_content",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
@@ -221,7 +221,7 @@
         "policy": "user_controlled",
         "max_days": 0
       },
-      "purpose": "Normalized quote line items in the desktop database; PII-bearing because each row carries a free-text item name and a history_entry_id link to a PII-bearing history entry.",
+      "purpose": "Retained legacy normalized quote line-item table; PII-bearing because rows include item names and the history_entry_id link to history. Any historical rows are plaintext and are not read by current app flows.",
       "legal_basis": "consent",
       "owner": "demeter",
       "version": "1.0"
@@ -232,7 +232,7 @@
       "platforms": ["electron"],
       "class": "user_content",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "user_export",
       "erasure": "erase_on_delete_all",
@@ -240,7 +240,7 @@
         "policy": "user_controlled",
         "max_days": 0
       },
-      "purpose": "Normalized saved calculation results in the desktop database; PII-bearing because each row carries a free-text name plus resultJson (the whole CalculationResult) and snapshotJson (every calculator input).",
+      "purpose": "Retained legacy normalized history table; PII-bearing because rows include names, result_json calculation results, and snapshot_json calculator inputs. Any historical rows are plaintext and are not read by current app flows.",
       "legal_basis": "consent",
       "owner": "demeter",
       "version": "1.0"
@@ -458,7 +458,7 @@
       "platforms": ["electron"],
       "class": "user_content",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "diagnostic_only",
       "erasure": "erase_on_delete_all",
@@ -466,7 +466,7 @@
         "policy": "user_controlled",
         "max_days": 0
       },
-      "purpose": "Key-value mirror of renderer state in the desktop database; rows inherit the policy of the mirrored key; PII rows must be encrypted (ADR-001).",
+      "purpose": "Desktop key-value storage for local renderer state, including customer, quote, and history records under the declared local keys. Values are stored as readable JSON without additional encryption.",
       "legal_basis": "consent",
       "owner": "demeter",
       "version": "1.0"
@@ -515,7 +515,7 @@
       "platforms": ["electron"],
       "class": "cache",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
@@ -523,7 +523,7 @@
         "policy": "session_only",
         "max_days": 1
       },
-      "purpose": "Whole-database staging copy written by db:import (electron/main.ts .open3dcalc-import-<ts>.tmp in the database directory) so the swap can be validated before the live file is replaced. PII-bearing because the copy is the entire database. It exists only for the duration of the import and is renamed away on success; there is no TTL sweeper, so the SPEC-02 §3 store row 10 purge (tempStagingAdapter) is the only enforcement. GAP: written by a plain fs.copyFile, so this entry declares the REQUIRED encrypted at-rest policy that the code does not yet satisfy.",
+      "purpose": "Whole-database staging copy for Desktop import validation. PII-bearing because the copy is the entire database; any staged data is readable and is not encrypted. The user-facing database import route is currently disabled.",
       "legal_basis": "consent",
       "owner": "hermes",
       "version": "1.1"
@@ -534,7 +534,7 @@
       "platforms": ["electron"],
       "class": "diagnostic",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "diagnostic_only",
       "erasure": "erase_on_delete_all",
@@ -542,7 +542,7 @@
         "policy": "fixed",
         "max_days": 14
       },
-      "purpose": "Operator-requested diagnostic SQLite backups (ADR-003 §2.2), written to an operator-chosen path behind the diagnostic gate. Real retention is 14 days, matching DIAGNOSTIC_RETENTION_DAYS, and a <target>.meta.json sidecar carries it. GAP: the redact:false path (electron/diagnosticBackup.ts) is a straight unredacted, unencrypted fsp.copyFile of the whole database, so this entry declares the REQUIRED at-rest policy that the code does not yet satisfy.",
+      "purpose": "Operator-requested, unredacted diagnostic SQLite backups written to a user-chosen path behind the diagnostic gate. Backups may contain readable personal data and are not encrypted; retention is 14 days with a metadata sidecar.",
       "legal_basis": "consent",
       "owner": "hermes",
       "version": "1.0"
@@ -553,7 +553,7 @@
       "platforms": ["electron"],
       "class": "snapshot",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
@@ -561,7 +561,7 @@
         "policy": "fixed",
         "max_days": 7
       },
-      "purpose": "Pre-erasure safety snapshots (SPEC-02 §5): encrypted with TTL, destroyed after commit, inside erasure scope. Electron only — the desktop saga uses diskSnapshotStore under userData; the web/PWA webSnapshotStore() has no production caller.",
+      "purpose": "Temporary readable rollback snapshot used by the legacy erasure saga, with a seven-day TTL. Desktop only; the user-facing mixed-scope erasure action remains unavailable.",
       "legal_basis": "consent",
       "owner": "hermes",
       "version": "1.1"
@@ -591,7 +591,7 @@
       "platforms": ["web", "pwa"],
       "class": "snapshot",
       "pii": true,
-      "persistence": "encrypted_at_rest",
+      "persistence": "plaintext_allowed",
       "sync": "never",
       "export": "never",
       "erasure": "erase_on_delete_all",
@@ -599,7 +599,7 @@
         "policy": "fixed",
         "max_days": 7
       },
-      "purpose": "Encrypted rollback snapshot of the current erasure saga (AES-256-GCM via the ADR-001 capability); the value is ciphertext only, and it is destroyed on commit/rollback or after the 7-day TTL. DECLARED AND WRITABLE: webSnapshotStore().write() writes this key through guardedStorage (erasureSaga/webStores.ts), so the S1 gate must keep recognizing it — an unregistered key makes the production write a silent no-op. NOT-YET-WIRED: webSnapshotStore() currently has no production caller, so no saga invokes it yet. The electron saga uses the separate erasure_snapshots entry (diskSnapshotStore under userData).",
+      "purpose": "Temporary readable rollback snapshot with a seven-day TTL. The Web/PWA key is writable, but its adapter is not yet wired into a production erasure saga; the user-facing mixed-scope erasure action remains unavailable.",
       "legal_basis": "contract_performance",
       "owner": "hermes",
       "version": "1.1"

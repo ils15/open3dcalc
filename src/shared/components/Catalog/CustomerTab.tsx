@@ -4,7 +4,7 @@ import { useCustomerStore } from "@/shared/stores/customerStore";
 import {
   PII_STORE_KEY,
   beginPiiSurfaceWrite,
-} from "@/shared/lib/crypto/piiStoreHydration";
+} from "@/shared/lib/localPiiPersistence";
 import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefusalNotice";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import {
@@ -294,8 +294,8 @@ export function CustomerTab() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // A locked/unavailable vault refuses the import at persistence; block it
-    // here so the import reports a refusal instead of appearing to succeed.
+    // Block import until Desktop storage has hydrated, so the user does not
+    // see a success that would be lost on reload.
     if (beginPiiSurfaceWrite(PII_STORE_KEY.customers) !== null) {
       e.target.value = "";
       return;
@@ -323,7 +323,7 @@ export function CustomerTab() {
   };
 
   const handleSave = (data: CustomerFormData) => {
-    // H-4: a locked/unavailable vault must not accept a new entry into memory.
+    // H-4: unhydrated Desktop storage must not accept a new entry into memory.
     // The write would be refused by the gate and the entry would vanish on
     // reload. Block it here, keep the form open, and let the notice explain
     // that nothing was saved — instead of pretending success.

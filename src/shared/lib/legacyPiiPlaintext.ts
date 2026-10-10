@@ -1,31 +1,24 @@
 /**
  * Legacy plaintext PII detection (ADR-002 §2.2 quarantine).
  *
- * After the three browser PII stores migrate onto the encrypted vault, any
- * plaintext still sitting under their old `localStorage` keys is legacy residue:
- * data written before the vault existed. ADR-002 §2.2 requires that residue to
- * be detected and surfaced to the user, never silently migrated, never silently
- * deleted, and never implicitly accepted.
+ * Read-only detection of customer, quote, and history data left under legacy
+ * browser storage keys. The current stores use readable local persistence; this
+ * helper remains only for the privacy disclosure and does not migrate or delete.
  *
  * This module is ONLY the detection half. It answers "is there legacy plaintext
  * PII, and how much?", so the migration/keep-read-only/export/delete choice can
  * render without doing any discovery of its own. It deliberately does not
- * implement the choice flow or a migration state machine — those are a later
- * wave with their own encrypted preimage and consent surface.
+ * implement a migration state machine or mutate any stored content.
  *
  * ## Why reading plaintext is allowed here
  *
- * The fail-closed rule ("PII is neither read nor written when the vault is
- * unavailable") governs the VAULT path. Legacy detection is the explicit
- * exception: its whole purpose is to let a user see what residue exists before
- * choosing what to do with it, so it must be able to read the plaintext residue
- * even while the vault is locked. It reads COUNTS only — never record contents —
- * and returns nothing that can be rendered as PII.
+ * The disclosure reads counts only — never record contents — and returns
+ * nothing that can be rendered as PII.
  */
 
 import { guardedStorage } from "./manifestStorage.js";
 
-/** The three plaintext `localStorage` keys the vault replaces. */
+/** The three localStorage keys covered by this historical disclosure. */
 export const LEGACY_PII_PLAINTEXT_KEYS = [
   "open3dcalc_customers_v1",
   "open3dcalc_quotes_v1",

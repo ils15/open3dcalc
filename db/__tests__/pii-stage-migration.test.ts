@@ -1,22 +1,20 @@
 /**
  * @vitest-environment node
  *
- * Migration 0004 — the `pii_stage` preimage table (Beta5 Wave 1, data layer).
+ * Migration 0004 — schema compatibility for the retired `pii_stage` table.
  *
- * The plan needed somewhere to park a SEALED preimage between reading a
- * plaintext source and writing its encrypted replacement. Staging it as a row
- * in the `storage` table is provably impossible, not merely racy:
+ * The table was added for a retired data re-homing design. Keep its migration
+ * so existing profiles remain compatible and historical rows are preserved.
+ * The current app does not interpret, read, or write those rows.
  *
  *  - `persistence-bridge.deleteStaleKeys()` runs every `AUTO_SAVE_INTERVAL_MS`
  *    (10 s) and DELETES every `storage` key that is absent from renderer
  *    `localStorage`, so a stage row stored there is gone within one poll;
- *  - `loadFromDatabase()` materializes every manifest-allowed `storage` row
- *    into renderer `localStorage` as PLAINTEXT — the exact mirror this
- *    remediation removes, recreated on the next launch.
+ *  - `loadFromDatabase()` materializes manifest-allowed `storage` rows into
+ *    renderer `localStorage`.
  *
- * Hence a dedicated table: it is invisible to `db:list-keys` and to that
- * sweep, so a staged preimage lives exactly as long as its own state machine
- * says it should.
+ * The dedicated table is outside the generic storage route and remains in the
+ * erasure inventory for explicit supported deletion.
  *
  * The runner (`db/database.ts runMigrations`, :160-206) executes statements ONE
  * AT A TIME with no transaction and tolerates only two error shapes
@@ -110,8 +108,8 @@ describe("migration 0004 — file shape", () => {
     expect(statements[0]).toMatch(
       /^CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+`?pii_stage`?\s*\(/i,
     );
-    // Nothing that mutates rows or ALTERs: a re-run over a staged preimage
-    // must be a no-op, never a rewrite.
+    // Nothing that mutates rows or ALTERs: re-running a historical migration
+    // must preserve existing profile data.
     expect(statements[0]).not.toMatch(/\b(ALTER|INSERT|UPDATE|DELETE|DROP)\b/i);
   });
 
@@ -134,14 +132,11 @@ describe("migration 0004 — file shape", () => {
         pk: number;
       }>;
       expect(info.map((column) => column.name)).toEqual([...STAGE_COLUMNS]);
-      // Every column is mandatory: a stage row with an unknown epoch, version
-      // or state cannot be interpreted by a resuming reader.
+      // Preserve the historical column contract for existing database files.
       for (const column of info) {
         expect(column.notnull, `${column.name} must be NOT NULL`).toBe(1);
       }
-      // The identity of a staged preimage: the transaction, and which attempt
-      // of it this row is. A retry writes the next generation rather than
-      // overwriting a preimage that may already have been applied.
+      // The historical identity is transaction + generation.
       const keyed = info.filter((column) => column.pk > 0);
       expect(keyed.map((column) => [column.name, column.pk])).toEqual([
         ["transaction_id", 1],
@@ -152,12 +147,12 @@ describe("migration 0004 — file shape", () => {
     }
   });
 
-  it("re-running the runner over a staged row leaves the row byte-identical", () => {
+  it("re-running the runner preserves an existing legacy row byte-identically", () => {
     const file = freshFile("idempotent.db");
     const sqlite = open(file);
     try {
       runMigrations(sqlite, MIGRATIONS_DIR);
-      const blob = `enc1:envelope:${Buffer.from(MARKER, "utf8").toString("base64")}`;
+      const blob = `legacy:${Buffer.from(MARKER, "utf8").toString("base64")}`;
       sqlite
         .prepare(
           "INSERT INTO pii_stage (transaction_id, generation, privacy_epoch, schema_version, envelope_version, state, blob, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -167,7 +162,7 @@ describe("migration 0004 — file shape", () => {
         .prepare("SELECT * FROM pii_stage")
         .all() as unknown[];
 
-      // The db:import / restart case: the same file is migrated again.
+      // The db:import / restart case: the same profile is opened again.
       runMigrations(sqlite, MIGRATIONS_DIR);
 
       expect(sqlite.prepare("SELECT * FROM pii_stage").all()).toEqual(before);
@@ -221,9 +216,8 @@ describe("migration 0004 — the pre-remediation database is forward-migrated", 
 
 describe("requiredTables() — the db:import consequence of a new table", () => {
   /**
-   * DECISION: `pii_stage` is EXEMPT from `requiredTables()`, so a database
-   * created before this remediation still validates and can still be restored
-   * through the app's own recovery path.
+   * DECISION: `pii_stage` is EXEMPT from `requiredTables()`, so older valid
+   * profiles remain importable and the migration runner can restore the schema.
    *
    * The reasoning, in order of weight:
    *
@@ -231,14 +225,12 @@ describe("requiredTables() — the db:import consequence of a new table", () => 
    *     swaps it in, and then calls `initDatabase()` — which re-runs the
    *     migration runner against the swapped file. Requiring the table in the
    *     candidate adds no safety; the runner creates it either way.
-   *  2. Rejecting it removes recoverability exactly where it is needed. The
-   *     files that lack `pii_stage` are the pre-remediation backups of the very
-   *     users this remediation is protecting, and `db:import` is how they get
-   *     their data back. Refusing them is a data-loss-shaped regression.
+   *  2. Rejecting it would prevent importing older valid profiles. The
+   *     regular migration runner recreates the schema without modifying their
+   *     remaining user data.
    *  3. The check is a legitimacy test on the user's DATA schema, not a
-   *     "is this the newest migration" test. `pii_stage` holds no user data,
-   *     mirrors nothing, and is created by its own migration, so a file missing
-   *     it is still unambiguously one of ours.
+   *     "is this the newest migration" test. A missing historical table does
+   *     not make a profile invalid.
    *
    * The cost of the exemption is bounded and pinned below: a candidate that is
    * missing any REAL table is still refused, and the exemption covers exactly
@@ -304,10 +296,8 @@ describe("requiredTables() — the db:import consequence of a new table", () => 
   });
 
   it("accepts a 0000-0004 database that has no legacy_residue yet", () => {
-    // The same trap one migration over: `legacy_residue` (0005) is created
-    // EMPTY and only receives a row if §3.6 recovery runs, which cannot have
-    // happened in a file that predates 0005. Requiring it would refuse exactly
-    // the pre-remediation backups this programme exists to restore.
+    // The same compatibility rule one migration over: an older valid profile
+    // need not already contain `legacy_residue` (0005).
     const preDir = migrationsSubset([
       "0000_initial.sql",
       "0001_add_theme.sql",

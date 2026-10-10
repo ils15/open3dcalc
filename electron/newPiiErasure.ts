@@ -46,8 +46,8 @@ import {
   type NewPiiErasureClaim,
   type NewPiiErasureJournal,
   type NewPiiErasureTarget,
-} from "../src/shared/lib/crypto/newPiiErasureJournal.js";
-import type { NewPiiStorageKey } from "../src/shared/lib/crypto/newPiiNamespace.js";
+} from "../src/shared/lib/localData/newPiiErasureJournal.js";
+import type { NewPiiStorageKey } from "../src/shared/lib/localData/newPiiNamespace.js";
 import type { MinimalStorageDb } from "./storageRows.js";
 import {
   deleteNewPiiRow,
@@ -334,7 +334,7 @@ function writeSnapshotOnce(
   const payload: SnapshotPayload = {
     request_id: journal.request_id,
     taken_at: new Date().toISOString(),
-    // These rows are plaintext PII envelopes; the rollback snapshot is sensitive.
+    // These rows contain readable customer data; the rollback snapshot is sensitive.
     rows: snapshotNewPiiRows(db),
   };
   fs.mkdirSync(dir, { recursive: true });

@@ -22,7 +22,7 @@
  * The sweep whose premise is "these rows are not in localStorage" is INVALID
  * when localStorage was never populated. It is therefore gated on BOTH a
  * complete hydration and an available manifest, and deletion refuses outright
- * at the IPC boundary (`db:delete`, see `persistGate.deleteGated`).
+ * at the IPC boundary (`db:delete`, see the closed database IPC allowlist).
  *
  * The `electronAPI.db` seam is backed by REAL better-sqlite3 over a real
  * temporary file migrated by the app's own runner, and every statement it runs
@@ -297,7 +297,7 @@ describe("persistence bridge — a healthy manifest still sweeps", () => {
     // The sweep re-reads `listKeys()` every cycle, so a row can appear in
     // `storage` that hydration never enumerated: a second writer (another app
     // instance, a restored or copied profile) or a future store that writes to
-    // the vault without a localStorage mirror. Here the key IS manifest-declared
+    // the dedicated local-data route. Here the key IS manifest-declared
     // (`open3dcalc_quotes_v1`), so the old sweep — which deleted any row with no
     // record — destroyed it without ever having classified it. The fix fails
     // closed on a missing record for a declared key, exactly as it does for a

@@ -2,7 +2,7 @@ import { useId } from "react";
 import { useTranslation } from "react-i18next";
 
 import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefusalNotice";
-import { PII_STORE_KEY } from "@/shared/lib/crypto/piiStoreHydration";
+import { PII_STORE_KEY } from "@/shared/lib/localPiiPersistence";
 import { ExportActionsCard } from "./ExportActionsCard";
 import { HistoryCard } from "./HistoryCard";
 import { InventoryDeductionCard } from "./InventoryDeductionCard";
@@ -41,7 +41,7 @@ export function ResultsActions({
       >
         {/*
          * H-4: the calculator is the main place a history entry is created, so
-         * its refusal (a locked/incapable vault) must be visible here, next to
+         * its refusal (unavailable Desktop storage) must be visible here, next to
          * the "add to history" control. Scoped to the history store so the PII
          * tabs' own notices (customers/quotes) are never duplicated here.
          */}

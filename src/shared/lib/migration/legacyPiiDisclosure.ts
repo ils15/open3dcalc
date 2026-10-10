@@ -8,9 +8,7 @@
  *  (a) whether legacy plaintext PII still sits under the three replaced
  *      `localStorage` keys — key NAMES and record counts only, from
  *      `detectLegacyPlaintextPii`;
- *  (b) the vault access state — `hydrated | locked | unavailable` — from the
- *      gate's own `getPiiStoreAccessState`;
- *  (c) the re-home / migration-marker state — whether the residue was already
+ *  (b) the re-home / migration-marker state — whether the residue was already
  *      re-homed, is still pending, or belongs to an interrupted migration.
  *
  * ## Why this is a separate module, not component logic
@@ -49,10 +47,6 @@ import {
   detectLegacyPlaintextPii,
   type LegacyPiiPlaintextKeyReport,
 } from "@/shared/lib/legacyPiiPlaintext";
-import {
-  getPiiStoreAccessState,
-  type PiiVaultAccessState,
-} from "@/shared/lib/crypto/piiStoreHydration";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import {
   MIGRATION_MARKER_KEY,
@@ -91,12 +85,9 @@ export interface HistoryMarkerDisclosure {
   /**
    * True when the LEGACY PII-bearing marker key currently holds ANY value.
    *
-   * That value is PLAINTEXT residue: an old build wrote the raw pre-migration
-   * history array there, and copy-without-delete means the current code never
-   * erases it. The declared `persistence: encrypted_at_rest` is therefore the
-   * policy for NEW writes (which never happen) rather than a description of the
-   * bytes an old install left behind — this flag is what the panel uses to say
-   * so explicitly. Value-free: only presence, never content.
+   * That value is plaintext residue: an old build wrote the raw pre-migration
+   * history array there, and copy-without-delete means current code never
+   * erases it. Value-free: only presence, never content.
    */
   legacyPlaintextResidue: boolean;
 }
@@ -108,7 +99,6 @@ export interface LegacyPiiDisclosure {
     /** Per-key NAME + count. Same value-free shape as the detection half. */
     keys: LegacyPiiPlaintextKeyReport[];
   };
-  vault: PiiVaultAccessState;
   rehome: RehomeDisclosure;
   historyMarker: HistoryMarkerDisclosure;
   /**
@@ -126,8 +116,6 @@ export interface LegacyPiiDisclosureOptions {
    * facade, mirroring `detectLegacyPlaintextPii`.
    */
   read?: (key: string) => string | null;
-  /** Inject the vault state (tests); defaults to the gate's own answer. */
-  vault?: PiiVaultAccessState;
 }
 
 /**
@@ -195,7 +183,6 @@ export function getLegacyPiiDisclosure(
       total: report.total,
       keys: report.keys,
     },
-    vault: options.vault ?? getPiiStoreAccessState(),
     rehome: {
       state: rehomeState(report.present, completed, historyState),
       completed,

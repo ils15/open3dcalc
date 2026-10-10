@@ -1,18 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  gatedPiiPersistStorage,
-  registerPiiPersistStore,
-} from "@/shared/lib/crypto/piiStoreHydration";
-import { isBetaChannel } from "@/shared/config/betaChannel";
-import { betaPlaintextPersistStorage } from "@/shared/lib/betaPersistence";
+import { registerPiiPersistStore } from "@/shared/lib/localPiiPersistence";
 import {
   isElectronRuntime,
   stablePiiPersistStorage,
 } from "@/shared/lib/manifestStorage";
 import type { HistoryEntry } from "@/shared/types";
 
-const useVaultPersistence = !isBetaChannel && isElectronRuntime();
+const deferDesktopHydration = isElectronRuntime();
 
 interface HistoryStore {
   entries: HistoryEntry[];
@@ -203,22 +198,14 @@ export const useHistoryStore = create<HistoryStore>()(
       },
     }),
     {
-      name: isBetaChannel
-        ? "open3dcalc_beta_test_history_v1"
-        : "open3dcalc_history_v2",
-      version: isBetaChannel ? 1 : 2,
-      storage: isBetaChannel
-        ? betaPlaintextPersistStorage<HistoryStore>(
-            "open3dcalc_beta_test_history_v1",
-          )
-        : useVaultPersistence
-          ? gatedPiiPersistStorage<HistoryStore>("open3dcalc_history_v2")
-          : stablePiiPersistStorage<HistoryStore>("open3dcalc_history_v2"),
-      skipHydration: useVaultPersistence,
+      name: "open3dcalc_history_v2",
+      version: 2,
+      storage: stablePiiPersistStorage<HistoryStore>("open3dcalc_history_v2"),
+      skipHydration: deferDesktopHydration,
     },
   ),
 );
 
-if (useVaultPersistence) {
+if (deferDesktopHydration) {
   registerPiiPersistStore("open3dcalc_history_v2", useHistoryStore.persist);
 }

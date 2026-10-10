@@ -62,7 +62,6 @@ const SEEDED = [EARLIER_KEY, QUARANTINED_KEY, ALSO_REFUSED_KEY, ...LATER_KEYS];
 
 function denied(reason: string): Error {
   return Object.assign(new Error(`write refused: ${reason}`), {
-    name: "CryptoDeniedError",
     reason,
   });
 }
@@ -204,7 +203,7 @@ describe("persistence bridge — a refused key fails the pass, not the loop", ()
     );
     for (const { error } of aggregate.failures) {
       expect(error).toBeInstanceOf(Error);
-      expect((error as Error).name).toBe("CryptoDeniedError");
+      expect((error as Error).name).toBe("Error");
       expect((error as { reason?: string }).reason).toBe(REFUSED);
     }
     expect(aggregate.message).toContain(QUARANTINED_KEY);

@@ -18,8 +18,8 @@ initTheme();
 // hydrate with durable data instead of stale/empty localStorage.
 //
 // BOTH outcomes below are terminal and neither is a blank window. The promise
-// used to carry only a `.then`, so a rejection — a CryptoDeniedError on a
-// quarantined PII key (ADR-002 §2.2.1), an unreadable manifest, a SQLite error
+// used to carry only a `.then`, so a rejection — a local storage refusal,
+// an unreadable manifest, or a SQLite error
 // on the first listKeys — left an empty #root with no message and no focusable
 // element, and the app looked broken rather than refused. Failing closed is
 // still the rule: a renderer that hydrated from stale localStorage would look
@@ -40,9 +40,9 @@ persistenceReady
             a bridge that works at startup and fails later still has to be able
             to say so.
 
-            `PiiUnavailableBanner` is the visible half of ADR-001 §3.6 per-key
-            isolation: the app now STARTS on a profile whose legacy blobs it
-            cannot read, quarantines those keys and hydrates the rest, and this
+            `PiiUnavailableBanner` is the visible half of per-key isolation:
+            the app starts on a profile where one stored value may be unreadable,
+            leaves that key untouched and hydrates the rest, and this
             is what stops that from being indistinguishable from data loss. It
             is mounted unconditionally because the event fires DURING
             `initPersistenceBridge()`, i.e. before this tree exists — the

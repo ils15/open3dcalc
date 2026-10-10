@@ -95,7 +95,6 @@ import { useAppInit } from "../useAppInit";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
-import * as piiStoreHydration from "@/shared/lib/crypto/piiStoreHydration";
 
 describe("useAppInit tutorial auto-start", () => {
   beforeEach(() => {
@@ -312,14 +311,8 @@ describe("useAppInit tutorial auto-start", () => {
     storageValues.set("open3dcalc_history_v2", "[]");
     storageValues.set("open3dcalc_products", "[]");
     storageGetItem.mockClear();
-    const readVaultRecord = vi.spyOn(
-      piiStoreHydration,
-      "readPiiPersistedRecord",
-    );
-
     renderHook(() => useAppInit(vi.fn()));
 
-    expect(readVaultRecord).not.toHaveBeenCalled();
     const retiredKeys = new Set([
       "open3dcalc_history_v2",
       "open3dcalc_products",

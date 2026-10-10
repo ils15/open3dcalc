@@ -6,13 +6,13 @@
  * sync / export / erasure / retention policies.
  *
  * Cross-cutting constraints enforced here (TEST-MATRIX §1):
- *  - plaintext PII is limited to the three policy 1.9 Stable keys and their
- *    declared localStorage destinations (1.2)
+ *  - the three shared customer/quote/history keys keep their exact declared
+ *    logical and per-platform destinations (1.2)
  *  - legal_basis not_personal_data is valid ONLY for pii:false keys (1.3)
  *  - onboarding_flag: pii:false, sync:never, export:never (1.4)
  *  - consent_record: pii:false, sync:never, export:never,
  *    erasure:erase_on_delete_all (1.5)
- *  - snapshot: never plaintext, never synced/exported (1.6)
+ *  - snapshot: never synced/exported (1.6); at-rest mode is disclosed honestly
  *  - ephemeral_key: memory_only, never synced/exported (1.7)
  *  - diagnostic: never user_export (1.8)
  *  - unknown enum values, missing/extra fields, empty platforms (1.9–1.10)
@@ -50,7 +50,6 @@ export type Platform = (typeof PLATFORMS)[number];
 export const PERSISTENCE_MODES = [
   "none",
   "memory_only",
-  "encrypted_at_rest",
   "plaintext_allowed",
 ] as const;
 export type PersistenceMode = (typeof PERSISTENCE_MODES)[number];
@@ -366,41 +365,10 @@ export function validateManifestEntry(
 
   const typed = record as unknown as ManifestEntry;
 
-  // TEST-MATRIX 1.2: policy 1.9 permits plaintext PII only for the three
-  // declared Stable localStorage keys, across their exact Electron/Web/PWA
-  // destination set. Desktop domain-table destinations remain encrypted.
+  // TEST-MATRIX 1.2: pin the three shared customer/quote/history logical keys
+  // to their declared Electron/Web/PWA destinations. Other user-data surfaces
+  // are also explicitly declared in the manifest and may be readable locally.
   const approvedPlaintextPiiKey = PLAINTEXT_PII_KEYS.has(typed.key);
-  if (typed.persistence === "plaintext_allowed" && typed.pii) {
-    if (!approvedPlaintextPiiKey) {
-      throw fieldError(
-        label,
-        "plaintext PII is limited to the three policy 1.9 Stable keys",
-      );
-    }
-    if (
-      typed.surface !== "localStorage" ||
-      typed.platforms.length !== PLAINTEXT_PII_PLATFORMS.length ||
-      !PLAINTEXT_PII_PLATFORMS.every(
-        (platform, index) => typed.platforms[index] === platform,
-      ) ||
-      typed.class !== "user_content" ||
-      typed.legal_basis !== "contract_performance"
-    ) {
-      throw fieldError(
-        label,
-        "policy 1.9 plaintext PII requires user_content on localStorage for electron/web/pwa with provisional contract_performance",
-      );
-    }
-    if (
-      JSON.stringify(typed.platform_destinations) !==
-      JSON.stringify(PLAINTEXT_PII_DESTINATIONS[typed.key])
-    ) {
-      throw fieldError(
-        label,
-        "policy 1.9 plaintext PII requires the exact declared per-platform destinations",
-      );
-    }
-  }
   if (
     approvedPlaintextPiiKey &&
     (typed.pii !== true ||
@@ -417,7 +385,7 @@ export function validateManifestEntry(
   ) {
     throw fieldError(
       label,
-      "policy 1.9 Stable plaintext PII keys require the exact approved declaration and per-platform destinations",
+      "shared customer/quote/history keys require their exact declared per-platform destinations",
     );
   }
   // TEST-MATRIX 1.3.
@@ -455,9 +423,6 @@ export function validateManifestEntry(
   }
   // TEST-MATRIX 1.6.
   if (typed.class === "snapshot") {
-    if (typed.persistence === "plaintext_allowed") {
-      throw fieldError(label, "snapshot must never be plaintext_allowed");
-    }
     if (typed.sync !== "never")
       throw fieldError(label, "snapshot must have sync:never");
     if (typed.export !== "never")

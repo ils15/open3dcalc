@@ -182,7 +182,8 @@ const measured = measuredDebt();
 
 /**
  * THE FLOOR — audited after the PR #280 Studio-shell migration, 2026-10-09,
- * 55 files / 662 occurrences.
+ * 54 files / 657 occurrences. PrivacyOnboarding moved its Beta UI into the
+ * token-only BetaVaultOnboarding component.
  *
  * Regenerate after an intentional migration:
  *   node -e '...' (see the PR description) or re-derive with the same regex.
@@ -241,7 +242,6 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/ui/ConfirmDialog.tsx": 1,
   "src/shared/components/ui/PrivacyBanner.tsx": 1,
   "src/shared/components/ui/QuickStartBanner.tsx": 1,
-  "src/shared/components/Privacy/PrivacyOnboarding.tsx": 1,
   "src/shared/lib/dataSync.test.ts": 1,
 };
 
@@ -305,8 +305,8 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
   it("reports the audited inventory so the header can be checked by eye", () => {
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
-    expect(files).toBe(55);
-    expect(occurrences).toBe(658);
+    expect(files).toBe(54);
+    expect(occurrences).toBe(657);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

@@ -5,7 +5,7 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import {
   PII_STORE_KEY,
   beginPiiSurfaceWrite,
-} from "@/shared/lib/crypto/piiStoreHydration";
+} from "@/shared/lib/localPiiPersistence";
 import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefusalNotice";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { ComparisonModal } from "@/shared/components/ui/ComparisonModal";
@@ -281,8 +281,8 @@ export function HistoryTab({ onLoadToCalculator }: HistoryTabProps) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // H-4: a locked/unavailable vault refuses the import at persistence; block
-    // it here so the import reports a refusal instead of appearing to succeed.
+    // Block the import until Desktop storage is hydrated, so success is not
+    // reported for data that would be lost on reload.
     if (beginPiiSurfaceWrite(PII_STORE_KEY.history) !== null) {
       e.target.value = "";
       return;

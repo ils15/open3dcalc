@@ -28,8 +28,8 @@ import {
   newPiiKeyFor,
   saveNewPii,
 } from "../newPiiStorage";
-import { setWithdrawalPending } from "@/shared/lib/crypto/piiStoreCapability";
-import { rehydratePiiStores } from "@/shared/lib/crypto/piiStoreHydration";
+import { setWithdrawalPending } from "@/shared/lib/localDataLifecycle";
+import { rehydratePiiStores } from "@/shared/lib/localPiiPersistence";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
 import { useHistoryStore } from "@/shared/stores/historyStore";

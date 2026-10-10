@@ -8,11 +8,9 @@
  * rows and reaches the renderer through the READ-ONLY `privacy:legacy-rows` IPC
  * (see `electron/legacyRows.ts`).
  *
- * This module is the thin adapter between that IPC contract and the re-home's
- * `read` function. It is deliberately NOT where PII is written: it returns the
- * values in memory so the caller can copy them into the encrypted vault. The
- * values are never persisted here — the persistence bridge refuses these keys,
- * and the vault is the only destination.
+ * This module is the thin adapter between that IPC contract and the legacy
+ * disclosure view. It only reports readable legacy rows; it does not write
+ * data or convert unsupported historical formats.
  *
  * Source state is explicit: a browser has no desktop source, while an Electron
  * bridge failure is unavailable (not proof that the legacy rows are absent).
@@ -68,7 +66,8 @@ function isLegacyRowsReport(value: unknown): value is LegacyPiiRowsReport {
       if (row.status === "legacy_plaintext")
         return typeof row.value === "string";
       return (
-        (row.status === "already_encrypted" || row.status === "absent") &&
+        (row.status === "unsupported_legacy_format" ||
+          row.status === "absent") &&
         row.value === null
       );
     }) && seen.size === EXPECTED_KEYS.size
@@ -76,11 +75,10 @@ function isLegacyRowsReport(value: unknown): value is LegacyPiiRowsReport {
 }
 
 /**
- * Map a `privacy:legacy-rows` report to the value map the re-home reads.
+ * Map a `privacy:legacy-rows` report to the readable legacy value map.
  *
  * Only rows that carry a value (`legacy_plaintext`) are kept; an
- * `already_encrypted` or `absent` row contributes nothing, so the merge can
- * never treat a ciphertext as residue.
+ * unsupported legacy format or absent row contributes nothing.
  */
 export function toLegacyPiiRowMap(
   report: LegacyPiiRowsReport,

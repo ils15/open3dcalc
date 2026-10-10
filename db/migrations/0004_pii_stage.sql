@@ -1,35 +1,15 @@
--- Open3DCalc — Migration 0004: PII stage table (Beta5 Wave 1, data layer)
+-- Open3DCalc — Migration 0004: historical PII staging table
 --
--- Where a SEALED preimage is parked between reading a plaintext source and
--- writing its encrypted replacement. Staging it as a row in `storage` is
--- provably impossible, not merely racy:
---
---   * `persistence-bridge.deleteStaleKeys()` runs every AUTO_SAVE_INTERVAL_MS
---     (10 s) and DELETES every `storage` key absent from renderer
---     localStorage — a stage row stored there is gone within one poll.
---   * `loadFromDatabase()` materializes every manifest-allowed `storage` row
---     into renderer localStorage as PLAINTEXT, which is the exact mirror this
---     remediation removes, recreated on the next launch.
---
--- A separate table is invisible to `db:list-keys` and to that sweep, so a
--- staged preimage survives exactly as long as its own state machine says.
---
--- The blob is an ADR-001 sealed envelope ("enc1:…"), never plaintext: this
--- table holds the ENCRYPTED preimage, which is why it is treated as a PII
--- table by the erasure purge/rescan, the §5 snapshot payload and the
--- ADR-003 §2.2.2 diagnostic-backup redaction (see electron/piiDomainTables.ts
--- → PII_ERASURE_TABLES).
+-- This table belonged to a retired data re-homing design. The migration stays
+-- in place so existing SQLite profiles retain their schema and old rows are
+-- not dropped by an upgrade. Current code does not create, read, or interpret
+-- staged values. The erasure inventory still includes the table so an explicit
+-- supported deletion can cover any rows left by an older app version.
 --
 -- Columns: transaction_id + generation identify WHICH preimage of WHICH
--- attempt (a retry writes the next generation instead of overwriting a row
--- that may already have been applied); privacy_epoch / schema_version /
--- envelope_version are the AAD components the preimage is bound to, kept
--- beside the ciphertext so a resuming reader can refuse a row sealed under a
--- policy this build no longer speaks; state is `staged` (destination not yet
--- written) or `applied` (destination written and verified, stage row not yet
--- retired). There is deliberately no CHECK on `state`: the vocabulary is
--- pinned by the PiiStageState union in electron/piiStage.ts, and a CHECK could
--- not be widened later without rebuilding the table.
+-- attempt; privacy_epoch, schema_version, envelope_version, state, and blob
+-- are retained as historical fields only. There is deliberately no CHECK on
+-- `state`, preserving compatibility with any values written by old versions.
 --
 -- ONE statement, IF NOT EXISTS: `runMigrations` (db/database.ts) executes each
 -- statement on its own with NO transaction and tolerates only

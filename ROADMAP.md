@@ -41,27 +41,30 @@ os cinco destinos vigentes de 7o.2, não uma decisão já implementada. As fatia
 aceites e dependências próprios; este registro não fecha gates de compatibilidade,
 privacidade ou publicação.
 
-**Diretriz da pessoa usuária de 10/10/2026 para o próximo destino V2:** suportar dados reais
-com proteção criptográfica local e caminho explícito de migração V1→V2. O perfil test-only
-descrito abaixo é o estado entregue na `beta.15`, não o objetivo do produto nem autorização
-para convidar uso real no código atual. A fatia S0 está consolidando ADR-001/002 e SPEC-01..04
-com os adendos de [ADR-004](docs/privacy/ADR-004-real-data-v2.md),
-[SPEC-01 V2 Candidate](docs/privacy/SPEC-01-v2-candidate.md) e
-[SPEC-05](docs/privacy/SPEC-05-v1-to-v2-migration.md); contratos/documentação não fecham
-gates de runtime. Web Stable, Web Beta/PWA e
-Desktop só recebem suporte a dados reais após persistência criptografada, migração, backup,
-exclusão e recuperação passarem seus gates. O plano detalha a sequência; nenhuma dessas
-capacidades é declarada entregue pelo registro de decisão.
+**Diretriz atual da pessoa usuária (10/10/2026):** o produto deve aceitar dados reais em
+armazenamento local legível, sem criptografia, senhas ou chaves do aplicativo. Stable e Beta
+compartilham os registros locais; importação/exportação é JSON legível com checksum apenas para
+integridade. A migração V1→V2 deve ser explícita, visível, validada e não destrutiva. Quem tiver
+acesso ao perfil local ou ao arquivo exportado poderá ler os dados; a interface precisa dizer
+isso claramente. Os dados não são enviados ao servidor pelo fluxo de persistência local.
 
-## Approved Beta test-only strip-down (merged; Beta web published)
+Essa decisão substitui a proposta de armazenamento criptografado registrada em ADR-004/SPEC-01
+V2 Candidate/SPEC-05. Esses documentos foram atualizados para refletir a decisão atual e não
+autorizam reintroduzir criptografia.
+Suporte/publicação ainda dependem de validar migração, exportação/importação, exclusão e
+disclosure em Web/PWA e Desktop.
 
-**Registro histórico:** esta seção descreve o comportamento aprovado para o build Beta `v2.0.0-beta.15`. Em 10/10/2026 a pessoa usuária definiu que o próximo destino V2 precisa aceitar dados reais com armazenamento local criptografado e migrar dados V1. Portanto, as restrições abaixo continuam verdadeiras para a `beta.15`, mas estão supersedidas como objetivo da próxima V2; não reproduzi-las como aceitação final. A alteração do canal requer revisar suas políticas, manifestos e release gates antes de publicar.
+## Registro histórico: Beta test-only (beta.15)
+
+O bloco abaixo descreve o comportamento do build Beta `v2.0.0-beta.15` publicado antes da
+mudança atual. Ele é evidência histórica, não o objetivo do próximo build. A nova política local
+legível só pode ser anunciada após os gates de migração, portabilidade, exclusão e disclosure.
 
 The owner approved D1–D12 for a Web-Beta-only profile intended for synthetic test data. This
-entry records the approved Beta profile and distinguishes it from the Stable/Desktop policy.
+historical entry records the prior Beta profile and distinguishes it from the Stable/Desktop policy.
 The Stable manifest now
 uses policy 1.9, which supersedes the former policy 1.8 plaintext restriction for its exact
-three-key scope; prior receipt bytes and encrypted-entry versions remain unchanged. Desktop
+three-key scope; prior receipt bytes and data-entry schema versions remain unchanged. Desktop
 follows the Stable policy 1.9 contract and is not part of the Web-Beta profile.
 
 - The Beta app uses only the three exact `open3dcalc_beta_test_*_v1` localStorage keys in
@@ -148,7 +151,7 @@ Every phase and change must complete this checklist:
 - [ ] Apply data minimization by default.
 - [ ] Define and enforce retention and deletion rules.
 - [ ] Provide working export and deletion of user data.
-- [ ] Protect local data and backups with appropriate access controls and encryption where applicable.
+- [ ] Protect local data and backups with appropriate access controls; keep any decision about encryption explicit and user-approved.
 - [ ] Do not send PII to third parties without a documented purpose and legal basis.
 - [ ] Keep logs free of secrets and excessive PII.
 - [ ] Review suppliers, integrations, and their data-processing terms before adoption.

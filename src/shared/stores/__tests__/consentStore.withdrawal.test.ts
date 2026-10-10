@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useConsentStore } from "../consentStore";
 import {
   isWithdrawalPending,
-  resetPiiStoreGateForTests,
-} from "@/shared/lib/crypto/piiStoreCapability";
+  resetLocalDataLifecycleForTests,
+} from "@/shared/lib/localDataLifecycle";
 
 const INITIAL = {
   privacyBannerDismissed: false,
@@ -21,12 +21,12 @@ const INITIAL = {
 
 beforeEach(() => {
   localStorage.clear();
-  resetPiiStoreGateForTests();
+  resetLocalDataLifecycleForTests();
   useConsentStore.setState(INITIAL);
 });
 
 afterEach(() => {
-  resetPiiStoreGateForTests();
+  resetLocalDataLifecycleForTests();
   delete (window as unknown as { electronAPI?: unknown }).electronAPI;
 });
 

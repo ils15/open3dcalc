@@ -14,7 +14,6 @@ import {
 } from "@/shared/lib/erasureSaga/engine";
 import type {
   JournalAdapter,
-  SnapshotCapability,
   SnapshotStore,
 } from "@/shared/lib/erasureSaga/ports";
 import type { StoreAdapterLike } from "@/shared/lib/erasureSaga/types";
@@ -50,24 +49,19 @@ function makeJournal() {
   };
 }
 
-function makeSnapshots(opts: { keyLost?: boolean; ttlDays?: number } = {}) {
+function makeSnapshots(opts: { unavailable?: boolean; ttlDays?: number } = {}) {
   const blobs = new Map<string, string>();
   const metas = new Map<string, { created_at: string; ttl_days: number }>();
   let now = new Date("2026-09-12T12:00:00Z");
   const store: SnapshotStore = {
-    async write(sagaId, payload, capability) {
-      blobs.set(
-        sagaId,
-        Buffer.from(
-          await capability.encrypt(new TextEncoder().encode(payload)),
-        ).toString("base64"),
-      );
+    async write(sagaId, payload) {
+      blobs.set(sagaId, payload);
       metas.set(sagaId, {
         created_at: now.toISOString(),
         ttl_days: opts.ttlDays ?? 7,
       });
     },
-    async canRollback(sagaId, capability, at) {
+    async canRollback(sagaId, at) {
       const meta = metas.get(sagaId);
       if (!meta) return { possible: false, reason: "snapshot_missing" };
       if (
@@ -76,17 +70,15 @@ function makeSnapshots(opts: { keyLost?: boolean; ttlDays?: number } = {}) {
       ) {
         return { possible: false, reason: "snapshot_expired" };
       }
-      if (opts.keyLost || !(await capability.canDecrypt())) {
-        return { possible: false, reason: "key_unavailable" };
+      if (opts.unavailable) {
+        return { possible: false, reason: "snapshot_unavailable" };
       }
       return { possible: true };
     },
-    async restore(sagaId, capability) {
+    async restore(sagaId) {
       const raw = blobs.get(sagaId);
       if (!raw) throw new Error("snapshot missing");
-      return new TextDecoder().decode(
-        await capability.decrypt(new Uint8Array(Buffer.from(raw, "base64"))),
-      );
+      return raw;
     },
     destroy(sagaId) {
       blobs.delete(sagaId);
@@ -115,25 +107,8 @@ function makeSnapshots(opts: { keyLost?: boolean; ttlDays?: number } = {}) {
     blobs,
     metas,
     setNow: (d: Date) => (now = d),
-    setKeyLost: (v: boolean) => {
-      opts.keyLost = v;
-    },
-  };
-}
-
-function makeCapability(): SnapshotCapability {
-  return {
-    keySource: "passphrase",
-    canDecrypt: async () => true,
-    async encrypt(bytes) {
-      return new Uint8Array(
-        Buffer.from(`enc:${Buffer.from(bytes).toString("base64")}`),
-      );
-    },
-    async decrypt(cipher) {
-      const text = Buffer.from(cipher).toString("utf8");
-      if (!text.startsWith("enc:")) throw new Error("auth failed");
-      return new Uint8Array(Buffer.from(text.slice(4), "base64"));
+    setUnavailable: (v: boolean) => {
+      opts.unavailable = v;
     },
   };
 }
@@ -194,7 +169,6 @@ function makeHarness(
     snapshots: h.snapshots.store,
     policyVersion: "1.1",
     adapters: makeAdapters(h),
-    snapshotCapability: makeCapability(),
     collectSnapshotPayload: async () => PAYLOAD,
     restoreSnapshotPayload: async (payload: string) => {
       h.restored.push(payload);
@@ -250,7 +224,7 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     const { options, h } = makeHarness({
       failStore: { store: "sqlite_storage", times: MAX_STORE_ATTEMPTS },
     });
-    h.snapshots.setKeyLost(true);
+    h.snapshots.setUnavailable(true);
     // The capability wrote the snapshot, but the key disappeared afterwards:
     const { journal, receipt } = await startSaga({ ...options });
     // Rollback impossible is not proof of erasure; preserve retryable progress.
@@ -259,12 +233,12 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     expect(
       journal.stores.find((row) => row.store === "sqlite_storage")?.state,
     ).toBe("failed");
-    expect(journal.rollback_unavailable?.reason).toBe("key_unavailable");
+    expect(journal.rollback_unavailable?.reason).toBe("snapshot_unavailable");
     expect(h.snapshots.blobs.size).toBe(1);
 
     // The user can explicitly retry after fixing the transient condition.
     h.failStore = undefined;
-    h.snapshots.setKeyLost(false);
+    h.snapshots.setUnavailable(false);
     const retried = await resumeSaga(options);
     expect(retried.journal?.state).toBe("committed");
     expect(retried.receipt?.stores_completed).toEqual([
@@ -287,14 +261,14 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     const { options, h } = makeHarness({
       rescanLeftovers: ["synthetic leftover"],
     });
-    h.snapshots.setKeyLost(true);
+    h.snapshots.setUnavailable(true);
 
     const { journal, receipt } = await startSaga(options);
 
     expect(journal.state).toBe("deleting");
     expect(receipt).toBeUndefined();
     expect(journal.stores.every((row) => row.state === "failed")).toBe(true);
-    expect(journal.rollback_unavailable?.reason).toBe("key_unavailable");
+    expect(journal.rollback_unavailable?.reason).toBe("snapshot_unavailable");
   });
 
   it("6.9: snapshot past its TTL ⇒ rollback unavailable, saga stays incomplete", async () => {
@@ -340,7 +314,7 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     const { options, h } = makeHarness({
       failStore: { store: "sqlite_storage", times: MAX_STORE_ATTEMPTS },
     });
-    h.snapshots.setKeyLost(true);
+    h.snapshots.setUnavailable(true);
 
     const first = await startSaga(options);
     expect(first.journal.state).toBe("deleting");
@@ -366,7 +340,7 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     options.adapters = options.adapters.filter(
       (adapter) => adapter.store !== "sqlite_storage",
     );
-    h.snapshots.setKeyLost(true);
+    h.snapshots.setUnavailable(true);
 
     const { journal } = await startSaga(options);
     const row = journal.stores.find(
@@ -384,14 +358,14 @@ describe("erasure saga engine (SPEC-02 §2/§6)", () => {
     target.rescan = async () => {
       throw new Error("synthetic rescan failure");
     };
-    h.snapshots.setKeyLost(true);
+    h.snapshots.setUnavailable(true);
 
     const { journal } = await startSaga(options);
     expect(journal.state).toBe("deleting");
     expect(
       journal.stores.find((store) => store.store === "sqlite_storage")?.state,
     ).toBe("failed");
-    expect(journal.rollback_unavailable?.reason).toBe("key_unavailable");
+    expect(journal.rollback_unavailable?.reason).toBe("snapshot_unavailable");
   });
 
   it("refuses a journal that exists but cannot be loaded", async () => {
@@ -441,7 +415,7 @@ describe("erasure saga engine — failure-detail branches", () => {
     target.purge = async () => {
       throw "synthetic string failure";
     };
-    h.snapshots.setKeyLost(true);
+    h.snapshots.setUnavailable(true);
 
     const { journal } = await startSaga(options);
 
@@ -460,7 +434,7 @@ describe("erasure saga engine — failure-detail branches", () => {
     )!;
     target.rescan = (async () =>
       "not-an-array") as unknown as typeof target.rescan;
-    h.snapshots.setKeyLost(true);
+    h.snapshots.setUnavailable(true);
 
     const { journal } = await startSaga(options);
 
@@ -486,7 +460,7 @@ describe("erasure saga engine — failure-detail branches", () => {
   it("binds a journal to the full platform plan when no store plan is injected", async () => {
     const { options, h } = makeHarness();
     delete (options as { storePlan?: unknown }).storePlan;
-    h.snapshots.setKeyLost(true);
+    h.snapshots.setUnavailable(true);
 
     const { journal } = await startSaga(options);
 

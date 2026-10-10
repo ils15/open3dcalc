@@ -12,25 +12,16 @@
  * `No "getUnavailableClasses" export is defined on the … mock`.
  *
  * The dependency direction is the fix, and it is the only one: a leaf module
- * that imports nothing from the bridge, `persistGate` or `electron`, which BOTH
+ * that imports nothing from the bridge or `electron`, which BOTH
  * the bridge (writer) and the component (reader) depend on. Neither knows about
  * the other, so a mock of either is still complete. This module has no imports
  * at all, by design — see the header of each function for what that rules out.
  */
 
-/** One key the app could not open, with the MAIN process's own refusal code. */
+/** One key the app could not open, with a safe diagnostic code. */
 export interface UnavailableEntry {
   key: string;
-  /**
-   * A code from the main process, never prose: `legacy_unbound_encryption`,
-   * `legacy_envelope_v1_1`, `authentication_failed`, `no_capability`, `locked`.
-   * Shown verbatim because it is what support needs, and a translated paraphrase
-   * of a refusal code diagnoses nothing. §3.2 — a name and a code, never a
-   * value.
-   */
   reason: string;
-  /** True when ADR-001 §3.6 recovery can still be attempted. */
-  recoverable: boolean;
 }
 
 /**

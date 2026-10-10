@@ -30,10 +30,11 @@ describe("Calculator — effective-width results layout", () => {
     expect(calculatorSource).toContain("calculator-viewport-measure");
     expect(calculatorCssSource).toContain("@media (min-width: 90rem)");
     expect(calculatorCssSource).toContain(
-      "width: min(65.5rem, calc(100vw - 24.5rem))",
+      "width: min(144rem, calc(100vw - 24.5rem))",
     );
     expect(calculatorCssSource).toContain("margin-inline-start: -4.375rem");
-    expect(calculatorCssSource).toContain(
+    expect(calculatorCssSource).toContain("minmax(32rem, 3.8fr)");
+    expect(calculatorCssSource).not.toContain(
       "grid-template-columns: 8.125rem 33.8125rem 20.5625rem",
     );
   });

@@ -1,6 +1,6 @@
 /** Desktop erasure preflight. Destructive delete-all remains unavailable. */
 
-import { app, safeStorage } from "electron";
+import { app } from "electron";
 import path from "node:path";
 import { isBetaElectronRuntime } from "./betaRuntime.js";
 import { diskJournalAdapter } from "../src/shared/lib/erasureSaga/journal.js";
@@ -12,7 +12,6 @@ import {
   isValidSagaJournal,
   PLATFORM_STORES,
 } from "../src/shared/lib/erasureSaga/types.js";
-import type { SnapshotCapability } from "../src/shared/lib/erasureSaga/ports.js";
 import { PII_ERASURE_TABLES } from "./piiDomainTables.js";
 import type { PayloadDb } from "./erasurePayload.js";
 import {
@@ -72,30 +71,6 @@ export async function verifySqliteDomainTables(
     }
   }
   return remaining;
-}
-
-/** ADR-001 capability for the snapshot: safeStorage on desktop. */
-export function safeStorageSnapshotCapability(): SnapshotCapability {
-  return {
-    keySource: "safeStorage",
-    async canDecrypt() {
-      try {
-        return safeStorage.isEncryptionAvailable() === true;
-      } catch {
-        return false;
-      }
-    },
-    async encrypt(bytes: Uint8Array) {
-      return new Uint8Array(
-        safeStorage.encryptString(Buffer.from(bytes).toString("latin1")),
-      );
-    },
-    async decrypt(cipher: Uint8Array) {
-      return new Uint8Array(
-        Buffer.from(safeStorage.decryptString(Buffer.from(cipher)), "latin1"),
-      );
-    },
-  };
 }
 
 /** Reject all starts until exact scope and durable authorization are supported. */

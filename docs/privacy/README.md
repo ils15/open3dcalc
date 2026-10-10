@@ -2,25 +2,23 @@
 
 ## Current policy — 1.9 (supersedes conflicting D1.0 and Beta addenda)
 
-Stable Web/PWA and Desktop directly save the exact three customer, quote, and history
-manifest keys as plaintext, without a password, vault unlock, or consent/receipt prerequisite.
+Stable Web/PWA, Beta Web, and Desktop directly save the exact three customer, quote, and history
+manifest keys as readable local data, without a password or consent/receipt prerequisite.
 Web/PWA use their listed `localStorage` keys; Desktop maps them to the corresponding
 `open3dcalc_pwless_*` keys in SQLite's `storage` table (SPEC-01). This is an approved policy
 change, not a claim that the former zero-plaintext contract was fulfilled. `contract_performance`
 is provisional and requires qualified legal review; this engineering document does not select
-or validate a legal basis. The encrypted logical export contract remains separate and intact;
-its password never gates local saves.
+or validate a legal basis. Logical exports are readable JSON without password or encryption; a
+checksum detects accidental corruption only.
 
-Web Beta remains a separate test-only channel intended for generated synthetic records in its
-three Beta-specific keys, plaintext, with no sync/export/import/deletion. The app restricts its
-own storage operations to that namespace but does not validate whether record contents are
-synthetic; this is an intended-use restriction, not a security boundary. Same-origin scripts,
-browser extensions, and DevTools can access browser storage, so namespace isolation is
-app-mediated and does not protect against code running in the same origin. Stable/Desktop
-policy does not broaden Beta's scope.
+Web Beta is not a separate user-data profile and has no synthetic-only restriction. It reuses the
+Stable customer, quote, and history keys. Valid records in the retired `open3dcalc_beta_test_*`
+keys are merged into the shared keys before hydration. The data is plaintext at rest; same-origin
+scripts, browser extensions, DevTools, and people with access to the browser profile can access
+browser storage. Import/export and backup availability remain a separate release-readiness item.
 
-Bytes already written to `open3dcalc_pii_vault` are inert historical data. Current production
-startup and user-facing flows have no call site that reads, inspects, converts, recovers,
+Bytes already written to `open3dcalc_pii_vault` are inert historical data and cannot be recovered
+by the current app. Current production startup and user-facing flows have no call site that reads, inspects, converts, recovers,
 migrates, or cleans up those vault records; startup also does not read retired migration markers
 or legacy history/product sources. The vault is excluded from current deletion scope; its bytes
 may remain in the profile. Current deletion applies only to current application-owned data
@@ -30,22 +28,17 @@ Receipts created under older policies remain historical records and evaluate as
 `policy_mismatch` under policy 1.9. No consent, withdrawal, or receipt action gates current
 local saves. See the dated decision at the start of each superseding ADR/spec below.
 
-## Next V2 candidate — real-data direction approved; not yet shipped
+## Next V2 candidate — real data, readable local storage, explicit migration
 
-The owner has approved a different destination for the next V2 Beta: real workshop data,
-encrypted local persistence, explicit V1/current-profile migration, encrypted recovery, and
-truthful deletion. The normative target is [ADR-004](ADR-004-real-data-v2.md),
-[SPEC-01 V2 Candidate](SPEC-01-v2-candidate.md), and
-[SPEC-05](SPEC-05-v1-to-v2-migration.md). This decision does not change the current runtime:
-Stable/Desktop still follow policy 1.9 and the published `v2.0.0-beta.15` still has its
-plaintext, test-intended namespace. Do not enter real data in that released Beta. The new
-runtime, manifest, first-run disclosure, and release evidence must be implemented and verified
-before any candidate is described as supporting real data.
-
-ADR-004 supersedes the Beta test-only addenda and policy 1.9 plaintext choices only for that
-future candidate. The historical documents below remain evidence of earlier released
-behavior; they are not authorization to reuse the old plaintext paths or to claim migration
-has occurred.
+The owner-approved direction is to support real workshop data without app-level encryption,
+passwords, or key management. Local profile contents and exported JSON are readable by anyone
+with access to the browser profile, Desktop profile, or file. Import/export uses integrity
+validation only; it does not encrypt or authenticate the data. V1/current-profile migration
+must be explicit, previewed, lossless, and covered by fixtures. The target contract is
+[ADR-004](ADR-004-real-data-v2.md), [SPEC-01 V2 Candidate](SPEC-01-v2-candidate.md), and
+[SPEC-05](SPEC-05-v1-to-v2-migration.md). These documents do not claim migration or every
+data-management surface is already shipped. The published `v2.0.0-beta.15` still describes its
+older test-intended profile; do not infer its behavior from this branch.
 
 **Historical D1.0 metadata:** Track D1 (Privacy & Data Contracts), documentation deliverable
 **DRI:** Hermes (backend/data contracts executor)
@@ -103,19 +96,19 @@ Those operations are separate from the Copilot's local suggestions.
 
 | File                                      | Purpose                                                                               | Addresses   |
 | ----------------------------------------- | ------------------------------------------------------------------------------------- | ----------- |
-| `ADR-001-crypto-capability.md`            | Policy 1.9 runtime record; former at-rest crypto superseded; export crypto retained   | R3, R7      |
+| `ADR-001-crypto-capability.md`            | Historical encryption design; all local encryption and encrypted exports retired      | R3, R7      |
 | `ADR-002-pii-at-rest-legacy.md`           | Policy 1.9 runtime record; former quarantine/migration proposal retained historically | R3, R11     |
-| `ADR-003-export-vs-backup.md`             | Encrypted logical export vs. diagnostic backup; 1.9 runtime record                    | R2, R13     |
-| `ADR-004-real-data-v2.md`                 | Approved target for encrypted real-data profiles and explicit migration               | Next V2     |
-| `SPEC-01-v2-candidate.md`                 | Candidate classification and source inventory; runtime manifest remains 1.9           | Next V2     |
+| `ADR-003-export-vs-backup.md`             | Readable logical JSON export vs. diagnostic backup                                    | R2, R13     |
+| `ADR-004-real-data-v2.md`                 | Real-data profile, plaintext local policy, and explicit migration direction           | Next V2     |
+| `SPEC-01-v2-candidate.md`                 | Candidate classification and exact source inventory; migration contract               | Next V2     |
 | `SPEC-01-manifest.schema.json`            | Versioned JSON Schema of the per-key/surface/platform data manifest                   | R1, R8      |
 | `SPEC-01-manifest-fixture.json`           | Stable policy 1.9 exact PII scope; synthetic contract fixture                         | R1, R8      |
 | `SPEC-01-beta-test-manifest.schema.json`  | Separate exact-key schema for app-mediated Web Beta storage (synthetic intended use)  | Beta D1, D2 |
 | `SPEC-01-beta-test-manifest-fixture.json` | Three-key, plaintext Web Beta fixture; content is not validated as synthetic          | Beta D1, D2 |
 | `SPEC-02-erasure.md`                      | Deletion limited to current owned data; historical vault excluded; Beta refuses       | R4, R9, R10 |
-| `SPEC-03-export-envelope.md`              | Normative encrypted export envelope: canonicalization, algorithms, limits, atomic IO  | R12         |
+| `SPEC-03-export-envelope.md`              | Retired encrypted export format retained as audit history                             | R12         |
 | `SPEC-04-consent-receipt.md`              | Historical receipts; no consent/receipt prerequisite for local saves                  | R5, R14     |
-| `SPEC-05-v1-to-v2-migration.md`           | Exact-source, user-confirmed, lossless V1/current-profile migration gate              | Next V2     |
+| `SPEC-05-v1-to-v2-migration.md`           | Exact-source, user-confirmed, lossless readable V1/current-profile migration gate     | Next V2     |
 | `COMPLIANCE-MATRIX.md`                    | Traceability of every finding R1–R15 → document/section → status                      | R1–R15      |
 | `TEST-MATRIX.md`                          | Policy 1.9 direct-save, reload, failure, Beta-boundary, and export tests              | R6          |
 | `OWNERS-RUNBOOK.md`                       | Policy versioning, verification, and rollback rules                                   | R6, R15     |

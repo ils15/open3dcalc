@@ -1,11 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  gatedPiiPersistStorage,
-  registerPiiPersistStore,
-} from "@/shared/lib/crypto/piiStoreHydration";
-import { isBetaChannel } from "@/shared/config/betaChannel";
-import { betaPlaintextPersistStorage } from "@/shared/lib/betaPersistence";
+import { registerPiiPersistStore } from "@/shared/lib/localPiiPersistence";
 import {
   isElectronRuntime,
   stablePiiPersistStorage,
@@ -13,7 +8,7 @@ import {
 import type { Customer, CustomerFormData } from "@/shared/types";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const useVaultPersistence = !isBetaChannel && isElectronRuntime();
+const deferDesktopHydration = isElectronRuntime();
 
 function generateId(): string {
   return `cust_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -205,22 +200,16 @@ export const useCustomerStore = create<CustomerStore>()(
       setSearchQuery: (query) => set({ searchQuery: query }),
     }),
     {
-      name: isBetaChannel
-        ? "open3dcalc_beta_test_customers_v1"
-        : "open3dcalc_customers_v1",
+      name: "open3dcalc_customers_v1",
       version: 1,
-      storage: isBetaChannel
-        ? betaPlaintextPersistStorage<CustomerStore>(
-            "open3dcalc_beta_test_customers_v1",
-          )
-        : useVaultPersistence
-          ? gatedPiiPersistStorage<CustomerStore>("open3dcalc_customers_v1")
-          : stablePiiPersistStorage<CustomerStore>("open3dcalc_customers_v1"),
-      skipHydration: useVaultPersistence,
+      storage: stablePiiPersistStorage<CustomerStore>(
+        "open3dcalc_customers_v1",
+      ),
+      skipHydration: deferDesktopHydration,
     },
   ),
 );
 
-if (useVaultPersistence) {
+if (deferDesktopHydration) {
   registerPiiPersistStore("open3dcalc_customers_v1", useCustomerStore.persist);
 }

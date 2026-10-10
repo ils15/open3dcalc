@@ -1,20 +1,12 @@
 import { useState } from "react";
 import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Database,
-  HardDrive,
-  History,
-  Lock,
-  ShieldCheck,
-  AlertTriangle,
-} from "lucide-react";
+import { Database, History, ShieldCheck, AlertTriangle } from "lucide-react";
 import {
   type HistoryMarkerState,
   type LegacyPiiDisclosure,
   type RehomeDisclosureState,
 } from "@/shared/lib/migration/legacyPiiDisclosure";
-import type { PiiVaultAccessState } from "@/shared/lib/crypto/piiStoreHydration";
 import { useLegacyPiiDisclosure } from "@/shared/hooks/useLegacyPiiDisclosure";
 
 /**
@@ -24,8 +16,7 @@ import { useLegacyPiiDisclosure } from "@/shared/hooks/useLegacyPiiDisclosure";
  * migrated and never silently deleted. This panel states, in one place:
  *
  *  (a) which legacy plaintext PII keys still hold data and how many records,
- *  (b) the vault access state (`hydrated | locked | unavailable`),
- *  (c) the re-home state (`migrated | pending | incomplete`), the
+ *  (b) the re-home state (`migrated | pending | incomplete`), the
  *      history-migration marker state, and whether the legacy PII-bearing
  *      marker still holds PLAINTEXT residue (a value an old build wrote that
  *      the current code never writes and copy-without-delete never erases).
@@ -38,12 +29,6 @@ import { useLegacyPiiDisclosure } from "@/shared/hooks/useLegacyPiiDisclosure";
  * The section is a labelled `region` with `aria-live="polite"`, so a screen
  * reader announces the disclosure when it is reached or updated.
  */
-
-const VAULT_LABEL_KEYS: Record<PiiVaultAccessState["status"], string> = {
-  hydrated: "privacy.residue.vaultHydrated",
-  locked: "privacy.residue.vaultLocked",
-  unavailable: "privacy.residue.vaultUnavailable",
-};
 
 const REHOME_LABEL_KEYS: Record<RehomeDisclosureState, string> = {
   migrated: "privacy.residue.rehomeMigrated",
@@ -180,31 +165,7 @@ export function LegacyResidueDisclosure({
         )}
       </div>
 
-      {/* (b) vault access state */}
-      <div className="space-y-1">
-        <p className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
-          <HardDrive
-            className="w-3.5 h-3.5 text-[var(--color-accent)]"
-            aria-hidden="true"
-          />
-          {t("privacy.residue.vaultHeading")}
-        </p>
-        <p className="text-xs text-[var(--color-text-secondary)] flex items-center gap-2">
-          {data.vault.status === "locked" && (
-            <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-          )}
-          {t(VAULT_LABEL_KEYS[data.vault.status])}
-        </p>
-        {data.vault.status === "unavailable" && (
-          <p className="text-[11px] font-mono text-[var(--color-text-muted)]">
-            {t("privacy.residue.vaultUnavailableDetail", {
-              reason: data.vault.reason,
-            })}
-          </p>
-        )}
-      </div>
-
-      {/* (c) re-home state */}
+      {/* (b) re-home state */}
       <div className="space-y-1">
         <p className="text-xs font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
           <History

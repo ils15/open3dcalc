@@ -52,9 +52,9 @@ let hydrationCompleted = false;
  *
  * The sweep's premise — "a DB row with no localStorage counterpart is stale" —
  * holds only when hydration POSITIVELY populated a key that is also on the
- * static non-PII sweep allowlist. A key hydration could not read (a pre-AAD
- * keyring blob, an authentication failure, a locked session, or any unforeseen
- * error) is absent from localStorage BY DESIGN, so that absence is a refusal,
+ * static non-PII sweep allowlist. A key hydration could not read (malformed or
+ * unsupported stored content, or any unforeseen error) is absent from
+ * localStorage BY DESIGN, so that absence is a refusal,
  * not evidence of staleness. Recording the outcome per key lets the sweep tell
  * the two apart: `hydrated` is necessary but not sufficient for deletion, and
  * a key marked `not_hydrated` is preserved.
@@ -63,7 +63,7 @@ let hydrationCompleted = false;
  * `not_hydrated`. The sweep re-reads `listKeys()` every cycle, so a key can
  * enter `storage` AFTER hydration — a second writer to the SQLite file (another
  * app instance, a restored or copied profile, or a future store that writes to
- * the vault without a localStorage mirror). Hydration never enumerated such a
+ * a dedicated adapter without a localStorage mirror). Hydration never enumerated such a
  * key, so it has no record, and treating that absence as staleness would delete
  * a declared key that was never classified at all. Undeclared keys are always
  * preserved as well: a storage row's absence from the manifest/localStorage is
@@ -166,7 +166,6 @@ function reportManifestUnavailable(): void {
   const entry: UnavailableEntry = {
     key: MANIFEST_UNAVAILABLE_KEY,
     reason: MANIFEST_UNAVAILABLE_REASON,
-    recoverable: false,
   };
   latchUnavailableClasses([entry]);
   console.warn(
@@ -183,16 +182,10 @@ function reportManifestUnavailable(): void {
 /**
  * The keys the bridge migrates, hydrates and saves.
  *
- * ## Wave 3 (T3.1): PII keys are deliberately absent
- *
- * A PII value must never cross into renderer `localStorage`, and this list is
- * the surface that did it. The three migrated browser PII keys —
- * `open3dcalc_customers_v1`, `open3dcalc_quotes_v1`, `open3dcalc_history_v2` —
- * used to be here, which meant `loadFromDatabase` wrote the main process's
- * DECRYPTED output straight into the renderer and `saveToDatabase` rewrote the
- * row as plaintext. They are now persisted EXCLUSIVELY through the encrypted
- * vault (`piiStoreHydration.ts` rehydrates them from IndexedDB after unlock),
- * so the bridge must not touch them at all.
+ * User-content keys are handled by their dedicated local-data adapters, not
+ * this preference/UI-state bridge. Keeping them out of the generic key list
+ * prevents one persistence path from overwriting another or hydrating a
+ * partially-read profile as if it were empty.
  *
  * The recovery marker `open3dcalc_migration_done_v2` is PII-bearing (its value
  * embeds the raw pre-migration history) and is also gone from this list: it is
@@ -354,22 +347,19 @@ function noteDbFailure(error: unknown, operation: string): void {
  * ## Per-key isolation, and why it is not optional
  *
  * This used to `await db().load(key)` inside a bare loop, so a single unreadable
- * row rejected the whole function. An ADR-001 §3.6 refusal — a pre-remediation
- * `enc1:safeStorage:` blob, a 1.1 envelope — propagated out of here, out of
- * `initPersistenceBridge`, and `main.tsx` rendered `<StartupBridgeFailure/>`
+ * row rejected the whole function. An inaccessible or malformed row propagated
+ * out of here, out of `initPersistenceBridge`, and `main.tsx` rendered `<StartupBridgeFailure/>`
  * instead of `<App/>`. Worse, the throw happened at step 2, so the app never
  * registered its `beforeunload` handler or its auto-save interval AT ALL: the
  * profile could not be saved even for the keys that were perfectly readable. One
  * unreadable row took down the application.
  *
- * The OS keyring was the default path before the Wave 2 remediation, so such
- * rows are exactly what a normal upgrading user has. This is the most likely
- * first-run experience of the upgrade.
+ * A per-value read failure is now reported without blocking other local data.
  *
- * So a per-value refusal is now collected and reported, and hydration continues.
+ * So a per-value read failure is collected and reported, and hydration continues.
  * Fail-closed is preserved on both sides: an unreadable value is never written
- * into `localStorage` (it is not decrypted, and it is not materialized as the raw
- * ciphertext either), and it is never deleted from SQLite. A STRUCTURAL failure —
+ * into `localStorage` (it is not decoded or materialized as an unsupported raw
+ * value either), and it is never deleted from SQLite. A STRUCTURAL failure —
  * `listKeys` itself failing, an unreadable manifest — is still terminal, because
  * then there is no key set to isolate and hydrating from stale localStorage would
  * look like success and then lose every write.
@@ -398,9 +388,8 @@ async function loadFromDatabase(): Promise<void> {
   for (const key of keys) {
     // SPEC-01 gate: unknown keys are never materialized locally.
     if (!isKeyAllowed(key)) continue;
-    // T3.1: a PII key is never materialized into the renderer — not decrypted,
-    // and not as raw ciphertext either. Its bytes belong to the encrypted
-    // adapter (Electron) or the browser vault, never to `localStorage`. The row
+    // Local user-data keys use their dedicated storage route and are never
+    // materialized through this generic renderer bridge. The row
     // is still RECORDED as an outcome so the sweep can tell a refusal from
     // staleness and preserve it (copy-without-delete); see `deleteStaleKeys`.
     if (isPiiBridgeKey(key)) {
@@ -425,11 +414,7 @@ async function loadFromDatabase(): Promise<void> {
       // rewrites it to "Error invoking remote method 'db:load': …" and loses
       // every structured field.
       hydrationOutcomes.set(key, "not_hydrated");
-      unavailable.push({
-        key,
-        reason: refusalCodeFromError(error),
-        recoverable: RECOVERABLE_REASONS.has(refusalCodeFromError(error)),
-      });
+      unavailable.push({ key, reason: refusalReasonFromError(error) });
     }
   }
 
@@ -473,18 +458,7 @@ async function loadFromDatabase(): Promise<void> {
 }
 
 /**
- * Refusals where the bytes are intact and only the old SHAPE is refused, so
- * ADR-001 §3.6 recovery can still be attempted. Mirrors `RECOVERABLE_REASONS`
- * in the main process; kept as its own set because the renderer must not import
- * main-process modules across the IPC boundary.
- */
-const RECOVERABLE_REASONS = new Set([
-  "legacy_unbound_encryption",
-  "legacy_envelope_v1_1",
-]);
-
-/**
- * Recover the main process's refusal code from a rejected `db:load`.
+ * Read a generic storage failure code from a rejected `db:load`.
  *
  * Electron flattens an error crossing `ipcRenderer.invoke` into a plain string
  * prefixed "Error invoking remote method 'db:load': ", so `error.reason` and
@@ -498,7 +472,7 @@ const RECOVERABLE_REASONS = new Set([
  * The fallback is a generic `unreadable` rather than a guess: inventing a
  * specific reason from a mangled string is how a wrong reason reaches a user.
  */
-function refusalCodeFromError(error: unknown): string {
+function refusalReasonFromError(error: unknown): string {
   const structured = (error as { reason?: unknown } | null)?.reason;
   if (typeof structured === "string" && structured.length > 0) {
     return structured;
@@ -506,17 +480,7 @@ function refusalCodeFromError(error: unknown): string {
   const message = String(
     (error as { message?: unknown } | null)?.message ?? error,
   );
-  for (const code of [
-    "legacy_unbound_encryption",
-    "legacy_envelope_v1_1",
-    "authentication_failed",
-    "no_capability",
-    "profile_data_key_unavailable",
-    "locked",
-    ...RECOVERABLE_REASONS,
-  ]) {
-    if (message.includes(code)) return code;
-  }
+  if (message.includes("manifest_unavailable")) return "manifest_unavailable";
   return "unreadable";
 }
 

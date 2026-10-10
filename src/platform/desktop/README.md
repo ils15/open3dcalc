@@ -46,17 +46,18 @@ npx electron-builder --win --linux  # Both
 - **Native file dialogs** — for STL/OBJ/3MF/G-code import
 - **Auto-updates** — via electron-builder (future: electron-updater)
 
-## Beta scope
+## Local user data
 
-The approved plaintext synthetic-test profile is Web-Beta-only and does not apply to Electron.
-For Stable/Desktop, the customer, quote, and history stores use the passwordless PII IPC route;
+The Web Beta and Stable Web share their local customer, quote, and history keys. Desktop uses
+the local PII IPC route;
 their physical keys are `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quotes_v1`, and
 `open3dcalc_pwless_history_v1` in the SQLite `storage` key/value table. These are the Desktop
 destinations for the corresponding logical keys in the SPEC-01 fixture, not `localStorage`
-rows. No Beta fixture key or Beta build flag enables the test profile in an Electron build.
+rows. Values are readable by anyone with access to the user's Desktop profile. No app password,
+keyring, or encryption gate is used.
 
-That is the current runtime, not the target for the next V2 Beta. ADR-004 requires the
-passwordless plaintext route to be replaced with authenticated local encryption and an
-explicit migration path covering supported Desktop V1/V2 records before Desktop may accept
-real operational data under the new policy. The route, migration, recovery, and deletion
-gates are not yet implemented by this documentation change.
+The published Beta `v2.0.0-beta.15` predates the shared-profile direction. The next candidate
+is governed by ADR-004/SPEC-05: retain readable local persistence and provide an explicit,
+previewed, verified migration for supported Desktop V1/V2 sources before claiming complete
+real-data readiness. Migration and release gates are not implemented merely by this document
+change.

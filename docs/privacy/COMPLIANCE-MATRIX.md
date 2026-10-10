@@ -8,19 +8,20 @@ declared Stable Web/PWA and Desktop destinations. Web/PWA use the logical `local
 Desktop maps them to `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quotes_v1`, and
 `open3dcalc_pwless_history_v1` in SQLite's `storage` table (SPEC-01). This is a change in policy and is **not**
 described as fulfillment of the historical zero-plaintext requirement in R3. `contract_performance`
-is provisional and requires qualified legal review. The encrypted logical export remains
-protected by SPEC-03 (E1 retained); its password does not gate local saves. Historical
+is provisional and requires qualified legal review. Logical export is readable JSON with no
+password or encryption; the optional checksum only detects accidental corruption. Historical
 `open3dcalc_pii_vault` bytes are inert and expressly excluded from current deletion scope
 (ADR-002, SPEC-02); no access, conversion, migration, recovery, or purge is promised.
 
 The R1–R15 table below is a historical trace of the former D1.0 contract and must be read
-through this policy 1.9 supersession. The current operative contracts are SPEC-01 policy 1.9,
-ADR-001/002/003 supersession notes, SPEC-02, SPEC-03, SPEC-04, and the current TEST-MATRIX.
+through the current owner decisions. Current policy-1.9 runtime facts and the next-candidate
+direction are separated in ADR-001–004, SPEC-01–05, and TEST-MATRIX. SPEC-03 is retained as a
+historical record only; it does not define an active encrypted format.
 
-**Implementation status:** implementation and local verification were completed in PR #279 and
-merged into `main`; the restricted web Beta is now `v2.0.0-beta.15`. Final Themis review and
-explicit owner/legal approval remain pending before Stable promotion. Beta publication does not
-approve the separate Stable/Desktop policy.
+**Historical implementation status:** policy-1.9 implementation evidence was merged by PR #279;
+the published web Beta `v2.0.0-beta.15` retains its earlier test-intended behavior. The next
+candidate direction in this branch is readable local real data with explicit migration, not
+local encryption. Final privacy, legal, and release reviews remain separate gates.
 
 ## Next V2 candidate trace — ADR-004/SPEC-05 (implementation pending)
 
@@ -28,13 +29,12 @@ The R1–R15 table below remains the historical D1.0 finding trace under current
 It is not evidence that the next-candidate requirements are implemented. The real-data
 candidate adds these release obligations:
 
-| Requirement                                                                        | Normative contract                                                         | Current state                                                           |
-| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Encrypt all durable user content on Web/PWA/Desktop; no Beta plaintext exception   | ADR-004 §§2.1–2.2; SPEC-01 V2 Candidate §§1–3                              | Direction approved; manifest/runtime pending S1                         |
-| Create/unlock/lock; unsupported crypto fails closed; no PII in logs                | ADR-001 candidate amendment; ADR-004 §2.2; TEST-MATRIX §9                  | Existing primitives partially reusable; platform integration pending S1 |
-| Exact-source, user-selected, previewed and retry-safe V1/current-profile migration | ADR-002 candidate amendment; SPEC-05 §§2–5                                 | Registry audit and implementation pending S2                            |
-| Encrypted backup/restore and exact-scope verified deletion                         | ADR-003 candidate amendment; SPEC-02/03 candidate amendments; ADR-004 §2.4 | Policy 1.9 Beta paths remain restricted; target runtime pending S1      |
-| Honest first-run disclosure and demo isolation                                     | ADR-004 §§2.1, 2.4; SPEC-04 candidate amendment; TEST-MATRIX §9            | Candidate UX and evidence pending S1                                    |
+| Requirement                                                                        | Normative contract                                                      | Current state                                                      |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Readable local persistence for real records; no app password/key/encryption flow   | ADR-004 §2.2; SPEC-01 V2 Candidate §§1–3; TEST-MATRIX §1                | Direction approved; exact candidate inventory and evidence pending |
+| Exact-source, user-selected, previewed and retry-safe V1/current-profile migration | ADR-002 candidate amendment; SPEC-05 §§2–5; TEST-MATRIX §4              | Registry audit and implementation pending                          |
+| Readable JSON export/import with checksum validation and exact-scope deletion      | ADR-003 candidate amendment; SPEC-02/03; ADR-004 §2.4; TEST-MATRIX §2–3 | Runtime coverage/release evidence pending                          |
+| Honest readable-data disclosure and demo isolation                                 | ADR-004 §§2.1, 2.2, 2.4; SPEC-04 candidate amendment; TEST-MATRIX §3    | Candidate UX and evidence pending                                  |
 
 No row in this trace marks a release gate as passed. The policy 1.9 runtime and beta.15
 evidence remain historical until an exact candidate tree passes its own tests and review.

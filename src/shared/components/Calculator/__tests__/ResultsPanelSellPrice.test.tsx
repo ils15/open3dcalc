@@ -7,10 +7,6 @@ import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { useProductInventory } from "@/shared/stores/productInventory";
 import type { CalculationResult } from "@/shared/types";
-import {
-  resetPiiStoreGateForTests,
-  setDemoSuppressedForPiiGate,
-} from "@/shared/lib/crypto/piiStoreCapability";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -103,13 +99,6 @@ function seedStore(productName = "Vaso Teste") {
 
 beforeEach(() => {
   localStorage.clear();
-  // The results surface now mounts PiiWriteRefusalNotice (H-4). Seeding the
-  // persisted history store is itself a refused write while the vault is
-  // locked, which would surface a spurious notice. These specs are not about
-  // the vault, so they run as an ephemeral demo session — the one state the
-  // gate allows — and no notice is rendered.
-  resetPiiStoreGateForTests();
-  setDemoSuppressedForPiiGate(true);
   seedStore();
   vi.restoreAllMocks();
 });

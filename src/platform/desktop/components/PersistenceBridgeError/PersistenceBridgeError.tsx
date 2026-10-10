@@ -15,9 +15,8 @@ import {
  * The desktop entry starts the SQLite bridge and only renders `<App/>` once it
  * resolves, so stores hydrate from durable data instead of stale localStorage.
  * That ordering is the point — and it had no rejection path, so every failure
- * the bridge can raise produced a BLANK WINDOW: a `CryptoDeniedError`
- * refusal on a quarantined PII key (ADR-002 §2.2.1, `persistGate.ts`), a
- * manifest that will not load, a SQLite error on the first `listKeys`. The
+ * the bridge can raise produced a BLANK WINDOW: a manifest that will not load,
+ * a SQLite error on the first `listKeys`, or a stored item that cannot be read. The
  * renderer had nothing on screen, so there was nothing to read, nothing to
  * focus and no record that the app had decided not to start.
  *
@@ -26,9 +25,8 @@ import {
  * dispatches on `document` after five consecutive failures — a signal that
  * until now had exactly one listener in the tree, and it was a test.
  *
- * Neither reads a store. The bridge can fail *because* a gated key is
- * quarantined, so anything that resolves a PII store to render this would be
- * reading the very state that caused it; both take their whole input from
+ * Neither reads a store. A storage failure must not cause the error surface to
+ * read the same state; both take their whole input from
  * props and from the DOM event, and nothing else.
  */
 
@@ -52,9 +50,7 @@ export const PII_UNAVAILABLE_EVENT = "open3dcalc:pii-unavailable";
  *
  * Distinct from every per-key reason: on this class no key can be classified,
  * so the surface says the whole profile is unavailable rather than offering
- * per-key recovery. Reusing the per-key copy here would describe data that
- * "could not be decrypted" when the actual failure is that nothing could be
- * evaluated at all.
+ * per-key recovery.
  */
 const MANIFEST_UNAVAILABLE_REASON = "manifest_unavailable";
 
@@ -228,32 +224,8 @@ function BridgeErrorSurface({
 }
 
 /**
- * Why the bridge refused, as a bare code — never its message.
- *
- * A `CryptoDeniedError` carries a reason code (`quarantined_read_only`,
- * `no_capability`, `write_path_disabled`, `locked`, `unknown_key`, …) and a
- * SQLite error carries a message that can name a file path on disk. Only the
- * code and the error class are shown: those identify the failure for support,
- * and they are what the bridge's own logs already carry (key NAMES only, never
- * values, §3.2).
- *
- * The reason is read from the `reason` FIELD, not out of the message. The two
- * used to be conflated — the constructor took a reason and only interpolated
- * it — and every denial then rendered as the bare class name
- * `CryptoDeniedError`, which tells support nothing about which of five
- * mutually exclusive causes they are looking at. `CryptoDeniedError.reason` is
- * a compile-time constant at every construction site, so it carries no PII.
- *
- * KNOWN LIMIT — the reason does not survive the IPC boundary, yet. The bridge
- * reaches SQLite through `ipcRenderer.invoke`, and a handler that throws is
- * serialised on its way back, so only the fields Electron's serialisation
- * preserves (`name`, `message`, `stack`) are guaranteed to arrive in the
- * renderer; a custom own property is not among them. This function therefore
- * resolves the reason only for errors raised IN the renderer, and falls back
- * to the class name for a refusal that crossed `db:save`. Closing that needs
- * the main process to hand back a structured reason of its own
- * (`electron/main.ts`), which is out of scope for this change — so the surface
- * says what it can and does not pretend the rest.
+ * Show a safe diagnostic reason without displaying arbitrary SQLite messages
+ * or stored values.
  */
 function refusalReason(error: unknown): string {
   if (typeof error === "object" && error !== null) {
@@ -375,9 +347,8 @@ function parseUnavailable(raw: unknown): UnavailableEntry[] {
  * from empty state. It states explicitly that nothing was deleted.
  *
  * The codes are rendered verbatim rather than translated: they are the
- * main process's own refusal codes, they are what a bug report needs, and a
- * paraphrase of `legacy_unbound_encryption` diagnoses nothing. Only key NAMES
- * and codes reach this surface — never a value (§3.2).
+ * main process's own refusal codes and are useful for diagnostics. Only key
+ * NAMES and codes reach this surface — never a value (§3.2).
  */
 export function PiiUnavailableBanner(): ReactElement | null {
   const { t } = useTranslation();
@@ -405,9 +376,9 @@ export function PiiUnavailableBanner(): ReactElement | null {
 
   if (entries === null) return null;
 
-  // An unloadable manifest is not a per-key refusal: there is no key to
-  // recover, and "some of your data could not be decrypted" is the wrong
-  // reading. It gets its own copy that says plainly that nothing is being
+  // An unloadable manifest is not a per-key refusal: no key can be classified,
+  // so the per-key message would be misleading. It gets its own copy that says
+  // plainly that nothing is being
   // written OR deleted, because that is exactly what the bridge now does —
   // refuses writes and skips the sweep — and a user staring at an empty app
   // needs to know their data is still on disk. The reason code is shown because
@@ -431,23 +402,10 @@ export function PiiUnavailableBanner(): ReactElement | null {
     );
   }
 
-  const detail = entries
-    .map(
-      (e) =>
-        `${e.key} (${e.reason}) — ${
-          e.recoverable
-            ? t("persistence.recovery.recoverable")
-            : t("persistence.recovery.unrecoverable")
-        }`,
-    )
-    .join("\n");
+  const detail = entries.map((e) => `${e.key} (${e.reason})`).join("\n");
 
-  // Per-key legacy recovery is PERMANENTLY DISABLED: `privacy:recover-key` is
-  // rejected by the main process and is no longer exposed through the preload
-  // bridge, so this surface must not offer an action that can never succeed. It
-  // discloses the refusal codes (what support diagnoses from) plus an explicit
-  // unavailability note, and offers only a dismissal — no value is read and
-  // nothing is deleted.
+  // Legacy restore is not supported by this version. The surface only reports
+  // unreadable keys and offers dismissal; it never reads values or deletes data.
   return (
     <BridgeErrorSurface
       variant="banner"

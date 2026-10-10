@@ -92,11 +92,6 @@ vi.mock("electron", () => {
     },
     Menu: { setApplicationMenu: vi.fn() },
     shell: { openExternal: vi.fn() },
-    safeStorage: {
-      isEncryptionAvailable: vi.fn(() => false),
-      encryptString: vi.fn((value: string) => Buffer.from(value)),
-      decryptString: vi.fn((value: Buffer) => value.toString()),
-    },
   };
 });
 

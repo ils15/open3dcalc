@@ -1,11 +1,10 @@
 /**
  * H-4 — the visible consumer of `getLastPiiWriteRefusal()`.
  *
- * The gate records a refusal outside React; this component subscribes and shows
+ * Local persistence records a refusal outside React; this component subscribes and shows
  * it the instant it happens, so a refused PII write is impossible to miss. The
  * specs pin: it renders nothing when idle, names the affected data area and the
- * typed reason when a real refusal exists, filters to its own store, and
- * ignores the deliberate `demo_session` non-refusal.
+ * typed reason when a real refusal exists and filters to its own store.
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -22,16 +21,16 @@ import { PiiWriteRefusalNotice } from "../PiiWriteRefusalNotice";
 import {
   PII_STORE_KEY,
   recordPiiWriteRefusal,
-  resetPiiStoreHydrationForTests,
-} from "@/shared/lib/crypto/piiStoreHydration";
+  resetLocalPiiPersistenceForTests,
+} from "@/shared/lib/localPiiPersistence";
 
 describe("H-4 — PiiWriteRefusalNotice", () => {
   beforeEach(() => {
-    resetPiiStoreHydrationForTests();
+    resetLocalPiiPersistenceForTests();
   });
 
   afterEach(() => {
-    resetPiiStoreHydrationForTests();
+    resetLocalPiiPersistenceForTests();
   });
 
   it("renders nothing while no write has been refused", () => {
@@ -44,19 +43,19 @@ describe("H-4 — PiiWriteRefusalNotice", () => {
   });
 
   it("shows the refusal, the data area and the typed reason", () => {
-    recordPiiWriteRefusal(PII_STORE_KEY.customers, "profile_locked");
+    recordPiiWriteRefusal(PII_STORE_KEY.customers, "storage_not_ready");
 
     render(<PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />);
 
     const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("privacy.vault.writeRefusedTitle");
+    expect(alert).toHaveTextContent("privacy.localData.writeRefusedTitle");
     // The area label is resolved through the existing customers.title key.
     expect(alert).toHaveTextContent("customers.title");
-    expect(alert).toHaveTextContent("profile_locked");
+    expect(alert).toHaveTextContent("storage_not_ready");
   });
 
   it("only renders a refusal that matches its own store", () => {
-    recordPiiWriteRefusal(PII_STORE_KEY.customers, "profile_locked");
+    recordPiiWriteRefusal(PII_STORE_KEY.customers, "storage_not_ready");
 
     const { container } = render(
       <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />,
@@ -65,21 +64,13 @@ describe("H-4 — PiiWriteRefusalNotice", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("ignores a demo_session refusal — it is not a failure", () => {
-    recordPiiWriteRefusal(PII_STORE_KEY.history, "demo_session");
-
-    const { container } = render(<PiiWriteRefusalNotice />);
-
-    expect(container).toBeEmptyDOMElement();
-  });
-
   it("falls back to a generic area label for an unknown store key", () => {
-    recordPiiWriteRefusal("open3dcalc_unknown_store", "capability_unknown");
+    recordPiiWriteRefusal("open3dcalc_unknown_store", "storage_not_ready");
 
     render(<PiiWriteRefusalNotice />);
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "privacy.vault.writeRefusedAreaUnknown",
+      "privacy.localData.writeRefusedAreaUnknown",
     );
   });
 
@@ -88,11 +79,11 @@ describe("H-4 — PiiWriteRefusalNotice", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
     act(() => {
-      recordPiiWriteRefusal(PII_STORE_KEY.customers, "profile_locked");
+      recordPiiWriteRefusal(PII_STORE_KEY.customers, "storage_not_ready");
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "privacy.vault.writeRefusedTitle",
+      "privacy.localData.writeRefusedTitle",
     );
   });
 });

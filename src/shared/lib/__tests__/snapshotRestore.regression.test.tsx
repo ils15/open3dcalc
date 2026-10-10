@@ -1,12 +1,5 @@
 import { render, renderHook, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.hoisted(() => {
-  Object.defineProperty(globalThis.navigator, "userAgent", {
-    configurable: true,
-    value: "Mozilla/5.0 Electron/43.0",
-  });
-});
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CostSummaryCard } from "@/shared/components/Results/CostSummaryCard";
 import { useFinancialBreakdown } from "@/shared/hooks/useFinancialBreakdown";
@@ -17,21 +10,6 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import { useHistoryStore } from "@/shared/stores/historyStore";
-import {
-  configurePiiStoreRuntime,
-  resetPiiStoreHydrationForTests,
-  unlockPiiStoresAndRehydrate,
-  whenPiiWritesSettled,
-} from "@/shared/lib/crypto/piiStoreHydration";
-import {
-  lockAllPiiStores,
-  PII_VAULT_STORE,
-  resetPiiStoreRuntimeForTests,
-} from "@/shared/lib/crypto/piiStore";
-import { resetPiiStoreGateForTests } from "@/shared/lib/crypto/piiStoreCapability";
-import { zeroizeSessionPassphrase } from "@/shared/lib/crypto/passphraseSession";
-import { PII_STORE_ENVIRONMENT } from "@/shared/lib/crypto/__tests__/piiStoreFixtures";
-import { createFakeIndexedDb } from "@/shared/test/fakeIndexedDb";
 import type {
   AMSSlot,
   CalculationSnapshot,
@@ -39,7 +17,6 @@ import type {
   PrintParameters,
 } from "@/shared/types";
 
-const PASS = "legacy-history-fixture-passphrase";
 const SETTINGS_STORAGE_KEY = "open3dcalc_settings_v2";
 const HISTORY_STORAGE_KEY = "open3dcalc_history_v2";
 
@@ -438,31 +415,8 @@ describe("snapshot restore result regression", () => {
   });
 });
 
-describe("persisted legacy calculator and history restore", () => {
-  let idb: ReturnType<typeof createFakeIndexedDb>;
-  const options = () => ({
-    indexedDb: idb.factory,
-    environment: PII_STORE_ENVIRONMENT,
-  });
-
-  beforeEach(() => {
-    idb = createFakeIndexedDb();
-    resetPiiStoreGateForTests();
-    lockAllPiiStores();
-    resetPiiStoreRuntimeForTests();
-    resetPiiStoreHydrationForTests();
-    zeroizeSessionPassphrase();
-  });
-
-  afterEach(() => {
-    lockAllPiiStores();
-    resetPiiStoreRuntimeForTests();
-    resetPiiStoreHydrationForTests();
-    resetPiiStoreGateForTests();
-    zeroizeSessionPassphrase();
-  });
-
-  it("rehydrates persisted history and restores legacy material data without rewriting storage", async () => {
+describe("plain local calculator and history restore", () => {
+  it("rehydrates readable history and restores legacy material data", async () => {
     const legacyMaterial = {
       ...useCalculatorStore.getState().fdmMaterial,
       type: "Legacy PETG Blend",
@@ -474,9 +428,6 @@ describe("persisted legacy calculator and history restore", () => {
       fdmMaterial: legacyMaterial,
     });
     localStorage.setItem(SETTINGS_STORAGE_KEY, serializedSettings);
-
-    configurePiiStoreRuntime(options());
-    await unlockPiiStoresAndRehydrate(PASS, options());
 
     const snapshot = buildSnapshot({ fdmMaterial: legacyMaterial });
     const result = useCalculatorStore.getState().results;
@@ -493,21 +444,13 @@ describe("persisted legacy calculator and history restore", () => {
       result: result!,
       snapshot,
     });
-    await whenPiiWritesSettled();
+    const readableHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
+    expect(readableHistory).toContain("Legacy material history snapshot");
 
-    const sealedHistoryBeforeReload = idb.raw(
-      PII_VAULT_STORE,
-      HISTORY_STORAGE_KEY,
-    );
-    expect(sealedHistoryBeforeReload).toBeTypeOf("string");
-
-    // Simulate a fresh calculator/history store: discard in-memory state while
-    // locked, then restore settings and hydrate history from serialized IDB.
-    lockAllPiiStores();
-    resetPiiStoreRuntimeForTests();
-    resetPiiStoreHydrationForTests();
+    // Simulate a fresh store by restoring its readable local JSON record.
     useHistoryStore.setState({ entries: [] });
-    await whenPiiWritesSettled();
+    localStorage.setItem(HISTORY_STORAGE_KEY, readableHistory!);
+    await useHistoryStore.persist.rehydrate();
     useCalculatorStore.setState({
       fdmMaterial: {
         ...legacyMaterial,
@@ -527,7 +470,6 @@ describe("persisted legacy calculator and history restore", () => {
     expect("id" in restoredSettingsMaterial).toBe(false);
     expect(localStorage.getItem(SETTINGS_STORAGE_KEY)).toBe(serializedSettings);
 
-    await unlockPiiStoresAndRehydrate(PASS, options());
     const restoredHistory = useHistoryStore.getState().entries;
     expect(restoredHistory).toHaveLength(1);
     expect(restoredHistory[0].snapshot?.fdmMaterial).toEqual(legacyMaterial);
@@ -541,9 +483,7 @@ describe("persisted legacy calculator and history restore", () => {
 
     useCalculatorStore.getState().loadHistoryItem(restoredHistory[0].snapshot!);
     expect(useCalculatorStore.getState().fdmMaterial).toEqual(legacyMaterial);
-    expect(idb.raw(PII_VAULT_STORE, HISTORY_STORAGE_KEY)).toBe(
-      sealedHistoryBeforeReload,
-    );
+    expect(localStorage.getItem(HISTORY_STORAGE_KEY)).toBe(readableHistory);
     expect(localStorage.getItem(SETTINGS_STORAGE_KEY)).toBe(serializedSettings);
   });
 });

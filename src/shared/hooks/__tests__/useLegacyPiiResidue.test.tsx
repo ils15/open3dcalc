@@ -65,7 +65,7 @@ describe("toLegacyPiiRowMap", () => {
       scannedAt: new Date().toISOString(),
       rows: [
         { key: CUSTOMERS, value: "legacy", status: "legacy_plaintext" },
-        { key: QUOTES, value: null, status: "already_encrypted" },
+        { key: QUOTES, value: null, status: "unsupported_legacy_format" },
         { key: HISTORY, value: null, status: "absent" },
       ],
     });

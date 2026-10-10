@@ -18,7 +18,6 @@ import {
   FileCheck,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
-import { isBetaChannel } from "@/shared/config/betaChannel";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
@@ -27,7 +26,7 @@ import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefus
 import {
   beginPiiSurfaceWrite,
   PII_STORE_KEY,
-} from "@/shared/lib/crypto/piiStoreHydration";
+} from "@/shared/lib/localPiiPersistence";
 import { guardExport } from "@/shared/lib/demoExportGuard";
 
 interface StudioCustomerViewProps {
@@ -115,7 +114,6 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
   };
 
   const handleDeleteCustomer = (customerId: string): void => {
-    if (isBetaChannel) return;
     if (beginPiiSurfaceWrite(PII_STORE_KEY.customers) !== null) return;
     removeCustomer(customerId);
   };
@@ -460,17 +458,15 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    {!isBetaChannel && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCustomer(customer.id)}
-                        className="flex min-h-11 min-w-11 items-center justify-center p-1.5 text-text-secondary hover:text-critical rounded-lg hover:bg-critical-subtle transition-colors"
-                        title="Excluir Cliente"
-                        aria-label={`Excluir ${customer.name}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCustomer(customer.id)}
+                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 text-text-secondary hover:text-critical rounded-lg hover:bg-critical-subtle transition-colors"
+                      title="Excluir Cliente"
+                      aria-label={`Excluir ${customer.name}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>

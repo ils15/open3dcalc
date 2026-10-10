@@ -16,16 +16,16 @@
  *
  * The Desktop app installs this adapter for the customer, quote and history
  * stores. Web never installs it; a missing or refused route never falls back to
- * either localStorage or the legacy vault.
+ * or legacy local-data rows.
  */
 
 import {
   NEW_PII_DOMAIN_KEYS,
   type NewPiiDomain,
   type NewPiiStorageKey,
-} from "@/shared/lib/crypto/newPiiNamespace";
-import { isWithdrawalPending } from "@/shared/lib/crypto/piiStoreCapability";
-import { getPiiStoreHydrationStatus } from "@/shared/lib/crypto/piiStoreHydration";
+} from "@/shared/lib/localData/newPiiNamespace";
+import { isWithdrawalPending } from "@/shared/lib/localDataLifecycle";
+import { getPiiStoreHydrationStatus } from "@/shared/lib/localPiiPersistence";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
@@ -279,7 +279,7 @@ export function installNewPiiStorageOnStore<S>(
   return true;
 }
 
-/** Replace the vault-backed persistence for Desktop only; Web never calls this. */
+/** Install the Desktop SQLite adapter; Web never calls this. */
 export function installNewPiiStorageForDesktop(): void {
   if (isBetaChannel) {
     console.warn(

@@ -46,7 +46,7 @@ test("Classic rail matches Example anchors at desktop and stays safe on mobile",
       '[data-testid="calculator-layout"][data-layout-mode="three-region"]',
     );
     assert.equal(await page.locator("#results-sidebar-panel").count(), 1);
-    assert.equal(await page.locator("#pii-vault-passphrase").count(), 1);
+    assert.equal(await page.locator("#pii-vault-passphrase").count(), 0);
 
     const sectionNav = await bounds(
       page,
@@ -114,7 +114,7 @@ test("Classic rail matches Example anchors at desktop and stays safe on mobile",
       '[data-testid="calculator-layout"][data-layout-mode="inline-results"]',
     );
     assert.equal(await page.locator("#results-sidebar-panel").count(), 1);
-    assert.equal(await page.locator("#pii-vault-passphrase").count(), 1);
+    assert.equal(await page.locator("#pii-vault-passphrase").count(), 0);
     const overflow = await page.evaluate(() => ({
       scrollWidth: globalThis.document.documentElement.scrollWidth,
       viewportWidth: globalThis.innerWidth,
