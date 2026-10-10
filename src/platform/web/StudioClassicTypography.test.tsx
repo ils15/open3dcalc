@@ -28,6 +28,27 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+// These tests assert the rendered surfaces and their typography, not the
+// timing of page transitions. Keep navigation synchronous so the dashboard
+// assertion is deterministic in the full coverage suite as well as in a
+// focused local run.
+vi.mock("framer-motion", () => ({
+  motion: {
+    div: ({
+      children,
+      ...props
+    }: React.PropsWithChildren<Record<string, unknown>>) => {
+      const { initial, animate, exit, transition, ...rest } = props;
+      void initial;
+      void animate;
+      void exit;
+      void transition;
+      return <div {...rest}>{children}</div>;
+    },
+  },
+  AnimatePresence: ({ children }: React.PropsWithChildren) => <>{children}</>,
+}));
+
 describe("Studio Classic surface — section card header scale", () => {
   it("renders the section headers at the h2 text-lg scale (Example/CatalogTab reference)", () => {
     render(<App />);
