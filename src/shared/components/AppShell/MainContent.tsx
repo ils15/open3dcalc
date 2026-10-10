@@ -24,15 +24,20 @@ interface MainContentProps {
   activeTab: Tab;
   /** Called when HistoryTab loads an item back into the calculator. */
   onSelectCalculator: () => void;
+  /** Opens the printer catalog from the Guided calculator. */
+  onManagePrinters?: () => void;
 }
 
 export function MainContent({
   activeTab,
   onSelectCalculator,
+  onManagePrinters,
 }: MainContentProps): React.ReactElement {
   return (
     <>
-      {activeTab === "calculator" && <CalculatorSurface />}
+      {activeTab === "calculator" && (
+        <CalculatorSurface onManagePrinters={onManagePrinters} />
+      )}
       {activeTab === "dashboard" && <Dashboard />}
       {activeTab === "infill" && <InfillCalculator />}
       {activeTab === "inventory" && <SpoolShelf />}

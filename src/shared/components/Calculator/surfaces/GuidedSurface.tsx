@@ -1,5 +1,9 @@
 import { GuidedWizard } from "@/shared/components/Wizard/GuidedWizard";
 
-export function GuidedSurface(): React.ReactElement {
-  return <GuidedWizard />;
+export function GuidedSurface({
+  onManagePrinters,
+}: {
+  onManagePrinters?: () => void;
+}): React.ReactElement {
+  return <GuidedWizard onManagePrinters={onManagePrinters} />;
 }

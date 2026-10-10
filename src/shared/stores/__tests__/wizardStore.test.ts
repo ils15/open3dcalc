@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 
-import {
-  useCalculatorStore,
-  initialState,
-} from "./calculatorStore.test-utils";
+import { useCalculatorStore, initialState } from "./calculatorStore.test-utils";
 import { useLayoutStore } from "../layoutStore";
+import { useCatalogStore } from "../catalogStore";
 import {
   useWizardStore,
   WIZARD_TOTAL_STEPS,
@@ -51,6 +49,7 @@ function resetWizard(): void {
 
 beforeEach(() => {
   localStorage.clear();
+  useCatalogStore.getState().load();
   useCalculatorStore.setState(initialState, true);
   useLayoutStore.setState({ layoutMode: "classic" });
   resetWizard();
@@ -187,6 +186,30 @@ describe("wizardStore — validateStep", () => {
     expect(useWizardStore.getState().errors.printerId).toBe("required");
   });
 
+  it("accepts and commits a printer from the personal catalog", () => {
+    const personalPrinter = {
+      ...printers[0],
+      id: "personal-printer",
+      name: "Minha impressora",
+      brand: "Oficina",
+      power: 275,
+      value: 2400,
+      custom: true,
+    };
+    useCatalogStore.getState().addPrinter(personalPrinter);
+    useWizardStore.setState({
+      seeded: true,
+      draft: { ...VALID_DRAFT, printerId: personalPrinter.id },
+    });
+
+    expect(useWizardStore.getState().next()).toBe(true);
+
+    const calc = useCalculatorStore.getState();
+    expect(calc.selectedPrinter.id).toBe(personalPrinter.id);
+    expect(calc.fdmPrintParams.printerPowerWatts).toBe(personalPrinter.power);
+    expect(calc.fdmMachine.machineCost).toBe(personalPrinter.value);
+  });
+
   it("rejects a negative hourly rate on step 3", () => {
     useWizardStore.setState({
       seeded: true,
@@ -253,7 +276,11 @@ describe("wizardStore — next", () => {
   });
 
   it("does not advance past the last step", () => {
-    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT }, step: 4 });
+    useWizardStore.setState({
+      seeded: true,
+      draft: { ...VALID_DRAFT },
+      step: 4,
+    });
     expect(useWizardStore.getState().next()).toBe(false);
     expect(useWizardStore.getState().step).toBe(4);
   });
@@ -273,7 +300,11 @@ describe("wizardStore — next", () => {
 
 describe("wizardStore — prev", () => {
   it("decrements the step and marks the direction backward", () => {
-    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT }, step: 3 });
+    useWizardStore.setState({
+      seeded: true,
+      draft: { ...VALID_DRAFT },
+      step: 3,
+    });
 
     useWizardStore.getState().prev();
 
@@ -282,7 +313,11 @@ describe("wizardStore — prev", () => {
   });
 
   it("clamps at step 1", () => {
-    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT }, step: 1 });
+    useWizardStore.setState({
+      seeded: true,
+      draft: { ...VALID_DRAFT },
+      step: 1,
+    });
     useWizardStore.getState().prev();
     expect(useWizardStore.getState().step).toBe(1);
   });
@@ -290,7 +325,11 @@ describe("wizardStore — prev", () => {
 
 describe("wizardStore — goTo", () => {
   it("allows jumping backward freely", () => {
-    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT }, step: 3 });
+    useWizardStore.setState({
+      seeded: true,
+      draft: { ...VALID_DRAFT },
+      step: 3,
+    });
     useWizardStore.getState().goTo(1);
     expect(useWizardStore.getState().step).toBe(1);
   });
@@ -382,7 +421,11 @@ describe("wizardStore — commit", () => {
         bedEnabled: false,
         bedAdhesionCost: 0.31,
       },
-      fdmFinishing: { ...current.fdmFinishing, enabled: true, suppliesCost: 19 },
+      fdmFinishing: {
+        ...current.fdmFinishing,
+        enabled: true,
+        suppliesCost: 19,
+      },
       fdmOps: {
         ...current.fdmOps,
         enabled: true,
@@ -437,7 +480,10 @@ describe("wizardStore — commit", () => {
     expect(after.fdmHardware.nozzleLifespanKg).toBe(7);
     expect(after.fdmHardware.bedEnabled).toBe(false);
     expect(after.fdmHardware.bedAdhesionCost).toBe(0.31);
-    expect(after.fdmFinishing).toMatchObject({ enabled: true, suppliesCost: 19 });
+    expect(after.fdmFinishing).toMatchObject({
+      enabled: true,
+      suppliesCost: 19,
+    });
     expect(after.fdmOps).toMatchObject({
       enabled: true,
       ppeCostPerPrint: 15,
@@ -478,9 +524,7 @@ describe("wizardStore — commit", () => {
     expect(after.fdmPrintParams.energyCostPerKwh).toBe(
       VALID_DRAFT.energyCostPerKwh,
     );
-    expect(after.fdmLabor.setupTimeMinutes).toBe(
-      VALID_DRAFT.setupTimeMinutes,
-    );
+    expect(after.fdmLabor.setupTimeMinutes).toBe(VALID_DRAFT.setupTimeMinutes);
     expect(after.fdmLabor.postProcessingTimeMinutes).toBe(
       VALID_DRAFT.postProcessingMinutes,
     );
@@ -494,14 +538,20 @@ describe("wizardStore — commit", () => {
     expect(after.fdmMaterial.weightUsed).toBe(VALID_DRAFT.weightGrams);
     expect(after.quantity).toBe(VALID_DRAFT.quantity);
     expect(after.productName).toBe(VALID_DRAFT.productName);
-    expect(before.fdmMaterial.weightUsed).not.toBe(after.fdmMaterial.weightUsed);
+    expect(before.fdmMaterial.weightUsed).not.toBe(
+      after.fdmMaterial.weightUsed,
+    );
   });
 });
 
 describe("wizardStore — finish / exit / reset", () => {
   it("finish commits and graduates the user to the classic layout", () => {
     useLayoutStore.setState({ layoutMode: "guided" });
-    useWizardStore.setState({ seeded: true, draft: { ...VALID_DRAFT }, step: 4 });
+    useWizardStore.setState({
+      seeded: true,
+      draft: { ...VALID_DRAFT },
+      step: 4,
+    });
 
     useWizardStore.getState().finish();
 

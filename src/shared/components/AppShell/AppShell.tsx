@@ -138,6 +138,7 @@ export function AppShell({
           <MainContent
             activeTab={activeTab}
             onSelectCalculator={() => onTabChange("calculator")}
+            onManagePrinters={() => onTabChange("catalog")}
           />
         </div>
       </main>

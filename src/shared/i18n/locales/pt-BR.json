@@ -2716,7 +2716,10 @@
       "weightGrams": { "label": "Peso da peça", "unit": "g" },
       "costPerKg": { "label": "Preço do carretel", "unit": "/kg" },
       "quantity": { "label": "Quantidade" },
-      "printer": { "label": "Impressora" },
+      "printer": {
+        "label": "Impressora",
+        "manage": "Gerenciar ou adicionar impressoras"
+      },
       "printTimeHours": { "label": "Tempo de impressão", "unit": "h" },
       "energyCostPerKwh": { "label": "Energia por kWh", "unit": "/kWh" },
       "setupTimeMinutes": { "label": "Tempo de preparação", "unit": "min" },

@@ -7,6 +7,8 @@ import {
   act,
 } from "@testing-library/react";
 
+const { navigateToTab } = vi.hoisted(() => ({ navigateToTab: vi.fn() }));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     // Identity `t` — these tests assert keys; string content is locked by the
@@ -18,8 +20,10 @@ vi.mock("react-i18next", () => ({
 
 import { useWizardStore } from "@/shared/stores/wizardStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { initialState } from "@/shared/stores/__tests__/calculatorStore.test-utils";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
+import { printers } from "@/shared/lib/printers";
 import { formatCurrency, resolveCurrency } from "@/shared/lib/currency";
 import { GuidedWizard } from "@/shared/components/Wizard/GuidedWizard";
 
@@ -33,7 +37,9 @@ import { GuidedWizard } from "@/shared/components/Wizard/GuidedWizard";
 
 beforeEach(() => {
   localStorage.clear();
+  useCatalogStore.getState().load();
   useCalculatorStore.setState(initialState, true);
+  navigateToTab.mockClear();
   useLayoutStore.setState({ layoutMode: "guided" });
   useWizardStore.setState({
     step: 1,
@@ -134,6 +140,47 @@ describe("GuidedWizard — advancing with validation", () => {
     render(<GuidedWizard />);
     fireEvent.click(nextButton());
     expect(document.activeElement).toHaveAttribute("id", "wizard-step-heading");
+  });
+
+  it("searches and selects a personal printer from the shared catalog", () => {
+    const personalPrinter = {
+      ...printers[0],
+      id: "personal-printer",
+      name: "Minha impressora",
+      brand: "Oficina",
+      custom: true,
+    };
+    useCatalogStore.getState().addPrinter(personalPrinter);
+    render(<GuidedWizard />);
+
+    fireEvent.click(nextButton());
+    fireEvent.click(
+      screen.getByRole("combobox", { name: "wizard.fields.printer.label" }),
+    );
+    fireEvent.change(screen.getByPlaceholderText("Buscar..."), {
+      target: { value: "Minha impressora" },
+    });
+
+    const personalOption = screen.getByRole("option", {
+      name: /Minha impressora/,
+    });
+    expect(personalOption).toBeInTheDocument();
+    fireEvent.click(personalOption);
+
+    expect(useWizardStore.getState().draft.printerId).toBe(personalPrinter.id);
+  });
+
+  it("offers a direct route to the printer catalog from step 2", () => {
+    render(<GuidedWizard onManagePrinters={() => navigateToTab("catalog")} />);
+    fireEvent.click(nextButton());
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "wizard.fields.printer.manage",
+      }),
+    );
+
+    expect(navigateToTab).toHaveBeenCalledWith("catalog");
   });
 });
 

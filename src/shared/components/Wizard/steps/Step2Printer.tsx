@@ -1,7 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { InputGroup, SelectGroup } from "@/shared/components/ui/InputGroup";
+import { Plus } from "lucide-react";
+import { InputGroup } from "@/shared/components/ui/InputGroup";
+import { Select } from "@/shared/components/ui/Select";
 import { useCurrency } from "@/shared/hooks/useCurrency";
-import { printers } from "@/shared/lib/printers";
+import { isPersonalPrinter } from "@/shared/lib/printerCatalog";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 import type { WizardDraft, WizardErrorKind } from "@/shared/stores/wizardStore";
 
 type WizardErrors = Partial<Record<keyof WizardDraft, WizardErrorKind>>;
@@ -14,15 +17,18 @@ export interface Step2PrinterProps {
   draft: WizardDraft;
   errors: WizardErrors;
   setField: SetWizardField;
+  onManagePrinters?: () => void;
 }
 
 export function Step2Printer({
   draft,
   errors,
   setField,
+  onManagePrinters,
 }: Step2PrinterProps): React.ReactElement {
   const { t } = useTranslation();
   const { symbol } = useCurrency();
+  const printers = useCatalogStore((state) => state.printers);
   const currentErrors = errors ?? {};
   const fieldError = (key: keyof WizardDraft): string | undefined => {
     const kind = currentErrors[key];
@@ -32,15 +38,35 @@ export function Step2Printer({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <SelectGroup
+        <Select
           label={t("wizard.fields.printer.label")}
           value={draft.printerId}
           onChange={(value) => setField("printerId", value)}
-          options={printers.map((printer) => ({
-            label: `${printer.brand} — ${printer.name}`,
-            value: printer.id,
-          }))}
+          options={printers.map((printer) => {
+            const personal = isPersonalPrinter(printer);
+            return {
+              label: printer.name,
+              value: printer.id,
+              image: printer.image,
+              group: personal ? t("catalog.myPrinters") : printer.brand,
+              subtitle: `${printer.power}W · ${symbol} ${printer.value}${
+                personal ? ` · ${t("catalog.customPrinter")}` : ""
+              }`,
+            };
+          })}
+          groups
+          search
         />
+        {onManagePrinters && (
+          <button
+            type="button"
+            onClick={onManagePrinters}
+            className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-[var(--color-accent)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            {t("wizard.fields.printer.manage")}
+          </button>
+        )}
         {fieldError("printerId") && (
           <p
             role="alert"
