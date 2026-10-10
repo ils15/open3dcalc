@@ -54,7 +54,7 @@ import { resolve } from "node:path";
  *     replaced the failing small `text-slate-500` copy with AA-safe text tokens.
  *
  * WHAT IS STILL DEFERRED, AND WHY (the honest debt list)
- *   - CatalogTab's remaining 124 — a rewrite of mixed sites in a SHARED
+ *   - CatalogTab's remaining 120 — a rewrite of mixed sites in a SHARED
  *     component would put the Electron target, which currently looks correct,
  *     at risk. Bounded batches only.
  *   - slicerOptimizer.ts (18) — DEAD MODULE: none of its four exported symbols
@@ -192,7 +192,7 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/platform/web/components/studio/StudioQuotesView.tsx": 3,
   "src/platform/web/components/studio/StudioSpoolView.tsx": 27,
   "src/platform/web/components/studio/StudioProductsView.tsx": 2,
-  "src/shared/components/Catalog/CatalogTab.tsx": 124,
+  "src/shared/components/Catalog/CatalogTab.tsx": 120,
   "src/platform/web/components/studio/StudioCustomerView.tsx": 1,
   "src/platform/web/components/studio/StudioQuoteModal.tsx": 1,
   "src/shared/components/Catalog/FilamentInventory.tsx": 61,
@@ -306,7 +306,7 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
     expect(files).toBe(55);
-    expect(occurrences).toBe(662);
+    expect(occurrences).toBe(658);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

@@ -217,6 +217,64 @@ describe("CatalogTab", () => {
     expect(within(custom).getByText("90 W")).toBeInTheDocument();
   });
 
+  it("separates personal printers from the built-in model library", () => {
+    const personal = {
+      id: "my-workshop-printer",
+      name: "Workshop Printer",
+      brand: "My Workshop",
+      power: 250,
+      value: 1200,
+      usefulLife: 3000,
+      maintenancePerHour: 0.25,
+      custom: true,
+    };
+    mockCatalog.printers = [printers[0], personal];
+
+    render(<CatalogTab />);
+
+    expect(
+      screen.getByRole("article", { name: /Workshop Printer/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("article", { name: new RegExp(printers[0].name) }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(
+        screen.getByRole("group", { name: "catalog.printerCollections" }),
+      ).getByRole("button", { name: /catalog.printerLibrary/ }),
+    );
+
+    const libraryCard = screen.getByRole("article", {
+      name: new RegExp(printers[0].name),
+    });
+    expect(
+      screen.queryByRole("article", { name: /Workshop Printer/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(libraryCard).queryByRole("button", {
+        name: "catalog.editPrinter",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(libraryCard).queryByRole("button", { name: "catalog.remove" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers a first-use add action when the personal printer list is empty", () => {
+    mockCatalog.printers = [printers[0]];
+
+    render(<CatalogTab />);
+
+    expect(
+      screen.getByText("catalog.emptyPersonalPrinters"),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "catalog.addPrinter" })[0],
+    );
+    expect(screen.getAllByRole("dialog")[0]).toBeInTheDocument();
+  });
+
   it("shows printer images with a resilient fallback and keeps unknown technology visible", () => {
     mockCatalog.printers = [
       {
@@ -459,7 +517,7 @@ describe("CatalogTab", () => {
 
   it("selects a profile for calculations and keeps edit/delete protections", async () => {
     const preset = {
-      id: "preset-1",
+      ...printers[0],
       name: "Maker Pro",
       brand: "Maker",
       power: 250,
@@ -525,16 +583,22 @@ describe("CatalogTab", () => {
     );
     expect(document.activeElement).toBe(editButton);
 
+    fireEvent.click(
+      within(custom).getByRole("button", { name: "catalog.remove" }),
+    );
+    expect(mockCatalog.removePrinter).toHaveBeenCalledWith("custom-1");
+
+    fireEvent.click(
+      within(
+        screen.getByRole("group", { name: "catalog.printerCollections" }),
+      ).getByRole("button", { name: /catalog.printerLibrary/ }),
+    );
     expect(
       within(screen.getByRole("article", { name: /Maker Pro/ })).queryByRole(
         "button",
         { name: "catalog.remove" },
       ),
     ).not.toBeInTheDocument();
-    fireEvent.click(
-      within(custom).getByRole("button", { name: "catalog.remove" }),
-    );
-    expect(mockCatalog.removePrinter).toHaveBeenCalledWith("custom-1");
   });
 
   it("filters material cards, clears the search, and preserves remove IDs", () => {

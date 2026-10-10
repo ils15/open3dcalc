@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { PrinterTagEditor } from "@/shared/components/Catalog/PrinterTagEditor";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
 import { Select } from "@/shared/components/ui/Select";
@@ -27,6 +28,14 @@ import type { CatalogPrinter } from "@/shared/stores/catalogStore";
 type Section = "printers" | "materials" | "marketplaces";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
+const BUILTIN_PRINTER_IDS = new Set(printers.map((printer) => printer.id));
+
+function isPersonalPrinter(printer: CatalogPrinter): boolean {
+  return (
+    printer.custom === true ||
+    (printer.custom === undefined && !BUILTIN_PRINTER_IDS.has(printer.id))
+  );
+}
 
 const SHIPPED_PRINTER_IMAGE_PATHS = new Set([
   "/images/printers/fallback-fdm.svg",
@@ -327,20 +336,32 @@ const emptyPrinterForm = (): PrinterEditForm => ({
 
 function PrinterManager() {
   const store = useCatalogStore();
+  const activePrinterId = useCalculatorStore(
+    (state) => state.selectedPrinter.id,
+  );
   const { t } = useTranslation();
   const { symbol: currencySymbol } = useCurrency();
+  const [collection, setCollection] = useState<"mine" | "library">("mine");
   const [search, setSearch] = useState("");
   const [technology, setTechnology] = useState<"all" | "fdm" | "resin">("all");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(
-    null,
-  );
   const [editingPrinterId, setEditingPrinterId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<PrinterEditForm>(emptyPrinterForm());
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const editFormRef = useRef<PrinterEditForm>(emptyPrinterForm());
   const modalRef = useRef<HTMLDivElement>(null);
   const editTriggerRef = useRef<HTMLElement | null>(null);
+
+  const personalPrinters = useMemo(
+    () => store.printers.filter(isPersonalPrinter),
+    [store.printers],
+  );
+  const libraryPrinters = useMemo(
+    () => store.printers.filter((printer) => !isPersonalPrinter(printer)),
+    [store.printers],
+  );
+  const visiblePrinters =
+    collection === "mine" ? personalPrinters : libraryPrinters;
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
@@ -352,7 +373,7 @@ function PrinterManager() {
 
   const filteredPrinters = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
-    return store.printers.filter((printer) => {
+    return visiblePrinters.filter((printer) => {
       const matchesSearch =
         !normalizedSearch ||
         `${printer.name} ${printer.brand}`
@@ -361,11 +382,18 @@ function PrinterManager() {
       const matchesTechnology =
         technology === "all" || printer.technology === technology;
       const matchesTag =
+        collection !== "mine" ||
         !store.selectedPrinterTag ||
         (printer.tags ?? []).includes(store.selectedPrinterTag);
       return matchesSearch && matchesTechnology && matchesTag;
     });
-  }, [search, store.printers, store.selectedPrinterTag, technology]);
+  }, [
+    collection,
+    search,
+    store.selectedPrinterTag,
+    technology,
+    visiblePrinters,
+  ]);
 
   const tagChipClass = (active: boolean) =>
     `whitespace-nowrap rounded border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
@@ -374,15 +402,9 @@ function PrinterManager() {
         : "border-[#262a3c] bg-[#161824] text-slate-300 hover:text-white"
     }`;
 
-  const selectPrinterForCalculation = useCallback(
-    async (printer: CatalogPrinter) => {
-      setSelectedPrinterId(printer.id);
-      const { useCalculatorStore } =
-        await import("@/shared/stores/calculatorStore");
-      useCalculatorStore.getState().setSelectedPrinter(printer);
-    },
-    [],
-  );
+  const selectPrinterForCalculation = useCallback((printer: CatalogPrinter) => {
+    useCalculatorStore.getState().setSelectedPrinter(printer);
+  }, []);
 
   const updEdit = (key: keyof PrinterEditForm, value: string) => {
     setEditForm((form) => {
@@ -505,7 +527,6 @@ function PrinterManager() {
 
   return (
     <div className="space-y-4">
-      {/* Minhas Impressoras Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[#0e1424] border border-[#1b253b]">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -515,11 +536,20 @@ function PrinterManager() {
             </span>
           </div>
           <h3 className="text-base font-bold text-white flex items-center gap-2">
-            Minhas Impressoras 3D Cadastradas
+            {t(
+              collection === "mine"
+                ? "catalog.myPrinters"
+                : "catalog.printerLibrary",
+            )}
           </h3>
           <p className="text-xs text-slate-400">
-            {store.printers.length} equipamentos na frota • Clique em "Definir
-            Ativa" para aplicar potência e custos no cálculo
+            {collection === "mine"
+              ? t("catalog.personalPrintersSummary", {
+                  count: personalPrinters.length,
+                })
+              : t("catalog.printerLibrarySummary", {
+                  count: libraryPrinters.length,
+                })}
           </p>
         </div>
 
@@ -532,6 +562,36 @@ function PrinterManager() {
           <Plus aria-hidden="true" className="h-4 w-4" />
           <span>{t("catalog.addPrinter")}</span>
         </button>
+      </div>
+
+      <div
+        className="inline-flex max-w-full flex-wrap rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1"
+        role="group"
+        aria-label={t("catalog.printerCollections")}
+      >
+        {(
+          [
+            ["mine", "catalog.myPrinters", personalPrinters.length],
+            ["library", "catalog.printerLibrary", libraryPrinters.length],
+          ] as const
+        ).map(([value, label, count]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={collection === value}
+            onClick={() => {
+              setCollection(value);
+              store.setPrinterTagFilter(null);
+            }}
+            className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+              collection === value
+                ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]"
+                : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)]"
+            }`}
+          >
+            {t(label)} <span className="opacity-75">({count})</span>
+          </button>
+        ))}
       </div>
 
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -566,7 +626,7 @@ function PrinterManager() {
             </button>
           ))}
         </div>
-        {allTags.length > 0 && (
+        {collection === "mine" && allTags.length > 0 && (
           <div
             className="flex flex-wrap items-center gap-1.5"
             role="group"
@@ -600,21 +660,16 @@ function PrinterManager() {
             ))}
           </div>
         )}
-        <button
-          type="button"
-          aria-expanded={showCreateForm}
-          onClick={() => setShowCreateForm((visible) => !visible)}
-          className="flex h-[30px] shrink-0 items-center justify-center gap-1.5 rounded bg-[#2563eb] px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#1d4ed8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          <Plus aria-hidden="true" className="h-3.5 w-3.5" />
-          {t("catalog.addPrinter")}
-        </button>
       </div>
 
       {showCreateForm && (
         <PrinterCreateForm
           onCancel={() => setShowCreateForm(false)}
-          onCreated={() => setShowCreateForm(false)}
+          onCreated={(printer) => {
+            setCollection("mine");
+            setShowCreateForm(false);
+            void selectPrinterForCalculation(printer);
+          }}
         />
       )}
 
@@ -623,24 +678,47 @@ function PrinterManager() {
         role="group"
         aria-label={t("catalog.printers")}
       >
-        {filteredPrinters.map((printer) => (
-          <PrinterProfileCard
-            key={printer.id}
-            printer={printer}
-            selected={selectedPrinterId === printer.id}
-            onSelect={() => void selectPrinterForCalculation(printer)}
-            onEdit={() => openEditPrinter(printer)}
-            onRemove={() => store.removePrinter(printer.id)}
-          />
-        ))}
+        {filteredPrinters.map((printer) => {
+          const personal = isPersonalPrinter(printer);
+          return (
+            <PrinterProfileCard
+              key={printer.id}
+              printer={printer}
+              personal={personal}
+              selected={activePrinterId === printer.id}
+              onSelect={() => void selectPrinterForCalculation(printer)}
+              onEdit={() => openEditPrinter(printer)}
+              onRemove={() => store.removePrinter(printer.id)}
+            />
+          );
+        })}
         {filteredPrinters.length === 0 && (
-          <p
+          <div
             role="status"
             aria-live="polite"
-            className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)]"
+            className="col-span-full rounded-xl border border-dashed border-[var(--color-border)] p-6 text-center"
           >
-            {t("history.noResults")}
-          </p>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              {collection === "mine" && personalPrinters.length === 0
+                ? t("catalog.emptyPersonalPrinters")
+                : t("history.noResults")}
+            </p>
+            {collection === "mine" && personalPrinters.length === 0 && (
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                {t("catalog.emptyPersonalPrintersHint")}
+              </p>
+            )}
+            {collection === "mine" && personalPrinters.length === 0 && (
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(true)}
+                className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--accent-fill)] px-4 py-2 text-sm font-semibold text-[var(--color-accent-fill-fg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+              >
+                <Plus aria-hidden="true" className="h-4 w-4" />
+                {t("catalog.addPrinter")}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -739,7 +817,7 @@ function PrinterManager() {
 
 interface PrinterCreateFormProps {
   onCancel: () => void;
-  onCreated: () => void;
+  onCreated: (printer: CatalogPrinter) => void;
 }
 
 function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
@@ -802,7 +880,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
 
   const add = () => {
     if (!name.trim()) return;
-    store.addPrinter({
+    const printer: CatalogPrinter = {
       id: uid(),
       name,
       brand: brand || t("catalog.customPrinter"),
@@ -813,8 +891,9 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
       custom: true,
       ...(technology ? { technology } : {}),
       ...(buildVolumeMm ? { buildVolumeMm } : {}),
-    });
-    onCreated();
+    };
+    store.addPrinter(printer);
+    onCreated(printer);
   };
 
   const numVal = Number(value) || 0;
@@ -1192,6 +1271,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
 
 interface PrinterProfileCardProps {
   printer: CatalogPrinter;
+  personal: boolean;
   selected: boolean;
   onSelect: () => void;
   onEdit: () => void;
@@ -1200,6 +1280,7 @@ interface PrinterProfileCardProps {
 
 function PrinterProfileCard({
   printer,
+  personal,
   selected,
   onSelect,
   onEdit,
@@ -1260,7 +1341,7 @@ function PrinterProfileCard({
             </span>
           </div>
         </div>
-        {printer.custom ? (
+        {personal ? (
           <span className="shrink-0 rounded border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-1.5 py-0.5 text-[10px] text-[var(--color-text-secondary)]">
             {t("catalog.customPrinter")}
           </span>
@@ -1301,16 +1382,18 @@ function PrinterProfileCard({
           {t("catalog.selectPrinter")}
         </button>
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label={t("catalog.editPrinter")}
-            title={t("catalog.editPrinter")}
-            className="flex h-8 w-8 items-center justify-center rounded text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
-          >
-            <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
-          </button>
-          {printer.custom && (
+          {personal && (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={t("catalog.editPrinter")}
+              title={t("catalog.editPrinter")}
+              className="flex h-8 w-8 items-center justify-center rounded text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+            >
+              <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {personal && (
             <button
               type="button"
               onClick={onRemove}

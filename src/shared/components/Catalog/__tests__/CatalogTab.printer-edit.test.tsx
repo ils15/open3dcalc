@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { CatalogTab } from "../CatalogTab";
 
@@ -7,7 +7,7 @@ const mockers = vi.hoisted(() => {
   const mockRemovePrinter = vi.fn();
   const printers = [
     {
-      id: "ender3",
+      id: "bambu_a1_mini",
       name: "Ender 3",
       brand: "Creality",
       power: 235,
@@ -48,12 +48,13 @@ vi.mock("@/shared/stores/catalogStore", () => {
     removeMaterial: vi.fn(),
     removeMarketplace: vi.fn(),
   };
+  const getState = () => state;
   return {
     useCatalogStore: Object.assign(
       vi.fn((selector?: (s: typeof state) => unknown) => {
         return selector ? selector(state) : state;
       }),
-      { subscribe: vi.fn() },
+      { subscribe: vi.fn(), getState },
     ),
   };
 });
@@ -76,12 +77,19 @@ vi.mock("@/shared/hooks/useCurrency", () => ({
 describe("CatalogTab — Printer Editing", () => {
   it("renders printer cards", () => {
     render(<CatalogTab />);
-    expect(screen.getByText("Ender 3")).toBeDefined();
     expect(screen.getByText("Minha Custom")).toBeDefined();
+    fireEvent.click(
+      screen.getByRole("button", { name: /catalog.printerLibrary/ }),
+    );
+    expect(screen.getByText("Ender 3")).toBeDefined();
+    expect(screen.queryByText("Minha Custom")).toBeNull();
   });
 
   it("shows default badge for non-custom printers", () => {
     render(<CatalogTab />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /catalog.printerLibrary/ }),
+    );
     // Mock t() returns the key itself, so we look for 'catalog.defaultPrinter'
     const badges = screen.getAllByText("catalog.defaultPrinter");
     expect(badges.length).toBe(1);
