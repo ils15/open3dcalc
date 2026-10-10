@@ -227,6 +227,36 @@ describe("GuidedWizard — result & graduation", () => {
         name: /calc.marketplaceComparison.open/,
       }),
     ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "calc.suggestedPrice.open" }),
+    ).toBeVisible();
+  });
+
+  it("applies a suggested price to the Guided result without changing the stored calculation", () => {
+    render(<GuidedWizard />);
+    act(() => {
+      useWizardStore.getState().goTo(4);
+    });
+
+    const storedPrice = useCalculatorStore.getState().results!.sellPrice;
+    const before = screen.getByTestId("wizard-sell-price").textContent;
+    fireEvent.click(
+      screen.getByRole("button", { name: "calc.suggestedPrice.open" }),
+    );
+    fireEvent.change(screen.getByLabelText("calc.suggestedPrice.goal"), {
+      target: { value: "break_even" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "calc.suggestedPrice.apply" }),
+    );
+
+    expect(screen.getByTestId("wizard-sell-price").textContent).not.toBe(
+      before,
+    );
+    expect(useCalculatorStore.getState().results!.sellPrice).toBe(storedPrice);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "calc.suggestedPrice.applied",
+    );
   });
 
   it("Finish commits the draft and graduates to the classic layout", () => {

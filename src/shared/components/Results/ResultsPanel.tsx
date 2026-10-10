@@ -12,12 +12,16 @@ import { DiagnosticDetailsCard } from "./DiagnosticDetailsCard";
 import { PriceHeroCard } from "./PriceHeroCard";
 import { ProfitSummaryCard } from "./ProfitSummaryCard";
 import { ResultsActions } from "./ResultsActions";
+import { SuggestedPriceTool } from "@/shared/components/Calculator/SuggestedPriceTool";
 
 export type ResultsSidebarTab = "chart" | "bars" | "actions";
 export type ResultsCompactView = "chart" | "bars";
 
 export interface ResultsPanelProps {
   variant: "sidebar" | "mobile" | "bento";
+  /** Optional controlled override for surfaces with several linked result cards. */
+  readonly sellOverride?: number | null;
+  readonly onSellOverrideChange?: (price: number | null) => void;
   /** Receives the explanation when an export/share action is blocked in demo. */
   readonly onExportBlocked?: (message: string) => void;
   /** Bento owns the outer alert slot so it can remain the first child. */
@@ -47,6 +51,8 @@ function getFailureRatePercent(params: PrintParameters): number | null {
  */
 export function ResultsPanel({
   variant,
+  sellOverride: controlledSellOverride,
+  onSellOverrideChange,
   onExportBlocked,
   suppressCalculationError = false,
   historyActionLabel,
@@ -61,6 +67,7 @@ export function ResultsPanel({
     resinSales,
     fdmPrintParams,
     resinPrintParams,
+    quantity,
     calculationIssues,
   } = useCalculatorStore(
     useShallow((state) => ({
@@ -70,13 +77,22 @@ export function ResultsPanel({
       resinSales: state.resinSales,
       fdmPrintParams: state.fdmPrintParams,
       resinPrintParams: state.resinPrintParams,
+      quantity: state.quantity,
       calculationIssues: state.calculationIssues,
     })),
   );
 
   // Display-local sell-price override (issue #85): never writes back to the
   // store, so the global margin stays untouched.
-  const [sellOverride, setSellOverride] = useState<number | null>(null);
+  const [localSellOverride, setLocalSellOverride] = useState<number | null>(
+    null,
+  );
+  const sellOverride =
+    controlledSellOverride === undefined
+      ? localSellOverride
+      : controlledSellOverride;
+  const setSellOverride = onSellOverrideChange ?? setLocalSellOverride;
+  const sales = activeTab === "fdm" ? fdmSales : resinSales;
   const breakdown = useFinancialBreakdown({
     result: results,
     activeTab,
@@ -164,6 +180,20 @@ export function ResultsPanel({
       <PriceHeroCard
         breakdown={breakdown}
         onSellOverrideChange={setSellOverride}
+      />
+      <SuggestedPriceTool
+        totalCost={results.totalCost}
+        taxPercent={sales.taxPercent}
+        marketplaceFeePercent={sales.marketplaceFeePercent}
+        marketplaceFeeFixed={sales.marketplaceFeeFixed ?? 0}
+        quantity={quantity}
+        volumeDiscounts={sales.volumeDiscounts}
+        initialMarginPercent={
+          breakdown.overrideCalc?.marginReal ?? results.actualMargin
+        }
+        initialProfit={breakdown.displayProfit}
+        initialSellPrice={breakdown.displaySellPrice}
+        onApply={(scenario) => setSellOverride(scenario.sellPrice)}
       />
       <ProfitSummaryCard
         totalCost={results.totalCost}

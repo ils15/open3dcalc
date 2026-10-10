@@ -263,7 +263,7 @@
     "packaging": "Embalagem",
     "shipping": "Frete",
     "marketplace": "Marketplace",
-    "marketplaceFeeFixedHint": "A taxa percentual entra no cálculo principal. A taxa fixa fica salva no perfil e aparece na comparação, mas ainda não altera este resultado.",
+    "marketplaceFeeFixedHint": "A taxa fixa por unidade do perfil entra no preço calculado. Taxas por categoria, promoção e regras de frete do canal não são consultadas.",
     "marketplaceComparison": {
       "open": "Comparar lucro por marketplace",
       "profileCount": "{{count}} perfis",
@@ -283,7 +283,52 @@
       "unavailable": "Não disponível com estas taxas",
       "empty": "Cadastre um perfil de marketplace para comparar.",
       "assumptionsTitle": "Premissas da comparação",
-      "assumptions": "A comparação estima o preço incluindo markup, imposto e taxa percentual; também desconta a taxa fixa informada no perfil para estimar o lucro líquido. O cálculo principal ainda desconta apenas a taxa percentual. Nenhuma taxa de categoria, promoção ou frete cobrada pelo marketplace é consultada ou presumida; revise as regras atuais do canal antes de publicar o preço."
+      "assumptions": "A comparação estima o preço com markup, imposto e taxa percentual, e desconta a taxa fixa informada no perfil para mostrar seu efeito no lucro líquido. No cálculo principal, a taxa fixa por unidade também entra na fórmula do preço. Taxas por categoria, promoções e cobranças de frete do canal não são consultadas nem presumidas; revise as regras atuais antes de publicar."
+    },
+    "suggestedPrice": {
+      "open": "Simular preço de venda",
+      "intro": "Cenários calculados com o custo atual, imposto, taxa do marketplace ({{percent}}% + {{fixed}} por unidade) e desconto por quantidade.",
+      "applyHint": "Aplicar substitui o preço exibido e recalcula lucro/taxas apenas nesta visualização. Não altera o markup configurado nem grava a simulação.",
+      "goal": "Meta de preço",
+      "goals": {
+        "target_margin": "Margem líquida desejada",
+        "profit_per_part": "Lucro líquido por peça",
+        "monthly_profit": "Lucro líquido mensal",
+        "break_even": "Ponto de equilíbrio",
+        "competitor": "Preço da concorrência"
+      },
+      "targetMargin": "Margem desejada sobre o preço (%)",
+      "profitPerPart": "Lucro líquido desejado por peça ({{currency}})",
+      "monthlyProfit": "Lucro líquido mensal desejado ({{currency}})",
+      "unitsPerMonth": "Peças por mês",
+      "competitorPrice": "Preço do concorrente ({{currency}})",
+      "resultsLabel": "Cenários para {{goal}}",
+      "scenarios": {
+        "target_margin": "Margem desejada",
+        "profit_per_part": "Lucro por peça",
+        "monthly_profit": "Lucro mensal",
+        "break_even": "Ponto de equilíbrio",
+        "competitor_match": "Igualar concorrente",
+        "competitor_undercut": "Ficar 5% abaixo",
+        "competitor_beat": "Ficar 5% acima",
+        "withTier": "{{title}} · desconto de {{discount}}% a partir de {{quantity}} peças"
+      },
+      "unavailable": "Meta inviável",
+      "sellPrice": "Preço por peça",
+      "profit": "Lucro líquido",
+      "margin": "Margem sobre o preço",
+      "markup": "Markup sobre o custo",
+      "apply": "Aplicar este preço",
+      "applied": "Preço {{price}} aplicado ao resultado.",
+      "notes": {
+        "marginTargetUnreachable": "A meta de margem, somada a impostos e taxas percentuais, consome 100% ou mais do preço.",
+        "feesConsumePrice": "Impostos e taxas percentuais consomem 100% ou mais do preço; reduza as taxas.",
+        "monthlyUnitsRequired": "Informe uma quantidade mensal maior que zero.",
+        "belowBreakEven": "Este cenário fica abaixo do ponto de equilíbrio, com prejuízo estimado de {{loss}}.",
+        "volumeTier": "O desconto por quantidade reduz a margem líquida para {{margin}}%.",
+        "marginMarkup": "Esta é a margem sobre o preço; o markup equivalente sobre o custo é {{markup}}%.",
+        "breakEven": "O ponto de equilíbrio inclui taxas percentuais e a taxa fixa do perfil."
+      }
     },
     "taxPercent": "Taxas / Impostos",
     "profitMargin": "Markup sobre o custo",

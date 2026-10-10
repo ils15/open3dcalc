@@ -175,6 +175,23 @@ describe("useFinancialBreakdown — sell-price override", () => {
     expect(breakdown.overrideCalc?.belowBreakEven).toBe(false);
   });
 
+  it("includes the selected marketplace fixed fee in an overridden price", () => {
+    const breakdown = render({
+      result: { ...result, breakEvenPrice: 100 },
+      sellOverride: 131.25,
+      fdmSales: {
+        ...sales,
+        taxPercent: 10,
+        marketplaceFeePercent: 10,
+        marketplaceFeeFixed: 5,
+      },
+    });
+
+    expect(breakdown.overrideCalc?.marketplaceFee).toBe(18.13);
+    expect(breakdown.overrideCalc?.profit).toBe(0);
+    expect(breakdown.displayProfit).toBe(0);
+  });
+
   it("flags an override below break-even", () => {
     const breakdown = render({ sellOverride: 60 });
 

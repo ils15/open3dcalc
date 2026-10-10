@@ -143,6 +143,34 @@ describe("ResultsPanel — editable sell price (display-local override)", () => 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("applies a suggested scenario to the displayed result without changing markup", async () => {
+    const user = userEvent.setup();
+    render(<ResultsPanel variant="mobile" />);
+
+    const displayedPrice = screen.getByTestId("price-hero-value");
+    const originalPrice = displayedPrice.textContent;
+
+    await user.click(
+      screen.getByRole("button", { name: "calc.suggestedPrice.open" }),
+    );
+    const panel = screen.getByTestId("suggested-price-panel");
+    await user.selectOptions(
+      within(panel).getByLabelText("calc.suggestedPrice.goal"),
+      "break_even",
+    );
+    await user.click(
+      within(panel).getByRole("button", {
+        name: "calc.suggestedPrice.apply",
+      }),
+    );
+
+    expect(displayedPrice.textContent).not.toBe(originalPrice);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "calc.suggestedPrice.applied",
+    );
+    expect(useCalculatorStore.getState().fdmSales.profitMarginPercent).toBe(50);
+  });
+
   it("warns when the override is below break-even", async () => {
     const user = userEvent.setup();
     render(<ResultsPanel variant="mobile" />);

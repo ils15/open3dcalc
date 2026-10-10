@@ -487,17 +487,17 @@ Every phase and change must complete this checklist:
 
 - [ ] `SocialShareModal` com pré-visualização e contadores.
 - [x] `MarketplaceComparison` com tabela ordenada, melhor resultado e ação para usar marketplace built-in ou perfil personalizado em Rápido, Detalhado, Completo, Bento e Guiado.
-- [ ] `SuggestedPriceTool` com cenários e ação para aplicar o preço.
-- [ ] Textos e rótulos completos em pt-BR e en-US, incluindo a diferença entre margem sobre preço e markup sobre custo.
-- [x] Painel de premissas explicita que o comparador considera taxa fixa, mas o cálculo principal ainda aplica apenas a percentual; taxas de categoria, promoções e frete do canal não são presumidos.
+- [x] `SuggestedPriceTool` com metas de margem, lucro por peça/mês, break-even e concorrência; aplica o preço apenas à visualização de resultados Clássica/Bento/Guiada, em todos os níveis. Usa taxas percentuais e fixa do perfil selecionado e descontos por quantidade.
+- [x] Textos e rótulos completos em pt-BR e en-US, incluindo a diferença entre margem sobre preço e markup sobre custo.
+- [x] Premissas explicam que o comparador desconta a taxa fixa para estimar o efeito no lucro, enquanto o cálculo principal também inclui a taxa fixa por unidade na fórmula do preço; taxas de categoria, promoções e frete do canal não são presumidos.
 
 **Referência de precificação:** [NovaLab 3D — `precificar-impressao-marketplaces`](https://www.novalab3d.app/documentacao).
 
 **Acceptance criteria:**
 
 - [ ] O compartilhamento funciona sem chamadas de rede na geração e sem deep links não documentados.
-- [ ] As libs permanecem puras, seguras para NaN e sem Infinity; metas inviáveis são explicadas à pessoa usuária.
-- [ ] O teste de paridade preserva a fórmula da calculadora até a centavo.
+- [x] As libs permanecem puras, seguras para NaN e sem Infinity; metas inviáveis são explicadas à pessoa usuária.
+- [x] O teste de paridade preserva a fórmula da calculadora até a centavo, inclusive ao recompor a taxa fixa do perfil selecionado.
 - [x] `src/shared/lib/calculator.ts` não foi alterado.
 - [ ] As libs mantêm cobertura ≥90% e as interfaces, quando entregues, terão testes RTL, navegação por teclado e WCAG AA.
 - [ ] A checklist de LGPD e os testes de regressão de privacidade passam para cada nova chave.

@@ -228,6 +228,7 @@ export function useFinancialBreakdown(
             result.breakEvenPrice,
             sales.taxPercent,
             sales.marketplaceFeePercent,
+            sales.marketplaceFeeFixed ?? 0,
           );
 
     const taxAmount = result.taxAmount;

@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { MarketplaceComparison } from "@/shared/components/Calculator/MarketplaceComparison";
+import { SuggestedPriceTool } from "@/shared/components/Calculator/SuggestedPriceTool";
+import type { SuggestedPriceScenario } from "@/shared/lib/suggestedPrice";
 import type { CalculationResult } from "@/shared/types";
 
 export interface Step4ResultProps {
@@ -17,9 +20,12 @@ export function Step4Result({
 }: Step4ResultProps): React.ReactElement {
   const { t } = useTranslation();
   const { format } = useCurrency();
+  const [appliedScenario, setAppliedScenario] =
+    useState<SuggestedPriceScenario | null>(null);
   const catalogMarketplaces = useCatalogStore((state) => state.marketplaces);
   const {
     activeTab,
+    quantity,
     fdmSales,
     resinSales,
     selectedMarketplace,
@@ -27,6 +33,7 @@ export function Step4Result({
   } = useCalculatorStore(
     useShallow((state) => ({
       activeTab: state.activeTab,
+      quantity: state.quantity,
       fdmSales: state.fdmSales,
       resinSales: state.resinSales,
       selectedMarketplace: state.selectedMarketplace,
@@ -51,12 +58,12 @@ export function Step4Result({
         <ResultCard
           testId="wizard-sell-price"
           label={t("wizard.result.sellPrice")}
-          value={format(results?.sellPrice ?? 0)}
+          value={format(appliedScenario?.sellPrice ?? results?.sellPrice ?? 0)}
         />
         <ResultCard
           testId="wizard-profit"
           label={t("wizard.result.profit")}
-          value={format(results?.profit ?? 0)}
+          value={format(appliedScenario?.profit ?? results?.profit ?? 0)}
         />
       </div>
       {results && (
@@ -67,6 +74,20 @@ export function Step4Result({
           marketplaces={catalogMarketplaces}
           selectedMarketplaceId={selectedMarketplace.id}
           onUseMarketplace={setSelectedMarketplace}
+        />
+      )}
+      {results && (
+        <SuggestedPriceTool
+          totalCost={results.totalCost}
+          taxPercent={sales.taxPercent}
+          marketplaceFeePercent={sales.marketplaceFeePercent}
+          marketplaceFeeFixed={sales.marketplaceFeeFixed ?? 0}
+          quantity={quantity}
+          volumeDiscounts={sales.volumeDiscounts}
+          initialMarginPercent={results.actualMargin}
+          initialProfit={results.profit}
+          initialSellPrice={results.sellPrice}
+          onApply={setAppliedScenario}
         />
       )}
       <div className="flex flex-col items-center gap-2 text-center">

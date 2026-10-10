@@ -23,6 +23,7 @@ export interface BentoPricingCardProps {
   readonly quantity: number;
   readonly breakEvenPrice: number;
   readonly profit: number;
+  readonly displaySellPrice: number;
 }
 
 function parseNumber(value: string): number {
@@ -36,6 +37,7 @@ export function BentoPricingCard({
   quantity,
   breakEvenPrice,
   profit,
+  displaySellPrice,
 }: BentoPricingCardProps): React.ReactElement {
   const { t, i18n } = useTranslation();
   const { format, symbol } = useCurrency();
@@ -88,7 +90,7 @@ export function BentoPricingCard({
   const isFailureVisible = (fieldId: string): boolean =>
     isFieldVisibleForLevel(calcLevel, hiddenFields, "failure", fieldId);
   const locale = i18n.resolvedLanguage?.startsWith("en") ? "en-US" : "pt-BR";
-  const realMargin = deriveRealMarginPercent(profit, result.sellPrice);
+  const realMargin = deriveRealMarginPercent(profit, displaySellPrice);
   const realMarginValue = formatRealMarginPercent(realMargin, locale);
   const failureIsFixed = printParams.failureMode === "fixed";
   const marginTone =

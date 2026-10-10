@@ -59,6 +59,7 @@ describe("suggestPrices — shape & invariants", () => {
       { ...BASE_INPUT, totalCost: -100 },
       { ...BASE_INPUT, taxPercent: NaN },
       { ...BASE_INPUT, marketplaceFeePercent: NaN },
+      { ...BASE_INPUT, marketplaceFeeFixed: NaN },
       { ...BASE_INPUT, taxPercent: -10, marketplaceFeePercent: -20 },
     ];
     for (const input of inputs) {
@@ -139,6 +140,53 @@ describe("suggestPrices — profit_per_part", () => {
     expect(out[0].feasible).toBe(false);
     expect(out[0].note).toContain("100");
   });
+
+  it("includes the selected marketplace fixed fee in the target-price equation", () => {
+    const [scenario] = suggestPrices(
+      { ...BASE_INPUT, marketplaceFeeFixed: 5 },
+      { kind: "target_margin", marginPercent: 30 },
+    );
+
+    expect(scenario.sellPrice).toBe(210);
+    expect(scenario.profit).toBe(63);
+    expect(scenario.marginReal).toBe(30);
+    expect(scenario.markup).toBe(63);
+    expect(scenario.key).toBe("target_margin");
+  });
+
+  it("matches the calculator price to the cent when targeting its current real margin", () => {
+    const totalCost = 100;
+    const markupPercent = 50;
+    const taxPercent = 10;
+    const marketplaceFeePercent = 10;
+    const marketplaceFeeFixed = 5;
+    const percentageFees = (taxPercent + marketplaceFeePercent) / 100;
+    const calculatorPrice =
+      (totalCost + totalCost * (markupPercent / 100) + marketplaceFeeFixed) /
+      (1 - percentageFees);
+    const calculatorProfit =
+      calculatorPrice -
+      totalCost -
+      calculatorPrice * (taxPercent / 100) -
+      calculatorPrice * (marketplaceFeePercent / 100) -
+      marketplaceFeeFixed;
+    const realMargin = (calculatorProfit / calculatorPrice) * 100;
+
+    const [scenario] = suggestPrices(
+      {
+        totalCost,
+        taxPercent,
+        marketplaceFeePercent,
+        marketplaceFeeFixed,
+        quantity: 1,
+      },
+      { kind: "target_margin", marginPercent: realMargin },
+    );
+
+    expect(Math.round(scenario.sellPrice * 100)).toBe(
+      Math.round(calculatorPrice * 100),
+    );
+  });
 });
 
 describe("suggestPrices — monthly_profit", () => {
@@ -209,6 +257,17 @@ describe("suggestPrices — break_even", () => {
     expect(out[0].feasible).toBe(false);
     expect(out[0].note).toContain("100");
   });
+
+  it("includes a fixed marketplace fee in the break-even floor", () => {
+    const [scenario] = suggestPrices(
+      { ...BASE_INPUT, marketplaceFeeFixed: 5 },
+      { kind: "break_even" },
+    );
+
+    expect(scenario.sellPrice).toBe(131.25);
+    expect(scenario.profit).toBe(0);
+    expect(scenario.feasible).toBe(true);
+  });
 });
 
 describe("suggestPrices — competitor (reuses reverseFromSellPrice)", () => {
@@ -224,6 +283,21 @@ describe("suggestPrices — competitor (reuses reverseFromSellPrice)", () => {
       "Beat (+5%)",
     ]);
     finiteFields(out);
+    expect(out.map((scenario) => scenario.key)).toEqual([
+      "competitor_match",
+      "competitor_undercut",
+      "competitor_beat",
+    ]);
+  });
+
+  it("deducts the fixed fee when evaluating competitor scenarios", () => {
+    const [match] = suggestPrices(
+      { ...BASE_INPUT, marketplaceFeeFixed: 5 },
+      { kind: "competitor", competitorPrice: 150 },
+    );
+
+    expect(match.profit).toBe(15);
+    expect(match.feasible).toBe(true);
   });
 
   it("is numerically identical to reverseFromSellPrice on the match point", () => {
@@ -300,6 +374,7 @@ describe("suggestPrices — volume discount tiers", () => {
     expect(out[1].sellPrice).toBe(180);
     expect(out[1].profit).toBe(44);
     expect(out[1].feasible).toBe(true);
+    expect(out[1].tier).toEqual({ minQuantity: 10, discountPercent: 10 });
     // both scenarios carry the margin!=markup didactic note
     expect(out[0].note).toContain("markup");
     expect(out[1].note).toContain("markup");

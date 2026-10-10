@@ -91,6 +91,7 @@ function renderCards(): {
         quantity={state.quantity}
         breakEvenPrice={70}
         profit={30}
+        displaySellPrice={result.sellPrice}
       />
     </>,
   );

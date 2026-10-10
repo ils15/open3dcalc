@@ -23,7 +23,7 @@ function num(v: number): number {
  *
  * Given a manually entered sell price S:
  * - tax = S * taxPercent / 100
- * - fee = S * marketplaceFeePercent / 100
+ * - fee = S * marketplaceFeePercent / 100 + marketplaceFeeFixed
  * - profit = S - base - tax - fee
  * - marginReal = profit / S * 100 (0 when S <= 0)
  * - markupEffective = profit / base * 100 (0 when base <= 0)
@@ -36,15 +36,19 @@ export function reverseFromSellPrice(
   baseCost: number,
   taxPercent: number,
   marketplaceFeePercent: number,
+  marketplaceFeeFixed = 0,
 ): SellPriceOverrideResult {
   const s = Math.max(0, num(sellPrice));
   const base = Math.max(0, num(baseCost));
   const taxPct = Math.max(0, num(taxPercent));
   const feePct = Math.max(0, num(marketplaceFeePercent));
+  const fixedFee = Math.max(0, num(marketplaceFeeFixed));
 
   const taxAmount = roundCurrency((s * taxPct) / 100);
-  const marketplaceFee = roundCurrency((s * feePct) / 100);
-  const profit = roundCurrency(s - base - taxAmount - marketplaceFee);
+  const marketplaceFee = roundCurrency((s * feePct) / 100 + fixedFee);
+  const profit = roundCurrency(
+    s - base - (s * taxPct) / 100 - (s * feePct) / 100 - fixedFee,
+  );
   const marginReal = s > 0 ? roundCurrency((profit / s) * 100) : 0;
   const markupEffective = base > 0 ? roundCurrency((profit / base) * 100) : 0;
 

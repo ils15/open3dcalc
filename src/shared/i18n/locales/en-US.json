@@ -263,7 +263,7 @@
     "packaging": "Packaging",
     "shipping": "Shipping",
     "marketplace": "Marketplace",
-    "marketplaceFeeFixedHint": "The main calculation includes the percentage fee. The fixed fee stays in the profile and appears in comparisons, but does not change this result yet.",
+    "marketplaceFeeFixedHint": "The profile's fixed per-unit fee is included in the calculated price. Marketplace category fees, promotions, and channel shipping rules are not fetched.",
     "marketplaceComparison": {
       "open": "Compare profit by marketplace",
       "profileCount": "{{count}} profiles",
@@ -283,7 +283,52 @@
       "unavailable": "Unavailable with these fees",
       "empty": "Add a marketplace profile to compare.",
       "assumptionsTitle": "Comparison assumptions",
-      "assumptions": "The comparison estimates the price with markup, tax, and percentage fee, then also deducts the fixed fee from the profile to estimate net profit. The main calculation still deducts only the percentage fee. Marketplace category, promotion, and shipping charges are not fetched or assumed; review the channel's current rules before publishing a price."
+      "assumptions": "The comparison estimates a price from markup, tax, and percentage fee, then deducts the profile's fixed fee to show its effect on net profit. In the main calculation, the per-unit fixed fee is also included in the price formula. Marketplace category fees, promotions, and channel shipping charges are not fetched or assumed; review the current rules before publishing."
+    },
+    "suggestedPrice": {
+      "open": "Suggest a selling price",
+      "intro": "Scenarios use the current cost, tax, marketplace fee ({{percent}}% + {{fixed}} per unit), and quantity discount.",
+      "applyHint": "Applying a scenario replaces the displayed price and recalculates profit/fees in this view only. It does not change your configured markup or save the simulation.",
+      "goal": "Pricing goal",
+      "goals": {
+        "target_margin": "Desired net margin",
+        "profit_per_part": "Net profit per part",
+        "monthly_profit": "Monthly net profit",
+        "break_even": "Break-even",
+        "competitor": "Competitor price"
+      },
+      "targetMargin": "Desired margin on selling price (%)",
+      "profitPerPart": "Desired net profit per part ({{currency}})",
+      "monthlyProfit": "Desired monthly net profit ({{currency}})",
+      "unitsPerMonth": "Parts per month",
+      "competitorPrice": "Competitor's price ({{currency}})",
+      "resultsLabel": "Scenarios for {{goal}}",
+      "scenarios": {
+        "target_margin": "Target margin",
+        "profit_per_part": "Profit per part",
+        "monthly_profit": "Monthly profit",
+        "break_even": "Break-even",
+        "competitor_match": "Match competitor",
+        "competitor_undercut": "Price 5% lower",
+        "competitor_beat": "Price 5% higher",
+        "withTier": "{{title}} · {{discount}}% discount from {{quantity}} parts"
+      },
+      "unavailable": "Goal not feasible",
+      "sellPrice": "Price per part",
+      "profit": "Net profit",
+      "margin": "Margin on price",
+      "markup": "Markup on cost",
+      "apply": "Apply this price",
+      "applied": "Price {{price}} applied to the result.",
+      "notes": {
+        "marginTargetUnreachable": "The target margin plus taxes and percentage fees uses 100% or more of the price.",
+        "feesConsumePrice": "Taxes and percentage fees use 100% or more of the price; reduce the fees.",
+        "monthlyUnitsRequired": "Enter a monthly quantity greater than zero.",
+        "belowBreakEven": "This scenario is below break-even, with an estimated loss of {{loss}}.",
+        "volumeTier": "The quantity discount reduces the net margin to {{margin}}%.",
+        "marginMarkup": "This is margin on the selling price; the equivalent markup on cost is {{markup}}%.",
+        "breakEven": "Break-even includes percentage fees and the profile's fixed fee."
+      }
     },
     "taxPercent": "Tax / Fees",
     "profitMargin": "Markup on cost",
