@@ -90,7 +90,7 @@
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
     "lint-staged": "^17.5.1",
-    "pantheon-opencode": "^1.4.3",
+    "pantheon-opencode": "^1.5.2",
     "playwright": "^1.63.0",
     "prettier": "^3.9.6",
     "rehype-sanitize": "^6.0.0",
