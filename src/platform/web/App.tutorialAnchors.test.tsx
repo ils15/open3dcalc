@@ -6,15 +6,13 @@
  * `layoutMode === "classic"`, and `StudioLayout` is the render root for every
  * layout mode. The gate was internally consistent (mount, auto-start and the
  * runtime re-check in `useAppInit` all keyed off `layoutMode === "classic"`),
- * but the Studio calculator (`StudioCalculatorView`) carried ZERO
- * `data-tutorial` anchors. The tour therefore ran 7 visible cards in which
- * 4–5 steps spotlighted nothing and described controls that were not on
- * screen: a visible no-op is worse than no tour, and it did not honour the
- * declared reason for mounting the Tutorial at all.
+ * but the previous reduced Studio calculator carried ZERO `data-tutorial`
+ * anchors. The tour therefore ran steps that spotlighted controls not on
+ * screen.
  *
  * This spec is the anti-regression lock for that fix. Two properties, both
  * rendered from the REAL render root (`App` → `StudioLayout` →
- * `StudioCalculatorView`, no Studio mocks, no fake anchor harness):
+ * `CalculatorSurface`, no Studio mocks, no fake anchor harness):
  *
  *  1. Every anchored step of the tour has a real, visible anchor in the DOM.
  *     Data-driven off the registry, so a NEW anchored step added to
@@ -38,6 +36,10 @@ import { DEFAULT_TOUR, TOURS } from "@/shared/components/ui/tutorialTours";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useConsentStore } from "@/shared/stores/consentStore";
+
+// The tutorial is intentionally paused by the beta first-run modal. This spec
+// exercises the stable Studio path where the tutorial is available in place.
+vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: false }));
 
 // The real i18next instance (side-effectful import) so the assertions can pin
 // the user-visible copy the tour shows in this surface. jsdom resolves the
@@ -163,11 +165,8 @@ describe("calc-basico anchors on the real Studio surface", () => {
   it("renders a visible anchor for every anchored step of the tour", () => {
     render(<App />);
 
-    // The Studio calculator must be the thing on screen — otherwise these
-    // assertions could pass against some other surface.
-    expect(
-      screen.getByText(/INSUMO & CONSUMO DE MATERIAL/i),
-    ).toBeInTheDocument();
+    // The shared Classic calculator must be the thing on screen.
+    expect(screen.getByTestId("calculator-inputs")).toBeInTheDocument();
 
     const missing = anchoredSteps()
       .filter((step) => document.querySelectorAll(step.target).length === 0)
@@ -181,6 +180,21 @@ describe("calc-basico anchors on the real Studio surface", () => {
 
   it("spotlights every anchored step instead of degrading to a bare card", async () => {
     render(<App />);
+
+    // ConfirmDialog keeps its close animation mounted for 200ms after the
+    // initial closed render. Let that transient DOM state settle before the
+    // tutorial's modal guard is exercised.
+    await vi.waitFor(
+      () => {
+        expect(
+          document.querySelector(
+            '[role="dialog"][aria-modal="true"]:not([data-tutorial="true"])',
+          ),
+        ).toBeNull();
+      },
+      { timeout: 1000 },
+    );
+
     act(() => {
       useTutorialStore.getState().startTour(DEFAULT_TOUR);
     });

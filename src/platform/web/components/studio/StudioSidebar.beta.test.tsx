@@ -41,6 +41,9 @@ vi.mock("@/shared/components/Privacy/PrivacyScreen", () => ({
 vi.mock("@/shared/components/Calculator/surfaces/BentoSurface", () => ({
   BentoSurface: () => null,
 }));
+vi.mock("@/shared/components/Calculator/surfaces/CalculatorSurface", () => ({
+  CalculatorSurface: () => <div data-testid="calculator-view" />,
+}));
 vi.mock("@/shared/components/Calculator/surfaces/GuidedSurface", () => ({
   GuidedSurface: () => null,
 }));

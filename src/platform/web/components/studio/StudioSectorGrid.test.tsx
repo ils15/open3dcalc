@@ -15,8 +15,10 @@ import { useLayoutStore } from "@/shared/stores/layoutStore";
  * every Studio view root carries margin-auto + max-width instead of an
  * unbounded `max-w-full`, so 1440px centres the column and 390px stays
  * fluid with no overflow. `BentoSurface` and `GuidedWizard` already follow
- * this rhythm (their own `mx-auto` containers); the eight Studio views and
- * the two inline StudioLayout wrappers (catalog, infill) were the outliers.
+ * this rhythm (their own `mx-auto` containers); the Studio views and the two
+ * inline StudioLayout wrappers (catalog, infill) were the outliers. Classic
+ * now uses the shared responsive calculator grid instead of the retired
+ * Studio form, so it is verified through its live surface contract below.
  *
  * Source-text assertions (not snapshots): they pin the layout contract the
  * way `studioShellTheme.test.ts` pins the colour contract. Behaviour tests
@@ -34,7 +36,6 @@ const CENTERED_VIEWS: ReadonlyArray<string> = [
   "platform/web/components/studio/StudioQuotesView.tsx",
   "platform/web/components/studio/StudioProductsView.tsx",
   "platform/web/components/studio/StudioPrinterView.tsx",
-  "platform/web/components/studio/StudioCalculatorView.tsx",
 ];
 
 describe("Studio sector grid — centered like the Example", () => {
@@ -77,7 +78,7 @@ describe("Studio sector grid — centered like the Example", () => {
     });
 
     it.each([390, 1440])(
-      "renders a fluid, centered calculator grid at %i px",
+      "renders the shared responsive calculator surface at %i px",
       (width) => {
         Object.defineProperty(window, "innerWidth", {
           configurable: true,
@@ -85,23 +86,12 @@ describe("Studio sector grid — centered like the Example", () => {
         });
         render(<App />);
 
-        const title = screen.getByRole("heading", {
-          name: "1. INSUMO & CONSUMO DE MATERIAL",
-        });
-        let grid: HTMLElement | null = title;
-        while (
-          grid &&
-          !(
-            grid.classList.contains("mx-auto") &&
-            grid.classList.contains("max-w-7xl") &&
-            grid.classList.contains("w-full")
-          )
-        ) {
-          grid = grid.parentElement;
-        }
-
-        expect(grid).not.toBeNull();
-        expect(grid).toHaveClass("mx-auto", "max-w-7xl", "w-full");
+        const main = screen.getByRole("main");
+        const measure = screen.getByTestId("calculator-measure");
+        expect(main).toContainElement(measure);
+        expect(measure).toHaveClass("calculator-viewport-measure", "min-w-0");
+        expect(screen.getByTestId("calculator-layout")).toHaveClass("grid");
+        expect(screen.getByTestId("calculator-inputs")).toBeInTheDocument();
       },
     );
   });

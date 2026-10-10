@@ -93,10 +93,9 @@ select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
 }
 
-/* Studio's custom calculator has a mix of standalone fields and compound
-   controls (currency/unit + number input). Normalize their touch target and
-   focus state without changing the legacy Calculator or Bento surfaces. */
-.studio-calculator-controls
+/* Calculator surfaces have a mix of standalone fields and compound controls
+   (currency/unit + number input). Normalize touch targets and focus state. */
+.calculator-controls
   :is(
     input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
         [type="color"]
@@ -108,7 +107,7 @@ select {
   font-size: 1rem;
 }
 
-.studio-calculator-controls
+.calculator-controls
   :is(
     input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
         [type="color"]
@@ -120,7 +119,7 @@ select {
   border-color: var(--color-accent);
 }
 
-.studio-calculator-controls
+.calculator-controls
   :is(
     input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
         [type="color"]
@@ -131,9 +130,9 @@ select {
   border-color: var(--color-border-strong);
 }
 
-/* The visual shell already owns the border for currency/unit fields. Remove
-   the browser's second border from its inner input and show focus on the whole
-   compound control instead. */
+/* Only the retired Studio form has compound currency/unit shells whose
+   wrapper owns the border. Keep this reset scoped there so shared InputGroup
+   rows retain their own input borders and backgrounds. */
 .studio-calculator-controls
   .flex.items-center:has(
     > input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
@@ -172,7 +171,7 @@ select {
 }
 
 @media (min-width: 640px) {
-  .studio-calculator-controls
+  .calculator-controls
     :is(
       input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not(
           [type="color"]
