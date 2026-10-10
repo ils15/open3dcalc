@@ -722,10 +722,10 @@ O canal beta publica builds **web-only** (Electron nunca é buildado) num subpat
 > da mesma origem, extensões ou DevTools, que podem acessar o armazenamento do navegador.
 > A Beta não tem senha/cofre, consentimento/recibo, migração de dados antigos, exclusão ou
 > recuperação, importação/exportação ou backup. O perfil do navegador é descartável; apague-o
-> fora do app se precisar limpar os fixtures. A implementação e a verificação local deste branch
-> estão concluídas; a revisão final da Themis está pendente. Nenhuma publicação foi autorizada
-> ou executada por este trabalho; a Beta web publicada continua na v2.0.0-beta.13. Stable e
-> Desktop permanecem fora desse contrato.
+> fora do app se precisar limpar os fixtures. A implementação foi mesclada na `main` pelo PR #279
+> e está na Beta web `v2.0.0-beta.15`. A revisão final da Themis e a aprovação explícita do
+> responsável/revisão legal continuam pendentes para promoção Stable. Stable e Desktop permanecem
+> fora do contrato Beta.
 
 As tags beta são **imutáveis**: nunca reescreva ou delete uma tag já publicada — corte uma nova beta (`beta.N+1`) caso precise ajustar algo. O `beta-deploy.yml` é idempotente, então re-executá-lo na mesma tag apenas refresca a release.
 
