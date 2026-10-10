@@ -17,9 +17,10 @@ The R1–R15 table below is a historical trace of the former D1.0 contract and m
 through this policy 1.9 supersession. The current operative contracts are SPEC-01 policy 1.9,
 ADR-001/002/003 supersession notes, SPEC-02, SPEC-03, SPEC-04, and the current TEST-MATRIX.
 
-**Current branch status:** implementation and local verification are complete on
-`refactor/beta13-prune-legacy-darkmode`; final Themis review is pending. No publication is
-authorized or performed by this work. The published web Beta remains `v2.0.0-beta.13`.
+**Implementation status:** implementation and local verification were completed in PR #279 and
+merged into `main`; the restricted web Beta is now `v2.0.0-beta.15`. Final Themis review and
+explicit owner/legal approval remain pending before Stable promotion. Beta publication does not
+approve the separate Stable/Desktop policy.
 
 **Track:** D1 — Privacy & Data Contracts (D1.0, documentation only)
 **DRI:** Hermes
