@@ -9,6 +9,7 @@ import { useCurrency } from "@/shared/hooks/useCurrency";
 import { SectionHeader } from "./SectionHeader";
 import { DerivedMarginDisplay } from "../DerivedMarginDisplay";
 import { isFieldVisibleForLevel } from "../Calculator.constants";
+import { MarketplaceComparison } from "../MarketplaceComparison";
 
 const MARKUP_PRESETS = [100, 150, 200, 250, 300, 500];
 
@@ -301,6 +302,22 @@ export function SalesSection({ step }: { step?: number }) {
             testId="classic-derived-real-margin"
           />
         </div>
+        {store.results && (
+          <MarketplaceComparison
+            totalCost={store.results.totalCost}
+            marginPercent={
+              isFDM
+                ? store.fdmSales.profitMarginPercent
+                : store.resinSales.profitMarginPercent
+            }
+            taxPercent={
+              isFDM ? store.fdmSales.taxPercent : store.resinSales.taxPercent
+            }
+            marketplaces={catalogMarketplaces}
+            selectedMarketplaceId={store.selectedMarketplace.id}
+            onUseMarketplace={store.setSelectedMarketplace}
+          />
+        )}
       </div>
     </div>
   );

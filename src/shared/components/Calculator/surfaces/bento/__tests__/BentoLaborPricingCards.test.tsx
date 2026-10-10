@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import i18n from "@/shared/i18n/i18n";
+import { marketplaces as marketplaceSeeds } from "@/shared/lib/marketplace";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 import type { CalculationResult } from "@/shared/types";
 import { BentoLaborCard } from "../BentoLaborCard";
 import { BentoPricingCard } from "../BentoPricingCard";
@@ -55,6 +57,9 @@ const ADVANCED_PRICING_FIELDS = [
 beforeEach(async () => {
   await i18n.changeLanguage("pt-BR");
   useCalculatorStore.getState().resetCalculator();
+  useCatalogStore.setState({
+    marketplaces: marketplaceSeeds.map((marketplace) => ({ ...marketplace })),
+  });
   useCalculatorStore.setState({
     activeTab: "fdm",
     calcLevel: "advanced",
@@ -173,6 +178,11 @@ describe("editable labor and pricing cards", () => {
       expect(
         within(pricingCard).getByRole("combobox", { name: "Marketplace" }),
       ).toBeVisible();
+      expect(
+        within(pricingCard).getByRole("button", {
+          name: /Comparar lucro por marketplace/,
+        }),
+      ).toBeVisible();
     },
   );
 
@@ -193,6 +203,37 @@ describe("editable labor and pricing cards", () => {
     expect(state.resinSales).toMatchObject({
       marketplaceFeePercent: 20,
       marketplaceFeeFixed: 4,
+    });
+  });
+
+  it("compares and applies custom marketplace profiles in Bento", () => {
+    const customMarketplace = {
+      id: "my-marketplace",
+      name: "Minha Loja",
+      feePercent: 7,
+      feeFixed: 1.5,
+      hasFreeShipping: false,
+      custom: true,
+    };
+    useCatalogStore.getState().addMarketplace(customMarketplace);
+    const { pricingCard } = renderCards();
+
+    fireEvent.click(
+      within(pricingCard).getByRole("button", {
+        name: /Comparar lucro por marketplace/,
+      }),
+    );
+    const customRow = screen.getByRole("row", { name: /Minha Loja/ });
+    fireEvent.click(
+      within(customRow).getByRole("button", {
+        name: "Usar Minha Loja na calculadora",
+      }),
+    );
+
+    expect(useCalculatorStore.getState().selectedMarketplace).toMatchObject({
+      id: "my-marketplace",
+      feePercent: 7,
+      feeFixed: 1.5,
     });
   });
 

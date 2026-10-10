@@ -222,6 +222,11 @@ describe("GuidedWizard — result & graduation", () => {
     expect(screen.getByTestId("wizard-profit").textContent).toContain(
       formatCurrency(results!.profit, currency),
     );
+    expect(
+      screen.getByRole("button", {
+        name: /calc.marketplaceComparison.open/,
+      }),
+    ).toBeVisible();
   });
 
   it("Finish commits the draft and graduates to the classic layout", () => {
