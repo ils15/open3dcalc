@@ -31,20 +31,34 @@ As observações abaixo registram a auditoria daquela publicação e não devem 
 - Os gates PII/export existentes não completam a checklist transversal LGPD das linhas 76–98.
 - Em 7q, IA, frota fora desta fase e vínculo cliente já têm decisão; continuam abertas a unidade de `usefulLife` e a formalização da decisão sobre `Example`. Coverage da beta.11 não foi medida.
 
-## Superseded: approved Beta test-only strip-down (historical)
+## Plano de integração UX/Dashboard — proposta de 10/10/2026
 
-**Owner decision, 2026-10-10:** the synthetic-only restriction and separate Beta user-data
-namespace are retired. Beta must support real local records without a password/cofre, reuse the
-Stable customer/quote/history keys, and migrate any old `open3dcalc_beta_test_*` records before
-hydration. This supersedes the approved test-only scope below. It does not claim that migration,
-backup, or every user-data surface is release-ready.
+[Plano detalhado com auditorias GPT Sol e referências oficiais](docs/plans/ux-integracao-dashboard.md).
+A proposta prioriza corrigir números/filtros do Dashboard, unificar navegação e biblioteca,
+melhorar seletores em todos os modos e completar o retorno produto → calculadora.
+Três grupos de tarefas (Calcular, Oficina e Vender) são uma proposta a reconciliar com
+os cinco destinos vigentes de 7o.2, não uma decisão já implementada. As fatias têm
+aceites e dependências próprios; este registro não fecha gates de compatibilidade,
+privacidade ou publicação.
 
-**Owner decision, 2026-10-10 — data portability:** Beta and Stable use the same local user
-records and the import/export dialog is available in both. New `.open3dcalc` files are plain
-JSON without a password or encryption and include real customer, quote, and history records.
-Users must be warned that anyone who can access the file can read it. Owner decision: remove all
-encryption, key, and password flows; old encrypted backups are unsupported. Readable v1.0 JSON
-remains importable for migration between versions.
+**Diretriz atual da pessoa usuária (10/10/2026):** o produto deve aceitar dados reais em
+armazenamento local legível, sem criptografia, senhas ou chaves do aplicativo. Stable e Beta
+compartilham os registros locais; importação/exportação é JSON legível com checksum apenas para
+integridade. A migração V1→V2 deve ser explícita, visível, validada e não destrutiva. Quem tiver
+acesso ao perfil local ou ao arquivo exportado poderá ler os dados; a interface precisa dizer
+isso claramente. Os dados não são enviados ao servidor pelo fluxo de persistência local.
+
+Essa decisão substitui a proposta de armazenamento criptografado registrada em ADR-004/SPEC-01
+V2 Candidate/SPEC-05. Esses documentos foram atualizados para refletir a decisão atual e não
+autorizam reintroduzir criptografia.
+Suporte/publicação ainda dependem de validar migração, exportação/importação, exclusão e
+disclosure em Web/PWA e Desktop.
+
+## Registro histórico: Beta test-only (beta.15)
+
+O bloco abaixo descreve o comportamento do build Beta `v2.0.0-beta.15` publicado antes da
+mudança atual. Ele é evidência histórica, não o objetivo do próximo build. A nova política local
+legível só pode ser anunciada após os gates de migração, portabilidade, exclusão e disclosure.
 
 The owner approved D1–D12 for a Web-Beta-only profile intended for synthetic test data. This
 historical entry records the prior Beta profile and distinguishes it from the Stable/Desktop policy.
@@ -151,9 +165,9 @@ Every phase and change must complete this checklist:
 - [ ] Automated checks confirm that no unapproved PII leaves the device and that logs contain no secrets or excessive PII.
 - [ ] Privacy regression tests pass before the release is approved.
 
-### 🔒 Gate transversal de compatibilidade de dados — v2.0
+### 🔒 Gate transversal de compatibilidade de dados — próxima candidata Beta
 
-**Obrigatório para cada etapa de implementação deste roadmap e como gate de release da Beta 5 e da 2.0.0.** A atualização de v1 para v2 precisa preservar os dados de trabalho da pessoa usuária: nenhuma atualização pode apagar, resetar, sobrescrever silenciosamente ou tornar inacessíveis dados de versões anteriores.
+**Obrigatório para cada etapa de implementação deste roadmap e gate de release da próxima candidata Beta após a `beta.15`.** A atualização de v1 para v2 precisa preservar os dados de trabalho da pessoa usuária: nenhuma atualização pode apagar, resetar, sobrescrever silenciosamente ou tornar inacessíveis dados de versões anteriores. O protocolo normativo de migração explícita está em [SPEC-05](docs/privacy/SPEC-05-v1-to-v2-migration.md); a aprovação de direção está em [ADR-004](docs/privacy/ADR-004-real-data-v2.md).
 
 - [ ] Ler os dados existentes sem perda e preservar as chaves e formatos atuais de armazenamento dos dados centrais; preferir payloads aditivos para novas preferências.
 - [ ] Antes de qualquer escrita ou migração, manter os dados originais recuperáveis por backup ou mecanismo equivalente. Migrações são versionadas, idempotentes, seguras para repetição após interrupção e falham fechadas — nunca fazem reset ou overwrite silencioso.
@@ -162,7 +176,7 @@ Every phase and change must complete this checklist:
 - [ ] Registrar cada chave de persistência nova no SPEC-01 antes de usá-la, com política explícita de sync, exportação e apagamento. Não enfraquecer a política de privacidade nem sincronizar por acidente a visibilidade local das abas.
 - [ ] Tratar preservação de dados em upgrade v1→v2 como requisito. Compatibilidade de downgrade — binários antigos lendo dados gravados pela v2.0 — é uma decisão separada de produto/release e não pode ser afirmada sem implementação e testes próprios.
 - [ ] Até a decisão explícita sobre downgrade, não reescrever destrutivamente chaves anteriores e manter caminho de exportação/backup. Se uma migração exigida não puder ser não destrutiva, adiar a mudança de schema para depois da v2.0.
-- [ ] Bloquear Beta 5 e 2.0.0 se qualquer fixture de versão anterior falhar, houver perda de dados ou permanecer migração destrutiva sem recuperação.
+- [ ] Bloquear a próxima candidata Beta se qualquer fixture de versão anterior falhar, houver perda de dados ou permanecer migração destrutiva sem recuperação.
 
 **Evidência parcial (09/10/2026):** comparação do source da `v1.14.0` com `main` confirmou que os stores Stable de clientes, orçamentos e histórico conservam suas chaves e versões persistidas. `src/shared/lib/__tests__/saveReloadChannels.test.ts` agora exercita fixtures sintéticas v1.14 desses três stores na Stable Web, incluindo hidratação, escrita e recarga. Isso cobre somente esses stores nesse canal e **não fecha** o gate transversal nem substitui a matriz completa de fixtures e superfícies.
 

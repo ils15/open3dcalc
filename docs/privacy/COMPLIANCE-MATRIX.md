@@ -14,14 +14,30 @@ password or encryption; the optional checksum only detects accidental corruption
 (ADR-002, SPEC-02); no access, conversion, migration, recovery, or purge is promised.
 
 The R1–R15 table below is a historical trace of the former D1.0 contract and must be read
-through the current owner decisions. The current operative contracts are SPEC-01 policy 1.9,
-the supersession notes in ADR-001/002/003 and SPEC-02/04, and the current TEST-MATRIX. SPEC-03
-is retained as a historical record only; it does not define an active encrypted format.
+through the current owner decisions. Current policy-1.9 runtime facts and the next-candidate
+direction are separated in ADR-001–004, SPEC-01–05, and TEST-MATRIX. SPEC-03 is retained as a
+historical record only; it does not define an active encrypted format.
 
-**Implementation status:** implementation and local verification were completed in PR #279 and
-merged into `main`; the restricted web Beta is now `v2.0.0-beta.15`. Final Themis review and
-explicit owner/legal approval remain pending before Stable promotion. Beta publication does not
-approve the separate Stable/Desktop policy.
+**Historical implementation status:** policy-1.9 implementation evidence was merged by PR #279;
+the published web Beta `v2.0.0-beta.15` retains its earlier test-intended behavior. The next
+candidate direction in this branch is readable local real data with explicit migration, not
+local encryption. Final privacy, legal, and release reviews remain separate gates.
+
+## Next V2 candidate trace — ADR-004/SPEC-05 (implementation pending)
+
+The R1–R15 table below remains the historical D1.0 finding trace under current policy 1.9.
+It is not evidence that the next-candidate requirements are implemented. The real-data
+candidate adds these release obligations:
+
+| Requirement                                                                        | Normative contract                                                      | Current state                                                      |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Readable local persistence for real records; no app password/key/encryption flow   | ADR-004 §2.2; SPEC-01 V2 Candidate §§1–3; TEST-MATRIX §1                | Direction approved; exact candidate inventory and evidence pending |
+| Exact-source, user-selected, previewed and retry-safe V1/current-profile migration | ADR-002 candidate amendment; SPEC-05 §§2–5; TEST-MATRIX §4              | Registry audit and implementation pending                          |
+| Readable JSON export/import with checksum validation and exact-scope deletion      | ADR-003 candidate amendment; SPEC-02/03; ADR-004 §2.4; TEST-MATRIX §2–3 | Runtime coverage/release evidence pending                          |
+| Honest readable-data disclosure and demo isolation                                 | ADR-004 §§2.1, 2.2, 2.4; SPEC-04 candidate amendment; TEST-MATRIX §3    | Candidate UX and evidence pending                                  |
+
+No row in this trace marks a release gate as passed. The policy 1.9 runtime and beta.15
+evidence remain historical until an exact candidate tree passes its own tests and review.
 
 **Track:** D1 — Privacy & Data Contracts (D1.0, documentation only)
 **DRI:** Hermes

@@ -46,11 +46,18 @@ npx electron-builder --win --linux  # Both
 - **Native file dialogs** — for STL/OBJ/3MF/G-code import
 - **Auto-updates** — via electron-builder (future: electron-updater)
 
-## Beta scope
+## Local user data
 
-The approved plaintext synthetic-test profile is Web-Beta-only and does not apply to Electron.
-For Stable/Desktop, the customer, quote, and history stores use the local PII IPC route;
+The Web Beta and Stable Web share their local customer, quote, and history keys. Desktop uses
+the local PII IPC route;
 their physical keys are `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quotes_v1`, and
 `open3dcalc_pwless_history_v1` in the SQLite `storage` key/value table. These are the Desktop
 destinations for the corresponding logical keys in the SPEC-01 fixture, not `localStorage`
-rows. No Beta fixture key or Beta build flag enables the test profile in an Electron build.
+rows. Values are readable by anyone with access to the user's Desktop profile. No app password,
+keyring, or encryption gate is used.
+
+The published Beta `v2.0.0-beta.15` predates the shared-profile direction. The next candidate
+is governed by ADR-004/SPEC-05: retain readable local persistence and provide an explicit,
+previewed, verified migration for supported Desktop V1/V2 sources before claiming complete
+real-data readiness. Migration and release gates are not implemented merely by this document
+change.

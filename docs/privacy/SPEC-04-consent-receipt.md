@@ -16,6 +16,17 @@ gate saves. The retained `contract_performance` declaration for the three Stable
 provisional and requires qualified legal review; this specification does not make a legal
 determination. Current JSON export/import does not require or use a password.
 
+## Next V2 candidate amendment — privacy disclosure is not consent receipt
+
+The current policy-1.9 receipt behavior remains applicable to the current runtime. The next
+candidate must not treat a receipt, banner dismissal, or privacy disclosure as a save
+prerequisite. The first-run disclosure about readable local data and the explicit V1 migration
+preview are separate user interactions: the disclosure explains who can read local profiles
+and exports; migration preview authorizes reading named legacy sources for a one-time copy.
+Neither permits background migration or makes a malformed/unavailable source count as empty.
+The data handling and source-preservation requirements are in ADR-004/SPEC-05; no new legal
+basis is selected by this engineering amendment.
+
 **Track:** D1 — Privacy & Data Contracts
 **Status:** Superseded for save prerequisites by approved policy 1.9; historical receipts retained
 **Addresses findings:** R5 (consent), R14 (receipt canonicalização)

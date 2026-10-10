@@ -56,12 +56,24 @@ Baixe a versão desktop para Windows ou Linux na [página de releases](https://g
 diretamente em texto legível no armazenamento local do navegador e do Desktop. Não é necessária
 senha ou consentimento para salvar; use apenas dispositivos e perfis sob
 seu controle. A base legal `contract_performance` é provisória e aguarda revisão jurídica
-qualificada — não é uma conclusão legal. A Beta Web usa as mesmas chaves e os mesmos dados locais
-da versão Stable; não é um perfil separado nem exige senha para salvar. Os registros legados da
+qualificada — não é uma conclusão legal. No código proposto nesta branch, a Beta Web usa as
+mesmas chaves e os mesmos dados locais da versão Stable; não é um perfil separado nem exige
+senha para salvar. Os registros legados da
 namespace `open3dcalc_beta_test_*` são copiados/mesclados para as chaves compartilhadas antes da
 hidratação. Dados históricos do antigo armazenamento protegido `open3dcalc_pii_vault` são
 inertes: não são abertos, lidos, convertidos nem incluídos na exclusão atual; seus bytes podem
 permanecer no perfil e não podem ser recuperados por esta versão.
+
+**Próxima Beta (trabalho em andamento, ainda não disponível):** o destino aprovado é aceitar
+dados reais em armazenamento local legível, sem criptografia, senhas ou chaves do aplicativo,
+com migração V1→V2 visível e validada. Qualquer pessoa com acesso ao perfil do navegador/Desktop
+ou ao JSON exportado poderá ler os dados. A Beta publicada `v2.0.0-beta.15` mantém o contrato
+test-only antigo; não use essa versão com dados reais. A decisão, o inventário e os critérios
+estão em [ADR-004](docs/privacy/ADR-004-real-data-v2.md),
+[SPEC-01 V2 Candidate](docs/privacy/SPEC-01-v2-candidate.md) e
+[SPEC-05](docs/privacy/SPEC-05-v1-to-v2-migration.md). Só anunciaremos suporte no novo candidato
+depois que migração, exportação/importação, exclusão e disclosure forem verificados em Web/PWA
+e Desktop.
 
 O Open3DCalc é **local-first** para os dados de cálculo salvos no dispositivo, mas não é correto afirmar que o aplicativo nunca acessa a rede: a versão web/PWA busca recursos e atualizações no serviço de hospedagem, o desktop verifica atualizações publicadas no GitHub Releases e o link do WhatsApp só abre quando acionado pelo usuário — nesse caso, o texto da proposta é enviado ao serviço do WhatsApp. Esses fluxos são separados do assistente local descrito abaixo. A partir da v1.12, a política de privacidade (LGPD) é executada pelo próprio aplicativo:
 

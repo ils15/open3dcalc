@@ -4,6 +4,18 @@
 **Status:** Current deletion scope; supersedes the former all-surfaces saga contract
 **Related:** SPEC-01 (manifest), ADR-002 (inert historical retention), ADR-003 (export)
 
+## Next V2 candidate amendment — exact readable-profile deletion
+
+This policy-1.9 text records the current Stable/Desktop scope and the published Beta's earlier
+deletion behavior. Under ADR-004, a user-triggered delete must remove only active readable
+profile data and its exact, declared metadata/ledger records on each supported platform,
+verify the postcondition, and report partial failure truthfully. It must not scan or delete
+unrelated browser keys, profiles, external backups, or the retired
+`open3dcalc_pii_vault` database. The candidate manifest and deletion tests must name the
+exact local keys and Desktop adapter before this action is advertised. Migration-source cleanup
+remains a separate explicit post-verification choice under SPEC-05; it is not implied by
+deleting the destination profile.
+
 ## 1. Goal and boundary
 
 This specification defines deletion of current application-owned data that the active

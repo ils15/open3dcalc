@@ -10,14 +10,25 @@ independent of export/import.
 The former vault-unlock prerequisite for export is removed. Export must operate only on its
 currently supported, explicitly selected data inputs and must not open, read, inspect, convert,
 recover, or migrate inert historical `open3dcalc_pii_vault` data. That vault and other retired
-legacy targets are outside the current deletion scope. Beta remains limited to its exact keys,
-intended for synthetic test data (not content-validated), with no import, export, or backup path;
-its app-mediated namespace is not a boundary against same-origin code.
+legacy targets are outside the current deletion scope. The published `v2.0.0-beta.15` remains
+limited to its earlier exact test-intended keys and has no import/export path; the next
+candidate direction is shared readable local records with JSON portability after its release
+gates pass. An app-mediated namespace is not a boundary against same-origin code.
 
 **Track:** D1 — Privacy & Data Contracts
 **Status:** Superseded for encryption; logical export/backup distinction retained
 **Addresses findings:** R2 (export lógico vs raw), R13 (raw SQLite diagnóstico)
 **Related:** SPEC-01 (manifest), SPEC-03 (export envelope), ADR-002 (quarantine)
+
+### Next V2 candidate amendment — readable logical export and import
+
+The current Beta export refusal above remains a fact about `v2.0.0-beta.15`, not the target
+candidate. ADR-004 requires the next real-data Beta to expose readable, user-controlled logical
+JSON export/import for supported candidate-manifest data classes. A SHA-256 checksum may detect
+accidental corruption but provides no secrecy or authentication. Raw SQLite copies stay
+diagnostic-only and are not a substitute for a logical user backup. Any unsupported export
+class must be clearly reported and cannot silently disappear from a claimed full backup. Old
+encrypted export formats are unsupported and must not trigger a password prompt or decryption.
 
 > **Historical D1.0 proposal below.** The original implementation and release claims describe
 > the D1.0 snapshot, not current runtime status. The policy 1.9 clarification above governs

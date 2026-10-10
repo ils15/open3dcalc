@@ -20,7 +20,7 @@ are unsupported.
 legal determination.
 
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Superseded for active encryption by approved policy 1.9 and the 2026-10-10 owner decision; old design retained as history
+**Status:** Historical design; local encryption and encrypted export are retired by the 2026-10-10 owner decision.
 **Addresses findings:** R3 (PII at-rest), R7 (web/PWA crypto)
 **Related:** ADR-002 (legacy plaintext quarantine), SPEC-01 (manifest), SPEC-03 (export envelope)
 

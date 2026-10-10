@@ -3,7 +3,7 @@
 **Owner:** Repository owner (policy approval); implementation owners are assigned per change.
 **Scope:** Local persistence, JSON portability, deletion boundaries, and privacy disclosures.
 
-## 1. Current behavior
+## 1. Current policy and consequences
 
 - Customer, quote, history, and calculator data are stored locally in readable form. Web uses
   browser storage; Desktop uses its local SQLite profile. Saves do not require a password, key,
@@ -31,6 +31,31 @@
   readable V1 JSON or document a deliberate versioned migration.
 - Do not turn legacy-format detection into a decoder or an automatic data rewrite.
 - Keep privacy disclosures explicit about local readable storage and readable exports.
+
+## 2A. Next V2 candidate release path
+
+The approved product direction is not a release authorization. Follow the S0 → S1 → S2 order
+in the integration roadmap and keep each slice in its own branch/PR:
+
+1. **S0 contract:** reconcile the current policy record with ADR-004/SPEC-01 V2 Candidate/SPEC-05;
+   inventory exact data classes, stores, source formats, Desktop destinations, readable backup,
+   deletion, and user disclosures. No real profile may be inspected for this work.
+2. **S1 readable persistence and portability:** document the exact local destinations and
+   plaintext consequence on Web/PWA/Desktop. Keep JSON import/export readable with integrity
+   validation only; do not add password, encryption, or key flows. Implement exact-scope
+   deletion. Keep all legacy sources intact; do not enable migration readers in this slice.
+3. **S2 explicit migration:** use only the reviewed versioned source registry; preview, copy,
+   verify the readable destination, report, then offer exact-source cleanup as a separate user
+   action. No startup scan, prefix sweep, or source deletion on cancel/failure/crash.
+4. **Candidate release:** run the complete §9 matrix against the exact Beta, Stable Web/PWA,
+   and Desktop build configurations. Release notes and first-run disclosure must match each
+   target's measured behavior. If a target or source is unsupported, name it and leave its
+   bytes untouched; do not claim full migration or real-data support for that target.
+
+S1/S2 are hard gates for a Beta that invites users to enter real workshop data. Dashboard,
+navigation, calculator parity, marketplace, and printer-library slices may be developed in
+parallel branches, but must not be included in the real-data candidate before their own plan
+gates pass and the S1/S2 contract remains intact.
 
 ## 3. Verification checklist
 

@@ -16,8 +16,20 @@ and migrates valid records from its retired `open3dcalc_beta_test_*` keys. Same-
 access browser storage. All sections below are retained as historical context only where they
 conflict with this superseding decision. Export behavior remains separate.
 
+### Next V2 candidate amendment — explicit migration of readable local data
+
+The inert-retention rule above applies to bytes in the retired encrypted database
+`open3dcalc_pii_vault`; it must not be generalized to known readable profiles that users
+explicitly choose to migrate. Under ADR-004/SPEC-05, the next candidate may read only the
+versioned exact-source registry after the user selects migration and reviews a preview. This
+includes known Stable v1.14, current Stable 2.x, Desktop `open3dcalc_pwless_*`, and Beta
+`open3dcalc_beta_test_*_v1` sources. It copies and verifies readable destination data before
+offering source cleanup; cancel/failure never mutates the source. No startup scan, prefix scan,
+or automatic cleanup is authorized. The old encrypted vault remains excluded unless a separate
+compatibility decision and tested reader are approved.
+
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Superseded by approved policy 1.9; historical-data handling is inert retention
+**Status:** Policy 1.9 describes current runtime behavior; ADR-004/SPEC-05 govern the future explicit readable-data migration path
 **Addresses findings:** R3 (PII at-rest), R11 (legacy plaintext quarantine)
 **Related:** ADR-001 (crypto capability), SPEC-01 (manifest), SPEC-02 (erasure)
 
