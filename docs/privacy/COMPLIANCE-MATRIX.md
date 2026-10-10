@@ -8,14 +8,15 @@ declared Stable Web/PWA and Desktop destinations. Web/PWA use the logical `local
 Desktop maps them to `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quotes_v1`, and
 `open3dcalc_pwless_history_v1` in SQLite's `storage` table (SPEC-01). This is a change in policy and is **not**
 described as fulfillment of the historical zero-plaintext requirement in R3. `contract_performance`
-is provisional and requires qualified legal review. The encrypted logical export remains
-protected by SPEC-03 (E1 retained); its password does not gate local saves. Historical
+is provisional and requires qualified legal review. Logical export is readable JSON with no
+password or encryption; the optional checksum only detects accidental corruption. Historical
 `open3dcalc_pii_vault` bytes are inert and expressly excluded from current deletion scope
 (ADR-002, SPEC-02); no access, conversion, migration, recovery, or purge is promised.
 
 The R1–R15 table below is a historical trace of the former D1.0 contract and must be read
-through this policy 1.9 supersession. The current operative contracts are SPEC-01 policy 1.9,
-ADR-001/002/003 supersession notes, SPEC-02, SPEC-03, SPEC-04, and the current TEST-MATRIX.
+through the current owner decisions. The current operative contracts are SPEC-01 policy 1.9,
+the supersession notes in ADR-001/002/003 and SPEC-02/04, and the current TEST-MATRIX. SPEC-03
+is retained as a historical record only; it does not define an active encrypted format.
 
 **Implementation status:** implementation and local verification were completed in PR #279 and
 merged into `main`; the restricted web Beta is now `v2.0.0-beta.15`. Final Themis review and

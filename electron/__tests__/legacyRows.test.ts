@@ -13,9 +13,9 @@
  *  - Only the three DECLARED keys are ever read. A non-PII key present in the
  *    table must not appear in the report — the reader takes no key from the
  *    caller, which is what keeps a renderer from asking for any row it likes.
- *  - The value is returned VERBATIM for plaintext and `null` for an
- *    already-encrypted envelope, so the re-home never re-seals a ciphertext and
- *    never copies a blob it cannot read as a record.
+ *  - The value is returned VERBATIM for readable plaintext and `null` for an
+ *    unsupported legacy format, so the disclosure never treats opaque bytes
+ *    as a record.
  *  - It is READ-ONLY: the rows are byte-identical after the read
  *    (copy-without-delete).
  */
@@ -30,7 +30,7 @@ import {
   LEGACY_PII_STORAGE_KEYS,
   type LegacyPiiStorageKey,
 } from "../legacyRows.js";
-import type { MinimalStorageDb } from "../persistGate.js";
+import type { MinimalStorageDb } from "../storageRows.js";
 import { runMigrations } from "../../db/database.js";
 
 const CUSTOMERS = "open3dcalc_customers_v1";
@@ -104,10 +104,10 @@ describe("readLegacyPiiRows — declared keys only", () => {
     );
   });
 
-  it("reports an ADR-001 envelope as already_encrypted with no value", () => {
+  it("reports an ADR-001 envelope as unsupported_legacy_format with no value", () => {
     insertRow(HISTORY, "enc1:envelope:QUJD");
     const row = rowFor(read(), HISTORY);
-    expect(row?.status).toBe("already_encrypted");
+    expect(row?.status).toBe("unsupported_legacy_format");
     expect(row?.value).toBeNull();
   });
 
@@ -121,7 +121,7 @@ describe("readLegacyPiiRows — declared keys only", () => {
       value: CUSTOMERS_RESIDUE,
     });
     expect(rowFor(report, QUOTES)).toMatchObject({
-      status: "already_encrypted",
+      status: "unsupported_legacy_format",
       value: null,
     });
     expect(rowFor(report, HISTORY)).toMatchObject({

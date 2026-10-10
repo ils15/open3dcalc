@@ -16,8 +16,8 @@ import os from "node:os";
 import path from "node:path";
 
 import type { WithdrawalClaim } from "../../src/shared/lib/consent/withdrawal.js";
-import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/crypto/newPiiNamespace.js";
-import type { MinimalStorageDb } from "../persistGate.js";
+import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/localData/newPiiNamespace.js";
+import type { MinimalStorageDb } from "../storageRows.js";
 import {
   runWithdrawalPurge,
   newPiiWithdrawalTargets,

@@ -213,21 +213,18 @@ const TABLE_CREATE_RE =
  * migration runner creates them itself on the very next line of the import.
  *
  * `pii_stage` (migration 0004) and `legacy_residue` (migration 0005) are the
- * entries, and both are exempt on purpose:
+ * historical tables, and both are exempt on purpose:
  *
  *  - The check cannot prevent a bad swap. `db:import` validates a temp copy,
  *    swaps it in, and then calls `initDatabase()`, which re-runs `runMigrations`
  *    against the swapped file. Requiring the table in the candidate buys no
  *    safety the runner does not already provide.
- *  - Rejecting it would remove recoverability exactly where it is needed: the
- *    files that lack these tables are pre-remediation backups — the users this
- *    work is protecting — and `db:import` is how they get their data back.
+ *  - Rejecting them would prevent importing older valid profiles. The regular
+ *    migration runner recreates the tables without changing any other data.
  *  - `requiredTables()` is a legitimacy test on the user's DATA schema, not a
  *    "is this the newest migration" test. Both tables are created EMPTY by
- *    their own migration and hold no user data at import time (`pii_stage` is a
- *    transient re-homing staging table; `legacy_residue` only ever receives a
- *    row when the §3.6 recovery runs, which cannot have happened in a file that
- *    predates 0005). A file without them is still unambiguously one of ours.
+ *    their own migrations. A file without them is still unambiguously one of
+ *    ours; importing it does not trigger any legacy-value recovery.
  *
  * Adding to this set is a behaviour change to data recovery, so it is a named
  * constant rather than an inferred rule, and `db/__tests__/pii-stage-migration.test.ts`

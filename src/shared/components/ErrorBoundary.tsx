@@ -1,6 +1,6 @@
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { isBetaChannel } from "@/shared/config/betaChannel";
-import { BETA_TEST_STORAGE_KEYS } from "@/shared/lib/betaPersistence";
+import { LEGACY_BETA_USER_CONTENT_KEYS } from "@/shared/lib/manifestStorage";
 
 interface Props {
   children: ReactNode;
@@ -26,11 +26,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReset = () => {
-    // Beta shares the origin with Stable: a blanket clear() would wipe
-    // Stable keys from the same origin. On Beta remove only the three
-    // synthetic beta_test keys (both storages, defensively) and reload.
+    // Beta shares Stable's origin and user-content keys. Never clear the
+    // user's current data as an error-recovery action; only remove the retired
+    // disposable-Beta copies, if any, then reload.
     if (isBetaChannel) {
-      for (const key of BETA_TEST_STORAGE_KEYS) {
+      for (const key of LEGACY_BETA_USER_CONTENT_KEYS) {
         try {
           localStorage.removeItem(key);
         } catch {

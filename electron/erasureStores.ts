@@ -9,7 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { StoreAdapterLike } from "../src/shared/lib/erasureSaga/types.js";
-import type { MinimalStorageDb } from "./persistGate.js";
+import type { MinimalStorageDb } from "./storageRows.js";
 import { PII_ERASURE_TABLES } from "./piiDomainTables.js";
 
 export interface RendererStoreReport {
@@ -57,9 +57,9 @@ export function rendererReportAdapter(
  * §3 row 2: manifest-PII domain tables + the `pii_stage` preimage table, and
  * their child rows.
  *
- * Iterates `PII_ERASURE_TABLES` — the domain tables PLUS `pii_stage`, which
- * holds a staged preimage and is therefore PII-bearing even though it mirrors
- * no user data. It used to iterate `PII_DOMAIN_TABLES`, which is how a table
+ * Iterates `PII_ERASURE_TABLES` — active domain tables plus the retired
+ * `pii_stage` and `legacy_residue` tables. It used to iterate only the content
+ * tables, which is how a table
  * becomes a silent-residue class: the purge did not touch it and the §6 rescan
  * could not name what survived.
  *
@@ -67,15 +67,9 @@ export function rendererReportAdapter(
  * from an older profile must not abort the purge of the tables that are there.
  * Per-table isolation is the idempotence the resume rule depends on.
  *
- * T4.5 — the delete is GATED on `COUNT > 0`. The domain tables are empty by
- * construction in any repo-built profile (breakdown §5.4), so this cleanup is a
- * scan-and-report, never a delete-by-default: a table that holds no rows is
- * never issued a `DELETE` at all. A nonzero count is a genuine finding (a
- * non-repo build, a manual edit, a future writer) and is surfaced as such by
- * the §6 `rescan` below and by the ADR-002 §2.3 scan report — never silently
- * cleared. The gate is per-table and lives ONLY here: the migration/re-home
- * paths are copy-without-delete and never import this adapter
- * (`sqliteDomainTablesAdapter` is wired only into the SPEC-02 erasure saga).
+ * Empty tables are skipped; non-empty tables are erased and then checked by
+ * the trusted post-purge rescan. Older profiles may not have every table, so
+ * the per-table isolation keeps an absent table from aborting other cleanup.
  */
 export function sqliteDomainTablesAdapter(
   db: MinimalStorageDb,

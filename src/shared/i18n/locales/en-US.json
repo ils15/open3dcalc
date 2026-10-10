@@ -1342,28 +1342,18 @@
     }
   },
   "privacy": {
-    "betaFirstRun": {
-      "title": "Beta test profile",
-      "testOnly": "This is a disposable test-only profile, not the stable app.",
-      "syntheticOnly": "Use synthetic test data only; never enter real customer information.",
-      "plaintextLocal": "Customer, quote, and calculation history data is stored unencrypted in this browser.",
-      "noPassword": "No password or consent gate is provided for this test profile.",
-      "noMigration": "Stable profile data is not read or migrated into Beta.",
-      "noExport": "Import, export, sync, and erasure are unavailable in Beta.",
-      "disposable": "Clear this disposable browser profile outside the app when finished."
-    },
     "banner": {
-      "text": "Your data stays only in your browser. Nothing you type — customer data, quotes, or logs — is sent to servers. You have full control: export, import, or delete your data anytime.",
+      "text": "Your data stays locally in this browser or Desktop app profile, without additional Open3DCalc encryption. Anyone with access to that profile can read it. What you type is not sent to our servers.",
       "dismiss": "Got it"
     },
     "policy": {
       "title": "Privacy Policy",
       "section8Title": "8. Data Export and Portability",
-      "section8Intro": "Open3DCalc supports local data export and import via encrypted .open3dcalc bundles:",
-      "section8Item1": "Local export/import via encrypted .open3dcalc bundles",
+      "section8Intro": "Open3DCalc supports local data export and import through unencrypted JSON .open3dcalc files:",
+      "section8Item1": "Local export/import as readable JSON; protect the file like any document containing customer data",
       "section8Item2": "All data processing happens exclusively client-side",
       "section8Item3": "No data is transmitted to any server during export or import",
-      "section8Item4": "You can encrypt bundles with your own password",
+      "section8Item4": "Files have no password or encryption; anyone with access to a file can read its contents",
       "section8Lgpd": "In compliance with LGPD Art. 18 (right to data portability), you can export your data at any time and import it on another device."
     },
     "quarantine": {
@@ -1380,19 +1370,19 @@
       "working": "Erasing… this may take a moment.",
       "done": "Erasure completed and verified. All stores have been wiped.",
       "externalCopies": "External copies the app cannot erase:",
-      "confirm": "Delete ALL your data? An encrypted snapshot allows rollback for up to 7 days in case of failure. Once committed, removal is permanent. Continue?",
+      "confirm": "Delete ALL your data? A temporary copy may be used to recover from a failure during the operation. Once committed, removal is permanent. Continue?",
       "unavailable": "Delete-all is unavailable until the app can verify an exact personal-data-only target plan. No deletion will start from this screen.",
       "blockersLabel": "Blocking reasons:",
-      "newPiiTitle": "Delete passwordless local records",
+      "newPiiTitle": "Delete local records",
       "newPiiDescription": "Erases only the plaintext customer, quote and history records this build stored in the local Desktop profile. It does not touch records from older builds, database tables or backups.",
-      "newPiiButton": "Delete passwordless local records",
+      "newPiiButton": "Delete local records",
       "newPiiWorking": "Erasing… this may take a moment.",
-      "newPiiDone": "Passwordless local records were erased and verified.",
-      "newPiiUnavailable": "Passwordless local deletion is unavailable right now — no deletion will start.",
+      "newPiiDone": "Local records were erased and verified.",
+      "newPiiUnavailable": "Local deletion is unavailable right now — no deletion will start.",
       "newPiiConfirm": "Delete the plaintext local records (customers, quotes, history) stored in this Desktop profile? This cannot be undone. Records from older builds, database tables and backups are not touched.",
       "newPiiFailed": "Deletion did not complete — no erasure is claimed. Check the app and try again.",
       "legacyScopeTitle": "Full-device delete-all (unavailable)",
-      "legacyScopeNote": "Deleting ALL data — older builds, database tables and backups — stays unavailable until an exact, verifiable target plan exists. The passwordless deletion above is the only erasure available in this version."
+      "legacyScopeNote": "Deleting ALL data — older builds, database tables and backups — stays unavailable until an exact, verifiable target plan exists. The local deletion above is the only erasure available in this version."
     },
     "consent_receipt": {
       "title": "Consent",
@@ -1400,37 +1390,32 @@
       "absent": "No valid consent recorded — consent-gated features stay blocked.",
       "grant": "Consent to the current policy",
       "withdraw": "Withdraw consent",
-      "withdrawConfirm": "Withdraw consent? This records the withdrawal and removes the consent data this device can reach locally. It does NOT erase data held in encrypted or other storage surfaces, which may remain. Consent-gated features will be blocked.",
+      "withdrawConfirm": "Withdraw consent? This records the withdrawal and removes the consent data this device can reach locally. It does NOT erase data held in other storage surfaces, which may remain. Consent-gated features will be blocked.",
       "withdrawScopeNote": "Withdrawal removes locally reachable consent-basis data and blocks consent-gated features. A verified full-device erasure is not available in this version, so some stored data may remain.",
       "withdrawFailed": "Withdrawal did not complete — nothing was erased. Check the app and try again.",
       "withdrawRetry": "Retry withdrawal",
       "flagsNote": "Tutorial, onboarding or banner flags never substitute consent — only the receipt counts (SPEC-04 §2)."
     },
-    "vault": {
+    "localData": {
       "writeRefusedTitle": "New entries were not saved",
-      "writeRefusedMessage": "Could not save to {{area}}: the profile is locked or data protection is unavailable ({{reason}}). The entry was NOT saved and will be lost when you reload. Unlock the profile to save.",
+      "writeRefusedMessage": "Could not save to {{area}}: local storage is not ready ({{reason}}). The entry was NOT saved. Please try again.",
       "writeRefusedAreaUnknown": "personal data"
     },
     "passwordless": {
       "title": "New data is stored locally",
-      "message": "New customers, quotes and history are stored as plaintext in this Desktop profile's local database. No app passphrase or OS keyring is required; records from older builds are left untouched.",
+      "message": "New customers, quotes and history are stored in readable form in this Desktop profile's local database, without an additional protection layer. Records from older builds are left untouched.",
       "limitation": "Anyone with access to this OS profile or its database may read these records. If the profile or device is lost, there is no cloud copy or recovery key."
     },
     "residue": {
       "title": "Legacy plaintext data",
-      "subtitle": "Transparency about the personal-data residue that older versions wrote in plaintext, the encrypted vault state, and the migration state. Only key names and counts are shown — never values.",
+      "subtitle": "Transparency about personal data left by older versions and migration to the current local format. Only key names and counts are shown — never values.",
       "residueHeading": "Plaintext residue",
       "residueNone": "No plaintext residue found under the three legacy keys.",
       "residueTotal": "{{count}} plaintext record(s) in total.",
       "residueKey": "{{key}} · {{count}} record(s)",
       "residueKeptNote": "The plaintext is never deleted automatically: the keys above stay in local storage until an explicit elimination.",
-      "vaultHeading": "Encrypted vault state",
-      "vaultHydrated": "Unlocked and hydrated",
-      "vaultLocked": "Locked — enter your passphrase to access",
-      "vaultUnavailable": "Unavailable in this environment",
-      "vaultUnavailableDetail": "Reason: {{reason}}",
-      "rehomeHeading": "Vault re-home",
-      "rehomeMigrated": "Migrated to the encrypted vault (or nothing to migrate)",
+      "rehomeHeading": "V1 → V2 migration",
+      "rehomeMigrated": "Migrated to the current local format (or nothing to migrate)",
       "rehomePending": "Pending — plaintext residue has not been re-homed yet",
       "rehomeIncomplete": "Incomplete — a previous migration was interrupted",
       "historyHeading": "History migration marker",
@@ -2480,14 +2465,10 @@
     "export": {
       "tab": "Export",
       "title": "Export Data",
-      "description": "Export all your data locally. No data is sent to servers.",
-      "encrypt": "Encrypt data with password",
-      "password": "Encryption password",
-      "passwordPlaceholder": "Enter a password (optional)",
+      "description": "Export your local data as JSON without a password. The file is readable; keep it somewhere safe. No data is sent to servers.",
       "button": "Export Data",
       "success": "Data exported successfully",
-      "downloading": "Preparing download...",
-      "piiExcluded": "Customers, quotes and history were NOT included: they are protected by the encrypted vault and were unavailable at export time. Unlock the vault and export again to include them."
+      "downloading": "Preparing download..."
     },
     "import": {
       "tab": "Import",
@@ -2496,8 +2477,6 @@
       "selectFile": "Select file",
       "dragDrop": "Drag and drop file here or click to select",
       "acceptedFormats": "Accepted format: .open3dcalc",
-      "password": "Decryption password",
-      "passwordPlaceholder": "Enter file password",
       "mode": "Import mode",
       "modeMerge": "Merge (recommended)",
       "modeReplace": "Replace all",
@@ -2507,16 +2486,14 @@
       "button": "Import Data",
       "success": "Data imported successfully",
       "importing": "Importing data...",
-      "invalidFile": "Invalid or corrupted file",
-      "wrongPassword": "Wrong password",
-      "piiRefused": "Customers, quotes and history were NOT imported: the encrypted vault was locked or unavailable. Unlock the vault and import again; nothing was written in plaintext.",
+      "invalidFile": "Invalid, corrupted, or incompatible file format",
       "results": {
         "imported": "{{count}} items imported",
         "conflicts": "{{count}} conflicts resolved",
         "errors": "{{count}} errors found"
       }
     },
-    "lgpd_notice": "Export and import are processed locally in an encrypted file. The app may access the network for updates; external links share content when you open them. See our Privacy Policy.",
+    "lgpd_notice": "Export and import are processed locally. Files are not encrypted and can be read by anyone with access to them. The app may access the network for updates; external links share content when you open them. See our Privacy Policy.",
     "privacy_link": "Privacy Policy"
   },
   "gcodePreview": {
@@ -2796,11 +2773,9 @@
     "recovery": {
       "ariaLabel": "Some stored data could not be opened",
       "title": "Some of your data could not be opened",
-      "message": "These parts of your profile are stored but could not be decrypted, so they are not shown right now. Nothing was deleted — the data is still on disk, and the rest of your profile is working normally.",
+      "message": "Some profile data uses an older format this version cannot open. Nothing was deleted — the data remains on this device, and the rest of your profile is working normally.",
       "detail": "Unavailable: {{reason}}",
-      "recoverable": "Can be recovered",
-      "unrecoverable": "Cannot be recovered",
-      "unavailable": "Automatic recovery is unavailable in this version. Nothing was changed and the data remains on disk."
+      "unavailable": "Conversion from this older format is not supported. Nothing was changed and the data remains on this device."
     },
     "manifestUnavailable": {
       "ariaLabel": "Saved data unavailable",

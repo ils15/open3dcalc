@@ -1,5 +1,5 @@
 /**
- * The DISJOINT new-PII key namespace for the Desktop passwordless path
+ * The disjoint user-data key namespace for the Desktop local-storage path
  * (Beta12 Phase3) — ADR-001 §3.4, owner decision
  * `beta12-minimum-desktop-no-recovery-code`.
  *
@@ -7,13 +7,11 @@
  *
  * The three migrated PII keys a Beta profile already has on disk are
  * `open3dcalc_customers_v1`, `open3dcalc_quotes_v1` and
- * `open3dcalc_history_v2`. They may hold PRE-remediation shapes
- * (`enc1:safeStorage:` — raw keyring output bound to nothing, or a `v: "1.1"`
- * self-asserted envelope). The Beta12 rule is explicit and load-bearing:
- * existing Beta PII is never read, re-sealed or deleted, and there is no
- * converter.
+ * `open3dcalc_history_v2`. They may hold data written by retired storage
+ * formats. Current code does not decrypt those formats; readable legacy JSON
+ * can still be migrated through the explicit import flow.
  *
- * If the new passwordless path reused those names it would silently ALIAS the
+ * If the new local-storage path reused those names it would silently ALIAS the
  * old rows: a `load` would read a legacy shape, a `save` would overwrite it,
  * and a reader that failed to open the old value could not tell "this row is
  * from a build I no longer support" from "this row is mine". A disjoint
@@ -23,7 +21,7 @@
  *
  * ## Exact allowlist, not a prefix rule
  *
- * `open3dcalc_pwless_invented_v9` is refused: the route authorises a fixed set
+ * `open3dcalc_local_invented_v9` is refused: the route authorises a fixed set
  * of records, so "add PII here" is a deliberate code change and review, not a
  * string a caller invents. `NEW_PII_KEY_PREFIX` is documentation and a cheap
  * negative classifier; it is NOT the authoriser.
@@ -33,12 +31,15 @@
  * names its store keys with it.
  */
 
-/** The namespace prefix. Every authorised key starts with it. */
+/**
+ * Historical namespace prefix retained in the on-disk SQLite keys so existing
+ * records remain addressable without a destructive rename or migration.
+ */
 export const NEW_PII_KEY_PREFIX = "open3dcalc_pwless_";
 
 /**
- * The exact records the passwordless route owns. One per PII domain so a
- * future split is a code change here, not a new prefix.
+ * The exact customer-data records the local route owns. Keep the historical
+ * physical key spellings stable; changing them requires an explicit migration.
  */
 export const NEW_PII_STORAGE_KEYS = [
   "open3dcalc_pwless_customers_v1",
@@ -50,7 +51,7 @@ export type NewPiiStorageKey = (typeof NEW_PII_STORAGE_KEYS)[number];
 
 const NEW_PII_KEY_SET: ReadonlySet<string> = new Set(NEW_PII_STORAGE_KEYS);
 
-/** The three PII domains the passwordless route persists, by logical name. */
+/** The three PII domains the local route persists, by logical name. */
 export type NewPiiDomain = "customers" | "quotes" | "history";
 
 /**

@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 describe("useAppInit Beta boundary", () => {
-  it("leaves Stable migration inputs untouched and performs no legacy storage access", async () => {
+  it("leaves Stable customer data untouched and does not inspect retired storage keys", async () => {
     const key = "open3dcalc_history_v2";
     const canary = '[{"id":"synthetic-stable-canary"}]';
     window.localStorage.setItem(key, canary);
@@ -25,7 +25,16 @@ describe("useAppInit Beta boundary", () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(getItem).not.toHaveBeenCalled();
+    const retiredPiiKeys = [
+      "open3dcalc_customers_v1",
+      "open3dcalc_quotes_v1",
+      "open3dcalc_history_v2",
+    ];
+    expect(
+      getItem.mock.calls.every(
+        ([calledKey]) => !retiredPiiKeys.includes(calledKey),
+      ),
+    ).toBe(true);
     expect(setItem).not.toHaveBeenCalled();
     expect(removeItem).not.toHaveBeenCalled();
 

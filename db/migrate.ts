@@ -109,14 +109,11 @@ export function migrateUp(sqlite: Database.Database): void {
 
 /**
  * Roll back the migrations that own a table: 0002 (products) and 0004
- * (pii_stage). Both drops are `IF EXISTS`, so the step is idempotent and safe
- * to repeat after a partial run.
+ * (pii_stage). Both drops are `IF EXISTS`, so the step is idempotent.
  *
- * 0004's down step is destructive by nature — a staged preimage IS the user's
- * data mid-re-homing — which is why `main()` takes a checkpointed backup
- * before calling this. Nothing here VACUUMs: the dropped pages may still hold
- * the ciphertext, and rewriting the file is the caller's decision, not a
- * side effect of a rollback.
+ * 0004's down step may delete historical user-data rows, which is why `main()`
+ * takes a checkpointed backup before calling this. Nothing here VACUUMs; the
+ * caller decides whether to rewrite the file after an explicit rollback.
  */
 export function migrateDown(sqlite: Database.Database): void {
   sqlite.exec("DROP TABLE IF EXISTS `products`");

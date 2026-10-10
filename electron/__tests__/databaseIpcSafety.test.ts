@@ -23,8 +23,8 @@ import {
   registerDatabaseStorageHandlers,
   registerDisabledDatabaseImportHandler,
 } from "../databaseIpc.js";
-import { isNewPiiNamespaceKey } from "../../src/shared/lib/crypto/newPiiNamespace.js";
-import type { MinimalStorageDb } from "../persistGate.js";
+import { isNewPiiNamespaceKey } from "../../src/shared/lib/localData/newPiiNamespace.js";
+import type { MinimalStorageDb } from "../storageRows.js";
 
 type Handler = (...args: unknown[]) => unknown;
 

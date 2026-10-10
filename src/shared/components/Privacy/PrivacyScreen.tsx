@@ -143,7 +143,7 @@ function StablePrivacyScreen() {
 
   // ── EXACT new-namespace delete-all (Beta12 follow-up) ───────────────
   // This is the only functional erasure in this version: it targets exactly the
-  // three passwordless local records. Legacy/mixed delete-all below stays
+  // three local customer-data records. Legacy/mixed delete-all below stays
   // unavailable, and the copy says so.
   const [newPiiAvailable, setNewPiiAvailable] = useState<boolean | null>(
     newPiiErasureApi ? null : false,
@@ -309,7 +309,7 @@ function StablePrivacyScreen() {
         </p>
       </section>
 
-      {/* ── T5.3 legacy residue + vault/marker disclosure ────────────── */}
+      {/* ── Legacy data and migration-marker disclosure ──────────────── */}
       <LegacyResidueDisclosure />
 
       {/* ── SPEC-04 consent receipt ─────────────────────────────────── */}

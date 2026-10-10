@@ -11,7 +11,7 @@
  */
 
 // The Electron main-process TypeScript project deliberately excludes
-// `vite/client`, but compiles shared crypto ports that import this tiny flag.
+// `vite/client`, but compiles shared storage contracts that import this tiny flag.
 // Merge only the field used by the build so the module remains type-safe there.
 declare global {
   interface ImportMetaEnv {

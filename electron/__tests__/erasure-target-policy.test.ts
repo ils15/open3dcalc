@@ -38,7 +38,7 @@ const UNMAPPED_SQLITE_STORAGE_PII = {
   platforms: ["electron"],
   class: "user_content",
   pii: true,
-  persistence: "encrypted_at_rest",
+  persistence: "plaintext_allowed",
   sync: "never",
   export: "never",
   erasure: "erase_on_delete_all",

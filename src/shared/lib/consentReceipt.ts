@@ -16,7 +16,7 @@
  *   device.
  */
 
-import { canonicalJson } from "./crypto/envelope";
+import { canonicalJson } from "./canonicalJson";
 import { getShippedPolicyVersion } from "./shippedManifest";
 import manifestFixture from "../../../docs/privacy/SPEC-01-manifest-fixture.json";
 import type { ManifestDocument } from "./dataManifest";

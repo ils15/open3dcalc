@@ -17,15 +17,6 @@ async function dismissFirstRun(page) {
     name: "Entendi e quero continuar",
   });
   if (await consent.isVisible()) await consent.click();
-
-  const passphrase = page.locator("#pii-vault-passphrase");
-  if (await passphrase.isVisible()) {
-    await passphrase.fill("Playwright-only-123!");
-    await page
-      .locator("#pii-vault-passphrase-confirm")
-      .fill("Playwright-only-123!");
-    await page.getByRole("button", { name: "Criar e desbloquear" }).click();
-  }
 }
 
 test("Studio PR #280 layout, theme, currency and mode behavior", async () => {

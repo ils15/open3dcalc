@@ -48,7 +48,7 @@ describe("SPEC-01 policy 1.9: former staged migration targets are retired", () =
     },
   );
 
-  it("keeps the four current PII SQLite content tables encrypted", () => {
+  it("declares retained PII SQLite tables as readable plaintext", () => {
     const entries = doc.keys.filter(
       (entry) => entry.surface === "sqlite_domain_tables" && entry.pii,
     );
@@ -56,7 +56,7 @@ describe("SPEC-01 policy 1.9: former staged migration targets are retired", () =
       [...PII_CONTENT_TABLES].sort(),
     );
     expect(
-      entries.every((entry) => entry.persistence === "encrypted_at_rest"),
+      entries.every((entry) => entry.persistence === "plaintext_allowed"),
     ).toBe(true);
     expect(getEntry(manifest, CURRENT_PII_KEY)?.persistence).toBe(
       "plaintext_allowed",

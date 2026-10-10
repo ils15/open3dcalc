@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isKeyAllowed } from "@/shared/lib/manifestGate";
 import { closeDatabase, initDatabase } from "../../../../../db/database";
-import { writeStoredRow } from "../../../../../electron/persistGate";
+import { writeStoredRow } from "../../../../../electron/storageRows";
 import type { ElectronAPI } from "@/platform/desktop/types/electron";
 import {
   initPersistenceBridge,
@@ -299,7 +299,7 @@ describe("production Electron persistence bridge over on-disk SQLite", () => {
     await expect(initPersistenceBridge()).resolves.toBeUndefined();
 
     // Fail-closed and non-partial: an unreadable value is never written into
-    // localStorage (and never as raw ciphertext), so the source is untouched.
+    // localStorage as an unsupported value, so the source is untouched.
     expect(localStorageSnapshot()).toEqual(sourcePreimage);
     expect(setItem).not.toHaveBeenCalled();
 

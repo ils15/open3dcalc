@@ -1,9 +1,8 @@
 /**
- * Disk-backed encrypted snapshot store (D1.1 S7) — SPEC-02 §5, desktop.
+ * Disk-backed local snapshot store (D1.1 S7) — SPEC-02 §5, desktop.
  *
- * Snapshots are always ENCRYPTED (ADR-001 capability), TTL'd (7 days) and
- * destroyed with overwrite-then-unlink. Rollback outside the window is
- * impossible by construction (missing/expired snapshot or unavailable key).
+ * Snapshots contain readable local data, are TTL'd (7 days), and are destroyed
+ * with overwrite-then-unlink. They are temporary rollback data, not a backup.
  */
 
 import fs from "node:fs";
@@ -16,7 +15,6 @@ export interface SnapshotMeta {
   saga_id: string;
   created_at: string;
   ttl_days: number;
-  key_source: "safeStorage" | "passphrase";
 }
 
 export function snapshotDir(sagaDir: string): string {
@@ -54,24 +52,20 @@ export function diskSnapshotStore(sagaDir: string): SnapshotStore {
     fs.rmSync(metaFile(sagaDir, sagaId), { force: true });
   }
   return {
-    async write(sagaId, payload, capability): Promise<void> {
+    async write(sagaId, payload): Promise<void> {
       fs.mkdirSync(sdir, { recursive: true });
-      const ciphertext = await capability.encrypt(
-        new TextEncoder().encode(payload),
-      );
-      fs.writeFileSync(snapshotFile(sagaDir, sagaId), Buffer.from(ciphertext));
+      fs.writeFileSync(snapshotFile(sagaDir, sagaId), payload, "utf8");
       const meta: SnapshotMeta = {
         saga_id: sagaId,
         created_at: new Date().toISOString(),
         ttl_days: SNAPSHOT_TTL_DAYS,
-        key_source: capability.keySource,
       };
       fs.writeFileSync(
         metaFile(sagaDir, sagaId),
         JSON.stringify(meta, null, 2),
       );
     },
-    async canRollback(sagaId, capability, now) {
+    async canRollback(sagaId, now) {
       if (!fs.existsSync(metaFile(sagaDir, sagaId))) {
         return { possible: false, reason: "snapshot_missing" };
       }
@@ -81,16 +75,10 @@ export function diskSnapshotStore(sagaDir: string): SnapshotStore {
       if (ageDays(meta.created_at, now) > meta.ttl_days) {
         return { possible: false, reason: "snapshot_expired" };
       }
-      if (!(await capability.canDecrypt())) {
-        return { possible: false, reason: "key_unavailable" };
-      }
       return { possible: true };
     },
-    async restore(sagaId, capability) {
-      const ciphertext = new Uint8Array(
-        fs.readFileSync(snapshotFile(sagaDir, sagaId)),
-      );
-      return new TextDecoder().decode(await capability.decrypt(ciphertext));
+    async restore(sagaId) {
+      return fs.readFileSync(snapshotFile(sagaDir, sagaId), "utf8");
     },
     destroy(sagaId) {
       destroyOne(sagaId);

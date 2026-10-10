@@ -5,23 +5,13 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
  *
  * This is the pure half of the honest disclosure surface: it answers, from the
  * three existing read-only sources, (a) whether legacy plaintext PII residue
- * exists (key NAMES + counts only), (b) the vault access state, and (c) the
- * re-home / migration-marker state. It renders nothing and writes nothing.
+ * exists (key NAMES + counts only), and (b) the re-home / migration-marker
+ * state. It renders nothing and writes nothing.
  *
  * The specs below pin the honesty contract: no record value may ever reach the
  * returned object, and each state is derived from the source that actually
  * proves it.
  */
-
-const mockVaultState = vi.fn();
-
-vi.mock("@/shared/lib/crypto/piiStoreHydration", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("@/shared/lib/crypto/piiStoreHydration")
-    >();
-  return { ...actual, getPiiStoreAccessState: () => mockVaultState() };
-});
 
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import {
@@ -79,21 +69,15 @@ const BACKUP_MARKER = JSON.stringify({
   baseEntries: [],
 });
 
-const LOCKED = { status: "locked", reason: "profile_locked" } as const;
-
 function disclosureWith(options: LegacyPiiDisclosureOptions) {
   return getLegacyPiiDisclosure(options);
 }
 
-beforeEach(() => {
-  mockVaultState.mockReset();
-  mockVaultState.mockReturnValue(LOCKED);
-  vi.restoreAllMocks();
-});
+beforeEach(() => vi.restoreAllMocks());
 
 describe("getLegacyPiiDisclosure — residue (value-free)", () => {
   it("reports no residue and a nothing-to-migrate re-home state", () => {
-    const disclosure = disclosureWith({ read: readMap({}), vault: LOCKED });
+    const disclosure = disclosureWith({ read: readMap({}) });
 
     expect(disclosure.residue.present).toBe(false);
     expect(disclosure.residue.total).toBe(0);
@@ -108,7 +92,6 @@ describe("getLegacyPiiDisclosure — residue (value-free)", () => {
   it("surfaces key NAMES and counts, never a record value", () => {
     const disclosure = disclosureWith({
       read: residue({ [CUSTOMERS]: 2, [QUOTES]: 1 }),
-      vault: LOCKED,
     });
 
     expect(disclosure.residue.present).toBe(true);
@@ -122,29 +105,10 @@ describe("getLegacyPiiDisclosure — residue (value-free)", () => {
   });
 });
 
-describe("getLegacyPiiDisclosure — vault state", () => {
-  it.each([
-    { status: "hydrated" } as const,
-    LOCKED,
-    { status: "unavailable", reason: "indexeddb_unavailable" } as const,
-  ])("passes the injected vault state through ($status)", (vault) => {
-    const disclosure = disclosureWith({ read: readMap({}), vault });
-    expect(disclosure.vault).toEqual(vault);
-  });
-
-  it("asks the vault gate by default when no state is injected", () => {
-    mockVaultState.mockReturnValue({ status: "hydrated" });
-    const disclosure = disclosureWith({ read: readMap({}) });
-    expect(disclosure.vault).toEqual({ status: "hydrated" });
-    expect(mockVaultState).toHaveBeenCalledTimes(1);
-  });
-});
-
 describe("getLegacyPiiDisclosure — re-home / marker state", () => {
   it("is pending when residue exists and there is no proof of a completed re-home", () => {
     const disclosure = disclosureWith({
       read: residue({ [CUSTOMERS]: 1 }),
-      vault: LOCKED,
     });
     expect(disclosure.rehome.state).toBe("pending");
     expect(disclosure.rehome.completed).toBe(false);
@@ -158,7 +122,7 @@ describe("getLegacyPiiDisclosure — re-home / marker state", () => {
         keys: [CUSTOMERS],
       }),
     });
-    const disclosure = disclosureWith({ read, vault: { status: "hydrated" } });
+    const disclosure = disclosureWith({ read });
     expect(disclosure.rehome.state).toBe("migrated");
     expect(disclosure.rehome.completed).toBe(true);
   });
@@ -168,7 +132,7 @@ describe("getLegacyPiiDisclosure — re-home / marker state", () => {
       [CUSTOMERS]: persisted(1, "customers"),
       [MIGRATION_MARKER_KEY]: BACKUP_MARKER,
     });
-    const disclosure = disclosureWith({ read, vault: LOCKED });
+    const disclosure = disclosureWith({ read });
     expect(disclosure.rehome.state).toBe("incomplete");
     expect(disclosure.historyMarker.state).toBe("resumable");
   });
@@ -182,21 +146,20 @@ describe("getLegacyPiiDisclosure — re-home / marker state", () => {
       }),
       [MIGRATION_MARKER_KEY]: BACKUP_MARKER,
     });
-    const disclosure = disclosureWith({ read, vault: { status: "hydrated" } });
+    const disclosure = disclosureWith({ read });
     expect(disclosure.rehome.state).toBe("migrated");
   });
 });
 
 describe("getLegacyPiiDisclosure — history migration marker (value-free)", () => {
   it("reports absent when there is no marker", () => {
-    const disclosure = disclosureWith({ read: readMap({}), vault: LOCKED });
+    const disclosure = disclosureWith({ read: readMap({}) });
     expect(disclosure.historyMarker.state).toBe("absent");
   });
 
   it("reports complete for the legacy non-JSON done value", () => {
     const disclosure = disclosureWith({
       read: readMap({ [MIGRATION_MARKER_KEY]: "done" }),
-      vault: LOCKED,
     });
     expect(disclosure.historyMarker.state).toBe("complete");
   });
@@ -204,7 +167,6 @@ describe("getLegacyPiiDisclosure — history migration marker (value-free)", () 
   it("reports complete for a non-backup JSON document", () => {
     const disclosure = disclosureWith({
       read: readMap({ [MIGRATION_MARKER_KEY]: JSON.stringify({ v: 1 }) }),
-      vault: LOCKED,
     });
     expect(disclosure.historyMarker.state).toBe("complete");
   });
@@ -219,7 +181,7 @@ describe("getLegacyPiiDisclosure — history migration marker (value-free)", () 
         v: 1,
       }),
     });
-    const disclosure = disclosureWith({ read, vault: LOCKED });
+    const disclosure = disclosureWith({ read });
     expect(disclosure.historyMarker.state).toBe("resumable");
     expect(disclosure.rehome.state).toBe("incomplete");
   });
@@ -227,7 +189,6 @@ describe("getLegacyPiiDisclosure — history migration marker (value-free)", () 
   it("reports complete for a non-marker value under the progress key", () => {
     const disclosure = disclosureWith({
       read: readMap({ [MIGRATION_PROGRESS_KEY]: JSON.stringify({ v: 1 }) }),
-      vault: LOCKED,
     });
     expect(disclosure.historyMarker.state).toBe("complete");
   });
@@ -242,12 +203,12 @@ describe("getLegacyPiiDisclosure — history migration marker (value-free)", () 
         baseEntries: [],
       }),
     });
-    const disclosure = disclosureWith({ read, vault: LOCKED });
+    const disclosure = disclosureWith({ read });
     expect(JSON.stringify(disclosure)).not.toContain("SENTINEL-LEAK-CANARY");
   });
 
   it("exposes only the marker key NAMES, never values", () => {
-    const disclosure = disclosureWith({ read: readMap({}), vault: LOCKED });
+    const disclosure = disclosureWith({ read: readMap({}) });
     expect(disclosure.rehome.markerKey).toBe(LEGACY_PII_REHOME_MARKER_KEY);
     expect(disclosure.historyMarker.markerKey).toBe(MIGRATION_MARKER_KEY);
   });
@@ -258,7 +219,6 @@ describe("getLegacyPiiDisclosure — history migration marker (value-free)", () 
     for (const raw of [BACKUP_MARKER, "done"]) {
       const disclosure = disclosureWith({
         read: readMap({ [MIGRATION_MARKER_KEY]: raw }),
-        vault: LOCKED,
       });
       expect(disclosure.historyMarker.legacyPlaintextResidue).toBe(
         raw !== null,
@@ -267,7 +227,7 @@ describe("getLegacyPiiDisclosure — history migration marker (value-free)", () 
   });
 
   it("reports no legacy plaintext residue when the legacy key is absent", () => {
-    const disclosure = disclosureWith({ read: readMap({}), vault: LOCKED });
+    const disclosure = disclosureWith({ read: readMap({}) });
     expect(disclosure.historyMarker.legacyPlaintextResidue).toBe(false);
   });
 
@@ -279,7 +239,6 @@ describe("getLegacyPiiDisclosure — history migration marker (value-free)", () 
           v: 1,
         }),
       }),
-      vault: LOCKED,
     });
     expect(disclosure.historyMarker.state).toBe("resumable");
     expect(disclosure.historyMarker.legacyPlaintextResidue).toBe(false);
@@ -289,7 +248,7 @@ describe("getLegacyPiiDisclosure — history migration marker (value-free)", () 
 describe("getLegacyPiiDisclosure — default readers", () => {
   it("reads through the manifest-gated storage by default", () => {
     const spy = vi.spyOn(guardedStorage, "getItem").mockReturnValue(null);
-    disclosureWith({ vault: LOCKED });
+    disclosureWith({});
 
     for (const key of [
       CUSTOMERS,

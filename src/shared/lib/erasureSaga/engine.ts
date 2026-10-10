@@ -25,11 +25,7 @@ import {
   SNAPSHOT_TTL_DAYS,
   buildStorePlan,
 } from "./types.js";
-import type {
-  JournalAdapter,
-  SnapshotCapability,
-  SnapshotStore,
-} from "./ports.js";
+import type { JournalAdapter, SnapshotStore } from "./ports.js";
 
 export { type StoreAdapterLike };
 
@@ -37,15 +33,14 @@ export interface SagaEngineOptions {
   platform: "electron" | "web";
   /** Journal storage (disk on desktop; localStorage/OPFS on web). */
   journal: JournalAdapter;
-  /** Encrypted snapshot storage (disk on desktop; OPFS/localStorage on web). */
+  /** Local rollback snapshot storage (disk on desktop; localStorage on web). */
   snapshots: SnapshotStore;
   policyVersion: string;
   /** One adapter per store in the platform plan (lookup by `store`). */
   adapters: StoreAdapterLike[];
   /** Override the platform's default store plan (crash-test drivers). */
   storePlan?: ErasureStore[];
-  snapshotCapability: SnapshotCapability;
-  /** Serialized PII-bearing data captured into the encrypted snapshot. */
+  /** Serialized PII-bearing data captured before deletion. */
   collectSnapshotPayload: () => Promise<string>;
   /** Restore a snapshot payload back into the stores (rollback path). */
   restoreSnapshotPayload?: (payload: string) => Promise<void>;
@@ -119,7 +114,6 @@ export async function startSaga(
     confirmation: { confirmed_at: now.toISOString(), scope: "delete_all" },
     rollback_window: {
       ttl_days: SNAPSHOT_TTL_DAYS,
-      key_source: options.snapshotCapability.keySource,
     },
     stores: buildStorePlan(options.platform)
       .map((row) =>
@@ -165,13 +159,9 @@ async function drive(
   if (journal.state === "prepared") {
     try {
       const payload = await options.collectSnapshotPayload();
-      await options.snapshots.write(
-        journal.saga_id,
-        payload,
-        options.snapshotCapability,
-      );
+      await options.snapshots.write(journal.saga_id, payload);
     } catch (error) {
-      // §5: capability denied ⇒ rollback is impossible — the erasure still
+      // §5: snapshot write failed ⇒ rollback is impossible — the erasure still
       // completes (documented trade-off; never weakens the guarantee).
       journal.rollback_unavailable = {
         reason: `capability_denied: ${
@@ -292,11 +282,7 @@ async function failOrRollback(
   failedStore: ErasureStore,
 ): Promise<{ journal: SagaJournal; receipt?: SagaReceipt }> {
   const now = options.now ?? (() => new Date());
-  const window = await options.snapshots.canRollback(
-    journal.saga_id,
-    options.snapshotCapability,
-    now(),
-  );
+  const window = await options.snapshots.canRollback(journal.saga_id, now());
   if (!window.possible || !options.restoreSnapshotPayload) {
     const row = journal.stores.find((store) => store.store === failedStore);
     if (row) row.state = "failed";
@@ -308,10 +294,7 @@ async function failOrRollback(
     await persist(options, journal);
     return { journal };
   }
-  const payload = await options.snapshots.restore(
-    journal.saga_id,
-    options.snapshotCapability,
-  );
+  const payload = await options.snapshots.restore(journal.saga_id);
   await options.restoreSnapshotPayload(payload);
   journal.state = "rolled_back";
   await persist(options, journal);

@@ -82,12 +82,6 @@ vi.mock("../update.js", () => ({
   getUpdateStatus: vi.fn(() => ({ status: "idle" })),
 }));
 
-vi.mock("../cryptoCapability.js", () => ({
-  getCapability: vi.fn(),
-  adoptSessionPassphrase: vi.fn(),
-  lockCryptoSession: vi.fn(),
-}));
-
 vi.mock("../databaseIpc.js", () => ({
   registerDatabaseStorageHandlers: vi.fn(),
   registerDisabledDatabaseImportHandler: vi.fn(),

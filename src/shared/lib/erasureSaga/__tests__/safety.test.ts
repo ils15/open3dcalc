@@ -5,7 +5,7 @@ import path from "node:path";
 import { resumeSaga, type SagaEngineOptions } from "../engine";
 import { diskJournalAdapter } from "../journal";
 import type { SagaJournal } from "../types";
-import type { SnapshotCapability, SnapshotStore } from "../ports";
+import type { SnapshotStore } from "../ports";
 
 const dirs: string[] = [];
 
@@ -25,7 +25,7 @@ function journalFixture(): SagaJournal {
       confirmed_at: "2026-10-06T00:00:00.000Z",
       scope: "delete_all",
     },
-    rollback_window: { ttl_days: 7, key_source: "safeStorage" },
+    rollback_window: { ttl_days: 7 },
     stores: [{ store: "sqlite_storage", state: "pending", attempts: 0 }],
   };
 }
@@ -44,9 +44,6 @@ function makeOptions(dir: string): {
     snapshotSweep: vi.fn(() => [] as string[]),
     purge: vi.fn(async () => 1),
     rescan: vi.fn(async () => [] as string[]),
-    capabilityCanDecrypt: vi.fn(async () => true),
-    encrypt: vi.fn(async (bytes: Uint8Array) => bytes),
-    decrypt: vi.fn(async (bytes: Uint8Array) => bytes),
     restorePayload: vi.fn(async () => undefined),
   };
   const snapshots: SnapshotStore = {
@@ -56,12 +53,6 @@ function makeOptions(dir: string): {
     destroy: calls.snapshotDestroy,
     destroyAll: calls.snapshotDestroyAll,
     sweepExpired: calls.snapshotSweep,
-  };
-  const capability: SnapshotCapability = {
-    keySource: "safeStorage",
-    canDecrypt: calls.capabilityCanDecrypt,
-    encrypt: calls.encrypt,
-    decrypt: calls.decrypt,
   };
   const disk = diskJournalAdapter(dir);
   const options: SagaEngineOptions = {
@@ -79,7 +70,6 @@ function makeOptions(dir: string): {
     adapters: [
       { store: "sqlite_storage", purge: calls.purge, rescan: calls.rescan },
     ],
-    snapshotCapability: capability,
     collectSnapshotPayload: calls.snapshotPayload,
     restoreSnapshotPayload: calls.restorePayload,
   };
@@ -121,7 +111,7 @@ describe("delete-all journal authorization and progress validation", () => {
     [
       "unknown store",
       (j: Record<string, unknown>) => {
-        j.stores = [{ store: "vault", state: "pending", attempts: 0 }];
+        j.stores = [{ store: "retired_store", state: "pending", attempts: 0 }];
       },
     ],
   ])(
@@ -145,9 +135,6 @@ describe("delete-all journal authorization and progress validation", () => {
       expect(calls.snapshotSweep).not.toHaveBeenCalled();
       expect(calls.purge).not.toHaveBeenCalled();
       expect(calls.rescan).not.toHaveBeenCalled();
-      expect(calls.capabilityCanDecrypt).not.toHaveBeenCalled();
-      expect(calls.encrypt).not.toHaveBeenCalled();
-      expect(calls.decrypt).not.toHaveBeenCalled();
     },
   );
 

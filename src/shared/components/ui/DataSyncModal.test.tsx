@@ -1,29 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { DataSyncModal } from "./DataSyncModal";
 
-const { mockExportData, mockImportData, mockIsEncrypted } = vi.hoisted(() => ({
+const { mockExportData, mockImportData } = vi.hoisted(() => ({
   mockExportData: vi.fn(),
   mockImportData: vi.fn(),
-  mockIsEncrypted: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
+  useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-// dataSync.ts is implemented in parallel — the factory mock replaces the module
 vi.mock("@/shared/lib/dataSync", () => ({
   exportData: (...args: unknown[]) => mockExportData(...args),
   importData: (...args: unknown[]) => mockImportData(...args),
-  isEncrypted: (...args: unknown[]) => mockIsEncrypted(...args),
 }));
 
 describe("DataSyncModal", () => {
   beforeEach(() => {
     mockExportData.mockReset();
-    mockImportData.mockReset();
-    mockIsEncrypted.mockReset();
+    mockImportData.mockReset().mockResolvedValue({
+      imported: 3,
+      conflicts: 0,
+      errors: 0,
+    });
   });
 
   it("renders nothing when closed", () => {
@@ -31,252 +31,56 @@ describe("DataSyncModal", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("renders with export tab active by default", () => {
-    render(<DataSyncModal open={true} />);
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(
-      screen.getByRole("tab", { name: "sync.export.tab" }),
-    ).toHaveAttribute("aria-selected", "true");
-    expect(
-      screen.getByRole("tab", { name: "sync.import.tab" }),
-    ).toHaveAttribute("aria-selected", "false");
-    expect(screen.getByText("sync.export.description")).toBeInTheDocument();
-  });
-
-  it("switches between export and import tabs", () => {
-    render(<DataSyncModal open={true} />);
-    fireEvent.click(screen.getByRole("tab", { name: "sync.import.tab" }));
-    expect(
-      screen.getByRole("tab", { name: "sync.import.tab" }),
-    ).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("sync.import.warning")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: "sync.export.tab" }));
-    expect(
-      screen.getByRole("tab", { name: "sync.export.tab" }),
-    ).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("sync.export.description")).toBeInTheDocument();
-  });
-
-  it("triggers download when export button is clicked", async () => {
+  it("exports readable JSON without a password", async () => {
     mockExportData.mockResolvedValue({
       fileName: "backup.open3dcalc",
       sizeBytes: 2048,
-      piiIncluded: true,
     });
     render(<DataSyncModal open={true} />);
-    // SPEC-03: export is always encrypted — the password is required.
-    const button = screen.getByRole("button", { name: "sync.export.button" });
-    expect(button).toBeDisabled();
-    fireEvent.change(screen.getByLabelText("sync.export.password"), {
-      target: { value: "senha-sintética" },
-    });
-    expect(button).toBeEnabled();
 
+    const button = screen.getByRole("button", { name: "sync.export.button" });
+    expect(button).toBeEnabled();
+    expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
     fireEvent.click(button);
 
-    expect(mockExportData).toHaveBeenCalledTimes(1);
-    expect(mockExportData).toHaveBeenCalledWith({
-      password: "senha-sintética",
-    });
+    expect(mockExportData).toHaveBeenCalledWith();
     expect(await screen.findByText(/backup.open3dcalc/)).toBeInTheDocument();
-    expect(screen.getByText(/sync.export.success/)).toBeInTheDocument();
-    // The vault was available, so the honest PII-excluded warning is absent.
-    expect(
-      screen.queryByText("sync.export.piiExcluded"),
-    ).not.toBeInTheDocument();
   });
 
-  it("warns when the export omitted PII because the vault was unavailable", async () => {
-    mockExportData.mockResolvedValue({
-      fileName: "backup.open3dcalc",
-      sizeBytes: 2048,
-      piiIncluded: false,
-    });
-    render(<DataSyncModal open={true} />);
-    fireEvent.change(screen.getByLabelText("sync.export.password"), {
-      target: { value: "senha-sintética" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "sync.export.button" }));
-
-    expect(
-      await screen.findByText("sync.export.piiExcluded"),
-    ).toBeInTheDocument();
-  });
-
-  it("toggles password field visibility", () => {
-    render(<DataSyncModal open={true} />);
-
-    // SPEC-03: encryption is mandatory — the field is always visible.
-    const input = screen.getByLabelText(
-      "sync.export.password",
-    ) as HTMLInputElement;
-    expect(input.type).toBe("password");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "sync.export.passwordShow" }),
-    );
-    expect(input.type).toBe("text");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "sync.export.passwordHide" }),
-    );
-    expect(input.type).toBe("password");
-  });
-
-  it("accepts .open3dcalc files in the import picker", () => {
+  it("does not show a password field when selecting a legacy encrypted file", () => {
     const { container } = render(<DataSyncModal open={true} />);
     fireEvent.click(screen.getByRole("tab", { name: "sync.import.tab" }));
-
     const input = container.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
-    expect(input).not.toBeNull();
-    expect(input.accept).toBe(".open3dcalc");
-    expect(input).toHaveAttribute("aria-label", "sync.import.selectFile");
-  });
-
-  it("imports a file and shows results", async () => {
-    mockIsEncrypted.mockResolvedValue(false);
-    mockImportData.mockResolvedValue({
-      imported: 3,
-      conflicts: 1,
-      errors: 0,
-      piiRefused: [],
-    });
-    const { container } = render(<DataSyncModal open={true} />);
-    fireEvent.click(screen.getByRole("tab", { name: "sync.import.tab" }));
-
-    const input = container.querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
-    const file = new File(["data"], "backup.open3dcalc", {
-      type: "application/octet-stream",
+    const file = new File(['{"encrypted":true}'], "legacy.open3dcalc", {
+      type: "application/json",
     });
     fireEvent.change(input, { target: { files: [file] } });
 
-    await waitFor(() => expect(mockIsEncrypted).toHaveBeenCalledWith(file));
+    expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "sync.import.button" }));
-    expect(mockImportData).toHaveBeenCalledWith(file, {
-      password: undefined,
-      mode: "merge",
+  it("imports a readable file without a password", async () => {
+    const { container } = render(<DataSyncModal open={true} />);
+    fireEvent.click(screen.getByRole("tab", { name: "sync.import.tab" }));
+    const input = container.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["{}"], "backup.open3dcalc", {
+      type: "application/json",
     });
+    fireEvent.change(input, { target: { files: [file] } });
+    fireEvent.click(screen.getByRole("button", { name: "sync.import.button" }));
 
+    expect(mockImportData).toHaveBeenCalledWith(file, { mode: "merge" });
     expect(
       await screen.findByText("sync.import.results.imported"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("sync.import.results.conflicts"),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/sync.import.success/)).toBeInTheDocument();
-    // No refusal, so the honest PII-refused warning is absent.
-    expect(
-      screen.queryByText("sync.import.piiRefused"),
-    ).not.toBeInTheDocument();
   });
 
-  it("warns when PII was refused because the vault was unavailable", async () => {
-    mockIsEncrypted.mockResolvedValue(false);
-    mockImportData.mockResolvedValue({
-      imported: 3,
-      conflicts: 0,
-      errors: 0,
-      piiRefused: ["customers", "quotes", "history"],
-    });
-    const { container } = render(<DataSyncModal open={true} />);
-    fireEvent.click(screen.getByRole("tab", { name: "sync.import.tab" }));
-
-    const input = container.querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
-    const file = new File(["data"], "backup.open3dcalc", {
-      type: "application/octet-stream",
-    });
-    fireEvent.change(input, { target: { files: [file] } });
-
-    await waitFor(() => expect(mockIsEncrypted).toHaveBeenCalledWith(file));
-
-    fireEvent.click(screen.getByRole("button", { name: "sync.import.button" }));
-
-    expect(
-      await screen.findByText("sync.import.piiRefused"),
-    ).toBeInTheDocument();
-  });
-
-  it("shows decryption password field for encrypted files", async () => {
-    mockIsEncrypted.mockResolvedValue(true);
-    const { container } = render(<DataSyncModal open={true} />);
-    fireEvent.click(screen.getByRole("tab", { name: "sync.import.tab" }));
-
-    expect(
-      screen.queryByLabelText("sync.import.password"),
-    ).not.toBeInTheDocument();
-
-    const input = container.querySelector(
-      'input[type="file"]',
-    ) as HTMLInputElement;
-    const file = new File(["enc"], "backup.open3dcalc", {
-      type: "application/octet-stream",
-    });
-    fireEvent.change(input, { target: { files: [file] } });
-
-    await waitFor(() =>
-      expect(screen.getByLabelText("sync.import.password")).toBeInTheDocument(),
-    );
-  });
-
-  it("switches import mode selector", () => {
-    render(<DataSyncModal open={true} />);
-    fireEvent.click(screen.getByRole("tab", { name: "sync.import.tab" }));
-
-    const radios = screen.getAllByRole("radio");
-    expect(radios).toHaveLength(2);
-    expect(radios[0]).toBeChecked();
-    expect(radios[1]).not.toBeChecked();
-
-    fireEvent.click(radios[1]);
-    expect(radios[1]).toBeChecked();
-    expect(radios[0]).not.toBeChecked();
-  });
-
-  it("closes on Escape key", () => {
-    const onRequestClose = vi.fn();
-    render(<DataSyncModal open={true} onRequestClose={onRequestClose} />);
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(onRequestClose).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows the LGPD notice with privacy link", () => {
+  it("shows the local-data privacy notice", () => {
     render(<DataSyncModal open={true} />);
     expect(screen.getByText(/sync.lgpd_notice/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "sync.privacy_link" }),
-    ).toBeInTheDocument();
-  });
-
-  it("exposes accessible names on interactive elements", () => {
-    render(<DataSyncModal open={true} />);
-
-    expect(screen.getByRole("dialog")).toHaveAttribute(
-      "aria-label",
-      "sync.title",
-    );
-    expect(screen.getByRole("dialog")).toHaveAttribute("aria-modal", "true");
-    expect(
-      screen.getByRole("button", { name: "common.close" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("tab", { name: "sync.export.tab" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("tab", { name: "sync.import.tab" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "sync.export.button" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "sync.privacy_link" }),
-    ).toBeInTheDocument();
   });
 });

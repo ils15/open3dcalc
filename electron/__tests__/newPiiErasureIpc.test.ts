@@ -20,8 +20,8 @@ import {
   registerWithdrawalPurgeHandlers,
   WITHDRAWAL_PURGE_CHANNELS,
 } from "../withdrawalPurge.js";
-import type { MinimalStorageDb } from "../persistGate.js";
-import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/crypto/newPiiNamespace.js";
+import type { MinimalStorageDb } from "../storageRows.js";
+import { NEW_PII_STORAGE_KEYS } from "../../src/shared/lib/localData/newPiiNamespace.js";
 import { loadWithdrawalJournal } from "../withdrawalJournal.js";
 
 const [CUSTOMERS, QUOTES, HISTORY] = NEW_PII_STORAGE_KEYS;

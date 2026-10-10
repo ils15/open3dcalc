@@ -35,7 +35,7 @@ describe("betaNoDestructiveOps", () => {
         confirmed_at: "2026-10-08T00:00:00.000Z",
         scope: "delete_all",
       },
-      rollback_window: { ttl_days: 7, key_source: "passphrase" },
+      rollback_window: { ttl_days: 7 },
       stores: [],
     } satisfies SagaJournal);
 
@@ -44,18 +44,11 @@ describe("betaNoDestructiveOps", () => {
     ).toBeNull();
   });
 
-  it("refuses a snapshot before invoking crypto or writing storage", async () => {
-    const encrypt = vi.fn(async () => new Uint8Array([1, 2, 3]));
+  it("refuses a snapshot before writing to storage", async () => {
     const snapshot = webSnapshotStore();
 
-    await snapshot.write("synthetic-saga-02", "synthetic-only", {
-      encrypt,
-      canDecrypt: vi.fn(async () => true),
-      decrypt: vi.fn(async () => new Uint8Array()),
-      keySource: "passphrase",
-    });
+    await snapshot.write("synthetic-saga-02", "synthetic-only");
 
-    expect(encrypt).not.toHaveBeenCalled();
     expect(
       window.localStorage.getItem("open3dcalc_erasure_snapshot"),
     ).toBeNull();

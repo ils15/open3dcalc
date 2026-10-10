@@ -13,8 +13,8 @@ import {
   verifyNewPiiErasureClaim,
   type NewPiiErasureClaim,
   type NewPiiErasureTarget,
-} from "../newPiiErasureJournal";
-import { NEW_PII_STORAGE_KEYS } from "../newPiiNamespace";
+} from "./newPiiErasureJournal";
+import { NEW_PII_STORAGE_KEYS } from "./newPiiNamespace";
 
 const TARGETS = newPiiErasureTargets();
 const INPUT = {

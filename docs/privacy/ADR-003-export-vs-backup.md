@@ -3,9 +3,9 @@
 ## Policy 1.9 clarification — export remains independent of local saves
 
 The distinction below between a user-facing logical export and a diagnostic/raw database
-backup remains in force. The logical export continues to use the SPEC-03 encrypted envelope;
-its password, algorithms, integrity checks, and size/iteration limits are retained. An export
-password is never a prerequisite for saving customers, quotes, or history locally.
+backup remains in force. The logical export is readable JSON; it has no password, encryption,
+or key-management path. A checksum detects accidental corruption only. Local saving is
+independent of export/import.
 
 The former vault-unlock prerequisite for export is removed. Export must operate only on its
 currently supported, explicitly selected data inputs and must not open, read, inspect, convert,
@@ -15,13 +15,18 @@ intended for synthetic test data (not content-validated), with no import, export
 its app-mediated namespace is not a boundary against same-origin code.
 
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Superseded for vault access by approved policy 1.9; logical export/backup distinction retained
+**Status:** Superseded for encryption; logical export/backup distinction retained
 **Addresses findings:** R2 (export lógico vs raw), R13 (raw SQLite diagnóstico)
 **Related:** SPEC-01 (manifest), SPEC-03 (export envelope), ADR-002 (quarantine)
 
 > **Historical D1.0 proposal below.** The original implementation and release claims describe
 > the D1.0 snapshot, not current runtime status. The policy 1.9 clarification above governs
-> current local saves; only the logical-export/diagnostic-backup distinction remains operative.
+> current local saves and data portability; only the logical-export/diagnostic-backup
+> distinction remains operative.
+
+> Everything below this notice is archival. References to encryption, passwords, cipher
+> parameters, encrypted portability, or Beta export restrictions do not describe current
+> behavior; no such code path remains.
 
 ## 1. Context
 

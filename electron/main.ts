@@ -244,7 +244,7 @@ function setupIpcHandlers(): void {
   // ── pii:new:* — Desktop exact-key plaintext PII route ──────────────────
   // Only the disjoint pwless namespace is available here. The route validates
   // trusted senders and the exact key before SQL; generic db IPC denies it.
-  // No keyring, profile key, or passphrase prerequisite gates these writes.
+  // These local writes have no password or encryption prerequisite.
   // The durable withdrawal journal lives in the profile (userData) directory;
   // while a pending/incomplete withdrawal exists the route refuses fail-closed.
   registerPasswordlessPiiHandlers(
@@ -282,8 +282,8 @@ function setupIpcHandlers(): void {
   // ── db:export (D1.1 S6 — ADR-003 §2.2 reclassification) ─────────────
   // The raw SQLite copy is a DIAGNOSTIC backup, not a user feature: it is
   // gated behind the diagnostic flag, refuses to run in production without
-  // it, and supports manifest-driven redaction. Users export via the
-  // SPEC-03 envelope instead. No renderer UI invokes this.
+  // it, and supports manifest-driven redaction. Users export portable plain
+  // JSON through the shared export flow instead. No renderer UI invokes this.
   ipcMain.handle(
     "db:export",
     async (event, options?: { redact?: boolean }): Promise<string> => {

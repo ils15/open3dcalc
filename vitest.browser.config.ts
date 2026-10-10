@@ -1,16 +1,10 @@
 /**
- * Vitest browser mode: the PII vault against a REAL browser.
+ * Vitest browser mode: Beta profile isolation in a REAL browser.
  *
  * ## Why this config exists next to `vitest.config.ts`
  *
- * Every vault spec to date runs in jsdom, where `globalThis.indexedDB` does not
- * exist: the store is a test double (`src/shared/test/fakeIndexedDb.ts`) and the
- * capability sampler has to be handed `PII_STORE_ENVIRONMENT`, because jsdom
- * reports `window.isSecureContext` as `undefined`. The cryptography was already
- * real, but the two things a public beta actually depends on were unproven in
- * the runtime that ships them: the browser's own IndexedDB (transactions,
- * auto-commit, the open/upgrade handshake) and Web Crypto behind a real secure
- * origin.
+ * These specs exercise the Beta profile's namespace isolation and storage
+ * behavior in Chromium rather than a simulated browser environment.
  *
  * This config runs only `*.browser.test.ts` in Chromium through Playwright, with
  * NO injected environment and NO store double. `vitest.config.ts` is untouched
@@ -36,14 +30,13 @@ export default defineConfig(
         enabled: true,
         // Explicit rather than CI-derived: a headless run must never depend on
         // `process.env.CI`, or a local `npm run test:browser` would try to open
-        // a window. There is no UI in these specs, only storage and crypto.
+        // a window. These specs assert storage behavior, not pixels.
         headless: true,
         provider: playwright(),
         instances: [{ browser: "chromium" }],
         // Vitest defaults this to `true` in a non-UI run and writes a screenshot
-        // into `__screenshots__/` beside the spec. These specs assert on
-        // IndexedDB and ciphertext, never on pixels, so the artifact would be a
-        // picture of an empty page and an untracked directory in the tree.
+        // into `__screenshots__/` beside the spec. These specs assert storage
+        // contracts, never on pixels, so screenshots would add no value.
         screenshotFailures: false,
       },
     },

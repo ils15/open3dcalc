@@ -66,6 +66,8 @@
   --surface-overlay: #fcfcff;
   --surface-sunken: #edf0f7;
   --surface-input: #ffffff;
+  /* Modal scrim stays dark in both themes; components consume the semantic alias. */
+  --overlay-scrim: rgb(0 0 0 / 75%);
 
   /* Borders */
   --border-subtle: #e2e8f0;
@@ -577,6 +579,7 @@
   --color-bg-elevated: var(--surface-overlay);
   --color-bg-hover: var(--surface-sunken);
   --color-bg-input: var(--surface-input);
+  --color-overlay-scrim: var(--overlay-scrim);
 
   --color-border: var(--border-subtle);
   --color-border-subtle: var(--surface-sunken);
@@ -701,6 +704,7 @@
   --color-bg-elevated: var(--surface-overlay);
   --color-bg-hover: var(--surface-sunken);
   --color-bg-input: var(--surface-input);
+  --color-overlay-scrim: var(--overlay-scrim);
   --color-border: var(--border-subtle);
   --color-border-subtle: var(--surface-sunken);
   --color-border-hover: var(--border-default);

@@ -31,13 +31,26 @@ As observações abaixo registram a auditoria daquela publicação e não devem 
 - Os gates PII/export existentes não completam a checklist transversal LGPD das linhas 76–98.
 - Em 7q, IA, frota fora desta fase e vínculo cliente já têm decisão; continuam abertas a unidade de `usefulLife` e a formalização da decisão sobre `Example`. Coverage da beta.11 não foi medida.
 
-## Approved Beta test-only strip-down (merged; Beta web published)
+## Superseded: approved Beta test-only strip-down (historical)
+
+**Owner decision, 2026-10-10:** the synthetic-only restriction and separate Beta user-data
+namespace are retired. Beta must support real local records without a password/cofre, reuse the
+Stable customer/quote/history keys, and migrate any old `open3dcalc_beta_test_*` records before
+hydration. This supersedes the approved test-only scope below. It does not claim that migration,
+backup, or every user-data surface is release-ready.
+
+**Owner decision, 2026-10-10 — data portability:** Beta and Stable use the same local user
+records and the import/export dialog is available in both. New `.open3dcalc` files are plain
+JSON without a password or encryption and include real customer, quote, and history records.
+Users must be warned that anyone who can access the file can read it. Owner decision: remove all
+encryption, key, and password flows; old encrypted backups are unsupported. Readable v1.0 JSON
+remains importable for migration between versions.
 
 The owner approved D1–D12 for a Web-Beta-only profile intended for synthetic test data. This
-entry records the approved Beta profile and distinguishes it from the Stable/Desktop policy.
+historical entry records the prior Beta profile and distinguishes it from the Stable/Desktop policy.
 The Stable manifest now
 uses policy 1.9, which supersedes the former policy 1.8 plaintext restriction for its exact
-three-key scope; prior receipt bytes and encrypted-entry versions remain unchanged. Desktop
+three-key scope; prior receipt bytes and data-entry schema versions remain unchanged. Desktop
 follows the Stable policy 1.9 contract and is not part of the Web-Beta profile.
 
 - The Beta app uses only the three exact `open3dcalc_beta_test_*_v1` localStorage keys in
@@ -124,7 +137,7 @@ Every phase and change must complete this checklist:
 - [ ] Apply data minimization by default.
 - [ ] Define and enforce retention and deletion rules.
 - [ ] Provide working export and deletion of user data.
-- [ ] Protect local data and backups with appropriate access controls and encryption where applicable.
+- [ ] Protect local data and backups with appropriate access controls; keep any decision about encryption explicit and user-approved.
 - [ ] Do not send PII to third parties without a documented purpose and legal basis.
 - [ ] Keep logs free of secrets and excessive PII.
 - [ ] Review suppliers, integrations, and their data-processing terms before adoption.

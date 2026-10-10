@@ -87,7 +87,7 @@ describe("dataSync export funnel", () => {
   it("recusa a exportação em demo — nenhum Blob vira URL", async () => {
     mockState.isActive = true;
 
-    const result = await exportData({ password: "senha-forte" });
+    const result = await exportData();
 
     // O guard aborta antes de qualquer createObjectURL: nada chega ao disco.
     expect(createObjectURL).not.toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe("dataSync export funnel", () => {
   it("exporta normalmente fora do demo — comportamento inalterado", async () => {
     mockState.isActive = false;
 
-    await exportData({ password: "senha-forte" });
+    await exportData();
 
     expect(createObjectURL).toHaveBeenCalledTimes(1);
   });

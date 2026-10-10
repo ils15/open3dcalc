@@ -26,7 +26,6 @@ import {
 } from "@/shared/lib/erasureSaga/engine";
 import type {
   JournalAdapter,
-  SnapshotCapability,
   SnapshotStore,
   SagaJournal,
   StoreAdapterLike,
@@ -114,22 +113,6 @@ function makeAdapters(): StoreAdapterLike[] {
   ];
 }
 
-function capability(): SnapshotCapability {
-  return {
-    keySource: "passphrase",
-    canDecrypt: async () => true,
-    async encrypt(bytes) {
-      return new Uint8Array(
-        Buffer.from(`enc:${Buffer.from(bytes).toString("base64")}`),
-      );
-    },
-    async decrypt(cipher) {
-      const text = Buffer.from(cipher).toString("utf8");
-      return new Uint8Array(Buffer.from(text.slice(4), "base64"));
-    },
-  };
-}
-
 /**
  * Journal wrapper that simulates process death: the atomic save completes
  * (the state IS durable on disk), then the "process" dies.
@@ -164,7 +147,6 @@ function makeOptions(journal: JournalAdapter): SagaEngineOptions {
     snapshots,
     policyVersion: "1.1",
     adapters: makeAdapters(),
-    snapshotCapability: capability(),
     collectSnapshotPayload: async () => {
       const rows = db.prepare("SELECT key, value FROM storage").all() as Array<{
         key: string;

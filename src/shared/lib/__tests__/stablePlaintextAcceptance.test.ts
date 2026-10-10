@@ -13,7 +13,7 @@ const APPROVED_PII_KEYS = [
 ] as const;
 
 describe("stablePlaintextAcceptance", () => {
-  it("accepts policy 1.9 and the exact approved Stable plaintext-PII scope", () => {
+  it("accepts policy 1.9 and the declared shared customer-data destinations", () => {
     const manifest = loadManifest(stableFixture as ManifestDocument);
 
     expect(stableFixture.policy_version).toBe("1.9");
@@ -30,7 +30,7 @@ describe("stablePlaintextAcceptance", () => {
     }
   });
 
-  it("keeps plaintext PII restricted to the three exact declared destinations", () => {
+  it("declares all current PII destinations as readable local storage", () => {
     const manifest = loadManifest(stableFixture as ManifestDocument);
     const otherPiiEntries = [...manifest.values()].filter(
       (entry) =>
@@ -43,7 +43,7 @@ describe("stablePlaintextAcceptance", () => {
     expect(otherPiiEntries.length).toBeGreaterThan(0);
     expect(
       otherPiiEntries.every(
-        (entry) => entry.persistence !== "plaintext_allowed",
+        (entry) => entry.persistence === "plaintext_allowed",
       ),
     ).toBe(true);
   });

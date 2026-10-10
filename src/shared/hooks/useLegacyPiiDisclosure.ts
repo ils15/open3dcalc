@@ -16,7 +16,6 @@ import {
   getLegacyPiiDisclosure,
   type LegacyPiiDisclosure,
 } from "@/shared/lib/migration/legacyPiiDisclosure";
-import { installPiiStoreRuntimeEnvironment } from "@/shared/lib/crypto/piiStoreHydration";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
 import { mergeLegacyPiiRead } from "@/shared/hooks/useLegacyPiiResidue";
 import { fetchDesktopLegacyPiiRows } from "@/shared/lib/migration/desktopLegacyRows";
@@ -51,9 +50,6 @@ export function useLegacyPiiDisclosure(
         const localRead = (key: string) => guardedStorage.getItem(key);
         const rows = source.status === "available" ? source.rows : null;
         const read = mergeLegacyPiiRead(localRead, rows);
-        // Install the capability snapshot before reading markers, or a capable
-        // browser would report `capability_unknown` in the vault section.
-        installPiiStoreRuntimeEnvironment();
         setState({
           status: "ready",
           disclosure: getLegacyPiiDisclosure({ read }),

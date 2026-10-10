@@ -25,13 +25,13 @@ import {
   NEW_PII_ERASURE_SURFACE,
   newPiiErasureKeyForTarget,
   type NewPiiErasureTarget,
-} from "../src/shared/lib/crypto/newPiiErasureJournal.js";
+} from "../src/shared/lib/localData/newPiiErasureJournal.js";
 import {
   NEW_PII_DOMAIN_KEYS,
   type NewPiiDomain,
   type NewPiiStorageKey,
-} from "../src/shared/lib/crypto/newPiiNamespace.js";
-import type { MinimalStorageDb } from "./persistGate.js";
+} from "../src/shared/lib/localData/newPiiNamespace.js";
+import type { MinimalStorageDb } from "./storageRows.js";
 import { deleteNewPiiRow, remainingNewPiiRows } from "./newPiiStore.js";
 import {
   claimWithdrawalVerification,
@@ -51,7 +51,7 @@ export type WithdrawalPurgeResult =
 /**
  * The exact new-PII targets a receipt scope authorises.
  *
- * The logical domains the passwordless route owns are mapped through
+ * The logical domains the local route owns are mapped through
  * `NEW_PII_DOMAIN_KEYS`; a domain outside the scope contributes no target, so
  * the purge can never widen beyond what the receipt granted.
  */

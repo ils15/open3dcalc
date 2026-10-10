@@ -7,7 +7,7 @@ import {
   type MinimalStorageDb,
 } from "./storageRows.js";
 import { resolveKeyPolicy } from "./manifestPolicy.js";
-import { isNewPiiNamespaceKey } from "../src/shared/lib/crypto/newPiiNamespace.js";
+import { isNewPiiNamespaceKey } from "../src/shared/lib/localData/newPiiNamespace.js";
 
 /**
  * Exact non-PII storage rows still used by the desktop preferences/catalog
@@ -67,7 +67,7 @@ function isPermitted(
     return false;
   }
 
-  // Defense in depth for the Beta12 passwordless namespace: its PII records
+  // Defense in depth for the retained local-data namespace: its PII records
   // are owned by the dedicated `pii:new:*` route and MUST never be read,
   // written or deleted through the generic store — even if a future edit
   // mistakenly added one to the static allowlist above. This check runs before
@@ -129,10 +129,10 @@ export function registerDatabaseStorageHandlers(
       try {
         assertTrustedSender(event);
         // This closed permission check MUST remain above readStoredRow: even a
-        // legacy PII value/ciphertext must not be selected before authorization.
+        // legacy PII content must not be selected before authorization.
         assertPermitted("load", key, allowedKeys);
         // Every key in this closed route is proven non-PII by isPermitted, so
-        // it can be read directly without loading the legacy crypto pipeline.
+        // it can be read directly without loading retired migration code.
         return readStoredRow(database.$client, key);
       } catch (error) {
         console.error("[db:load] Error:", error);

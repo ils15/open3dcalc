@@ -7,8 +7,7 @@
  * (`--crash-at-store` / `--crash-after-snapshot`), then re-run it and
  * assert the §2 resume rules (idempotent, no re-prompt, rescan clean).
  *
- * The snapshot capability here derives a key from a key FILE — deleting the
- * file simulates the "ephemeral key lost" scenario (§5) exactly.
+ * Snapshots are readable local rollback data under the current data policy.
  *
  * Output: prints `__ERASURE_DONE__ {receipt json}` on success,
  * `__ERASURE_ROLLED_BACK__` on rollback, and is otherwise SIGKILLed.
@@ -17,7 +16,6 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
-import crypto from "node:crypto";
 import { processKillSelf } from "./erasure-driver-kill.mjs";
 import {
   startSaga,
@@ -26,46 +24,13 @@ import {
 } from "../src/shared/lib/erasureSaga/engine.js";
 import { diskJournalAdapter } from "../src/shared/lib/erasureSaga/journal.js";
 import { diskSnapshotStore } from "../src/shared/lib/erasureSaga/snapshot.js";
-import type { JournalAdapter, SnapshotCapability } from "../src/shared/lib/erasureSaga/types.js";
+import type { JournalAdapter } from "../src/shared/lib/erasureSaga/types.js";
 
 const MARKER = "Fernanda Sintética <fernanda@exemplo.teste>";
 
 function arg(name: string): string | undefined {
   const prefix = `--${name}=`;
   return process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length);
-}
-
-// ── §5 snapshot capability: key derives from a deletable key file ───────
-function fileKeyCapability(keyFile: string): SnapshotCapability {
-  function derive(): Buffer {
-    const secret = fs.readFileSync(keyFile);
-    return crypto.pbkdf2Sync(secret, "o3dc-driver-salt", 1, 32, "sha256");
-  }
-  let iv: Buffer;
-  return {
-    keySource: "passphrase",
-    async canDecrypt() {
-      return fs.existsSync(keyFile);
-    },
-    async encrypt(bytes) {
-      iv = crypto.randomBytes(12);
-      const cipher = crypto.createCipheriv("aes-256-gcm", derive(), iv);
-      const enc = Buffer.concat([cipher.update(Buffer.from(bytes)), cipher.final()]);
-      return new Uint8Array(Buffer.concat([iv, cipher.getAuthTag(), enc]));
-    },
-    async decrypt(cipherBytes) {
-      const buf = Buffer.from(cipherBytes);
-      const decipher = crypto.createDecipheriv(
-        "aes-256-gcm",
-        derive(),
-        buf.subarray(0, 12),
-      );
-      decipher.setAuthTag(buf.subarray(12, 28));
-      return new Uint8Array(
-        Buffer.concat([decipher.update(buf.subarray(28)), decipher.final()]),
-      );
-    },
-  };
 }
 
 function buildAdapters(
@@ -127,7 +92,6 @@ function buildAdapters(
 function main(): void {
   const dbPath = arg("db") as string;
   const sagaDir = arg("saga-dir") as string;
-  const keyFile = path.join(sagaDir, "snapshot.key");
   const failStore = arg("fail-store");
   const crashAtStore = arg("crash-at-store");
   const crashAfterSnapshot = process.argv.includes("--crash-after-snapshot");
@@ -145,11 +109,6 @@ function main(): void {
     seed.prepare("INSERT INTO customers (id, name) VALUES (?, ?)").run("c1", MARKER);
     seed.close();
   }
-  if (!fs.existsSync(keyFile)) {
-    fs.mkdirSync(sagaDir, { recursive: true });
-    fs.writeFileSync(keyFile, crypto.randomBytes(32));
-  }
-
   const db = new Database(dbPath);
   const failures = new Map<string, number>();
   // Deterministic crash injection: the SIGKILL fires INSIDE journal.save,
@@ -180,7 +139,6 @@ function main(): void {
     snapshots: diskSnapshotStore(sagaDir),
     policyVersion: "1.1",
     adapters: buildAdapters(db, { failStore, failures }),
-    snapshotCapability: fileKeyCapability(keyFile),
     collectSnapshotPayload: async () => {
       const rows = db
         .prepare("SELECT key, value FROM storage")

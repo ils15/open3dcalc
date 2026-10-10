@@ -196,8 +196,8 @@ export async function createDiagnosticBackup(
   let manifest: ReturnType<typeof loadManifestFromDisk> | undefined;
   try {
     // Both the manifest-less and the manifest-driven paths strip the SAME list
-    // (`PII_ERASURE_TABLES`: the PII domain tables plus the `pii_stage`
-    // preimage table, whose rows carry a sealed preimage of the user's data).
+    // (`PII_ERASURE_TABLES`: the PII domain tables plus retained historical
+    // preimage tables that may contain temporary user-data copies).
     // A table this profile predates is skipped silently; a table whose DELETE is
     // refused is named in `stripFailures` and in the sidecar.
     const stripAll = (): void => {

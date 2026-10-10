@@ -20,25 +20,25 @@ import { useCustomerStore } from "@/shared/stores/customerStore";
 import { resetManifestForTests } from "@/shared/lib/manifestGate";
 import {
   getLastPiiWriteRefusal,
-  resetPiiStoreHydrationForTests,
-} from "@/shared/lib/crypto/piiStoreHydration";
+  resetLocalPiiPersistenceForTests,
+} from "@/shared/lib/localPiiPersistence";
 
-beforeEach(async () => {
+beforeEach(() => {
   window.localStorage.clear();
   resetManifestForTests(undefined);
-  resetPiiStoreHydrationForTests();
-  await useCustomerStore.persist.rehydrate();
+  resetLocalPiiPersistenceForTests();
   useCustomerStore.setState({ customers: [], searchQuery: "" });
 });
 
 afterEach(() => {
   cleanup();
+  resetLocalPiiPersistenceForTests();
   window.localStorage.clear();
   vi.restoreAllMocks();
 });
 
-describe("StudioCustomerView Beta deletion boundary", () => {
-  it("does not offer deletion for PII customer records", async () => {
+describe("StudioCustomerView Beta user-data controls", () => {
+  it("lets the user delete a customer from the local profile", async () => {
     useCustomerStore.setState({
       customers: [
         {
@@ -55,18 +55,20 @@ describe("StudioCustomerView Beta deletion boundary", () => {
         },
       ],
     });
+    const user = userEvent.setup();
     render(
       <StudioCustomerView onTabChange={vi.fn()} onOpenQuoteModal={vi.fn()} />,
     );
 
-    expect(
-      screen.queryByRole("button", { name: "Excluir Example Customer" }),
-    ).toBeNull();
+    await user.click(
+      screen.getByRole("button", { name: "Excluir Example Customer" }),
+    );
+    expect(useCustomerStore.getState().customers).toHaveLength(0);
   });
 });
 
 describe("StudioCustomerView Beta real save (no gate mock)", () => {
-  it("saves a synthetic customer through the REAL Beta write gate", async () => {
+  it("saves a real customer directly to the shared local profile", async () => {
     const user = userEvent.setup();
     render(
       <StudioCustomerView onTabChange={vi.fn()} onOpenQuoteModal={vi.fn()} />,
@@ -75,22 +77,21 @@ describe("StudioCustomerView Beta real save (no gate mock)", () => {
     await user.click(screen.getByRole("button", { name: "Cadastrar Cliente" }));
     await user.type(
       screen.getByPlaceholderText("Ex: João da Silva"),
-      "Synthetic Customer",
+      "Maria Cliente",
     );
     await user.click(screen.getByRole("button", { name: /^Cadastrar$/ }));
 
     await waitFor(() => {
       expect(useCustomerStore.getState().customers).toHaveLength(1);
     });
-    expect(useCustomerStore.getState().customers[0].name).toBe(
-      "Synthetic Customer",
-    );
-    expect(screen.getByText("Synthetic Customer")).toBeInTheDocument();
+    expect(useCustomerStore.getState().customers[0].name).toBe("Maria Cliente");
+    expect(screen.getByText("Maria Cliente")).toBeInTheDocument();
     expect(getLastPiiWriteRefusal()).toBeNull();
     expect(screen.queryByText(/privacy\.vault\.writeRefusedTitle/)).toBeNull();
-    const raw = window.localStorage.getItem(
-      "open3dcalc_beta_test_customers_v1",
-    );
-    expect(raw).toContain("Synthetic Customer");
+    const raw = window.localStorage.getItem("open3dcalc_customers_v1");
+    expect(raw).toContain("Maria Cliente");
+    expect(
+      window.localStorage.getItem("open3dcalc_beta_test_customers_v1"),
+    ).toBeNull();
   });
 });

@@ -56,7 +56,6 @@ export interface StoreJournalRow {
 
 export interface RollbackWindow {
   ttl_days: number;
-  key_source: "safeStorage" | "passphrase";
 }
 
 export interface SagaJournal {
@@ -145,11 +144,9 @@ export function isValidSagaJournal(
   if (!isRecord(value.rollback_window)) return false;
   const rollbackWindow = value.rollback_window;
   if (
-    !hasOnlyKeys(rollbackWindow, ["ttl_days", "key_source"]) ||
+    !hasOnlyKeys(rollbackWindow, ["ttl_days"]) ||
     !Number.isInteger(rollbackWindow.ttl_days) ||
-    (rollbackWindow.ttl_days as number) <= 0 ||
-    (rollbackWindow.key_source !== "safeStorage" &&
-      rollbackWindow.key_source !== "passphrase")
+    (rollbackWindow.ttl_days as number) <= 0
   ) {
     return false;
   }
