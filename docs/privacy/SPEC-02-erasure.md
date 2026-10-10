@@ -4,6 +4,18 @@
 **Status:** Current deletion scope; supersedes the former all-surfaces saga contract
 **Related:** SPEC-01 (manifest), ADR-002 (inert historical retention), ADR-003 (export)
 
+## Next V2 candidate amendment — exact encrypted-profile deletion
+
+This policy-1.9 text records the current Stable/Desktop scope and the released Beta's lack of
+deletion. It is not the next-candidate contract. Under ADR-004, a user-triggered delete must
+remove the active encrypted profile and its exact, declared metadata/ledger records on each
+supported platform, verify the postcondition, and report partial failure truthfully. It must
+not scan or delete unrelated browser keys, profiles, external backups, or the retired
+`open3dcalc_pii_vault` database. The next candidate's manifest and deletion tests must name
+the exact new vault namespace and Desktop adapter before the runtime exposes this action.
+Migration-source cleanup remains a separate explicit post-verification choice under SPEC-05;
+it is not implied by deleting the destination profile.
+
 ## 1. Goal and boundary
 
 This specification defines deletion of current application-owned data that the active

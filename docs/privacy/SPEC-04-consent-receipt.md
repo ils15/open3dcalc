@@ -16,6 +16,17 @@ provisional and requires qualified legal review; this specification does not mak
 determination. The encrypted export password remains independent of receipt state and local
 saves.
 
+## Next V2 candidate amendment — vault acknowledgement is not consent receipt
+
+The current policy-1.9 receipt behavior remains applicable to the current runtime. The next
+candidate must still not treat a receipt, banner dismissal, or recovery acknowledgement as a
+cryptographic control. The first-run vault disclosure and the explicit V1 migration preview
+are separate user decisions: the former confirms understanding of local encryption/recovery
+limits, while the latter authorizes reading named legacy sources for a one-time copy. Neither
+permits background migration or makes a malformed/unavailable source count as empty. The
+encryption and source-preservation requirements are in ADR-004/SPEC-05; no new legal basis is
+selected by this engineering amendment.
+
 **Track:** D1 — Privacy & Data Contracts
 **Status:** Superseded for save prerequisites by approved policy 1.9; historical receipts retained
 **Addresses findings:** R5 (consent), R14 (receipt canonicalização)

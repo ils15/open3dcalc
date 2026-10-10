@@ -38,3 +38,11 @@ profile and clear it outside the app. Stable keys stay isolated even though Stab
 share an origin (same-origin isolation is verified by the Wave 3 browser suite). Waves 1–3
 are implemented and tested on this branch; Stable and Desktop contracts are unchanged.
 Desktop is not a Beta target.
+
+This documents the released Beta behavior only. The product direction for the next candidate
+has since changed: real data, encrypted local persistence, and an explicit V1→V2 migration are
+required. That work is not shipped yet; do not enter real data in the current Beta. See the
+repository [ADR-004](../../../docs/privacy/ADR-004-real-data-v2.md) and
+[SPEC-01 V2 Candidate](../../../docs/privacy/SPEC-01-v2-candidate.md)/
+[SPEC-05](../../../docs/privacy/SPEC-05-v1-to-v2-migration.md) for the approved target and
+release gates.

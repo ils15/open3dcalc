@@ -22,6 +22,23 @@ merged into `main`; the restricted web Beta is now `v2.0.0-beta.15`. Final Themi
 explicit owner/legal approval remain pending before Stable promotion. Beta publication does not
 approve the separate Stable/Desktop policy.
 
+## Next V2 candidate trace — ADR-004/SPEC-05 (implementation pending)
+
+The R1–R15 table below remains the historical D1.0 finding trace under current policy 1.9.
+It is not evidence that the next-candidate requirements are implemented. The real-data
+candidate adds these release obligations:
+
+| Requirement                                                                        | Normative contract                                                         | Current state                                                           |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Encrypt all durable user content on Web/PWA/Desktop; no Beta plaintext exception   | ADR-004 §§2.1–2.2; SPEC-01 V2 Candidate §§1–3                              | Direction approved; manifest/runtime pending S1                         |
+| Create/unlock/lock; unsupported crypto fails closed; no PII in logs                | ADR-001 candidate amendment; ADR-004 §2.2; TEST-MATRIX §9                  | Existing primitives partially reusable; platform integration pending S1 |
+| Exact-source, user-selected, previewed and retry-safe V1/current-profile migration | ADR-002 candidate amendment; SPEC-05 §§2–5                                 | Registry audit and implementation pending S2                            |
+| Encrypted backup/restore and exact-scope verified deletion                         | ADR-003 candidate amendment; SPEC-02/03 candidate amendments; ADR-004 §2.4 | Policy 1.9 Beta paths remain restricted; target runtime pending S1      |
+| Honest first-run disclosure and demo isolation                                     | ADR-004 §§2.1, 2.4; SPEC-04 candidate amendment; TEST-MATRIX §9            | Candidate UX and evidence pending S1                                    |
+
+No row in this trace marks a release gate as passed. The policy 1.9 runtime and beta.15
+evidence remain historical until an exact candidate tree passes its own tests and review.
+
 **Track:** D1 — Privacy & Data Contracts (D1.0, documentation only)
 **DRI:** Hermes
 **Gate:** Themis (3 review rounds; findings R1–R15)

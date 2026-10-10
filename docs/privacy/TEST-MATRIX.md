@@ -2,6 +2,11 @@
 
 **Scope:** Stable/Desktop direct plaintext saves, Web-Beta app-mediated restrictions, current-owned-data deletion, and retained encrypted export. This matrix replaces the former local at-rest encryption, vault-lock, consent-gate, and startup-migration requirements. Implementation was merged into `main` by PR #279 and is present in web Beta `v2.0.0-beta.15`; final Themis review and explicit owner/legal approval remain required before Stable promotion.
 
+**Candidate status:** Sections §0–§8 describe policy 1.9, historical implementation evidence,
+or the currently published Beta. They do not authorize real-data use in `beta.15`. The next V2
+candidate is governed by ADR-004, SPEC-01 V2 Candidate, and SPEC-05; the independent release
+matrix in §9 remains pending until its implementation and fixtures pass.
+
 ## 0. Global rules
 
 - Use synthetic values only (`example.invalid`, generated names and identifiers).
@@ -15,6 +20,8 @@
 - Keep encrypted export cryptography and its existing compatibility/integrity coverage (§6).
 - Do not open, enumerate, inspect, convert, recover, migrate, or delete inert historical vault
   bytes. No startup cleanup test may expect such bytes to be removed.
+- Candidate tests use synthetic fixtures. A record in a historical `beta_test_*` key is never
+  presumed disposable from its key name.
 
 ## 1. Manifest and policy validation (SPEC-01)
 
@@ -101,3 +108,40 @@ exception is not valid RED evidence.
 - Final Themis review is required before promotion. This matrix authorizes no commit, merge,
   release, or publication. The published web Beta is `v2.0.0-beta.15`; that Beta publication
   does not authorize promotion of the separate Stable/Desktop policy.
+
+## 9. Next V2 real-data candidate (ADR-004; all gates pending)
+
+These are additional acceptance tests for a new policy-2.0 manifest/runtime. They supersede
+§3–§7 only for the exact next candidate once its manifest and disclosure are implemented;
+they do not change the tests or claims for `beta.15`.
+
+### 9.1 Encrypted user-content persistence (S1)
+
+| ID    | Setup                                                                | Required result                                                                                                                                                                                       |
+| ----- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9.1.1 | Validate the candidate manifest and source-map fixture               | Every durable `user_content`/personal-data key is `encrypted_at_rest` on Web/PWA/Desktop; plaintext Beta data keys are sources only; only the reviewed preference allowlist stays plaintext           |
+| 9.1.2 | Create a new Web profile with a passphrase and recovery disclosure   | New profile creation requires explicit acknowledgement; passphrase never enters storage, URL, logs, or analytics; no demo records are seeded into the durable profile                                 |
+| 9.1.3 | Unlock a populated profile after reload                              | All registered user-content stores positively rehydrate before write access; wrong password or one failed/corrupt store blocks writes and never displays an empty profile as successful hydration     |
+| 9.1.4 | Save unique synthetic sentinels to every user-content store          | IndexedDB contains authenticated ciphertext only; browser localStorage has no candidate content; ciphertext does not contain sentinel values; unlock/reload returns exact logical values              |
+| 9.1.5 | Run without secure Web Crypto/IndexedDB or with quota/write failure  | User-content persistence fails closed, reports no durable save, preserves existing bytes, and does not fall back to plaintext                                                                         |
+| 9.1.6 | Enter/edit/exit/reload explicit demo with a preexisting real profile | Demo values are ephemeral; ciphertext and legacy sources are byte-identical before/after; leaving/reloading does not write demo state into the profile                                                |
+| 9.1.7 | Exercise Desktop with keyring capability available/unavailable       | Real gated Desktop path persists only encrypted values; unavailable gate refuses with no `open3dcalc_pwless_*` plaintext write; restart/unlock reads values back                                      |
+| 9.1.8 | Export, restore, lock, and delete a candidate profile                | SPEC-03 encrypted backup round-trips every declared content class; exact-scope deletion verifies only active profile data removed; external backups and unselected sources are disclosed as remaining |
+
+### 9.2 Explicit V1/current-profile migration (S2)
+
+| ID    | Setup                                                                                                    | Required result                                                                                                                                                                 |
+| ----- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9.2.1 | Start with any registered source present                                                                 | Startup does not parse source contents; a visible migration action is available, and an empty new profile is not offered as if prior data were preserved                        |
+| 9.2.2 | Select migration and preview each exact source                                                           | Only allowlisted source IDs are read; preview shows source/type/status/count, never PII values; cancel leaves source and destination byte-identical                             |
+| 9.2.3 | Confirm migration with valid destination unlock                                                          | Stable IDs, relationships, snapshots, settings, products, catalog, and inventory are copied to encrypted destination and read back before source is eligible for cleanup        |
+| 9.2.4 | Repeat or resume after interruption at every checkpoint                                                  | Migration is idempotent and resumable; no duplicate records; completed groups remain verified and incomplete groups remain retryable                                            |
+| 9.2.5 | Duplicate records across v1.14 storage and domain rows                                                   | Only exact identity-equivalent duplicates are deduplicated; distinct IDs with identical display fields remain distinct; report counts explain each decision                     |
+| 9.2.6 | Malformed, unsupported, inaccessible, or corrupt source; wrong passphrase; quota error                   | Show blocker/failure rather than empty; source remains byte-identical; no completion/checkpoint is reported for an unverified destination                                       |
+| 9.2.7 | Confirm source cleanup after successful report                                                           | Delete only exact sources marked cleanable after a second confirmation; reread to verify; failed cleanup reports remaining plaintext without invalidating encrypted destination |
+| 9.2.8 | Seed sentinel data in undeclared localStorage key, IndexedDB database, SQLite table, or Beta key version | Migration never opens/enumerates/changes the sentinel; old `open3dcalc_pii_vault` remains unopened unless a separately reviewed compatibility reader is approved                |
+
+Synthetic source fixtures must be checked against tagged v1.14 and current 2.x serializers.
+Web tests must exercise production Web Crypto/IndexedDB; Desktop tests must exercise the
+actual gated main-process IPC/database path, not a renderer-only mock. Failure of any S1/S2
+case blocks a Beta that advertises support for real data.
