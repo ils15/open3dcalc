@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 
@@ -65,11 +66,12 @@ export function BentoSurface(): React.ReactElement {
       calculationIssues: state.calculationIssues,
     })),
   );
+  const [sellOverride, setSellOverride] = useState<number | null>(null);
 
   const breakdown = useFinancialBreakdown({
     result: results,
     activeTab,
-    sellOverride: null,
+    sellOverride,
     fdmSales,
     resinSales,
   });
@@ -198,6 +200,8 @@ export function BentoSurface(): React.ReactElement {
           </h2>
           <ResultsPanel
             variant="bento"
+            sellOverride={sellOverride}
+            onSellOverrideChange={setSellOverride}
             suppressCalculationError
             historyActionLabel={t("results.addHistorySeparate")}
           />
@@ -226,6 +230,7 @@ export function BentoSurface(): React.ReactElement {
             quantity={quantity}
             breakEvenPrice={breakdown.breakEvenPrice}
             profit={breakdown.displayProfit}
+            displaySellPrice={breakdown.displaySellPrice}
           />
         </div>
       </div>

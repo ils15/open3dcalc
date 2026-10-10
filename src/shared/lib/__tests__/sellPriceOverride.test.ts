@@ -28,6 +28,15 @@ describe("reverseFromSellPrice", () => {
     expect(r.belowBreakEven).toBe(false);
   });
 
+  it("includes the marketplace fixed fee and keeps an exact break-even at zero profit", () => {
+    // S=(100+5)/(1-10%-10%) = 131.25
+    const r = reverseFromSellPrice(131.25, 100, 10, 10, 5);
+    expect(r.taxAmount).toBe(13.13);
+    expect(r.marketplaceFee).toBe(18.13);
+    expect(r.profit).toBe(0);
+    expect(r.marginReal).toBe(0);
+  });
+
   it("never returns NaN margins for zero sell price", () => {
     const r = reverseFromSellPrice(0, 60, 10, 5);
     expect(r.marginReal).toBe(0);
@@ -51,5 +60,8 @@ describe("reverseFromSellPrice", () => {
     expect(r2.taxAmount).toBe(0);
     expect(r2.marketplaceFee).toBe(0);
     expect(r2.profit).toBeCloseTo(40, 2);
+    const r3 = reverseFromSellPrice(100, 60, 10, 5, Infinity);
+    expect(r3.marketplaceFee).toBe(5);
+    expect(r3.profit).toBeCloseTo(25, 2);
   });
 });

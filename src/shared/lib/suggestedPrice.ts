@@ -2,11 +2,9 @@
  * suggestedPrice.ts — biblioteca pura de valor sugerido (Wave 9-lib / ROADMAP Phase 7b).
  *
  * Gera cenarios de preço de venda a partir de metas: margem alvo, lucro por peca,
- * lucro mensal, break-even ou preço de concorrente. Reusa a camada de calculo
- * existente sem modifica-la:
- * - getBulkDiscount  (calculator.ts)      -> tiers de desconto por volume;
- * - reverseFromSellPrice (sellPriceOverride.ts) -> todo numero monetario (modo concorrente incluso);
- * - roundCurrency ja vem embutido nos helpers acima.
+ * lucro mensal, break-even ou preço de concorrente. Reusa `getBulkDiscount`
+ * para tiers de quantidade, trata a taxa fixa do marketplace como custo por
+ * unidade e mantém toda a matemática fora do store.
  *
  * PREMISSAS (alinhadas ao core calculator.ts):
  * - `totalCost` e o custo unitario POS-RISCO: o core ja embute `riskMultiplier` no
@@ -17,7 +15,8 @@
  *   sobre o preço" (margin-on-price), por isso rotula explicitamente a diferenca
  *   margem != markup para evitar a armadilha classica de UX.
  * - `breakEvenPrice` do core e PRE-fees (= totalBaseCost); o modo break_even aqui e
- *   INCLUSIVO (S = base/(1-(tax%+fee%)/100)) — o piso real que cobre custos + fees.
+ *   INCLUSIVO (S = (base + fee fixa)/(1-(tax%+fee%)/100)) — o piso real que
+ *   cobre custos + fees.
  *
  * Absorve itens do ROADMAP: Phase 3 L172 (projeções "se voce imprimir X pecas/mes"
  * via modo lucro-mensal) e Phase 5 L220 (regras de margem minima + reverse-price).
@@ -27,7 +26,7 @@
  * { feasible: false } com uma nota didatica.
  */
 import { getBulkDiscount } from "@/shared/lib/calculator";
-import { reverseFromSellPrice } from "@/shared/lib/sellPriceOverride";
+import { roundCurrency } from "@/shared/lib/currency";
 import type { VolumeDiscount } from "@/shared/types";
 
 export type SuggestedPriceGoal =
@@ -41,12 +40,31 @@ export interface SuggestedPriceInput {
   readonly totalCost: number;
   readonly taxPercent: number;
   readonly marketplaceFeePercent: number;
+  /** Fixed fee charged per unit by the selected marketplace profile. */
+  readonly marketplaceFeeFixed?: number;
   readonly quantity: number;
   readonly volumeDiscounts?: readonly VolumeDiscount[];
 }
 
+export type SuggestedPriceScenarioKey =
+  | "target_margin"
+  | "profit_per_part"
+  | "monthly_profit"
+  | "break_even"
+  | "competitor_match"
+  | "competitor_undercut"
+  | "competitor_beat";
+
+export type SuggestedPriceInfeasibility =
+  | "margin_target_unreachable"
+  | "fees_consume_price"
+  | "monthly_units_required"
+  | "below_break_even";
+
 export interface SuggestedPriceScenario {
   label: string;
+  /** Stable UI key; `label` remains for existing non-UI consumers. */
+  key: SuggestedPriceScenarioKey;
   sellPrice: number;
   profit: number;
   /** Margem real sobre o preço de venda, em %. */
@@ -55,6 +73,8 @@ export interface SuggestedPriceScenario {
   markup: number;
   feasible: boolean;
   note?: string;
+  infeasibility?: SuggestedPriceInfeasibility;
+  tier?: { minQuantity: number; discountPercent: number };
 }
 
 /** Fator do undercut no modo concorrente (5% abaixo). */
@@ -64,12 +84,11 @@ const BEAT_FACTOR = 1.05;
 
 interface ModeScenario {
   label: string;
-  /**
-   * Preço sugerido bruto a partir do custo base. Retornar NaN sinaliza que a meta
-   * e estruturalmente inatingivel (denominador <= 0, unidades/mes = 0).
-   */
+  key: SuggestedPriceScenarioKey;
+  /** Preço sugerido bruto a partir do custo + taxa fixa; NaN sinaliza meta inalcançável. */
   priceFor: (base: number) => number;
   note?: string;
+  infeasibility?: SuggestedPriceInfeasibility;
 }
 
 interface ModeBundle {
@@ -104,7 +123,7 @@ function targetMarginBundle(
   feeFraction: number,
 ): ModeBundle {
   const label = `Margem alvo ${displayValue(goal.marginPercent)}% sobre o preço`;
-  // Margem sobre o preço: S*(1 - tax - fee - alvo) = base  =>  S = base/(1 - alvo - tax - fee).
+  // Margem sobre o preço: S*(1 - tax - fee - alvo) = base + fee fixa.
   const denom = 1 - feeFraction - goal.marginPercent / 100;
   if (!validDenominator(denom)) {
     return {
@@ -112,7 +131,9 @@ function targetMarginBundle(
       scenarios: [
         {
           label,
+          key: "target_margin",
           priceFor: () => NaN,
+          infeasibility: "margin_target_unreachable",
           note: `Margem alvo de ${displayValue(goal.marginPercent)}% mais impostos+taxas consome 100% ou mais do preço: meta inatingivel.`,
         },
       ],
@@ -123,6 +144,7 @@ function targetMarginBundle(
     scenarios: [
       {
         label,
+        key: "target_margin",
         priceFor: (base) => base / denom,
         note: `Meta: margem de ${displayValue(goal.marginPercent)}% sobre o preço de venda.`,
       },
@@ -135,7 +157,7 @@ function profitPerPartBundle(
   feeFraction: number,
 ): ModeBundle {
   const label = "Lucro desejado por peca";
-  // Lucro pos-fees: S*(1 - tax - fee) - base = lucro  =>  S = (base + lucro)/(1 - tax - fee).
+  // Lucro pos-fees: S*(1 - tax - fee) - (base + fee fixa) = lucro.
   const denom = 1 - feeFraction;
   if (!validDenominator(denom)) {
     return {
@@ -143,7 +165,9 @@ function profitPerPartBundle(
       scenarios: [
         {
           label,
+          key: "profit_per_part",
           priceFor: () => NaN,
+          infeasibility: "fees_consume_price",
           note: excessiveFeesNote(
             feeFraction,
             "nao existe preço que cubra o custo. Reduza as taxas.",
@@ -155,7 +179,11 @@ function profitPerPartBundle(
   return {
     feasible: true,
     scenarios: [
-      { label, priceFor: (base) => (base + goal.profit) / denom },
+      {
+        label,
+        key: "profit_per_part",
+        priceFor: (base) => (base + goal.profit) / denom,
+      },
     ],
   };
 }
@@ -172,7 +200,9 @@ function monthlyBundle(
       scenarios: [
         {
           label,
+          key: "monthly_profit",
           priceFor: () => NaN,
+          infeasibility: "monthly_units_required",
           note: "Unidades por mes deve ser maior que zero: nao e possivel dividir o lucro mensal (divisao por zero).",
         },
       ],
@@ -185,7 +215,9 @@ function monthlyBundle(
       scenarios: [
         {
           label,
+          key: "monthly_profit",
           priceFor: () => NaN,
+          infeasibility: "fees_consume_price",
           note: excessiveFeesNote(
             feeFraction,
             "o lucro mensal fica inatingivel. Reduza as taxas.",
@@ -198,14 +230,18 @@ function monthlyBundle(
   return {
     feasible: true,
     scenarios: [
-      { label, priceFor: (base) => (base + unitProfit) / denom },
+      {
+        label,
+        key: "monthly_profit",
+        priceFor: (base) => (base + unitProfit) / denom,
+      },
     ],
   };
 }
 
 function breakEvenBundle(feeFraction: number): ModeBundle {
   const label = "Break-even inclusivo de fees";
-  // Piso real: S = base/(1 - tax - fee) zera o lucro pos-fees.
+  // Piso real: S = (base + fee fixa)/(1 - tax - fee) zera o lucro pos-fees.
   const denom = 1 - feeFraction;
   if (!validDenominator(denom)) {
     return {
@@ -213,7 +249,9 @@ function breakEvenBundle(feeFraction: number): ModeBundle {
       scenarios: [
         {
           label,
+          key: "break_even",
           priceFor: () => NaN,
+          infeasibility: "fees_consume_price",
           note: excessiveFeesNote(
             feeFraction,
             "o break-even inclusivo nao existe.",
@@ -227,6 +265,7 @@ function breakEvenBundle(feeFraction: number): ModeBundle {
     scenarios: [
       {
         label,
+        key: "break_even",
         priceFor: (base) => base / denom,
         note: "Piso de break-even inclusivo de fees (lucro zero). Diferente do breakEvenPrice do core, que e pre-fees (= totalCost).",
       },
@@ -237,22 +276,33 @@ function breakEvenBundle(feeFraction: number): ModeBundle {
 function competitorBundle(
   goal: Extract<SuggestedPriceGoal, { kind: "competitor" }>,
 ): ModeBundle {
-  // REUSA reverseFromSellPrice no "modo preço de concorrente".
   const competitorPrice = sanitize(goal.competitorPrice);
   return {
     feasible: true,
     scenarios: [
-      { label: "Match concorrente", priceFor: () => competitorPrice },
+      {
+        label: "Match concorrente",
+        key: "competitor_match",
+        priceFor: () => competitorPrice,
+      },
       {
         label: "Undercut 5%",
+        key: "competitor_undercut",
         priceFor: () => competitorPrice * UNDERCUT_FACTOR,
       },
-      { label: "Beat (+5%)", priceFor: () => competitorPrice * BEAT_FACTOR },
+      {
+        label: "Beat (+5%)",
+        key: "competitor_beat",
+        priceFor: () => competitorPrice * BEAT_FACTOR,
+      },
     ],
   };
 }
 
-function buildBundle(goal: SuggestedPriceGoal, feeFraction: number): ModeBundle {
+function buildBundle(
+  goal: SuggestedPriceGoal,
+  feeFraction: number,
+): ModeBundle {
   switch (goal.kind) {
     case "target_margin":
       return targetMarginBundle(goal, feeFraction);
@@ -290,28 +340,46 @@ function tierMinQuantity(
 
 function buildScenario(
   label: string,
+  key: SuggestedPriceScenarioKey,
   price: number,
   base: number,
   taxPercent: number,
   marketplaceFeePercent: number,
+  marketplaceFeeFixed: number,
   note?: string,
+  infeasibility?: SuggestedPriceInfeasibility,
 ): SuggestedPriceScenario {
-  // reverseFromSellPrice saneia NaN/negativos e arredonda saidas: paridade garantida.
-  const r = reverseFromSellPrice(price, base, taxPercent, marketplaceFeePercent);
-  const below = r.profit < 0;
+  const sellPrice = roundFiniteCurrency(Math.max(0, price));
+  const tax = (sellPrice * taxPercent) / 100;
+  const marketplaceFee =
+    (sellPrice * marketplaceFeePercent) / 100 + marketplaceFeeFixed;
+  const profit = roundFiniteCurrency(sellPrice - base - tax - marketplaceFee);
+  const marginReal =
+    sellPrice > 0 ? roundFiniteCurrency((profit / sellPrice) * 100) : 0;
+  const markup = base > 0 ? roundFiniteCurrency((profit / base) * 100) : 0;
+  const feasible = sellPrice > 0 && profit >= 0;
+  const reason = infeasibility ?? (!feasible ? "below_break_even" : undefined);
   return {
     label,
-    sellPrice: r.sellPrice,
-    profit: r.profit,
-    marginReal: r.marginReal,
-    markup: r.markupEffective,
-    feasible: r.sellPrice > 0 && r.profit >= 0,
+    key,
+    sellPrice,
+    profit,
+    marginReal,
+    markup,
+    feasible,
+    ...(reason ? { infeasibility: reason } : {}),
     note:
       note ??
-      (below
-        ? `Preço abaixo do break-even: prejuizo de ${Math.abs(r.profit)}.`
+      (reason === "below_break_even"
+        ? `Preço abaixo do break-even: prejuizo de ${Math.abs(profit)}.`
         : undefined),
   };
+}
+
+/** Currency rounding that keeps the library's finite-output guarantee. */
+function roundFiniteCurrency(value: number): number {
+  const rounded = roundCurrency(value);
+  return Number.isFinite(rounded) ? rounded : 0;
 }
 
 /** Rotula a armadilha classica: margem sobre o preço != markup sobre o custo. */
@@ -331,6 +399,7 @@ function annotateTier(
   percent: number,
 ): void {
   if (!scenario.feasible) return;
+  scenario.tier = { minQuantity, discountPercent: percent };
   const info = `Tier qtd>=${minQuantity}: -${percent}% no preço sugerido; margem real cai para ${scenario.marginReal}%.`;
   scenario.note = scenario.note ? `${scenario.note} ${info}` : info;
 }
@@ -350,6 +419,7 @@ export function suggestPrices(
   const base = sanitize(input.totalCost);
   const taxPercent = sanitize(input.taxPercent);
   const marketplaceFeePercent = sanitize(input.marketplaceFeePercent);
+  const marketplaceFeeFixed = sanitize(input.marketplaceFeeFixed ?? 0);
   const quantity = sanitize(input.quantity);
   // Copia para satisfazer a assinatura (mutavel) do getBulkDiscount sem violar o
   // contrato readonly do input; a leitura e indireta (import de helper puro).
@@ -369,14 +439,19 @@ export function suggestPrices(
   const out: SuggestedPriceScenario[] = [];
 
   for (const scenario of bundle.scenarios) {
-    const basePrice = scenario.priceFor(base);
+    // Recovering a fixed per-unit marketplace fee is equivalent to adding it
+    // to the amount the target price must cover.
+    const basePrice = scenario.priceFor(base + marketplaceFeeFixed);
     const primary = buildScenario(
       scenario.label,
+      scenario.key,
       basePrice,
       base,
       taxPercent,
       marketplaceFeePercent,
+      marketplaceFeeFixed,
       scenario.note,
+      scenario.infeasibility,
     );
     out.push(primary);
     annotateTrap(goal, primary);
@@ -384,10 +459,12 @@ export function suggestPrices(
     if (bundle.feasible && tierActive) {
       const tiered = buildScenario(
         `${scenario.label} + tier qtd>=${minQuantity} (-${tierPercent}%)`,
+        scenario.key,
         basePrice * (1 - tierPercent / 100),
         base,
         taxPercent,
         marketplaceFeePercent,
+        marketplaceFeeFixed,
       );
       out.push(tiered);
       annotateTrap(goal, tiered);

@@ -164,6 +164,7 @@ describe("ResultsPanel hierarchy", () => {
 
     expect(order).toEqual([
       "price-hero",
+      "suggested-price-tool",
       "profit-summary",
       "cost-distribution-card",
       "diagnostic-details",
