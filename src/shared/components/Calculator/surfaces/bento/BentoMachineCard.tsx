@@ -4,7 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 
 import { isFieldVisibleForLevel } from "../../Calculator.constants";
 import { useCurrency } from "@/shared/hooks/useCurrency";
-import { printers } from "@/shared/lib/printers";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { BentoCard } from "./BentoCard";
 import { BentoField } from "./BentoField";
@@ -29,6 +29,7 @@ export function BentoMachineCard({
 }: BentoMachineCardProps): React.ReactElement {
   const { t, i18n } = useTranslation();
   const { format, symbol } = useCurrency();
+  const catalogPrinters = useCatalogStore((state) => state.printers);
   const {
     activeTab,
     calcLevel,
@@ -77,7 +78,7 @@ export function BentoMachineCard({
   const maintenanceSummary = machine.maintenanceEnabled
     ? `${format(machine.maintenanceCost)} / ${t("bento.perMonth")}`
     : t("bento.notIncluded");
-  const printerOptions = printers.map((printer) => ({
+  const printerOptions = catalogPrinters.map((printer) => ({
     label: printer.name,
     value: printer.id,
   }));
@@ -90,7 +91,7 @@ export function BentoMachineCard({
             label={t("calc.printer")}
             value={selectedPrinter.id}
             onChange={(value) => {
-              const printer = printers.find((item) => item.id === value);
+              const printer = catalogPrinters.find((item) => item.id === value);
               if (printer) setSelectedPrinter(printer);
             }}
             options={printerOptions}
@@ -165,7 +166,10 @@ export function BentoMachineCard({
               if (isFDM) {
                 setFdmMachine({ ...fdmMachine, machineCost: nextMachineCost });
               } else {
-                setResinMachine({ ...resinMachine, machineCost: nextMachineCost });
+                setResinMachine({
+                  ...resinMachine,
+                  machineCost: nextMachineCost,
+                });
               }
             }}
             type="number"

@@ -13,6 +13,7 @@ const sharedCalculation = vi.hoisted(() => ({
   current: null as Record<string, unknown> | null,
 }));
 const catalogState = vi.hoisted(() => ({
+  printers: [] as Array<Record<string, unknown>>,
   marketplaces: [] as Array<Record<string, unknown>>,
 }));
 
@@ -111,6 +112,7 @@ describe("useAppInit tutorial auto-start", () => {
     });
     useHistoryStore.setState({ entries: [] });
     sharedCalculation.current = null;
+    catalogState.printers = [];
     catalogState.marketplaces = [];
     calculatorState.current = null;
     vi.useFakeTimers();
@@ -211,6 +213,31 @@ describe("useAppInit tutorial auto-start", () => {
 
     expect(calculatorSetState).toHaveBeenCalledWith(
       expect.objectContaining({ selectedMarketplace: customMarketplace }),
+    );
+    expect(window.location.hash).toBe("");
+  });
+
+  it("restores a personal printer from the local catalog in a shared calculation", () => {
+    const personalPrinter = {
+      id: "my-workshop-printer",
+      name: "Workshop Printer",
+      brand: "My Workshop",
+      power: 250,
+      value: 1200,
+      usefulLife: 3000,
+      maintenancePerHour: 0.25,
+    };
+    catalogState.printers = [personalPrinter];
+    sharedCalculation.current = {
+      selectedPrinterId: personalPrinter.id,
+      quantity: 1,
+    };
+    window.location.hash = "#shared-calculation";
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    expect(calculatorSetState).toHaveBeenCalledWith(
+      expect.objectContaining({ selectedPrinter: personalPrinter }),
     );
     expect(window.location.hash).toBe("");
   });

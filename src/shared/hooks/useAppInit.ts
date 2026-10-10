@@ -111,7 +111,11 @@ function loadSharedCalculation(): void {
   };
   // Resolve printer/marketplace by ID
   if (shared.selectedPrinterId) {
-    const printer = printers.find((p) => p.id === shared.selectedPrinterId);
+    const printer =
+      useCatalogStore
+        .getState()
+        .printers.find((p) => p.id === shared.selectedPrinterId) ??
+      printers.find((p) => p.id === shared.selectedPrinterId);
     if (printer) merged.selectedPrinter = printer as (typeof printers)[number];
   }
   if (shared.selectedMarketplaceId) {

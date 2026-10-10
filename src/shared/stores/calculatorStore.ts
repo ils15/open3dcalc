@@ -695,10 +695,15 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
 
     loadHistoryItem: (snapshot: CalculationSnapshot) => {
       setWithCompute((state) => {
+        const catalogPrinters = useCatalogStore.getState().printers ?? [];
         const selectedPrinter =
+          catalogPrinters.find(
+            (printer) => printer.id === snapshot.selectedPrinterId,
+          ) ??
           printers.find(
             (printer) => printer.id === snapshot.selectedPrinterId,
-          ) ?? state.selectedPrinter;
+          ) ??
+          state.selectedPrinter;
         const selectedMarketplace =
           findMarketplace(
             snapshot.selectedMarketplaceId,

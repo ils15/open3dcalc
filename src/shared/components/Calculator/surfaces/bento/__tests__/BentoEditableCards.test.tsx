@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import i18n from "@/shared/i18n/i18n";
 import { printers } from "@/shared/lib/printers";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useSpoolStore, type FilamentSpool } from "@/shared/stores/spoolStore";
 import type { CalculationResult } from "@/shared/types";
@@ -58,6 +59,9 @@ beforeEach(async () => {
   localStorage.clear();
   await i18n.changeLanguage("pt-BR");
   useLayoutStore.setState({ layoutMode: "bento" });
+  useCatalogStore.setState({
+    printers: printers.map((printer) => ({ ...printer })),
+  });
   useSpoolStore.setState({ spools: [] });
   useCalculatorStore.setState({
     activeTab: "fdm",
@@ -156,7 +160,9 @@ describe("editable Bento cards", () => {
     const { materialCard } = renderBento();
 
     await user.selectOptions(
-      within(materialCard).getByRole("combobox", { name: "Carretel do inventário" }),
+      within(materialCard).getByRole("combobox", {
+        name: "Carretel do inventário",
+      }),
       spool.id,
     );
     expect(useCalculatorStore.getState().selectedSpoolId).toBe(spool.id);
@@ -164,7 +170,10 @@ describe("editable Bento cards", () => {
     const gauge = within(materialCard).getByRole("progressbar", {
       name: "Carretel Open3D PLA Azul",
     });
-    expect(gauge).toHaveAttribute("aria-valuetext", "500 g de 800 g disponíveis (63%)");
+    expect(gauge).toHaveAttribute(
+      "aria-valuetext",
+      "500 g de 800 g disponíveis (63%)",
+    );
   });
 
   it("writes print, energy, and machine fields through public setters", async () => {
@@ -175,25 +184,33 @@ describe("editable Bento cards", () => {
       within(machineCard).getByRole("combobox", { name: "Impressora" }),
       printers[2].id,
     );
-    expect(useCalculatorStore.getState().selectedPrinter.id).toBe(printers[2].id);
+    expect(useCalculatorStore.getState().selectedPrinter.id).toBe(
+      printers[2].id,
+    );
 
     const printTime = within(machineCard).getByRole("spinbutton", {
       name: "Tempo de Impressão",
     });
     fireEvent.change(printTime, { target: { value: "3.5" } });
-    expect(useCalculatorStore.getState().fdmPrintParams.printTimeHours).toBe(3.5);
+    expect(useCalculatorStore.getState().fdmPrintParams.printTimeHours).toBe(
+      3.5,
+    );
 
     const power = within(machineCard).getByRole("spinbutton", {
       name: "Potência da Impressora",
     });
     fireEvent.change(power, { target: { value: "180" } });
-    expect(useCalculatorStore.getState().fdmPrintParams.printerPowerWatts).toBe(180);
+    expect(useCalculatorStore.getState().fdmPrintParams.printerPowerWatts).toBe(
+      180,
+    );
 
     const energyPrice = within(machineCard).getByRole("spinbutton", {
       name: "Custo da Energia",
     });
     fireEvent.change(energyPrice, { target: { value: "1.15" } });
-    expect(useCalculatorStore.getState().fdmPrintParams.energyCostPerKwh).toBe(1.15);
+    expect(useCalculatorStore.getState().fdmPrintParams.energyCostPerKwh).toBe(
+      1.15,
+    );
 
     const machineCost = within(machineCard).getByRole("spinbutton", {
       name: "Custo da Impressora",
@@ -205,7 +222,9 @@ describe("editable Bento cards", () => {
       name: "Depreciação",
     });
     fireEvent.change(depreciation, { target: { value: "48" } });
-    expect(useCalculatorStore.getState().fdmMachine.depreciationMonths).toBe(48);
+    expect(useCalculatorStore.getState().fdmMachine.depreciationMonths).toBe(
+      48,
+    );
 
     const hours = within(machineCard).getByRole("spinbutton", {
       name: "Uso Mensal",
@@ -225,9 +244,13 @@ describe("editable Bento cards", () => {
       name: "Manutenção",
     });
     await user.click(maintenance);
-    expect(useCalculatorStore.getState().fdmMachine.maintenanceEnabled).toBe(false);
+    expect(useCalculatorStore.getState().fdmMachine.maintenanceEnabled).toBe(
+      false,
+    );
     await user.click(maintenance);
-    expect(useCalculatorStore.getState().fdmMachine.maintenanceEnabled).toBe(true);
+    expect(useCalculatorStore.getState().fdmMachine.maintenanceEnabled).toBe(
+      true,
+    );
 
     const maintenanceCost = within(machineCard).getByRole("spinbutton", {
       name: "Custo Mensal Manutenção",
@@ -236,25 +259,76 @@ describe("editable Bento cards", () => {
     expect(useCalculatorStore.getState().fdmMachine.maintenanceCost).toBe(90);
   });
 
+  it("selects a personal printer and keeps it across all calculator levels", async () => {
+    const user = userEvent.setup();
+    const personalPrinter = {
+      ...printers[0],
+      id: "my-workshop-printer",
+      name: "Workshop Printer",
+      custom: true,
+    };
+    useCatalogStore.setState((state) => ({
+      printers: [...state.printers, personalPrinter],
+    }));
+    useCalculatorStore.setState({ calcLevel: "intermediate" });
+
+    const { machineCard } = renderBento();
+    await user.selectOptions(
+      within(machineCard).getByRole("combobox", { name: "Impressora" }),
+      personalPrinter.id,
+    );
+
+    act(() => {
+      for (const calcLevel of ["basic", "intermediate", "advanced"] as const) {
+        useCalculatorStore.setState({ calcLevel });
+        expect(useCalculatorStore.getState().selectedPrinter.id).toBe(
+          personalPrinter.id,
+        );
+      }
+    });
+  });
+
   it("uses the Classic field visibility contract for every calc level", () => {
     useCalculatorStore.setState({ calcLevel: "basic" });
     const { materialCard, machineCard } = renderBento();
 
-    expect(within(materialCard).getByRole("spinbutton", { name: "Peso da Peça" })).toBeInTheDocument();
-    expect(within(materialCard).queryByRole("spinbutton", { name: "Densidade" })).not.toBeInTheDocument();
-    expect(within(materialCard).queryByRole("spinbutton", { name: "Purga / Perda" })).not.toBeInTheDocument();
-    expect(within(machineCard).queryByRole("combobox", { name: "Impressora" })).not.toBeInTheDocument();
-    expect(within(machineCard).queryByRole("spinbutton", { name: "Custo da Impressora" })).not.toBeInTheDocument();
+    expect(
+      within(materialCard).getByRole("spinbutton", { name: "Peso da Peça" }),
+    ).toBeInTheDocument();
+    expect(
+      within(materialCard).queryByRole("spinbutton", { name: "Densidade" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(materialCard).queryByRole("spinbutton", { name: "Purga / Perda" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(machineCard).queryByRole("combobox", { name: "Impressora" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(machineCard).queryByRole("spinbutton", {
+        name: "Custo da Impressora",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows intermediate fields but still hides the advanced machine section", () => {
     useCalculatorStore.setState({ calcLevel: "intermediate" });
     const { materialCard, machineCard } = renderBento();
 
-    expect(within(materialCard).getByRole("spinbutton", { name: "Densidade" })).toBeInTheDocument();
-    expect(within(materialCard).getByRole("spinbutton", { name: "Purga / Perda" })).toBeInTheDocument();
-    expect(within(machineCard).getByRole("combobox", { name: "Impressora" })).toBeInTheDocument();
-    expect(within(machineCard).queryByRole("spinbutton", { name: "Custo da Impressora" })).not.toBeInTheDocument();
+    expect(
+      within(materialCard).getByRole("spinbutton", { name: "Densidade" }),
+    ).toBeInTheDocument();
+    expect(
+      within(materialCard).getByRole("spinbutton", { name: "Purga / Perda" }),
+    ).toBeInTheDocument();
+    expect(
+      within(machineCard).getByRole("combobox", { name: "Impressora" }),
+    ).toBeInTheDocument();
+    expect(
+      within(machineCard).queryByRole("spinbutton", {
+        name: "Custo da Impressora",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("honors hidden intermediate fields in advanced mode and keeps resin fields editable", async () => {
@@ -266,12 +340,18 @@ describe("editable Bento cards", () => {
     const user = userEvent.setup();
     const { materialCard } = renderBento();
 
-    expect(within(materialCard).queryByRole("spinbutton", { name: "Densidade" })).not.toBeInTheDocument();
-    const volume = within(materialCard).getByRole("spinbutton", { name: "Volume Usado" });
+    expect(
+      within(materialCard).queryByRole("spinbutton", { name: "Densidade" }),
+    ).not.toBeInTheDocument();
+    const volume = within(materialCard).getByRole("spinbutton", {
+      name: "Volume Usado",
+    });
     fireEvent.change(volume, { target: { value: "80" } });
     expect(useCalculatorStore.getState().resinMaterial.volumeUsedMl).toBe(80);
 
-    const cost = within(materialCard).getByRole("spinbutton", { name: "Custo/Litro" });
+    const cost = within(materialCard).getByRole("spinbutton", {
+      name: "Custo/Litro",
+    });
     fireEvent.change(cost, { target: { value: "210" } });
     expect(useCalculatorStore.getState().resinMaterial.costPerLiter).toBe(210);
 
@@ -279,13 +359,17 @@ describe("editable Bento cards", () => {
       within(materialCard).getByRole("combobox", { name: "Tipo de Resina" }),
       "Resina Tough",
     );
-    expect(useCalculatorStore.getState().resinMaterial.type).toBe("Resina Tough");
+    expect(useCalculatorStore.getState().resinMaterial.type).toBe(
+      "Resina Tough",
+    );
   });
 
   it("keeps the English labels and visible units in parity with Portuguese", () => {
     return i18n.changeLanguage("en-US").then(() => {
       const { materialCard } = renderBento();
-      expect(within(materialCard).getByRole("spinbutton", { name: "Part Weight" })).toBeInTheDocument();
+      expect(
+        within(materialCard).getByRole("spinbutton", { name: "Part Weight" }),
+      ).toBeInTheDocument();
       for (const unit of within(materialCard).getAllByText("g")) {
         expect(unit).toBeVisible();
       }

@@ -164,6 +164,32 @@ describe("snapshot restore result regression", () => {
     },
   );
 
+  it("restores a personal printer profile from a history snapshot", () => {
+    const personalPrinter = {
+      ...printers[0],
+      id: "my-workshop-printer",
+      name: "Workshop Printer",
+      custom: true,
+    };
+    useCatalogStore.setState({
+      printers: [
+        ...printers.map((printer) => ({ ...printer })),
+        personalPrinter,
+      ],
+    });
+
+    useCalculatorStore
+      .getState()
+      .loadHistoryItem(
+        buildSnapshot({ selectedPrinterId: personalPrinter.id }),
+      );
+
+    expect(useCalculatorStore.getState().selectedPrinter).toMatchObject({
+      id: personalPrinter.id,
+      name: "Workshop Printer",
+    });
+  });
+
   it("keeps restored material cost positive without configured multi-material slots", () => {
     restoreSnapshot("partial-legacy");
 

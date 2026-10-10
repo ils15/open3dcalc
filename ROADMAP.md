@@ -307,6 +307,8 @@ Every phase and change must complete this checklist:
 
 - [ ] Correct FDM/resin selection throughout the calculator and related data.
 - [x] Apply configured marketplace fixed per-unit fees in the FDM and resin calculator flows; legacy calculator data derives the additive field from its selected fee profile without changing storage keys.
+- [x] Separate the user's personal printer list from the built-in model library and make catalog profiles selectable in Classic and Bento.
+- [x] Resolve personal printer profiles from the local catalog when restoring history and shared calculations.
 - [ ] Apply channel-specific shipping rules and fees to calculations and offers.
 - [ ] Separate `Marketplace` as a fee-template from `StoreChannel` as a concrete store/channel.
 - [ ] Support multiple stores/channels and product offers with price, fee, shipping, margin, SKU, and URL.
@@ -973,7 +975,6 @@ A entrega teve uma forma específica que vale registrar: **o recurso foi desliga
 
 #### Dívida rastreada (fora desta frente)
 
-- `loadHistoryItem` resolve a impressora contra o array estático `printers`, enquanto o builder usa `useCatalogStore`; há divergência real em catálogo personalizado.
 - `addToHistory` grava o histórico **antes** da dedução de estoque.
 - `demoDataset.ts` chama `computeStoreResults` diretamente, contornando a fronteira de validação.
 - Resolvers antigos em `calculatorStore.helpers.ts` ficaram órfãos: existem duas políticas de sanitização, com risco de drift.
