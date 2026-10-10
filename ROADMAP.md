@@ -1,6 +1,6 @@
 # 🗺️ Open3DCalc — Roadmap
 
-> **Date:** 04/10/2026 (documento original: 18/09/2026)
+> **Date:** 09/10/2026 (documento original: 18/09/2026)
 > **Purpose:** Priority guide for the evolution of Open3DCalc.
 > **Flow:** Every feature follows → branch → PR → review → merge (`BRANCH-POLICY.md`)
 
@@ -14,9 +14,15 @@
 - Users must be able to export and delete their data.
 - Privacy documentation and a privacy review are required before every release.
 
-## Estado da versão publicada — v2.0.0-beta.13
+## Estado dos canais publicados — verificado em 09/10/2026
 
-Tag `v2.0.0-beta.13`: `d08a4eafcc5fc20d03867a08bd417fae390f6b10`, publicada em 08/10/2026; `/beta/index.web.html` referencia `assets/index.web-BFz5JDpp.js`. Merge de código não comprova que a interface esteja montada ou publicada na web.
+- **Estável:** `v1.14.0`.
+- **Beta web:** `v2.0.0-beta.15` (pré-release; canal web-only).
+- **Versão no `main`:** `2.0.0-beta.15`; isso não promove `main` a estável nem autoriza uma publicação estável.
+
+### Auditoria da beta.13 — snapshot histórico de 08/10/2026
+
+As observações abaixo registram a auditoria daquela publicação e não devem ser tratadas como verificação da beta.15. A tag `v2.0.0-beta.13` apontava para `d08a4eafcc5fc20d03867a08bd417fae390f6b10`; naquele snapshot, `/beta/index.web.html` referenciava `assets/index.web-BFz5JDpp.js`. Merge de código, por si só, não comprova que a interface esteja montada ou publicada na web.
 
 - PRs #248–#264 estão na beta.11, exceto #254 (fechado sem merge). #264 corrigiu a saída web após a falha da beta.10 e antes da publicação da beta.11.
 - A web beta monta `StudioLayout`, com sidebar de dez módulos; isso não corresponde aos cinco destinos definidos em 7o.2.
@@ -25,10 +31,10 @@ Tag `v2.0.0-beta.13`: `d08a4eafcc5fc20d03867a08bd417fae390f6b10`, publicada em 0
 - Os gates PII/export existentes não completam a checklist transversal LGPD das linhas 76–98.
 - Em 7q, IA, frota fora desta fase e vínculo cliente já têm decisão; continuam abertas a unidade de `usefulLife` e a formalização da decisão sobre `Example`. Coverage da beta.11 não foi medida.
 
-## Approved Beta test-only strip-down (implementation on current branch; unpublished)
+## Approved Beta test-only strip-down (merged; Beta web published)
 
 The owner approved D1–D12 for a Web-Beta-only profile intended for synthetic test data. This
-entry records the current branch state without rewriting the published release history above.
+entry records the approved Beta profile and distinguishes it from the Stable/Desktop policy.
 The Stable manifest now
 uses policy 1.9, which supersedes the former policy 1.8 plaintext restriction for its exact
 three-key scope; prior receipt bytes and encrypted-entry versions remain unchanged. Desktop
@@ -44,9 +50,10 @@ follows the Stable policy 1.9 contract and is not part of the Web-Beta profile.
   deletion, import/export, sync, or backup paths.
 - The first-run disclosure states test-only, intended synthetic use, stored unencrypted, no
   password, no migration/export, and disposable browser profile. Desktop is unaffected.
-- Implementation and local verification are complete on
-  `refactor/beta13-prune-legacy-darkmode`; final Themis review is pending. No publication is
-  authorized or performed by this work. The published web Beta remains v2.0.0-beta.13.
+- Implementation and local verification were completed in PR #279 and merged into `main`.
+  The current web Beta is `v2.0.0-beta.15`; this Beta publication does not promote the
+  separate Stable/Desktop policy. Final Themis review and explicit owner/legal approval remain
+  required before Stable promotion.
 
 ---
 

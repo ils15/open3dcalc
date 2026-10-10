@@ -209,8 +209,9 @@ policy 1.9 Stable plaintext manifest and remains distinct from Beta.
 
 Beta storage isolation is enforced by the app's own adapters and guards, not by browser-origin
 security: same-origin scripts, extensions, and DevTools can still access `localStorage`. The
-current implementation is on this branch; final Themis review is pending and no Beta
-publication has been authorized. The published web Beta remains v2.0.0-beta.13.
+implementation was merged into `main` by PR #279 and is present in web Beta `v2.0.0-beta.15`.
+Final Themis review and explicit owner/legal approval remain required before Stable promotion;
+publication of the restricted Beta channel does not approve the separate Stable/Desktop policy.
 
 ## 8. SPEC-01 fixture changes in policy 1.9
 

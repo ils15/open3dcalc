@@ -1,6 +1,6 @@
 # TEST-MATRIX — Policy 1.9 Contracts
 
-**Scope:** Stable/Desktop direct plaintext saves, Web-Beta app-mediated restrictions, current-owned-data deletion, and retained encrypted export. This matrix replaces the former local at-rest encryption, vault-lock, consent-gate, and startup-migration requirements. Implementation is present on the current branch; final Themis review is pending and no publication is authorized.
+**Scope:** Stable/Desktop direct plaintext saves, Web-Beta app-mediated restrictions, current-owned-data deletion, and retained encrypted export. This matrix replaces the former local at-rest encryption, vault-lock, consent-gate, and startup-migration requirements. Implementation was merged into `main` by PR #279 and is present in web Beta `v2.0.0-beta.15`; final Themis review and explicit owner/legal approval remain required before Stable promotion.
 
 ## 0. Global rules
 
@@ -99,4 +99,5 @@ exception is not valid RED evidence.
   Beta builds, and stable-preview browser checks for this branch's final wave; report any
   unrelated baseline failures separately.
 - Final Themis review is required before promotion. This matrix authorizes no commit, merge,
-  release, or publication; published web Beta remains v2.0.0-beta.13.
+  release, or publication. The published web Beta is `v2.0.0-beta.15`; that Beta publication
+  does not authorize promotion of the separate Stable/Desktop policy.
