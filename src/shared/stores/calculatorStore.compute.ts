@@ -1,5 +1,5 @@
 import type { ComputeStoreInput } from "./calculatorStore.types";
-import type { CalculationResult } from "@/shared/types";
+import type { CalculationResult, SalesParameters } from "@/shared/types";
 import {
   calculateFDM,
   calculateResin,
@@ -27,6 +27,39 @@ function profitTimeMinutes(
   const setupEach =
     (laborEnabled ? Math.max(0, setupTimeMinutes) : 0) / Math.max(1, qty);
   return { printMinutes, postMinutes, setupEach };
+}
+
+/**
+ * The frozen core calculator handles percentage fees. Apply the catalog's
+ * fixed per-unit fee at the store boundary so legacy core formulas remain
+ * untouched and the configured markup is still honored.
+ */
+function applyMarketplaceFixedFee(
+  result: CalculationResult,
+  baseCost: number,
+  sales: SalesParameters,
+): CalculationResult {
+  const feeFixed = sales.marketplaceFeeFixed ?? 0;
+  if (feeFixed <= 0) return result;
+
+  const feeRate = (sales.taxPercent + sales.marketplaceFeePercent) / 100;
+  const priceBeforeFees =
+    baseCost + baseCost * (sales.profitMarginPercent / 100) + feeFixed;
+  const sellPrice =
+    feeRate < 1 ? priceBeforeFees / (1 - feeRate) : priceBeforeFees * 2;
+  const taxAmount = sellPrice * (sales.taxPercent / 100);
+  const marketplaceFee =
+    sellPrice * (sales.marketplaceFeePercent / 100) + feeFixed;
+  const profit = sellPrice - baseCost - taxAmount - marketplaceFee;
+
+  return {
+    ...result,
+    sellPrice,
+    taxAmount,
+    marketplaceFee,
+    profit,
+    actualMargin: sellPrice > 0 ? (profit / sellPrice) * 100 : 0,
+  };
 }
 
 export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
@@ -80,14 +113,18 @@ export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
     const taxAmount = sellPrice * (s.fdmSales.taxPercent / 100);
     const marketplaceFee = sellPrice * (s.fdmSales.marketplaceFeePercent / 100);
     const totalProfit = sellPrice - totalBaseCost - taxAmount - marketplaceFee;
-    const r = {
-      ...filtered,
-      totalCost: totalBaseCost,
-      sellPrice,
-      profit: totalProfit,
-      taxAmount,
-      marketplaceFee,
-    };
+    const r = applyMarketplaceFixedFee(
+      {
+        ...filtered,
+        totalCost: totalBaseCost,
+        sellPrice,
+        profit: totalProfit,
+        taxAmount,
+        marketplaceFee,
+      },
+      totalBaseCost,
+      s.fdmSales,
+    );
     const t = profitTimeMinutes(
       s.fdmPrintParams.printTimeHours,
       s.fdmLabor.setupTimeMinutes,
@@ -186,14 +223,18 @@ export function computeStoreResults(s: ComputeStoreInput): CalculationResult {
     const marketplaceFee =
       sellPrice * (s.resinSales.marketplaceFeePercent / 100);
     const totalProfit = sellPrice - totalBaseCost - taxAmount - marketplaceFee;
-    const r = {
-      ...filtered,
-      totalCost: totalBaseCost,
-      sellPrice,
-      profit: totalProfit,
-      taxAmount,
-      marketplaceFee,
-    };
+    const r = applyMarketplaceFixedFee(
+      {
+        ...filtered,
+        totalCost: totalBaseCost,
+        sellPrice,
+        profit: totalProfit,
+        taxAmount,
+        marketplaceFee,
+      },
+      totalBaseCost,
+      s.resinSales,
+    );
     const t = profitTimeMinutes(
       s.resinPrintParams.printTimeHours,
       s.resinLabor.setupTimeMinutes,

@@ -61,7 +61,11 @@ vi.mock("@/shared/lib/calculationLink", () => ({
   getSharedCalculation: () => null,
 }));
 vi.mock("@/shared/lib/printers", () => ({ printers: [] }));
-vi.mock("@/shared/lib/marketplace", () => ({ marketplaces: [] }));
+vi.mock("@/shared/lib/marketplace", () => ({
+  marketplaces: [],
+  findMarketplace: (id: string, available: Array<{ id: string }> = []) =>
+    available.find((marketplace) => marketplace.id === id),
+}));
 vi.mock("@/shared/lib/initialWorkshopSeed", () => ({
   seedDefaultStudioDataIfEmpty: startup.seedDefaults,
 }));

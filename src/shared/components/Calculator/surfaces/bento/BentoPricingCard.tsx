@@ -3,8 +3,10 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 
 import { isFieldVisibleForLevel } from "../../Calculator.constants";
+import { Select } from "@/shared/components/ui/Select";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 import type { CalculationResult, SalesParameters } from "@/shared/types";
 import {
   deriveRealMarginPercent,
@@ -36,6 +38,7 @@ export function BentoPricingCard({
 }: BentoPricingCardProps): React.ReactElement {
   const { t, i18n } = useTranslation();
   const { format, symbol } = useCurrency();
+  const catalogMarketplaces = useCatalogStore((state) => state.marketplaces);
   const {
     activeTab,
     calcLevel,
@@ -50,6 +53,8 @@ export function BentoPricingCard({
     setResinPrintParams,
     setFdmSales,
     setResinSales,
+    setSelectedMarketplace,
+    selectedMarketplace,
     setQuantity,
     setInfillPercent,
   } = useCalculatorStore(
@@ -67,6 +72,8 @@ export function BentoPricingCard({
       setResinPrintParams: state.setResinPrintParams,
       setFdmSales: state.setFdmSales,
       setResinSales: state.setResinSales,
+      setSelectedMarketplace: state.setSelectedMarketplace,
+      selectedMarketplace: state.selectedMarketplace,
       setQuantity: state.setQuantity,
       setInfillPercent: state.setInfillPercent,
     })),
@@ -87,7 +94,11 @@ export function BentoPricingCard({
     realMargin === null ? "neutral" : realMargin < 0 ? "negative" : "margin";
 
   const setSalesField = (
-    field: "marketplaceFeePercent" | "taxPercent" | "profitMarginPercent" | "shippingCost",
+    field:
+      | "marketplaceFeePercent"
+      | "taxPercent"
+      | "profitMarginPercent"
+      | "shippingCost",
     value: number,
   ): void => {
     const nextSales = { ...currentSales, [field]: value };
@@ -142,10 +153,36 @@ export function BentoPricingCard({
           />
         )}
         {isSalesVisible("marketplace") && (
+          <div className="sm:col-span-2 xl:col-span-3">
+            <Select
+              label={t("calc.marketplace")}
+              value={selectedMarketplace.id}
+              onChange={(id) => {
+                const marketplace = catalogMarketplaces.find(
+                  (candidate) => candidate.id === id,
+                );
+                if (marketplace) setSelectedMarketplace(marketplace);
+              }}
+              options={catalogMarketplaces.map((marketplace) => ({
+                label: marketplace.name,
+                value: marketplace.id,
+                image: marketplace.logo,
+                subtitle: `${marketplace.feePercent}% + ${symbol} ${marketplace.feeFixed}`,
+              }))}
+              search
+            />
+            <p className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
+              {t("calc.marketplaceFeeFixedHint")}
+            </p>
+          </div>
+        )}
+        {isSalesVisible("marketplaceFeePercent") && (
           <BentoField
             label={t("bento.fields.fee")}
             value={sales.marketplaceFeePercent}
-            onChange={(value) => setSalesField("marketplaceFeePercent", parseNumber(value))}
+            onChange={(value) =>
+              setSalesField("marketplaceFeePercent", parseNumber(value))
+            }
             type="number"
             unit="%"
             step="0.1"
@@ -158,7 +195,9 @@ export function BentoPricingCard({
           <BentoField
             label={t("bento.fields.tax")}
             value={sales.taxPercent}
-            onChange={(value) => setSalesField("taxPercent", parseNumber(value))}
+            onChange={(value) =>
+              setSalesField("taxPercent", parseNumber(value))
+            }
             type="number"
             unit="%"
             step="0.1"
@@ -169,7 +208,11 @@ export function BentoPricingCard({
         )}
         {isFailureVisible("failureValue") && (
           <BentoField
-            label={t(failureIsFixed ? "bento.fields.failure" : "bento.fields.failureRate")}
+            label={t(
+              failureIsFixed
+                ? "bento.fields.failure"
+                : "bento.fields.failureRate",
+            )}
             value={printParams.failureValue}
             onChange={(value) => setFailureValue(parseNumber(value))}
             type="number"
@@ -186,7 +229,9 @@ export function BentoPricingCard({
           <BentoField
             label={t("bento.fields.targetMargin")}
             value={sales.profitMarginPercent}
-            onChange={(value) => setSalesField("profitMarginPercent", parseNumber(value))}
+            onChange={(value) =>
+              setSalesField("profitMarginPercent", parseNumber(value))
+            }
             type="number"
             unit="%"
             step="0.1"
@@ -198,7 +243,9 @@ export function BentoPricingCard({
           <BentoField
             label={t("calc.shipping")}
             value={sales.shippingCost}
-            onChange={(value) => setSalesField("shippingCost", parseNumber(value))}
+            onChange={(value) =>
+              setSalesField("shippingCost", parseNumber(value))
+            }
             type="number"
             prefix={symbol}
             step="0.01"

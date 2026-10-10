@@ -306,7 +306,8 @@ Every phase and change must complete this checklist:
 **What needs to be done:**
 
 - [ ] Correct FDM/resin selection throughout the calculator and related data.
-- [ ] Apply fixed fees and shipping costs to calculations and offers.
+- [x] Apply configured marketplace fixed per-unit fees in the FDM and resin calculator flows; legacy calculator data derives the additive field from its selected fee profile without changing storage keys.
+- [ ] Apply channel-specific shipping rules and fees to calculations and offers.
 - [ ] Separate `Marketplace` as a fee-template from `StoreChannel` as a concrete store/channel.
 - [ ] Support multiple stores/channels and product offers with price, fee, shipping, margin, SKU, and URL.
 - [ ] Preserve historical price and calculation snapshots.

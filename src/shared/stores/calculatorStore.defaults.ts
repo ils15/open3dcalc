@@ -102,6 +102,7 @@ export const DEFAULT_SALES: SalesParameters = {
   shippingCost: 0,
   taxPercent: 0,
   marketplaceFeePercent: 0,
+  marketplaceFeeFixed: 0,
   profitMarginPercent: 50,
   volumeDiscounts: DEFAULT_VOLUME_DISCOUNTS,
 };
@@ -168,6 +169,7 @@ export const DEFAULT_RESIN_SALES: SalesParameters = {
   shippingCost: 0,
   taxPercent: 0,
   marketplaceFeePercent: 0,
+  marketplaceFeeFixed: 0,
   profitMarginPercent: 50,
   volumeDiscounts: DEFAULT_VOLUME_DISCOUNTS,
 };

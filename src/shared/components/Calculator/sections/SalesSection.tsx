@@ -37,15 +37,7 @@ export function SalesSection({ step }: { step?: number }) {
 
   const handleMarketplaceChange = (id: string) => {
     const mp = catalogMarketplaces.find((m) => m.id === id);
-    if (mp) {
-      store.setSelectedMarketplace(
-        mp as Parameters<typeof store.setSelectedMarketplace>[0],
-      );
-      store.setFdmSales({
-        ...store.fdmSales,
-        marketplaceFeePercent: mp.feePercent,
-      });
-    }
+    if (mp) store.setSelectedMarketplace(mp);
   };
 
   // The extras total ("Custos Extras" slot of the Example) is this section's
@@ -162,21 +154,30 @@ export function SalesSection({ step }: { step?: number }) {
             />
           )}
         </div>
-        {isFieldVisible("sales", "marketplace") && (
-          <>
-            <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-              <Select
-                label={t("calc.marketplace")}
-                value={store.selectedMarketplace.id}
-                onChange={handleMarketplaceChange}
-                options={catalogMarketplaces.map((m) => ({
-                  label: m.name,
-                  value: m.id,
-                  image: m.logo,
-                  subtitle: `${m.feePercent}% + ${currencySymbol} ${m.feeFixed}`,
-                }))}
-                search
-              />
+        {(isFieldVisible("sales", "marketplace") ||
+          isFieldVisible("sales", "taxPercent") ||
+          isFieldVisible("sales", "marketplaceFeePercent")) && (
+          <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+            {isFieldVisible("sales", "marketplace") && (
+              <div>
+                <Select
+                  label={t("calc.marketplace")}
+                  value={store.selectedMarketplace.id}
+                  onChange={handleMarketplaceChange}
+                  options={catalogMarketplaces.map((m) => ({
+                    label: m.name,
+                    value: m.id,
+                    image: m.logo,
+                    subtitle: `${m.feePercent}% + ${currencySymbol} ${m.feeFixed}`,
+                  }))}
+                  search
+                />
+                <p className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
+                  {t("calc.marketplaceFeeFixedHint")}
+                </p>
+              </div>
+            )}
+            {isFieldVisible("sales", "taxPercent") && (
               <InputGroup
                 label={t("calc.taxPercent")}
                 value={
@@ -201,42 +202,70 @@ export function SalesSection({ step }: { step?: number }) {
                 unit="%"
                 tooltip={t("tooltip.taxPercent")}
               />
-            </div>
-            <div className="surface rounded-xl p-4 sm:p-5">
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between mb-2">
-                <span className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
-                  {t("calc.markupPresets")}
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {MARKUP_PRESETS.map((pct) => (
-                    <button
-                      key={pct}
-                      onClick={() =>
-                        isFDM
-                          ? store.setFdmSales({
-                              ...store.fdmSales,
-                              profitMarginPercent: pct,
-                            })
-                          : store.setResinSales({
-                              ...store.resinSales,
-                              profitMarginPercent: pct,
-                            })
-                      }
-                      className={`px-3 min-h-[44px] text-[11px] sm:text-xs rounded-md transition-all flex items-center ${
-                        (isFDM
-                          ? store.fdmSales.profitMarginPercent
-                          : store.resinSales.profitMarginPercent) === pct
-                          ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]"
-                          : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-                      }`}
-                    >
-                      {pct}%
-                    </button>
-                  ))}
-                </div>
+            )}
+            {isFieldVisible("sales", "marketplaceFeePercent") && (
+              <InputGroup
+                label={t("bento.fields.fee")}
+                value={
+                  isFDM
+                    ? store.fdmSales.marketplaceFeePercent
+                    : store.resinSales.marketplaceFeePercent
+                }
+                onChange={(v) =>
+                  handleInput(v, (val) =>
+                    isFDM
+                      ? store.setFdmSales({
+                          ...store.fdmSales,
+                          marketplaceFeePercent: val,
+                        })
+                      : store.setResinSales({
+                          ...store.resinSales,
+                          marketplaceFeePercent: val,
+                        }),
+                  )
+                }
+                type="number"
+                unit="%"
+                tooltip={t("tooltip.marketplaceFee")}
+              />
+            )}
+          </div>
+        )}
+        {isFieldVisible("sales", "markupPresets") && (
+          <div className="surface rounded-xl p-4 sm:p-5">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between mb-2">
+              <span className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
+                {t("calc.markupPresets")}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {MARKUP_PRESETS.map((pct) => (
+                  <button
+                    key={pct}
+                    onClick={() =>
+                      isFDM
+                        ? store.setFdmSales({
+                            ...store.fdmSales,
+                            profitMarginPercent: pct,
+                          })
+                        : store.setResinSales({
+                            ...store.resinSales,
+                            profitMarginPercent: pct,
+                          })
+                    }
+                    className={`px-3 min-h-[44px] text-[11px] sm:text-xs rounded-md transition-all flex items-center ${
+                      (isFDM
+                        ? store.fdmSales.profitMarginPercent
+                        : store.resinSales.profitMarginPercent) === pct
+                        ? "bg-[var(--accent-fill)] text-[var(--accent-fill-fg)]"
+                        : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                ))}
               </div>
             </div>
-          </>
+          </div>
         )}
         <div className="surface rounded-xl p-4 sm:p-5">
           <InputGroup

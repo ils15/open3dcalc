@@ -29,8 +29,10 @@ A seção mistura logística, taxas e lucro:
   além do plástico.
 - **Embalagem** — caixa, plástico bolha, fita.
 - **Frete** — o custo da entrega ao cliente.
-- **Marketplace** — a plataforma de venda, selecionada do catálogo. Cada uma tem
-  a sua taxa percentual, preenchida automaticamente.
+- **Marketplace** — o perfil de taxas da plataforma, selecionado do catálogo.
+  A taxa percentual e a taxa fixa por unidade entram no preço calculado.
+  A seleção permanece disponível no modo Rápido, pois altera o preço sugerido;
+  imposto e presets continuam nos níveis mais detalhados.
 - **Taxas e impostos** — impostos sobre o valor da venda (ICMS, ISS, Simples
   Nacional).
 - **Markup sobre o custo** — a porcentagem de lucro desejada sobre o custo total.
@@ -65,8 +67,9 @@ jeito especial, **por divisão**, para que eles não comam o seu lucro:
 ```
 custo base       = produção + falhas + embalagem + frete
 lucro            = custo base * (markup / 100)
-preço s/ taxas   = custo base + lucro
-preço de venda   = preço s/ taxas / (1 - (impostos + taxa marketplace) / 100)
+preço s/ taxas   = custo base + lucro + taxa fixa por unidade
+preço de venda   = preço s/ taxas / (1 - (impostos + taxa percentual marketplace) / 100)
+taxa marketplace = preço de venda * taxa percentual + taxa fixa por unidade
 ```
 
 A divisão não é um detalhe técnico: ela é o que faz a margem ser **honrada**.
@@ -76,8 +79,8 @@ fim é exatamente a porcentagem que você declarou — nem um centavo a menos.
 ## Exemplo numérico completo
 
 Uma peça com R$ 20,00 de custo de produção, R$ 2,00 de falha, R$ 2,00 de
-embalagem e R$ 1,00 de frete, vendida numa plataforma com 10% de taxa, com 15%
-de impostos e markup de 100%:
+embalagem e R$ 1,00 de frete, vendida numa plataforma com 10% de taxa e taxa
+fixa de R$ 0,00, com 15% de impostos e markup de 100%:
 
 ```
 custo base       = 20 + 2 + 2 + 1        = R$ 25,00

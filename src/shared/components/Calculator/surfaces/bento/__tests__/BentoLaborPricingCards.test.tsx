@@ -91,8 +91,12 @@ function renderCards(): {
   );
 
   return {
-    laborCard: screen.getByRole("article", { name: i18n.t("bento.cards.labor") }),
-    pricingCard: screen.getByRole("article", { name: i18n.t("bento.cards.pricing") }),
+    laborCard: screen.getByRole("article", {
+      name: i18n.t("bento.cards.labor"),
+    }),
+    pricingCard: screen.getByRole("article", {
+      name: i18n.t("bento.cards.pricing"),
+    }),
   };
 }
 
@@ -117,31 +121,79 @@ describe("editable labor and pricing cards", () => {
       ADVANCED_PRICING_FIELDS.length,
     );
     for (const name of ADVANCED_PRICING_FIELDS) {
-      expect(within(pricingCard).getByRole("spinbutton", { name })).toBeVisible();
+      expect(
+        within(pricingCard).getByRole("spinbutton", { name }),
+      ).toBeVisible();
     }
   });
 
   it.each([
-    ["basic", ["Embalagem"], ["Taxa de falha", "Quantidade", "Markup sobre o custo"]],
+    [
+      "basic",
+      ["Embalagem"],
+      ["Taxa de falha", "Quantidade", "Markup sobre o custo"],
+    ],
     [
       "intermediate",
       ["Peças e Extras", "Embalagem"],
-      ["Preenchimento (Infill)", "Frete", "Taxa do marketplace", "Imposto", "Taxa de falha", "Quantidade", "Markup sobre o custo"],
+      [
+        "Preenchimento (Infill)",
+        "Frete",
+        "Taxa do marketplace",
+        "Imposto",
+        "Taxa de falha",
+        "Quantidade",
+        "Markup sobre o custo",
+      ],
     ],
     ["advanced", ADVANCED_LABOR_FIELDS, ADVANCED_PRICING_FIELDS],
-  ] as const)("uses the Classic level contract in %s mode", (level, laborFields, pricingFields) => {
-    useCalculatorStore.setState({ calcLevel: level });
-    const { laborCard, pricingCard } = renderCards();
+  ] as const)(
+    "uses the Classic level contract in %s mode",
+    (level, laborFields, pricingFields) => {
+      useCalculatorStore.setState({ calcLevel: level });
+      const { laborCard, pricingCard } = renderCards();
 
-    expect(within(laborCard).getAllByRole("spinbutton")).toHaveLength(laborFields.length);
-    for (const name of laborFields) {
-      expect(within(laborCard).getByRole("spinbutton", { name })).toBeVisible();
-    }
+      expect(within(laborCard).getAllByRole("spinbutton")).toHaveLength(
+        laborFields.length,
+      );
+      for (const name of laborFields) {
+        expect(
+          within(laborCard).getByRole("spinbutton", { name }),
+        ).toBeVisible();
+      }
 
-    expect(within(pricingCard).getAllByRole("spinbutton")).toHaveLength(pricingFields.length);
-    for (const name of pricingFields) {
-      expect(within(pricingCard).getByRole("spinbutton", { name })).toBeVisible();
-    }
+      expect(within(pricingCard).getAllByRole("spinbutton")).toHaveLength(
+        pricingFields.length,
+      );
+      for (const name of pricingFields) {
+        expect(
+          within(pricingCard).getByRole("spinbutton", { name }),
+        ).toBeVisible();
+      }
+      expect(
+        within(pricingCard).getByRole("combobox", { name: "Marketplace" }),
+      ).toBeVisible();
+    },
+  );
+
+  it("applies a selected marketplace profile to both FDM and resin in Bento", () => {
+    const { pricingCard } = renderCards();
+
+    fireEvent.click(
+      within(pricingCard).getByRole("combobox", { name: "Marketplace" }),
+    );
+    fireEvent.click(screen.getAllByRole("option", { name: /Shopee/ })[0]);
+
+    const state = useCalculatorStore.getState();
+    expect(state.selectedMarketplace.id).toBe("shopee_ate79");
+    expect(state.fdmSales).toMatchObject({
+      marketplaceFeePercent: 20,
+      marketplaceFeeFixed: 4,
+    });
+    expect(state.resinSales).toMatchObject({
+      marketplaceFeePercent: 20,
+      marketplaceFeeFixed: 4,
+    });
   });
 
   it("honors advanced disclosure with the exact Classic section ids", () => {
@@ -153,6 +205,7 @@ describe("editable labor and pricing cards", () => {
         "sales.extrasCost",
         "sales.packagingCost",
         "sales.marketplace",
+        "sales.marketplaceFeePercent",
         "sales.taxPercent",
         "failure.failureValue",
         "sales.quantity",
@@ -164,7 +217,9 @@ describe("editable labor and pricing cards", () => {
     const { laborCard, pricingCard } = renderCards();
 
     expect(within(laborCard).queryByRole("spinbutton")).not.toBeInTheDocument();
-    expect(within(pricingCard).queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(
+      within(pricingCard).queryByRole("spinbutton"),
+    ).not.toBeInTheDocument();
   });
 
   it("writes every FDM field through public calculator-store setters", () => {
@@ -229,19 +284,35 @@ describe("editable labor and pricing cards", () => {
   it("keeps cost, real margin, break-even, failure, and profit derived", () => {
     const { laborCard, pricingCard } = renderCards();
 
-    expect(within(laborCard).getByLabelText("Custo de mão de obra: R$ 20,00")).toBeVisible();
-    expect(within(pricingCard).getByLabelText("Margem real: 28,33%")).toBeVisible();
+    expect(
+      within(laborCard).getByLabelText("Custo de mão de obra: R$ 20,00"),
+    ).toBeVisible();
+    expect(
+      within(pricingCard).getByLabelText("Margem real: 28,33%"),
+    ).toBeVisible();
     expect(within(pricingCard).getByLabelText("Falha: R$ 4,50")).toBeVisible();
-    expect(within(pricingCard).getByLabelText("Break-even: R$ 70,00")).toBeVisible();
-    expect(within(pricingCard).getByLabelText("Lucro líquido: R$ 30,00")).toBeVisible();
-    expect(within(pricingCard).queryByRole("spinbutton", { name: "Margem real" })).not.toBeInTheDocument();
-    expect(within(pricingCard).queryByRole("spinbutton", { name: "Break-even" })).not.toBeInTheDocument();
+    expect(
+      within(pricingCard).getByLabelText("Break-even: R$ 70,00"),
+    ).toBeVisible();
+    expect(
+      within(pricingCard).getByLabelText("Lucro líquido: R$ 30,00"),
+    ).toBeVisible();
+    expect(
+      within(pricingCard).queryByRole("spinbutton", { name: "Margem real" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(pricingCard).queryByRole("spinbutton", { name: "Break-even" }),
+    ).not.toBeInTheDocument();
   });
 
   it("exposes visible units and helper text through accessible descriptions", () => {
     const { laborCard, pricingCard } = renderCards();
-    const setup = within(laborCard).getByRole("spinbutton", { name: "Setup (Fatiamento)" });
-    const fee = within(pricingCard).getByRole("spinbutton", { name: "Taxa do marketplace" });
+    const setup = within(laborCard).getByRole("spinbutton", {
+      name: "Setup (Fatiamento)",
+    });
+    const fee = within(pricingCard).getByRole("spinbutton", {
+      name: "Taxa do marketplace",
+    });
 
     expect(setup).toHaveAccessibleDescription(
       "Tempo gasto preparando o arquivo, fatiando e configurando a impressora.",
@@ -251,7 +322,7 @@ describe("editable labor and pricing cards", () => {
     expect(within(laborCard).getByText("/h")).toBeVisible();
     expect(within(laborCard).getAllByText("R$")).toHaveLength(3);
     expect(fee).toHaveAccessibleDescription(
-      "Percentual cobrado pelo marketplace sobre o valor de venda.",
+      "Taxa percentual sobre a venda mais a taxa fixa do marketplace por unidade.",
     );
     expect(within(pricingCard).getByText("un")).toBeVisible();
   });
@@ -260,17 +331,33 @@ describe("editable labor and pricing cards", () => {
     await i18n.changeLanguage("en-US");
     const { laborCard, pricingCard } = renderCards();
 
-    for (const name of ["Setup (Slicing)", "Post-Processing", "Hourly Rate", "Parts & Extras", "Packaging"]) {
+    for (const name of [
+      "Setup (Slicing)",
+      "Post-Processing",
+      "Hourly Rate",
+      "Parts & Extras",
+      "Packaging",
+    ]) {
       expect(within(laborCard).getByRole("spinbutton", { name })).toBeVisible();
     }
-    for (const name of ["Marketplace fee", "Tax", "Failure rate", "Quantity", "Markup on cost", "Infill Percentage", "Shipping"]) {
-      expect(within(pricingCard).getByRole("spinbutton", { name })).toBeVisible();
+    for (const name of [
+      "Marketplace fee",
+      "Tax",
+      "Failure rate",
+      "Quantity",
+      "Markup on cost",
+      "Infill Percentage",
+      "Shipping",
+    ]) {
+      expect(
+        within(pricingCard).getByRole("spinbutton", { name }),
+      ).toBeVisible();
     }
     expect(within(pricingCard).getByText("units")).toBeVisible();
     expect(
       within(pricingCard).getByRole("spinbutton", { name: "Marketplace fee" }),
     ).toHaveAccessibleDescription(
-      "Percentage charged by the marketplace on the sale value.",
+      "Percentage of the sale plus the marketplace's fixed fee per unit.",
     );
   });
 });

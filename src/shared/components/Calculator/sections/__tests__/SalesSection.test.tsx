@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { SalesSection } from "../SalesSection";
 
 // Mocks
@@ -136,6 +136,14 @@ const mockMarketplaces = [
     hasFreeShipping: true,
     shippingFeePercent: 0,
   },
+  {
+    id: "my-store",
+    name: "Minha Loja",
+    feePercent: 8,
+    feeFixed: 2,
+    hasFreeShipping: false,
+    custom: true,
+  },
 ];
 
 vi.mock("@/shared/stores/catalogStore", () => ({
@@ -213,6 +221,36 @@ describe("SalesSection", () => {
     expect(screen.queryByText("calc.infillPercent")).not.toBeInTheDocument();
   });
 
+  it("keeps marketplace fees available in quick mode without exposing detailed tax controls", () => {
+    mockStore = createMockStore({ calcLevel: "basic" });
+    render(<SalesSection />);
+
+    expect(
+      screen.getByRole("combobox", { name: "calc.marketplace" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("calc.taxPercent")).not.toBeInTheDocument();
+    expect(screen.queryByText("calc.markupPresets")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("spinbutton", { name: "bento.fields.fee" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("allows a manual marketplace percentage in detailed mode", () => {
+    mockStore = createMockStore({ calcLevel: "intermediate" });
+    render(<SalesSection />);
+
+    fireEvent.change(
+      screen.getByRole("spinbutton", { name: "bento.fields.fee" }),
+      {
+        target: { value: "8.5" },
+      },
+    );
+
+    expect(mockSetFdmSales).toHaveBeenCalledWith(
+      expect.objectContaining({ marketplaceFeePercent: 8.5 }),
+    );
+  });
+
   it("shows extrasCost when field is visible", () => {
     render(<SalesSection />);
     expect(screen.getByText("calc.extras")).toBeInTheDocument();
@@ -270,14 +308,29 @@ describe("SalesSection", () => {
     expect(combobox).toBeInTheDocument();
   });
 
-  it("hides marketplace section when hidden", () => {
+  it("passes custom catalog marketplaces to the calculator store", () => {
+    render(<SalesSection />);
+    fireEvent.click(screen.getByRole("combobox"));
+    fireEvent.click(screen.getByRole("option", { name: /Minha Loja/ }));
+
+    expect(mockSetSelectedMarketplace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "my-store",
+        feePercent: 8,
+        feeFixed: 2,
+      }),
+    );
+    expect(mockSetFdmSales).not.toHaveBeenCalled();
+  });
+
+  it("hides only the marketplace selector when hidden", () => {
     mockStore = createMockStore({
       calcLevel: "intermediate",
       hiddenFields: ["sales.marketplace"],
     });
     render(<SalesSection />);
     expect(screen.queryByText("calc.marketplace")).not.toBeInTheDocument();
-    expect(screen.queryByText("calc.markupPresets")).not.toBeInTheDocument();
+    expect(screen.getByText("calc.markupPresets")).toBeInTheDocument();
   });
 
   it("shows taxPercent when marketplace field is visible", () => {

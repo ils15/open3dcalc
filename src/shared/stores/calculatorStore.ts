@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { assertPersistableCalculationState } from "@/shared/lib/calculationState";
-import { marketplaces } from "@/shared/lib/marketplace";
+import {
+  findMarketplace,
+  getMarketplace,
+  marketplaces,
+} from "@/shared/lib/marketplace";
 import { printers } from "@/shared/lib/printers";
 import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
@@ -14,6 +18,7 @@ import type {
   AMSSlot,
   PostProcessingResin,
   MachineCosts,
+  SalesParameters,
 } from "@/shared/types";
 import type { CalcLevel } from "./calculatorStore.types";
 import type { CurrencySetting } from "@/shared/lib/currency";
@@ -138,6 +143,26 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     debouncedAutoSave(get);
   };
 
+  const catalogMarketplaces = useCatalogStore.getState().marketplaces ?? [];
+  const initialMarketplace = getMarketplace(
+    loadStr("selectedMarketplaceId", marketplaces[0].id),
+    catalogMarketplaces,
+  );
+  const loadSales = (
+    key: string,
+    defaults: SalesParameters,
+  ): SalesParameters => {
+    const saved = loadStr<Partial<SalesParameters>>(key, {});
+    return {
+      ...defaults,
+      ...saved,
+      // The fixed fee did not exist in older saves. Derive only this missing
+      // additive field from the selected profile; preserve an explicit 0.
+      marketplaceFeeFixed:
+        saved.marketplaceFeeFixed ?? initialMarketplace.feeFixed,
+    };
+  };
+
   const initialValues = {
     activeTab: "fdm" as const,
     fdmMaterial: loadStr("fdmMaterial", DEFAULT_FDM_MATERIAL),
@@ -153,7 +178,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     fdmFinishing: { ...DEFAULT_FDM_FINISHING, ...loadStr("fdmFinishing", {}) },
     fdmLabor: loadStr("fdmLabor", DEFAULT_LABOR),
     fdmExtras: { ...DEFAULT_EXTRAS, ...loadStr("fdmExtras", {}) },
-    fdmSales: { ...DEFAULT_SALES, ...loadStr("fdmSales", {}) },
+    fdmSales: loadSales("fdmSales", DEFAULT_SALES),
     fdmOps: { ...DEFAULT_OPS, ...loadStr("fdmOps", {}) },
     fdmSoft: { ...DEFAULT_SOFT, ...loadStr("fdmSoft", {}) },
 
@@ -170,12 +195,12 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     },
     resinLabor: loadStr("resinLabor", DEFAULT_RESIN_LABOR),
     resinExtras: { ...DEFAULT_RESIN_EXTRAS, ...loadStr("resinExtras", {}) },
-    resinSales: { ...DEFAULT_RESIN_SALES, ...loadStr("resinSales", {}) },
+    resinSales: loadSales("resinSales", DEFAULT_RESIN_SALES),
     resinOps: { ...DEFAULT_RESIN_OPS, ...loadStr("resinOps", {}) },
     resinSoft: { ...DEFAULT_RESIN_SOFT, ...loadStr("resinSoft", {}) },
 
     selectedPrinter: printers[0],
-    selectedMarketplace: marketplaces[0],
+    selectedMarketplace: initialMarketplace,
     fixedCosts: { ...DEFAULT_FIXED_COSTS, ...loadStr("fixedCosts", {}) },
 
     fdmAmsEnabled: false,
@@ -337,7 +362,19 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
       });
     },
     setSelectedMarketplace: (selectedMarketplace) =>
-      setWithCompute({ selectedMarketplace }),
+      setWithCompute((state) => ({
+        selectedMarketplace,
+        fdmSales: {
+          ...state.fdmSales,
+          marketplaceFeePercent: selectedMarketplace.feePercent,
+          marketplaceFeeFixed: selectedMarketplace.feeFixed,
+        },
+        resinSales: {
+          ...state.resinSales,
+          marketplaceFeePercent: selectedMarketplace.feePercent,
+          marketplaceFeeFixed: selectedMarketplace.feeFixed,
+        },
+      })),
 
     setFixedCostsField: (field, value) =>
       setWithCompute((state) => ({
@@ -663,8 +700,9 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
             (printer) => printer.id === snapshot.selectedPrinterId,
           ) ?? state.selectedPrinter;
         const selectedMarketplace =
-          marketplaces.find(
-            (marketplace) => marketplace.id === snapshot.selectedMarketplaceId,
+          findMarketplace(
+            snapshot.selectedMarketplaceId,
+            useCatalogStore.getState().marketplaces ?? [],
           ) ?? state.selectedMarketplace;
         const snapshotSpool = snapshot.spoolId
           ? useFilamentInventory

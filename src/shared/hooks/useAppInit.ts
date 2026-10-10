@@ -11,7 +11,8 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { computeValidatedStoreResults } from "@/shared/stores/calculatorStore.validation";
 import { getSharedCalculation } from "@/shared/lib/calculationLink";
 import { printers } from "@/shared/lib/printers";
-import { marketplaces } from "@/shared/lib/marketplace";
+import { findMarketplace, marketplaces } from "@/shared/lib/marketplace";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
@@ -114,8 +115,9 @@ function loadSharedCalculation(): void {
     if (printer) merged.selectedPrinter = printer as (typeof printers)[number];
   }
   if (shared.selectedMarketplaceId) {
-    const marketplace = marketplaces.find(
-      (m) => m.id === shared.selectedMarketplaceId,
+    const marketplace = findMarketplace(
+      shared.selectedMarketplaceId,
+      useCatalogStore.getState().marketplaces ?? [],
     );
     if (marketplace)
       merged.selectedMarketplace = marketplace as (typeof marketplaces)[number];
