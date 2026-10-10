@@ -13,7 +13,8 @@ type CatalogMaterial = Material & { custom?: boolean };
 type CatalogMarketplace = Marketplace & { custom?: boolean };
 
 /** Free tags are case-insensitive and whitespace-collapsed so duplicates collapse to one entry. */
-const normalizeTag = (raw: string): string => raw.trim().toLowerCase().replace(/\s+/g, " ");
+const normalizeTag = (raw: string): string =>
+  raw.trim().toLowerCase().replace(/\s+/g, " ");
 
 /** Backward-compat: bundles persisted before Phase 4A have no `tags` field. Coerce to `[]`. */
 const withTags = (printers: CatalogPrinter[]): CatalogPrinter[] =>
@@ -64,7 +65,9 @@ export const useCatalogStore = create<CatalogState>((set, get) => {
   const saved = loadFromStorage();
 
   const initial = {
-    printers: withTags((saved.printers ?? defaults.printers) as CatalogPrinter[]),
+    printers: withTags(
+      (saved.printers ?? defaults.printers) as CatalogPrinter[],
+    ),
     materials: (saved.materials ?? defaults.materials) as CatalogMaterial[],
     marketplaces: (saved.marketplaces ??
       defaults.marketplaces) as CatalogMarketplace[],
@@ -77,7 +80,9 @@ export const useCatalogStore = create<CatalogState>((set, get) => {
     load: () => {
       const next = loadFromStorage();
       set({
-        printers: withTags((next.printers ?? defaults.printers) as CatalogPrinter[]),
+        printers: withTags(
+          (next.printers ?? defaults.printers) as CatalogPrinter[],
+        ),
         materials: (next.materials ?? defaults.materials) as CatalogMaterial[],
         marketplaces: (next.marketplaces ??
           defaults.marketplaces) as CatalogMarketplace[],

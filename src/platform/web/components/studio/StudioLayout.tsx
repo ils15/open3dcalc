@@ -244,7 +244,9 @@ export const StudioLayout: React.FC = () => {
                     mode={layoutMode}
                     onModeChange={setLayoutMode}
                   />
-                  <CalculatorSurface />
+                  <CalculatorSurface
+                    onManagePrinters={() => setActiveTab("catalog")}
+                  />
                 </>
               )}
 

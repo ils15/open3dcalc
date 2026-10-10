@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import { isValidQuantity } from "@/shared/lib/quantity";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { printers } from "@/shared/lib/printers";
 import type { CalculatorState } from "@/shared/stores/calculatorStore.types";
@@ -33,10 +34,7 @@ export type WizardStep = 1 | 2 | 3 | 4;
 export type WizardDirection = "forward" | "backward";
 /** Validation kinds the UI renders via `t("wizard.errors.<kind>")`. */
 export type WizardErrorKind =
-  | "required"
-  | "positive"
-  | "minQuantity"
-  | "invalidQuantity";
+  "required" | "positive" | "minQuantity" | "invalidQuantity";
 
 export const WIZARD_TOTAL_STEPS = 4;
 export const WIZARD_STEPS: readonly WizardStep[] = [1, 2, 3, 4];
@@ -77,7 +75,10 @@ interface WizardState {
 
   /** Seed the draft from the current calculator values (idempotent per session). */
   start: () => void;
-  setField: <K extends keyof WizardDraft>(key: K, value: WizardDraft[K]) => void;
+  setField: <K extends keyof WizardDraft>(
+    key: K,
+    value: WizardDraft[K],
+  ) => void;
   /** Validate one step; records its errors and returns whether it is clean. */
   validateStep: (step: WizardStep) => boolean;
   /** Validate, commit, advance. Returns whether it advanced. */
@@ -148,6 +149,7 @@ const STEP_FIELDS: Record<WizardStep, (keyof WizardDraft)[]> = {
 function fieldError(
   key: keyof WizardDraft,
   value: unknown,
+  printerIds: ReadonlySet<string>,
 ): WizardErrorKind | null {
   switch (key) {
     case "materialType":
@@ -156,7 +158,7 @@ function fieldError(
         : "required";
     case "printerId":
       if (typeof value !== "string" || value.length === 0) return "required";
-      return printers.some((p) => p.id === value) ? null : "required";
+      return printerIds.has(value) ? null : "required";
     case "quantity":
       return isValidQuantity(value) ? null : "invalidQuantity";
     case "weightGrams":
@@ -178,13 +180,20 @@ function fieldError(
 function validateDraft(
   draft: WizardDraft,
   step: WizardStep,
+  printerIds: ReadonlySet<string>,
 ): Partial<Record<keyof WizardDraft, WizardErrorKind>> {
   const errors: Partial<Record<keyof WizardDraft, WizardErrorKind>> = {};
   for (const field of STEP_FIELDS[step]) {
-    const kind = fieldError(field, draft[field]);
+    const kind = fieldError(field, draft[field], printerIds);
     if (kind) errors[field] = kind;
   }
   return errors;
+}
+
+function getCatalogPrinterIds(): Set<string> {
+  return new Set(
+    useCatalogStore.getState().printers.map((printer) => printer.id),
+  );
 }
 
 function isEmpty(errors: Record<string, unknown>): boolean {
@@ -221,7 +230,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     }),
 
   validateStep: (step) => {
-    const errors = validateDraft(get().draft, step);
+    const errors = validateDraft(get().draft, step, getCatalogPrinterIds());
     set({ errors });
     return isEmpty(errors);
   },
@@ -229,7 +238,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   next: () => {
     const { step, draft } = get();
     if (step >= WIZARD_TOTAL_STEPS) return false;
-    const errors = validateDraft(draft, step);
+    const errors = validateDraft(draft, step, getCatalogPrinterIds());
     if (!isEmpty(errors)) {
       set({ errors });
       return false;
@@ -252,6 +261,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
 
   goTo: (target) => {
     const { step, draft } = get();
+    const printerIds = getCatalogPrinterIds();
     if (target === step) return;
     if (target < step) {
       set({ step: target, direction: "backward", errors: {} });
@@ -259,7 +269,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     }
     // Forward jumps must clear every step they skip; land on the first offender.
     for (let s = step; s < target; s++) {
-      const errors = validateDraft(draft, s as WizardStep);
+      const errors = validateDraft(draft, s as WizardStep, printerIds);
       if (!isEmpty(errors)) {
         set({ step: s as WizardStep, direction: "forward", errors });
         return;
@@ -272,7 +282,8 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     const d = get().draft;
     const calc = useCalculatorStore.getState();
     const printer =
-      printers.find((p) => p.id === d.printerId) ?? calc.selectedPrinter;
+      useCatalogStore.getState().printers.find((p) => p.id === d.printerId) ??
+      calc.selectedPrinter;
 
     // Order matters: print params are set BEFORE the printer so the catalog's
     // power figure wins the merge inside setSelectedPrinter (it also derives

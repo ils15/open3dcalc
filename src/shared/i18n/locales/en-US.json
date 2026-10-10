@@ -2716,7 +2716,10 @@
       "weightGrams": { "label": "Part weight", "unit": "g" },
       "costPerKg": { "label": "Spool price", "unit": "/kg" },
       "quantity": { "label": "Quantity" },
-      "printer": { "label": "Printer" },
+      "printer": {
+        "label": "Printer",
+        "manage": "Manage or add printers"
+      },
       "printTimeHours": { "label": "Print time", "unit": "h" },
       "energyCostPerKwh": { "label": "Energy per kWh", "unit": "/kWh" },
       "setupTimeMinutes": { "label": "Setup time", "unit": "min" },

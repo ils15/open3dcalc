@@ -12,7 +12,13 @@ import { Step2Printer } from "./steps/Step2Printer";
 import { Step3Labor } from "./steps/Step3Labor";
 import { Step4Result } from "./steps/Step4Result";
 
-export function GuidedWizard(): React.ReactElement {
+export interface GuidedWizardProps {
+  onManagePrinters?: () => void;
+}
+
+export function GuidedWizard({
+  onManagePrinters,
+}: GuidedWizardProps = {}): React.ReactElement {
   const { t } = useTranslation();
   const prefersReducedMotion = useReducedMotion();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -57,7 +63,12 @@ export function GuidedWizard(): React.ReactElement {
         );
       case 2:
         return (
-          <Step2Printer draft={draft} errors={errors} setField={setField} />
+          <Step2Printer
+            draft={draft}
+            errors={errors}
+            setField={setField}
+            onManagePrinters={onManagePrinters}
+          />
         );
       case 3:
         return (

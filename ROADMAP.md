@@ -538,6 +538,7 @@ Every phase and change must complete this checklist:
 **Entregue:**
 
 - [x] Thumbnails no `Select`, com fallback de monograma marcado como decorativo por `aria-hidden`.
+- [x] O passo de impressora do Guiado lê o mesmo catálogo pessoal/biblioteca do Clássico e Bento, permite busca por marca/modelo e encaminha a Cadastros para adicionar ou gerenciar perfis.
 - [x] Enrichment de 70 das 103 impressoras com dados técnicos CC-BY-4.0 do swordlab.
 - [x] Dados econômicos existentes preservados: o enrichment nunca sobrescreve preço ou outros valores comerciais.
 - [x] `docs/CREDITS.md` com a atribuição da fonte.
@@ -552,6 +553,7 @@ Every phase and change must complete this checklist:
 **Acceptance criteria:**
 
 - [x] O fallback de monograma não é anunciado como informação por leitores de tela.
+- [x] Impressoras pessoais cadastradas são selecionáveis e válidas no fluxo Guiado, e mantêm potência/depreciação ao aplicar o perfil.
 - [ ] Nenhuma entrada do catálogo renderiza uma imagem quebrada.
 - [x] Nenhuma foto de fabricante ou logotipo registrado entra no repositório sem permissão documentada.
 - [ ] Os assets de `public/` permanecem fora do bundle JavaScript e sob carregamento tardio.

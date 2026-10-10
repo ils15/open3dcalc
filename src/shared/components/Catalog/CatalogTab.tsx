@@ -8,6 +8,7 @@ import { InputGroup } from "@/shared/components/ui/InputGroup";
 import { Select } from "@/shared/components/ui/Select";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { printers } from "@/shared/lib/printers";
+import { isPersonalPrinter } from "@/shared/lib/printerCatalog";
 import { materials } from "@/shared/lib/materials";
 import { marketplaces } from "@/shared/lib/marketplace";
 import {
@@ -28,15 +29,6 @@ import type { CatalogPrinter } from "@/shared/stores/catalogStore";
 type Section = "printers" | "materials" | "marketplaces";
 
 const uid = () => Math.random().toString(36).slice(2, 9);
-const BUILTIN_PRINTER_IDS = new Set(printers.map((printer) => printer.id));
-
-function isPersonalPrinter(printer: CatalogPrinter): boolean {
-  return (
-    printer.custom === true ||
-    (printer.custom === undefined && !BUILTIN_PRINTER_IDS.has(printer.id))
-  );
-}
-
 const SHIPPED_PRINTER_IMAGE_PATHS = new Set([
   "/images/printers/fallback-fdm.svg",
   "/images/printers/fallback-resin.svg",

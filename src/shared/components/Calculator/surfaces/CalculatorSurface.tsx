@@ -11,12 +11,18 @@ import { GuidedSurface } from "./GuidedSurface";
  * five-card grid. The classic mode must keep rendering ClassicSurface verbatim
  * (behavior parity is locked by tabsParity/TabletOptimization tests).
  */
-export function CalculatorSurface(): React.ReactElement {
+export interface CalculatorSurfaceProps {
+  onManagePrinters?: () => void;
+}
+
+export function CalculatorSurface({
+  onManagePrinters,
+}: CalculatorSurfaceProps): React.ReactElement {
   const layoutMode = useLayoutStore((state) => state.layoutMode);
 
   switch (layoutMode) {
     case "guided":
-      return <GuidedSurface />;
+      return <GuidedSurface onManagePrinters={onManagePrinters} />;
     case "bento":
       return <BentoSurface />;
     case "classic":
