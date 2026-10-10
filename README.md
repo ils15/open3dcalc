@@ -64,6 +64,14 @@ ou apagar. Dados históricos do
 cofre `open3dcalc_pii_vault` são inertes: não são abertos, lidos, convertidos nem incluídos na
 exclusão atual de dados; seus bytes podem permanecer no perfil.
 
+**Próxima Beta (trabalho em andamento, ainda não disponível):** o destino aprovado é aceitar
+dados reais com armazenamento local criptografado, migração V1→V2 visível e recuperação
+criptografada. A política acima descreve o runtime atual; não use a Beta publicada para dados
+reais. A decisão, o inventário-alvo e os critérios estão em [ADR-004](docs/privacy/ADR-004-real-data-v2.md),
+[SPEC-01 V2 Candidate](docs/privacy/SPEC-01-v2-candidate.md) e
+[SPEC-05](docs/privacy/SPEC-05-v1-to-v2-migration.md). Só anunciaremos suporte depois que os
+gates de Web, PWA e Desktop passarem.
+
 O Open3DCalc é **local-first** para os dados de cálculo salvos no dispositivo, mas não é correto afirmar que o aplicativo nunca acessa a rede: a versão web/PWA busca recursos e atualizações no serviço de hospedagem, o desktop verifica atualizações publicadas no GitHub Releases e o link do WhatsApp só abre quando acionado pelo usuário — nesse caso, o texto da proposta é enviado ao serviço do WhatsApp. Esses fluxos são separados do assistente local descrito abaixo. A partir da v1.12, a política de privacidade (LGPD) é executada pelo próprio aplicativo:
 
 - **Assistente local (Copilot)** — as dicas por material usam heurísticas locais, a proposta de venda é um template local e os números vêm da calculadora. Não há geração por IA, chamada a provedor de IA, leitura/armazenamento de chave de API nem transferência de dados do projeto ou chaves para serviços de IA. Uma chave eventualmente salva por uma versão beta antiga é ignorada pelo assistente atual. Ao abrir a proposta pelo link do WhatsApp, o texto é compartilhado com o WhatsApp por escolha do usuário.

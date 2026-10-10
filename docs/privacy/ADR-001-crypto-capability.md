@@ -18,8 +18,20 @@ including its password, algorithms, integrity checks, and limits, is explicitly 
 The export password never gates a local save. `contract_performance` is provisional and
 requires qualified legal review; this ADR makes no legal determination.
 
+### Next V2 candidate amendment — ADR-004
+
+The paragraph above describes the current policy-1.9 runtime only. For a future V2 candidate,
+[ADR-004](ADR-004-real-data-v2.md) restores a reviewed local encryption boundary: every
+manifest entry classified as user content or personal data is encrypted before durable Web,
+PWA, or Desktop persistence, with no plaintext fallback. Web uses the existing authenticated
+Web Crypto envelope in a new IndexedDB namespace; Desktop must pass the real OS-keyring gate
+or use an explicit session passphrase. Unsupported capability means no sensitive save.
+This amendment does not make the current runtime compliant and does not permit ordinary
+startup to open the retired `open3dcalc_pii_vault` database. Backup, restore, explicit
+migration, deletion, and release criteria are governed by ADR-004 and SPEC-05.
+
 **Track:** D1 — Privacy & Data Contracts
-**Status:** Superseded for local at-rest storage by approved policy 1.9; SPEC-03 export crypto retained
+**Status:** Policy 1.9 describes the current runtime; ADR-004 governs the next V2 candidate; SPEC-03 export crypto retained
 **Addresses findings:** R3 (PII at-rest), R7 (web/PWA crypto)
 **Related:** ADR-002 (legacy plaintext quarantine), SPEC-01 (manifest), SPEC-03 (export envelope)
 

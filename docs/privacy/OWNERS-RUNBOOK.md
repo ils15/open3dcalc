@@ -4,6 +4,11 @@
 **Review gates:** Themis review and explicit owner approval before promotion.
 **Scope:** Stable/Desktop direct local plaintext, unchanged Web-Beta restrictions, current-owned-data deletion, retained encrypted export.
 
+**Candidate status:** This runbook section records the shipped/current policy 1.9 behavior.
+The next V2 real-data candidate is separately governed by ADR-004, SPEC-01 V2 Candidate,
+SPEC-05, and TEST-MATRIX §9. Do not apply the 1.9 artifact rules below to that candidate or
+describe `v2.0.0-beta.15` as supporting real data.
+
 ## 1. Approved policy and consequences
 
 - Stable Web/PWA and Desktop directly persist only the three PII keys declared in SPEC-01
@@ -42,6 +47,31 @@
 
 Never use this policy change as authorization for a data-format migration. Avoid changing
 encrypted-entry versions: policy 1.9 is not an encrypted-format migration.
+
+## 2A. Next V2 candidate release path
+
+The approved product direction is not a release authorization. Follow the S0 → S1 → S2 order
+in the integration roadmap and keep each slice in its own branch/PR:
+
+1. **S0 contract:** reconcile the current 1.9 record with ADR-004/SPEC-01 V2 Candidate/SPEC-05;
+   inventory exact data classes, stores, envelopes, source formats, Desktop capability,
+   backup, deletion, and user disclosures. No real profile may be inspected for this work.
+2. **S1 encrypted persistence:** update the candidate manifest/schema and encrypt all durable
+   user content on Web/PWA/Desktop, with passphrase/keyring gates and no plaintext fallback.
+   Add user-triggered encrypted backup/restore and exact-scope deletion. Keep all legacy
+   sources intact; do not enable migration readers in this slice.
+3. **S2 explicit migration:** use only the reviewed versioned source registry; preview, copy,
+   verify encrypted destination, report, then offer exact-source cleanup as a separate user
+   action. No startup scan, prefix sweep, or source deletion on cancel/failure/crash.
+4. **Candidate release:** run the complete §9 matrix against the exact Beta, Stable Web/PWA,
+   and Desktop build configurations. Release notes and first-run disclosure must match each
+   target's measured behavior. If a target or source is unsupported, name it and leave its
+   bytes untouched; do not claim full migration or real-data support for that target.
+
+S1/S2 are hard gates for a Beta that invites users to enter real workshop data. Dashboard,
+navigation, calculator parity, marketplace, and printer-library slices may be developed in
+parallel branches, but must not be included in the real-data candidate before their own plan
+gates pass and the S1/S2 contract remains intact.
 
 ## 3. Verification checklist
 
