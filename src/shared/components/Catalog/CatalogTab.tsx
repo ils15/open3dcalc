@@ -21,6 +21,7 @@ import {
   X,
   Zap,
   ArrowLeft,
+  Store,
 } from "lucide-react";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import type { PrinterProfile } from "@/shared/types";
@@ -33,16 +34,36 @@ const SHIPPED_PRINTER_IMAGE_PATHS = new Set([
   "/images/printers/fallback-fdm.svg",
   "/images/printers/fallback-resin.svg",
 ]);
+const SHIPPED_MARKETPLACE_IMAGE_PATHS = new Set(
+  marketplaces.flatMap((marketplace) =>
+    marketplace.logo ? [marketplace.logo] : [],
+  ),
+);
+const PRINTER_FALLBACK_IMAGES = {
+  fdm: "/images/printers/fallback-fdm.svg",
+  resin: "/images/printers/fallback-resin.svg",
+} as const;
 
-function getImageSource(source: string | undefined): string | null {
+function resolveCatalogImageSource(
+  source: string | undefined,
+  allowedSources: ReadonlySet<string>,
+): string | null {
   const normalizedSource = source?.trim();
-  if (!normalizedSource || !SHIPPED_PRINTER_IMAGE_PATHS.has(normalizedSource)) {
+  if (!normalizedSource || !allowedSources.has(normalizedSource)) {
     return null;
   }
 
   const baseUrl = import.meta.env.BASE_URL;
   if (baseUrl === "/") return normalizedSource;
   return `${baseUrl.replace(/\/?$/, "/")}${normalizedSource.slice(1)}`;
+}
+
+function getImageSource(source: string | undefined): string | null {
+  return resolveCatalogImageSource(source, SHIPPED_PRINTER_IMAGE_PATHS);
+}
+
+function getMarketplaceImageSource(source: string | undefined): string | null {
+  return resolveCatalogImageSource(source, SHIPPED_MARKETPLACE_IMAGE_PATHS);
 }
 
 interface CatalogCardProps {
@@ -136,18 +157,20 @@ function CatalogSectionLayout({
 
 interface PrinterThumbnailProps {
   source?: string;
-  name: string;
+  technology?: PrinterProfile["technology"];
   className?: string;
 }
 
 function PrinterThumbnail({
   source,
-  name,
+  technology,
   className = "",
 }: PrinterThumbnailProps) {
   const { t } = useTranslation();
   const [failedSource, setFailedSource] = useState<string | null>(null);
-  const imageSource = getImageSource(source) ?? "";
+  const fallbackPath = technology ? PRINTER_FALLBACK_IMAGES[technology] : null;
+  const imageSource =
+    getImageSource(source) ?? getImageSource(fallbackPath ?? undefined) ?? "";
   const showImage = Boolean(imageSource) && failedSource !== imageSource;
 
   return (
@@ -157,7 +180,8 @@ function PrinterThumbnail({
       {showImage ? (
         <img
           src={imageSource}
-          alt={name}
+          alt=""
+          aria-hidden="true"
           loading="lazy"
           decoding="async"
           onError={() => setFailedSource(imageSource)}
@@ -171,6 +195,38 @@ function PrinterThumbnail({
         >
           <PrinterIcon aria-hidden="true" className="h-5 w-5" />
         </span>
+      )}
+    </span>
+  );
+}
+
+function MarketplaceThumbnail({
+  source,
+  className = "",
+}: {
+  source?: string;
+  className?: string;
+}) {
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  const imageSource = getMarketplaceImageSource(source) ?? "";
+  const showImage = Boolean(imageSource) && failedSource !== imageSource;
+
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] ${className}`}
+    >
+      {showImage ? (
+        <img
+          src={imageSource}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailedSource(imageSource)}
+          className="h-full w-full object-contain p-1"
+        />
+      ) : (
+        <Store className="h-5 w-5" />
       )}
     </span>
   );
@@ -1081,7 +1137,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                       <div>
                         <PrinterThumbnail
                           source={preset.image}
-                          name={preset.name}
+                          technology={preset.technology}
                           className="mb-3 h-20 w-full"
                         />
                         <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -1310,7 +1366,7 @@ function PrinterProfileCard({
         <div className="flex min-w-0 items-center gap-2">
           <PrinterThumbnail
             source={printer.image}
-            name={printer.name}
+            technology={printer.technology}
             className="h-14 w-14"
           />
           <div className="min-w-0">
@@ -1584,10 +1640,10 @@ function MarketplaceManager() {
 
   const filteredMarketplaces = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
-    return store.marketplaces.filter(
-      (marketplace) =>
-        !query || marketplace.name.toLocaleLowerCase().includes(query),
-    );
+    return store.marketplaces.filter((marketplace) => {
+      const searchable = `${marketplace.name} ${marketplace.feePercent}% ${marketplace.feeFixed}`;
+      return !query || searchable.toLocaleLowerCase().includes(query);
+    });
   }, [search, store.marketplaces]);
 
   const add = () => {
@@ -1626,14 +1682,21 @@ function MarketplaceManager() {
               }
             }}
             options={[
-              { label: t("catalog.customMarketplace"), value: "" },
+              {
+                label: t("catalog.customMarketplace"),
+                value: "",
+                group: t("catalog.marketplaceManualGroup"),
+              },
               ...marketplaces.map((m) => ({
                 label: m.name,
                 value: m.id,
+                image: getMarketplaceImageSource(m.logo) ?? undefined,
+                group: t("catalog.marketplaceLibrary"),
                 subtitle: `${m.feePercent}% + ${currencySymbol}${m.feeFixed}`,
               })),
             ]}
             search
+            groups
           />
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -1694,29 +1757,49 @@ function MarketplaceManager() {
     >
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {filteredMarketplaces.map((m) => (
-          <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="font-semibold text-[var(--color-text-primary)]">
+          <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <MarketplaceThumbnail source={m.logo} className="h-12 w-12" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-semibold text-[var(--color-text-primary)]">
                   {m.name}
                 </div>
-              </div>
-              {m.custom && (
-                /* contrast-site: catalog-tab-marketplace-custom-badge */
-                <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)]">
-                  Custom
+                <span
+                  className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                    m.custom
+                      ? "border-[var(--color-accent-muted)] bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
+                      : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]"
+                  }`}
+                >
+                  {m.custom
+                    ? t("catalog.customMarketplace")
+                    : t("catalog.defaultMarketplace")}
                 </span>
-              )}
+              </div>
             </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {t("catalog.fee")}: {m.feePercent}% + {currencySymbol}{" "}
-              {m.feeFixed}
-            </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {m.hasFreeShipping
-                ? t("catalog.hasFreeShipping")
-                : t("catalog.noFreeShipping")}
-            </div>
+            <dl className="grid grid-cols-2 gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 text-xs">
+              <div>
+                <dt className="text-[10px] text-[var(--color-text-muted)]">
+                  {t("catalog.feePercent")}
+                </dt>
+                <dd className="font-semibold text-[var(--color-text-primary)]">
+                  {m.feePercent}%
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[10px] text-[var(--color-text-muted)]">
+                  {t("catalog.feeFixed")}
+                </dt>
+                <dd className="font-semibold text-[var(--color-text-primary)]">
+                  {currencySymbol} {m.feeFixed}
+                </dd>
+              </div>
+              <div className="col-span-2 border-t border-[var(--color-border)] pt-2 text-[var(--color-text-secondary)]">
+                {m.hasFreeShipping
+                  ? t("catalog.hasFreeShipping")
+                  : t("catalog.noFreeShipping")}
+              </div>
+            </dl>
             {m.custom && (
               <button
                 onClick={() => store.removeMarketplace(m.id)}

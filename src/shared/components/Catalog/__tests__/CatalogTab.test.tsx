@@ -10,6 +10,7 @@ import { resolve } from "node:path";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { printers } from "@/shared/lib/printers";
+import { marketplaces as builtInMarketplaces } from "@/shared/lib/marketplace";
 import { CatalogTab } from "../CatalogTab";
 
 // Mock stores
@@ -315,14 +316,13 @@ describe("CatalogTab", () => {
     const imageCard = screen.getByRole("article", {
       name: "Image Printer Maker",
     });
-    expect(
-      within(imageCard).queryByRole("img", { name: "Image Printer" }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(imageCard).getByRole("img", {
-        name: "catalog.imageUnavailable",
-      }),
-    ).toBeInTheDocument();
+    const printerImage = imageCard.querySelector("img");
+    expect(printerImage).toHaveAttribute(
+      "src",
+      "/images/printers/fallback-fdm.svg",
+    );
+    expect(printerImage).toHaveAttribute("loading", "lazy");
+    expect(printerImage).toHaveAttribute("aria-hidden", "true");
     const fdmBadge = within(imageCard).getByText("catalog.fdm");
     expect(fdmBadge).toHaveClass(
       "border-[var(--color-accent-muted)]",
@@ -397,12 +397,82 @@ describe("CatalogTab", () => {
       const presetCard = presetCards.get(printer.name);
       expect(presetCard).toBeDefined();
       if (!presetCard) throw new Error(`Preset missing: ${printer.name}`);
+      const thumbnail = presetCard.querySelector("img");
+      if (printer.technology === "fdm" || printer.technology === "resin") {
+        expect(thumbnail).toHaveAttribute(
+          "src",
+          `/images/printers/fallback-${printer.technology}.svg`,
+        );
+        expect(thumbnail).toHaveAttribute("loading", "lazy");
+      } else {
+        expect(thumbnail).toBeNull();
+        expect(
+          within(presetCard).getByRole("img", {
+            name: "catalog.imageUnavailable",
+          }),
+        ).toBeInTheDocument();
+      }
+    }
+  });
+
+  it("shows original marketplace artwork and separates custom profiles visually", () => {
+    const directSale = builtInMarketplaces.find(
+      (marketplace) => marketplace.id === "direct",
+    );
+    expect(directSale).toBeDefined();
+    if (!directSale) throw new Error("Built-in direct sale profile is missing");
+    mockCatalog.marketplaces = [
+      { ...directSale },
+      {
+        id: "fee-template-local",
+        name: "Local Pickup",
+        feePercent: 0,
+        feeFixed: 0,
+        hasFreeShipping: false,
+        custom: true,
+      },
+    ];
+
+    render(<CatalogTab />);
+    fireEvent.click(screen.getByRole("tab", { name: "catalog.marketplaces" }));
+
+    const directCard = screen.getByRole("article", { name: "Venda Direta" });
+    const logo = directCard.querySelector("img");
+    expect(logo).toHaveAttribute("src", "/images/marketplaces/direct.svg");
+    expect(logo).toHaveAttribute("loading", "lazy");
+    expect(logo).toHaveAttribute("alt", "");
+    expect(
+      within(directCard).getByText("catalog.defaultMarketplace"),
+    ).toBeInTheDocument();
+
+    const customCard = screen.getByRole("article", { name: "Local Pickup" });
+    expect(customCard.querySelector("img")).toBeNull();
+    expect(
+      within(customCard).getByText("catalog.customMarketplace"),
+    ).toBeInTheDocument();
+  });
+
+  it("resolves marketplace art under the production relative base URL", () => {
+    const directSale = builtInMarketplaces.find(
+      (marketplace) => marketplace.id === "direct",
+    );
+    expect(directSale).toBeDefined();
+    if (!directSale) throw new Error("Built-in direct sale profile is missing");
+    mockCatalog.marketplaces = [{ ...directSale }];
+    vi.stubEnv("BASE_URL", "./");
+
+    try {
+      render(<CatalogTab />);
+      fireEvent.click(
+        screen.getByRole("tab", { name: "catalog.marketplaces" }),
+      );
       expect(
-        within(presetCard).getByRole("img", {
-          name: "catalog.imageUnavailable",
-        }),
-      ).toBeInTheDocument();
-      expect(presetCard.querySelector("img")).toBeNull();
+        screen
+          .getByRole("article", { name: "Venda Direta" })
+          .querySelector("img"),
+      ).toHaveAttribute("src", "./images/marketplaces/direct.svg");
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 
@@ -424,11 +494,13 @@ describe("CatalogTab", () => {
     try {
       render(<CatalogTab />);
 
-      expect(
-        within(
-          screen.getByRole("article", { name: /Relative Base Printer/ }),
-        ).getByRole("img", { name: "Relative Base Printer" }),
-      ).toHaveAttribute("src", "./images/printers/fallback-fdm.svg");
+      const thumbnail = screen
+        .getByRole("article", { name: /Relative Base Printer/ })
+        .querySelector("img");
+      expect(thumbnail).toHaveAttribute(
+        "src",
+        "./images/printers/fallback-fdm.svg",
+      );
     } finally {
       vi.unstubAllEnvs();
     }
