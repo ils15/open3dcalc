@@ -17,7 +17,7 @@ export function ProductName() {
     <div className="calculator-product-name surface rounded-xl px-3 py-2.5 sm:px-4">
       <label
         htmlFor={id}
-        className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
+        className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
       >
         {t("calc.productIdentity")}
       </label>

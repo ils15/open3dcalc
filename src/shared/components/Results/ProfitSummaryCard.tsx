@@ -45,7 +45,7 @@ export function ProfitSummaryCard({
         className={`rounded-xl p-3 sm:p-5 ${profitSurfaceClass} text-center`}
       >
         <div
-          className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-widest ${profitTextClass}/70 mb-0.5 sm:mb-1`}
+          className={`text-[10px] sm:text-[11px] font-bold uppercase tracking-wide ${profitTextClass}/70 mb-0.5 sm:mb-1`}
         >
           {t("calc.profit")}
         </div>
@@ -71,7 +71,7 @@ export function ProfitSummaryCard({
         aria-label={`${t("calc.totalCost")}: ${fmtCurrency(totalCost)}`}
         className="rounded-xl p-3 sm:p-5 bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center"
       >
-        <div className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] mb-0.5 sm:mb-1">
+        <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-0.5 sm:mb-1">
           {t("calc.totalCost")}
         </div>
         <div className="text-base sm:text-xl font-black text-[var(--cost)] font-mono">

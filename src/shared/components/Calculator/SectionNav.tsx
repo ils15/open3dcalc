@@ -72,7 +72,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
 
       {/* Desktop sidebar — icon + label + cost toggle dot */}
       <nav className="calculator-section-nav hidden lg:flex flex-col gap-0.5 w-28 shrink-0 sticky top-0 h-[calc(100vh-40px)] overflow-y-auto">
-        <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 ml-1">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-1 ml-1">
           {t("sections.title")}
         </div>
         {visibleSections.map((s) => {
@@ -100,7 +100,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
                 title={t(s.label)}
               >
                 {step !== undefined && <StepBadge step={step} size="sm" />}
-                <span className="min-w-0 truncate text-[10px] font-medium leading-tight">
+                <span className="min-w-0 truncate text-xs font-medium leading-tight">
                   {t(s.shortKey)}
                 </span>
               </button>
