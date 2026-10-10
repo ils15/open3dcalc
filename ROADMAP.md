@@ -31,7 +31,31 @@ As observações abaixo registram a auditoria daquela publicação e não devem 
 - Os gates PII/export existentes não completam a checklist transversal LGPD das linhas 76–98.
 - Em 7q, IA, frota fora desta fase e vínculo cliente já têm decisão; continuam abertas a unidade de `usefulLife` e a formalização da decisão sobre `Example`. Coverage da beta.11 não foi medida.
 
+## Plano de integração UX/Dashboard — proposta de 10/10/2026
+
+[Plano detalhado com auditorias GPT Sol e referências oficiais](docs/plans/ux-integracao-dashboard.md).
+A proposta prioriza corrigir números/filtros do Dashboard, unificar navegação e biblioteca,
+melhorar seletores em todos os modos e completar o retorno produto → calculadora.
+Três grupos de tarefas (Calcular, Oficina e Vender) são uma proposta a reconciliar com
+os cinco destinos vigentes de 7o.2, não uma decisão já implementada. As fatias têm
+aceites e dependências próprios; este registro não fecha gates de compatibilidade,
+privacidade ou publicação.
+
+**Diretriz da pessoa usuária de 10/10/2026 para o próximo destino V2:** suportar dados reais
+com proteção criptográfica local e caminho explícito de migração V1→V2. O perfil test-only
+descrito abaixo é o estado entregue na `beta.15`, não o objetivo do produto nem autorização
+para convidar uso real no código atual. A fatia S0 está consolidando ADR-001/002 e SPEC-01..04
+com os adendos de [ADR-004](docs/privacy/ADR-004-real-data-v2.md),
+[SPEC-01 V2 Candidate](docs/privacy/SPEC-01-v2-candidate.md) e
+[SPEC-05](docs/privacy/SPEC-05-v1-to-v2-migration.md); contratos/documentação não fecham
+gates de runtime. Web Stable, Web Beta/PWA e
+Desktop só recebem suporte a dados reais após persistência criptografada, migração, backup,
+exclusão e recuperação passarem seus gates. O plano detalha a sequência; nenhuma dessas
+capacidades é declarada entregue pelo registro de decisão.
+
 ## Approved Beta test-only strip-down (merged; Beta web published)
+
+**Registro histórico:** esta seção descreve o comportamento aprovado para o build Beta `v2.0.0-beta.15`. Em 10/10/2026 a pessoa usuária definiu que o próximo destino V2 precisa aceitar dados reais com armazenamento local criptografado e migrar dados V1. Portanto, as restrições abaixo continuam verdadeiras para a `beta.15`, mas estão supersedidas como objetivo da próxima V2; não reproduzi-las como aceitação final. A alteração do canal requer revisar suas políticas, manifestos e release gates antes de publicar.
 
 The owner approved D1–D12 for a Web-Beta-only profile intended for synthetic test data. This
 entry records the approved Beta profile and distinguishes it from the Stable/Desktop policy.
@@ -138,9 +162,9 @@ Every phase and change must complete this checklist:
 - [ ] Automated checks confirm that no unapproved PII leaves the device and that logs contain no secrets or excessive PII.
 - [ ] Privacy regression tests pass before the release is approved.
 
-### 🔒 Gate transversal de compatibilidade de dados — v2.0
+### 🔒 Gate transversal de compatibilidade de dados — próxima candidata Beta
 
-**Obrigatório para cada etapa de implementação deste roadmap e como gate de release da Beta 5 e da 2.0.0.** A atualização de v1 para v2 precisa preservar os dados de trabalho da pessoa usuária: nenhuma atualização pode apagar, resetar, sobrescrever silenciosamente ou tornar inacessíveis dados de versões anteriores.
+**Obrigatório para cada etapa de implementação deste roadmap e gate de release da próxima candidata Beta após a `beta.15`.** A atualização de v1 para v2 precisa preservar os dados de trabalho da pessoa usuária: nenhuma atualização pode apagar, resetar, sobrescrever silenciosamente ou tornar inacessíveis dados de versões anteriores. O protocolo normativo de migração explícita está em [SPEC-05](docs/privacy/SPEC-05-v1-to-v2-migration.md); a aprovação de direção está em [ADR-004](docs/privacy/ADR-004-real-data-v2.md).
 
 - [ ] Ler os dados existentes sem perda e preservar as chaves e formatos atuais de armazenamento dos dados centrais; preferir payloads aditivos para novas preferências.
 - [ ] Antes de qualquer escrita ou migração, manter os dados originais recuperáveis por backup ou mecanismo equivalente. Migrações são versionadas, idempotentes, seguras para repetição após interrupção e falham fechadas — nunca fazem reset ou overwrite silencioso.
@@ -149,7 +173,7 @@ Every phase and change must complete this checklist:
 - [ ] Registrar cada chave de persistência nova no SPEC-01 antes de usá-la, com política explícita de sync, exportação e apagamento. Não enfraquecer a política de privacidade nem sincronizar por acidente a visibilidade local das abas.
 - [ ] Tratar preservação de dados em upgrade v1→v2 como requisito. Compatibilidade de downgrade — binários antigos lendo dados gravados pela v2.0 — é uma decisão separada de produto/release e não pode ser afirmada sem implementação e testes próprios.
 - [ ] Até a decisão explícita sobre downgrade, não reescrever destrutivamente chaves anteriores e manter caminho de exportação/backup. Se uma migração exigida não puder ser não destrutiva, adiar a mudança de schema para depois da v2.0.
-- [ ] Bloquear Beta 5 e 2.0.0 se qualquer fixture de versão anterior falhar, houver perda de dados ou permanecer migração destrutiva sem recuperação.
+- [ ] Bloquear a próxima candidata Beta se qualquer fixture de versão anterior falhar, houver perda de dados ou permanecer migração destrutiva sem recuperação.
 
 **Evidência parcial (09/10/2026):** comparação do source da `v1.14.0` com `main` confirmou que os stores Stable de clientes, orçamentos e histórico conservam suas chaves e versões persistidas. `src/shared/lib/__tests__/saveReloadChannels.test.ts` agora exercita fixtures sintéticas v1.14 desses três stores na Stable Web, incluindo hidratação, escrita e recarga. Isso cobre somente esses stores nesse canal e **não fecha** o gate transversal nem substitui a matriz completa de fixtures e superfícies.
 

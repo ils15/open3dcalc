@@ -52,6 +52,10 @@ docs/*
 # ignored quebra o stash interno do lint-staged).
 !docs/privacy/
 !docs/CREDITS.md
+# Plano revisável de UX/Dashboard; outras notas locais continuam ignoradas.
+!docs/plans/
+docs/plans/*
+!docs/plans/ux-integracao-dashboard.md
 
 # Logs
 logs/

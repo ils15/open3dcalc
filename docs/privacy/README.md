@@ -30,6 +30,23 @@ Receipts created under older policies remain historical records and evaluate as
 `policy_mismatch` under policy 1.9. No consent, withdrawal, or receipt action gates current
 local saves. See the dated decision at the start of each superseding ADR/spec below.
 
+## Next V2 candidate — real-data direction approved; not yet shipped
+
+The owner has approved a different destination for the next V2 Beta: real workshop data,
+encrypted local persistence, explicit V1/current-profile migration, encrypted recovery, and
+truthful deletion. The normative target is [ADR-004](ADR-004-real-data-v2.md),
+[SPEC-01 V2 Candidate](SPEC-01-v2-candidate.md), and
+[SPEC-05](SPEC-05-v1-to-v2-migration.md). This decision does not change the current runtime:
+Stable/Desktop still follow policy 1.9 and the published `v2.0.0-beta.15` still has its
+plaintext, test-intended namespace. Do not enter real data in that released Beta. The new
+runtime, manifest, first-run disclosure, and release evidence must be implemented and verified
+before any candidate is described as supporting real data.
+
+ADR-004 supersedes the Beta test-only addenda and policy 1.9 plaintext choices only for that
+future candidate. The historical documents below remain evidence of earlier released
+behavior; they are not authorization to reuse the old plaintext paths or to claim migration
+has occurred.
+
 **Historical D1.0 metadata:** Track D1 (Privacy & Data Contracts), documentation deliverable
 **DRI:** Hermes (backend/data contracts executor)
 **Historical review:** Themis completed 3 document-review rounds (findings R1–R15)
@@ -84,21 +101,24 @@ Those operations are separate from the Copilot's local suggestions.
 
 ## 2. Document index
 
-| File                                      | Purpose                                                                                     | Addresses   |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- |
-| `ADR-001-crypto-capability.md`            | Policy 1.9 direct local plaintext; former at-rest crypto superseded; export crypto retained | R3, R7      |
-| `ADR-002-pii-at-rest-legacy.md`           | Inert historical retention; no inspection, migration, or startup cleanup                    | R3, R11     |
-| `ADR-003-export-vs-backup.md`             | Encrypted logical export vs. diagnostic backup; no vault prerequisite                       | R2, R13     |
-| `SPEC-01-manifest.schema.json`            | Versioned JSON Schema of the per-key/surface/platform data manifest                         | R1, R8      |
-| `SPEC-01-manifest-fixture.json`           | Stable policy 1.9 exact PII scope; synthetic contract fixture                               | R1, R8      |
-| `SPEC-01-beta-test-manifest.schema.json`  | Separate exact-key schema for app-mediated Web Beta storage (synthetic intended use)        | Beta D1, D2 |
-| `SPEC-01-beta-test-manifest-fixture.json` | Three-key, plaintext Web Beta fixture; content is not validated as synthetic                | Beta D1, D2 |
-| `SPEC-02-erasure.md`                      | Deletion limited to current owned data; historical vault excluded; Beta refuses             | R4, R9, R10 |
-| `SPEC-03-export-envelope.md`              | Normative encrypted export envelope: canonicalization, algorithms, limits, atomic IO        | R12         |
-| `SPEC-04-consent-receipt.md`              | Historical receipts; no consent/receipt prerequisite for local saves                        | R5, R14     |
-| `COMPLIANCE-MATRIX.md`                    | Traceability of every finding R1–R15 → document/section → status                            | R1–R15      |
-| `TEST-MATRIX.md`                          | Policy 1.9 direct-save, reload, failure, Beta-boundary, and export tests                    | R6          |
-| `OWNERS-RUNBOOK.md`                       | Policy versioning, verification, and rollback rules                                         | R6, R15     |
+| File                                      | Purpose                                                                               | Addresses   |
+| ----------------------------------------- | ------------------------------------------------------------------------------------- | ----------- |
+| `ADR-001-crypto-capability.md`            | Policy 1.9 runtime record; former at-rest crypto superseded; export crypto retained   | R3, R7      |
+| `ADR-002-pii-at-rest-legacy.md`           | Policy 1.9 runtime record; former quarantine/migration proposal retained historically | R3, R11     |
+| `ADR-003-export-vs-backup.md`             | Encrypted logical export vs. diagnostic backup; 1.9 runtime record                    | R2, R13     |
+| `ADR-004-real-data-v2.md`                 | Approved target for encrypted real-data profiles and explicit migration               | Next V2     |
+| `SPEC-01-v2-candidate.md`                 | Candidate classification and source inventory; runtime manifest remains 1.9           | Next V2     |
+| `SPEC-01-manifest.schema.json`            | Versioned JSON Schema of the per-key/surface/platform data manifest                   | R1, R8      |
+| `SPEC-01-manifest-fixture.json`           | Stable policy 1.9 exact PII scope; synthetic contract fixture                         | R1, R8      |
+| `SPEC-01-beta-test-manifest.schema.json`  | Separate exact-key schema for app-mediated Web Beta storage (synthetic intended use)  | Beta D1, D2 |
+| `SPEC-01-beta-test-manifest-fixture.json` | Three-key, plaintext Web Beta fixture; content is not validated as synthetic          | Beta D1, D2 |
+| `SPEC-02-erasure.md`                      | Deletion limited to current owned data; historical vault excluded; Beta refuses       | R4, R9, R10 |
+| `SPEC-03-export-envelope.md`              | Normative encrypted export envelope: canonicalization, algorithms, limits, atomic IO  | R12         |
+| `SPEC-04-consent-receipt.md`              | Historical receipts; no consent/receipt prerequisite for local saves                  | R5, R14     |
+| `SPEC-05-v1-to-v2-migration.md`           | Exact-source, user-confirmed, lossless V1/current-profile migration gate              | Next V2     |
+| `COMPLIANCE-MATRIX.md`                    | Traceability of every finding R1–R15 → document/section → status                      | R1–R15      |
+| `TEST-MATRIX.md`                          | Policy 1.9 direct-save, reload, failure, Beta-boundary, and export tests              | R6          |
+| `OWNERS-RUNBOOK.md`                       | Policy versioning, verification, and rollback rules                                   | R6, R15     |
 
 Reading order for reviewers: README → COMPLIANCE-MATRIX (map of findings) → ADRs → SPECs →
 TEST-MATRIX → OWNERS-RUNBOOK.

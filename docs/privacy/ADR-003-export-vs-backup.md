@@ -19,6 +19,16 @@ its app-mediated namespace is not a boundary against same-origin code.
 **Addresses findings:** R2 (export lógico vs raw), R13 (raw SQLite diagnóstico)
 **Related:** SPEC-01 (manifest), SPEC-03 (export envelope), ADR-002 (quarantine)
 
+### Next V2 candidate amendment — encrypted recovery is required
+
+The current Beta export refusal above remains a fact about `v2.0.0-beta.15`, not the target
+candidate. ADR-004 requires the next real-data Beta to expose a user-controlled encrypted
+backup/restore flow using the governed SPEC-03 envelope, extended and tested for all
+candidate-manifest data classes. The backup password remains separate from the at-rest
+profile passphrase; neither is sent to a server or stored by the app. Raw SQLite copies stay
+diagnostic-only and are not a substitute for a logical user backup. Any unsupported export
+class must be clearly reported and cannot silently disappear from a claimed full backup.
+
 > **Historical D1.0 proposal below.** The original implementation and release claims describe
 > the D1.0 snapshot, not current runtime status. The policy 1.9 clarification above governs
 > current local saves; only the logical-export/diagnostic-backup distinction remains operative.

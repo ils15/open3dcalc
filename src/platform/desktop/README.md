@@ -54,3 +54,9 @@ their physical keys are `open3dcalc_pwless_customers_v1`, `open3dcalc_pwless_quo
 `open3dcalc_pwless_history_v1` in the SQLite `storage` key/value table. These are the Desktop
 destinations for the corresponding logical keys in the SPEC-01 fixture, not `localStorage`
 rows. No Beta fixture key or Beta build flag enables the test profile in an Electron build.
+
+That is the current runtime, not the target for the next V2 Beta. ADR-004 requires the
+passwordless plaintext route to be replaced with authenticated local encryption and an
+explicit migration path covering supported Desktop V1/V2 records before Desktop may accept
+real operational data under the new policy. The route, migration, recovery, and deletion
+gates are not yet implemented by this documentation change.

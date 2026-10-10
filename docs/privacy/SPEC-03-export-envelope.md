@@ -15,6 +15,19 @@ refuse import/export entirely.
 **Addresses findings:** R12 (envelope normativo completo), R2 (export lógico vs raw)
 **Related:** ADR-001 (crypto), ADR-003 (export vs backup), SPEC-01 (manifest)
 
+## Next V2 candidate amendment — backup/restore required
+
+The refusal above describes the currently released Beta only. ADR-004 requires the next
+real-data candidate to support user-initiated encrypted export and validated import/restore
+for the approved candidate manifest, including Beta-origin data after migration. The format,
+KDF, authenticated envelope, size limits, downgrade checks, and atomicity in this SPEC remain
+the cryptographic baseline; before implementation, the allowlist and payload schemas must be
+amended for every supported user-content record and tested against both current 1.0 bundles
+and the governed 1.1 format. Export uses a separate password and never unlocks or reads the
+retired at-rest vault. Import is previewed/additive by default, validates all fields before
+live writes, and cannot replace a profile without a separate recoverable confirmation. Raw
+SQLite files remain outside this user-facing backup contract.
+
 ## 1. Goal
 
 The user export is a single, fully-specified, encrypted envelope. Any two implementations
