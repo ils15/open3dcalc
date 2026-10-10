@@ -546,21 +546,21 @@ Every phase and change must complete this checklist:
 
 **Pendente:**
 
-- [ ] Reescrita dos cards de `CatalogTab` com thumbnails, badges de tecnologia, arte de marketplace e busca textual.
+- [x] Reescrita dos cards de `CatalogTab` com thumbnails, badges de tecnologia, arte de marketplace e busca textual.
 - [ ] Completar a arte própria e a revisão visual dos assets ainda ausentes.
-- [ ] Confirmar carregamento tardio e ausência de imagens quebradas em todos os estados do catálogo.
+- [x] Confirmar carregamento tardio e ausência de imagens quebradas em todos os estados do catálogo.
 
 **Acceptance criteria:**
 
 - [x] O fallback de monograma não é anunciado como informação por leitores de tela.
 - [x] Impressoras pessoais cadastradas são selecionáveis e válidas no fluxo Guiado, e mantêm potência/depreciação ao aplicar o perfil.
-- [ ] Nenhuma entrada do catálogo renderiza uma imagem quebrada.
+- [x] Nenhuma entrada do catálogo renderiza uma imagem quebrada.
 - [x] Nenhuma foto de fabricante ou logotipo registrado entra no repositório sem permissão documentada.
-- [ ] Os assets de `public/` permanecem fora do bundle JavaScript e sob carregamento tardio.
+- [x] Os assets de `public/` permanecem fora do bundle JavaScript e sob carregamento tardio.
 - [x] O enrichment técnico não altera os dados econômicos existentes.
 
-- [ ] Os dados do catálogo permanecem sem PII e as chaves de catálogo do SPEC-01 não mudam.
-- [ ] Todos os rótulos novos existem em pt-BR e en-US; thumbnails são decorativas ou têm texto alternativo.
+- [x] Os dados do catálogo permanecem sem PII e as chaves de catálogo do SPEC-01 não mudam.
+- [x] Todos os rótulos novos existem em pt-BR e en-US; thumbnails são decorativas ou têm texto alternativo.
 
 ### 🧾 Pipeline e achados técnicos das betas 1 e 2
 
