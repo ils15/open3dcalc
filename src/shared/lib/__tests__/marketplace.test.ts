@@ -57,6 +57,19 @@ describe("getMarketplace", () => {
     expect(result.id).toBe("direct");
     expect(result.name).toBe("Venda Direta");
   });
+
+  it("resolves user-defined marketplace profiles before default profiles", () => {
+    const custom = {
+      id: "my-channel",
+      name: "My Channel",
+      feePercent: 8,
+      feeFixed: 2,
+      hasFreeShipping: false,
+    };
+
+    expect(getMarketplace(custom.id, [custom])).toEqual(custom);
+    expect(getMarketplace("missing", [custom])).toEqual(marketplaces[0]);
+  });
 });
 
 describe("calculateMarketplaceFee", () => {

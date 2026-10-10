@@ -28,8 +28,10 @@ The section mixes logistics, fees and profit:
   beyond the plastic.
 - **Packaging** — box, bubble wrap, tape.
 - **Shipping** — the cost of delivery to the customer.
-- **Marketplace** — the sales platform, picked from the catalog. Each one carries
-  its own percentage fee, filled in automatically.
+- **Marketplace** — the platform fee profile, picked from the catalog. Its
+  percentage fee and fixed per-unit fee are included in the calculated price.
+  It remains available in Quick mode because it changes the suggested price;
+  taxes and markup presets stay in the more detailed levels.
 - **Taxes** — taxes over the sale amount (ICMS, ISS, Simples Nacional).
 - **Markup on cost** — the desired profit percentage over the total cost.
 
@@ -65,8 +67,9 @@ but in a special way, **by division**, so they do not eat your profit:
 ```
 base cost       = production + failures + packaging + shipping
 profit          = base cost * (markup / 100)
-price w/o fees  = base cost + profit
-sale price      = price w/o fees / (1 - (taxes + marketplace fee) / 100)
+price w/o fees  = base cost + profit + fixed fee per unit
+sale price      = price w/o fees / (1 - (taxes + marketplace percentage fee) / 100)
+marketplace fee = sale price * percentage fee + fixed fee per unit
 ```
 
 The division is not a technicality: it is what makes the margin **honored**.
@@ -76,8 +79,8 @@ is exactly the percentage you declared — not a cent less.
 ## A complete numeric example
 
 A part with a R$ 20.00 production cost, R$ 2.00 in failures, R$ 2.00 in packaging
-and R$ 1.00 in shipping, sold on a platform with a 10% fee, with 15% in taxes and
-a 100% markup:
+and R$ 1.00 in shipping, sold on a platform with a 10% fee and R$ 0.00 fixed
+fee, with 15% in taxes and a 100% markup:
 
 ```
 base cost       = 20 + 2 + 2 + 1        = R$ 25.00

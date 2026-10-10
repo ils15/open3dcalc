@@ -129,6 +129,14 @@ describe("CalculatorStore logic", () => {
 
       const after = useCalculatorStore.getState();
       expect(after.selectedMarketplace.id).toBe("etsy");
+      expect(after.fdmSales).toMatchObject({
+        marketplaceFeePercent: 6.5,
+        marketplaceFeeFixed: 3,
+      });
+      expect(after.resinSales).toMatchObject({
+        marketplaceFeePercent: 6.5,
+        marketplaceFeeFixed: 3,
+      });
     });
   });
 

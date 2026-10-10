@@ -156,6 +156,7 @@ export const INTERMEDIATE_FIELDS: Record<string, string[]> = {
     "extrasCost",
     "shippingCost",
     "marketplace",
+    "marketplaceFeePercent",
     "taxPercent",
     "markupPresets",
   ],
@@ -165,7 +166,9 @@ export const BASIC_FIELDS: Record<string, string[]> = {
   material: ["type", "costPerKg", "weightUsed", "costPerLiter", "volumeUsedMl"],
   print: ["printTimeHours", "printerPowerWatts", "energyCostPerKwh"],
   failure: ["failureMode", "failureValue", "riskMultiplier"],
-  sales: ["quantity", "packagingCost", "profitMarginPercent"],
+  // The channel fee changes the suggested price directly, so it remains
+  // visible even in Rápido; taxes and presets stay progressively disclosed.
+  sales: ["quantity", "packagingCost", "profitMarginPercent", "marketplace"],
 };
 
 /**
@@ -202,6 +205,7 @@ export const FIELD_LABELS: Record<string, string> = {
   extrasCost: "calc.extras",
   shippingCost: "calc.shipping",
   marketplace: "calc.marketplace",
+  marketplaceFeePercent: "bento.fields.fee",
   taxPercent: "calc.taxPercent",
   markupPresets: "calc.markupPresets",
 };

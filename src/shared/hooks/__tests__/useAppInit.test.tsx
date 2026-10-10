@@ -12,6 +12,9 @@ const calculatorState = vi.hoisted(() => ({
 const sharedCalculation = vi.hoisted(() => ({
   current: null as Record<string, unknown> | null,
 }));
+const catalogState = vi.hoisted(() => ({
+  marketplaces: [] as Array<Record<string, unknown>>,
+}));
 
 vi.mock("@/shared/lib/manifestStorage", () => ({
   guardedStorage: {
@@ -75,7 +78,14 @@ vi.mock("@/shared/lib/printers", () => ({
     technology: "fdm",
   })),
 }));
-vi.mock("@/shared/lib/marketplace", () => ({ marketplaces: [] }));
+vi.mock("@/shared/lib/marketplace", () => ({
+  marketplaces: [],
+  findMarketplace: (id: string, available: Array<{ id: string }> = []) =>
+    available.find((marketplace) => marketplace.id === id),
+}));
+vi.mock("@/shared/stores/catalogStore", () => ({
+  useCatalogStore: { getState: () => catalogState },
+}));
 vi.mock("@/shared/hooks/useTutorialTabNavigation", () => ({
   useTutorialTabNavigation: vi.fn(),
 }));
@@ -101,6 +111,7 @@ describe("useAppInit tutorial auto-start", () => {
     });
     useHistoryStore.setState({ entries: [] });
     sharedCalculation.current = null;
+    catalogState.marketplaces = [];
     calculatorState.current = null;
     vi.useFakeTimers();
     localStorage.clear();
@@ -177,6 +188,29 @@ describe("useAppInit tutorial auto-start", () => {
         fdmAmsEnabled: false,
         fdmAmsSlots: slots,
       }),
+    );
+    expect(window.location.hash).toBe("");
+  });
+
+  it("restores a user-defined marketplace from the local catalog in a shared calculation", () => {
+    const customMarketplace = {
+      id: "my-store",
+      name: "Minha Loja",
+      feePercent: 8,
+      feeFixed: 2,
+      hasFreeShipping: false,
+    };
+    catalogState.marketplaces = [customMarketplace];
+    sharedCalculation.current = {
+      selectedMarketplaceId: customMarketplace.id,
+      quantity: 1,
+    };
+    window.location.hash = "#shared-calculation";
+
+    renderHook(() => useAppInit(vi.fn()));
+
+    expect(calculatorSetState).toHaveBeenCalledWith(
+      expect.objectContaining({ selectedMarketplace: customMarketplace }),
     );
     expect(window.location.hash).toBe("");
   });

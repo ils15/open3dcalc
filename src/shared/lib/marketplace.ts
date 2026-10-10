@@ -58,8 +58,21 @@ export const marketplaces: Marketplace[] = [
   },
 ];
 
-export function getMarketplace(id: string): Marketplace {
-  return marketplaces.find((m) => m.id === id) ?? marketplaces[0];
+export function findMarketplace(
+  id: string,
+  availableMarketplaces: readonly Marketplace[] = marketplaces,
+): Marketplace | undefined {
+  return (
+    availableMarketplaces.find((m) => m.id === id) ??
+    marketplaces.find((m) => m.id === id)
+  );
+}
+
+export function getMarketplace(
+  id: string,
+  availableMarketplaces: readonly Marketplace[] = marketplaces,
+): Marketplace {
+  return findMarketplace(id, availableMarketplaces) ?? marketplaces[0];
 }
 
 export function calculateMarketplaceFee(

@@ -267,6 +267,8 @@ export interface SalesParameters {
   shippingCost: number;
   taxPercent: number;
   marketplaceFeePercent: number;
+  /** Fixed marketplace fee applied to each calculated unit; absent in legacy saves. */
+  marketplaceFeeFixed?: number;
   profitMarginPercent: number;
   volumeDiscounts: VolumeDiscount[];
 }

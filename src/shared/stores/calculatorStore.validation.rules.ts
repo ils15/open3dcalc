@@ -1,5 +1,8 @@
 import type { VolumeDiscount } from "@/shared/types";
-import type { CalculationValidationIssue, CalculationValidationReason } from "./calculatorStore.validation.types";
+import type {
+  CalculationValidationIssue,
+  CalculationValidationReason,
+} from "./calculatorStore.validation.types";
 
 type NumberRule = {
   kind: "number";
@@ -94,6 +97,7 @@ export const SALES_RULES: FieldRules = {
   shippingCost: number(),
   taxPercent: number({ max: 100 }),
   marketplaceFeePercent: number({ max: 100 }),
+  marketplaceFeeFixed: number({ min: 0 }),
   profitMarginPercent: number(),
 };
 export const OPS_RULES: FieldRules = {
@@ -106,7 +110,10 @@ export const SOFT_RULES: FieldRules = {
   slicerMonthlyCost: number(),
   modelFileCost: number(),
 };
-export const FINISHING_RULES: FieldRules = { enabled: boolean(), suppliesCost: number() };
+export const FINISHING_RULES: FieldRules = {
+  enabled: boolean(),
+  suppliesCost: number(),
+};
 export const FIXED_RULES: FieldRules = {
   enabled: boolean(),
   monthlyCost: number(),
@@ -229,7 +236,10 @@ export function normalizeDiscounts(
     return fallback.map((item) => ({ ...item }));
   }
   return source.map((item, index) => {
-    const fallbackItem = fallback[index] ?? { minQuantity: 0, discountPercent: 0 };
+    const fallbackItem = fallback[index] ?? {
+      minQuantity: 0,
+      discountPercent: 0,
+    };
     return normalizeSlice(
       item,
       fallbackItem,
