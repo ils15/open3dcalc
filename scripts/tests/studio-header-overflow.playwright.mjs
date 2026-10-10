@@ -65,10 +65,14 @@ test("StudioHeader fits the full document at mobile and desktop widths", async (
         );
         const layout = await page.evaluate(() => {
           const header = globalThis.document.querySelector("header");
-          const actions = header?.children[2];
+          const main = globalThis.document.querySelector("main");
+          const actions =
+            header?.querySelector("#studio-currency")?.parentElement;
           return {
             scrollWidth: globalThis.document.documentElement.scrollWidth,
             viewportWidth: globalThis.window.innerWidth,
+            mainScrollWidth: main?.scrollWidth ?? 0,
+            mainClientWidth: main?.clientWidth ?? 0,
             actionGap: actions
               ? globalThis.getComputedStyle(actions).columnGap
               : null,
@@ -83,6 +87,10 @@ test("StudioHeader fits the full document at mobile and desktop widths", async (
         assert.ok(
           layout.scrollWidth <= width,
           `${width}px ${colorScheme} viewport overflow: document scrollWidth=${layout.scrollWidth}`,
+        );
+        assert.ok(
+          layout.mainScrollWidth <= layout.mainClientWidth,
+          `${width}px ${colorScheme} content overflow: main scrollWidth=${layout.mainScrollWidth}, clientWidth=${layout.mainClientWidth}`,
         );
         assert.equal(layout.theme, colorScheme);
         if (width >= 640) assert.equal(layout.actionGap, "8px");
@@ -169,6 +177,19 @@ test("localized Cadastros tabs, keyboard search, and CRUD work in the browser", 
     await marketplaceCard.waitFor({ state: "detached" });
 
     await main.getByRole("tab", { name: "Impressoras" }).click();
+    await main
+      .getByRole("group", { name: "Listas de impressoras" })
+      .getByRole("button", { name: /Minhas impressoras/ })
+      .click();
+    await main.getByRole("button", { name: "Nova impressora" }).first().click();
+    const createPrinter = page.getByRole("dialog").first();
+    await createPrinter
+      .getByPlaceholder(/Buscar por modelo ou marca/)
+      .fill("A1 Mini");
+    await createPrinter
+      .getByRole("button", { name: "Adicionar esta Máquina" })
+      .click();
+    await createPrinter.getByRole("button", { name: "Salvar" }).click();
     const printerSearch = main.getByRole("searchbox", {
       name: "Buscar impressora por nome ou marca",
     });
