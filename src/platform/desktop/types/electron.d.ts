@@ -188,9 +188,11 @@ declare global {
       available: boolean;
       version?: string;
       releaseNotes?: string;
+      /** True when the update must be downloaded manually (unsigned macOS). */
+      manual?: boolean;
     }>;
 
-    /** Start downloading the update. */
+    /** Start downloading the update, or open the release page when manual. */
     download: () => Promise<void>;
 
     /** Install the downloaded update and restart. */
@@ -218,7 +220,11 @@ declare global {
 
     /** Listen for update-available events. Returns an unsubscribe function. */
     onAvailable: (
-      callback: (data: { version: string; releaseNotes?: string }) => void,
+      callback: (data: {
+        version: string;
+        releaseNotes?: string;
+        manual?: boolean;
+      }) => void,
     ) => () => void;
 
     /** Listen for update-downloaded events. Returns an unsubscribe function. */

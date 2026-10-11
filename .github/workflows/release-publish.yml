@@ -31,6 +31,8 @@ jobs:
             target: --win
           - os: ubuntu-latest
             target: --linux
+          - os: macos-latest
+            target: --mac
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:
@@ -171,6 +173,7 @@ jobs:
           set -euo pipefail
           mapfile -t ARTIFACTS < <(find dist-electron -maxdepth 1 -type f \( \
             -name 'Open3DCalc-*.exe' -o -name 'Open3DCalc-*.AppImage' -o \
+            -name 'Open3DCalc-*.dmg' -o -name 'Open3DCalc-*.zip' -o \
             -name 'latest*.yml' -o -name '*.blockmap' \) -print | sort)
           if [ "${#ARTIFACTS[@]}" -eq 0 ]; then
             echo "No release artifacts found." >&2
@@ -265,6 +268,7 @@ jobs:
 
           mapfile -t ARTIFACTS < <(find dist-electron -maxdepth 1 -type f \( \
             -name 'Open3DCalc-*.exe' -o -name 'Open3DCalc-*.AppImage' -o \
+            -name 'Open3DCalc-*.dmg' -o -name 'Open3DCalc-*.zip' -o \
             -name 'latest*.yml' -o -name '*.blockmap' \) -print | sort)
           if [ "${#ARTIFACTS[@]}" -eq 0 ]; then
             echo "Validation failed: no local release artifacts found." >&2

@@ -4,7 +4,7 @@ import type {
   UpdateCheckResult,
   UpdateInfo,
 } from "electron-updater";
-import type { BrowserWindow } from "electron";
+import { shell, type BrowserWindow } from "electron";
 
 const { autoUpdater } = pkg;
 
@@ -49,6 +49,35 @@ autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 
 /**
+ * Releases page used when the update cannot be applied in place. Must match
+ * `build.publish` in package.json and the `v*.*.*` tags from release-publish.
+ */
+const RELEASES_URL = "https://github.com/ils15/open3dcalc/releases";
+
+/**
+ * macOS builds are ad-hoc signed (`identity: "-"`) and not notarized.
+ * Squirrel.Mac refuses to apply an update whose code signature does not
+ * match a Developer ID, so download/install would always fail there. Until
+ * the app is signed, macOS still *checks* for updates but hands the user the
+ * release page to download the new DMG manually.
+ */
+export function isManualUpdate(): boolean {
+  return process.platform === "darwin";
+}
+
+/**
+ * Release page for a version reported by the update feed. The version comes
+ * from the network, so anything that is not a plain semver string falls back
+ * to the releases list instead of being interpolated into the URL.
+ */
+export function getReleaseUrl(version: string | undefined): string {
+  if (version && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?$/.test(version)) {
+    return `${RELEASES_URL}/tag/v${version}`;
+  }
+  return RELEASES_URL;
+}
+
+/**
  * Extract a human-readable release notes string from the UpdateInfo,
  * handling both string and array-of-objects formats.
  */
@@ -80,6 +109,7 @@ function setupEventListeners(): void {
     mainWindow?.webContents.send("update:available", {
       version: info.version,
       releaseNotes: extractReleaseNotes(info.releaseNotes),
+      manual: isManualUpdate(),
     });
   });
 
@@ -215,6 +245,7 @@ export async function checkForUpdates(): Promise<{
   available: boolean;
   version?: string;
   releaseNotes?: string;
+  manual?: boolean;
   error?: string;
 }> {
   let lastError: unknown = null;
@@ -237,6 +268,7 @@ export async function checkForUpdates(): Promise<{
           result.updateInfo.version !== autoUpdater.currentVersion.format(),
         version: result.updateInfo.version,
         releaseNotes: extractReleaseNotes(result.updateInfo.releaseNotes),
+        manual: isManualUpdate(),
       };
     } catch (error: unknown) {
       lastError = error;
@@ -260,10 +292,19 @@ export async function downloadUpdate(): Promise<void> {
       "No update available to download. Call checkForUpdates() first.",
     );
   }
+  if (isManualUpdate()) {
+    await shell.openExternal(
+      getReleaseUrl(updateCheckResult.updateInfo.version),
+    );
+    return;
+  }
   await autoUpdater.downloadUpdate();
 }
 
 export function installUpdate(): void {
+  if (isManualUpdate()) {
+    throw new Error("In-place install is not supported on this platform.");
+  }
   autoUpdater.quitAndInstall(true, true);
 }
 
