@@ -1,11 +1,15 @@
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { MoreMenu } from "@/shared/components/AppShell/MoreMenu";
-import { PRIMARY_TABS, type Tab } from "@/shared/components/AppShell/tabs";
+import {
+  isNavigationTabActive,
+  PRIMARY_TABS,
+  type Tab,
+} from "@/shared/components/AppShell/tabs";
 import { useVisiblePrimaryTabs } from "@/shared/components/AppShell/useVisibleNavigation";
 
 /**
- * Mobile bottom navigation (desktop/Electron) — the five always-available
+ * Mobile bottom navigation (desktop/Electron) — the four always-available
  * primary destinations plus a More disclosure for the demoted surfaces, at the
  * lg breakpoint and with no settings gear. The visible items come from the
  * shared hook, so this bar and the web bar can never show different sets; only
@@ -43,7 +47,7 @@ export function MobileNav({
       <div className="flex overflow-x-auto h-[68px] px-1.5">
         {visiblePrimary.map((id) => {
           const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
-          const isActive = activeTab === tab.id;
+          const isActive = isNavigationTabActive(activeTab, tab.id);
           return (
             <button
               key={tab.id}

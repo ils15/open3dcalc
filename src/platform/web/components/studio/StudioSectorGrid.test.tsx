@@ -44,7 +44,7 @@ describe("Studio sector grid — centered like the Example", () => {
     (file) => {
       const source = read(file);
       expect(source).toMatch(/mx-auto/);
-      expect(source).toMatch(/max-w-7xl/);
+      expect(source).toMatch(/max-w-(?:7xl|\[1920px\])/);
     },
   );
 

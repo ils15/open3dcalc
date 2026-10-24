@@ -1,17 +1,15 @@
-import { CatalogTab } from "@/shared/components/Catalog/CatalogTab";
-import { MarketplaceBrowseTab } from "@/shared/components/Catalog/MarketplaceBrowseTab";
+import { WorkshopHub } from "@/shared/components/Catalog/WorkshopHub";
 import { HistoryTab } from "@/shared/components/Calculator/HistoryTab/HistoryTab";
 import { Dashboard } from "@/shared/components/Dashboard/Dashboard";
 import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
 import { WikiPage } from "@/shared/components/Wiki/WikiPage";
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
-import { SpoolShelf } from "@/shared/components/SpoolShelf/SpoolShelf";
 import { CustomerTab } from "@/shared/components/Catalog/CustomerTab";
 import { StudioQuotesView } from "@/platform/web/components/studio/StudioQuotesView";
 import { StudioProductsView } from "@/platform/web/components/studio/StudioProductsView";
 import { PrivacyScreen } from "@/shared/components/Privacy/PrivacyScreen";
 import { CalculatorSurface } from "@/shared/components/Calculator/surfaces/CalculatorSurface";
-import type { Tab } from "./tabs";
+import { isWorkshopRoute, type Tab } from "./tabs";
 
 /**
  * The tab → surface switch shared by both platforms (V2.0 Wave 1).
@@ -22,6 +20,7 @@ import type { Tab } from "./tabs";
  */
 interface MainContentProps {
   activeTab: Tab;
+  onTabChange: (tab: Tab) => void;
   /** Called when HistoryTab loads an item back into the calculator. */
   onSelectCalculator: () => void;
   /** Opens the printer catalog from the Guided calculator. */
@@ -30,9 +29,12 @@ interface MainContentProps {
 
 export function MainContent({
   activeTab,
+  onTabChange,
   onSelectCalculator,
   onManagePrinters,
 }: MainContentProps): React.ReactElement {
+  const isWorkshop = isWorkshopRoute(activeTab);
+
   return (
     <>
       {activeTab === "calculator" && (
@@ -40,9 +42,9 @@ export function MainContent({
       )}
       {activeTab === "dashboard" && <Dashboard />}
       {activeTab === "infill" && <InfillCalculator />}
-      {activeTab === "inventory" && <SpoolShelf />}
-      {activeTab === "catalog" && <CatalogTab />}
-      {activeTab === "marketplace" && <MarketplaceBrowseTab />}
+      {isWorkshop && (
+        <WorkshopHub activeTab={activeTab} onTabChange={onTabChange} />
+      )}
       {activeTab === "history" && (
         <HistoryTab onLoadToCalculator={onSelectCalculator} />
       )}

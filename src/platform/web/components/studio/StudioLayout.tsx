@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Tab } from "@/shared/components/AppShell/tabs";
+import { isWorkshopRoute, Tab } from "@/shared/components/AppShell/tabs";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { StudioCalculatorModeSelector } from "./StudioCalculatorModeSelector";
@@ -8,7 +8,6 @@ import { StudioHeader } from "./StudioHeader";
 import { StudioSidebar } from "./StudioSidebar";
 import { StudioCockpitDock } from "./StudioCockpitDock";
 import { StudioDashboardView } from "./StudioDashboardView";
-import { StudioSpoolView } from "./StudioSpoolView";
 import { StudioMiniDashOverlay } from "./StudioMiniDashOverlay";
 import { StudioCopilotModal } from "./StudioCopilotModal";
 import { StudioShortcutsModal } from "./StudioShortcutsModal";
@@ -20,8 +19,7 @@ import { StudioProductsView } from "./StudioProductsView";
 
 // Existing shared surfaces for remaining tabs
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
-import { CatalogTab } from "@/shared/components/Catalog/CatalogTab";
-import { MarketplaceBrowseTab } from "@/shared/components/Catalog/MarketplaceBrowseTab";
+import { WorkshopHub } from "@/shared/components/Catalog/WorkshopHub";
 import { WikiPage } from "@/shared/components/Wiki/WikiPage";
 import { ChangelogPage } from "@/shared/components/Changelog/ChangelogPage";
 import { PrivacyScreen } from "@/shared/components/Privacy/PrivacyScreen";
@@ -222,7 +220,7 @@ export const StudioLayout: React.FC = () => {
               `activeTab === …` blocks below stay exactly as they were. */}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={activeTab}
+              key={isWorkshopRoute(activeTab) ? "workshop" : activeTab}
               initial={prefersReduced ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={prefersReduced ? { opacity: 1 } : { opacity: 0, y: -6 }}
@@ -250,34 +248,11 @@ export const StudioLayout: React.FC = () => {
                 </>
               )}
 
-              {activeTab === "inventory" && (
-                <StudioSpoolView onTabChange={setActiveTab} />
+              {(activeTab === "catalog" ||
+                activeTab === "inventory" ||
+                activeTab === "marketplace") && (
+                <WorkshopHub activeTab={activeTab} onTabChange={setActiveTab} />
               )}
-
-              {activeTab === "catalog" && (
-                <div className="flex mx-auto w-full max-w-7xl flex-col gap-6 text-[var(--color-text-primary)]">
-                  <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-accent)] font-bold">
-                        PARÂMETROS DE PRODUÇÃO & TAXAS
-                      </span>
-                    </div>
-                    <h1 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
-                      Cadastros Gerais da Oficina
-                    </h1>
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-                      Gerenciamento de impressoras 3D, especificações de
-                      materiais e taxas de marketplaces
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-6">
-                    <CatalogTab />
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "marketplace" && <MarketplaceBrowseTab />}
 
               {activeTab === "history" && (
                 <StudioHistoryView

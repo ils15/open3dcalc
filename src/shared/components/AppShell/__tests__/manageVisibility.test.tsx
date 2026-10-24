@@ -16,7 +16,7 @@ vi.mock("react-i18next", () => ({
 
 import { ManageVisibilityButton } from "../ManageVisibilityButton";
 import { NavigationProvider } from "../NavigationProvider";
-import { TABS } from "../tabs";
+import { NAVIGATION_TABS } from "../tabs";
 import { useDismissablePopover } from "@/shared/hooks/useDismissablePopover";
 
 /**
@@ -213,7 +213,7 @@ describe("ManageVisibilityButton — the destination list", () => {
     );
 
     const dialog = screen.getByRole("dialog");
-    for (const tab of TABS) {
+    for (const tab of NAVIGATION_TABS) {
       expect(
         within(dialog).getByText(tab.labelKey),
         tab.id,
@@ -229,7 +229,7 @@ describe("ManageVisibilityButton — the destination list", () => {
 
     expect(
       screen.getAllByRole("button", { name: "settings.visibility.hide" }),
-    ).toHaveLength(TABS.length - 1);
+    ).toHaveLength(NAVIGATION_TABS.length - 1);
   });
 
   it("never offers a control for Pricing/Calculator", () => {

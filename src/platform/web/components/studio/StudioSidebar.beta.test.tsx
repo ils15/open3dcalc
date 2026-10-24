@@ -28,9 +28,6 @@ vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
 vi.mock("@/shared/components/Catalog/CatalogTab", () => ({
   CatalogTab: () => null,
 }));
-vi.mock("@/shared/components/Catalog/MarketplaceBrowseTab", () => ({
-  MarketplaceBrowseTab: () => null,
-}));
 vi.mock("@/shared/components/Wiki/WikiPage", () => ({ WikiPage: () => null }));
 vi.mock("@/shared/components/Changelog/ChangelogPage", () => ({
   ChangelogPage: () => null,
@@ -67,6 +64,12 @@ vi.mock("@/shared/stores/layoutStore", () => ({
       setLayoutMode: () => void;
     }) => unknown,
   ) => selector({ layoutMode: "classic", setLayoutMode: vi.fn() }),
+}));
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: "pt-BR" },
+  }),
 }));
 
 import { StudioSidebar } from "./StudioSidebar";
@@ -126,7 +129,7 @@ describe("StudioSidebar Beta touch + scroll (Wave4)", () => {
     const aside = container.querySelector("aside") as HTMLElement;
     expect(aside).not.toBeNull();
     expect(aside.className).not.toMatch(/pb-20/);
-    const btn = screen.getByRole("button", { name: "Calculadora" });
+    const btn = screen.getByRole("button", { name: "nav.calculator" });
     expect(btn.className).toMatch(/min-h-11/);
   });
 
@@ -158,7 +161,7 @@ describe("StudioSidebar Beta touch + scroll (Wave4)", () => {
     expect(bottom.className).toMatch(/shrink-0/);
     expect(screen.queryByText("Moeda Base")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /recolher painel/i }),
+      screen.getByRole("button", { name: /nav\.collapsePanel/i }),
     ).toBeInTheDocument();
   });
 });

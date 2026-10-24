@@ -147,8 +147,8 @@ describe("Studio views — card header scale", () => {
     });
 
     for (const title of [
-      "Dashboard em Tempo Real (Base Limpa)",
-      "Desempenho Financeiro",
+      "Histórico de valores calculados",
+      "Consumo FDM por material",
     ]) {
       const heading = screen.getByRole("heading", { name: title });
       expect(heading.tagName).toBe("H2");

@@ -58,19 +58,17 @@ describe("StudioSubHeader global controls", () => {
     renderSidebar(true);
 
     for (const label of [
-      "Calculadora",
-      "Dashboard",
-      "Calc. Infill",
-      "Insumos",
-      "Cadastros",
-      "Histórico",
-      "Orçamentos",
-      "Clientes",
-      "Produtos",
-      "Privacidade",
-      "Marketplace",
-      "Documentação / Wiki",
-      "Notas de Versão",
+      "nav.calculator",
+      "nav.dashboard",
+      "nav.infill",
+      "nav.catalog",
+      "nav.history",
+      "nav.quotes",
+      "nav.customers",
+      "nav.products",
+      "nav.privacy",
+      "nav.docsWiki",
+      "nav.releaseNotes",
     ]) {
       const destination = screen.getByRole("button", { name: label });
       expect(destination).toHaveClass("min-h-11", "min-w-11");

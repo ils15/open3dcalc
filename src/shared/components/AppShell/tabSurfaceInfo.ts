@@ -15,9 +15,10 @@ import { TABS, type Tab } from "./tabs";
  * also leaves the ten-tab contract in `tabs.tsx` byte-identical, which is the
  * surface `tabsParity` and `tutorialTours` both speak.
  *
- * `titleKey` is therefore DERIVED from `TabEntry.labelKey` rather than
- * restated, so the breadcrumb title cannot drift from the label the nav already
- * renders. Only the descriptions are new keys.
+ * `titleKey` is derived from `TabEntry.labelKey` rather than restated, so the
+ * breadcrumb title cannot drift from the label the nav already renders.
+ * Inventory and marketplace are route aliases for My Workshop, so their
+ * breadcrumbs deliberately use the canonical workshop title/description.
  */
 export interface TabSurfaceInfo {
   /** The surface's name — the very key the navigation itself renders. */
@@ -40,18 +41,28 @@ const FOOTER_ONLY_SURFACES: Record<"wiki" | "changelog", TabSurfaceInfo> = {
   },
 };
 
-export const TAB_SURFACE_INFO: Record<Tab, TabSurfaceInfo> = Object.fromEntries(
-  [
-    ...TABS.map(
-      (tab) =>
-        [
-          tab.id,
-          {
-            titleKey: tab.labelKey,
-            descKey: `breadcrumb.${tab.id}.description`,
-          },
-        ] as const,
-    ),
-    ...(Object.entries(FOOTER_ONLY_SURFACES) as [Tab, TabSurfaceInfo][]),
-  ],
-) as Record<Tab, TabSurfaceInfo>;
+const tabSurfaceInfo = Object.fromEntries([
+  ...TABS.map(
+    (tab) =>
+      [
+        tab.id,
+        {
+          titleKey: tab.labelKey,
+          descKey: `breadcrumb.${tab.id}.description`,
+        },
+      ] as const,
+  ),
+  ...(Object.entries(FOOTER_ONLY_SURFACES) as [Tab, TabSurfaceInfo][]),
+]) as Record<Tab, TabSurfaceInfo>;
+
+export const TAB_SURFACE_INFO: Record<Tab, TabSurfaceInfo> = {
+  ...tabSurfaceInfo,
+  inventory: {
+    titleKey: "nav.catalog",
+    descKey: "breadcrumb.catalog.description",
+  },
+  marketplace: {
+    titleKey: "nav.catalog",
+    descKey: "breadcrumb.catalog.description",
+  },
+};

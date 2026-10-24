@@ -6,9 +6,10 @@ import {
   Minimize2,
   Calculator,
   BarChart3,
-  Settings2,
+  Warehouse,
   Clock,
-  Package,
+  Spool,
+  Store,
   Grid3x3,
   Users,
   ChevronRight,
@@ -66,7 +67,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             <BarChart3 className="w-3.5 h-3.5 text-[var(--color-accent)]" />
           ),
           title: "Dashboard Geral",
-          subtitle: "Indicadores financeiros e status da oficina",
+          subtitle: "Resumo dos cálculos salvos e da estrutura da oficina",
         };
       case "calculator":
         return {
@@ -76,27 +77,25 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           title: "Calculadora 3D",
           subtitle: "Cálculo de custos, tempos e preço de venda",
         };
-      case "inventory":
-        return {
-          icon: <Package className="w-3.5 h-3.5 text-[var(--color-warning)]" />,
-          title: "Estoque de Carretéis",
-          subtitle: "Controle de filamentos e preços por kg",
-        };
       case "catalog":
         return {
           icon: (
-            <Settings2 className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+            <Warehouse className="w-3.5 h-3.5 text-[var(--color-accent)]" />
           ),
-          title: "Frota de Impressoras",
-          subtitle: "Gerenciamento de máquinas e custos/hora",
+          title: t("workshop.title"),
+          subtitle: t("workshop.subtitle"),
+        };
+      case "inventory":
+        return {
+          icon: <Spool className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
+          title: t("workshop.title"),
+          subtitle: t("workshop.stock"),
         };
       case "marketplace":
         return {
-          icon: (
-            <Settings2 className="w-3.5 h-3.5 text-[var(--color-accent)]" />
-          ),
-          title: t("marketplaceBrowse.title"),
-          subtitle: t("marketplaceBrowse.subtitle"),
+          icon: <Store className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
+          title: t("workshop.title"),
+          subtitle: t("workshop.salesChannels"),
         };
       case "history":
         return {

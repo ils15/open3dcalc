@@ -13,7 +13,7 @@ vi.mock("./StudioSidebar", () => ({
   }) => (
     <nav>
       <button type="button" onClick={() => onTabChange("catalog")}>
-        Select Cadastros
+        Select Minha Oficina
       </button>
       <button type="button" onClick={() => onTabChange("marketplace")}>
         Select Marketplace
@@ -40,9 +40,6 @@ vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
 }));
 vi.mock("@/shared/components/Catalog/CatalogTab", () => ({
   CatalogTab: () => null,
-}));
-vi.mock("@/shared/components/Catalog/MarketplaceBrowseTab", () => ({
-  MarketplaceBrowseTab: () => null,
 }));
 vi.mock("@/shared/components/Wiki/WikiPage", () => ({ WikiPage: () => null }));
 vi.mock("@/shared/components/Changelog/ChangelogPage", () => ({
@@ -98,7 +95,7 @@ describe("StudioLayout demo export feedback", () => {
   });
 
   it.each([
-    { route: "catalog", control: "Select Cadastros" },
+    { route: "catalog", control: "Select Minha Oficina" },
     { route: "marketplace", control: "Select Marketplace" },
   ])("keeps the dock-safe scroll viewport on the $route", ({ control }) => {
     const { container } = render(<StudioLayout />);

@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Settings } from "lucide-react";
-import { type Tab } from "@/shared/components/AppShell/tabs";
+import {
+  isNavigationTabActive,
+  type Tab,
+} from "@/shared/components/AppShell/tabs";
 import { MoreMenu } from "@/shared/components/AppShell/MoreMenu";
 import { PRIMARY_TABS } from "@/shared/components/AppShell/tabs";
 import { useVisiblePrimaryTabs } from "@/shared/components/AppShell/useVisibleNavigation";
 import { MobileSettingsSheet } from "./MobileSettingsSheet";
 
 /**
- * Mobile bottom navigation (web) — the five always-available primary
+ * Mobile bottom navigation (web) — the four always-available primary
  * destinations, a More disclosure for the demoted surfaces, and a pinned
  * settings gear that opens the settings-only bottom sheet.
  *
@@ -50,7 +53,7 @@ export function MobileNav({
           <div className="flex overflow-x-auto flex-1 min-w-0 px-1">
             {visiblePrimary.map((id) => {
               const tab = PRIMARY_TABS.find((entry) => entry.id === id)!;
-              const isActive = activeTab === tab.id;
+              const isActive = isNavigationTabActive(activeTab, tab.id);
               return (
                 <button
                   key={tab.id}

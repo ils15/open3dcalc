@@ -1,14 +1,14 @@
 import {
   Calculator as CalculatorIcon,
   Clock,
-  Settings2,
+  Warehouse,
   BarChart3,
   Grid3x3,
   Spool,
   FileText,
   Users,
   Package,
-  Search,
+  Store,
   ShieldCheck,
   MoreHorizontal,
 } from "lucide-react";
@@ -20,15 +20,13 @@ import { MORE_TAB_IDS, PRIMARY_TAB_IDS } from "@/shared/lib/navigationPrefs";
  *
  * `Tab` is the surface contract: it is the vocabulary every platform, the tab
  * → surface switch and the tutorial registry already speak, and it is
- * unchanged by this phase. What changed is which surfaces are *primary
- * destinations* (the five in `PRIMARY_TABS`, rendered in the nav bar) versus
- * *demoted* surfaces (the six in `MORE_TABS`, still fully functional and
- * reachable through the "More" disclosure).
+ * unchanged by this phase. Inventory and marketplace remain valid route IDs
+ * for subsections inside My Workshop, but are no longer standalone navigation
+ * destinations. The remaining surfaces are split between primary and More.
  *
- * The five primary destinations are the existing surface ids under
- * product-facing names: calculator→Pricing, dashboard→Dashboard,
- * history→History, catalog→Printers, inventory→Spools. Infill is demoted, not
- * removed — its standalone screen and its in-calculator field are untouched.
+ * The primary destinations are calculator→Pricing, dashboard→Dashboard,
+ * history→History and catalog→My Workshop. Infill is demoted, not removed —
+ * its standalone screen and its in-calculator field are untouched.
  *
  * `TABS` stays the full ordered catalog (primary first, then demoted) and is
  * locked by tabsParity.test (web ≡ desktop ≡ TUTORIAL_TABS) — keep all three in
@@ -78,9 +76,9 @@ export const TABS: TabEntry[] = [
   },
   {
     id: "catalog",
-    icon: <Settings2 className="w-[18px] h-[18px]" />,
-    labelKey: "nav.printers",
-    label: "Impressoras",
+    icon: <Warehouse className="w-[18px] h-[18px]" />,
+    labelKey: "nav.catalog",
+    label: "Minha Oficina",
   },
   {
     id: "inventory",
@@ -120,21 +118,38 @@ export const TABS: TabEntry[] = [
   },
   {
     id: "marketplace",
-    icon: <Search className="w-[18px] h-[18px]" />,
+    icon: <Store className="w-[18px] h-[18px]" />,
     labelKey: "nav.marketplace",
-    label: "Marketplace",
+    label: "Canais de venda",
   },
 ];
 
-/** The five always-available primary destinations, in nav order. */
+/** The four always-available primary destinations, in nav order. */
 export const PRIMARY_TABS: TabEntry[] = TABS.filter((tab) =>
   (PRIMARY_TAB_IDS as readonly string[]).includes(tab.id),
 );
 
-/** Demoted surfaces, reachable through the "More" disclosure. */
+/** Standalone surfaces reachable through the "More" disclosure. */
 export const MORE_TABS: TabEntry[] = TABS.filter((tab) =>
   (MORE_TAB_IDS as readonly string[]).includes(tab.id),
 );
+
+/** Destinations users can show or hide in navigation settings. */
+export const NAVIGATION_TABS: TabEntry[] = TABS.filter(
+  (tab) => tab.id !== "inventory" && tab.id !== "marketplace",
+);
+
+/** Route IDs that render a section inside the My Workshop hub. */
+export function isWorkshopRoute(tab: Tab): boolean {
+  return tab === "catalog" || tab === "inventory" || tab === "marketplace";
+}
+
+/** Treat all workshop sections as one active navigation destination. */
+export function isNavigationTabActive(activeTab: Tab, navTab: Tab): boolean {
+  return (
+    activeTab === navTab || (navTab === "catalog" && isWorkshopRoute(activeTab))
+  );
+}
 
 /**
  * True when a destination lives behind "More" rather than in the nav bar.

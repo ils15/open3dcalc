@@ -6,12 +6,17 @@ import {
   X,
   Calculator,
   Package,
-  Settings2,
+  Printer,
   FileText,
   Sparkles,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { isBetaChannel } from "@/shared/config/betaChannel";
+import { useHistoryStore } from "@/shared/stores/historyStore";
+import { useFilamentInventory } from "@/shared/stores/filamentInventory";
+import { isLowStockSpool } from "@/shared/stores/spoolStore";
+import { LOW_STOCK_GRAMS } from "@/shared/components/SpoolShelf/SpoolCard";
+import { useTranslation } from "react-i18next";
 
 interface StudioCockpitDockProps {
   onOpenMiniDash: () => void;
@@ -31,6 +36,19 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
   onOpenNewQuote,
 }) => {
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const { t } = useTranslation();
+  const entries = useHistoryStore((s) => s.entries);
+  const spools = useFilamentInventory((s) => s.spools);
+  // Dock pill mirrors the Mini-Dash summary: the same saved-history revenue
+  // and low-stock count, never fabricated machine state.
+  const revenue = entries.reduce((sum, entry) => sum + entry.sellPrice, 0);
+  const lowCount = spools.filter((spool) =>
+    isLowStockSpool(spool, LOW_STOCK_GRAMS),
+  ).length;
+  const revenueLabel = revenue.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
   const dockPosition = isBetaChannel
     ? "relative flex justify-center px-4 sm:px-6 lg:px-8 pt-4 pb-4 sm:pb-6"
     : "fixed inset-x-0 bottom-4 flex justify-center px-4";
@@ -80,7 +98,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
               }}
               className="flex min-h-11 items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-accent-wash)] transition-colors text-left"
             >
-              <Settings2 className="w-3.5 h-3.5 text-[var(--color-violet)]" />
+              <Printer className="w-3.5 h-3.5 text-[var(--color-violet)]" />
               <span>Adicionar Impressora</span>
             </button>
             <button
@@ -120,20 +138,24 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
               Mini-Dash
             </span>
             <span className="hidden text-[var(--color-text-secondary)] font-medium sm:inline">
-              R$ 3.737,94
+              {revenueLabel}
             </span>
             <span className="hidden text-[var(--color-text-muted)] sm:inline">
               •
             </span>
             <span className="hidden text-[var(--color-info)] font-medium sm:inline">
-              2/6 máq.
+              {t("minidash.calculations", { count: entries.length })}
             </span>
-            <span className="hidden text-[var(--color-text-muted)] sm:inline">
-              •
-            </span>
-            <span className="hidden rounded border border-[var(--color-warning-muted)] bg-[var(--color-warning-subtle)] px-1.5 py-0.2 text-[10px] font-bold text-[var(--color-warning)] sm:inline">
-              ⚠️ 2 baixos
-            </span>
+            {lowCount > 0 && (
+              <>
+                <span className="hidden text-[var(--color-text-muted)] sm:inline">
+                  •
+                </span>
+                <span className="hidden rounded border border-[var(--color-warning-muted)] bg-[var(--color-warning-subtle)] px-1.5 py-0.2 text-[10px] font-bold text-[var(--color-warning)] sm:inline">
+                  {t("minidash.dockLowStock", { count: lowCount })}
+                </span>
+              </>
+            )}
           </button>
 
           {/* Action button */}

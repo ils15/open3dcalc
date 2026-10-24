@@ -3,12 +3,10 @@
  *
  * Two things live here, both pure so they can be tested without React:
  *
- * 1. The destination contract. The app already had ten `Tab` surfaces; this
- *    module only *classifies* them. Five are always-available primary
- *    destinations (Pricing, Dashboard, History, Printers, Spools) and the rest
- *    are demoted to "More". Nothing is deleted — `MainContent` still switches on
- *    every id, so demoting Infill moves it out of the primary bar and nothing
- *    else.
+ * 1. The destination contract. Inventory and marketplace IDs remain valid
+ *    route aliases inside My Workshop, but are no longer standalone
+ *    navigation destinations. The visible primary and More lists contain the
+ *    destinations users can actually choose from the navigation chrome.
  *
  * 2. The persisted preference: which destination is active and which ones the
  *    user chose to hide. ONE new namespaced key (`open3dcalc_nav_v1`), additive
@@ -32,21 +30,19 @@ import { guardedStorage } from "./manifestStorage";
 export const NAV_PREFS_STORAGE_KEY = "open3dcalc_nav_v1";
 
 /**
- * The five always-available primary destinations, in nav order. These are the
- * existing surface ids — the change is presentation and label, not a new screen
- * set: calculator→Pricing, dashboard→Dashboard, history→History,
- * catalog→Printers, inventory→Spools.
+ * The four always-available primary destinations, in nav order:
+ * calculator→Pricing, dashboard→Dashboard, history→History,
+ * catalog→My Workshop.
  */
 export const PRIMARY_TAB_IDS = [
   "calculator",
   "dashboard",
   "history",
   "catalog",
-  "inventory",
 ] as const satisfies readonly Tab[];
 
 /**
- * Demoted surfaces, still fully functional and still reachable from "More".
+ * Demoted standalone surfaces, still fully functional and still reachable from "More".
  * Infill is here on purpose: its standalone screen and its in-calculator field
  * both keep working, it is just no longer a primary destination.
  */
@@ -56,7 +52,6 @@ export const MORE_TAB_IDS = [
   "customers",
   "products",
   "privacy",
-  "marketplace",
 ] as const satisfies readonly Tab[];
 
 /**
@@ -67,6 +62,9 @@ export const MORE_TAB_IDS = [
 export const SURFACE_IDS = [
   ...PRIMARY_TAB_IDS,
   ...MORE_TAB_IDS,
+  // Persisted aliases keep old navigation preferences and internal links valid.
+  "inventory",
+  "marketplace",
   "changelog",
   "wiki",
 ] as const satisfies readonly Tab[];
@@ -97,7 +95,9 @@ export function isTabId(value: unknown): value is Tab {
 }
 
 export function canHideTab(tab: Tab): boolean {
-  return tab !== ALWAYS_VISIBLE_TAB;
+  return (
+    tab !== ALWAYS_VISIBLE_TAB && tab !== "inventory" && tab !== "marketplace"
+  );
 }
 
 /** True only for a destination the user may actually hide. */

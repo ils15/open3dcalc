@@ -137,6 +137,7 @@ export function AppShell({
         <div className="animate-fade-up">
           <MainContent
             activeTab={activeTab}
+            onTabChange={onTabChange}
             onSelectCalculator={() => onTabChange("calculator")}
             onManagePrinters={() => onTabChange("catalog")}
           />
