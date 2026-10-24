@@ -35,6 +35,11 @@ vi.mock("@/shared/components/Catalog/CatalogTab", () => ({
 vi.mock("@/shared/components/SpoolShelf/SpoolShelf", () => ({
   SpoolShelf: () => <div data-testid="surface-inventory" />,
 }));
+vi.mock("@/shared/components/Catalog/WorkshopHub", () => ({
+  WorkshopHub: ({ activeTab }: { activeTab: string }) => (
+    <div data-testid="workshop-hub">{activeTab}</div>
+  ),
+}));
 vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
   InfillCalculator: () => <div data-testid="surface-infill" />,
 }));
@@ -67,7 +72,7 @@ import { MORE_TABS, PRIMARY_TABS } from "@/shared/components/AppShell/tabs";
 /**
  * Phase 7o s3 — the visible primary navigation.
  *
- * The five always-available destinations must be reachable in BOTH shells at
+ * The four always-available destinations must be reachable in BOTH shells at
  * EVERY width: the desktop sidebar (lg+), the tablet strip (md) and the two
  * mobile bottom bars. Demoted destinations (Infill first) must still be
  * reachable through "More", and hiding a destination must affect navigation
@@ -115,23 +120,22 @@ function renderMobileNav(platform: "web" | "desktop"): HTMLElement {
   return container.querySelector("nav")!;
 }
 
-describe("primary navigation — the five always-available destinations", () => {
-  it("exposes exactly five primary entries and six demoted entries", () => {
+describe("primary navigation — the four always-available destinations", () => {
+  it("exposes four primary entries and five standalone destinations in More", () => {
     expect(PRIMARY_TABS.map((tab) => tab.id)).toEqual([...PRIMARY_TAB_IDS]);
     expect(MORE_TABS.map((tab) => tab.id)).toEqual([...MORE_TAB_IDS]);
   });
 
-  it("labels the destinations Pricing, Dashboard, History, Printers, Spools", () => {
+  it("labels the destinations Pricing, Dashboard, History, and My Workshop", () => {
     expect(PRIMARY_LABEL_KEYS).toEqual([
       "nav.pricing",
       "nav.dashboard",
       "nav.history",
-      "nav.printers",
-      "nav.spools",
+      "nav.catalog",
     ]);
   });
 
-  it("renders the five destinations in the desktop sidebar", () => {
+  it("renders the four destinations in the desktop sidebar", () => {
     const { desktopSidebar } = renderShell();
     const buttons = desktopSidebar.querySelectorAll("button");
 
@@ -144,7 +148,7 @@ describe("primary navigation — the five always-available destinations", () => 
     }
   });
 
-  it("renders the five destinations in the tablet strip", () => {
+  it("renders the four destinations in the tablet strip", () => {
     const { tabletSidebar } = renderShell();
 
     for (const labelKey of PRIMARY_LABEL_KEYS) {
@@ -156,7 +160,7 @@ describe("primary navigation — the five always-available destinations", () => 
   });
 
   it.each(["web", "desktop"] as const)(
-    "renders the five destinations in the %s mobile bottom bar",
+    "renders the four destinations in the %s mobile bottom bar",
     (platform) => {
       const nav = renderMobileNav(platform);
 
@@ -433,7 +437,6 @@ describe("primary navigation — hiding affects navigation only", () => {
       "dashboard",
       "history",
       "catalog",
-      "inventory",
       "infill",
       "quotes",
       "customers",

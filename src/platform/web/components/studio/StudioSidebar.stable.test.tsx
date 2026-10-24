@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
 vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: false }));
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: "pt-BR" },
+  }),
+}));
 
 import { StudioSidebar } from "./StudioSidebar";
 
@@ -20,10 +26,10 @@ function renderSidebar(collapsed = false) {
 describe("StudioSidebar Stable layout", () => {
   it("keeps Stable navigation targets at least 44px", () => {
     renderSidebar();
-    const btn = screen.getByRole("button", { name: "Calculadora" });
+    const btn = screen.getByRole("button", { name: "nav.calculator" });
     expect(btn).toHaveClass("min-h-11", "min-w-11");
     const toggle = screen.getByRole("button", {
-      name: /recolher painel|expandir painel/i,
+      name: /nav\.collapsePanel|nav\.expandPanel/i,
     });
     expect(toggle).toHaveClass("min-h-11", "min-w-11");
   });
@@ -52,7 +58,7 @@ describe("StudioSidebar Stable layout", () => {
     expect(sidebarBottom).toHaveClass("p-3", "shrink-0");
     expect(screen.queryByText("Moeda Base")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /recolher painel/i }),
+      screen.getByRole("button", { name: /nav\.collapsePanel/i }),
     ).toBeInTheDocument();
   });
 });

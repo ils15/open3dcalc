@@ -39,12 +39,12 @@
   },
   "nav": {
     "calculator": "Calculator",
-    "catalog": "Catalog",
-    "marketplace": "Marketplace",
+    "catalog": "My Workshop",
+    "marketplace": "Sales channels",
     "history": "History",
     "dashboard": "Dashboard",
     "infill": "Infill Calc.",
-    "inventory": "Filament Shelf",
+    "inventory": "Stock",
     "changelog": "Changelog",
     "customers": "Customers",
     "products": "Products",
@@ -61,7 +61,14 @@
     "pricing": "Pricing",
     "printers": "Printers",
     "more": "More",
-    "resources": "Resources"
+    "resources": "Resources",
+    "modules": "Modules",
+    "docsWiki": "Documentation / Wiki",
+    "releaseNotes": "Release Notes",
+    "github": "Source on GitHub",
+    "communityTelegram": "Telegram Community",
+    "collapsePanel": "Collapse panel",
+    "expandPanel": "Expand navigation panel"
   },
   "utilityBar": {
     "label": "Display preferences"
@@ -79,10 +86,10 @@
       "description": "Every print saved and comparable"
     },
     "catalog": {
-      "description": "Printers, materials and fees & channels"
+      "description": "Printers, materials, stock and sales channels"
     },
     "marketplace": {
-      "description": "Material definitions and printer profiles"
+      "description": "Stores where you sell and per-channel fees"
     },
     "inventory": {
       "description": "Filament stock"
@@ -454,37 +461,6 @@
     "saleLabel": "Sale",
     "profitLabel": "Profit"
   },
-  "marketplaceBrowse": {
-    "title": "Marketplace",
-    "subtitle": "Browse material catalog definitions and printer profiles.",
-    "browseOnly": "Browse only",
-    "materials": "Materials",
-    "printers": "Printer profiles",
-    "searchMaterials": "Search materials",
-    "searchPrinters": "Search printer profiles",
-    "filterBrand": "Brand",
-    "allBrands": "All brands",
-    "filterTechnology": "Declared technology",
-    "allTechnologies": "All technologies",
-    "fdm": "FDM",
-    "resin": "Resin",
-    "unspecified": "Not specified",
-    "unknownProfiles_one": "{{count}} profile has no specified technology.",
-    "unknownProfiles_other": "{{count}} profiles have no specified technology.",
-    "revealUnknown_one": "Show {{count}} profile with no specified technology",
-    "revealUnknown_other": "Show {{count}} profiles with no specified technology",
-    "type": "Type",
-    "density": "Density",
-    "averagePrice": "Average price",
-    "prusaMk4PhotoAlt": "Original Prusa MK4 3D printer with an orange print on the bed",
-    "openPrusaMk4PhotoSource": "Open the Wikimedia Commons source page for the Prusa MK4 photo",
-    "photoBy": "Photo by",
-    "photoModified": "Cropped to remove visible wordmark; other visible marks blurred.",
-    "photoNotEndorsed": "Independent photo; not an endorsement by Prusa Research.",
-    "fdmPlaceholderAlt": "Illustrated FDM printer placeholder, not a product photo",
-    "resinPlaceholderAlt": "Illustrated resin printer placeholder, not a product photo",
-    "unknownPlaceholderAlt": "Generic printer illustration; technology not specified"
-  },
   "catalog": {
     "title": "Catalogs & Presets",
     "subtitle": "Manage printers, materials and fee profiles used by the calculator.",
@@ -497,7 +473,7 @@
     "emptyPersonalPrinters": "You haven't added a printer to your list yet.",
     "emptyPersonalPrintersHint": "Add your own or choose a model to create an editable copy.",
     "materials": "Materials",
-    "marketplaces": "Fees & Channels",
+    "marketplaces": "Stores & Sales Channels",
     "addPrinter": "New printer",
     "selectPrinter": "Select printer",
     "customPrinter": "Custom",
@@ -2692,21 +2668,52 @@
         "label": "Project name",
         "placeholder": "e.g. Headphone stand"
       },
-      "materialType": { "label": "Filament" },
-      "weightGrams": { "label": "Part weight", "unit": "g" },
-      "costPerKg": { "label": "Spool price", "unit": "/kg" },
-      "quantity": { "label": "Quantity" },
+      "materialType": {
+        "label": "Filament"
+      },
+      "weightGrams": {
+        "label": "Part weight",
+        "unit": "g"
+      },
+      "costPerKg": {
+        "label": "Spool price",
+        "unit": "/kg"
+      },
+      "quantity": {
+        "label": "Quantity"
+      },
       "printer": {
         "label": "Printer",
         "manage": "Manage or add printers"
       },
-      "printTimeHours": { "label": "Print time", "unit": "h" },
-      "energyCostPerKwh": { "label": "Energy per kWh", "unit": "/kWh" },
-      "setupTimeMinutes": { "label": "Setup time", "unit": "min" },
-      "postProcessingMinutes": { "label": "Post-processing", "unit": "min" },
-      "hourlyRate": { "label": "Hourly rate", "unit": "/h" },
-      "packagingCost": { "label": "Packaging", "unit": "/unit" },
-      "profitMarginPercent": { "label": "Markup on cost", "unit": "%" }
+      "printTimeHours": {
+        "label": "Print time",
+        "unit": "h"
+      },
+      "energyCostPerKwh": {
+        "label": "Energy per kWh",
+        "unit": "/kWh"
+      },
+      "setupTimeMinutes": {
+        "label": "Setup time",
+        "unit": "min"
+      },
+      "postProcessingMinutes": {
+        "label": "Post-processing",
+        "unit": "min"
+      },
+      "hourlyRate": {
+        "label": "Hourly rate",
+        "unit": "/h"
+      },
+      "packagingCost": {
+        "label": "Packaging",
+        "unit": "/unit"
+      },
+      "profitMarginPercent": {
+        "label": "Markup on cost",
+        "unit": "%"
+      }
     },
     "nav": {
       "previous": "Previous",
@@ -2730,7 +2737,6 @@
       "invalidQuantity": "Enter a whole-number quantity between 1 and 100,000."
     }
   },
-
   "copilot": {
     "title": "Local assistant",
     "localBadge": "Local suggestions",
@@ -2758,7 +2764,6 @@
     "github": "GitHub",
     "telegram": "Telegram Channel"
   },
-
   "persistence": {
     "bridge": {
       "startupAriaLabel": "Could not open local storage",
@@ -2783,5 +2788,32 @@
       "message": "The app could not read the data classification manifest, so none of your saved profile can be opened right now. Nothing is being written or deleted — your data is still on disk and will return when the manifest is available again.",
       "detail": "Reason: {{reason}}"
     }
+  },
+  "minidash": {
+    "title": "Mini-Dash & Workshop Quick View",
+    "close": "Close",
+    "revenue": "Calculated revenue",
+    "netProfit": "Estimated profit",
+    "margin": "{{margin}}% margin",
+    "calculations": "{{count}} saved calculations",
+    "spools": "Spools",
+    "registeredSpools": "registered in stock",
+    "alerts": "Studio Alerts",
+    "lowStock": "{{count}} spools below 100 g of stock",
+    "seeStock": "See Stock",
+    "seeHistory": "See History",
+    "noAlerts": "No stock alerts; {{count}} saved calculations",
+    "demoSession": "Demo session with sample data",
+    "demoLabel": "—",
+    "goDashboard": "Open the full Dashboard →",
+    "dockLowStock": "{{count}} low"
+  },
+  "workshop": {
+    "title": "My Workshop",
+    "subtitle": "Printers, materials, stock and sales channels in one place.",
+    "printers": "Printers",
+    "materials": "Materials",
+    "stock": "Stock",
+    "salesChannels": "Stores & sales channels"
   }
 }

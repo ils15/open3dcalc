@@ -3,9 +3,9 @@ import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Frota-pattern contract for the Studio top-bar region (PR #280).
+ * Studio shell contract for the global top-bar region.
  *
- * The owner's reference is the Catalog tab ("Frota de Impressoras"): a
+ * The owner's reference is the My Workshop tab: a
  * breadcrumb + title, pill-shaped filters, aligned actions, and cards whose
  * colours come exclusively from semantic tokens so both themes render
  * correctly. These tests lock the BEHAVIOUR of that pattern on the Studio
@@ -143,11 +143,11 @@ describe("StudioSidebar shell (Frota breadcrumb-and-pill pattern)", () => {
   it("navigates modules on click and marks the active destination", () => {
     const { onTabChange } = renderSidebar();
 
-    const catalog = screen.getByRole("button", { name: "Cadastros" });
+    const catalog = screen.getByRole("button", { name: "nav.catalog" });
     fireEvent.click(catalog);
     expect(onTabChange).toHaveBeenCalledWith("catalog");
 
-    const calculator = screen.getByRole("button", { name: "Calculadora" });
+    const calculator = screen.getByRole("button", { name: "nav.calculator" });
     expect(calculator).toHaveAttribute("aria-current", "page");
   });
 
@@ -232,7 +232,7 @@ describe("StudioHeader breadcrumb (Frota title pattern)", () => {
       />,
     );
 
-    expect(screen.getByText("Frota de Impressoras")).toBeInTheDocument();
+    expect(screen.getByText("workshop.title")).toBeInTheDocument();
   });
 
   it("provides a global dashboard navigation landmark", () => {

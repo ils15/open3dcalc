@@ -81,7 +81,13 @@ import {
   PRIMARY_TABS,
   holdsDemotedSurface,
 } from "@/shared/components/AppShell/tabs";
-import { MORE_TAB_IDS, PRIMARY_TAB_IDS } from "@/shared/lib/navigationPrefs";
+import {
+  MORE_TAB_IDS,
+  PRIMARY_TAB_IDS,
+  SURFACE_IDS,
+} from "@/shared/lib/navigationPrefs";
+import ptBR from "@/shared/i18n/locales/pt-BR.json";
+import enUS from "@/shared/i18n/locales/en-US.json";
 
 type TabEntry = {
   id: string;
@@ -142,14 +148,34 @@ describe("tabs parity", () => {
  * navigation bars, which is the regression the whole lock exists to prevent.
  */
 describe("primary vs demoted parity", () => {
-  it("splits into exactly the five primary destinations and six demoted", () => {
+  it("splits into four primary and five More destinations", () => {
     expect(PRIMARY_TABS.map((tab) => tab.id)).toEqual([...PRIMARY_TAB_IDS]);
     expect(MORE_TABS.map((tab) => tab.id)).toEqual([...MORE_TAB_IDS]);
   });
 
-  it("primary and demoted together reconstruct TABS exactly", () => {
+  it("keeps inventory and sales-channel routes as hub aliases", () => {
     expect([...PRIMARY_TABS, ...MORE_TABS].map((tab) => tab.id)).toEqual(
-      WEB_TABS.map((tab) => tab.id),
+      WEB_TABS.map((tab) => tab.id).filter(
+        (id) => id !== "inventory" && id !== "marketplace",
+      ),
+    );
+    expect(SURFACE_IDS).toContain("inventory");
+    expect(SURFACE_IDS).toContain("marketplace");
+    expect(MORE_TABS.some((tab) => tab.id === "inventory")).toBe(false);
+    expect(MORE_TABS.some((tab) => tab.id === "marketplace")).toBe(false);
+  });
+
+  // The fee-template section is presented as sales channels; the route id and
+  // catalog fees key stay untouched so saved preferences and links keep working.
+  it("presents the fee templates as sales channels in both locales", () => {
+    expect(ptBR.nav.catalog).toBe("Minha Oficina");
+    expect(enUS.nav.catalog).toBe("My Workshop");
+    expect(ptBR.nav.marketplace).toBe("Canais de venda");
+    expect(enUS.nav.marketplace).toBe("Sales channels");
+    expect(ptBR.catalog.marketplaces).toBe("Lojas e canais de venda");
+    expect(enUS.catalog.marketplaces).toBe("Stores & Sales Channels");
+    expect(WEB_TABS.find(({ id }) => id === "marketplace")?.id).toBe(
+      "marketplace",
     );
   });
 

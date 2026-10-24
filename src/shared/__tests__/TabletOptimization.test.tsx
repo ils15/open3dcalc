@@ -90,7 +90,7 @@ vi.mock("@/shared/stores/calculatorStore", () => ({
 
 // ─── Import after mocks ───
 import App from "../App";
-import { TABS } from "@/platform/web/App";
+import { TABS } from "@/shared/components/AppShell/tabs";
 
 // Mock i18next
 vi.mock("react-i18next", () => ({
@@ -175,28 +175,28 @@ describe("Phase 2 — Tablet Optimization", () => {
       });
     });
 
-    it("renders one rail destination per shared tab contract entry", () => {
+    it("shows the Studio destinations without duplicate workshop aliases", () => {
       setViewportWidth(DEFAULT_WIDTH);
       const { container } = render(<App />);
 
       const { modules } = rail(container);
-      // The rail is the Studio's own presentation of the shared catalog: a
-      // destination that is missing here is a destination with no entry point.
-      expect(modules.querySelectorAll("button")).toHaveLength(TABS.length);
+      expect(modules.querySelectorAll("button")).toHaveLength(TABS.length - 2);
     });
 
-    it("routes the Marketplace sidebar destination to the browse-only catalog", async () => {
+    it("routes the Minha Oficina sidebar destination to the printer section", async () => {
       setViewportWidth(DEFAULT_WIDTH);
       const { container } = render(<App />);
-      const marketplaceButton = container.querySelector<HTMLButtonElement>(
-        'button[title="Marketplace"]',
+      const workshopButton = container.querySelector<HTMLButtonElement>(
+        'button[title="nav.catalog"]',
       );
 
-      expect(marketplaceButton).not.toBeNull();
-      fireEvent.click(marketplaceButton!);
+      expect(workshopButton).not.toBeNull();
+      fireEvent.click(workshopButton!);
       await waitFor(() =>
         expect(
-          container.querySelector("#marketplace-printers-heading"),
+          container.querySelector(
+            '#workshop-tab-printers[aria-selected="true"]',
+          ),
         ).not.toBeNull(),
       );
     });
@@ -207,7 +207,7 @@ describe("Phase 2 — Tablet Optimization", () => {
 
       const { aside, modules } = rail(container);
       expect(aside.className).toContain("w-56");
-      expect(modules.textContent).toContain("Calculadora");
+      expect(modules.textContent).toContain("nav.calculator");
     });
 
     it("collapses again when the window shrinks past the breakpoint", () => {
@@ -229,10 +229,10 @@ describe("Phase 2 — Tablet Optimization", () => {
 
       const { resources } = rail(container);
       for (const label of [
-        "Documentação / Wiki",
-        "Notas de Versão",
-        "Código no GitHub",
-        "Comunidade Telegram",
+        "nav.docsWiki",
+        "nav.releaseNotes",
+        "nav.github",
+        "nav.communityTelegram",
       ]) {
         expect(resources.querySelector(`[title="${label}"]`)).not.toBeNull();
       }

@@ -32,6 +32,11 @@ vi.mock("@/shared/components/Catalog/CatalogTab", () => ({
 vi.mock("@/shared/components/SpoolShelf/SpoolShelf", () => ({
   SpoolShelf: () => <div data-testid="surface-inventory" />,
 }));
+vi.mock("@/shared/components/Catalog/WorkshopHub", () => ({
+  WorkshopHub: ({ activeTab }: { activeTab: string }) => (
+    <div data-testid="workshop-hub">{activeTab}</div>
+  ),
+}));
 vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
   InfillCalculator: () => <div data-testid="surface-infill" />,
 }));
@@ -194,8 +199,7 @@ describe("focus mode — entering", () => {
       "nav.pricing",
       "nav.dashboard",
       "nav.history",
-      "nav.printers",
-      "nav.spools",
+      "nav.catalog",
     ]) {
       expect(
         screen.queryByRole("button", { name: labelKey }),

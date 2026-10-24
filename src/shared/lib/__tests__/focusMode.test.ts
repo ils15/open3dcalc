@@ -64,7 +64,6 @@ describe("focusMode — where the mode lands on exit", () => {
       "dashboard",
       "history",
       "catalog",
-      "inventory",
       "infill",
       "quotes",
       "customers",

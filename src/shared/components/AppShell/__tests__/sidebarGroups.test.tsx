@@ -14,7 +14,6 @@ vi.mock("../useVisibleNavigation", () => ({
     "dashboard",
     "history",
     "catalog",
-    "inventory",
   ],
 }));
 
@@ -37,8 +36,7 @@ describe("sidebar groups", () => {
       "nav.pricing",
       "nav.dashboard",
       "nav.history",
-      "nav.printers",
-      "nav.spools",
+      "nav.catalog",
     ]) {
       expect(
         within(modules).getByRole("button", { name: key }),

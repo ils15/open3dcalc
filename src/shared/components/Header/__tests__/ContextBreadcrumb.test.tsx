@@ -161,15 +161,33 @@ describe("contextual breadcrumb", () => {
     },
   );
 
-  it.each(SHELLS)("follows the destination (%s)", (_name, Header) => {
-    useNavigationPrefsStore.setState({ activeTab: "inventory" });
-    renderShell(Header);
+  it.each(SHELLS)(
+    "groups legacy workshop routes under the canonical destination (%s)",
+    (_name, Header) => {
+      useNavigationPrefsStore.setState({ activeTab: "inventory" });
+      renderShell(Header);
 
-    const nav = screen.getByRole("navigation", {
-      name: translate("breadcrumb.label", ptBR),
-    });
-    expect(nav.textContent).toContain(translate("nav.spools", ptBR));
-  });
+      const nav = screen.getByRole("navigation", {
+        name: translate("breadcrumb.label", ptBR),
+      });
+      expect(nav.textContent).toContain(translate("nav.catalog", ptBR));
+      expect(nav.textContent).not.toContain(translate("nav.spools", ptBR));
+    },
+  );
+
+  it.each(SHELLS)(
+    "keeps the marketplace route inside the workshop breadcrumb (%s)",
+    (_name, Header) => {
+      useNavigationPrefsStore.setState({ activeTab: "marketplace" });
+      renderShell(Header);
+
+      const nav = screen.getByRole("navigation", {
+        name: translate("breadcrumb.label", ptBR),
+      });
+      expect(nav.textContent).toContain(translate("nav.catalog", ptBR));
+      expect(nav.textContent).not.toContain(translate("nav.marketplace", ptBR));
+    },
+  );
 
   /**
    * WCAG 2.4.6, and the rule the repo has already written down at

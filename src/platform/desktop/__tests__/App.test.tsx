@@ -26,6 +26,11 @@ vi.mock("@/shared/components/Dashboard/Dashboard", () => ({
 vi.mock("@/shared/components/Catalog/CatalogTab", () => ({
   CatalogTab: () => <div>CatalogTab</div>,
 }));
+vi.mock("@/shared/components/Catalog/WorkshopHub", () => ({
+  WorkshopHub: ({ activeTab }: { activeTab: string }) => (
+    <div data-testid="workshop-hub">{activeTab}</div>
+  ),
+}));
 vi.mock("@/shared/components/Calculator/HistoryTab/HistoryTab", () => ({
   HistoryTab: () => <div>HistoryTab</div>,
 }));
@@ -133,7 +138,7 @@ describe("desktop App shell (post-extraction)", () => {
     );
 
     expect(tabletSidebar).toBeDefined();
-    // Phase 7o s3: the five primary destinations + the More disclosure.
+    // Phase 7o s3: the four primary destinations + the More disclosure.
     expect(tabletSidebar!.querySelectorAll("button")).toHaveLength(
       PRIMARY_TABS.length + 1,
     );
@@ -168,7 +173,7 @@ describe("desktop App shell (post-extraction)", () => {
     const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
     expect(nav.className).toContain("lg:hidden");
 
-    // The five primary destinations carry aria-selected; the More disclosure
+    // The four primary destinations carry aria-selected; the More disclosure
     // and (web-only) the gear do not.
     expect(nav.querySelectorAll("button[aria-selected]")).toHaveLength(
       PRIMARY_TABS.length,
@@ -350,7 +355,6 @@ describe("desktop App shell (post-extraction)", () => {
   it.each([
     ["wiki", "nav.wiki", "WikiPage"],
     ["changelog", "nav.changelog", "ChangelogPage"],
-    ["marketplace", "nav.marketplace", "marketplaceBrowse.title"],
   ] as const)(
     "routes desktop More action %s to its existing surface and closes the disclosure",
     (_route, label, surface) => {
@@ -371,6 +375,23 @@ describe("desktop App shell (post-extraction)", () => {
     },
   );
 
+  it("routes the old Marketplace destination into My Workshop instead of More", () => {
+    render(<App />);
+    const desktopSidebar = Array.from(document.querySelectorAll("aside")).find(
+      (aside) => aside.className.includes("hidden lg:flex"),
+    )!;
+    fireEvent.click(
+      within(desktopSidebar).getByRole("button", { name: "nav.catalog" }),
+    );
+
+    expect(screen.getByTestId("workshop-hub")).toHaveTextContent("catalog");
+    expect(
+      within(
+        screen.getByRole("navigation", { name: "nav.mainNavigation" }),
+      ).getByRole("button", { name: /nav\.more/ }),
+    ).not.toHaveAttribute("aria-current", "page");
+  });
+
   it("still surfaces the standalone Infill screen from More", () => {
     render(<App />);
     const nav = screen.getByRole("navigation", { name: "nav.mainNavigation" });
@@ -385,18 +406,17 @@ describe("desktop App shell (post-extraction)", () => {
     expect(screen.getByText("InfillCalculator")).toBeInTheDocument();
   });
 
-  it("keeps every TABS id in the primary or demoted set (none orphaned)", () => {
-    // The Phase 7o s3 split only changes presentation, so no surface may fall
-    // out of both groups. (Reachability itself is covered by the More-menu and
-    // Infill tests above, which drive the real nav.)
+  it("keeps every standalone destination grouped and workshop routes internal", () => {
     const grouped = new Set([
       ...PRIMARY_TABS.map((tab) => tab.id),
       ...MORE_TABS.map((tab) => tab.id),
     ]);
 
-    for (const tab of TABS) {
+    for (const tab of TABS.filter(
+      ({ id }) => id !== "inventory" && id !== "marketplace",
+    )) {
       expect(grouped.has(tab.id), `${tab.id} is in no nav group`).toBe(true);
     }
-    expect(grouped.size).toBe(TABS.length);
+    expect(grouped.size).toBe(TABS.length - 2);
   });
 });

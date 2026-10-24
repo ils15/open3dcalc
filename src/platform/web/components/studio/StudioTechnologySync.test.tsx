@@ -53,9 +53,6 @@ vi.mock("@/shared/components/Calculator/InfillCalculator", () => ({
 vi.mock("@/shared/components/Catalog/CatalogTab", () => ({
   CatalogTab: () => null,
 }));
-vi.mock("@/shared/components/Catalog/MarketplaceBrowseTab", () => ({
-  MarketplaceBrowseTab: () => null,
-}));
 vi.mock("@/shared/components/Wiki/WikiPage", () => ({ WikiPage: () => null }));
 vi.mock("@/shared/components/Changelog/ChangelogPage", () => ({
   ChangelogPage: () => null,

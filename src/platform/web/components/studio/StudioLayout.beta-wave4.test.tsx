@@ -50,16 +50,14 @@ describe("Wave4 Beta shell: ONE navigation model", () => {
   it("keeps every retained screen reachable from the sidebar", () => {
     renderSidebar();
     for (const name of [
-      "Calculadora",
-      "Dashboard",
-      "Calc. Infill",
-      "Insumos",
-      "Cadastros",
-      "Histórico",
-      "Orçamentos",
-      "Clientes",
-      "Produtos",
-      "Marketplace",
+      "nav.calculator",
+      "nav.dashboard",
+      "nav.infill",
+      "nav.catalog",
+      "nav.history",
+      "nav.quotes",
+      "nav.customers",
+      "nav.products",
     ]) {
       expect(
         screen.getByRole("button", { name }),
@@ -70,10 +68,10 @@ describe("Wave4 Beta shell: ONE navigation model", () => {
 
   it("exposes no migration or privacy entries on Beta", () => {
     renderSidebar();
-    expect(screen.queryByRole("button", { name: "Privacidade" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "nav.privacy" })).toBeNull();
     expect(screen.queryByText(/migra/i)).toBeNull();
     renderSubHeader();
-    expect(screen.queryByRole("button", { name: "Privacidade" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "nav.privacy" })).toBeNull();
   });
 
   it("labels the sidebar as the primary navigation with a drawer toggle", () => {
@@ -82,7 +80,7 @@ describe("Wave4 Beta shell: ONE navigation model", () => {
     expect(nav).not.toBeNull();
     // Toggle must be a drawer control: expanded state + 44px target.
     const toggle = screen.getByRole("button", {
-      name: /painel|navegação|menu/i,
+      name: /collapsePanel|expandPanel/i,
     });
     expect(toggle).toHaveAttribute("aria-expanded");
     expect(toggle.className).toMatch(/min-h-11|min-h-\[44px\]/);
@@ -116,7 +114,7 @@ describe("Wave4 Beta shell: dock in normal flow", () => {
 describe("Wave4 Beta shell: 44px targets", () => {
   it("keeps sidebar navigation targets at least 44px", () => {
     renderSidebar();
-    for (const name of ["Calculadora", "Dashboard", "Histórico"]) {
+    for (const name of ["nav.calculator", "nav.dashboard", "nav.history"]) {
       const btn = screen.getByRole("button", { name });
       expect(btn.className).toMatch(/min-h-11|min-h-\[44px\]/);
     }

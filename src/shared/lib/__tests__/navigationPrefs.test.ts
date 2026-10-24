@@ -52,13 +52,12 @@ afterEach(() => {
 });
 
 describe("navigationPrefs — destination contract", () => {
-  it("declares exactly the five always-available primary destinations", () => {
+  it("declares exactly the four always-available primary destinations", () => {
     expect([...PRIMARY_TAB_IDS]).toEqual([
       "calculator",
       "dashboard",
       "history",
       "catalog",
-      "inventory",
     ]);
   });
 
@@ -74,11 +73,10 @@ describe("navigationPrefs — destination contract", () => {
       "customers",
       "products",
       "privacy",
-      "marketplace",
     ]);
   });
 
-  it("primary and More are disjoint and together cover every navigation tab", () => {
+  it("primary and More are disjoint; Workshop aliases remain valid routes", () => {
     const overlap = PRIMARY_TAB_IDS.filter((id) =>
       (MORE_TAB_IDS as readonly string[]).includes(id),
     );
@@ -86,7 +84,9 @@ describe("navigationPrefs — destination contract", () => {
 
     const combined = [...PRIMARY_TAB_IDS, ...MORE_TAB_IDS];
     expect(new Set(combined).size).toBe(combined.length);
-    expect(combined).toHaveLength(11);
+    expect(combined).toHaveLength(9);
+    expect(SURFACE_IDS).toContain("inventory");
+    expect(SURFACE_IDS).toContain("marketplace");
   });
 
   it("accepts the secondary footer surfaces as persisted destinations", () => {
@@ -144,7 +144,7 @@ describe("navigationPrefs — parse tolerates absent / corrupt payloads", () => 
   it("recovers each field independently when only one is usable", () => {
     expect(
       parseNavigationPrefs('{"activeTab":"bogus","hiddenTabs":["inventory"]}'),
-    ).toEqual({ activeTab: "calculator", hiddenTabs: ["inventory"] });
+    ).toEqual({ activeTab: "calculator", hiddenTabs: [] });
     expect(
       parseNavigationPrefs('{"activeTab":"dashboard","hiddenTabs":"nope"}'),
     ).toEqual({ activeTab: "dashboard", hiddenTabs: [] });
@@ -154,7 +154,7 @@ describe("navigationPrefs — parse tolerates absent / corrupt payloads", () => 
     const parsed = parseNavigationPrefs(
       '{"activeTab":"history","hiddenTabs":["bogus","inventory",42,null]}',
     );
-    expect(parsed).toEqual({ activeTab: "history", hiddenTabs: ["inventory"] });
+    expect(parsed).toEqual({ activeTab: "history", hiddenTabs: [] });
   });
 
   it("never restores the always-visible destination as hidden", () => {
@@ -212,7 +212,6 @@ describe("navigationPrefs — visibility helpers", () => {
       "calculator",
       "dashboard",
       "catalog",
-      "inventory",
     ]);
   });
 
@@ -223,7 +222,6 @@ describe("navigationPrefs — visibility helpers", () => {
       "customers",
       "products",
       "privacy",
-      "marketplace",
     ]);
   });
 
@@ -356,7 +354,6 @@ describe("navigationPrefs — v2.0 no-loss guarantee", () => {
       "dashboard",
       "history",
       "catalog",
-      "inventory",
     ]);
   });
 

@@ -27,7 +27,15 @@ import { useCurrency } from "@/shared/hooks/useCurrency";
 import type { PrinterProfile } from "@/shared/types";
 import type { CatalogPrinter } from "@/shared/stores/catalogStore";
 
-type Section = "printers" | "materials" | "marketplaces";
+export type CatalogSection = "printers" | "materials" | "marketplaces";
+
+interface CatalogTabProps {
+  activeSection?: CatalogSection;
+  initialSection?: CatalogSection;
+  onActiveSectionChange?: (section: CatalogSection) => void;
+  showHeader?: boolean;
+  showSectionTabs?: boolean;
+}
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const SHIPPED_PRINTER_IMAGE_PATHS = new Set([
@@ -232,12 +240,28 @@ function MarketplaceThumbnail({
   );
 }
 
-const SECTION_ORDER: Section[] = ["printers", "materials", "marketplaces"];
+const SECTION_ORDER: CatalogSection[] = [
+  "printers",
+  "materials",
+  "marketplaces",
+];
 
-export function CatalogTab() {
+export function CatalogTab({
+  activeSection,
+  initialSection = "printers",
+  onActiveSectionChange,
+  showHeader = true,
+  showSectionTabs = true,
+}: CatalogTabProps = {}) {
   const { t } = useTranslation();
   const store = useCatalogStore();
-  const [section, setSection] = useState<Section>("printers");
+  const [internalSection, setInternalSection] =
+    useState<CatalogSection>(initialSection);
+  const section = activeSection ?? internalSection;
+  const setSection = (next: CatalogSection) => {
+    if (activeSection === undefined) setInternalSection(next);
+    onActiveSectionChange?.(next);
+  };
 
   const load = useCatalogStore((s) => s.load);
   useEffect(() => {
@@ -253,7 +277,10 @@ export function CatalogTab() {
     [store.printers.length, store.materials.length, store.marketplaces.length],
   );
 
-  const handleTabKeyDown = (e: React.KeyboardEvent, current: Section) => {
+  const handleTabKeyDown = (
+    e: React.KeyboardEvent,
+    current: CatalogSection,
+  ) => {
     const idx = SECTION_ORDER.indexOf(current);
     if (e.key === "ArrowRight") {
       e.preventDefault();
@@ -268,34 +295,36 @@ export function CatalogTab() {
 
   return (
     <div className="space-y-5">
-      <div className="surface rounded-xl p-5 flex flex-wrap gap-3 items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-            {t("catalog.title")}
-          </h2>
-          <p className="text-xs text-[var(--color-text-muted)]">
-            {t("catalog.subtitle")}
-          </p>
-        </div>
-        {/*
+      {showHeader && (
+        <div className="surface rounded-xl p-5 flex flex-wrap gap-3 items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+              {t("catalog.title")}
+            </h2>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              {t("catalog.subtitle")}
+            </p>
+          </div>
+          {/*
          VIS-003(a) — `flex-wrap` so the three stat chips reflow instead of
          pushing the page wide. Measured at 390px: this row was 294px inside a
          242px column and reached x=420, making the document 420px wide on the
          Cadastros destination even after the shell and the dock were fixed. The
          chips were already token-driven; only the layout was at fault.
          */}
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="px-3 py-1.5 rounded-[6px] bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
-            {stats.printers} {t("catalog.printers")}
-          </span>
-          <span className="px-3 py-1.5 rounded-[6px] bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
-            {stats.materials} {t("catalog.materials")}
-          </span>
-          <span className="px-3 py-1.5 rounded-[6px] bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
-            {stats.marketplaces} {t("catalog.marketplaces")}
-          </span>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="px-3 py-1.5 rounded-[6px] bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+              {stats.printers} {t("catalog.printers")}
+            </span>
+            <span className="px-3 py-1.5 rounded-[6px] bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+              {stats.materials} {t("catalog.materials")}
+            </span>
+            <span className="px-3 py-1.5 rounded-[6px] bg-[var(--color-bg-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+              {stats.marketplaces} {t("catalog.marketplaces")}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/*
          VIS-004 — the fee tabs were uneven and clipped at 390px.
@@ -308,42 +337,44 @@ export function CatalogTab() {
          restores equal-width columns once the content area can fit the labels.
          `whitespace-nowrap` keeps each label uncut.
          */}
-      <div
-        className="surface grid grid-cols-1 gap-2 rounded-xl p-2 sm:grid-cols-3"
-        role="tablist"
-        aria-label={t("catalog.title")}
-      >
-        <button
-          role="tab"
-          aria-selected={section === "printers"}
-          aria-controls="tabpanel-printers"
-          onClick={() => setSection("printers")}
-          onKeyDown={(e) => handleTabKeyDown(e, "printers")}
-          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "printers" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+      {showSectionTabs && (
+        <div
+          className="surface grid grid-cols-1 gap-2 rounded-xl p-2 sm:grid-cols-3"
+          role="tablist"
+          aria-label={t("catalog.title")}
         >
-          {t("catalog.printers")}
-        </button>
-        <button
-          role="tab"
-          aria-selected={section === "materials"}
-          aria-controls="tabpanel-materials"
-          onClick={() => setSection("materials")}
-          onKeyDown={(e) => handleTabKeyDown(e, "materials")}
-          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "materials" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
-        >
-          {t("catalog.materials")}
-        </button>
-        <button
-          role="tab"
-          aria-selected={section === "marketplaces"}
-          aria-controls="tabpanel-marketplaces"
-          onClick={() => setSection("marketplaces")}
-          onKeyDown={(e) => handleTabKeyDown(e, "marketplaces")}
-          className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "marketplaces" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
-        >
-          {t("catalog.marketplaces")}
-        </button>
-      </div>
+          <button
+            role="tab"
+            aria-selected={section === "printers"}
+            aria-controls="tabpanel-printers"
+            onClick={() => setSection("printers")}
+            onKeyDown={(e) => handleTabKeyDown(e, "printers")}
+            className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "printers" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          >
+            {t("catalog.printers")}
+          </button>
+          <button
+            role="tab"
+            aria-selected={section === "materials"}
+            aria-controls="tabpanel-materials"
+            onClick={() => setSection("materials")}
+            onKeyDown={(e) => handleTabKeyDown(e, "materials")}
+            className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "materials" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          >
+            {t("catalog.materials")}
+          </button>
+          <button
+            role="tab"
+            aria-selected={section === "marketplaces"}
+            aria-controls="tabpanel-marketplaces"
+            onClick={() => setSection("marketplaces")}
+            onKeyDown={(e) => handleTabKeyDown(e, "marketplaces")}
+            className={`min-h-11 w-full rounded-xl px-3 py-2.5 text-center text-sm font-semibold whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${section === "marketplaces" ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`}
+          >
+            {t("catalog.marketplaces")}
+          </button>
+        </div>
+      )}
 
       {section === "printers" && (
         <div id="tabpanel-printers" role="tabpanel">

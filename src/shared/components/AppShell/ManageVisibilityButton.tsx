@@ -8,7 +8,7 @@ import {
   type NavigationPrefs,
 } from "@/shared/lib/navigationPrefs";
 import { useNavigationVisibility } from "./NavigationContext";
-import { TABS, type Tab } from "./tabs";
+import { NAVIGATION_TABS, type Tab } from "./tabs";
 
 /**
  * Settings → Manage Visibility (Phase 7o s3).
@@ -191,7 +191,7 @@ export function ManageVisibilityButton({
             </p>
 
             <ul className="px-2 pb-2">
-              {TABS.map((tab) => {
+              {NAVIGATION_TABS.map((tab) => {
                 const hidden = isHidden(tab.id);
                 return (
                   <li

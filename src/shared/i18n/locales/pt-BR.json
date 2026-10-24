@@ -39,12 +39,12 @@
   },
   "nav": {
     "calculator": "Calculadora",
-    "catalog": "Cadastros",
-    "marketplace": "Marketplace",
+    "catalog": "Minha Oficina",
+    "marketplace": "Canais de venda",
     "history": "Histórico",
     "dashboard": "Dashboard",
     "infill": "Calc. Infill",
-    "inventory": "Estante de Filamento",
+    "inventory": "Estoque",
     "quotes": "Orçamentos",
     "changelog": "Novidades",
     "customers": "Clientes",
@@ -61,7 +61,14 @@
     "pricing": "Precificação",
     "printers": "Impressoras",
     "more": "Mais",
-    "resources": "Recursos"
+    "resources": "Recursos",
+    "modules": "Módulos",
+    "docsWiki": "Documentação / Wiki",
+    "releaseNotes": "Notas de Versão",
+    "github": "Código no GitHub",
+    "communityTelegram": "Comunidade Telegram",
+    "collapsePanel": "Recolher painel",
+    "expandPanel": "Expandir painel de navegação"
   },
   "utilityBar": {
     "label": "Preferências de exibição"
@@ -79,10 +86,10 @@
       "description": "Cada impressão salva e comparável"
     },
     "catalog": {
-      "description": "Impressoras, materiais e taxas e canais"
+      "description": "Impressoras, materiais, estoque e canais de venda"
     },
     "marketplace": {
-      "description": "Definições de materiais e perfis de impressora"
+      "description": "Lojas onde você vende e taxas por canal"
     },
     "inventory": {
       "description": "Estoque de filamentos"
@@ -454,37 +461,6 @@
     "saleLabel": "Venda",
     "profitLabel": "Lucro"
   },
-  "marketplaceBrowse": {
-    "title": "Marketplace",
-    "subtitle": "Consulte definições do catálogo de materiais e perfis de impressora.",
-    "browseOnly": "Somente consulta",
-    "materials": "Materiais",
-    "printers": "Perfis de impressora",
-    "searchMaterials": "Buscar materiais",
-    "searchPrinters": "Buscar perfis de impressora",
-    "filterBrand": "Marca",
-    "allBrands": "Todas as marcas",
-    "filterTechnology": "Tecnologia declarada",
-    "allTechnologies": "Todas as tecnologias",
-    "fdm": "FDM",
-    "resin": "Resina",
-    "unspecified": "Não especificada",
-    "unknownProfiles_one": "{{count}} perfil sem tecnologia especificada.",
-    "unknownProfiles_other": "{{count}} perfis sem tecnologia especificada.",
-    "revealUnknown_one": "Mostrar {{count}} perfil sem tecnologia especificada",
-    "revealUnknown_other": "Mostrar {{count}} perfis sem tecnologia especificada",
-    "type": "Tipo",
-    "density": "Densidade",
-    "averagePrice": "Preço médio",
-    "prusaMk4PhotoAlt": "Impressora 3D Original Prusa MK4 vista de frente, com uma peça laranja impressa na mesa",
-    "openPrusaMk4PhotoSource": "Abrir a página da foto do Prusa MK4 no Wikimedia Commons",
-    "photoBy": "Foto de",
-    "photoModified": "Recortada para remover a marca visível; outras marcas foram desfocadas.",
-    "photoNotEndorsed": "Foto independente; não representa endosso da Prusa Research.",
-    "fdmPlaceholderAlt": "Ilustração genérica de impressora FDM; não é uma foto do produto",
-    "resinPlaceholderAlt": "Ilustração genérica de impressora de resina; não é uma foto do produto",
-    "unknownPlaceholderAlt": "Ilustração genérica de impressora; tecnologia não especificada"
-  },
   "catalog": {
     "title": "Cadastros e Presets",
     "subtitle": "Gerencie impressoras, materiais e taxas e canais usados pela calculadora.",
@@ -497,7 +473,7 @@
     "emptyPersonalPrinters": "Você ainda não adicionou uma impressora à sua lista.",
     "emptyPersonalPrintersHint": "Cadastre a sua ou escolha um modelo para criar uma cópia editável.",
     "materials": "Materiais",
-    "marketplaces": "Taxas e Canais",
+    "marketplaces": "Lojas e canais de venda",
     "addPrinter": "Nova impressora",
     "selectPrinter": "Selecionar impressora",
     "customPrinter": "Personalizada",
@@ -2692,21 +2668,52 @@
         "label": "Nome do projeto",
         "placeholder": "Ex.: Suporte para fones"
       },
-      "materialType": { "label": "Filamento" },
-      "weightGrams": { "label": "Peso da peça", "unit": "g" },
-      "costPerKg": { "label": "Preço do carretel", "unit": "/kg" },
-      "quantity": { "label": "Quantidade" },
+      "materialType": {
+        "label": "Filamento"
+      },
+      "weightGrams": {
+        "label": "Peso da peça",
+        "unit": "g"
+      },
+      "costPerKg": {
+        "label": "Preço do carretel",
+        "unit": "/kg"
+      },
+      "quantity": {
+        "label": "Quantidade"
+      },
       "printer": {
         "label": "Impressora",
         "manage": "Gerenciar ou adicionar impressoras"
       },
-      "printTimeHours": { "label": "Tempo de impressão", "unit": "h" },
-      "energyCostPerKwh": { "label": "Energia por kWh", "unit": "/kWh" },
-      "setupTimeMinutes": { "label": "Tempo de preparação", "unit": "min" },
-      "postProcessingMinutes": { "label": "Pós-processamento", "unit": "min" },
-      "hourlyRate": { "label": "Valor por hora", "unit": "/h" },
-      "packagingCost": { "label": "Embalagem", "unit": "/un" },
-      "profitMarginPercent": { "label": "Markup sobre o custo", "unit": "%" }
+      "printTimeHours": {
+        "label": "Tempo de impressão",
+        "unit": "h"
+      },
+      "energyCostPerKwh": {
+        "label": "Energia por kWh",
+        "unit": "/kWh"
+      },
+      "setupTimeMinutes": {
+        "label": "Tempo de preparação",
+        "unit": "min"
+      },
+      "postProcessingMinutes": {
+        "label": "Pós-processamento",
+        "unit": "min"
+      },
+      "hourlyRate": {
+        "label": "Valor por hora",
+        "unit": "/h"
+      },
+      "packagingCost": {
+        "label": "Embalagem",
+        "unit": "/un"
+      },
+      "profitMarginPercent": {
+        "label": "Markup sobre o custo",
+        "unit": "%"
+      }
     },
     "nav": {
       "previous": "Anterior",
@@ -2730,7 +2737,6 @@
       "invalidQuantity": "Informe uma quantidade inteira entre 1 e 100.000."
     }
   },
-
   "copilot": {
     "title": "Assistente local",
     "localBadge": "Sugestões locais",
@@ -2758,7 +2764,6 @@
     "github": "GitHub",
     "telegram": "Canal Telegram"
   },
-
   "persistence": {
     "bridge": {
       "startupAriaLabel": "Falha ao abrir o armazenamento local",
@@ -2783,5 +2788,32 @@
       "message": "O aplicativo não conseguiu ler o manifesto de classificação de dados, então nenhuma parte do seu perfil salvo pode ser aberta agora. Nada está sendo gravado ou apagado — seus dados continuam no disco e voltarão quando o manifesto estiver disponível novamente.",
       "detail": "Motivo: {{reason}}"
     }
+  },
+  "minidash": {
+    "title": "Mini-Dash & Visão Rápida da Oficina",
+    "close": "Fechar",
+    "revenue": "Faturamento calculado",
+    "netProfit": "Lucro estimado",
+    "margin": "Margem {{margin}}%",
+    "calculations": "{{count}} cálculos salvos",
+    "spools": "Carretéis",
+    "registeredSpools": "cadastrados no estoque",
+    "alerts": "Alertas do Estúdio",
+    "lowStock": "{{count}} carretéis com estoque abaixo de 100 g",
+    "seeStock": "Ver Estoque",
+    "seeHistory": "Ver Histórico",
+    "noAlerts": "Nenhum alerta de estoque; {{count}} cálculos salvos",
+    "demoSession": "Sessão de demonstração com dados de exemplo",
+    "demoLabel": "—",
+    "goDashboard": "Ir para Dashboard Completo →",
+    "dockLowStock": "{{count}} baixos"
+  },
+  "workshop": {
+    "title": "Minha Oficina",
+    "subtitle": "Impressoras, materiais, estoque e canais de venda em um só lugar.",
+    "printers": "Impressoras",
+    "materials": "Materiais",
+    "stock": "Estoque",
+    "salesChannels": "Lojas e canais de venda"
   }
 }

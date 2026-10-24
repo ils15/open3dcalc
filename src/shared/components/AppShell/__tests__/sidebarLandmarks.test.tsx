@@ -14,7 +14,6 @@ vi.mock("../useVisibleNavigation", () => ({
     "dashboard",
     "history",
     "catalog",
-    "inventory",
   ],
 }));
 

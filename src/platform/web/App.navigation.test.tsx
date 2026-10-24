@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
+import i18n from "@/shared/i18n/i18n";
 
 /**
  * Who owns the web App's destination — after the Studio layout refactor (#260).
@@ -107,6 +108,16 @@ function currentView(): string | null {
 }
 
 describe("web App navigation owner", () => {
+  // The sidebar resolves labels through the shared nav.* keys; pin pt-BR so
+  // literal assertions below do not depend on the detector's jsdom defaults.
+  const previousLanguage = i18n.language;
+  beforeAll(() => {
+    void i18n.changeLanguage("pt-BR");
+  });
+  afterAll(() => {
+    void i18n.changeLanguage(previousLanguage);
+  });
+
   it("opens on the calculator", () => {
     render(<App />);
 
@@ -163,13 +174,31 @@ describe("web App navigation owner", () => {
   it("switches destination from the keyboard shortcuts", async () => {
     render(<App />);
 
-    // StudioLayout binds 1–4 to the four workshop destinations. Each is read
-    // back off the `StudioHeader` breadcrumb, the same label a user follows.
+    // StudioLayout keeps the old shortcuts, but printer and stock routes now
+    // open sections inside Minha Oficina rather than standalone destinations.
     fireEvent.keyDown(window, { key: "3" });
-    expect(await screen.findByText("Frota de Impressoras")).toBeInTheDocument();
+    const printerTab = await screen.findByRole("tab", {
+      name: /Printers|Impressoras/,
+    });
+    expect(printerTab).toHaveAttribute("aria-selected", "true");
 
     fireEvent.keyDown(window, { key: "4" });
-    expect(await screen.findByText("Estoque de Carretéis")).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(
+        screen
+          .getAllByRole("tab", { name: /Stock|Estoque/ })
+          .some((tab) => tab.getAttribute("aria-selected") === "true"),
+      ).toBe(true);
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: /Materials|Materiais/ }));
+    await vi.waitFor(() => {
+      expect(
+        screen
+          .getAllByRole("tab", { name: /Materials|Materiais/ })
+          .some((tab) => tab.getAttribute("aria-selected") === "true"),
+      ).toBe(true);
+    });
 
     fireEvent.keyDown(window, { key: "2" });
     expect(await screen.findByText("Dashboard Geral")).toBeInTheDocument();
