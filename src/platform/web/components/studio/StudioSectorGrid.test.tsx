@@ -30,7 +30,7 @@ const read = (p: string) => readFileSync(resolve(srcRoot, p), "utf-8");
 /** Every Studio view whose root must follow the Example rhythm. */
 const CENTERED_VIEWS: ReadonlyArray<string> = [
   "platform/web/components/studio/StudioDashboardView.tsx",
-  "platform/web/components/studio/StudioSpoolView.tsx",
+  "shared/components/SpoolShelf/SpoolManagerView.tsx",
   "platform/web/components/studio/StudioHistoryView.tsx",
   "platform/web/components/studio/StudioCustomerView.tsx",
   "platform/web/components/studio/StudioQuotesView.tsx",

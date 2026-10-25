@@ -191,7 +191,7 @@ const measured = measuredDebt();
 const FLOOR: Readonly<Record<string, number>> = {
   "src/platform/web/components/studio/StudioCalculatorView.tsx": 3,
   "src/platform/web/components/studio/StudioQuotesView.tsx": 3,
-  "src/platform/web/components/studio/StudioSpoolView.tsx": 27,
+  "src/shared/components/SpoolShelf/SpoolManagerView.tsx": 27,
   "src/platform/web/components/studio/StudioProductsView.tsx": 2,
   "src/shared/components/Catalog/CatalogTab.tsx": 120,
   "src/platform/web/components/studio/StudioCustomerView.tsx": 1,

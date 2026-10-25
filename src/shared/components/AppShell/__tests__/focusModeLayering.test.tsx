@@ -827,7 +827,8 @@ describe("focus mode — a passive surface never buries the exit", () => {
     //    runs over each and re-checks that every one of their z-50s really is
     //    `fixed inset-0 … bg-black/NN`: StudioCopilotModal, StudioCustomerView,
     //    StudioMiniDashOverlay, StudioProductsView, StudioQuoteModal,
-    //    StudioQuotesView, StudioShortcutsModal and StudioSpoolView. Listing
+    //    StudioQuotesView and StudioShortcutsModal. SpoolManagerView (ex-StudioSpoolView,
+    //    moved to shared) completes the set. Listing
     //    them widens the
     //    audit; it does not widen an exemption.
     //
@@ -873,7 +874,7 @@ describe("focus mode — a passive surface never buries the exit", () => {
       "src/platform/web/components/studio/StudioQuoteModal.tsx",
       "src/platform/web/components/studio/StudioQuotesView.tsx",
       "src/platform/web/components/studio/StudioShortcutsModal.tsx",
-      "src/platform/web/components/studio/StudioSpoolView.tsx",
+      "src/shared/components/SpoolShelf/SpoolManagerView.tsx",
     ].sort();
     expect(
       found.sort(),

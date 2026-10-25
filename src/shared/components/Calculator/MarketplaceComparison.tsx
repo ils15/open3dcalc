@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { MarketplaceArt } from "@/shared/components/MarketplaceArt";
 import { ArrowLeftRight, Check, Trophy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -145,6 +146,10 @@ export function MarketplaceComparison({
                         className="block px-2 py-3 text-left font-medium text-[var(--color-text-primary)] sm:table-cell"
                       >
                         <div className="flex min-w-0 items-start gap-1.5">
+                          <MarketplaceArt
+                            source={marketplace?.logo}
+                            className="h-9 w-9"
+                          />
                           {isBest && (
                             <Trophy
                               aria-hidden="true"

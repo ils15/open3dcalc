@@ -2814,6 +2814,9 @@
     "printers": "Impressoras",
     "materials": "Materiais",
     "stock": "Estoque",
-    "salesChannels": "Lojas e canais de venda"
+    "salesChannels": "Lojas e canais de venda",
+    "stockViewLabel": "Visualização do estoque",
+    "stockViewManager": "Gestão",
+    "stockViewShelf": "Estante"
   }
 }

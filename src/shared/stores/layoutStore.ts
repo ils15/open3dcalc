@@ -30,6 +30,7 @@ export const LAYOUT_STORAGE_KEY = "open3dcalc_layout_v1";
 
 export type LayoutMode = "classic" | "guided" | "bento";
 export type SidebarMode = "compact" | "tabs" | "dock" | "expanded";
+export type StockView = "shelf" | "manager";
 
 const DEFAULT_LAYOUT_MODE: LayoutMode = "classic";
 export const DEFAULT_SIDEBAR_MODE: SidebarMode = "compact";
@@ -44,10 +45,13 @@ const VALID_SIDEBAR_MODES: readonly SidebarMode[] = [
   "dock",
   "expanded",
 ];
+const VALID_STOCK_VIEWS: readonly StockView[] = ["shelf", "manager"];
 
 interface LayoutPreferences {
   layoutMode: LayoutMode;
   sidebarMode: SidebarMode;
+  /** My Workshop stock presentation; absent = the shelf default. */
+  stockView?: StockView;
 }
 
 function isLayoutMode(value: unknown): value is LayoutMode {
@@ -56,6 +60,10 @@ function isLayoutMode(value: unknown): value is LayoutMode {
 
 function isSidebarMode(value: unknown): value is SidebarMode {
   return (VALID_SIDEBAR_MODES as readonly string[]).includes(value as string);
+}
+
+function isStockView(value: unknown): value is StockView {
+  return (VALID_STOCK_VIEWS as readonly string[]).includes(value as string);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -84,7 +92,13 @@ function loadLayoutPreferences(): LayoutPreferences {
       isLayoutMode(parsed.layoutMode) &&
       isSidebarMode(parsed.sidebarMode)
     ) {
-      return { layoutMode: parsed.layoutMode, sidebarMode: parsed.sidebarMode };
+      return {
+        layoutMode: parsed.layoutMode,
+        sidebarMode: parsed.sidebarMode,
+        ...(isStockView(parsed.stockView)
+          ? { stockView: parsed.stockView }
+          : {}),
+      };
     }
   } catch {
     return defaultPreferences();
@@ -126,6 +140,7 @@ function persistPreferences(
 interface LayoutState extends LayoutPreferences {
   setLayoutMode: (mode: LayoutMode) => void;
   setSidebarMode: (mode: SidebarMode) => void;
+  setStockView: (view: StockView) => void;
 }
 
 const initialPreferences = loadLayoutPreferences();
@@ -152,6 +167,18 @@ export const useLayoutStore = create<LayoutState>((set) => ({
       };
       // Selecting any sidebar mode opts into the composite format, including
       // compact, so the independent choice survives a reload.
+      persistPreferences(preferences, true);
+      return preferences;
+    });
+  },
+
+  setStockView: (view) => {
+    set((state) => {
+      const preferences = {
+        layoutMode: state.layoutMode,
+        sidebarMode: state.sidebarMode,
+        stockView: view,
+      };
       persistPreferences(preferences, true);
       return preferences;
     });

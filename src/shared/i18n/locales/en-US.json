@@ -2814,6 +2814,9 @@
     "printers": "Printers",
     "materials": "Materials",
     "stock": "Stock",
-    "salesChannels": "Stores & sales channels"
+    "salesChannels": "Stores & sales channels",
+    "stockViewLabel": "Stock view",
+    "stockViewManager": "Management",
+    "stockViewShelf": "Shelf"
   }
 }

@@ -28,7 +28,7 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 
-interface StudioSpoolViewProps {
+interface SpoolManagerViewProps {
   onTabChange?: (tab: Tab) => void;
 }
 
@@ -51,7 +51,7 @@ const PRESET_PALETTE = [
   { name: "Translúcido / Clear", hex: "#cbd5e1" },
 ];
 
-export const StudioSpoolView: React.FC<StudioSpoolViewProps> = ({
+export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
   onTabChange,
 }) => {
   const isDemoMode = useIsDemoMode();
