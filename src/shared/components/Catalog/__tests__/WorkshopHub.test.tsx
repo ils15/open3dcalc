@@ -13,8 +13,24 @@ vi.mock("../CatalogTab", () => ({
   ),
 }));
 
-vi.mock("@/shared/components/SpoolShelf/SpoolShelf", () => ({
-  SpoolShelf: () => <div data-testid="stock-section" />,
+const setStockView = vi.fn();
+let fakeStockView: "shelf" | "manager" | undefined = undefined;
+
+vi.mock("@/shared/stores/layoutStore", () => ({
+  useLayoutStore: Object.assign(
+    vi.fn((selector: (s: unknown) => unknown) =>
+      selector({
+        stockView: fakeStockView,
+        setStockView,
+      }),
+    ),
+    { getState: vi.fn() },
+  ),
+}));
+
+vi.mock("@/shared/components/SpoolShelf", () => ({
+  SpoolShelf: () => <div data-testid="shelf-section" />,
+  SpoolManagerView: () => <div data-testid="manager-section" />,
 }));
 
 function renderHub(activeTab: Tab) {
@@ -29,7 +45,24 @@ describe("WorkshopHub", () => {
       "aria-selected",
       "true",
     );
-    expect(screen.getByTestId("stock-section")).toBeInTheDocument();
+    // The full management view is the default stock presentation.
+    expect(screen.getByTestId("manager-section")).toBeInTheDocument();
+  });
+
+  it("toggles stock between management and shelf, persisting the choice", () => {
+    renderHub("inventory");
+
+    const shelfToggle = screen.getByRole("button", {
+      name: "workshop.stockViewShelf",
+    });
+    fireEvent.click(shelfToggle);
+
+    expect(setStockView).toHaveBeenCalledWith("shelf");
+
+    fakeStockView = "shelf";
+    render(<WorkshopHub activeTab="inventory" onTabChange={vi.fn()} />);
+    expect(screen.getByTestId("shelf-section")).toBeInTheDocument();
+    fakeStockView = undefined;
   });
 
   it("opens seller fee profiles from the legacy Marketplace route", () => {

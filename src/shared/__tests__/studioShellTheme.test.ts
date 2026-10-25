@@ -393,7 +393,6 @@ describe("Studio views and overlays use theme tokens", () => {
     "StudioCalculatorView",
     "StudioQuotesView",
     "StudioProductsView",
-    "StudioSpoolView",
     "StudioHistoryView",
     "StudioCustomerView",
     "StudioPrinterView",
@@ -403,29 +402,29 @@ describe("Studio views and overlays use theme tokens", () => {
     "StudioQuoteModal",
   ];
 
-  it.each(MIGRATED_FILES)("%s contains no hardcoded hex color", (file) => {
-    let source = stripComments(read(`${STUDIO}/${file}.tsx`));
-    // Spool swatch presets are product data, not UI paint. Keep their physical
-    // colors while guarding all rendered surfaces, borders, text, and chart ink.
-    if (file === "StudioSpoolView") {
-      source = source
-        .replace(/hex:\s*"#[0-9a-f]{6}"/gi, "hex: <swatch-data>")
-        .replace(
-          /(?:useState|setColorHex)\("#[0-9a-f]{6}"\)/gi,
-          "colorHex(<swatch-data>)",
-        )
-        .replace(
-          /spool\.colorHex \|\| "#[0-9a-f]{6}"/gi,
-          "spool.colorHex || <swatch-data>",
-        );
-    }
+  // Ex-StudioSpoolView moved to shared (now the workshop stock "Gestão" view);
+  // the swatch-preset exemption travels with it.
+  it("SpoolManagerView contains no hardcoded hex color", () => {
+    let source = stripComments(
+      read("shared/components/SpoolShelf/SpoolManagerView.tsx"),
+    );
+    source = source
+      .replace(/hex:\s*"#[0-9a-f]{6}"/gi, "hex: <swatch-data>")
+      .replace(
+        /(?:useState|setColorHex)\("#[0-9a-f]{6}"\)/gi,
+        "colorHex(<swatch-data>)",
+      )
+      .replace(
+        /spool\.colorHex \|\| "#[0-9a-f]{6}"/gi,
+        "spool.colorHex || <swatch-data>",
+      );
     expect(
       source,
-      `${file} must use semantic theme tokens instead of hardcoded hex colors`,
+      "SpoolManagerView must use semantic theme tokens instead of hardcoded hex colors",
     ).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     expect(
       source,
-      `${file} must not use static Tailwind color palettes`,
+      "SpoolManagerView must not use static Tailwind color palettes",
     ).not.toMatch(
       /\b(?:bg|text|border|ring|from|to|via|placeholder|shadow|divide)-(?:slate|gray|zinc|neutral|blue|indigo|purple|green|red|yellow|amber|orange|emerald|cyan|teal|pink|rose)-\d{2,3}\b/i,
     );

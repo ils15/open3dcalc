@@ -7,10 +7,15 @@
   column-gap: 1.5rem;
 }
 
+/* Wide viewports keep the three-region template, but the measure container
+   must NOT break out of its parent: the retired Studio shell compensated a
+   fixed dock with a negative inline margin here, which now desynchronises the
+   grid from the centered max-w-7xl views around it (mode selector, results
+   column and section rail drifted apart on both web shells). */
 @media (min-width: 90rem) {
   .calculator-viewport-measure {
-    width: min(144rem, calc(100vw - 24.5rem));
-    margin-inline-start: -4.375rem;
+    width: 100%;
+    margin-inline-start: 0;
   }
 
   .calculator-layout--three-region {
@@ -18,6 +23,6 @@
   }
 
   .calculator-results-sidebar {
-    margin-inline-start: 0.5625rem;
+    margin-inline-start: 0;
   }
 }

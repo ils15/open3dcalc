@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Boxes, Printer, Store } from "lucide-react";
+import { Boxes, Printer, Spool, Store } from "lucide-react";
 
 import { CatalogTab, type CatalogSection } from "./CatalogTab";
-import { SpoolShelf } from "@/shared/components/SpoolShelf/SpoolShelf";
-import { Spool } from "lucide-react";
+import { SpoolShelf, SpoolManagerView } from "@/shared/components/SpoolShelf";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
 type WorkshopSection = CatalogSection | "stock";
@@ -46,6 +46,8 @@ export function WorkshopHub({
   onTabChange,
 }: WorkshopHubProps): React.ReactElement {
   const { t } = useTranslation();
+  const stockView = useLayoutStore((s) => s.stockView ?? "manager");
+  const setStockView = useLayoutStore((s) => s.setStockView);
   const [selectedSection, setSelectedSection] = useState<WorkshopSection>(() =>
     getSectionFromRoute(activeTab),
   );
@@ -101,7 +103,42 @@ export function WorkshopHub({
         className="min-w-0"
       >
         {section === "stock" ? (
-          <SpoolShelf />
+          <div className="flex flex-col gap-4">
+            {/* Stock presentation toggle: the full management view or the
+                compact shelf. The choice persists in the declared
+                open3dcalc_layout_v1 preference (layoutStore.stockView). */}
+            <div
+              role="group"
+              aria-label={t("workshop.stockViewLabel")}
+              className="surface flex w-fit items-center gap-1 rounded-xl border border-[var(--color-border)] p-1"
+            >
+              {(
+                [
+                  ["manager", "workshop.stockViewManager"],
+                  ["shelf", "workshop.stockViewShelf"],
+                ] as const
+              ).map(([view, labelKey]) => (
+                <button
+                  key={view}
+                  type="button"
+                  aria-pressed={stockView === view}
+                  onClick={() => setStockView(view)}
+                  className={`min-h-9 rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                    stockView === view
+                      ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
+                  }`}
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+            </div>
+            {stockView === "manager" ? (
+              <SpoolManagerView onTabChange={onTabChange} />
+            ) : (
+              <SpoolShelf />
+            )}
+          </div>
         ) : (
           <CatalogTab
             activeSection={section}
