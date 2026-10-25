@@ -31,8 +31,11 @@ export function StudioCalculatorModeSelector({
   mode,
   onModeChange,
 }: StudioCalculatorModeSelectorProps): ReactElement {
+  // Full width on purpose: the card must share the calculator grid's left and
+  // right edges below it — centering it made the two drift apart on wide
+  // viewports.
   return (
-    <section className="mx-auto mb-4 flex w-full max-w-7xl flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+    <section className="mb-4 flex w-full flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
       <div>
         <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
           Visualização da calculadora

@@ -46,8 +46,15 @@ const TAB_OPTIONS: readonly SidebarTabOption[] = [
   { tab: "actions", labelKey: "results.sidebar.actions", icon: ListChecks },
 ];
 
-function controlClass(active: boolean): string {
-  return `inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
+function controlClass(active: boolean, compact = false): string {
+  // The four-mode group lives in a ~20rem column: horizontal icon+text makes
+  // "Expandido"/"Expanded" truncate, so the compact variant stacks the icon
+  // above the label and drops the size/padding.
+  return `inline-flex min-h-[44px] items-center justify-center rounded-lg ${
+    compact
+      ? "flex-col gap-0.5 px-1 py-1 text-[10px]"
+      : "gap-1.5 px-2.5 text-xs"
+  } font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none ${
     active
       ? "bg-[var(--accent)] text-[var(--text-inverse)] shadow-sm"
       : "text-[var(--text-secondary)] hover:bg-[var(--surface-sunken)] hover:text-[var(--text-primary)]"
@@ -100,7 +107,7 @@ export function ResultsSidebar({
                   aria-pressed={active}
                   title={t(labelKey)}
                   onClick={() => setSidebarMode(mode)}
-                  className={`${controlClass(active)} min-w-0 px-1.5`}
+                  className={`${controlClass(active, true)} min-w-0`}
                 >
                   <Icon className="size-3.5 shrink-0" aria-hidden="true" />
                   <span className="truncate">{t(labelKey)}</span>
