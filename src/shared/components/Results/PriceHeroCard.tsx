@@ -277,7 +277,7 @@ export function PriceHeroCard({
       <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[var(--border-default)]">
         <div className="p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center">
           <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-0.5">
-            CUSTO DE PRODUÇÃO
+            {t("results.hero.productionCost")}
           </span>
           <span className="text-sm font-bold font-mono text-[var(--text-primary)] block">
             {fmtCurrency(totalCost)}
@@ -289,7 +289,7 @@ export function PriceHeroCard({
 
         <div className="p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-default)] text-center">
           <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block mb-0.5">
-            LUCRO LÍQUIDO
+            {t("results.hero.netProfit")}
           </span>
           <span className="text-sm font-bold font-mono text-[var(--positive)] block">
             {fmtCurrency(breakdown.displayProfit)}

@@ -147,8 +147,9 @@ describe("Studio views — card header scale", () => {
     });
 
     for (const title of [
-      "Histórico de valores calculados",
-      "Consumo FDM por material",
+      i18n.t("dashboardView.revenueChartTitle"),
+      i18n.t("dashboardView.materialTitle"),
+      i18n.t("dashboardView.recentTitle"),
     ]) {
       const heading = screen.getByRole("heading", { name: title });
       expect(heading.tagName).toBe("H2");

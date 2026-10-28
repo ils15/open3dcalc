@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistoryEntry } from "@/shared/types";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
+import i18n from "@/shared/i18n/i18n";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { StudioDashboardView } from "./StudioDashboardView";
 
@@ -43,6 +44,9 @@ afterEach(() => {
 });
 
 describe("StudioDashboardView", () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage("pt-BR");
+  });
   it("uses saved history for the selected period and keeps material units separate", () => {
     const now = Date.now();
     const fdmSnapshot = {
@@ -103,12 +107,14 @@ describe("StudioDashboardView", () => {
       <StudioDashboardView onTabChange={vi.fn()} onOpenCopilot={vi.fn()} />,
     );
 
-    expect(screen.getByText("Dashboard aguardando seus dados")).toBeVisible();
     expect(
-      screen.getByText("Nenhum cálculo salvo neste período."),
+      screen.getByText(i18n.t("dashboardView.waitingTitle")),
     ).toBeVisible();
     expect(
-      screen.getByText("Sem consumo FDM registrado no período."),
+      screen.getByText(i18n.t("dashboardView.noDataInPeriod")),
+    ).toBeVisible();
+    expect(
+      screen.getByText(i18n.t("dashboardView.noFdmConsumption")),
     ).toBeVisible();
     expect(
       screen.queryByText(/BACKLOG|projeção anual|meta mensal/i),
