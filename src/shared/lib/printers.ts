@@ -76,7 +76,8 @@ export const printers: PrinterProfile[] = [
     value: 13000,
     usefulLife: 5000,
     maintenancePerHour: 0.65,
-    image: "/images/printers/fallback-fdm.svg",
+    image:
+      "/images/printers/brands/creality/creality-ender-3-v3-ke-card-300.png",
     maxFilaments: 4,
     technology: "fdm",
     websiteUrl: "https://bambulab.com",
@@ -148,7 +149,7 @@ export const printers: PrinterProfile[] = [
     value: 2500,
     usefulLife: 3000,
     maintenancePerHour: 0.2,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/elegoo/elegoo-orangestorm-g2-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 229.6, y: 229.6, z: 229.6 },
@@ -162,7 +163,8 @@ export const printers: PrinterProfile[] = [
     value: 2300,
     usefulLife: 3000,
     maintenancePerHour: 0.2,
-    image: "/images/printers/fallback-fdm.svg",
+    image:
+      "/images/printers/brands/flashforge/flashforge-guider-3-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 226.5, y: 226.5, z: 226.5 },
@@ -270,7 +272,8 @@ export const printers: PrinterProfile[] = [
     value: 3000,
     usefulLife: 2500,
     maintenancePerHour: 0.2,
-    image: "/images/printers/fallback-fdm.svg",
+    image:
+      "/images/printers/brands/flashforge/flashforge-guider-3s-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 330.2, y: 330.2, z: 330.2 },
@@ -284,7 +287,8 @@ export const printers: PrinterProfile[] = [
     value: 3500,
     usefulLife: 3000,
     maintenancePerHour: 0.25,
-    image: "/images/printers/fallback-fdm.svg",
+    image:
+      "/images/printers/brands/artillery/artillery-sidewinder-x1-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 330.2, y: 330.2, z: 330.2 },
@@ -298,7 +302,8 @@ export const printers: PrinterProfile[] = [
     value: 1800,
     usefulLife: 2000,
     maintenancePerHour: 0.15,
-    image: "/images/printers/fallback-fdm.svg",
+    image:
+      "/images/printers/brands/artillery/artillery-sidewinder-x2-card-300.png",
     websiteUrl: "https://www.creality.com",
   },
   {
@@ -309,7 +314,7 @@ export const printers: PrinterProfile[] = [
     value: 4500,
     usefulLife: 3000,
     maintenancePerHour: 0.3,
-    image: "/images/printers/fallback-resin.svg",
+    image: "/images/printers/brands/creality/creality-halot-sky-card-300.png",
     technology: "resin",
     // dimensões reais (mm)
     buildVolumeMm: { x: 192, y: 120, z: 250 },
@@ -466,7 +471,7 @@ export const printers: PrinterProfile[] = [
     value: 1800,
     usefulLife: 2200,
     maintenancePerHour: 0.18,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/artillery/artillery-hornet-card-300.png",
     websiteUrl: "https://www.anycubic.com",
   },
   {
@@ -477,7 +482,7 @@ export const printers: PrinterProfile[] = [
     value: 2800,
     usefulLife: 2500,
     maintenancePerHour: 0.22,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/artillery/artillery-genius-card-300.png",
     websiteUrl: "https://www.anycubic.com",
   },
   {
@@ -488,7 +493,7 @@ export const printers: PrinterProfile[] = [
     value: 2000,
     usefulLife: 2000,
     maintenancePerHour: 0.15,
-    image: "/images/printers/fallback-resin.svg",
+    image: "/images/printers/brands/anycubic/anycubic-photon-m3-card-300.png",
     technology: "resin",
     // dimensões reais (mm)
     buildVolumeMm: { x: 163.8, y: 102.4, z: 180 },
@@ -502,7 +507,8 @@ export const printers: PrinterProfile[] = [
     value: 3500,
     usefulLife: 2500,
     maintenancePerHour: 0.2,
-    image: "/images/printers/fallback-resin.svg",
+    image:
+      "/images/printers/brands/anycubic/anycubic-photon-m3-plus-card-300.png",
     technology: "resin",
     // dimensões reais (mm)
     buildVolumeMm: { x: 198.2, y: 123.8, z: 245 },
@@ -516,7 +522,7 @@ export const printers: PrinterProfile[] = [
     value: 3000,
     usefulLife: 2500,
     maintenancePerHour: 0.18,
-    image: "/images/printers/fallback-resin.svg",
+    image: "/images/printers/brands/phrozen/phrozen-sonic-mini-8k-card-300.png",
     technology: "resin",
     // dimensões reais (mm)
     buildVolumeMm: { x: 102.4, y: 57.6, z: 165 },
@@ -530,7 +536,7 @@ export const printers: PrinterProfile[] = [
     value: 5500,
     usefulLife: 4000,
     maintenancePerHour: 0.25,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/qidi-tech/qidi-tech-qidi-i-3-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 226, y: 226, z: 226 },
@@ -544,7 +550,7 @@ export const printers: PrinterProfile[] = [
     value: 7500,
     usefulLife: 4500,
     maintenancePerHour: 0.3,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/sovol/sovol-sv06-card-300.png",
     technology: "fdm",
     websiteUrl: "https://www.prusa3d.com",
   },
@@ -556,7 +562,7 @@ export const printers: PrinterProfile[] = [
     value: 8000,
     usefulLife: 4500,
     maintenancePerHour: 0.3,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/sovol/sovol-sv06-plus-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 226, y: 226, z: 226 },
@@ -571,7 +577,7 @@ export const printers: PrinterProfile[] = [
     value: 20000,
     usefulLife: 6000,
     maintenancePerHour: 0.6,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/sovol/sovol-sv07-plus-card-300.png",
     maxFilaments: 2,
     websiteUrl: "https://www.prusa3d.com",
   },
@@ -584,7 +590,7 @@ export const printers: PrinterProfile[] = [
     value: 35000,
     usefulLife: 6000,
     maintenancePerHour: 0.8,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/raise3d/raise3d-e2-card-300.png",
     maxFilaments: 5,
     websiteUrl: "https://www.prusa3d.com",
   },
@@ -596,7 +602,7 @@ export const printers: PrinterProfile[] = [
     value: 3500,
     usefulLife: 3000,
     maintenancePerHour: 0.2,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/raise3d/raise3d-rf1000-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 180, y: 180, z: 180 },
@@ -622,7 +628,7 @@ export const printers: PrinterProfile[] = [
     value: 1200,
     usefulLife: 2000,
     maintenancePerHour: 0.12,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/snapmaker/snapmaker-a350t-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 238.4, y: 238.4, z: 238.4 },
@@ -636,7 +642,7 @@ export const printers: PrinterProfile[] = [
     value: 1600,
     usefulLife: 2500,
     maintenancePerHour: 0.15,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/voron/voron-switchwire-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 242, y: 242, z: 242 },
@@ -650,7 +656,7 @@ export const printers: PrinterProfile[] = [
     value: 2200,
     usefulLife: 2800,
     maintenancePerHour: 0.18,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/peopoly/peopoly-lantech-card-300.png",
     technology: "fdm",
     websiteUrl: "https://www.elegoo.com",
   },
@@ -662,7 +668,7 @@ export const printers: PrinterProfile[] = [
     value: 2000,
     usefulLife: 3000,
     maintenancePerHour: 0.18,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/phrozen/phrozen-sonic-mega-8k-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 237.6, y: 237.6, z: 237.6 },
@@ -676,7 +682,7 @@ export const printers: PrinterProfile[] = [
     value: 2500,
     usefulLife: 3000,
     maintenancePerHour: 0.2,
-    image: "/images/printers/fallback-fdm.svg",
+    image: "/images/printers/brands/outra/outra-personalizada-card-300.png",
     technology: "fdm",
     // volume aproximado (∛cm³) — dimensões reais indisponíveis
     buildVolumeMm: { x: 237.6, y: 237.6, z: 237.6 },

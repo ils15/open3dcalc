@@ -1,0 +1,556 @@
+{
+  "assets": [
+    {
+      "profileId": "bambu_a1_mini",
+      "printerName": "A1 Mini",
+      "brand": "Bambu Lab",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:DG_%E6%9D%B1%E8%8E%9E_DongGuan_%E5%8D%97%E5%9F%8E%E5%8D%80_Nancheng_%E9%B4%BB%E7%A6%8F%E8%B7%AF_HongFu_Road_%E6%9D%B1%E8%8E%9E%E4%BA%AC%E6%9D%B1%E5%95%86%E5%A0%B4_JD_Mall_Electronics_Showroom_3D_printers_December_2024_R12S_05.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/DG_%E6%9D%B1%E8%8E%9E_DongGuan_%E5%8D%97%E5%9F%8E%E5%8D%80_Nancheng_%E9%B4%BB%E7%A6%8F%E8%B7%AF_HongFu_Road_%E6%9D%B1%E8%8E%9E%E4%BA%AC%E6%9D%B1%E5%95%86%E5%A0%B4_JD_Mall_Electronics_Showroom_3D_printers_December_2024_R12S_05.jpg/960px-DG_%E6%9D%B1%E8%8E%9E_DongGuan_%E5%8D%97%E5%9F%8E%E5%8D%80_Nancheng_%E9%B4%BB%E7%A6%8F%E8%B7%AF_HongFu_Road_%E6%9D%B1%E8%8E%9E%E4%BA%AC%E6%9D%B1%E5%95%86%E5%A0%B4_JD_Mall_Electronics_Showroom_3D_printers_December_2024_R12S_05.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "NAS 238 WMMNO",
+      "license": "CC0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "bambu_a1",
+      "printerName": "A1",
+      "brand": "Bambu Lab",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:3D_(54252724296).jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/3D_%2854252724296%29.jpg/960px-3D_%2854252724296%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "UC Davis College of Engineering",
+      "license": "CC BY 2.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "bambu_p1s",
+      "printerName": "P1S",
+      "brand": "Bambu Lab",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:3D_print_Yellow_ribbons.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/3D_print_Yellow_ribbons.jpg/960px-3D_print_Yellow_ribbons.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Nizzan Cohen",
+      "license": "CC BY 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "bambu_x1c",
+      "printerName": "X1 Carbon",
+      "brand": "Bambu Lab",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Bambu_Lab_X1_Carbon_with_AMS_module.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Bambu_Lab_X1_Carbon_with_AMS_module.jpg/960px-Bambu_Lab_X1_Carbon_with_AMS_module.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Benlisquare",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_k1",
+      "printerName": "K1",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Creality_K1C_addons.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Creality_K1C_addons.jpg/960px-Creality_K1C_addons.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Mortymore",
+      "license": "CC BY 2.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "prusa_mk3s",
+      "printerName": "MK3S+",
+      "brand": "Prusa",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Nose_whistle_3dprint.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Nose_whistle_3dprint.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Anachronist",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "prusa_mk4",
+      "printerName": "MK4",
+      "brand": "Prusa",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Prusa_MK4.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Prusa_MK4.jpg/960px-Prusa_MK4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Majkluss",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "prusa_mini",
+      "printerName": "Mini+",
+      "brand": "Prusa",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:PrusaMiniClone.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2f/PrusaMiniClone.jpg/960px-PrusaMiniClone.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "PeterDHabermehl",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_neptune_4",
+      "printerName": "Neptune 4",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Problemen_met_neptune_4_Max_Elegoo.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Problemen_met_neptune_4_Max_Elegoo.jpg/960px-Problemen_met_neptune_4_Max_Elegoo.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Meykenstivari",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_neptune_4_max",
+      "printerName": "Neptune 4 Max",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Problemen_met_neptune_4_Max_Elegoo.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Problemen_met_neptune_4_Max_Elegoo.jpg/960px-Problemen_met_neptune_4_Max_Elegoo.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Meykenstivari",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "flashforge_adventurer_5m",
+      "printerName": "Adventurer 5M",
+      "brand": "Flashforge",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:2023-11-09_newly_arrived_Flashforge_AD5M_Pro.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/2023-11-09_newly_arrived_Flashforge_AD5M_Pro.jpg/960px-2023-11-09_newly_arrived_Flashforge_AD5M_Pro.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Emmanuel Gilloz",
+      "license": "CC BY-SA 2.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "ultimaker_s5",
+      "printerName": "S5",
+      "brand": "UltiMaker",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Ultimaker_S5_printer_2018.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/4/4d/Ultimaker_S5_printer_2018.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Svitlana Lozova",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "voron_24",
+      "printerName": "2.4",
+      "brand": "Voron",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Voron_3D_printer.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/Voron_3D_printer.jpg/960px-Voron_3D_printer.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "disinterpreter",
+      "license": "CC BY-SA 2.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "bambu_x1e",
+      "printerName": "X1E",
+      "brand": "Bambu Lab",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Swaraswatialtar.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cf/Swaraswatialtar.jpg/960px-Swaraswatialtar.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Christina Kundu",
+      "license": "CC BY-SA 3.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_ender_3_s1",
+      "printerName": "Ender 3 S1",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Stamp_1941_DRBM_MiNrD001_mt_B002a.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Stamp_1941_DRBM_MiNrD001_mt_B002a.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Postal administration of the Protectorate of Bohemia and Moravia",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_ender_3_s1_plus",
+      "printerName": "Ender 3 S1 Plus",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Animated_construction_of_Sierpinski_Triangle.gif",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/7/74/Animated_construction_of_Sierpinski_Triangle.gif?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Dino at English Wikipedia\n\n(Original text: dino (talk))",
+      "license": "CC BY-SA 3.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_ender_3_s1_pro",
+      "printerName": "Ender 3 S1 Pro",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:End_cretaceous_65Ma_gdd5_co2_400ppmv_S_1357_1_1_1_1.png",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/End_cretaceous_65Ma_gdd5_co2_400ppmv_S_1357_1_1_1_1.png/960px-End_cretaceous_65Ma_gdd5_co2_400ppmv_S_1357_1_1_1_1.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Merikanto",
+      "license": "CC0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_ender_3_v3_se",
+      "printerName": "Ender 3 V3 SE",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Nordsee-Ostsee-Wasserscheide.png",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4b/Nordsee-Ostsee-Wasserscheide.png/960px-Nordsee-Ostsee-Wasserscheide.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "The background map is the light_nolabels map by carto \nThe data for the carto map is provided by the OSM \nThe drainage areas are provided by the following governmental agencies:\nUSGS\nCEO Water Mandate\nCH: CH BAFU\nCZ: DIBAVOD\nDE (BW): LUBW\nDE (BY): LfU Bayern\nDE (BB): LfU Brandenburg\nDE (MV): LUNG M-V\nDE (SN): Sachsen LfULG\nDE (SH): LLUR SH\nDK: KEFM\nES (Ebro): CHE\nES (Jucar): CHJ\nES (Quadalquivir): ideCHG\nES (Segura): CHS\nFI: SYKE\nFR: Sandre\nGR: MECC\nIT: ISPRA\nNO: NVE\nPL: Otwarte Dane\nSE: SMHI\nSI: Agencija Rs Za Okolje\nUK (ENG): Environment Agency\nUK (SCT): SEPA\n\nThe color and layout are done by Sledbird (talk) 07:56, 21 February 2021 (UTC)Sledbird.",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_ender_3_v3",
+      "printerName": "Ender 3 V3",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:OPSR.Ifl.Fig2.Iflaviridae_v3.png-640x480.png",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/c/c8/OPSR.Ifl.Fig2.Iflaviridae_v3.png-640x480.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "S. M. Valles​, Y. Chen​, A. E. Firth, D. M. A. Guérin, Y. Hashimoto​, S. Herrero​, J. R. de Miranda​, E. Ryabov",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_k1_se",
+      "printerName": "K1 SE",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Butik_vid_Aldersgate_street_-_TEK_-_TEKA0118984.tif",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/Butik_vid_Aldersgate_street_-_TEK_-_TEKA0118984.tif/lossy-page1-960px-Butik_vid_Aldersgate_street_-_TEK_-_TEKA0118984.tif.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Sigurd Curman",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_k1_max",
+      "printerName": "K1 Max",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Max_Meckel.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Max_Meckel.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "AnonymousUnknown author",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_k2",
+      "printerName": "K2",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:K2-big_b.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e4/K2-big_b.jpg/960px-K2-big_b.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "The original uploader was Bwag at German Wikipedia.",
+      "license": "CC BY-SA 3.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_k2_plus",
+      "printerName": "K2 Plus",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:K2_by_Montgomery.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/6/6e/K2_by_Montgomery.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Thomas Montgomerie (1830-1878)",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_k2_pro",
+      "printerName": "K2 Pro",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:C2014_Q2.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/55/C2014_Q2.jpg/960px-C2014_Q2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "John Vermette",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_cr10_v3",
+      "printerName": "CR-10 V3",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Olympus_C740-UZ_battery_compartment.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d5/Olympus_C740-UZ_battery_compartment.jpg/960px-Olympus_C740-UZ_battery_compartment.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Moxfyre",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_cr10_smart",
+      "printerName": "CR-10 Smart",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Svenska_Grammofonstudion,_Gothenburg_Sweden,_Queen_Neve.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Svenska_Grammofonstudion%2C_Gothenburg_Sweden%2C_Queen_Neve.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "neve Sweden",
+      "license": "CC BY-SA 3.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "creality_cr6_se",
+      "printerName": "CR-6 SE",
+      "brand": "Creality",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chrom_1.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/c/cf/Chrom_1.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "de:Benutzer:Tomihahndorf",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "anycubic_kobra_2",
+      "printerName": "Kobra 2",
+      "brand": "Anycubic",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Ophiophagus_hannah_ewart.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Ophiophagus_hannah_ewart.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Joseph Ewart",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "anycubic_kobra_2_max",
+      "printerName": "Kobra 2 Max",
+      "brand": "Anycubic",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Le_Caire._Saray_el_Kobra_(haremlik_du_palais_de_Kasr_el-Aali)_vu_du_Nil_-_btv1b53120101x_(1_of_2).jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Le_Caire._Saray_el_Kobra_%28haremlik_du_palais_de_Kasr_el-Aali%29_vu_du_Nil_-_btv1b53120101x_%281_of_2%29.jpg/960px-Le_Caire._Saray_el_Kobra_%28haremlik_du_palais_de_Kasr_el-Aali%29_vu_du_Nil_-_btv1b53120101x_%281_of_2%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Desconhecido",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "anycubic_kobra_3",
+      "printerName": "Kobra 3",
+      "brand": "Anycubic",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Telia_Kobra_2007.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/Telia_Kobra_2007.jpg/960px-Telia_Kobra_2007.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Holger Ellgaard",
+      "license": "CC BY-SA 3.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "anycubic_kobra_3_max",
+      "printerName": "Kobra 3 Max",
+      "brand": "Anycubic",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Le_Caire._Saray_el_Kobra_(haremlik_du_palais_de_Kasr_el-Aali)_vu_du_Nil_-_btv1b53120101x_(1_of_2).jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fc/Le_Caire._Saray_el_Kobra_%28haremlik_du_palais_de_Kasr_el-Aali%29_vu_du_Nil_-_btv1b53120101x_%281_of_2%29.jpg/960px-Le_Caire._Saray_el_Kobra_%28haremlik_du_palais_de_Kasr_el-Aali%29_vu_du_Nil_-_btv1b53120101x_%281_of_2%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Desconhecido",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "anycubic_chiron",
+      "printerName": "Chiron",
+      "brand": "Anycubic",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Chiron-_or,_the_mental_optician._-_Fleuron_T107655-3.png",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/2/26/Chiron-_or%2C_the_mental_optician._-_Fleuron_T107655-3.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Unknown authorUnknown author",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "anycubic_photon_ultra",
+      "printerName": "Photon Ultra",
+      "brand": "Anycubic",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Feynman_diagrams_of_photon-photon_scattering.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Feynman_diagrams_of_photon-photon_scattering.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "ATLAS Collaboration",
+      "license": "CC BY 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "prusa_mk4s",
+      "printerName": "MK4S",
+      "brand": "Prusa",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Beige_beauty._(11186110685).jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Beige_beauty._%2811186110685%29.jpg/960px-Beige_beauty._%2811186110685%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Riley from Christchurch, New Zealand",
+      "license": "CC BY 2.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_neptune_3",
+      "printerName": "Neptune 3",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:A_catalogue_of_books,_Including_the_libraries_of_the_following_gentlemen,_lately_deceased,_viz_Fleuron_T064499-2.png",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/d/d2/A_catalogue_of_books%2C_Including_the_libraries_of_the_following_gentlemen%2C_lately_deceased%2C_viz_Fleuron_T064499-2.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Unknown authorUnknown author",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_neptune_3_pro",
+      "printerName": "Neptune 3 Pro",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Neptune_clouds.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Neptune_clouds.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "NASA / Jet Propulsion Lab",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_neptune_3_plus",
+      "printerName": "Neptune 3 Plus",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:A_catalogue_of_books,_Including_the_libraries_of_the_following_gentlemen,_lately_deceased,_viz_Fleuron_T064499-2.png",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/d/d2/A_catalogue_of_books%2C_Including_the_libraries_of_the_following_gentlemen%2C_lately_deceased%2C_viz_Fleuron_T064499-2.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Unknown authorUnknown author",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_neptune_4_pro",
+      "printerName": "Neptune 4 Pro",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Windows_Neptune_logo.png",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/Windows_Neptune_logo.png/960px-Windows_Neptune_logo.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Microsoft",
+      "license": "CC0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_saturn_2",
+      "printerName": "Saturn 2",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Astronomy_of_the_satellites_of_the_Earth,_Jupiter_and_Saturn-_Grounded_upon_Sir_Isaac_Newton%27s_Theory_of_the_Earth%27s_Satellite_Fleuron_T008469-2.png",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/5/53/Astronomy_of_the_satellites_of_the_Earth%2C_Jupiter_and_Saturn-_Grounded_upon_Sir_Isaac_Newton%27s_Theory_of_the_Earth%27s_Satellite_Fleuron_T008469-2.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Leadbetter, Charles",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_saturn_3",
+      "printerName": "Saturn 3",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:A_treatise_of_comets,_containing_I_Fleuron_T098926-3.png",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/2/24/A_treatise_of_comets%2C_containing_I_Fleuron_T098926-3.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Smith, George",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_saturn_4",
+      "printerName": "Saturn 4",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:HP_Saturn_1LT8_Clarke.tif",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b1/HP_Saturn_1LT8_Clarke.tif/lossy-page1-960px-HP_Saturn_1LT8_Clarke.tif.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Lemahtor",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_mars_4",
+      "printerName": "Mars 4",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Epitre_de_Mr._de_Voltaire._En_arrivant_dans_sa_terre_Pr%C3%A8s_du_lac_de_Geneve,_en_mars,_1755._Fleuron_T080581-4.png",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/2/2a/Epitre_de_Mr._de_Voltaire._En_arrivant_dans_sa_terre_Pr%C3%A8s_du_lac_de_Geneve%2C_en_mars%2C_1755._Fleuron_T080581-4.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Voltaire",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "elegoo_mars_5",
+      "printerName": "Mars 5",
+      "brand": "Elegoo",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:07._Plaques_%C3%A0_Lyon_-_mars_2011.JPG",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6f/07._Plaques_%C3%A0_Lyon_-_mars_2011.JPG/960px-07._Plaques_%C3%A0_Lyon_-_mars_2011.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "User:Otourly",
+      "license": "CC BY-SA 3.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "flashforge_creator_4s",
+      "printerName": "Creator 4S",
+      "brand": "Flashforge",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:VOL_-_imprimante_3D_-_1.JPG",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ca/VOL_-_imprimante_3D_-_1.JPG/960px-VOL_-_imprimante_3D_-_1.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Benoît Prieur",
+      "license": "CC0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "ultimaker_s3",
+      "printerName": "S3",
+      "brand": "UltiMaker",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Torpedovene-S3-1918-1922.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/Torpedovene-S3-1918-1922.jpg/960px-Torpedovene-S3-1918-1922.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Unknown authorUnknown author",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "artillery_sidewinder_x4",
+      "printerName": "Sidewinder X4",
+      "brand": "Artillery",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:SideWinder_X4_Keyboard_Japanese.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/SideWinder_X4_Keyboard_Japanese.jpg/960px-SideWinder_X4_Keyboard_Japanese.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Leucius",
+      "license": "CC BY-SA 3.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "qidi_x_plus",
+      "printerName": "X-Plus",
+      "brand": "Qidi Tech",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:View_in_Quibd%C3%B3_Baud%C3%B3_-_-_J.C.T._delt._;_P.S._Duval_%26_Co%27s_Steam_Lith._Press._Philada._LCCN2014649019.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/2/26/View_in_Quibd%C3%B3_Baud%C3%B3_-_-_J.C.T._delt._%3B_P.S._Duval_%26_Co%27s_Steam_Lith._Press._Philada._LCCN2014649019.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "P.S. Duval &amp; Co., printer; Trautwine, John C. (John Cresson), 1810-1883, artist",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "qidi_x_max",
+      "printerName": "X-Max",
+      "brand": "Qidi Tech",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:DPAG-50_Jahre_Bonn-Kopenhagener_Erkl%C3%A4rungen.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/0/00/DPAG-50_Jahre_Bonn-Kopenhagener_Erkl%C3%A4rungen.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Deutsche Post AG",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "qidi_x_smart",
+      "printerName": "X-Smart",
+      "brand": "Qidi Tech",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Sondermarke_100_Jahre_Berliner_U-Bahn.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/7/7c/Sondermarke_100_Jahre_Berliner_U-Bahn.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Deutsche Post AG, nach einem Entwurf von Ingo Wulff, Kiel",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "sovol_sv07",
+      "printerName": "SV07",
+      "brand": "Sovol",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Sally_Ride_in_1984.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/Sally_Ride_in_1984.jpg/960px-Sally_Ride_in_1984.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "NASA; retouched by Adam Cuerden (edited to remove dust and scratches)",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "ankermake_v6",
+      "printerName": "V6",
+      "brand": "AnkerMake",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:3DBenchy_-_The_3D-printable_calibration_object_-_3DBenchy.com_v6.png",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/3DBenchy_-_The_3D-printable_calibration_object_-_3DBenchy.com_v6.png/960px-3DBenchy_-_The_3D-printable_calibration_object_-_3DBenchy.com_v6.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "CreativeTools",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "raise3d_pro3",
+      "printerName": "Pro3",
+      "brand": "Raise3D",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Fujifilm_X-Pro3_26_oct_2019a.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/Fujifilm_X-Pro3_26_oct_2019a.jpg/960px-Fujifilm_X-Pro3_26_oct_2019a.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "昼落ち",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "raise3d_pro3_plus",
+      "printerName": "Pro3 Plus",
+      "brand": "Raise3D",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Leopold_Staff_by_Fryderyk_Pautsch.jpg",
+      "sourceAsset": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/96/Leopold_Staff_by_Fryderyk_Pautsch.jpg/960px-Leopold_Staff_by_Fryderyk_Pautsch.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "author": "Fryderyk Pautsch",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "voron_trident",
+      "printerName": "Trident",
+      "brand": "Voron",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:UA_1918_MiNr0039_mt_B002a.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/3/30/UA_1918_MiNr0039_mt_B002a.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Government of the Ukrainian People's Republic",
+      "license": "Public domain",
+      "dateAccessed": "2026-10-28"
+    },
+    {
+      "profileId": "phrozen_sonic_4k",
+      "printerName": "Sonic 4K",
+      "brand": "Phrozen",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:%D9%86%D8%B5%D8%A8_%D9%88%DB%8C%D8%AF%D8%A6%D9%88_%D9%BE%D8%B1%D9%88%DA%98%DA%A9%D8%AA%D9%88%D8%B1-B.jpg",
+      "sourceAsset": "https://upload.wikimedia.org/wikipedia/commons/a/a5/%D9%86%D8%B5%D8%A8_%D9%88%DB%8C%D8%AF%D8%A6%D9%88_%D9%BE%D8%B1%D9%88%DA%98%DA%A9%D8%AA%D9%88%D8%B1-B.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
+      "author": "Top10service",
+      "license": "CC BY-SA 4.0",
+      "dateAccessed": "2026-10-28"
+    }
+  ],
+  "generatedAt": "2026-10-28",
+  "note": "Fotos livremente licenciadas do Wikimedia Commons (atribuição por foto). Modelos sem foto livre usam arte original Open3DCalc (banda de marca)."
+}

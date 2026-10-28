@@ -14,6 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { printers } from "@/shared/lib/printers";
 import { marketplaces } from "@/shared/lib/marketplace";
+import { readFileSync } from "node:fs";
 
 const PUBLIC_DIR = path.resolve(process.cwd(), "public");
 
@@ -47,6 +48,37 @@ describe("catalog assets", () => {
       expect(p.image).toMatch(
         /^\/images\/printers\/(fallback-(fdm|resin)\.svg|brands\/.+)$/,
       );
+    }
+  });
+
+  it("ships every printer image locally (103/103)", () => {
+    for (const p of printers) {
+      expect(
+        p.image && existsInPublic(p.image),
+        `missing printer image: ${p.image}`,
+      ).toBe(true);
+    }
+  });
+
+  it("gives every photo (non-card, non-fallback) a manifest attribution with a free license", () => {
+    const manifest = JSON.parse(
+      readFileSync("public/images/printers/manifest.json", "utf-8"),
+    ) as { assets: Array<Record<string, string>> };
+    const byProfile = new Map(manifest.assets.map((a) => [a.profileId, a]));
+    const FREE = /CC (BY|BY-SA|Zero|0)|Public domain/i;
+    for (const p of printers) {
+      if (
+        !p.image ||
+        p.image.includes("-card-300") ||
+        p.image.includes("fallback-")
+      ) {
+        continue;
+      }
+      const entry = byProfile.get(p.id);
+      expect(entry, `no manifest attribution for ${p.id}`).toBeDefined();
+      expect(entry?.license).toMatch(FREE);
+      expect(entry?.sourcePage).toMatch(/^https:\/\//);
+      expect(entry?.author).toBeTruthy();
     }
   });
 
