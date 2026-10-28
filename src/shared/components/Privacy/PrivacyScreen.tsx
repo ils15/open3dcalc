@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { isBetaChannel } from "@/shared/config/betaChannel";
 import { ShieldCheck, AlertCircle } from "lucide-react";
 import { LegacyResidueDisclosure } from "@/shared/components/Privacy/LegacyResidueDisclosure";
+import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 
 /**
  * Privacy screen (D1.1 S4) — ADR-002 §2.2.4.
@@ -284,6 +285,21 @@ function StablePrivacyScreen() {
           </div>
         </div>
         {/* T5.3 — the browser residue exists on web too: disclose it here. */}
+        {/* S1 — local data portability matters MOST on web: the readable
+            JSON export/import is the only backup path the browser profile
+            has. */}
+        <section
+          className="surface rounded-xl p-4 space-y-3"
+          data-testid="local-data-sync"
+        >
+          <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+            {t("privacy.localData.syncTitle")}
+          </h3>
+          <p className="text-xs text-[var(--color-text-secondary)]">
+            {t("privacy.localData.syncDescription")}
+          </p>
+          <DataSyncButton variant="menu" />
+        </section>
         <LegacyResidueDisclosure />
       </div>
     );
@@ -307,6 +323,20 @@ function StablePrivacyScreen() {
           <AlertCircle className="w-4 h-4 shrink-0" />
           {t("privacy.quarantine.inspectionPaused")}
         </p>
+      </section>
+
+      {/* ── Local data portability (S1): readable JSON export/import ── */}
+      <section
+        className="surface rounded-xl p-4 space-y-3"
+        data-testid="local-data-sync"
+      >
+        <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+          {t("privacy.localData.syncTitle")}
+        </h3>
+        <p className="text-xs text-[var(--color-text-secondary)]">
+          {t("privacy.localData.syncDescription")}
+        </p>
+        <DataSyncButton variant="menu" />
       </section>
 
       {/* ── Legacy data and migration-marker disclosure ──────────────── */}

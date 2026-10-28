@@ -165,6 +165,13 @@
       "inputLabel": "Parts per month",
       "partsMonth": "parts/month",
       "projectedProfit": "Projected monthly profit"
+    },
+    "ws": {
+      "label": "Dashboard workspaces",
+      "finance": "Overview & Finances",
+      "pricing": "Profitability & Prices",
+      "operations": "Operations & Stock",
+      "engineering": "Engineering & Slicer"
     }
   },
   "sections": {
@@ -1393,7 +1400,9 @@
     "localData": {
       "writeRefusedTitle": "New entries were not saved",
       "writeRefusedMessage": "Could not save to {{area}}: local storage is not ready ({{reason}}). The entry was NOT saved. Please try again.",
-      "writeRefusedAreaUnknown": "personal data"
+      "writeRefusedAreaUnknown": "personal data",
+      "syncTitle": "Take your data with you",
+      "syncDescription": "Export a readable JSON file with history, customers, quotes, catalog and stock — with an integrity checksum — or import an existing backup. Nothing leaves your device."
     },
     "passwordless": {
       "title": "New data is stored locally",
