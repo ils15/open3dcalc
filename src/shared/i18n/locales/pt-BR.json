@@ -459,7 +459,9 @@
     "cheaper": "Mais Barato",
     "costLabel": "Custo",
     "saleLabel": "Venda",
-    "profitLabel": "Lucro"
+    "profitLabel": "Lucro",
+    "marginQuickEdit": "Editar margem rápida",
+    "marginQuickLabel": "Ajuste rápido de margem"
   },
   "catalog": {
     "title": "Cadastros e Presets",
@@ -1004,7 +1006,16 @@
       "chart": "Gráfico",
       "bars": "Barras",
       "actions": "Ações"
-    }
+    },
+    "breakEven": {
+      "title": "Break-Even da Máquina",
+      "pieces": "{{count}} peças",
+      "description": "Vendendo {{count}} unidades deste projeto você quita o valor da máquina ({{value}})."
+    },
+    "projectedProfit": "Lucro projetado de {{profit}} sobre o custo total de fabricação de {{cost}}.",
+    "distributionViewLabel": "Visualização da composição",
+    "distributionViewList": "Exibir em lista",
+    "distributionViewChart": "Exibir em gráfico de pizza"
   },
   "tutorial": {
     "start": "Iniciar Tutorial",

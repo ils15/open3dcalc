@@ -459,7 +459,9 @@
     "cheaper": "Cheaper",
     "costLabel": "Cost",
     "saleLabel": "Sale",
-    "profitLabel": "Profit"
+    "profitLabel": "Profit",
+    "marginQuickEdit": "Quick margin edit",
+    "marginQuickLabel": "Quick margin adjustment"
   },
   "catalog": {
     "title": "Catalogs & Presets",
@@ -1004,7 +1006,16 @@
       "chart": "Chart",
       "bars": "Bars",
       "actions": "Actions"
-    }
+    },
+    "breakEven": {
+      "title": "Machine break-even",
+      "pieces": "{{count}} pieces",
+      "description": "Selling {{count}} units of this project pays off the machine's cost ({{value}})."
+    },
+    "projectedProfit": "Projected profit of {{profit}} over the total manufacturing cost of {{cost}}.",
+    "distributionViewLabel": "Composition view",
+    "distributionViewList": "Show as list",
+    "distributionViewChart": "Show as pie chart"
   },
   "tutorial": {
     "start": "Start Tutorial",

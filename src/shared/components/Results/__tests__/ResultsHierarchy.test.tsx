@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import i18n from "@/shared/i18n/i18n";
@@ -158,14 +158,20 @@ describe("ResultsPanel hierarchy", () => {
     render(<ResultsPanel variant="sidebar" />);
 
     const hierarchy = screen.getByTestId("results-hierarchy");
-    const order = Array.from(hierarchy.children).map((child) =>
-      child.getAttribute("data-testid"),
+    const order = Array.from(hierarchy.children).map(
+      (child) =>
+        child.getAttribute("data-testid") ??
+        child
+          .querySelector('[data-testid="cost-distribution-card"]')
+          ?.getAttribute("data-testid") ??
+        null,
     );
 
     expect(order).toEqual([
       "price-hero",
       "suggested-price-tool",
-      "profit-summary",
+      "projected-profit-note",
+      "break-even-machine",
       "cost-distribution-card",
       "diagnostic-details",
       "results-actions",
@@ -273,7 +279,7 @@ describe("ResultsPanel hierarchy", () => {
     );
   });
 
-  it("shows the donut disclosure and no bar list in the chart view", () => {
+  it("shows the list rows by default and the pie via the view switch", () => {
     render(
       <ResultsPanel
         variant="sidebar"
@@ -282,11 +288,20 @@ describe("ResultsPanel hierarchy", () => {
       />,
     );
 
-    expect(screen.queryByTestId("compact-cost-bars")).not.toBeInTheDocument();
-    expect(screen.getByTestId("cost-distribution-details")).not.toHaveClass(
-      "hidden",
+    // Example reference: the composition card opens on the dot+percent list;
+    // the switch beside the title flips it to the donut.
+    expect(screen.getByTestId("cost-distribution-dotlist")).toBeInTheDocument();
+    const listBtn = screen.getByRole("button", {
+      name: i18n.t("results.distributionViewList"),
+    });
+    expect(listBtn).toHaveAttribute("aria-pressed", "true");
+
+    // Flipping the switch mounts the donut through the same disclosure.
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: i18n.t("results.distributionViewChart"),
+      }),
     );
-    // The donut is still mounted, just inside the disclosure.
     expect(
       screen
         .getByTestId("cost-distribution-details")
@@ -303,20 +318,7 @@ describe("ResultsPanel hierarchy", () => {
     expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
   });
 
-  it("mounts the donut in the active sidebar chart view", () => {
-    render(
-      <ResultsPanel
-        variant="sidebar"
-        sidebarMode="compact"
-        compactView="chart"
-      />,
-    );
-
-    expect(screen.getByTestId("cost-distribution-details")).toBeInTheDocument();
-    expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
-  });
-
-  it("keeps the donut out of the bars view, whose host is display:none", () => {
+  it("seeds the pie view when compact starts on bars", () => {
     render(
       <ResultsPanel
         variant="sidebar"
@@ -325,10 +327,27 @@ describe("ResultsPanel hierarchy", () => {
       />,
     );
 
+    // The "Barras" choice seeds the composition switch with the pie: the
+    // bars themselves already show every category in the card.
+    expect(screen.getByTestId("cost-distribution-details")).toBeInTheDocument();
+    expect(screen.getByTestId("pie-chart")).toBeInTheDocument();
+  });
+
+  it("keeps the donut host hidden while the list view is selected", () => {
+    render(
+      <ResultsPanel
+        variant="sidebar"
+        sidebarMode="compact"
+        compactView="chart"
+      />,
+    );
+
+    // Default list view: the Recharts host stays display:none so the chart
+    // never measures a zero box; the dot list carries the composition.
     expect(screen.getByTestId("cost-distribution-details")).toHaveClass(
       "hidden",
     );
-    expect(screen.queryByTestId("pie-chart")).toBeNull();
+    expect(screen.getByTestId("cost-distribution-dotlist")).toBeInTheDocument();
   });
 
   it("sticks the actions to the bottom in dock mode", () => {

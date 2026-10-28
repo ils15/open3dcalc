@@ -109,11 +109,14 @@ describe("CostBreakdownCard", () => {
   });
 
   it("shows every cost category in the sidebar without opening the disclosure", () => {
+    // "chart" keeps the pre-existing bars presentation (the list is now the
+    // sidebar default, per the Example reference).
     render(
       <CostBreakdownCard
         chartData={segments}
         totalCost={30}
         isSidebar={true}
+        sidebarView="chart"
       />,
     );
 
