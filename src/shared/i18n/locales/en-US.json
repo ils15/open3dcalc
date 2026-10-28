@@ -1037,6 +1037,10 @@
       "summary": "Selling {{pieces}} pieces (≈{{hours}}h of printing) pays off your {{printer}}.",
       "machineCost": "Machine cost: {{value}}",
       "perUnit": "Profit per piece: {{value}} · {{hours}}h each"
+    },
+    "hero": {
+      "productionCost": "Production cost",
+      "netProfit": "Net profit"
     }
   },
   "tutorial": {
@@ -1619,6 +1623,49 @@
       "data": "Data"
     },
     "versions": [
+      {
+        "version": "2.0.0",
+        "date": "",
+        "sections": [
+          {
+            "title": "🚀 What's new",
+            "items": [
+              "**My Workshop** — printers, materials, spool stock and sales channels in one registry, with \"Mine\" and \"Library\" collections (103 printer models with real images and specs)",
+              "**Brazilian channels** — Shein, TikTok Shop, Magalu and Counter pickup join the fee catalog, alongside Shopee, Mercado Livre, Amazon and Etsy",
+              "**Real filament brands** — 13 brands (3D Fila, Voolt3D, National 3D, Bambu Lab, eSun...) with one tap in the spool form",
+              "**Dashboard with 4 workspaces** — Overview & Finances, Profitability & Prices, Operations & Stock and Engineering & Slicer, all derived from saved calculations",
+              "**Export & import data** — readable JSON backup with checksum on the Privacy screen, including explicit migration of test-profile (Beta) data",
+              "**Guided mode** — a four-step assistant for newcomers, with keyboard arrows"
+            ]
+          },
+          {
+            "title": "🎨 Interface",
+            "items": [
+              "Navigation reorganized: from ten destinations to four primary ones (Pricing, Dashboard, History, My Workshop) — the old ones became hub sections and stay reachable",
+              "Squarer, denser theme following the prototype: three-column form grids and flat corners",
+              "Real WhatsApp icon at proposal and send points",
+              "Results panel with the green price card, quick margin slider, list/pie cost composition and Machine Break-Even",
+              "Content centered on ultrawide screens (1600px max) — no more edge-to-edge stretching",
+              "Mini-Dash and dock pill with real history numbers — no fixed values"
+            ]
+          },
+          {
+            "title": "🔒 Privacy & data",
+            "items": [
+              "Readable-by-design local data: clear disclosure, checksummed export/import and an idempotent migration that preserves the source",
+              "[DEMO] badge in the tab title during demo mode — never confuse it with real data"
+            ]
+          },
+          {
+            "title": "🧹 Housekeeping",
+            "items": [
+              "Duplicated browse-only library removed (My Workshop covers it)",
+              "Wiki updated for 2.x: My Workshop, Data & Privacy, workspaces and calculator modes",
+              "en-US translation of navigation, dashboard and results"
+            ]
+          }
+        ]
+      },
       {
         "version": "1.14.0",
         "date": "",
@@ -2872,5 +2919,62 @@
     "stockViewLabel": "Stock view",
     "stockViewManager": "Management",
     "stockViewShelf": "Shelf"
+  },
+  "dashboardView": {
+    "title": "Management & Workshop 3D Panel",
+    "subtitle": "Summary of local history and the profiles set up in your workshop.",
+    "calculations": "{{count}} calculation(s)",
+    "periodLabel": "Dashboard period",
+    "range7": "7 Days",
+    "range30": "30 Days",
+    "rangeMonth": "This Month",
+    "rangeAll": "All",
+    "newCalc": "New Calculation",
+    "historyBtn": "History ({{count}})",
+    "workshopBtn": "My Workshop",
+    "copilot": "AI Copilot",
+    "waitingTitle": "Dashboard waiting for your data",
+    "periodEmptyTitle": "No calculations in this period",
+    "waitingDesc": "The indicators below use only calculations saved to history.",
+    "waitingFirst": " Save a calculation to start tracking your activity.",
+    "waitingOlder": " Adjust the period or pick “All” to see earlier records.",
+    "goCalc": "Go to the calculator",
+    "activateDemo": "Enable Demo Mode",
+    "fdmCalcs": "FDM calculations",
+    "resinCalcs": "Resin calculations",
+    "inPeriod": "in the selected period",
+    "customPrinters": "Custom printers",
+    "customChannels": "Custom sales channels",
+    "seeWorkshop": "see in My Workshop →",
+    "revenueLabel": "CALCULATED SELL VALUE",
+    "savedInPeriod": "{{count}} calculations saved in the period",
+    "profitLabel": "ESTIMATED PROFIT",
+    "marginLiquid": "{{pct}}% net margin",
+    "costLabel": "CALCULATED COST",
+    "costSum": "Sum of costs saved in history",
+    "hoursLabel": "PRINT TIME",
+    "hoursHint": "estimated in the saved calculations",
+    "consumptionLabel": "TOTAL CONSUMPTION",
+    "resinMl": "{{ml}} ml of resin",
+    "avgTicketLabel": "AVERAGE CALCULATED PRICE",
+    "avgTicketHint": "per saved calculation",
+    "revenueChartTitle": "Calculated value history",
+    "revenueChartSub": "Suggested price, estimated profit and cost of the saved calculations",
+    "legendPrice": "Suggested price",
+    "legendProfit": "Profit",
+    "legendCost": "Cost",
+    "noDataInPeriod": "No calculations saved in this period.",
+    "materialTitle": "FDM consumption by material",
+    "materialTotal": "Total: {{total}} g in history",
+    "stockLink": "Stock →",
+    "noFdmConsumption": "No FDM consumption registered in the period.",
+    "recentTitle": "Recent calculations",
+    "recentSub": "History saved on this device, respecting the selected period.",
+    "openHistory": "Open history",
+    "noRecentDemo": "The demo history will appear here.",
+    "noRecent": "No saved calculations to show.",
+    "unnamed": "Unnamed calculation",
+    "costPrefix": "cost ${{value}}",
+    "demoRankingEmpty": "No saved calculations to show."
   }
 }

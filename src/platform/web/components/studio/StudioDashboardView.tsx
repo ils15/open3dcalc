@@ -312,14 +312,14 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
             <div>
               <h2 className="text-base font-bold text-text-primary">
                 {entries.length === 0
-                  ? "Dashboard aguardando seus dados"
-                  : "Sem cálculos neste período"}
+                  ? t("dashboardView.waitingTitle")
+                  : t("dashboardView.periodEmptyTitle")}
               </h2>
               <p className="text-xs text-text-secondary mt-0.5">
-                Os indicadores abaixo usam apenas cálculos salvos no histórico.
+                {t("dashboardView.waitingDesc")}
                 {entries.length === 0
-                  ? " Salve um cálculo para começar a acompanhar sua atividade."
-                  : " Ajuste o período ou escolha “Tudo” para consultar registros anteriores."}
+                  ? t("dashboardView.waitingFirst")
+                  : t("dashboardView.waitingOlder")}
               </p>
             </div>
           </div>
@@ -354,7 +354,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
             </span>
           </div>
           <p className="text-xs text-text-secondary mt-1">
-            Resumo do histórico local e dos perfis configurados na sua oficina.
+            {t("dashboardView.subtitle")}
           </p>
         </div>
 
@@ -363,7 +363,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
           {/* Time filters */}
           <div
             role="group"
-            aria-label="Período do dashboard"
+            aria-label={t("dashboardView.periodLabel")}
             className="flex items-center bg-surface-raised border border-border-subtle rounded-lg p-0.5 text-xs font-medium"
           >
             <button
@@ -421,7 +421,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-colors shadow-sm"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Novo Cálculo</span>
+            <span>{t("dashboardView.newCalc")}</span>
           </button>
 
           <button
@@ -429,7 +429,9 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-colors"
           >
             <Clock className="w-3.5 h-3.5 text-info" />
-            <span>Histórico ({calculationCount})</span>
+            <span>
+              {t("dashboardView.historyBtn", { count: calculationCount })}
+            </span>
           </button>
 
           <button
@@ -437,7 +439,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-colors"
           >
             <Package className="w-3.5 h-3.5 text-accent" />
-            <span>Minha Oficina</span>
+            <span>{t("dashboardView.workshopBtn")}</span>
           </button>
 
           <button
@@ -445,7 +447,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-raised hover:bg-surface-overlay border border-warning/30 text-warning text-xs font-bold transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>IA Copilot</span>
+            <span>{t("dashboardView.copilot")}</span>
           </button>
         </div>
       </div>
@@ -501,7 +503,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   {isUsingDemo ? 7 : fdmCalculations}
                 </div>
                 <div className="text-[11px] text-text-secondary">
-                  no período selecionado
+                  {t("dashboardView.inPeriod")}
                 </div>
               </div>
               <div className="rounded-xl border border-border-subtle bg-surface-raised p-3.5">
@@ -512,7 +514,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   {isUsingDemo ? 2 : resinCalculations}
                 </div>
                 <div className="text-[11px] text-text-secondary">
-                  no período selecionado
+                  {t("dashboardView.inPeriod")}
                 </div>
               </div>
               <button
@@ -527,7 +529,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   {printers.filter((printer) => printer.custom).length}
                 </div>
                 <div className="text-[11px] text-text-secondary">
-                  ver em Minha Oficina →
+                  {t("dashboardView.seeWorkshop")}
                 </div>
               </button>
               <button
@@ -542,7 +544,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   {salesChannels.filter((channel) => channel.custom).length}
                 </div>
                 <div className="text-[11px] text-text-secondary">
-                  ver em Minha Oficina →
+                  {t("dashboardView.seeWorkshop")}
                 </div>
               </button>
             </div>
@@ -553,7 +555,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                   <span className="text-[10px] font-mono uppercase font-semibold">
-                    VALOR DE VENDA CALCULADO
+                    {t("dashboardView.revenueLabel")}
                   </span>
                   <DollarSign className="w-4 h-4 text-positive" />
                 </div>
@@ -563,7 +565,9 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   </span>
                 </div>
                 <div className="text-[10px] text-text-muted">
-                  {calculationCount} cálculos salvos no período
+                  {t("dashboardView.savedInPeriod", {
+                    count: calculationCount,
+                  })}
                 </div>
               </div>
 
@@ -571,7 +575,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                   <span className="text-[10px] font-mono uppercase font-semibold">
-                    LUCRO ESTIMADO
+                    {t("dashboardView.profitLabel")}
                   </span>
                   <Percent className="w-4 h-4 text-positive" />
                 </div>
@@ -582,7 +586,11 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 </div>
                 <div className="text-[10px] text-positive font-semibold flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
-                  <span>{Math.round(marginPct)}% margem líquida</span>
+                  <span>
+                    {t("dashboardView.marginLiquid", {
+                      pct: Math.round(marginPct),
+                    })}
+                  </span>
                 </div>
               </div>
 
@@ -590,7 +598,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                   <span className="text-[10px] font-mono uppercase font-semibold">
-                    CUSTO CALCULADO
+                    {t("dashboardView.costLabel")}
                   </span>
                   <Layers className="w-4 h-4 text-text-secondary" />
                 </div>
@@ -600,7 +608,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   </span>
                 </div>
                 <div className="text-[10px] text-text-muted">
-                  Soma dos custos salvos no histórico
+                  {t("dashboardView.costSum")}
                 </div>
               </div>
 
@@ -608,7 +616,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                   <span className="text-[10px] font-mono uppercase font-semibold">
-                    TEMPO DE IMPRESSÃO
+                    {t("dashboardView.hoursLabel")}
                   </span>
                   <Clock className="w-4 h-4 text-warning" />
                 </div>
@@ -619,7 +627,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   </span>
                 </div>
                 <div className="text-[10px] text-text-muted">
-                  estimado nos cálculos salvos
+                  {t("dashboardView.hoursHint")}
                 </div>
               </div>
 
@@ -627,7 +635,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                   <span className="text-[10px] font-mono uppercase font-semibold">
-                    CONSUMO TOTAL
+                    {t("dashboardView.consumptionLabel")}
                   </span>
                   <Package className="w-4 h-4 text-info" />
                 </div>
@@ -640,10 +648,11 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   </span>
                 </div>
                 <div className="text-[10px] text-text-muted">
-                  {resinMillilitres.toLocaleString("pt-BR", {
-                    maximumFractionDigits: 1,
-                  })}{" "}
-                  ml de resina
+                  {t("dashboardView.resinMl", {
+                    ml: resinMillilitres.toLocaleString("pt-BR", {
+                      maximumFractionDigits: 1,
+                    }),
+                  })}
                 </div>
               </div>
 
@@ -651,7 +660,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
                 <div className="flex items-center justify-between text-text-secondary">
                   <span className="text-[10px] font-mono uppercase font-semibold">
-                    PREÇO MÉDIO CALCULADO
+                    {t("dashboardView.avgTicketLabel")}
                   </span>
                   <ArrowUpRight className="w-4 h-4 text-accent" />
                 </div>
@@ -661,7 +670,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   </span>
                 </div>
                 <div className="text-[10px] text-text-muted">
-                  por cálculo salvo
+                  {t("dashboardView.avgTicketHint")}
                 </div>
               </div>
             </div>
@@ -673,10 +682,10 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
-                      Histórico de valores calculados
+                      {t("dashboardView.revenueChartTitle")}
                     </h2>
                     <span className="text-[11px] text-text-secondary">
-                      Preço sugerido, lucro estimado e custo dos cálculos salvos
+                      {t("dashboardView.revenueChartSub")}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-xs">
@@ -698,7 +707,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 <div className="relative h-64 w-full">
                   {!isUsingDemo && revenueChartData.length === 0 && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg border border-dashed border-border-subtle text-sm text-text-secondary">
-                      Nenhum cálculo salvo neste período.
+                      {t("dashboardView.noDataInPeriod")}
                     </div>
                   )}
                   <ResponsiveContainer width="100%" height="100%">
@@ -805,7 +814,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h2 className="text-base font-bold text-text-primary">
-                      Consumo FDM por material
+                      {t("dashboardView.materialTitle")}
                     </h2>
                     <span className="text-[11px] text-text-secondary">
                       Total: {totalMaterialWeight.toLocaleString("pt-BR")} g no
@@ -816,14 +825,14 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                     onClick={() => onTabChange("inventory")}
                     className="text-xs text-info hover:text-info font-semibold"
                   >
-                    Estoque →
+                    {t("dashboardView.stockLink")}
                   </button>
                 </div>
 
                 <div className="relative flex h-48 w-full items-center justify-center">
                   {materialData.length === 0 ? (
                     <div className="text-center text-sm text-text-secondary">
-                      Sem consumo FDM registrado no período.
+                      {t("dashboardView.noFdmConsumption")}
                     </div>
                   ) : (
                     <>
@@ -949,7 +958,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                     Cálculos mais lucrativos
                   </h2>
                   <p className="text-[11px] text-text-secondary">
-                    Ranking do lucro por peça no período selecionado.
+                    Ranking do lucro por peça t("dashboardView.inPeriod").
                   </p>
                 </div>
                 <button
@@ -957,7 +966,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   onClick={() => onTabChange("history")}
                   className="rounded-lg border border-border-subtle px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-overlay hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  Abrir histórico
+                  {t("dashboardView.openHistory")}
                 </button>
               </div>
               {topEntries.length === 0 ? (
@@ -977,7 +986,9 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                         </span>
                         <div className="min-w-0">
                           <div className="truncate text-sm font-semibold text-text-primary">
-                            {entry.name || entry.summary || "Cálculo sem nome"}
+                            {entry.name ||
+                              entry.summary ||
+                              t("dashboardView.unnamed")}
                           </div>
                           <div className="text-[11px] text-text-secondary">
                             {entry.type === "fdm" ? "FDM" : "Resina"} ·{" "}
@@ -1037,7 +1048,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   {lowSpools.length}
                 </div>
                 <div className="text-[11px] text-text-secondary">
-                  ver em Minha Oficina →
+                  {t("dashboardView.seeWorkshop")}
                 </div>
               </button>
               <div className="rounded-xl border border-border-subtle bg-surface-raised p-3.5">
@@ -1129,7 +1140,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   onClick={() => onTabChange("history")}
                   className="rounded-lg border border-border-subtle px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-overlay hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
-                  Abrir histórico
+                  {t("dashboardView.openHistory")}
                 </button>
               </div>
               <div className="p-5">
@@ -1194,7 +1205,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle px-5 py-4">
           <div>
             <h2 className="text-base font-bold text-text-primary">
-              Cálculos recentes
+              {t("dashboardView.recentTitle")}
             </h2>
             <p className="text-[11px] text-text-secondary">
               Histórico salvo neste dispositivo, respeitando o período
@@ -1206,14 +1217,14 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
             onClick={() => onTabChange("history")}
             className="rounded-lg border border-border-subtle px-3 py-2 text-xs font-semibold text-text-secondary transition-colors hover:bg-surface-overlay hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            Abrir histórico
+            {t("dashboardView.openHistory")}
           </button>
         </div>
         {visibleEntries.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-text-secondary">
             {isUsingDemo
-              ? "O histórico da demonstração aparecerá aqui."
-              : "Nenhum cálculo salvo para exibir."}
+              ? t("dashboardView.noRecentDemo")
+              : t("dashboardView.noRecent")}
           </p>
         ) : (
           <ul className="divide-y divide-border-subtle">
@@ -1224,7 +1235,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               >
                 <div className="min-w-0">
                   <div className="truncate text-sm font-semibold text-text-primary">
-                    {entry.name || entry.summary || "Cálculo sem nome"}
+                    {entry.name || entry.summary || t("dashboardView.unnamed")}
                   </div>
                   <div className="text-[11px] text-text-secondary">
                     {entry.type === "fdm" ? "FDM" : "Resina"} ·{" "}

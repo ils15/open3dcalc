@@ -1037,6 +1037,10 @@
       "summary": "Vendendo {{pieces}} peças (≈{{hours}}h de impressão) você quita a {{printer}}.",
       "machineCost": "Valor da máquina: {{value}}",
       "perUnit": "Lucro por peça: {{value}} · tempo {{hours}}h"
+    },
+    "hero": {
+      "productionCost": "Custo de produção",
+      "netProfit": "Lucro líquido"
     }
   },
   "tutorial": {
@@ -1619,6 +1623,49 @@
       "data": "Dados"
     },
     "versions": [
+      {
+        "version": "2.0.0",
+        "date": "",
+        "sections": [
+          {
+            "title": "🚀 Novidades",
+            "items": [
+              "**Minha Oficina** — impressoras, materiais, estoque e canais de venda em um cadastro único, com coleções \"Meus\" e \"Biblioteca\" (103 modelos de impressora com imagens e especificações reais)",
+              "**Canais do Brasil** — Shein, TikTok Shop, Magalu e Balcão/retirada entram no catálogo de taxas, além de Shopee, Mercado Livre, Amazon e Etsy",
+              "**Marcas de filamento reais** — 13 marcas (3D Fila, Voolt3D, National 3D, Bambu Lab, eSun...) com um toque no cadastro de carretel",
+              "**Dashboard com 4 espaços de trabalho** — Visão Geral & Finanças, Rentabilidade & Preços, Operação & Estoque e Engenharia & Fatiador, todos derivados dos cálculos salvos",
+              "**Exportar e importar dados** — backup JSON legível com checksum na tela Privacidade, incluindo a migração explícita dos dados do perfil de teste (Beta)",
+              "**Modo Guiado** — assistente de quatro passos para quem está começando, com setas do teclado"
+            ]
+          },
+          {
+            "title": "🎨 Interface",
+            "items": [
+              "Navegação reorganizada: de dez destinos para quatro primários (Precificar, Dashboard, Histórico, Minha Oficina) — os antigos viram seções do hub e continuam acessíveis",
+              "Tema mais quadrado e denso, no padrão do protótipo: formulário em grades de três colunas e cantos flat",
+              "Ícone real do WhatsApp nos pontos de proposta e envio",
+              "Painel de resultados com cartão verde de preço, slider rápido de margem, composição de custos em lista/pizza e Break-Even da Máquina",
+              "Conteúdo centralizado em telas ultrawide (máximo de 1600px) — sem esticar de ponta a ponta",
+              "Mini-Dash e pill do dock com números reais do histórico — nada de valores fixos"
+            ]
+          },
+          {
+            "title": "🔒 Privacidade & dados",
+            "items": [
+              "Dados locais legíveis por design: disclosure claro, exportação/importação com checksum e migração idempotente que preserva a fonte",
+              "Selo [DEMO] no título da aba durante o modo demo — nunca confundir com o dado real"
+            ]
+          },
+          {
+            "title": "🧹 Organização",
+            "items": [
+              "Biblioteca de consulta duplicada removida (a Minha Oficina cobre)",
+              "Wiki atualizada para a 2.x: Minha Oficina, Dados & Privacidade, workspaces e modos da calculadora",
+              "Tradução en-US da navegação, dashboard e resultados"
+            ]
+          }
+        ]
+      },
       {
         "version": "1.14.0",
         "date": "",
@@ -2872,5 +2919,63 @@
     "stockViewLabel": "Visualização do estoque",
     "stockViewManager": "Gestão",
     "stockViewShelf": "Estante"
+  },
+  "dashboardView": {
+    "title": "Painel de Gestão & Oficina 3D",
+    "subtitle": "Resumo do histórico local e dos perfis configurados na sua oficina.",
+    "calculations": "{{count}} cálculo(s)",
+    "periodLabel": "Período do dashboard",
+    "range7": "7 Dias",
+    "range30": "30 Dias",
+    "rangeMonth": "Este Mês",
+    "rangeAll": "Tudo",
+    "newCalc": "Novo Cálculo",
+    "historyBtn": "Histórico ({{count}})",
+    "workshopBtn": "Minha Oficina",
+    "copilot": "IA Copilot",
+    "waitingTitle": "Dashboard aguardando seus dados",
+    "periodEmptyTitle": "Sem cálculos neste período",
+    "waitingDesc": "Os indicadores abaixo usam apenas cálculos salvos no histórico.",
+    "waitingFirst": " Salve um cálculo para começar a acompanhar sua atividade.",
+    "waitingOlder": " Ajuste o período ou escolha “Tudo” para consultar registros anteriores.",
+    "goCalc": "Ir à calculadora",
+    "activateDemo": "Ativar Modo Demo",
+    "fdmCalcs": "Cálculos FDM",
+    "resinCalcs": "Cálculos de resina",
+    "inPeriod": "no período selecionado",
+    "customPrinters": "Impressoras personalizadas",
+    "customChannels": "Canais de venda personalizados",
+    "seeWorkshop": "ver em Minha Oficina →",
+    "revenueLabel": "VALOR DE VENDA CALCULADO",
+    "savedInPeriod": "{{count}} cálculos salvos no período",
+    "profitLabel": "LUCRO ESTIMADO",
+    "marginLiquid": "{{pct}}% margem líquida",
+    "costLabel": "CUSTO CALCULADO",
+    "costSum": "Soma dos custos salvos no histórico",
+    "hoursLabel": "TEMPO DE IMPRESSÃO",
+    "hoursHint": "estimado nos cálculos salvos",
+    "consumptionLabel": "CONSUMO TOTAL",
+    "resinMl": "{{ml}} ml de resina",
+    "avgTicketLabel": "PREÇO MÉDIO CALCULADO",
+    "avgTicketHint": "por cálculo salvo",
+    "revenueChartTitle": "Histórico de valores calculados",
+    "revenueChartSub": "Preço sugerido, lucro estimado e custo dos cálculos salvos",
+    "legendPrice": "Preço sugerido",
+    "legendProfit": "Lucro",
+    "legendCost": "Custo",
+    "noDataInPeriod": "Nenhum cálculo salvo neste período.",
+    "materialTitle": "Consumo FDM por material",
+    "materialTotal": "Total: {{total}} g no histórico",
+    "stockLink": "Estoque →",
+    "noFdmConsumption": "Sem consumo FDM registrado no período.",
+    "recentTitle": "Cálculos recentes",
+    "recentSub": "Histórico salvo neste dispositivo, respeitando o período selecionado.",
+    "openHistory": "Abrir histórico",
+    "noRecentDemo": "O histórico da demonstração aparecerá aqui.",
+    "noRecent": "Nenhum cálculo salvo para exibir.",
+    "unnamed": "Cálculo sem nome",
+    "costPrefix": "custo R$ {{value}}",
+    "demoRankingEmpty": "Nenhum cálculo salvo para exibir.",
+    "roiCardTitle": "Break-Even da Máquina"
   }
 }
