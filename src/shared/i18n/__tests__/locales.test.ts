@@ -700,8 +700,15 @@ describe("i18n locales (privacy.localData.*) — write refusal", () => {
     );
   });
 
-  it("has no orphan privacy.localData write-refusal keys in either locale", () => {
-    const expected = [...LOCAL_DATA_KEYS, "writeRefusedMessage"].sort();
+  it("has no orphan privacy.localData keys in either locale", () => {
+    // syncTitle/syncDescription back the stable privacy screen's S1
+    // export/import section (DataSyncButton).
+    const expected = [
+      ...LOCAL_DATA_KEYS,
+      "writeRefusedMessage",
+      "syncTitle",
+      "syncDescription",
+    ].sort();
     for (const dict of [ptBR, enUS]) {
       const localData = resolve(dict, ["privacy", "localData"]) as
         Record<string, unknown> | undefined;

@@ -165,6 +165,13 @@
       "inputLabel": "Peças por mês",
       "partsMonth": "peças/mês",
       "projectedProfit": "Lucro mensal projetado"
+    },
+    "ws": {
+      "label": "Espaços de trabalho do dashboard",
+      "finance": "Visão Geral & Finanças",
+      "pricing": "Rentabilidade & Preços",
+      "operations": "Operação & Estoque",
+      "engineering": "Engenharia & Fatiador"
     }
   },
   "sections": {
@@ -1393,7 +1400,9 @@
     "localData": {
       "writeRefusedTitle": "Entradas novas não foram salvas",
       "writeRefusedMessage": "Não foi possível salvar em {{area}}: o armazenamento local ainda não está pronto ({{reason}}). A entrada NÃO foi salva. Tente novamente.",
-      "writeRefusedAreaUnknown": "dados pessoais"
+      "writeRefusedAreaUnknown": "dados pessoais",
+      "syncTitle": "Levar e trazer seus dados",
+      "syncDescription": "Exporte um arquivo JSON legível com histórico, clientes, orçamentos, catálogo e estoque — com checksum de integridade — ou importe um backup existente. Nada sai do seu dispositivo."
     },
     "passwordless": {
       "title": "Novos dados são armazenados localmente",
