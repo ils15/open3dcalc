@@ -51,6 +51,167 @@ export function SalesSection({ step }: { step?: number }) {
       ? `${t("calc.sectionMetric.totalExtras")}: ${formatAmount(extrasTotal)}`
       : undefined;
 
+  // One flowing grid (Example reference): every visible field packs into a
+  // 3-col row instead of stacked pairs with an empty cell when its partner is
+  // hidden by the quick level.
+  const salesFields = (
+    <>
+      <InputGroup
+        label={t("calc.quantity")}
+        value={store.quantity}
+        onChange={(v) =>
+          handleInput(v, (val) => store.setQuantity(val > 0 ? val : 1))
+        }
+        type="number"
+        unit="un"
+        tooltip={t("tooltip.quantity")}
+      />
+      {isFieldVisible("sales", "infillPercent") && (
+        <InputGroup
+          label={t("calc.infillPercent")}
+          value={store.infillPercent}
+          onChange={(v) => handleInput(v, (val) => store.setInfillPercent(val))}
+          type="number"
+          unit="%"
+          tooltip={t("tooltip.infillPercent")}
+        />
+      )}
+      {isFieldVisible("sales", "extrasCost") && (
+        <InputGroup
+          label={t("calc.extras")}
+          value={
+            isFDM ? store.fdmExtras.extrasCost : store.resinExtras.extrasCost
+          }
+          onChange={(v) =>
+            handleInput(v, (val) =>
+              isFDM
+                ? store.setFdmExtras({ extrasCost: val })
+                : store.setResinExtras({ extrasCost: val }),
+            )
+          }
+          type="number"
+          prefix={currencySymbol}
+          tooltip={t("tooltip.extras")}
+        />
+      )}
+      <InputGroup
+        label={t("calc.packaging")}
+        value={
+          isFDM ? store.fdmSales.packagingCost : store.resinSales.packagingCost
+        }
+        onChange={(v) =>
+          handleInput(v, (val) =>
+            isFDM
+              ? store.setFdmSales({
+                  ...store.fdmSales,
+                  packagingCost: val,
+                })
+              : store.setResinSales({
+                  ...store.resinSales,
+                  packagingCost: val,
+                }),
+          )
+        }
+        type="number"
+        prefix={currencySymbol}
+        tooltip={t("tooltip.packaging")}
+      />
+      {isFieldVisible("sales", "shippingCost") && (
+        <InputGroup
+          label={t("calc.shipping")}
+          value={
+            isFDM ? store.fdmSales.shippingCost : store.resinSales.shippingCost
+          }
+          onChange={(v) =>
+            handleInput(v, (val) =>
+              isFDM
+                ? store.setFdmSales({
+                    ...store.fdmSales,
+                    shippingCost: val,
+                  })
+                : store.setResinSales({
+                    ...store.resinSales,
+                    shippingCost: val,
+                  }),
+            )
+          }
+          type="number"
+          prefix={currencySymbol}
+          tooltip={t("tooltip.shipping")}
+        />
+      )}
+      {isFieldVisible("sales", "marketplace") && (
+        <div className="min-w-0">
+          <Select
+            label={t("calc.marketplace")}
+            value={store.selectedMarketplace.id}
+            onChange={handleMarketplaceChange}
+            options={catalogMarketplaces.map((m) => ({
+              label: m.name,
+              value: m.id,
+              image: m.logo,
+              subtitle: `${m.feePercent}% + ${currencySymbol} ${m.feeFixed}`,
+            }))}
+            search
+          />
+          <p className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
+            {t("calc.marketplaceFeeFixedHint")}
+          </p>
+        </div>
+      )}
+      {isFieldVisible("sales", "taxPercent") && (
+        <InputGroup
+          label={t("calc.taxPercent")}
+          value={
+            isFDM ? store.fdmSales.taxPercent : store.resinSales.taxPercent
+          }
+          onChange={(v) =>
+            handleInput(v, (val) =>
+              isFDM
+                ? store.setFdmSales({
+                    ...store.fdmSales,
+                    taxPercent: val,
+                  })
+                : store.setResinSales({
+                    ...store.resinSales,
+                    taxPercent: val,
+                  }),
+            )
+          }
+          type="number"
+          unit="%"
+          tooltip={t("tooltip.taxPercent")}
+        />
+      )}
+      {isFieldVisible("sales", "marketplaceFeePercent") && (
+        <InputGroup
+          label={t("bento.fields.fee")}
+          value={
+            isFDM
+              ? store.fdmSales.marketplaceFeePercent
+              : store.resinSales.marketplaceFeePercent
+          }
+          onChange={(v) =>
+            handleInput(v, (val) =>
+              isFDM
+                ? store.setFdmSales({
+                    ...store.fdmSales,
+                    marketplaceFeePercent: val,
+                  })
+                : store.setResinSales({
+                    ...store.resinSales,
+                    marketplaceFeePercent: val,
+                  }),
+            )
+          }
+          type="number"
+          unit="%"
+          tooltip={t("tooltip.marketplaceFee")}
+        />
+      )}
+    </>
+  );
+
   return (
     <div className="surface rounded-xl p-4 sm:p-5">
       <SectionHeader
@@ -60,184 +221,19 @@ export function SalesSection({ step }: { step?: number }) {
         subtitle={t("calc.sectionDesc.sales")}
         metric={metric}
       />
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-          <InputGroup
-            label={t("calc.quantity")}
-            value={store.quantity}
-            onChange={(v) =>
-              handleInput(v, (val) => store.setQuantity(val > 0 ? val : 1))
-            }
-            type="number"
-            unit="un"
-            tooltip={t("tooltip.quantity")}
-          />
-          {isFieldVisible("sales", "infillPercent") && (
-            <InputGroup
-              label={t("calc.infillPercent")}
-              value={store.infillPercent}
-              onChange={(v) =>
-                handleInput(v, (val) => store.setInfillPercent(val))
-              }
-              type="number"
-              unit="%"
-              tooltip={t("tooltip.infillPercent")}
-            />
-          )}
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 gap-3 items-start">
+          {salesFields}
         </div>
-        {isFieldVisible("sales", "extrasCost") && (
-          <InputGroup
-            label={t("calc.extras")}
-            value={
-              isFDM ? store.fdmExtras.extrasCost : store.resinExtras.extrasCost
-            }
-            onChange={(v) =>
-              handleInput(v, (val) =>
-                isFDM
-                  ? store.setFdmExtras({ extrasCost: val })
-                  : store.setResinExtras({ extrasCost: val }),
-              )
-            }
-            type="number"
-            prefix={currencySymbol}
-            tooltip={t("tooltip.extras")}
-          />
-        )}
-        <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-          <InputGroup
-            label={t("calc.packaging")}
-            value={
-              isFDM
-                ? store.fdmSales.packagingCost
-                : store.resinSales.packagingCost
-            }
-            onChange={(v) =>
-              handleInput(v, (val) =>
-                isFDM
-                  ? store.setFdmSales({
-                      ...store.fdmSales,
-                      packagingCost: val,
-                    })
-                  : store.setResinSales({
-                      ...store.resinSales,
-                      packagingCost: val,
-                    }),
-              )
-            }
-            type="number"
-            prefix={currencySymbol}
-            tooltip={t("tooltip.packaging")}
-          />
-          {isFieldVisible("sales", "shippingCost") && (
-            <InputGroup
-              label={t("calc.shipping")}
-              value={
-                isFDM
-                  ? store.fdmSales.shippingCost
-                  : store.resinSales.shippingCost
-              }
-              onChange={(v) =>
-                handleInput(v, (val) =>
-                  isFDM
-                    ? store.setFdmSales({
-                        ...store.fdmSales,
-                        shippingCost: val,
-                      })
-                    : store.setResinSales({
-                        ...store.resinSales,
-                        shippingCost: val,
-                      }),
-                )
-              }
-              type="number"
-              prefix={currencySymbol}
-              tooltip={t("tooltip.shipping")}
-            />
-          )}
-        </div>
-        {(isFieldVisible("sales", "marketplace") ||
-          isFieldVisible("sales", "taxPercent") ||
-          isFieldVisible("sales", "marketplaceFeePercent")) && (
-          <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
-            {isFieldVisible("sales", "marketplace") && (
-              <div>
-                <Select
-                  label={t("calc.marketplace")}
-                  value={store.selectedMarketplace.id}
-                  onChange={handleMarketplaceChange}
-                  options={catalogMarketplaces.map((m) => ({
-                    label: m.name,
-                    value: m.id,
-                    image: m.logo,
-                    subtitle: `${m.feePercent}% + ${currencySymbol} ${m.feeFixed}`,
-                  }))}
-                  search
-                />
-                <p className="mt-1.5 text-xs text-[var(--color-text-secondary)]">
-                  {t("calc.marketplaceFeeFixedHint")}
-                </p>
-              </div>
-            )}
-            {isFieldVisible("sales", "taxPercent") && (
-              <InputGroup
-                label={t("calc.taxPercent")}
-                value={
-                  isFDM
-                    ? store.fdmSales.taxPercent
-                    : store.resinSales.taxPercent
-                }
-                onChange={(v) =>
-                  handleInput(v, (val) =>
-                    isFDM
-                      ? store.setFdmSales({
-                          ...store.fdmSales,
-                          taxPercent: val,
-                        })
-                      : store.setResinSales({
-                          ...store.resinSales,
-                          taxPercent: val,
-                        }),
-                  )
-                }
-                type="number"
-                unit="%"
-                tooltip={t("tooltip.taxPercent")}
-              />
-            )}
-            {isFieldVisible("sales", "marketplaceFeePercent") && (
-              <InputGroup
-                label={t("bento.fields.fee")}
-                value={
-                  isFDM
-                    ? store.fdmSales.marketplaceFeePercent
-                    : store.resinSales.marketplaceFeePercent
-                }
-                onChange={(v) =>
-                  handleInput(v, (val) =>
-                    isFDM
-                      ? store.setFdmSales({
-                          ...store.fdmSales,
-                          marketplaceFeePercent: val,
-                        })
-                      : store.setResinSales({
-                          ...store.resinSales,
-                          marketplaceFeePercent: val,
-                        }),
-                  )
-                }
-                type="number"
-                unit="%"
-                tooltip={t("tooltip.marketplaceFee")}
-              />
-            )}
-          </div>
-        )}
+
+        {/* Markup presets + margin + real-margin readout share ONE compact
+            band (Example reference), instead of two stacked full-width boxes. */}
         {isFieldVisible("sales", "markupPresets") && (
-          <div className="surface rounded-xl p-4 sm:p-5">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between mb-2">
-              <span className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
+          <div className="surface rounded-xl p-3.5 sm:p-4 grid grid-cols-1 @form:grid-cols-2 gap-3 items-start">
+            <div>
+              <div className="text-xs sm:text-sm text-[var(--color-text-secondary)] mb-1.5">
                 {t("calc.markupPresets")}
-              </span>
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {MARKUP_PRESETS.map((pct) => (
                   <button
@@ -266,42 +262,70 @@ export function SalesSection({ step }: { step?: number }) {
                 ))}
               </div>
             </div>
+            <div>
+              <InputGroup
+                label={t("calc.profitMargin")}
+                value={
+                  isFDM
+                    ? store.fdmSales.profitMarginPercent
+                    : store.resinSales.profitMarginPercent
+                }
+                onChange={(v) =>
+                  handleInput(v, (val) =>
+                    isFDM
+                      ? store.setFdmSales({
+                          ...store.fdmSales,
+                          profitMarginPercent: val,
+                        })
+                      : store.setResinSales({
+                          ...store.resinSales,
+                          profitMarginPercent: val,
+                        }),
+                  )
+                }
+                type="number"
+                unit="%"
+                tooltip={t("tooltip.profitMargin")}
+              />
+              <DerivedMarginDisplay
+                profit={store.results?.profit}
+                sellPrice={store.results?.sellPrice}
+                label={t("calc.actualMargin")}
+                helper={t("tooltip.profitMargin")}
+                locale={locale}
+                testId="classic-derived-real-margin"
+              />
+            </div>
           </div>
         )}
-        <div className="surface rounded-xl p-4 sm:p-5">
-          <InputGroup
-            label={t("calc.profitMargin")}
-            value={
-              isFDM
-                ? store.fdmSales.profitMarginPercent
-                : store.resinSales.profitMarginPercent
-            }
-            onChange={(v) =>
-              handleInput(v, (val) =>
+        {!isFieldVisible("sales", "markupPresets") && (
+          <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">
+            <InputGroup
+              label={t("calc.profitMargin")}
+              value={
                 isFDM
-                  ? store.setFdmSales({
-                      ...store.fdmSales,
-                      profitMarginPercent: val,
-                    })
-                  : store.setResinSales({
-                      ...store.resinSales,
-                      profitMarginPercent: val,
-                    }),
-              )
-            }
-            type="number"
-            unit="%"
-            tooltip={t("tooltip.profitMargin")}
-          />
-          <DerivedMarginDisplay
-            profit={store.results?.profit}
-            sellPrice={store.results?.sellPrice}
-            label={t("calc.actualMargin")}
-            helper={t("tooltip.profitMargin")}
-            locale={locale}
-            testId="classic-derived-real-margin"
-          />
-        </div>
+                  ? store.fdmSales.profitMarginPercent
+                  : store.resinSales.profitMarginPercent
+              }
+              onChange={(v) =>
+                handleInput(v, (val) =>
+                  isFDM
+                    ? store.setFdmSales({
+                        ...store.fdmSales,
+                        profitMarginPercent: val,
+                      })
+                    : store.setResinSales({
+                        ...store.resinSales,
+                        profitMarginPercent: val,
+                      }),
+                )
+              }
+              type="number"
+              unit="%"
+              tooltip={t("tooltip.profitMargin")}
+            />
+          </div>
+        )}
         {store.results && (
           <MarketplaceComparison
             totalCost={store.results.totalCost}
