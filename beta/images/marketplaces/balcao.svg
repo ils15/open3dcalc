@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Balcão e retirada estilizada">
+  <!--
+    Open3DCalc — original artwork. Stylized storefront for in-person pickup,
+    the app's own zero-fee channel. NOT a registered trademark logo.
+  -->
+  <g fill="none" stroke="#059669" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4.5 9 L12 4 L19.5 9" />
+    <path d="M6 9 V19 H18 V9" />
+    <path d="M10 19 V14 H14 V19" />
+  </g>
+</svg>
