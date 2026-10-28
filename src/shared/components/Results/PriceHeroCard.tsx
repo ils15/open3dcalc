@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Pencil, X } from "lucide-react";
+import { Check, Percent, Pencil, X } from "lucide-react";
 
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { roundCurrency } from "@/shared/lib/currency";
@@ -15,11 +15,17 @@ export interface PriceHeroCardProps {
   breakdown: FinancialBreakdown;
   /** Receives the new override, or `null` to clear it back to the calculated price. */
   onSellOverrideChange: (price: number | null) => void;
+  /** Current commercial margin percent, when the surface can edit it. */
+  marginPercent?: number;
+  /** Writes a new commercial margin (recomputes the base suggested price). */
+  onMarginChange?: (percent: number) => void;
 }
 
 export function PriceHeroCard({
   breakdown,
   onSellOverrideChange,
+  marginPercent,
+  onMarginChange,
 }: PriceHeroCardProps) {
   const { t, i18n } = useTranslation();
   const { format: fmtCurrency } = useCurrency();
@@ -27,6 +33,7 @@ export function PriceHeroCard({
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [priceDraft, setPriceDraft] = useState("");
   const [priceError, setPriceError] = useState(false);
+  const [isEditingMargin, setIsEditingMargin] = useState(false);
 
   const openPriceEditor = () => {
     setPriceDraft(String(breakdown.displaySellPrice));
@@ -73,7 +80,9 @@ export function PriceHeroCard({
   return (
     <div
       data-testid="price-hero"
-      className="bg-[var(--surface-raised)] border border-[var(--border-default)] rounded-2xl p-4 text-[var(--text-primary)] shadow-xl space-y-4"
+      /* Green-tinted hero, per the Example reference: the suggested price is
+         the one optimistic surface in the panel. */
+      className="rounded-2xl border border-[var(--positive)]/40 bg-[var(--positive-wash)] p-4 text-[var(--text-primary)] shadow-xl space-y-4"
     >
       {/* Header: PREÇO SUGERIDO + Badge Lucro */}
       <div className="flex items-center justify-between">
@@ -89,6 +98,22 @@ export function PriceHeroCard({
               className="p-1 rounded-md text-[var(--positive)] hover:text-[var(--positive)] hover:bg-[var(--positive-subtle)] transition-colors"
             >
               <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {/* Example reference: quick margin slider lives on the hero. */}
+          {onMarginChange && marginPercent !== undefined && !isEditingPrice && (
+            <button
+              type="button"
+              onClick={() => setIsEditingMargin((v) => !v)}
+              aria-label={t("calc.marginQuickEdit")}
+              aria-expanded={isEditingMargin}
+              className={`p-1 rounded-md transition-colors ${
+                isEditingMargin
+                  ? "bg-[var(--positive-subtle)] text-[var(--positive)]"
+                  : "text-[var(--positive)] hover:bg-[var(--positive-subtle)]"
+              }`}
+            >
+              <Percent className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -197,6 +222,29 @@ export function PriceHeroCard({
           >
             {fmtCurrency(breakdown.displaySellPrice)}
           </span>
+        </div>
+      )}
+
+      {/* Quick margin slider (Example reference): recomputes the base price
+          live; a set override keeps overriding and stays labelled custom. */}
+      {isEditingMargin && onMarginChange && marginPercent !== undefined && (
+        <div className="mt-1 space-y-1 border-t border-[var(--positive)]/30 pt-2">
+          <div className="flex items-center justify-between text-[10px] text-[var(--text-secondary)]">
+            <span>{t("calc.marginQuickLabel")}</span>
+            <span className="font-mono font-bold text-[var(--positive)]">
+              {marginPercent}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min={20}
+            max={200}
+            step={5}
+            value={marginPercent}
+            onChange={(e) => onMarginChange(Number(e.target.value))}
+            aria-label={t("calc.marginQuickEdit")}
+            className="h-1.5 w-full cursor-pointer rounded bg-[var(--positive)]/20 accent-[var(--positive)]"
+          />
         </div>
       )}
 

@@ -24,6 +24,9 @@ export interface CostBreakdownCardProps {
   readonly totalCost: number;
   /** Sidebar variant hides the pie (space constraint) — matches the legacy panel. */
   readonly isSidebar: boolean;
+  /** Sidebar presentation switch (Example reference): inline dot+percent rows
+   *  ("list") or the donut chart ("chart"). Ignored outside the sidebar. */
+  readonly sidebarView?: "list" | "chart";
 }
 
 const CATEGORY_COLOR_TOKEN: Record<CostCategory, string> = {
@@ -47,6 +50,7 @@ export function CostBreakdownCard({
   chartData,
   totalCost,
   isSidebar,
+  sidebarView = "list",
 }: CostBreakdownCardProps) {
   const { t } = useTranslation();
   const { format: fmtCurrency } = useCurrency();
@@ -126,8 +130,43 @@ export function CostBreakdownCard({
           )}
         </div>
 
-        {isSidebar && (
+        {isSidebar && sidebarView === "chart" && (
           <CostDistributionBars chartData={chartData} totalCost={totalCost} />
+        )}
+
+        {isSidebar && sidebarView === "list" && (
+          <div
+            data-testid="cost-distribution-dotlist"
+            className="space-y-1 font-mono text-xs"
+          >
+            {chartData.map((item) => {
+              return (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between border-b border-[var(--border-subtle)] py-0.5 text-[11px] last:border-0"
+                >
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-[2px]"
+                      style={{
+                        backgroundColor: CATEGORY_COLOR_TOKEN[item.category],
+                      }}
+                    />
+                    <span className="truncate font-sans">{item.name}</span>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-[10px] text-[var(--text-muted)]">
+                      {item.pct.toFixed(0)}%
+                    </span>
+                    <span className="font-semibold text-[var(--text-primary)]">
+                      {fmtCurrency(item.value)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
 
         <details
@@ -182,11 +221,14 @@ export function CostBreakdownCard({
             )}
             {/* The host remains structurally stable; the chart is skipped when
                 the caller reports a hidden surface to avoid Recharts measuring
-                a 0×0 container. */}
+                a 0×0 container. In the sidebar the donut mounts only through
+                the list/pie switch (sidebarView === "chart"). */}
             <div
-              className={`mt-4 w-full ${isSidebar ? "hidden" : "h-48 sm:h-56"}`}
+              className={`mt-4 w-full ${
+                isSidebar && sidebarView === "list" ? "hidden" : "h-48 sm:h-56"
+              }`}
             >
-              {!isSidebar && (
+              {(!isSidebar || sidebarView === "chart") && (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie

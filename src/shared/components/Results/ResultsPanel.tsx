@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { useTranslation } from "react-i18next";
+import { Info, List, PieChart } from "lucide-react";
 
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFinancialBreakdown } from "@/shared/hooks/useFinancialBreakdown";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 import type { SidebarMode } from "@/shared/stores/layoutStore";
 import type { PrintParameters } from "@/shared/types";
 
+import { BreakEvenMachineCard } from "./BreakEvenMachineCard";
 import { CalculationErrorState } from "./CalculationErrorState";
 import { CostBreakdownCard } from "./CostBreakdownCard";
 import { DiagnosticDetailsCard } from "./DiagnosticDetailsCard";
@@ -81,6 +85,11 @@ export function ResultsPanel({
       calculationIssues: state.calculationIssues,
     })),
   );
+  const setFdmSales = useCalculatorStore((s) => s.setFdmSales);
+  const setResinSales = useCalculatorStore((s) => s.setResinSales);
+  const selectedPrinter = useCalculatorStore((s) => s.selectedPrinter);
+  const { format: fmtCurrency } = useCurrency();
+  const { t } = useTranslation();
 
   // Display-local sell-price override (issue #85): never writes back to the
   // store, so the global margin stays untouched.
@@ -92,6 +101,12 @@ export function ResultsPanel({
       ? localSellOverride
       : controlledSellOverride;
   const setSellOverride = onSellOverrideChange ?? setLocalSellOverride;
+  // Example reference: the composition card offers the list (dot + % + value)
+  // and the donut side by side via a small list/pie switch. The compact
+  // "Barras" choice seeds it with the bars presentation.
+  const [breakdownView, setBreakdownView] = useState<"list" | "chart">(
+    compactView === "bars" ? "chart" : "list",
+  );
   const sales = activeTab === "fdm" ? fdmSales : resinSales;
   const breakdown = useFinancialBreakdown({
     result: results,
@@ -127,22 +142,59 @@ export function ResultsPanel({
   const activeTabView = isTabsSidebar ? sidebarTab : "chart";
   const showDiagnostics = !isTabsSidebar || activeTabView !== "actions";
   const showActions = !isTabsSidebar || activeTabView === "actions";
-  const showChart =
-    isSidebar &&
-    ((sidebarMode === "compact" && compactView === "chart") ||
-      (sidebarMode === "tabs" && activeTabView === "chart"));
   // When the sidebar is not presenting the donut, the bars carry the
   // composition alone. CostBreakdownCard already renders CostDistributionBars
   // itself when `isSidebar` is set, so this component must not add a second
   // copy of the bar list — it used to, which duplicated every segment whenever
   // the compact view was on "bars". Non-sidebar surfaces (mobile/bento) keep
-  // the donut disclosure, exactly as before.
+  // the donut disclosure, exactly as before. The list/pie switch follows the
+  // Example reference: "list" shows the dot+%+value rows inline.
   const compactDistribution = (
-    <CostBreakdownCard
-      chartData={breakdown.chartData}
-      totalCost={results.totalCost}
-      isSidebar={isSidebar && !showChart}
-    />
+    <div className="relative">
+      {isSidebar && (
+        <div
+          role="group"
+          aria-label={t("results.distributionViewLabel")}
+          className="absolute right-3 top-3 z-10 flex items-center rounded border border-[var(--border-default)] bg-[var(--surface-overlay)] p-0.5"
+        >
+          {(
+            [
+              ["list", List],
+              ["chart", PieChart],
+            ] as const
+          ).map(([view, Icon]) => (
+            <button
+              key={view}
+              type="button"
+              aria-pressed={breakdownView === view}
+              aria-label={t(
+                view === "list"
+                  ? "results.distributionViewList"
+                  : "results.distributionViewChart",
+              )}
+              onClick={() => setBreakdownView(view)}
+              className={`rounded p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] ${
+                breakdownView === view
+                  ? "bg-[var(--surface-raised)] text-[var(--text-primary)]"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+              }`}
+            >
+              <Icon className="size-3" aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      )}
+      <CostBreakdownCard
+        chartData={breakdown.chartData}
+        totalCost={results.totalCost}
+        /* Sidebar layout always: the list/pie switch (seeded by the compact
+           "Barras" choice) picks the composition presentation, per the
+           Example reference. The old !showChart flip painted the mobile
+           variant here and hid the composition entirely. */
+        isSidebar={isSidebar}
+        sidebarView={breakdownView}
+      />
+    </div>
   );
   const actions = (
     <ResultsActions
@@ -180,6 +232,12 @@ export function ResultsPanel({
       <PriceHeroCard
         breakdown={breakdown}
         onSellOverrideChange={setSellOverride}
+        marginPercent={sales.profitMarginPercent}
+        onMarginChange={(percent) =>
+          activeTab === "fdm"
+            ? setFdmSales({ ...fdmSales, profitMarginPercent: percent })
+            : setResinSales({ ...resinSales, profitMarginPercent: percent })
+        }
       />
       <SuggestedPriceTool
         totalCost={results.totalCost}
@@ -195,12 +253,39 @@ export function ResultsPanel({
         initialSellPrice={breakdown.displaySellPrice}
         onApply={(scenario) => setSellOverride(scenario.sellPrice)}
       />
-      <ProfitSummaryCard
-        totalCost={results.totalCost}
-        profit={breakdown.displayProfit}
-        profitPerHour={results.profitPerHour ?? 0}
-        showProfitPerHour={false}
-      />
+      {isSidebar ? (
+        <>
+          {/* Example reference: projected-profit note + machine break-even
+              replace the generic profit card in the sidebar, which already
+              reads the profit inside the green hero. */}
+          <div
+            data-testid="projected-profit-note"
+            className="flex items-start gap-2 rounded-xl border border-[var(--border-default)] bg-[var(--surface-sunken)] p-2.5 text-[11px] text-[var(--text-secondary)]"
+          >
+            <Info
+              aria-hidden="true"
+              className="mt-0.5 size-3.5 shrink-0 text-[var(--info)]"
+            />
+            <span>
+              {t("results.projectedProfit", {
+                profit: fmtCurrency(breakdown.displayProfit),
+                cost: fmtCurrency(results.totalCost),
+              })}
+            </span>
+          </div>
+          <BreakEvenMachineCard
+            machineCost={selectedPrinter?.value ?? 0}
+            netProfit={breakdown.displayProfit}
+          />
+        </>
+      ) : (
+        <ProfitSummaryCard
+          totalCost={results.totalCost}
+          profit={breakdown.displayProfit}
+          profitPerHour={results.profitPerHour ?? 0}
+          showProfitPerHour={false}
+        />
+      )}
       {compactDistribution}
 
       {showDiagnostics && (
