@@ -435,6 +435,11 @@ describe("CatalogTab", () => {
 
     render(<CatalogTab />);
     fireEvent.click(screen.getByRole("tab", { name: "catalog.marketplaces" }));
+    // The marketplace list opens on "Meus canais"; the built-in profile lives
+    // in the library collection.
+    fireEvent.click(
+      screen.getByRole("button", { name: /catalog.marketplaceLibrary/ }),
+    );
 
     const directCard = screen.getByRole("article", { name: "Venda Direta" });
     const logo = directCard.querySelector("img");
@@ -445,6 +450,10 @@ describe("CatalogTab", () => {
       within(directCard).getByText("catalog.defaultMarketplace"),
     ).toBeInTheDocument();
 
+    // The custom profile lives in "Meus canais" — switch collections.
+    fireEvent.click(
+      screen.getByRole("button", { name: /catalog\.myMarketplaces/ }),
+    );
     const customCard = screen.getByRole("article", { name: "Local Pickup" });
     expect(customCard.querySelector("img")).toBeNull();
     expect(
@@ -465,6 +474,9 @@ describe("CatalogTab", () => {
       render(<CatalogTab />);
       fireEvent.click(
         screen.getByRole("tab", { name: "catalog.marketplaces" }),
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: /catalog\.marketplaceLibrary/ }),
       );
       expect(
         screen

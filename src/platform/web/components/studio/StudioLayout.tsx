@@ -189,7 +189,14 @@ export const StudioLayout: React.FC = () => {
           ref={mainRef}
           className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${
             isBetaChannel ? "" : "min-h-0 overflow-y-auto overscroll-y-contain"
-          } ${focusMode ? "max-w-[84rem] mx-auto" : ""}`}
+          } ${
+            /* Ultrawide displays must not stretch content edge to edge:
+               the workspace centers at a readable measure (focus mode keeps
+               its tighter column). */
+            focusMode
+              ? "max-w-[84rem] mx-auto"
+              : "mx-auto w-full max-w-[100rem]"
+          }`}
         >
           {/* Focus mode exit banner. The exit button uses the arbitrary-value
               form for `--accent-fill*` — see the note on the shell root: those

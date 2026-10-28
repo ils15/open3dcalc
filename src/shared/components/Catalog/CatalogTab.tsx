@@ -9,6 +9,10 @@ import { Select } from "@/shared/components/ui/Select";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { printers } from "@/shared/lib/printers";
 import { isPersonalPrinter } from "@/shared/lib/printerCatalog";
+import {
+  isPersonalMarketplace,
+  isPersonalMaterial,
+} from "@/shared/lib/catalogOwnership";
 import { materials } from "@/shared/lib/materials";
 import { marketplaces } from "@/shared/lib/marketplace";
 import {
@@ -1458,13 +1462,24 @@ function MaterialManager() {
   const [density, setDensity] = useState("");
   const [price, setPrice] = useState("");
   const [search, setSearch] = useState("");
+  const [collection, setCollection] = useState<"mine" | "library">("mine");
+
+  const personalMaterials = useMemo(
+    () => store.materials.filter(isPersonalMaterial),
+    [store.materials],
+  );
+  const libraryMaterials = useMemo(
+    () => store.materials.filter((m) => !isPersonalMaterial(m)),
+    [store.materials],
+  );
 
   const filteredMaterials = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
-    return store.materials.filter(
+    const pool = collection === "mine" ? personalMaterials : libraryMaterials;
+    return pool.filter(
       (material) => !query || material.name.toLocaleLowerCase().includes(query),
     );
-  }, [search, store.materials]);
+  }, [collection, search, personalMaterials, libraryMaterials]);
 
   const add = () => {
     if (!name.trim()) return;
@@ -1563,11 +1578,39 @@ function MaterialManager() {
         </div>
       }
       toolbar={
-        <CatalogSearchField
-          label={t("catalog.materialSearch")}
-          value={search}
-          onChange={setSearch}
-        />
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div
+            className="inline-flex max-w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1"
+            role="group"
+            aria-label={t("catalog.materialCollections")}
+          >
+            {(
+              [
+                ["mine", "catalog.myMaterials", personalMaterials.length],
+                ["library", "catalog.materialLibrary", libraryMaterials.length],
+              ] as const
+            ).map(([value, label, count]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={collection === value}
+                onClick={() => setCollection(value)}
+                className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                  collection === value
+                    ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)]"
+                }`}
+              >
+                {t(label)} <span className="opacity-75">({count})</span>
+              </button>
+            ))}
+          </div>
+          <CatalogSearchField
+            label={t("catalog.materialSearch")}
+            value={search}
+            onChange={setSearch}
+          />
+        </div>
       }
     >
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -1606,13 +1649,22 @@ function MaterialManager() {
           </CatalogCard>
         ))}
         {filteredMaterials.length === 0 && (
-          <p
+          <div
             role="status"
             aria-live="polite"
-            className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)]"
+            className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)] space-y-2"
           >
-            {t("history.noResults")}
-          </p>
+            <p>{t("history.noResults")}</p>
+            {collection === "mine" && personalMaterials.length === 0 && (
+              <button
+                type="button"
+                onClick={() => setCollection("library")}
+                className="text-xs font-semibold text-[var(--color-accent)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
+              >
+                {t("catalog.browseMaterialLibrary")}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </CatalogSectionLayout>
@@ -1628,14 +1680,26 @@ function MarketplaceManager() {
   const [feeFixed, setFeeFixed] = useState("");
   const [hasFreeShipping, setHasFreeShipping] = useState(false);
   const [search, setSearch] = useState("");
+  const [collection, setCollection] = useState<"mine" | "library">("mine");
+
+  const personalMarketplaces = useMemo(
+    () => store.marketplaces.filter(isPersonalMarketplace),
+    [store.marketplaces],
+  );
+  const libraryMarketplaces = useMemo(
+    () => store.marketplaces.filter((m) => !isPersonalMarketplace(m)),
+    [store.marketplaces],
+  );
 
   const filteredMarketplaces = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
-    return store.marketplaces.filter((marketplace) => {
+    const pool =
+      collection === "mine" ? personalMarketplaces : libraryMarketplaces;
+    return pool.filter((marketplace) => {
       const searchable = `${marketplace.name} ${marketplace.feePercent}% ${marketplace.feeFixed}`;
       return !query || searchable.toLocaleLowerCase().includes(query);
     });
-  }, [search, store.marketplaces]);
+  }, [collection, search, personalMarketplaces, libraryMarketplaces]);
 
   const add = () => {
     if (!name.trim()) return;
@@ -1739,11 +1803,43 @@ function MarketplaceManager() {
         </div>
       }
       toolbar={
-        <CatalogSearchField
-          label={t("catalog.marketplaceSearch")}
-          value={search}
-          onChange={setSearch}
-        />
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+          <div
+            className="inline-flex max-w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1"
+            role="group"
+            aria-label={t("catalog.marketplaceCollections")}
+          >
+            {(
+              [
+                ["mine", "catalog.myMarketplaces", personalMarketplaces.length],
+                [
+                  "library",
+                  "catalog.marketplaceLibrary",
+                  libraryMarketplaces.length,
+                ],
+              ] as const
+            ).map(([value, label, count]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={collection === value}
+                onClick={() => setCollection(value)}
+                className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                  collection === value
+                    ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)]"
+                }`}
+              >
+                {t(label)} <span className="opacity-75">({count})</span>
+              </button>
+            ))}
+          </div>
+          <CatalogSearchField
+            label={t("catalog.marketplaceSearch")}
+            value={search}
+            onChange={setSearch}
+          />
+        </div>
       }
     >
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -1802,13 +1898,22 @@ function MarketplaceManager() {
           </CatalogCard>
         ))}
         {filteredMarketplaces.length === 0 && (
-          <p
+          <div
             role="status"
             aria-live="polite"
-            className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)]"
+            className="col-span-full rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-sm text-[var(--color-text-muted)] space-y-2"
           >
-            {t("history.noResults")}
-          </p>
+            <p>{t("history.noResults")}</p>
+            {collection === "mine" && personalMarketplaces.length === 0 && (
+              <button
+                type="button"
+                onClick={() => setCollection("library")}
+                className="text-xs font-semibold text-[var(--color-accent)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] rounded"
+              >
+                {t("catalog.browseMarketplaceLibrary")}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </CatalogSectionLayout>

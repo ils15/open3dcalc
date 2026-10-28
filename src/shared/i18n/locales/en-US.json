@@ -535,7 +535,14 @@
     "addTag": "Add tag",
     "tagPlaceholder": "New tag…",
     "noTags": "No tags yet",
-    "removeTag": "Remove tag {{tag}}"
+    "removeTag": "Remove tag {{tag}}",
+    "myMaterials": "My materials",
+    "materialLibrary": "Material library",
+    "materialCollections": "Material collections",
+    "myMarketplaces": "My channels",
+    "marketplaceCollections": "Channel collections",
+    "browseMaterialLibrary": "Browse the material library",
+    "browseMarketplaceLibrary": "Browse the catalog templates"
   },
   "customers": {
     "title": "Customers",
