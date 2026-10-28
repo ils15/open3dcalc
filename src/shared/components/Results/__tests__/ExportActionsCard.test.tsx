@@ -91,7 +91,7 @@ describe("ExportActionsCard — chrome", () => {
     render(<ExportActionsCard />);
 
     expect(screen.getByText("calc.saveSettings")).toBeInTheDocument();
-    expect(screen.getByText("calc.exportPdf")).toBeInTheDocument();
+    expect(screen.getByText("calc.exportProposalPdf")).toBeInTheDocument();
     expect(screen.getByText("CSV")).toBeInTheDocument();
     expect(screen.getByText("results.exportQuote")).toBeInTheDocument();
     expect(screen.getByText("results.shareLink")).toBeInTheDocument();

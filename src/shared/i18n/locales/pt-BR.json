@@ -461,7 +461,8 @@
     "saleLabel": "Venda",
     "profitLabel": "Lucro",
     "marginQuickEdit": "Editar margem rápida",
-    "marginQuickLabel": "Ajuste rápido de margem"
+    "marginQuickLabel": "Ajuste rápido de margem",
+    "exportProposalPdf": "Gerar Proposta Comercial (PDF)"
   },
   "catalog": {
     "title": "Cadastros e Presets",
@@ -1015,7 +1016,13 @@
     "projectedProfit": "Lucro projetado de {{profit}} sobre o custo total de fabricação de {{cost}}.",
     "distributionViewLabel": "Visualização da composição",
     "distributionViewList": "Exibir em lista",
-    "distributionViewChart": "Exibir em gráfico de pizza"
+    "distributionViewChart": "Exibir em gráfico de pizza",
+    "roi": {
+      "title": "Análise de ROI & Ponto de Equilíbrio da Impressora",
+      "summary": "Vendendo {{pieces}} peças (≈{{hours}}h de impressão) você quita a {{printer}}.",
+      "machineCost": "Valor da máquina: {{value}}",
+      "perUnit": "Lucro por peça: {{value}} · tempo {{hours}}h"
+    }
   },
   "tutorial": {
     "start": "Iniciar Tutorial",

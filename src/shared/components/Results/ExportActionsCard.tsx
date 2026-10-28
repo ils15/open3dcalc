@@ -198,12 +198,14 @@ export function ExportActionsCard({
             const locale = i18n.resolvedLanguage || i18n.language || "pt-BR";
             exportPdf(results, locale, currency);
           }}
-          className={`w-full min-h-[32px] py-1.5 rounded text-xs font-semibold bg-[var(--surface-sunken)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--surface-overlay)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1 truncate${
+          /* Example reference: the commercial proposal PDF is THE primary
+             action — flat positive fill, full width, first among exports. */
+          className={`w-full min-h-[44px] py-2 rounded text-xs font-semibold bg-[var(--positive-fill)] text-[var(--positive-fill-fg)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:outline-none flex items-center justify-center gap-1.5 truncate${
             showSaveSettings ? "" : " col-span-2"
           }`}
         >
           <FileText className="w-3.5 h-3.5 shrink-0" />{" "}
-          <span className="truncate">{t("calc.exportPdf")}</span>
+          <span className="truncate">{t("calc.exportProposalPdf")}</span>
         </button>
         {/*
          * The tertiary pair nests its own 2-column grid rather than sitting as

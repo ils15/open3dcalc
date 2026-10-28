@@ -1,4 +1,5 @@
 import { SlidersHorizontal } from "lucide-react";
+import { PrinterRoiBreakEvenCard } from "@/shared/components/Results/PrinterRoiBreakEvenCard";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
 import { Select } from "@/shared/components/ui/Select";
 import type { CalculatorState } from "@/shared/stores/calculatorStore";
@@ -24,6 +25,10 @@ export interface PrintSectionProps {
     image?: string;
     brand: string;
   }>;
+  /** Live figures for the ROI analysis (Example reference). */
+  roiMachineCost: number;
+  roiNetProfit: number;
+  roiPrintTimeHours: number;
 }
 
 export function PrintSection({
@@ -36,6 +41,9 @@ export function PrintSection({
   isFieldVisible,
   handlePrinterSelect,
   catalogPrinters,
+  roiMachineCost,
+  roiNetProfit,
+  roiPrintTimeHours,
 }: PrintSectionProps) {
   return (
     <div className="surface rounded-xl p-4 sm:p-5">
@@ -44,6 +52,12 @@ export function PrintSection({
         t("calc.printParams"),
         t("calc.sectionDesc.print"),
       )}
+      <PrinterRoiBreakEvenCard
+        machineCost={roiMachineCost}
+        netProfit={roiNetProfit}
+        printTimeHours={roiPrintTimeHours}
+        printerName={store.selectedPrinter.name}
+      />
       <div className="grid grid-cols-1 @form:grid-cols-2 @form3:grid-cols-3 gap-3">
         <InputGroup
           label={t("calc.printTime")}

@@ -461,7 +461,8 @@
     "saleLabel": "Sale",
     "profitLabel": "Profit",
     "marginQuickEdit": "Quick margin edit",
-    "marginQuickLabel": "Quick margin adjustment"
+    "marginQuickLabel": "Quick margin adjustment",
+    "exportProposalPdf": "Generate commercial proposal (PDF)"
   },
   "catalog": {
     "title": "Catalogs & Presets",
@@ -1015,7 +1016,13 @@
     "projectedProfit": "Projected profit of {{profit}} over the total manufacturing cost of {{cost}}.",
     "distributionViewLabel": "Composition view",
     "distributionViewList": "Show as list",
-    "distributionViewChart": "Show as pie chart"
+    "distributionViewChart": "Show as pie chart",
+    "roi": {
+      "title": "Printer ROI & break-even analysis",
+      "summary": "Selling {{pieces}} pieces (≈{{hours}}h of printing) pays off your {{printer}}.",
+      "machineCost": "Machine cost: {{value}}",
+      "perUnit": "Profit per piece: {{value}} · {{hours}}h each"
+    }
   },
   "tutorial": {
     "start": "Start Tutorial",

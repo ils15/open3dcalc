@@ -21,11 +21,12 @@ import {
   X,
   Zap,
   ArrowLeft,
-  Store,
 } from "lucide-react";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import type { PrinterProfile } from "@/shared/types";
 import type { CatalogPrinter } from "@/shared/stores/catalogStore";
+import { resolveMarketplaceImageSource } from "@/shared/components/marketplaceImageSource";
+import { MarketplaceArt } from "@/shared/components/MarketplaceArt";
 
 export type CatalogSection = "printers" | "materials" | "marketplaces";
 
@@ -42,11 +43,6 @@ const SHIPPED_PRINTER_IMAGE_PATHS = new Set([
   "/images/printers/fallback-fdm.svg",
   "/images/printers/fallback-resin.svg",
 ]);
-const SHIPPED_MARKETPLACE_IMAGE_PATHS = new Set(
-  marketplaces.flatMap((marketplace) =>
-    marketplace.logo ? [marketplace.logo] : [],
-  ),
-);
 const PRINTER_FALLBACK_IMAGES = {
   fdm: "/images/printers/fallback-fdm.svg",
   resin: "/images/printers/fallback-resin.svg",
@@ -68,10 +64,6 @@ function resolveCatalogImageSource(
 
 function getImageSource(source: string | undefined): string | null {
   return resolveCatalogImageSource(source, SHIPPED_PRINTER_IMAGE_PATHS);
-}
-
-function getMarketplaceImageSource(source: string | undefined): string | null {
-  return resolveCatalogImageSource(source, SHIPPED_MARKETPLACE_IMAGE_PATHS);
 }
 
 interface CatalogCardProps {
@@ -203,38 +195,6 @@ function PrinterThumbnail({
         >
           <PrinterIcon aria-hidden="true" className="h-5 w-5" />
         </span>
-      )}
-    </span>
-  );
-}
-
-function MarketplaceThumbnail({
-  source,
-  className = "",
-}: {
-  source?: string;
-  className?: string;
-}) {
-  const [failedSource, setFailedSource] = useState<string | null>(null);
-  const imageSource = getMarketplaceImageSource(source) ?? "";
-  const showImage = Boolean(imageSource) && failedSource !== imageSource;
-
-  return (
-    <span
-      aria-hidden="true"
-      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] ${className}`}
-    >
-      {showImage ? (
-        <img
-          src={imageSource}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          onError={() => setFailedSource(imageSource)}
-          className="h-full w-full object-contain p-1"
-        />
-      ) : (
-        <Store className="h-5 w-5" />
       )}
     </span>
   );
@@ -1721,7 +1681,7 @@ function MarketplaceManager() {
               ...marketplaces.map((m) => ({
                 label: m.name,
                 value: m.id,
-                image: getMarketplaceImageSource(m.logo) ?? undefined,
+                image: resolveMarketplaceImageSource(m.logo) ?? undefined,
                 group: t("catalog.marketplaceLibrary"),
                 subtitle: `${m.feePercent}% + ${currencySymbol}${m.feeFixed}`,
               })),
@@ -1790,7 +1750,7 @@ function MarketplaceManager() {
         {filteredMarketplaces.map((m) => (
           <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-3">
             <div className="flex min-w-0 items-center gap-3">
-              <MarketplaceThumbnail source={m.logo} className="h-12 w-12" />
+              <MarketplaceArt source={m.logo} className="h-12 w-12" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold text-[var(--color-text-primary)]">
                   {m.name}
