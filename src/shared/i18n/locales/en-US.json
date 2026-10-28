@@ -1438,6 +1438,25 @@
       "driftHeading": "Legacy source changed",
       "driftWarning": "The legacy source changed after the migration: {{sources}} no longer matches what was migrated. Nothing was reconciled automatically.",
       "valueFreeNote": "This panel is informational and value-free: it shows only key names, counts and states."
+    },
+    "betaImport": {
+      "title": "Import data from the test profile (Beta)",
+      "description": "If you used the Beta channel in this browser, your test customers, quotes and history can be brought into this stable profile. The source is never modified or deleted; ids are preserved and duplicates skipped.",
+      "check": "Check test data",
+      "sourceHint": "Read-only — the source stays intact",
+      "type": {
+        "customers": "Test customers",
+        "quotes": "Test quotes",
+        "history": "Test history"
+      },
+      "corrupt": "unreadable",
+      "import": "Import",
+      "cancel": "Cancel",
+      "done": "{{imported}} record(s) imported into this profile.",
+      "report": "{{skipped}} duplicate(s) skipped. The test source remains in the profile.",
+      "sourceIntact": "Test source verified: intact.",
+      "sourceChanged": "Warning: the source changed during import.",
+      "error": "Import failed. Nothing was changed."
     }
   },
   "tooltip": {

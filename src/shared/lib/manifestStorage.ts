@@ -124,7 +124,7 @@ export const LEGACY_BETA_USER_CONTENT_KEYS = [
   "open3dcalc_beta_test_history_v1",
 ] as const;
 
-const LEGACY_BETA_PII_KEYS: Readonly<
+export const LEGACY_BETA_PII_KEYS: Readonly<
   Record<string, { key: string; field: string; version: number }>
 > = {
   open3dcalc_customers_v1: {
