@@ -6,6 +6,7 @@ import {
   MessageCircle,
   Activity,
 } from "lucide-react";
+import { BrandIcon } from "@/shared/components/BrandIcon";
 import { useTranslation } from "react-i18next";
 import { guardExport } from "@/shared/lib/demoExportGuard";
 
@@ -179,7 +180,7 @@ export function SalesPitchPanel({
           aria-label={t("copilot.openWhatsApp")}
           className="flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-800 active:scale-95"
         >
-          <MessageCircle className="h-4 w-4" aria-hidden="true" />
+          <BrandIcon brand="whatsapp" className="h-4 w-4" aria-hidden="true" />
           {t("copilot.openWhatsApp")}
         </a>
       </div>

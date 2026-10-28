@@ -16,7 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
-import { BrandIcon } from "@/platform/web/BrandIcon";
+import { BrandIcon } from "@/shared/components/BrandIcon";
 import { isBetaChannel } from "@/shared/config/betaChannel";
 import { useTranslation } from "react-i18next";
 

@@ -13,10 +13,10 @@ import {
   Calendar,
   Eye,
   Download,
-  MessageCircle,
   List,
   LayoutGrid,
 } from "lucide-react";
+import { BrandIcon } from "@/shared/components/BrandIcon";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
 import { useCustomerStore } from "@/shared/stores/customerStore";
@@ -927,7 +927,10 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                             title="Enviar no WhatsApp"
                             aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                           >
-                            <MessageCircle className="w-3.5 h-3.5" />
+                            <BrandIcon
+                              brand="whatsapp"
+                              className="h-3.5 w-3.5"
+                            />
                           </button>
 
                           <button
@@ -1079,7 +1082,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       title="Compartilhar no WhatsApp"
                       aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
+                      <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
                     </button>
 
                     <button
@@ -1520,7 +1523,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                 onClick={() => shareWhatsApp(viewingQuote)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-positive bg-positive-subtle hover:bg-positive-subtle border border-positive/30 transition-colors"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
+                <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
                 <span>WhatsApp</span>
               </button>
               <button
