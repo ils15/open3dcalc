@@ -18,6 +18,20 @@
 // a change to the report shape is a compile error here, not a silent drift.
 import type { LegacyPiiRowsReport } from "../../../../electron/legacyRows.js";
 
+/** S2: explicit v1.14 desktop migration routes (read-only detect + apply). */
+export interface ElectronPiiLegacyApi {
+  detect: () => Promise<{
+    sources: Array<{ type: string; records: number; corrupt: boolean }>;
+    total: number;
+    hasAny: boolean;
+  }>;
+  apply: () => Promise<{
+    imported: number;
+    skipped: number;
+    perType: Record<string, number>;
+  }>;
+}
+
 /** Database operations available through IPC. */
 /** Full Electron API exposed via contextBridge. */
 export interface ElectronAPI {
@@ -26,6 +40,7 @@ export interface ElectronAPI {
   privacy: ElectronPrivacyApi;
   erasure: ElectronErasureApi;
   piiNew: ElectronPiiNewApi;
+  piiLegacy: ElectronPiiLegacyApi;
   withdrawal: ElectronWithdrawalApi;
 }
 

@@ -37,15 +37,52 @@ export function BetaDataImportSection(): React.ReactElement | null {
     sourceIntact: boolean;
   } | null>(null);
 
+  const isDesktop =
+    typeof navigator !== "undefined" &&
+    navigator.userAgent.includes("Electron");
+
   const read = useCallback(
     (key: string) =>
       typeof localStorage !== "undefined" ? localStorage.getItem(key) : null,
     [],
   );
 
-  const detect = useMemo(() => detectBetaData(read), [read]);
+  // Web: read the beta_test keys from localStorage and merge through the
+  // stores. Desktop: the v1.14 rows live in the SQLite `storage` table under
+  // the inherited key names and the generic db IPC refuses PII — so the
+  // migration runs in the main process behind pii:legacy:*.
+  const detectWeb = useMemo(() => detectBetaData(read), [read]);
 
-  const runImport = useCallback(() => {
+  const detectDesktop = useCallback(async (): Promise<BetaImportPreview> => {
+    const cap = await window.electronAPI?.piiLegacy?.detect();
+    const sources = (cap?.sources ?? []).map((s) => ({
+      type: s.type as BetaImportPreview["sources"][number]["type"],
+      storageKey: "",
+      records: s.records,
+      corrupt: s.corrupt,
+    }));
+    return {
+      sources,
+      total: cap?.total ?? 0,
+      hasAny: cap?.hasAny ?? false,
+    };
+  }, []);
+
+  const runImportDesktop = useCallback(async () => {
+    try {
+      const report = await window.electronAPI?.piiLegacy?.apply();
+      setResult({
+        imported: report?.imported ?? 0,
+        skipped: report?.skipped ?? 0,
+        sourceIntact: true,
+      });
+      setPhase("done");
+    } catch {
+      setPhase("error");
+    }
+  }, []);
+
+  const runImportWeb = useCallback(() => {
     const snapshot = snapshotBetaSources(read);
     try {
       const customers = useCustomerStore.getState().customers;
@@ -93,8 +130,8 @@ export function BetaDataImportSection(): React.ReactElement | null {
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={() => {
-              setPreview(detect);
+            onClick={async () => {
+              setPreview(isDesktop ? await detectDesktop() : detectWeb);
               setPhase("preview");
             }}
             className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-2 text-xs font-semibold text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
@@ -144,7 +181,9 @@ export function BetaDataImportSection(): React.ReactElement | null {
               <button
                 type="button"
                 disabled={!preview.hasAny}
-                onClick={runImport}
+                onClick={() =>
+                  isDesktop ? runImportDesktop() : runImportWeb()
+                }
                 className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg bg-[var(--color-positive-fill)] px-3 text-xs font-bold text-[var(--color-positive-fill-fg)] transition-all hover:brightness-110 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
               >
                 <Download className="h-3.5 w-3.5" aria-hidden="true" />

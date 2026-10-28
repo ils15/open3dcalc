@@ -225,6 +225,34 @@ const electronAPI = {
         : ipcRenderer.invoke("pii:new:save", key, value),
   },
 
+  piiLegacy: {
+    /**
+     * S2: read-only detection of v1.14 desktop rows (per-type counts).
+     * Unavailable on Beta (Web-only channel).
+     */
+    detect: (): Promise<{
+      sources: Array<{ type: string; records: number; corrupt: boolean }>;
+      total: number;
+      hasAny: boolean;
+    }> =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("pii:legacy:detect")
+        : ipcRenderer.invoke("pii:legacy:detect"),
+
+    /**
+     * S2: merge-by-id apply from the v1.14 keys into the pwless namespace.
+     * The legacy keys are never written or deleted.
+     */
+    apply: (): Promise<{
+      imported: number;
+      skipped: number;
+      perType: Record<string, number>;
+    }> =>
+      isBetaPreloadRuntime()
+        ? betaPiiUnavailable("pii:legacy:apply")
+        : ipcRenderer.invoke("pii:legacy:apply"),
+  },
+
   erasure: {
     /** Persist/validate the authorization barrier before renderer-side work. */
     authorize: (): Promise<{ token: string }> =>

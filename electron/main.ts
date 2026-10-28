@@ -22,6 +22,7 @@ import {
   registerDisabledDatabaseImportHandler,
 } from "./databaseIpc.js";
 import { registerPasswordlessPiiHandlers } from "./newPiiIpc.js";
+import { registerLegacyDesktopMigrationHandlers } from "./legacyDesktopMigration.js";
 import { registerNewPiiErasureHandlers } from "./newPiiErasure.js";
 import { registerWithdrawalPurgeHandlers } from "./withdrawalPurge.js";
 import { registerDisabledLegacyPrivacyHandlers } from "./disabledLegacyPrivacyIpc.js";
@@ -253,6 +254,11 @@ function setupIpcHandlers(): void {
     assertTrustedSender,
     app.getPath("userData"),
   );
+
+  // ── pii:legacy:detect/apply — S2 explicit v1.14 desktop migration ─────────
+  // Read-only detect + merge-by-id apply from the inherited v1.14 storage keys
+  // into the pwless namespace. The legacy keys are never written or deleted.
+  registerLegacyDesktopMigrationHandlers(ipcMain, db, assertTrustedSender);
 
   // ── erasure:new-pii:* — EXACT new-namespace delete-all (Beta12 follow-up) ─
   // Erases ONLY the three passwordless new-PII storage rows through a durable,

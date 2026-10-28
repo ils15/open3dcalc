@@ -219,17 +219,19 @@ describe("preload bridge Beta parity (source-pinned, toolchain cannot load it)",
     );
   });
 
-  it("gates every retained PII method exactly once (17: export/pii/erasure/withdrawal/privacy)", () => {
+  it("gates every retained PII method exactly once (19: export/pii/legacy/erasure/withdrawal/privacy)", () => {
     const gated = preloadCode.match(/betaPiiUnavailable\("/g) ?? [];
-    // db.exportDatabase(1) + piiNew(3) + erasure(4) +
-    // erasure.newPii(4) + withdrawal(2) + privacy(3) = 17. A different count
+    // db.exportDatabase(1) + piiNew(3) + piiLegacy(2) + erasure(4) +
+    // erasure.newPii(4) + withdrawal(2) + privacy(3) = 19. A different count
     // means a PII method lost its gate or a non-PII method gained one.
-    expect(gated).toHaveLength(17);
+    expect(gated).toHaveLength(19);
     for (const channel of [
       "db:export",
       "pii:new:capability",
       "pii:new:load",
       "pii:new:save",
+      "pii:legacy:detect",
+      "pii:legacy:apply",
       "erasure:authorize",
       "erasure:claim",
       "erasure:start",
