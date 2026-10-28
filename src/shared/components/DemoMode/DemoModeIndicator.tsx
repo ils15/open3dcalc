@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Sparkles, X } from "lucide-react";
 
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
-import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
+import { useDemoWindowTitle, useIsDemoMode } from "@/shared/hooks/useDemoMode";
 
 /**
  * Persistent banner shown for the whole duration of a demo session.
@@ -26,6 +26,7 @@ import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 export function DemoModeIndicator(): ReactElement | null {
   const { t } = useTranslation();
   const isActive = useIsDemoMode();
+  useDemoWindowTitle();
   const exitButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {

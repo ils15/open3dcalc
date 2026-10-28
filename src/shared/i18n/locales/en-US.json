@@ -2539,7 +2539,7 @@
       "ariaLabel": "Try demo mode with sample data"
     },
     "indicator": {
-      "title": "Demo mode active",
+      "title": "Demo mode · sample data",
       "description": "You are exploring sample data — nothing is saved.",
       "exit": "Exit demo",
       "exitAriaLabel": "Exit demo mode and discard the sample data"

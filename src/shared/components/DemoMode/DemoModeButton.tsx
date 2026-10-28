@@ -34,12 +34,12 @@ export function DemoModeButton(): ReactElement | null {
     <button
       type="button"
       onClick={() => useDemoModeStore.getState().enter()}
-      className="flex items-center gap-2 p-2.5 sm:px-3.5 sm:py-2 min-h-[44px] min-w-[44px] text-[var(--color-accent)] hover:bg-[var(--color-accent-muted)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none rounded-xl border border-transparent hover:border-[var(--color-accent-muted)]"
+      className="flex items-center gap-1.5 px-2.5 sm:px-3.5 sm:py-2 min-h-[44px] min-w-[44px] rounded-lg bg-[var(--color-violet-muted)] border border-[var(--color-violet)]/40 text-[var(--color-violet)] hover:bg-[var(--color-violet)] hover:text-[var(--color-text-inverse)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
       title={t("demo.button.ariaLabel")}
       aria-label={t("demo.button.ariaLabel")}
     >
-      <PlayCircle className="w-5 h-5 shrink-0" aria-hidden="true" />
-      <span className="hidden sm:inline text-[13px] font-semibold whitespace-nowrap">
+      <PlayCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+      <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">
         {t("demo.button.label")}
       </span>
     </button>

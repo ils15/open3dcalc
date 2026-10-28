@@ -8,13 +8,13 @@ import {
   DollarSign,
   Trash2,
   Calculator,
-  MessageCircle,
   Plus,
   FileText,
   Layers,
   Calendar,
   Sparkles,
 } from "lucide-react";
+import { BrandIcon } from "@/shared/components/BrandIcon";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
@@ -511,7 +511,7 @@ export const StudioHistoryView: React.FC<StudioHistoryViewProps> = ({
                       className="p-1.5 rounded-lg bg-positive-subtle hover:bg-positive-subtle border border-positive/30 text-positive transition-colors"
                       title="Enviar proposta via WhatsApp"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
+                      <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
                     </button>
 
                     <button

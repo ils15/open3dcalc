@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  MessageCircle,
   Maximize2,
   Minimize2,
   Calculator,
@@ -15,6 +14,7 @@ import {
   ChevronRight,
   Home,
 } from "lucide-react";
+import { BrandIcon } from "@/shared/components/BrandIcon";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { DemoModeButton } from "@/shared/components/DemoMode/DemoModeButton";
 import { guardExport } from "@/shared/lib/demoExportGuard";
@@ -226,7 +226,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           title="Gerar proposta rápida para WhatsApp"
           aria-label="Proposta WhatsApp"
         >
-          <MessageCircle className="w-3.5 h-3.5" />
+          <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
           <span className="hidden xs:inline">Proposta WhatsApp</span>
         </button>
 

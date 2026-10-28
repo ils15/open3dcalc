@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { BookOpen, Info } from "lucide-react";
-import { BrandIcon } from "./BrandIcon";
+import { BrandIcon } from "@/shared/components/BrandIcon";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
 type SecondaryNavigationProps = {
