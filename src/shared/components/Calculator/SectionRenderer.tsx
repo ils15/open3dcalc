@@ -151,6 +151,13 @@ export function SectionRenderer(props: SectionRendererProps) {
                   isFieldVisible={isFieldVisible}
                   handlePrinterSelect={handlePrinterSelect}
                   catalogPrinters={catalogPrinters}
+                  roiMachineCost={store.selectedPrinter.value ?? 0}
+                  roiNetProfit={store.results?.profit ?? 0}
+                  roiPrintTimeHours={
+                    isFDM
+                      ? (store.fdmPrintParams.printTimeHours ?? 0)
+                      : (store.resinPrintParams.printTimeHours ?? 0)
+                  }
                 />
               </div>
             );

@@ -157,22 +157,21 @@ describe("ResultsPanel — demo export guard", () => {
     expect(screen.queryByText("demo.export.badge")).not.toBeInTheDocument();
   });
 
-  it.each([
-    ["calc.exportPdf"],
-    ["CSV"],
-    ["results.exportQuote"],
-  ])("blocks the %s export with explanatory feedback", async (label) => {
-    mockState.isActive = true;
-    const user = userEvent.setup();
+  it.each([["calc.exportProposalPdf"], ["CSV"], ["results.exportQuote"]])(
+    "blocks the %s export with explanatory feedback",
+    async (label) => {
+      mockState.isActive = true;
+      const user = userEvent.setup();
 
-    render(<ResultsPanel variant="mobile" onExportBlocked={onBlocked} />);
+      render(<ResultsPanel variant="mobile" onExportBlocked={onBlocked} />);
 
-    await user.click(screen.getByText(label));
+      await user.click(screen.getByText(label));
 
-    expect(onBlocked).toHaveBeenCalledWith("demo.export.blockedTitle");
-    expect(exportQuoteJson).not.toHaveBeenCalled();
-    expect(downloadQuoteJson).not.toHaveBeenCalled();
-  });
+      expect(onBlocked).toHaveBeenCalledWith("demo.export.blockedTitle");
+      expect(exportQuoteJson).not.toHaveBeenCalled();
+      expect(downloadQuoteJson).not.toHaveBeenCalled();
+    },
+  );
 
   it("blocks the share link with explanatory feedback", async () => {
     mockState.isActive = true;

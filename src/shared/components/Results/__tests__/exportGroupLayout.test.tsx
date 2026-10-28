@@ -55,7 +55,7 @@ describe("export group — two primaries over a tertiary pair", () => {
   it("gives the PDF primary the full width of the group", () => {
     render(<ExportActionsCard showSaveSettings={false} />);
 
-    const pdf = screen.getByText("calc.exportPdf").closest("button");
+    const pdf = screen.getByText("calc.exportProposalPdf").closest("button");
     expect(pdf).not.toBeNull();
     expect(
       TOKEN(pdf as Element, "col-span-2"),
@@ -96,7 +96,7 @@ describe("export group — two primaries over a tertiary pair", () => {
     );
 
     const pair = tertiaryPair(container);
-    expect(pair.textContent).not.toContain("calc.exportPdf");
+    expect(pair.textContent).not.toContain("calc.exportProposalPdf");
   });
 
   it("gives the group grid exactly two direct children when there is no save action", () => {

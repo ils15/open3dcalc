@@ -56,6 +56,9 @@ const defaultProps = {
   isFieldVisible: vi.fn(() => true),
   handlePrinterSelect: vi.fn(),
   catalogPrinters: mockCatalogPrinters,
+  roiMachineCost: 2000,
+  roiNetProfit: 4.35,
+  roiPrintTimeHours: 0.9,
 };
 
 describe("PrintSection", () => {
