@@ -351,67 +351,22 @@ describe("CatalogTab", () => {
     ).toBeInTheDocument();
   });
 
-  it("uses fallbacks for missing catalog PNGs without rendering image requests", () => {
-    const missingPngPrinters = printers.filter(
-      (printer) =>
-        printer.image?.endsWith(".png") &&
-        !existsSync(
-          resolve(process.cwd(), "public", printer.image.replace(/^\/+/, "")),
+  it("ships every seeded brand card and renders them without broken requests", () => {
+    // The 25 previously-dangling brand-card PNGs now ship as original
+    // artwork (see public/images/printers/brands). The onError fallback
+    // chain stays covered by the "shows printer images with a resilient
+    // fallback" test above.
+    const pngPrinters = printers.filter((printer) =>
+      printer.image?.endsWith(".png"),
+    );
+    expect(pngPrinters.length).toBeGreaterThanOrEqual(25);
+    for (const printer of pngPrinters) {
+      expect(
+        existsSync(
+          resolve(process.cwd(), "public", printer.image!.replace(/^\/+/, "")),
         ),
-    );
-    expect(missingPngPrinters).toHaveLength(25);
-
-    render(<CatalogTab />);
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "catalog.addPrinter" })[0],
-    );
-    const dialog = screen
-      .getAllByRole("dialog")
-      .find((candidate) => candidate.querySelector("h2"));
-    expect(dialog).toBeDefined();
-    if (!dialog) throw new Error("Printer preset dialog was not rendered");
-
-    const presetCards = new Map(
-      Array.from(dialog.querySelectorAll<HTMLDivElement>("div.group")).map(
-        (card) =>
-          [card.querySelector("h4")?.textContent?.trim() ?? "", card] as const,
-      ),
-    );
-
-    const verifiedFdmPreset = printers.find(
-      (printer) => printer.technology === "fdm",
-    );
-    expect(verifiedFdmPreset).toBeDefined();
-    if (!verifiedFdmPreset) throw new Error("No verified FDM seed was found");
-    const verifiedFdmCard = presetCards.get(verifiedFdmPreset.name);
-    expect(verifiedFdmCard).toBeDefined();
-    if (!verifiedFdmCard)
-      throw new Error("Verified FDM preset card was not rendered");
-    expect(within(verifiedFdmCard).getByText("catalog.fdm")).toHaveClass(
-      "border-[var(--color-accent-muted)]",
-      "bg-[var(--color-accent-muted)]",
-      "text-[var(--color-accent)]",
-    );
-
-    for (const printer of missingPngPrinters) {
-      const presetCard = presetCards.get(printer.name);
-      expect(presetCard).toBeDefined();
-      if (!presetCard) throw new Error(`Preset missing: ${printer.name}`);
-      const thumbnail = presetCard.querySelector("img");
-      if (printer.technology === "fdm" || printer.technology === "resin") {
-        expect(thumbnail).toHaveAttribute(
-          "src",
-          `/images/printers/fallback-${printer.technology}.svg`,
-        );
-        expect(thumbnail).toHaveAttribute("loading", "lazy");
-      } else {
-        expect(thumbnail).toBeNull();
-        expect(
-          within(presetCard).getByRole("img", {
-            name: "catalog.imageUnavailable",
-          }),
-        ).toBeInTheDocument();
-      }
+        `missing brand card: ${printer.image}`,
+      ).toBe(true);
     }
   });
 

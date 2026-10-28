@@ -479,6 +479,10 @@ describe("catalogStore — printer tags", () => {
       "mercadolivre",
       "amazon",
       "etsy",
+      "shein",
+      "tiktok_shop",
+      "magalu",
+      "balcao",
     ]);
     expect(marketplaces).toEqual([
       {
@@ -531,6 +535,38 @@ describe("catalogStore — printer tags", () => {
         feeFixed: 3,
         hasFreeShipping: false,
         logo: "/images/marketplaces/etsy.svg",
+      },
+      {
+        id: "shein",
+        name: "Shein",
+        feePercent: 16,
+        feeFixed: 0,
+        hasFreeShipping: true,
+        logo: "/images/marketplaces/shein.svg",
+      },
+      {
+        id: "tiktok_shop",
+        name: "TikTok Shop",
+        feePercent: 6,
+        feeFixed: 4,
+        hasFreeShipping: false,
+        logo: "/images/marketplaces/tiktokshop.svg",
+      },
+      {
+        id: "magalu",
+        name: "Magalu",
+        feePercent: 16,
+        feeFixed: 0,
+        hasFreeShipping: false,
+        logo: "/images/marketplaces/magalu.svg",
+      },
+      {
+        id: "balcao",
+        name: "Balcão / retirada",
+        feePercent: 0,
+        feeFixed: 0,
+        hasFreeShipping: false,
+        logo: "/images/marketplaces/balcao.svg",
       },
     ]);
   });

@@ -173,25 +173,30 @@ function resinFixture(
 
 describe("compareMarketplaceProfits", () => {
   it("ranks the full static catalog by net profit (best first)", () => {
-    // base=100 margin=30 tax=0:
-    //   direct  = 30.00 net (best)   amazon  = 30.00    etsy     = 27.00
-    //   shopee79= 26.00              mlivre = 23.50     shopee80 = 14.00
+    // base=100 margin=30 tax=0 (price=130):
+    //   direct/balcao/amazon/shein/magalu = 30.00 (feeFixed 0, tie)
+    //   etsy = 27.00   shopee79 = 26.00   tiktok_shop = 26.00
+    //   mlivre = 23.50   shopee80 = 14.00
     const rows = compareMarketplaceProfits({
       totalCost: 100,
       marginPercent: 30,
       taxPercent: 0,
     });
 
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(10);
     expect(rows.map((r) => r.id)).toEqual([
       "direct",
+      "balcao",
       "amazon",
+      "shein",
+      "magalu",
       "etsy",
       "shopee_ate79",
+      "tiktok_shop",
       "mercadolivre",
       "shopee_80mais",
     ]);
-    expect(rows.map((r) => r.rank)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(rows.map((r) => r.rank)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
   it("keeps rows sorted by net profit descending (ties are float-tight)", () => {
@@ -366,7 +371,7 @@ describe("compareMarketplaceProfits", () => {
       marginPercent: Number.POSITIVE_INFINITY,
       taxPercent: Number.NaN,
     });
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(10);
     // Inputs invalid → all rows invalid (base NaN/Infinity < 0 false, not finite)
     for (const row of rows) {
       expect(row.isValid).toBe(false);
