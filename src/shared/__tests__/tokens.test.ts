@@ -575,10 +575,13 @@ describe("radius scale has a single source of truth", () => {
     }
   });
 
-  it("aligns --radius-2xl with Tailwind's rounded-2xl (16px)", () => {
+  it("keeps --radius-2xl on the squared/flat scale (10px)", () => {
+    // The Example prototype's VS-Code-like density: panels read as flat
+    // squares, not pills. The whole scale lives in tokens.css and drives
+    // Tailwind's rounded-* utilities on both platforms.
     const value = tokensCss.match(/--radius-2xl\s*:\s*(\d+)px/);
     expect(value).not.toBeNull();
-    expect(Number(value![1])).toBe(16);
+    expect(Number(value![1])).toBe(10);
   });
 });
 
