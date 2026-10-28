@@ -15,6 +15,20 @@ aparece na tela tem uma origem rastreável — um campo que você preencheu e um
 fórmula conhecida. Se o preço final parece alto, a calculadora te mostra qual
 seção está pesando, em vez de esconder o problema dentro de um "valor total".
 
+## Três formas de usar
+
+O seletor no topo da calculadora escolhe a superfície:
+
+- **Clássico** — todas as seções auditáveis em uma tela, para quem domina os
+  números. É a forma completa, com nível Rápido, Detalhado ou Avançado;
+- **Guiado** — um assistente de **quatro passos** (peça e material →
+  impressora e tempo → mão de obra e extras → resultado final) para quem está
+  começando: campos essenciais, navegação Anterior/Próximo e setas do teclado;
+- **Bento** — a versão compacta em cartões.
+
+Os três usam o mesmo motor de cálculo: mudar de forma não muda número, muda
+apresentação.
+
 ## O que ela calcula
 
 A calculadora responde a duas perguntas separadas, sempre na ordem:

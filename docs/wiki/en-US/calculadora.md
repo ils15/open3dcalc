@@ -15,6 +15,20 @@ screen has a traceable origin — a field you filled in and a known formula. If
 the final price looks high, the calculator shows you which section is weighing
 it down, instead of hiding the problem inside a lump "total".
 
+## Three ways to use it
+
+The selector at the top of the calculator picks the surface:
+
+- **Classic** — every auditable section on one screen, for people who know
+  their numbers. The full form, with Quick, Detailed or Advanced levels;
+- **Guided** — a **four-step** assistant (part & material → printer & time →
+  labor & extras → final result) for people starting out: essential fields,
+  Back/Next navigation and keyboard arrows;
+- **Bento** — the compact card version.
+
+All three run the same calculation engine: switching shapes changes the
+presentation, never the numbers.
+
 ## What it calculates
 
 The calculator answers two separate questions, always in this order:
