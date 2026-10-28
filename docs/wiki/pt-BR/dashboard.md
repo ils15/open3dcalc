@@ -20,6 +20,24 @@ Por isso a primeira visita costuma mostrar os gráficos vazios com a mensagem
 estado normal de quem acabou de instalar. Salve três estimativas no Histórico,
 volte aqui, e a mesma tela está preenchida.
 
+## Espaços de trabalho
+
+O painel está dividido em **quatro espaços de trabalho** com conteúdo distinto,
+todos derivados dos cálculos salvos no período selecionado:
+
+- **Visão Geral & Finanças** — métricas gerais e a evolução de preço, lucro e
+  custo;
+- **Rentabilidade & Preços** — margem média, quanto dos cálculos ficou acima
+  do ponto de equilíbrio, margem por material e o ranking dos mais lucrativos;
+- **Operação & Estoque** — carretéis cadastrados, a lista real de estoque baixo
+  e o risco médio de falha declarado nos cálculos;
+- **Engenharia & Fatiador** — eficiência por material (lucro por grama em
+  faixas de peso) e horas de máquina por material.
+
+Nenhum número é inventado: quando não há dados no período, o espaço mostra o
+estado vazio em vez de estimar. O **modo demo** preenche os indicadores com a
+oficina de exemplo, isolada dos seus dados.
+
 ## KPIs da estimativa ativa
 
 O primeiro grupo de números acompanha a peça aberta na calculadora. Cada um

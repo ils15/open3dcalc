@@ -10,11 +10,14 @@ O **Inventário** é o catálogo que alimenta a calculadora. Em vez de estimar o
 custo com valores genéricos, você cadastra uma vez o que comprou e o que usa —
 e toda estimativa passa a sair de números reais.
 
-A **Estante de Filamento** é uma aba única (identificada internamente como
-`inventory`). A antiga aba `spools` foi removida: não existe uma segunda lista
-para manter em sincronia. A aba **Cadastros**, que registra impressoras,
-materiais e marketplaces, continua separada e é usada para preencher outros
-campos da calculadora.
+O estoque vive dentro da [**Minha Oficina**](#user-content-minha-oficina),
+na seção **Estoque**, com duas formas alternadas: a **Gestão** (completa, com
+KPIs e formulário de carretel com marcas de filamento reais) e a **Estante**
+(compacta, em cartões). O cadastro de impressoras, materiais e canais de venda
+também está lá, no mesmo lugar.
+
+Na calculadora, o atalho **"Puxar de Insumos"** lista os carretéis compatíveis
+com a peça e deduz o estoque quando você salva.
 
 Cada dado da estante é lido por uma seção específica da calculadora. Se um
 dado estiver errado, todo orçamento que o usa sai errado — por isso este

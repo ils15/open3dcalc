@@ -10,10 +10,14 @@ The **Inventory** is the catalog that feeds the calculator. Instead of
 estimating cost from generic values, you enter once what you bought and what
 you use — and every estimate starts from real numbers.
 
-The **Filament Shelf** is a single tab, identified internally as `inventory`.
-The old `spools` tab has been removed, so there is no second list to keep in
-sync. **Cadastros**, which stores printers, materials and marketplaces, remains
-a separate tab used to fill other calculator fields.
+Stock lives inside [**My Workshop**](#user-content-minha-oficina), in the
+**Stock** section, with two alternating shapes: **Management** (full, with
+KPIs and a spool form with real filament brands) and the **Shelf** (compact,
+card-based). The printer, material and sales-channel registries live there
+too, in the same place.
+
+In the calculator, the **"Pull from supplies"** shortcut lists spools
+compatible with the part and deducts stock when you save.
 
 Every shelf value is read by a specific calculator section. Get one wrong and
 every quote that uses it comes out wrong — which is why this catalog is the

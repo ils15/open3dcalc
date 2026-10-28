@@ -20,6 +20,24 @@ history data"**. It is not a bug and not a missing setting — it is the normal
 state for someone who just installed the app. Save three estimates to History,
 come back here, and the same screen is filled in.
 
+## Workspaces
+
+The panel is split into **four workspaces** with distinct contents, all derived
+from the calculations saved in the selected period:
+
+- **Overview & Finances** — general metrics and the price, profit and cost
+  evolution;
+- **Profitability & Prices** — average margin, how many calculations stayed
+  above break-even, margin per material and the most profitable ranking;
+- **Operations & Stock** — registered spools, the real low-stock list and the
+  average failure risk declared in the calculations;
+- **Engineering & Slicer** — efficiency per material (profit per gram by
+  weight band) and machine hours per material.
+
+No number is invented: when a period has no data, the workspace shows its
+empty state instead of estimating. **Demo mode** fills the indicators with the
+sample workshop, isolated from your data.
+
 ## KPIs of the active estimate
 
 The first group of numbers follows the part open in the calculator. Each one
