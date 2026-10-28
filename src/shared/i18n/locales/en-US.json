@@ -664,7 +664,8 @@
       "errBrand": "Enter the filament brand.",
       "errColor": "Select the filament color.",
       "errWeight": "Remaining weight must be greater than zero.",
-      "errOriginal": "Original weight must be greater than zero."
+      "errOriginal": "Original weight must be greater than zero.",
+      "brandSuggestions": "Filament brands (tap to fill)"
     }
   },
   "product": {

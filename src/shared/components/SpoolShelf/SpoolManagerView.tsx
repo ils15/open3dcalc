@@ -25,6 +25,7 @@ import {
   isLowStockSpool,
 } from "@/shared/stores/spoolStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { filamentBrands } from "@/shared/lib/filamentBrands";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 
@@ -877,6 +878,29 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
                     placeholder="Ex: Bambu Lab, eSun, Creality"
                     className="w-full bg-surface-raised border border-border-subtle rounded-lg px-3 py-2 text-text-primary outline-none focus:border-accent"
                   />
+                  {/* Real filament brands (reference registry): one tap fills
+                      the brand. Free text always wins. */}
+                  <div
+                    role="group"
+                    aria-label="Marcas de filamento"
+                    className="mt-1.5 flex flex-wrap gap-1"
+                  >
+                    {filamentBrands.map((fb) => (
+                      <button
+                        key={fb.id}
+                        type="button"
+                        title={`${fb.name} · ${fb.priceRangeBrl[0]}–${fb.priceRangeBrl[1]} R$/kg`}
+                        onClick={() => setBrand(fb.name)}
+                        className={`rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                          brand === fb.name
+                            ? "border-transparent bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+                            : "border-border-subtle bg-surface-raised text-text-secondary hover:text-text-primary"
+                        }`}
+                      >
+                        {fb.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>

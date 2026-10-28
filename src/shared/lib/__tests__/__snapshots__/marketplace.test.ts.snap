@@ -53,5 +53,37 @@ exports[`marketplaces > matches snapshot 1`] = `
     "logo": "/images/marketplaces/etsy.svg",
     "name": "Etsy",
   },
+  {
+    "feeFixed": 0,
+    "feePercent": 16,
+    "hasFreeShipping": true,
+    "id": "shein",
+    "logo": "/images/marketplaces/shein.svg",
+    "name": "Shein",
+  },
+  {
+    "feeFixed": 4,
+    "feePercent": 6,
+    "hasFreeShipping": false,
+    "id": "tiktok_shop",
+    "logo": "/images/marketplaces/tiktokshop.svg",
+    "name": "TikTok Shop",
+  },
+  {
+    "feeFixed": 0,
+    "feePercent": 16,
+    "hasFreeShipping": false,
+    "id": "magalu",
+    "logo": "/images/marketplaces/magalu.svg",
+    "name": "Magalu",
+  },
+  {
+    "feeFixed": 0,
+    "feePercent": 0,
+    "hasFreeShipping": false,
+    "id": "balcao",
+    "logo": "/images/marketplaces/balcao.svg",
+    "name": "Balcão / retirada",
+  },
 ]
 `;

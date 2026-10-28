@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PackageCheck, X } from "lucide-react";
 import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
 import { InputGroup } from "@/shared/components/ui/InputGroup";
+import { filamentBrands } from "@/shared/lib/filamentBrands";
 import { Select } from "@/shared/components/ui/Select";
 import {
   SPOOL_MATERIALS,
@@ -306,6 +307,30 @@ export function SpoolForm({
                   placeholder="Bambu Lab"
                   error={errors.brand ?? null}
                 />
+                {/* Real filament brands (reference registry): one tap fills
+                    the brand; the tooltip shows the typical BRL/kg range so a
+                    new spool's cost lands in a sane range. Free text wins. */}
+                <div
+                  role="group"
+                  aria-label={t("spools.form.brandSuggestions")}
+                  className="mt-1.5 flex flex-wrap gap-1"
+                >
+                  {filamentBrands.map((brand) => (
+                    <button
+                      key={brand.id}
+                      type="button"
+                      title={`${brand.name} · ${brand.priceRangeBrl[0]}–${brand.priceRangeBrl[1]} R$/kg`}
+                      onClick={() => upd("brand", brand.name)}
+                      className={`rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                        values.brand === brand.name
+                          ? "border-transparent bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+                          : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      }`}
+                    >
+                      {brand.name}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <Select

@@ -664,7 +664,8 @@
       "errBrand": "Informe a marca do filamento.",
       "errColor": "Selecione a cor do filamento.",
       "errWeight": "O peso restante deve ser maior que zero.",
-      "errOriginal": "O peso original deve ser maior que zero."
+      "errOriginal": "O peso original deve ser maior que zero.",
+      "brandSuggestions": "Marcas de filamento (toque para preencher)"
     }
   },
   "product": {
