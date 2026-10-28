@@ -1438,6 +1438,25 @@
       "driftHeading": "Alteração na fonte legada",
       "driftWarning": "A fonte legada mudou depois da migração: {{sources}} já não corresponde ao que foi migrado. Nada foi reconciliado automaticamente.",
       "valueFreeNote": "Este painel é informativo e sem valores: exibe apenas nomes de chave, contagens e estados."
+    },
+    "betaImport": {
+      "title": "Importar dados do perfil de teste (Beta)",
+      "description": "Se você usou o canal Beta neste navegador, seus clientes, orçamentos e histórico de teste podem ser trazidos para este perfil estável. A fonte nunca é modificada nem apagada; IDs são preservados e duplicatas são ignoradas.",
+      "check": "Verificar dados de teste",
+      "sourceHint": "Leitura apenas — a fonte permanece intacta",
+      "type": {
+        "customers": "Clientes de teste",
+        "quotes": "Orçamentos de teste",
+        "history": "Histórico de teste"
+      },
+      "corrupt": "ilegível",
+      "import": "Importar",
+      "cancel": "Cancelar",
+      "done": "{{imported}} registro(s) importado(s) para este perfil.",
+      "report": "{{skipped}} duplicata(s) ignorada(s). A fonte de teste permanece no perfil.",
+      "sourceIntact": "Fonte de teste verificada: intacta.",
+      "sourceChanged": "Atenção: a fonte mudou durante a importação.",
+      "error": "Não foi possível importar. Nada foi alterado."
     }
   },
   "tooltip": {

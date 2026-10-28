@@ -4,6 +4,7 @@ import { isBetaChannel } from "@/shared/config/betaChannel";
 import { ShieldCheck, AlertCircle } from "lucide-react";
 import { LegacyResidueDisclosure } from "@/shared/components/Privacy/LegacyResidueDisclosure";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
+import { BetaDataImportSection } from "./BetaDataImportSection";
 
 /**
  * Privacy screen (D1.1 S4) — ADR-002 §2.2.4.
@@ -300,6 +301,7 @@ function StablePrivacyScreen() {
           </p>
           <DataSyncButton variant="menu" />
         </section>
+        <BetaDataImportSection />
         <LegacyResidueDisclosure />
       </div>
     );
@@ -338,6 +340,8 @@ function StablePrivacyScreen() {
         </p>
         <DataSyncButton variant="menu" />
       </section>
+
+      <BetaDataImportSection />
 
       {/* ── Legacy data and migration-marker disclosure ──────────────── */}
       <LegacyResidueDisclosure />
