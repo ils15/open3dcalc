@@ -1,149 +1,555 @@
----
-name: Beta channel
+name: Beta release
 
-# Tag-first beta automation. Computes the next beta version, commits it in
-# package.json and package-lock.json, cuts an immutable annotated tag and
-# pushes both to the beta branch. The tag then triggers beta-deploy.yml, which
-# builds and publishes the web-only beta. Electron is never built for the beta
-# channel.
-#
-# IMPORTANT: the tag push MUST use the BETA_RELEASE_TOKEN PAT, not the default
-# GITHUB_TOKEN. GitHub deliberately suppresses new workflow runs for events
-# caused by GITHUB_TOKEN (anti-recursion), so a GITHUB_TOKEN push would create
-# the tag but never trigger beta-deploy.yml. See the "Canal Beta" section of
-# README.md for how to create the token.
-#
-# Beta changelog lives ONLY in the GitHub Release body (beta-deploy.yml); this
-# workflow never touches CHANGELOG.md — the sync-changelog.mjs parser collides
-# on keys like "1.13.0" vs "1.13.0-beta.1".
+# Validation runs without credentials and exercises the repository's actual
+# Husky hooks. The publisher is a fresh runner with no checkout or project code;
+# it creates only the exact validated main commit's beta tag.
 
 "on":
   workflow_dispatch:
-    inputs:
-      version:
-        description: >-
-          Base version for the beta, without the prerelease suffix
-          (e.g. "1.13.0" or "v1.13.0"). Leave empty for auto: the next minor
-          of the version in package.json.
-        required: false
-        type: string
-        default: ""
-      ref:
-        description: >-
-          Branch base para cortar o beta. Cortes beta devem partir de main
-          (onde CL1-CL6 já mergearam), mas o input permite cortar de qualquer
-          branch em casos excepcionais. Default: main.
-        required: false
-        type: string
-        default: "main"
+
+permissions: {}
 
 concurrency:
   group: beta-channel
   cancel-in-progress: false
 
 jobs:
-  cut:
-    name: Cut beta tag
+  validate:
+    name: Validate beta candidate without credentials
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
+    timeout-minutes: 60
+    permissions: {}
+    env:
+      BASH_ENV: /dev/null
+      GIT_CONFIG_NOSYSTEM: "1"
+      GIT_TERMINAL_PROMPT: "0"
     steps:
-      - name: Verify beta release token is configured
-        env:
-          BETA_TOKEN: ${{ secrets.BETA_RELEASE_TOKEN }}
+      - name: Fetch public main anonymously
+        shell: bash
         run: |
-          if [ -z "$BETA_TOKEN" ]; then
-            echo "❌ Repository secret BETA_RELEASE_TOKEN is not configured." >&2
-            echo "   A personal access token with 'contents: write' is required:" >&2
-            echo "   pushing the tag with the default GITHUB_TOKEN would NOT" >&2
-            echo "   trigger beta-deploy.yml (GitHub suppresses recursive runs)." >&2
-            echo "   See README.md > Canal Beta." >&2
+          set -euo pipefail
+          mkdir -p "$HOME"
+          if [ -e "$GITHUB_WORKSPACE/.git" ]; then
+            echo "❌ Expected a fresh workspace for anonymous checkout." >&2
             exit 1
           fi
-
-      - name: Checkout base branch
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 0
-          persist-credentials: true
-          # PAT, not GITHUB_TOKEN — the push must trigger beta-deploy.yml.
-          token: ${{ secrets.BETA_RELEASE_TOKEN }}
+          git init --quiet "$GITHUB_WORKSPACE"
+          git -C "$GITHUB_WORKSPACE" remote add origin \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main
+          git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
+            '+refs/tags/*:refs/tags/*'
+          git -C "$GITHUB_WORKSPACE" checkout --quiet --detach refs/remotes/origin/main
+          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$GITHUB_SHA"
 
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
 
-      - name: Compute next beta version
-        id: beta
-        shell: bash
+      # The hook requires Gitleaks. This trusted step installs a checksum-pinned
+      # binary before any npm lifecycle or project code runs.
+      - name: Install pinned Gitleaks
         env:
-          VERSION_INPUT: ${{ inputs.version }}
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          BASH_ENV: /dev/null
+        shell: bash
         run: |
           set -euo pipefail
-          # Versions never contain whitespace; remove all of it (including
-          # accidental newlines from manual input) before processing.
-          VERSION_INPUT="$(printf '%s' "$VERSION_INPUT" | tr -d '[:space:]')"
-          # Base version: explicit input wins (tolerate a leading "v" and any
-          # prerelease suffix); otherwise derive from package.json — bump the
-          # minor when sitting on a stable, keep the base when already on a
-          # beta series (e.g. 1.13.0-beta.2 -> base 1.13.0).
-          if [ -n "$VERSION_INPUT" ]; then
-            BASE="${VERSION_INPUT#v}"
-            BASE="${BASE%%-*}"
-            # Fail fast on typos: the base must be a plain X.Y.Z, otherwise the
-            # derived tag (vX.Y.Z-beta.N) would not match the v*.*.* stable-tag
-            # trigger of ci-cd.yml nor LAST_STABLE detection in beta-deploy.yml.
-            if ! printf '%s' "$BASE" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-              echo "❌ Invalid version input: '$VERSION_INPUT'" >&2
-              echo "   Use the format X.Y.Z, ex: 1.13.0 (a leading 'v' and a" >&2
-              echo "   prerelease suffix such as -beta.2 are tolerated)." >&2
+          curl --fail --silent --show-error --location \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            --output "$RUNNER_TEMP/gitleaks.tar.gz"
+          printf '%s  %s\n' "$GITLEAKS_SHA256" "$RUNNER_TEMP/gitleaks.tar.gz" \
+            | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/gitleaks-bin"
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP/gitleaks-bin" gitleaks
+          "$RUNNER_TEMP/gitleaks-bin/gitleaks" version
+
+      # All npm-controlled commands execute as a dedicated unprivileged user.
+      # The current step's actual runner command-file directory is made
+      # inaccessible to that user (not overridden or redirected). A canary
+      # proves GITHUB_ENV/PATH/OUTPUT/STATE/SUMMARY writes fail and that a
+      # BASH_ENV payload cannot persist changes. The publisher consumes no
+      # outputs or artifacts from this job--only its success result.
+      - name: Install and run actual commit, commit-msg, and pre-push hooks
+        shell: bash
+        env:
+          BASH_ENV: /dev/null
+        run: |
+          set -euo pipefail
+
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "❌ Beta releases must be dispatched from main (got $GITHUB_REF)." >&2
+            exit 1
+          fi
+          base_sha="$GITHUB_SHA"
+          [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]]
+          git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main
+          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$base_sha"
+          test "$(git -C "$GITHUB_WORKSPACE" rev-parse refs/remotes/origin/main)" = "$base_sha"
+
+          version=$(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          if (pkg.version !== lock.version || pkg.version !== lock.packages?.['']?.version) {
+            throw new Error('package.json and package-lock.json versions do not match');
+          }
+          if (!/^\d+\.\d+\.\d+-beta\.\d+$/.test(pkg.version)) {
+            throw new Error(`Expected X.Y.Z-beta.N, got ${pkg.version}`);
+          }
+          process.stdout.write(pkg.version);
+          NODE
+          )
+          beta_tag="v$version"
+          if git -C "$GITHUB_WORKSPACE" show-ref --verify --quiet "refs/tags/$beta_tag"; then
+            echo "❌ Beta tag $beta_tag already exists; beta tags are immutable." >&2
+            exit 1
+          fi
+
+          command_paths=()
+          for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
+            value=${!name-}
+            [ -n "$value" ] || continue
+            [ -f "$value" ] && [ ! -L "$value" ] || {
+              echo "❌ Runner command file $name is missing or not a regular file." >&2
+              exit 1
+            }
+            command_paths+=("$value")
+          done
+          ((${#command_paths[@]} >= 3)) || {
+            echo "❌ Runner did not provide the expected command files." >&2
+            exit 1
+          }
+          command_dir=$(dirname "${command_paths[0]}")
+          [ -d "$command_dir" ] && [ ! -L "$command_dir" ] || {
+            echo "❌ Runner command-file directory is not a real directory." >&2
+            exit 1
+          }
+          for path in "${command_paths[@]}"; do
+            [ "$(dirname "$path")" = "$command_dir" ] || {
+              echo "❌ Runner command files are not isolated in one directory." >&2
+              exit 1
+            }
+            [ "$(stat -c '%h' "$path")" = 1 ] || {
+              echo "❌ Runner command file $path has an unexpected hard link." >&2
+              exit 1
+            }
+            [ "$(stat -c '%u' "$path")" = "$(id -u)" ] || {
+              echo "❌ Runner command-file owner differs from this step user." >&2
+              exit 1
+            }
+          done
+          [ "$(stat -c '%u' "$command_dir")" = "$(id -u)" ] || {
+            echo "❌ Runner command-file directory owner differs from this step user." >&2
+            exit 1
+          }
+          chmod 700 "$command_dir"
+          chmod 600 "${command_paths[@]}"
+
+          run_id=${GITHUB_RUN_ID//[^0-9]/}
+          [ -n "$run_id" ] || { echo "❌ Invalid workflow run id." >&2; exit 1; }
+          sandbox_user="beta-gate-$run_id"
+          sandbox_root="$RUNNER_TEMP/beta-gate-$run_id"
+          trusted_root="$RUNNER_TEMP/beta-trusted-$run_id"
+          trusted_git="$trusted_root/candidate.git"
+          guard_dir="$trusted_root/hook-guards"
+          install_tree="$sandbox_root/work/install-tree"
+          hook_tree="$sandbox_root/work/hook-tree"
+          sandbox_home="$sandbox_root/home"
+          uid=""
+          user_created=0
+
+          cleanup() {
+            if [ -n "$uid" ]; then
+              sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
+            fi
+            if [ "$user_created" = 1 ]; then
+              sudo -n rm -rf -- "$sandbox_root" "$trusted_root"
+              sudo -n userdel "$sandbox_user" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          sudo -n true || {
+            echo "❌ A passwordless runner privilege boundary is unavailable." >&2
+            exit 1
+          }
+          sudo -n useradd --system --user-group --no-create-home \
+            --shell /usr/sbin/nologin "$sandbox_user"
+          user_created=1
+          uid=$(id -u "$sandbox_user")
+          gid=$(id -g "$sandbox_user")
+          mkdir -m 755 "$sandbox_root"
+          sudo -n install -d -m 755 -o "$uid" -g "$gid" \
+            "$sandbox_home" "$sandbox_root/work"
+          sudo -n install -d -m 700 -o "$uid" -g "$gid" \
+            "$sandbox_root/tmp" "$sandbox_root/npm-cache"
+          mkdir -m 755 "$trusted_root"
+          git -C "$GITHUB_WORKSPACE" clone --bare --no-hardlinks . "$trusted_git"
+          chmod -R a-w "$trusted_git"
+          find "$trusted_git" -type d -exec chmod 555 {} +
+          find "$trusted_git" -type f -exec chmod 444 {} +
+
+          sandbox_path="$RUNNER_TEMP/gitleaks-bin:$PATH"
+          sandbox() {
+            sudo -n -u "$sandbox_user" -- env -i \
+              PATH="$sandbox_path" \
+              HOME="$sandbox_home" \
+              XDG_CONFIG_HOME="$sandbox_home/.config" \
+              TMPDIR="$sandbox_root/tmp" \
+              NPM_CONFIG_CACHE="$sandbox_root/npm-cache" \
+              GIT_CONFIG_NOSYSTEM=1 \
+              GIT_CONFIG_GLOBAL=/dev/null \
+              GIT_TERMINAL_PROMPT=0 \
+              BASH_ENV=/dev/null \
+              "$@"
+          }
+          sandbox_in_tree() {
+            local tree="$1"
+            shift
+            sandbox /bin/bash -c 'cd "$1" && shift && exec "$@"' \
+              sandbox-shell "$tree" "$@"
+          }
+
+          # Canary: provide the actual runner paths to an isolated user and
+          # attempt command-file and BASH_ENV persistence. All writes must fail.
+          declare -A command_hashes=()
+          for path in "${command_paths[@]}"; do
+            command_hashes["$path"]=$(sha256sum "$path")
+          done
+          canary="$sandbox_home/canary.bashenv"
+          sudo -n -u "$sandbox_user" -- env -i \
+            HOME="$sandbox_home" PATH="$sandbox_path" \
+            /usr/bin/tee "$canary" >/dev/null <<EOF
+          for target in ${command_paths[*]@Q}; do
+            if printf 'BASH_ENV=/tmp/untrusted-startup\\n' >> "\$target" 2>/dev/null; then
+              exit 91
+            fi
+          done
+          : > "\$HOME/bash-env-ran"
+          EOF
+          canary_env=(HOME="$sandbox_home" PATH="$sandbox_path" BASH_ENV="$canary")
+          for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
+            value=${!name-}
+            [ -n "$value" ] && canary_env+=("$name=$value")
+          done
+          if ! sudo -n -u "$sandbox_user" -- env -i "${canary_env[@]}" \
+            /bin/bash -c 'for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do [ -n "$target" ] || continue; if printf "PWNED=1\\n" >> "$target" 2>/dev/null; then exit 92; fi; done'; then
+            echo "❌ Command-file/BASH_ENV canary could persist a write." >&2
+            exit 1
+          fi
+          sandbox test -f "$sandbox_home/bash-env-ran" || {
+            echo "❌ BASH_ENV canary did not execute; isolation test is inconclusive." >&2
+            exit 1
+          }
+          for path in "${command_paths[@]}"; do
+            [ "$(sha256sum "$path")" = "${command_hashes[$path]}" ] || {
+              echo "❌ Isolated canary changed a runner command file." >&2
+              exit 1
+            }
+          done
+
+          verify_command_files() {
+            local path
+            for path in "${command_paths[@]}"; do
+              [ "$(sha256sum "$path")" = "${command_hashes[$path]}" ] || {
+                echo "❌ npm/hook code changed a runner command file." >&2
+                return 1
+              }
+            done
+          }
+
+          sandbox git clone --no-checkout --no-hardlinks "$trusted_git" "$install_tree"
+          sandbox git -C "$install_tree" checkout --quiet --detach "$base_sha"
+          test "$(git -C "$install_tree" rev-parse HEAD)" = "$base_sha"
+          sandbox_in_tree "$install_tree" npm ci
+
+          # Stop any lifecycle daemon before the trusted post-install check.
+          sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
+          if pgrep -u "$uid" >/dev/null 2>&1; then
+            echo "❌ npm lifecycle process survived the sandbox boundary." >&2
+            exit 1
+          fi
+          verify_command_files
+
+          hook_sources=(
+            .husky/pre-commit .husky/commit-msg .husky/pre-push
+            scripts/scan-secrets-bifrost.mjs scripts/push-gate.mjs
+            scripts/push-gate-baseline.json package.json package-lock.json
+            commitlint.config.js .lintstagedrc.json eslint.config.js
+          )
+          verify_hook_sources() {
+            local tree="$1" path
+            for path in "${hook_sources[@]}"; do
+              if [ ! -f "$tree/$path" ] || [ -L "$tree/$path" ] || \
+                 ! git --git-dir="$trusted_git" cat-file blob "$base_sha:$path" \
+                   | cmp --silent - "$tree/$path"; then
+                echo "❌ Trusted hook source differs from candidate $base_sha:$path." >&2
+                return 1
+              fi
+            done
+          }
+          verify_hook_sources "$install_tree"
+
+          # Re-clone from immutable candidate objects after npm, so neither
+          # lifecycle changes to .git nor its working-tree edits can become the
+          # tree on which the actual hooks execute. Reuse only node_modules.
+          sandbox git clone --no-checkout --no-hardlinks "$trusted_git" "$hook_tree"
+          sandbox git -C "$hook_tree" checkout --quiet --detach "$base_sha"
+          sandbox cp -a "$install_tree/node_modules" "$hook_tree/node_modules"
+          verify_hook_sources "$hook_tree"
+
+          sandbox mkdir -p "$sandbox_home/.config" "$sandbox_home/.config/husky"
+          if [ -e "$sandbox_home/.huskyrc" ] || [ -e "$sandbox_home/.config/husky/init.sh" ]; then
+            echo "❌ Unexpected user Husky init script." >&2
+            exit 1
+          fi
+          sandbox_in_tree "$hook_tree" ./node_modules/.bin/husky
+          sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
+          if pgrep -u "$uid" >/dev/null 2>&1; then
+            echo "❌ Husky setup process survived the sandbox boundary." >&2
+            exit 1
+          fi
+
+          hooks_path=$(git -C "$hook_tree" config --local --get-all core.hooksPath || true)
+          if [ "$hooks_path" != ".husky/_" ]; then
+            echo "❌ Unexpected Git hooksPath after Husky activation: $hooks_path" >&2
+            exit 1
+          fi
+          for hook in pre-commit commit-msg pre-push; do
+            wrapper="$hook_tree/.husky/_/$hook"
+            if [ ! -f "$wrapper" ] || [ -L "$wrapper" ] || [ ! -x "$wrapper" ] || \
+               ! printf '%s  %s\n' \
+                 '34fe496008be71d8fdd446b2cce81e4bb0406109c130eafc583fbd9fe33244e2' \
+                 "$wrapper" | sha256sum --check --status; then
+              echo "❌ Husky wrapper integrity check failed: $hook" >&2
               exit 1
             fi
-          else
-            BASE=$(node -e '
-              const pkg = require("./package.json");
-              const [maj, min, pat] = pkg.version.split("-")[0].split(".").map(Number);
-              const onBeta = /-beta\.\d+$/.test(pkg.version);
-              process.stdout.write(onBeta ? `${maj}.${min}.${pat}` : `${maj}.${min + 1}.0`);
-            ')
+          done
+          if [ ! -f "$hook_tree/.husky/_/h" ] || [ -L "$hook_tree/.husky/_/h" ] || \
+             ! printf '%s  %s\n' \
+               '70200b200ca709b0622784f93839a5b2872333a917a09afddefd7dc2d8cdc680' \
+               "$hook_tree/.husky/_/h" | sha256sum --check --status; then
+            echo "❌ Husky dispatcher integrity check failed." >&2
+            exit 1
           fi
-          # Next prerelease number: highest existing vX.Y.Z-beta.N + 1, or 1
-          # when the series is new. Numeric sort so beta.10 > beta.9.
-          LAST_N=$(git tag --list "v${BASE}-beta.*" \
-            | sed -n 's/^v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*-beta\.\([0-9][0-9]*\)$/\1/p' \
-            | sort -n \
-            | tail -1 \
-            || true)
-          N=$(( ${LAST_N:-0} + 1 ))
-          TAG="v${BASE}-beta.${N}"
-          echo "base=$BASE" >> "$GITHUB_OUTPUT"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Computed beta tag: $TAG (base $BASE, prerelease $N)"
 
-      - name: Bump version in package manifests
-        shell: bash
+          mkdir -m 755 "$guard_dir"
+          for hook in pre-commit commit-msg pre-push; do
+            cat > "$guard_dir/$hook" <<'GUARD'
+          #!/bin/sh
+          set -eu
+          hook=${0##*/}
+          case "$hook" in
+            pre-commit|commit-msg|pre-push) ;;
+            *) echo "Unknown beta hook: $hook" >&2; exit 2 ;;
+          esac
+          [ "${BASH_ENV:-}" = /dev/null ] || { echo "Unexpected BASH_ENV" >&2; exit 2; }
+          [ "${HUSKY:-}" != 0 ] || { echo "HUSKY bypass detected" >&2; exit 2; }
+          [ ! -e "$HOME/.huskyrc" ] && [ ! -e "$HOME/.config/husky/init.sh" ] || {
+            echo "Unexpected user Husky init script" >&2; exit 2;
+          }
+          [ "${SKIP_GITLEAKS:-}" != 1 ] && [ "${SKIP_ENV_GUARD:-}" != 1 ] && \
+            [ "${SKIP_BIFROST_EXPOSURE:-}" != 1 ] && [ "${SKIP_HYGIENE:-}" != 1 ] && \
+            [ "${SKIP_PUSH_GATE:-}" != 1 ] || { echo "Hook bypass detected" >&2; exit 2; }
+          for path in \
+            .husky/pre-commit .husky/commit-msg .husky/pre-push \
+            scripts/scan-secrets-bifrost.mjs scripts/push-gate.mjs \
+            scripts/push-gate-baseline.json package.json package-lock.json \
+            commitlint.config.js .lintstagedrc.json eslint.config.js; do
+            file="$BETA_HOOK_TREE/$path"
+            [ -f "$file" ] && [ ! -L "$file" ] || { echo "Missing hook source: $path" >&2; exit 2; }
+            /usr/bin/git --git-dir="$BETA_TRUSTED_GIT" cat-file blob "$BETA_BASE_SHA:$path" \
+              | /usr/bin/cmp --silent - "$file" || { echo "Hook source changed: $path" >&2; exit 2; }
+          done
+          wrapper="$BETA_HOOK_TREE/.husky/_/$hook"
+          [ -f "$wrapper" ] && [ ! -L "$wrapper" ] && [ -x "$wrapper" ] || exit 2
+          printf '%s  %s\n' \
+            '34fe496008be71d8fdd446b2cce81e4bb0406109c130eafc583fbd9fe33244e2' \
+            "$wrapper" | /usr/bin/sha256sum --check --status || exit 2
+          dispatcher="$BETA_HOOK_TREE/.husky/_/h"
+          [ -f "$dispatcher" ] && [ ! -L "$dispatcher" ] || exit 2
+          printf '%s  %s\n' \
+            '70200b200ca709b0622784f93839a5b2872333a917a09afddefd7dc2d8cdc680' \
+            "$dispatcher" | /usr/bin/sha256sum --check --status || exit 2
+          exec "$wrapper" "$@"
+          GUARD
+            chmod 555 "$guard_dir/$hook"
+          done
+          chmod 555 "$guard_dir"
+
+          sandbox git -C "$hook_tree" config user.name "github-actions[bot]"
+          sandbox git -C "$hook_tree" config user.email "github-actions[bot]@users.noreply.github.com"
+          sudo -n chown -R "$(id -u):$(id -g)" "$trusted_root" "$guard_dir"
+          chmod -R a-w "$trusted_root"
+          find "$trusted_root" -type d -exec chmod 555 {} +
+          find "$trusted_root" -type f -exec chmod 444 {} +
+
+          # Final source comparison after installation/activation, then the
+          # immutable guard re-compares immediately before each real Husky hook.
+          verify_hook_sources "$hook_tree"
+          for hook in pre-commit commit-msg pre-push; do
+            wrapper="$hook_tree/.husky/_/$hook"
+            test -f "$wrapper" && test ! -L "$wrapper"
+          done
+
+          git_env=(
+            BETA_TRUSTED_GIT="$trusted_git"
+            BETA_BASE_SHA="$base_sha"
+            BETA_HOOK_TREE="$hook_tree"
+            HOME="$sandbox_home"
+            XDG_CONFIG_HOME="$sandbox_home/.config"
+            PATH="$sandbox_path"
+            BASH_ENV=/dev/null
+            GIT_CONFIG_NOSYSTEM=1
+            GIT_CONFIG_GLOBAL=/dev/null
+            GIT_TERMINAL_PROMPT=0
+          )
+          git_as_sandbox() {
+            sudo -n -u "$sandbox_user" -- env -i "${git_env[@]}" \
+              /usr/bin/git -C "$hook_tree" -c "core.hooksPath=$guard_dir" "$@"
+          }
+          git_as_sandbox commit --allow-empty -m "chore(beta): validate $beta_tag"
+          git_as_sandbox reset --hard "$base_sha"
+
+          remote="$sandbox_root/work/validation.git"
+          sandbox /usr/bin/git init --bare "$remote"
+          git_as_sandbox remote add beta-validation "$remote"
+          git_as_sandbox push beta-validation "$base_sha:refs/heads/beta-validation"
+          remote_sha=$(sandbox /usr/bin/git --git-dir="$remote" rev-parse refs/heads/beta-validation)
+          test "$remote_sha" = "$base_sha"
+          verify_command_files
+          echo "✅ Actual hooks passed for $beta_tag at $base_sha."
+
+          # No GITHUB_OUTPUT or artifact carries a value from npm/project code.
+
+  publish-tag:
+    name: Publish validated beta tag
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: beta-release
+    permissions:
+      contents: read
+    steps:
+      # No checkout, dependency install, or repository script runs in this job.
+      - name: Verify candidate manifests, main ancestry, and tag availability
+        id: verify
         env:
-          TAG: ${{ steps.beta.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+          API_URL: ${{ github.api_url }}
+          BASE_SHA: ${{ github.sha }}
+          BASH_ENV: /dev/null
+        shell: bash
         run: |
           set -euo pipefail
-          # Keep both root manifests in sync; this workflow owns the commit and tag.
-          npm version "${TAG#v}" --no-git-tag-version
-          node -p "'package.json version is now ' + require('./package.json').version"
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "❌ Refusing publication outside main (got $GITHUB_REF)." >&2
+            exit 1
+          fi
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
 
-      - name: Commit, tag and push
-        shell: bash
+          api_root="$API_URL/repos/$GITHUB_REPOSITORY"
+          api_get() {
+            local path="$1" destination="$2" status
+            status=$(curl --silent --show-error --output "$destination" \
+              --write-out '%{http_code}' \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$api_root/$path")
+            if [ "$status" != 200 ]; then
+              echo "❌ GitHub API GET $path returned HTTP $status." >&2
+              exit 1
+            fi
+          }
+
+          package_response=$(mktemp "$RUNNER_TEMP/package.XXXXXX")
+          lock_response=$(mktemp "$RUNNER_TEMP/lock-response.XXXXXX")
+          package_json=$(mktemp "$RUNNER_TEMP/package-json.XXXXXX")
+          lock_json=$(mktemp "$RUNNER_TEMP/lock-json.XXXXXX")
+          api_get "contents/package.json?ref=$BASE_SHA" "$package_response"
+          api_get "contents/package-lock.json?ref=$BASE_SHA" "$lock_response"
+          jq -er '.content' "$package_response" | tr -d '\n' | base64 --decode > "$package_json"
+          jq -er '.content' "$lock_response" | tr -d '\n' | base64 --decode > "$lock_json"
+          package_version=$(jq -er '.version' "$package_json")
+          lock_version=$(jq -er '.version' "$lock_json")
+          lock_root_version=$(jq -er '.packages[""].version' "$lock_json")
+          if [ "$package_version" != "$lock_version" ] || \
+             [ "$package_version" != "$lock_root_version" ] || \
+             ! [[ "$package_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+            echo "❌ Candidate manifests do not contain one beta X.Y.Z-beta.N version." >&2
+            exit 1
+          fi
+          tag="v$package_version"
+
+          tag_response=$(mktemp "$RUNNER_TEMP/tag-ref.XXXXXX")
+          status=$(curl --silent --show-error --output "$tag_response" \
+            --write-out '%{http_code}' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$api_root/git/ref/tags/$tag")
+          case "$status" in
+            404) ;;
+            200) echo "❌ Beta tag $tag already exists; beta tags are immutable." >&2; exit 1 ;;
+            *) echo "❌ GitHub API tag check returned HTTP $status." >&2; exit 1 ;;
+          esac
+
+          main_json=$(mktemp "$RUNNER_TEMP/main-ref.XXXXXX")
+          api_get "git/ref/heads/main" "$main_json"
+          main_sha=$(jq -er '.object.sha' "$main_json")
+          [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]]
+          comparison=$(mktemp "$RUNNER_TEMP/main-ancestry.XXXXXX")
+          api_get "compare/$BASE_SHA...$main_sha" "$comparison"
+          compare_status=$(jq -er '.status' "$comparison")
+          merge_base_sha=$(jq -er '.merge_base_commit.sha' "$comparison")
+          if [[ "$compare_status" != ahead && "$compare_status" != identical ]] || \
+             [ "$merge_base_sha" != "$BASE_SHA" ]; then
+            echo "❌ Validated candidate is not an ancestor of current main." >&2
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Verified $tag at exact candidate SHA $BASE_SHA; current main is $main_sha."
+
+      # This is the only step receiving BETA_RELEASE_TOKEN. The API creates
+      # refs/tags/<tag> directly at the exact validated candidate SHA; an
+      # existing ref or concurrent create fails closed.
+      - name: Create immutable beta tag ref
         env:
-          TAG: ${{ steps.beta.outputs.tag }}
-          REF: ${{ inputs.ref }}
+          GH_TOKEN: ${{ secrets.BETA_RELEASE_TOKEN }}
+          TAG: ${{ steps.verify.outputs.tag }}
+          CANDIDATE_SHA: ${{ github.sha }}
+          API_URL: ${{ github.api_url }}
+          BASH_ENV: /dev/null
+        shell: bash
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Only package manifests — never CHANGELOG.md and never the whole tree.
-          git add package.json package-lock.json
-          git commit --no-verify -m "chore(beta): $TAG"
-          git tag -a "$TAG" -m "Beta $TAG"
-          git push origin "$REF" --follow-tags
-          echo "Cut and pushed $TAG on $REF"
+          if [ -z "$GH_TOKEN" ]; then
+            echo "❌ Secret BETA_RELEASE_TOKEN is not configured for the protected beta-release environment." >&2
+            exit 1
+          fi
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          payload=$(jq -cn --arg ref "refs/tags/$TAG" --arg sha "$CANDIDATE_SHA" \
+            '{ref: $ref, sha: $sha}')
+          response=$(mktemp "$RUNNER_TEMP/create-tag.XXXXXX")
+          status=$(curl --silent --show-error --output "$response" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --header 'Content-Type: application/json' \
+            --data "$payload" \
+            "$API_URL/repos/$GITHUB_REPOSITORY/git/refs")
+          if [ "$status" != 201 ]; then
+            echo "❌ GitHub API tag creation returned HTTP $status." >&2
+            cat "$response" >&2
+            exit 1
+          fi
+          echo "Created $TAG for exact candidate commit $CANDIDATE_SHA."

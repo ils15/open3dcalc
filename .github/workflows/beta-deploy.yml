@@ -1,205 +1,442 @@
 ---
 name: Beta deploy
 
-# Web-only beta publication, triggered by the immutable beta tag that
-# beta.yml cuts and pushes. Builds the web bundle with VITE_BETA_CHANNEL=true
-# (visual beta badge in the app), publishes it under the /beta/ subpath of the
-# gh-pages branch and creates (or refreshes) the prerelease GitHub Release whose
-# body carries the beta changelog.
-#
-# The tag filter v*-beta.* matches only vX.Y.Z-beta.N and never a stable
-# vX.Y.Z, so this workflow and release-publish.yml are mutually exclusive.
-#
-# Electron is never built for the beta channel: betas are web-only.
-#
-# The release step needs the BETA_RELEASE_TOKEN PAT (not the default
-# GITHUB_TOKEN): the tag itself was pushed with that PAT, and GITHUB_TOKEN
-# would be enough for the gh-pages deploy but cannot reliably create the
-# release in the same run. See README.md > Canal Beta.
-#
-# Re-deploying an already-pushed immutable tag uses workflow_dispatch with the
-# "tag" input: a tag cannot be re-pushed to retrigger the push event, and the
-# workflow file that runs is the one on the dispatched ref, so the corrected
-# copy on the default branch is used. BETA_TAG (job env) resolves the tag for
-# both trigger paths and every step reads the tag from it.
-#
-# Release safety: `npm run test:browser` (the real-browser Beta storage
-# isolation test) runs BEFORE the publish step, so a beta tag does not publish
-# if profile isolation fails. The step mirrors the standalone
-# `test-browser` job in ci-cd.yml — same Playwright browser cache and
-# `npx playwright install --with-deps chromium`.
+# Web-only publication for immutable beta tags. The credential-free build job
+# validates the exact tag commit against package manifests and current main,
+# then produces the /beta/ bundle. A fresh deploy job consumes only that
+# artifact and the immutable push-event tag/SHA; it never checks out the repo,
+# installs dependencies, or executes project code.
 
 "on":
   push:
     tags:
       - "v*-beta.*"
 
-  # Manual re-deploy of an existing beta tag. The tag input is optional only
-  # because this same file still serves the push trigger (where it stays
-  # empty); a dispatch without it resolves BETA_TAG to the branch name and is
-  # rejected by the preflight guard below.
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Existing beta tag to re-deploy (e.g. v1.13.0-beta.1). Required when dispatching manually.'
-        required: false
-        type: string
-
 concurrency:
   group: gh-pages-deploy
   cancel-in-progress: false
 
-jobs:
-  beta-deploy:
-    name: Publish web beta to /beta/
-    runs-on: ubuntu-latest
-    # 15 min covered install + build:web + publish. The browser isolation test
-    # (Chromium install ~1-2 min, plus the specs — ci-cd.yml budgets it 15 min
-    # alone) is now on the critical path, so the budget is raised to keep a slow
-    # Chromium download from turning a healthy publish into a timeout.
-    timeout-minutes: 25
-    permissions:
-      # peaceiris only needs contents: write to push the gh-pages branch; the
-      # pages: write scope of the retired deploy-pages job is unused here (the
-      # Pages source is the gh-pages branch, not an Actions artifact).
-      contents: write
-    env:
-      # Single source of truth for the beta tag across every step. On a tag
-      # push inputs.tag is empty and github.ref_name is the tag that triggered
-      # the run; on a manual dispatch it is the tag passed in the input.
-      BETA_TAG: ${{ inputs.tag || github.ref_name }}
-    steps:
-      - name: Verify beta release token is configured
-        env:
-          BETA_TOKEN: ${{ secrets.BETA_RELEASE_TOKEN }}
-        run: |
-          if [ -z "$BETA_TOKEN" ]; then
-            echo "❌ Repository secret BETA_RELEASE_TOKEN is not configured." >&2
-            echo "   The prerelease for $BETA_TAG cannot be created" >&2
-            echo "   without it. See README.md > Canal Beta." >&2
-            exit 1
-          fi
-          # Preflight: the resolved tag must be a beta tag before anything is
-          # built or published. A manual dispatch without the tag input
-          # resolves to the branch name (e.g. "main"); failing here keeps the
-          # release step from ever touching a non-beta release.
-          if ! printf '%s' "$BETA_TAG" \
-            | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$'; then
-            echo "❌ BETA_TAG \"$BETA_TAG\" is not a beta tag (expected vX.Y.Z-beta.N)." >&2
-            echo "   On a manual run, pass the existing tag in the 'tag' input." >&2
-            exit 1
-          fi
+permissions: {}
 
-      - name: Checkout beta tag
+jobs:
+  build-beta:
+    name: Validate and build web beta (credential-free)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      BETA_TAG: ${{ github.ref_name }}
+    steps:
+      - name: Checkout exact tag commit without persisted credentials
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Accepts a tag name: on a dispatch this is the input tag, on a push
-          # it is the tag that triggered the run. Detached HEAD at the tag in
-          # both cases, so changelogen's implicit --to HEAD is the tag commit.
-          ref: ${{ env.BETA_TAG }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
-          persist-credentials: true
-          token: ${{ secrets.BETA_RELEASE_TOKEN }}
+          persist-credentials: false
 
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
-      # ── Browser storage isolation test (release gate) ─────────────────────
-      # The publish below is unreachable while this test is red: a beta tag
-      # must not ship if profile isolation fails in a REAL browser. Mirrors the
-      # `test-browser` job in ci-cd.yml (same cache key, same install command).
-      - name: ⚡ Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          # Keyed on package-lock so a Playwright upgrade (a new hash) never
-          # takes a cache HIT on the previous revision; `restore-keys` may still
-          # restore that revision, and `npx playwright install` below then
-          # downloads only what the new version actually needs.
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Chromium
-        # `--with-deps` installs the shared libraries headless Chromium needs on
-        # ubuntu-latest (the runner has passwordless sudo). It is a no-op
-        # download when the cache above already holds the revision.
-        run: npx playwright install --with-deps chromium
-
-      - name: 🌐 Browser storage isolation test
-        run: npm run test:browser
-
-      - name: Build web (beta channel)
-        run: npm run build:web
+      - name: Validate beta tag, package version, and ancestry of current main
+        shell: bash
         env:
-          # Visual beta badge in the app; false on stable builds.
-          VITE_BETA_CHANNEL: "true"
-          # 3D toolpath preview (D-CL5/D-CL6) — ON by default for everyone now
-          # (see featureFlags.ts); kept explicit here to record the beta channel
-          # as its dogfood vehicle (v1.13.0-beta.1..3).
-          VITE_TOOLPATH_PREVIEW: "true"
-
-      - name: SPA routing fallback
-        # GitHub Pages serves index.html for directory requests; without it,
-        # /open3dcalc/beta/ would fall through to the root 404.html (the stable
-        # shell, whose /assets/ do not exist under /beta/). Mirror the pattern
-        # used by ci-cd.yml.
+          BASH_ENV: /dev/null
         run: |
-          cp dist-web/index.web.html dist-web/404.html
-          cp dist-web/index.web.html dist-web/index.html
+          set -euo pipefail
+          if [[ ! "$BETA_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+            echo "❌ Refusing non-beta tag: $BETA_TAG" >&2
+            exit 1
+          fi
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
 
-      # keep_files: true so the stable root of gh-pages is never clobbered.
-      # The shared gh-pages-deploy concurrency group serializes this with the
-      # stable publish in ci-cd.yml.
+          git fetch --no-tags origin \
+            "+refs/tags/$BETA_TAG:refs/tags/$BETA_TAG" \
+            "+refs/heads/main:refs/remotes/origin/main"
+          tag_sha=$(git rev-parse "$BETA_TAG^{commit}")
+          test "$tag_sha" = "$GITHUB_SHA" || {
+            echo "❌ Triggering tag does not point to the workflow event SHA." >&2
+            exit 1
+          }
+          git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main || {
+            echo "❌ Beta tag commit is not an ancestor of current main." >&2
+            exit 1
+          }
+
+          package_version=$(node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          if (pkg.version !== lock.version || pkg.version !== lock.packages?.['']?.version) {
+            throw new Error('package.json and package-lock.json versions do not match');
+          }
+          if (!/^\d+\.\d+\.\d+-beta\.\d+$/.test(pkg.version)) {
+            throw new Error(`Expected X.Y.Z-beta.N, got ${pkg.version}`);
+          }
+          process.stdout.write(pkg.version);
+          NODE
+          )
+          if [ "$BETA_TAG" != "v$package_version" ]; then
+            echo "❌ Tag $BETA_TAG does not exactly match v$package_version." >&2
+            exit 1
+          fi
+          echo "Validated $BETA_TAG at $GITHUB_SHA as an ancestor of current main."
+
+      # Playwright 1.63's Ubuntu 24.04 Chromium runtime dependencies, installed
+      # before project code. This keeps privileged apt from executing npm code.
+      - name: Install Chromium system dependencies
+        shell: bash
+        env:
+          BASH_ENV: /dev/null
+        run: |
+          set -euo pipefail
+          sudo -n apt-get update
+          sudo -n apt-get install --yes --no-install-recommends \
+            xvfb fonts-noto-color-emoji fonts-unifont libfontconfig1 \
+            libfreetype6 xfonts-cyrillic xfonts-scalable fonts-liberation \
+            fonts-ipafont-gothic fonts-wqy-zenhei fonts-tlwg-loma-otf \
+            fonts-freefont-ttf libasound2t64 libatk-bridge2.0-0t64 \
+            libatk1.0-0t64 libatspi2.0-0t64 libcairo2 libcups2t64 \
+            libdbus-1-3 libdrm2 libgbm1 libglib2.0-0t64 libnspr4 libnss3 \
+            libpango-1.0-0 libx11-6 libxcb1 libxcomposite1 libxdamage1 \
+            libxext6 libxfixes3 libxkbcommon0 libxrandr2
+
+      # All npm and project code runs as a dedicated unprivileged user. The
+      # runner's actual command-file directory is made inaccessible to it, and
+      # a canary tests writes through every available GITHUB_* file including a
+      # BASH_ENV payload. Nothing from this job except built files crosses into
+      # the fresh publisher; no scalar outputs are produced.
+      - name: Install, test, and build web beta
+        shell: bash
+        env:
+          BASH_ENV: /dev/null
+          VITE_BETA_CHANNEL: "true"
+          VITE_TOOLPATH_PREVIEW: "true"
+        run: |
+          set -euo pipefail
+          command_paths=()
+          for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
+            value=${!name-}
+            [ -n "$value" ] || continue
+            [ -f "$value" ] && [ ! -L "$value" ] || {
+              echo "❌ Runner command file $name is missing or not a regular file." >&2
+              exit 1
+            }
+            command_paths+=("$value")
+          done
+          ((${#command_paths[@]} >= 3)) || {
+            echo "❌ Runner did not provide the expected command files." >&2
+            exit 1
+          }
+          command_dir=$(dirname "${command_paths[0]}")
+          [ -d "$command_dir" ] && [ ! -L "$command_dir" ] || {
+            echo "❌ Runner command-file directory is not a real directory." >&2
+            exit 1
+          }
+          for path in "${command_paths[@]}"; do
+            [ "$(dirname "$path")" = "$command_dir" ] || {
+              echo "❌ Runner command files are not isolated in one directory." >&2
+              exit 1
+            }
+            [ "$(stat -c '%h' "$path")" = 1 ] || {
+              echo "❌ Runner command file $path has an unexpected hard link." >&2
+              exit 1
+            }
+            [ "$(stat -c '%u' "$path")" = "$(id -u)" ] || {
+              echo "❌ Runner command-file owner differs from this step user." >&2
+              exit 1
+            }
+          done
+          [ "$(stat -c '%u' "$command_dir")" = "$(id -u)" ] || {
+            echo "❌ Runner command-file directory owner differs from this step user." >&2
+            exit 1
+          }
+          chmod 700 "$command_dir"
+          chmod 600 "${command_paths[@]}"
+
+          run_id=${GITHUB_RUN_ID//[^0-9]/}
+          [ -n "$run_id" ] || { echo "❌ Invalid workflow run id." >&2; exit 1; }
+          sandbox_user="beta-build-$run_id"
+          sandbox_root="$RUNNER_TEMP/beta-build-$run_id"
+          sandbox_tree="$sandbox_root/worktree"
+          sandbox_home="$sandbox_root/home"
+          uid=""
+          user_created=0
+          cleanup() {
+            if [ -n "$uid" ]; then
+              sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
+            fi
+            if [ "$user_created" = 1 ]; then
+              sudo -n rm -rf -- "$sandbox_root"
+              sudo -n userdel "$sandbox_user" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          sudo -n true || {
+            echo "❌ A passwordless runner privilege boundary is unavailable." >&2
+            exit 1
+          }
+          sudo -n useradd --system --user-group --no-create-home \
+            --shell /usr/sbin/nologin "$sandbox_user"
+          user_created=1
+          uid=$(id -u "$sandbox_user")
+          gid=$(id -g "$sandbox_user")
+          mkdir -m 755 "$sandbox_root"
+          sudo -n install -d -m 755 -o "$uid" -g "$gid" \
+            "$sandbox_home" "$sandbox_root/work"
+          sudo -n install -d -m 700 -o "$uid" -g "$gid" \
+            "$sandbox_root/tmp" "$sandbox_root/npm-cache"
+
+          sandbox_path="$PATH"
+          sandbox() {
+            sudo -n -u "$sandbox_user" -- env -i \
+              PATH="$sandbox_path" \
+              HOME="$sandbox_home" \
+              XDG_CONFIG_HOME="$sandbox_home/.config" \
+              TMPDIR="$sandbox_root/tmp" \
+              NPM_CONFIG_CACHE="$sandbox_root/npm-cache" \
+              GIT_CONFIG_NOSYSTEM=1 \
+              GIT_CONFIG_GLOBAL=/dev/null \
+              GIT_TERMINAL_PROMPT=0 \
+              BASH_ENV=/dev/null \
+              VITE_BETA_CHANNEL="$VITE_BETA_CHANNEL" \
+              "$@"
+          }
+          sandbox_in_tree() {
+            local tree="$1"
+            shift
+            sandbox /bin/bash -c 'cd "$1" && shift && exec "$@"' \
+              sandbox-shell "$tree" "$@"
+          }
+
+          declare -A command_hashes=()
+          for path in "${command_paths[@]}"; do
+            command_hashes["$path"]=$(sha256sum "$path")
+          done
+          canary="$sandbox_home/canary.bashenv"
+          sudo -n -u "$sandbox_user" -- env -i \
+            HOME="$sandbox_home" PATH="$sandbox_path" \
+            /usr/bin/tee "$canary" >/dev/null <<'CANARY'
+          for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do
+            [ -n "$target" ] || continue
+            if printf 'BASH_ENV=untrusted-startup\n' >> "$target" 2>/dev/null; then
+              exit 91
+            fi
+          done
+          : > "$HOME/bash-env-ran"
+          CANARY
+          canary_env=(HOME="$sandbox_home" PATH="$sandbox_path" BASH_ENV="$canary")
+          for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
+            value=${!name-}
+            [ -n "$value" ] && canary_env+=("$name=$value")
+          done
+          if ! sudo -n -u "$sandbox_user" -- env -i "${canary_env[@]}" \
+            /bin/bash -c 'for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do [ -n "$target" ] || continue; if printf "PWNED=1\\n" >> "$target" 2>/dev/null; then exit 92; fi; done'; then
+            echo "❌ Command-file/BASH_ENV canary could persist a write." >&2
+            exit 1
+          fi
+          sandbox test -f "$sandbox_home/bash-env-ran" || {
+            echo "❌ BASH_ENV canary did not execute; isolation test is inconclusive." >&2
+            exit 1
+          }
+          verify_command_files() {
+            local path
+            for path in "${command_paths[@]}"; do
+              [ "$(sha256sum "$path")" = "${command_hashes[$path]}" ] || {
+                echo "❌ Project code changed a runner command file." >&2
+                return 1
+              }
+            done
+          }
+          verify_command_files
+
+          sandbox git clone --no-checkout --no-hardlinks \
+            "$GITHUB_WORKSPACE" "$sandbox_tree"
+          sandbox git -C "$sandbox_tree" checkout --quiet --detach "$GITHUB_SHA"
+          test "$(sandbox git -C "$sandbox_tree" rev-parse HEAD)" = "$GITHUB_SHA"
+          sandbox_in_tree "$sandbox_tree" npm ci
+          sandbox_in_tree "$sandbox_tree" npx playwright install chromium
+          sandbox_in_tree "$sandbox_tree" npm run test:browser
+          sandbox_in_tree "$sandbox_tree" npm run build:web
+          sandbox_in_tree "$sandbox_tree" cp dist-web/index.web.html dist-web/404.html
+          sandbox_in_tree "$sandbox_tree" cp dist-web/index.web.html dist-web/index.html
+
+          last_stable=$(sandbox git -C "$sandbox_tree" tag --list 'v*.*.*' \
+            --sort=-v:refname | grep -v '-' | head -1 || true)
+          if [ -n "$last_stable" ]; then
+            sandbox_in_tree "$sandbox_tree" npx changelogen \
+              --from "$last_stable" --output beta-notes.md || \
+              sandbox_in_tree "$sandbox_tree" sh -c ': > beta-notes.md'
+          else
+            echo "No stable tag found; shipping an empty beta changelog." >&2
+            sandbox_in_tree "$sandbox_tree" sh -c ': > beta-notes.md'
+          fi
+
+          sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
+          if pgrep -u "$uid" >/dev/null 2>&1; then
+            echo "❌ Project process survived the sandbox boundary." >&2
+            exit 1
+          fi
+          verify_command_files
+          test -d "$sandbox_tree/dist-web" && test -f "$sandbox_tree/beta-notes.md"
+          if find "$sandbox_tree/dist-web" -type l -print -quit | grep -q . || \
+             find "$sandbox_tree/dist-web" ! -type f ! -type d -print -quit | grep -q . || \
+             [ -L "$sandbox_tree/beta-notes.md" ]; then
+            echo "❌ Build artifact contains a symlink or special file." >&2
+            exit 1
+          fi
+          mkdir -p "$GITHUB_WORKSPACE/beta-artifact"
+          cp -R --no-preserve=mode,ownership,timestamps \
+            "$sandbox_tree/dist-web" "$GITHUB_WORKSPACE/beta-artifact/"
+          cp --no-preserve=mode,ownership,timestamps \
+            "$sandbox_tree/beta-notes.md" "$GITHUB_WORKSPACE/beta-artifact/beta-notes.md"
+
+      # Only the built site and plain-text notes cross the job boundary. No tag,
+      # SHA, or other scalar output is produced by npm/project-controlled code.
+      - name: Upload beta site and release notes
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: beta-site
+          path: |
+            beta-artifact/dist-web/
+            beta-artifact/beta-notes.md
+          if-no-files-found: error
+          retention-days: 1
+        env:
+          BASH_ENV: /dev/null
+          NODE_OPTIONS: ""
+          PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+  deploy-beta:
+    name: Publish validated web beta
+    needs: build-beta
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: beta-release
+    permissions:
+      contents: write
+    env:
+      BETA_TAG: ${{ github.ref_name }}
+    steps:
+      # This job has no checkout, dependency install, or project script. The
+      # artifact is the only build input; the tag and SHA come from GitHub's
+      # immutable push event and were validated by build-beta.
+      - name: Download beta site artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: beta-site
+          path: beta-artifact
+
+      - name: Verify artifact metadata
+        shell: bash
+        env:
+          BASH_ENV: /dev/null
+          API_URL: ${{ github.api_url }}
+        run: |
+          set -euo pipefail
+          [[ "$BETA_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test -d beta-artifact/dist-web
+          test ! -L beta-artifact/dist-web
+          test -f beta-artifact/dist-web/index.html
+          test -f beta-artifact/dist-web/404.html
+          test -f beta-artifact/beta-notes.md
+          test ! -L beta-artifact/beta-notes.md
+
+          # Recheck the public tag ref and main ancestry immediately before
+          # publication. No token is needed for this public repository.
+          api_root="$API_URL/repos/$GITHUB_REPOSITORY"
+          api_get() {
+            local path="$1" destination="$2" status
+            status=$(curl --silent --show-error --output "$destination" \
+              --write-out '%{http_code}' \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'X-GitHub-Api-Version: 2022-11-28' \
+              "$api_root/$path")
+            if [ "$status" != 200 ]; then
+              echo "❌ GitHub API GET $path returned HTTP $status." >&2
+              exit 1
+            fi
+          }
+          ref_json=$(mktemp "$RUNNER_TEMP/beta-ref.XXXXXX")
+          api_get "git/ref/tags/$BETA_TAG" "$ref_json"
+          object_sha=$(jq -er '.object.sha' "$ref_json")
+          object_type=$(jq -er '.object.type' "$ref_json")
+          resolved=0
+          for _ in 1 2 3 4 5; do
+            case "$object_type" in
+              commit)
+                resolved=1
+                break
+                ;;
+              tag)
+                tag_json=$(mktemp "$RUNNER_TEMP/beta-tag-object.XXXXXX")
+                api_get "git/tags/$object_sha" "$tag_json"
+                object_sha=$(jq -er '.object.sha' "$tag_json")
+                object_type=$(jq -er '.object.type' "$tag_json")
+                ;;
+              *)
+                echo "❌ Beta tag resolves to unsupported Git object type $object_type." >&2
+                exit 1
+                ;;
+            esac
+          done
+          [ "$resolved" = 1 ] && [ "$object_sha" = "$GITHUB_SHA" ] || {
+            echo "❌ Beta tag no longer points to this run's immutable event SHA." >&2
+            exit 1
+          }
+
+          main_json=$(mktemp "$RUNNER_TEMP/beta-main.XXXXXX")
+          api_get "git/ref/heads/main" "$main_json"
+          main_sha=$(jq -er '.object.sha' "$main_json")
+          [[ "$main_sha" =~ ^[0-9a-f]{40}$ ]]
+          compare_json=$(mktemp "$RUNNER_TEMP/beta-main-compare.XXXXXX")
+          api_get "compare/$GITHUB_SHA...$main_sha" "$compare_json"
+          compare_status=$(jq -er '.status' "$compare_json")
+          merge_base_sha=$(jq -er '.merge_base_commit.sha' "$compare_json")
+          if [[ "$compare_status" != ahead && "$compare_status" != identical ]] || \
+             [ "$merge_base_sha" != "$GITHUB_SHA" ]; then
+            echo "❌ Beta event SHA is no longer an ancestor of current main." >&2
+            exit 1
+          fi
+
+      # Only this pinned publisher receives the job's minimum write token. No
+      # source checkout or project-controlled executable is present here.
       - name: Publish to gh-pages /beta/
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           destination_dir: beta
-          # The web build writes to dist-web, not the action default ./public.
-          # Without publish_dir the action does fs.readdir('./public') and
-          # fails with ENOENT.
-          publish_dir: dist-web
+          publish_dir: beta-artifact/dist-web
           keep_files: true
 
+      # PAT is exposed to this trusted shell step only, after build and deploy.
       - name: Create or refresh the prerelease
         env:
           GH_TOKEN: ${{ secrets.BETA_RELEASE_TOKEN }}
+          BETA_TAG: ${{ github.ref_name }}
+          BASH_ENV: /dev/null
+          NODE_OPTIONS: ""
+          PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        shell: bash
         run: |
           set -euo pipefail
-          # changelogen auto-selects the highest semver tag as the diff start,
-          # which is a beta tag once betas exist. --from must pin the last
-          # STABLE tag so the beta notes cover everything since the baseline.
-          LAST_STABLE=$(git tag --list 'v*.*.*' --sort=-v:refname | grep -v '-' | head -1 || true)
-          if [ -n "$LAST_STABLE" ]; then
-            npx changelogen --from "$LAST_STABLE" --output beta-notes.md || echo "" > beta-notes.md
-          else
-            echo "No stable tag found; shipping an empty beta changelog." >&2
-            echo "" > beta-notes.md
+          if [ -z "$GH_TOKEN" ]; then
+            echo "❌ Secret BETA_RELEASE_TOKEN is not configured for the protected beta-release environment." >&2
+            exit 1
           fi
-          # Idempotent: re-running the workflow refreshes the notes in place.
           if gh release view "$BETA_TAG" >/dev/null 2>&1; then
-            # Guard: this step must never downgrade a stable release to
-            # prerelease. Only beta tags reach this workflow (the v*-beta.*
-            # trigger), but refuse explicitly if a non-beta tag slips through.
-            if ! printf '%s' "$BETA_TAG" \
-              | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$'; then
-              echo "Tag não-beta encontrada ($BETA_TAG); recusando editar release estável." >&2
-              exit 1
-            fi
             gh release edit "$BETA_TAG" \
               --prerelease \
               --title "Open3DCalc Beta $BETA_TAG" \
-              --notes-file beta-notes.md
+              --notes-file beta-artifact/beta-notes.md
           else
             gh release create "$BETA_TAG" \
               --prerelease \
               --title "Open3DCalc Beta $BETA_TAG" \
-              --notes-file beta-notes.md
+              --notes-file beta-artifact/beta-notes.md
           fi
