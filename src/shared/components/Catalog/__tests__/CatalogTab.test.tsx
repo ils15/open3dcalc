@@ -98,6 +98,14 @@ vi.mock("@/shared/hooks/useCurrency", () => ({
   }),
 }));
 
+type SeededPrinterProfile = (typeof printers)[number];
+
+function findPrinterProfile(id: string): SeededPrinterProfile {
+  const printer = printers.find((profile) => profile.id === id);
+  if (!printer) throw new Error(`Missing seeded printer profile: ${id}`);
+  return printer;
+}
+
 describe("CatalogTab", () => {
   const suspiciousImageProfileIds = new Set([
     "bambu_x1e",
@@ -142,7 +150,7 @@ describe("CatalogTab", () => {
     expect(tablist).toHaveAttribute("aria-label", "catalog.title");
   });
 
-  it("uses the neutral printer icon for all 74 profiles without specific artwork", () => {
+  it("keeps all 74 profiles without specific artwork in the neutral-icon inventory", () => {
     const affectedProfiles = printers.filter(
       (printer) =>
         printer.id !== "custom" &&
@@ -150,7 +158,23 @@ describe("CatalogTab", () => {
           fallbackImagePaths.has(printer.image ?? "")),
     );
     expect(affectedProfiles).toHaveLength(74);
-    mockCatalog.printers = printers.map((printer) => ({ ...printer }));
+    expect(
+      affectedProfiles.every((printer) =>
+        fallbackImagePaths.has(printer.image ?? ""),
+      ),
+    ).toBe(true);
+  });
+
+  it("uses the neutral printer icon for representative FDM, resin, and fallback profiles", () => {
+    const neutralProfiles = [
+      findPrinterProfile("bambu_x1e"),
+      findPrinterProfile("anycubic_photon_ultra"),
+      findPrinterProfile("creality_cr6_se"),
+    ];
+    const confirmedArtworkProfile = printers[0];
+    mockCatalog.printers = [...neutralProfiles, confirmedArtworkProfile].map(
+      (printer) => ({ ...printer }),
+    );
 
     render(<CatalogTab />);
     fireEvent.click(
@@ -159,7 +183,7 @@ describe("CatalogTab", () => {
       ).getByRole("button", { name: /catalog.printerLibrary/ }),
     );
 
-    for (const printer of affectedProfiles) {
+    for (const printer of neutralProfiles) {
       const card = screen.getByRole("article", {
         name: `${printer.name} ${printer.brand}`,
       });
@@ -167,14 +191,30 @@ describe("CatalogTab", () => {
         within(card).getByRole("img", { name: "catalog.imageUnavailable" }),
         `${printer.id} should show the neutral printer icon`,
       ).toBeInTheDocument();
-      expect(
-        card.querySelector("img"),
-        `${printer.id} should not render misleading printer artwork`,
-      ).toBeNull();
-      expect(
-        within(card).queryByRole("img", { name: /Phrozen/i }),
-      ).not.toBeInTheDocument();
+      expect(card.querySelector("img")).toBeNull();
     }
+
+    expect(
+      within(
+        screen.getByRole("article", {
+          name: `${neutralProfiles[0].name} ${neutralProfiles[0].brand}`,
+        }),
+      ).getByText("catalog.fdm"),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("article", {
+          name: `${neutralProfiles[1].name} ${neutralProfiles[1].brand}`,
+        }),
+      ).getByText("catalog.resin"),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("article", {
+          name: `${neutralProfiles[2].name} ${neutralProfiles[2].brand}`,
+        }),
+      ).getByText("catalog.technologyUnknown"),
+    ).toBeInTheDocument();
 
     const confirmedArtwork = screen.getByRole("article", {
       name: "A1 Mini Bambu Lab",
@@ -183,12 +223,6 @@ describe("CatalogTab", () => {
       "src",
       "/images/printers/brands/bambu-lab/bambu-lab-a1-mini-card-300.png",
     );
-    expect(
-      printers.find((printer) => printer.id === "creality_cr6_se")?.technology,
-    ).toBeUndefined();
-    expect(
-      printers.find((printer) => printer.id === "anycubic_chiron")?.technology,
-    ).toBeUndefined();
   });
 
   it("renders three tabs with correct roles", () => {
