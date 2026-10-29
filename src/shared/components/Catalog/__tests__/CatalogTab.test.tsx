@@ -99,6 +99,33 @@ vi.mock("@/shared/hooks/useCurrency", () => ({
 }));
 
 describe("CatalogTab", () => {
+  const suspiciousImageProfileIds = new Set([
+    "bambu_x1e",
+    "creality_ender_3_v3",
+    "creality_ender_3_v3_ke",
+    "creality_cr10_v3",
+    "creality_cr10_smart",
+    "creality_cr6_se",
+    "anycubic_vyper",
+    "anycubic_chiron",
+    "anycubic_photon_ultra",
+    "prusa_mk3s",
+    "prusa_mk4",
+    "prusa_mk4s",
+    "prusa_xl_2",
+    "prusa_xl_5",
+    "prusa_mini",
+    "elegoo_neptune_3",
+    "elegoo_neptune_3_pro",
+    "elegoo_neptune_3_plus",
+    "elegoo_neptune_4",
+    "elegoo_neptune_4_pro",
+  ]);
+  const fallbackImagePaths = new Set([
+    "/images/printers/fallback-fdm.svg",
+    "/images/printers/fallback-resin.svg",
+  ]);
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockCatalog.printers = [];
@@ -113,6 +140,55 @@ describe("CatalogTab", () => {
     const tablist = screen.getByRole("tablist");
     expect(tablist).toBeInTheDocument();
     expect(tablist).toHaveAttribute("aria-label", "catalog.title");
+  });
+
+  it("uses the neutral printer icon for all 74 profiles without specific artwork", () => {
+    const affectedProfiles = printers.filter(
+      (printer) =>
+        printer.id !== "custom" &&
+        (suspiciousImageProfileIds.has(printer.id) ||
+          fallbackImagePaths.has(printer.image ?? "")),
+    );
+    expect(affectedProfiles).toHaveLength(74);
+    mockCatalog.printers = printers.map((printer) => ({ ...printer }));
+
+    render(<CatalogTab />);
+    fireEvent.click(
+      within(
+        screen.getByRole("group", { name: "catalog.printerCollections" }),
+      ).getByRole("button", { name: /catalog.printerLibrary/ }),
+    );
+
+    for (const printer of affectedProfiles) {
+      const card = screen.getByRole("article", {
+        name: `${printer.name} ${printer.brand}`,
+      });
+      expect(
+        within(card).getByRole("img", { name: "catalog.imageUnavailable" }),
+        `${printer.id} should show the neutral printer icon`,
+      ).toBeInTheDocument();
+      expect(
+        card.querySelector("img"),
+        `${printer.id} should not render misleading printer artwork`,
+      ).toBeNull();
+      expect(
+        within(card).queryByRole("img", { name: /Phrozen/i }),
+      ).not.toBeInTheDocument();
+    }
+
+    const confirmedArtwork = screen.getByRole("article", {
+      name: "A1 Mini Bambu Lab",
+    });
+    expect(confirmedArtwork.querySelector("img")).toHaveAttribute(
+      "src",
+      "/images/printers/brands/bambu-lab/bambu-lab-a1-mini-card-300.png",
+    );
+    expect(
+      printers.find((printer) => printer.id === "creality_cr6_se")?.technology,
+    ).toBeUndefined();
+    expect(
+      printers.find((printer) => printer.id === "anycubic_chiron")?.technology,
+    ).toBeUndefined();
   });
 
   it("renders three tabs with correct roles", () => {
@@ -276,7 +352,7 @@ describe("CatalogTab", () => {
     expect(screen.getAllByRole("dialog")[0]).toBeInTheDocument();
   });
 
-  it("shows printer images with a resilient fallback and keeps unknown technology visible", () => {
+  it("uses a neutral printer icon when an image cannot be resolved and keeps unknown technology visible", () => {
     mockCatalog.printers = [
       {
         id: "image-printer",
@@ -316,13 +392,10 @@ describe("CatalogTab", () => {
     const imageCard = screen.getByRole("article", {
       name: "Image Printer Maker",
     });
-    const printerImage = imageCard.querySelector("img");
-    expect(printerImage).toHaveAttribute(
-      "src",
-      "/images/printers/fallback-fdm.svg",
-    );
-    expect(printerImage).toHaveAttribute("loading", "lazy");
-    expect(printerImage).toHaveAttribute("aria-hidden", "true");
+    expect(imageCard.querySelector("img")).toBeNull();
+    expect(
+      within(imageCard).getByRole("img", { name: "catalog.imageUnavailable" }),
+    ).toBeInTheDocument();
     const fdmBadge = within(imageCard).getByText("catalog.fdm");
     expect(fdmBadge).toHaveClass(
       "border-[var(--color-accent-muted)]",
@@ -353,9 +426,9 @@ describe("CatalogTab", () => {
 
   it("ships every seeded brand card and renders them without broken requests", () => {
     // The 25 previously-dangling brand-card PNGs now ship as original
-    // artwork (see public/images/printers/brands). The onError fallback
-    // chain stays covered by the "shows printer images with a resilient
-    // fallback" test above.
+    // artwork (see public/images/printers/brands). The test above verifies
+    // that unapproved image URLs show the neutral placeholder; it does not
+    // exercise the image onError fallback.
     const pngPrinters = printers.filter((printer) =>
       printer.image?.endsWith(".png"),
     );
@@ -443,7 +516,7 @@ describe("CatalogTab", () => {
     }
   });
 
-  it("resolves root printer images beneath the production relative base URL", () => {
+  it("resolves shipped printer artwork beneath the production relative base URL", () => {
     vi.stubEnv("BASE_URL", "./");
     mockCatalog.printers = [
       {
@@ -454,7 +527,7 @@ describe("CatalogTab", () => {
         value: 1200,
         usefulLife: 3000,
         maintenancePerHour: 0.25,
-        image: "/images/printers/fallback-fdm.svg",
+        image: printers[0].image,
       },
     ];
 
@@ -466,7 +539,7 @@ describe("CatalogTab", () => {
         .querySelector("img");
       expect(thumbnail).toHaveAttribute(
         "src",
-        "./images/printers/fallback-fdm.svg",
+        "./images/printers/brands/bambu-lab/bambu-lab-a1-mini-card-300.png",
       );
     } finally {
       vi.unstubAllEnvs();

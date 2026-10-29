@@ -923,7 +923,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                           <button
                             type="button"
                             onClick={() => shareWhatsApp(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-positive-subtle hover:bg-positive-subtle text-positive border border-positive/30 transition-colors"
+                            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-positive/30 bg-positive-subtle p-1.5 text-positive transition-colors hover:border-[var(--positive-fill)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
                             title="Enviar no WhatsApp"
                             aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                           >
@@ -1078,7 +1078,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     <button
                       type="button"
                       onClick={() => shareWhatsApp(quote)}
-                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-positive-subtle hover:bg-positive-subtle text-positive transition-colors border border-positive/30"
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-positive/30 bg-positive-subtle p-1.5 text-positive transition-colors hover:border-[var(--positive-fill)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
                       title="Compartilhar no WhatsApp"
                       aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
                     >
@@ -1521,7 +1521,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => shareWhatsApp(viewingQuote)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-positive bg-positive-subtle hover:bg-positive-subtle border border-positive/30 transition-colors"
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--positive-fill)] bg-[var(--positive-fill)] px-3 py-2 text-xs font-bold text-[var(--positive-fill-fg)] shadow-sm transition-[filter,transform] hover:brightness-110 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
               >
                 <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
                 <span>WhatsApp</span>

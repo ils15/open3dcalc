@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { StudioHeader } from "./StudioHeader";
 
@@ -18,6 +18,25 @@ vi.mock("@/shared/components/DemoMode/DemoModeButton", () => ({
 }));
 
 describe("StudioHeader theme surfaces", () => {
+  it("keeps the WhatsApp proposal accessible and labels it above mobile", () => {
+    render(
+      <StudioHeader
+        activeTab="calculator"
+        onTabChange={vi.fn()}
+        activeTechnology="fdm"
+        onOpenQuoteModal={vi.fn()}
+      />,
+    );
+
+    const proposalButton = screen.getByRole("button", {
+      name: "Proposta WhatsApp",
+    });
+    expect(proposalButton.className).toContain("min-h-11");
+    expect(proposalButton.querySelector("span")?.className).toContain(
+      "hidden sm:inline",
+    );
+  });
+
   it.each(["catalog", "marketplace"] as const)(
     "uses semantic surface and text tokens on the %s route",
     (activeTab) => {

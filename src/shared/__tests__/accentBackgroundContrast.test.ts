@@ -437,7 +437,7 @@ const WASH_SITE_PIN: Record<string, string[]> = {
     "bg-[var(--color-danger)]/90 + text-[var(--color-text-primary)]",
   ],
   "header-whatsapp-proposal-link": [
-    "hover:bg-[var(--positive)]/15 + text-[var(--positive)]",
+    "bg-[var(--positive-fill)] + text-[var(--positive-fill-fg)]",
   ],
   "price-hero-edit-price-button": [
     "hover:bg-[var(--revenue)]/10 + hover:text-[var(--revenue)]",

@@ -508,8 +508,9 @@ export const StudioHistoryView: React.FC<StudioHistoryViewProps> = ({
                     <button
                       type="button"
                       onClick={() => handleWhatsApp(entry)}
-                      className="p-1.5 rounded-lg bg-positive-subtle hover:bg-positive-subtle border border-positive/30 text-positive transition-colors"
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-positive/30 bg-positive-subtle p-1.5 text-positive transition-colors hover:border-[var(--positive-fill)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
                       title="Enviar proposta via WhatsApp"
+                      aria-label="Enviar proposta via WhatsApp"
                     >
                       <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
                     </button>
