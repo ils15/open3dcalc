@@ -178,7 +178,7 @@ export function SalesPitchPanel({
             if (guardExport()) event.preventDefault();
           }}
           aria-label={t("copilot.openWhatsApp")}
-          className="flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-800 active:scale-95"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-800 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
         >
           <BrandIcon brand="whatsapp" className="h-4 w-4" aria-hidden="true" />
           {t("copilot.openWhatsApp")}

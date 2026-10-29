@@ -215,11 +215,11 @@ export function Header() {
               onClick={(event) => {
                 if (guardExport()) event.preventDefault();
               }}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--positive)]/60 text-[var(--positive)] bg-[var(--positive-subtle)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] text-xs font-semibold transition-colors shadow-sm min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-canvas)]"
+              className="inline-flex min-h-11 min-w-11 w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--positive-fill)] bg-[var(--positive-fill)] px-0 text-xs font-semibold text-[var(--positive-fill-fg)] shadow-sm transition-[filter,transform] hover:brightness-110 active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-canvas)] sm:min-h-[36px] sm:w-auto sm:px-3"
               title="Gerar proposta rápida formatada para WhatsApp"
             >
               <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
-              <span>Proposta WhatsApp</span>
+              <span className="hidden sm:inline">Proposta WhatsApp</span>
             </a>
 
             {/* Local assistant button */}

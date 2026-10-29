@@ -1,15 +1,8 @@
 import React, { useState } from "react";
-import {
-  X,
-  Copy,
-  Check,
-  MessageSquare,
-  FileText,
-  Printer,
-  Table,
-} from "lucide-react";
+import { X, Copy, Check, FileText, Printer, Table } from "lucide-react";
 import confetti from "canvas-confetti";
 import { downloadBlob } from "@/shared/lib/download";
+import { BrandIcon } from "@/shared/components/BrandIcon";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { guardExport } from "@/shared/lib/demoExportGuard";
 import { serializeCsvRows } from "@/shared/lib/csvExport";
@@ -377,9 +370,9 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
 
             <button
               onClick={handleWhatsApp}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-positive hover:ring-2 hover:ring-positive/40 text-text-inverse font-bold transition-all shadow-md shadow-positive/50"
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--positive-fill)] bg-[var(--positive-fill)] px-4 py-2 font-bold text-[var(--positive-fill-fg)] shadow-sm transition-[filter,transform] hover:brightness-110 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
               <span>Enviar no WhatsApp</span>
             </button>
           </div>

@@ -117,6 +117,22 @@ describe("Header", () => {
     expect(screen.getByText("app.title")).toBeInTheDocument();
   });
 
+  it("keeps the WhatsApp proposal action visible and touch-sized on mobile", () => {
+    render(<Header />);
+
+    const proposalLink = screen.getByRole("link", {
+      name: "Proposta WhatsApp",
+    });
+
+    expect(proposalLink).toHaveAttribute(
+      "href",
+      expect.stringContaining("wa.me"),
+    );
+    expect(proposalLink.className).not.toContain("hidden");
+    expect(proposalLink.className).toContain("min-h-11");
+    expect(proposalLink.className).toContain("w-11");
+  });
+
   describe("currency dropdown — portal, z-index, Escape and aria", () => {
     it("renders the currency menu in a portal directly under body", async () => {
       render(<Header />);

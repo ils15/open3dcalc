@@ -44,20 +44,13 @@ interface CatalogTabProps {
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const SHIPPED_PRINTER_IMAGE_PATHS = new Set([
-  "/images/printers/fallback-fdm.svg",
-  "/images/printers/fallback-resin.svg",
   // Brand cards ship as original artwork PNGs (see public/images/printers/
   // brands). The path prefix, not a hardcoded list, keeps the gate open to
-  // new seed models while custom user entries still never resolve.
+  // new seed models while custom user entries and fallback artwork never resolve.
   ...printers
     .map((printer) => printer.image)
     .filter((image): image is string => Boolean(image?.includes("/brands/"))),
 ]);
-const PRINTER_FALLBACK_IMAGES = {
-  fdm: "/images/printers/fallback-fdm.svg",
-  resin: "/images/printers/fallback-resin.svg",
-} as const;
-
 function resolveCatalogImageSource(
   source: string | undefined,
   allowedSources: ReadonlySet<string>,
@@ -167,20 +160,13 @@ function CatalogSectionLayout({
 
 interface PrinterThumbnailProps {
   source?: string;
-  technology?: PrinterProfile["technology"];
   className?: string;
 }
 
-function PrinterThumbnail({
-  source,
-  technology,
-  className = "",
-}: PrinterThumbnailProps) {
+function PrinterThumbnail({ source, className = "" }: PrinterThumbnailProps) {
   const { t } = useTranslation();
   const [failedSource, setFailedSource] = useState<string | null>(null);
-  const fallbackPath = technology ? PRINTER_FALLBACK_IMAGES[technology] : null;
-  const imageSource =
-    getImageSource(source) ?? getImageSource(fallbackPath ?? undefined) ?? "";
+  const imageSource = getImageSource(source) ?? "";
   const showImage = Boolean(imageSource) && failedSource !== imageSource;
 
   return (
@@ -1138,7 +1124,6 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                       <div>
                         <PrinterThumbnail
                           source={preset.image}
-                          technology={preset.technology}
                           className="mb-3 h-20 w-full"
                         />
                         <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -1365,11 +1350,7 @@ function PrinterProfileCard({
     >
       <div className="flex min-w-0 items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <PrinterThumbnail
-            source={printer.image}
-            technology={printer.technology}
-            className="h-14 w-14"
-          />
+          <PrinterThumbnail source={printer.image} className="h-14 w-14" />
           <div className="min-w-0">
             <h3 className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
               {printer.name}

@@ -222,12 +222,12 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <button
           type="button"
           onClick={handleWhatsApp}
-          className="flex min-h-11 min-w-11 items-center gap-1.5 px-1.5 py-1.5 rounded-lg bg-[var(--color-positive-fill)] hover:opacity-90 text-[var(--color-positive-fill-fg)] font-semibold transition-all shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
+          className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-positive-fill)] bg-[var(--color-positive-fill)] px-1.5 py-1.5 font-semibold text-[var(--color-positive-fill-fg)] shadow-sm transition-[filter,transform] hover:brightness-110 active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:px-3"
           title="Gerar proposta rápida para WhatsApp"
           aria-label="Proposta WhatsApp"
         >
           <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
-          <span className="hidden xs:inline">Proposta WhatsApp</span>
+          <span className="hidden sm:inline">Proposta WhatsApp</span>
         </button>
 
         {/* Fullscreen toggle */}

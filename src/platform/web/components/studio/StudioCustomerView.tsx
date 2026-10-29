@@ -3,7 +3,6 @@ import {
   Users,
   Search,
   Plus,
-  MessageCircle,
   Mail,
   Phone,
   Building,
@@ -18,6 +17,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
+import { BrandIcon } from "@/shared/components/BrandIcon";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
@@ -394,10 +394,10 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
                         <button
                           type="button"
                           onClick={() => handleWhatsApp(customer)}
-                          className="text-[10px] text-positive hover:text-positive font-bold flex items-center gap-0.5"
+                          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-lg border border-positive/30 bg-positive-subtle px-2.5 text-[11px] font-semibold text-positive transition-colors hover:border-[var(--positive-fill)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
                           aria-label={`Enviar mensagem para ${customer.name} no WhatsApp`}
                         >
-                          <MessageCircle className="w-3 h-3" />
+                          <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
                           <span>WhatsApp</span>
                         </button>
                       </div>
