@@ -197,6 +197,7 @@ jobs:
           install_tree="$sandbox_root/work/install-tree"
           hook_tree="$sandbox_root/work/hook-tree"
           sandbox_home="$sandbox_root/home"
+          canary_dir=""
           uid=""
           user_created=0
 
@@ -207,6 +208,10 @@ jobs:
             if [ "$user_created" = 1 ]; then
               sudo -n rm -rf -- "$sandbox_root" "$trusted_root"
               sudo -n userdel "$sandbox_user" >/dev/null 2>&1 || true
+            fi
+            if [ -n "$canary_dir" ]; then
+              rm -f -- "$canary_dir/canary.bashenv"
+              rmdir -- "$canary_dir"
             fi
           }
           trap cleanup EXIT
@@ -258,17 +263,33 @@ jobs:
           for path in "${command_paths[@]}"; do
             command_hashes["$path"]=$(sha256sum "$path")
           done
-          canary="$sandbox_home/canary.bashenv"
-          sudo -n -u "$sandbox_user" -- env -i \
-            HOME="$sandbox_home" PATH="$sandbox_path" \
-            /usr/bin/tee "$canary" >/dev/null <<EOF
-          __BETA_BASH_ENV_CANARY=loaded
-          EOF
-          # Runner and sandbox use different UIDs, so permit read access only;
-          # this file contains no command-file paths or write payloads.
-          sandbox /usr/bin/chmod 444 "$canary"
-          if ! test -r "$canary" || ! sandbox /usr/bin/test -r "$canary"; then
-            echo "❌ BASH_ENV marker is not readable by both test identities; isolation test is inconclusive." >&2
+          canary_dir=$(mktemp -d "/tmp/beta-bashenv-$run_id.XXXXXXXX")
+          canary="$canary_dir/canary.bashenv"
+          # /tmp is traversable by the runner-created sandbox UID. The private
+          # RUNNER_TEMP parent may not be; never loosen its permissions.
+          chmod 711 "$canary_dir"
+          (umask 077; printf '%s\n' '__BETA_BASH_ENV_CANARY=loaded' > "$canary")
+          chmod 444 "$canary"
+          canary_bash_uid=$(sudo -n -u "$sandbox_user" -- id -u)
+          if [ "$canary_bash_uid" != "$uid" ] || [ "$canary_bash_uid" = "$(id -u)" ]; then
+            echo "❌ BASH_ENV child did not resolve to the isolated sandbox UID." >&2
+            exit 1
+          fi
+          echo "BASH_ENV canary Bash runs as isolated UID $canary_bash_uid."
+          [ -f "$canary" ] && [ ! -L "$canary" ] && [ -r "$canary" ] || {
+            echo "❌ BASH_ENV marker is not a readable regular file for the runner." >&2
+            exit 1
+          }
+          canary_parent="$canary"
+          while [ "$canary_parent" != / ]; do
+            canary_parent=$(dirname -- "$canary_parent")
+            if ! sandbox /usr/bin/test -x "$canary_parent"; then
+              echo "❌ BASH_ENV marker parent is not searchable by isolated UID $canary_bash_uid: $canary_parent" >&2
+              exit 1
+            fi
+          done
+          if ! sandbox /usr/bin/test -r "$canary"; then
+            echo "❌ BASH_ENV marker is not readable by isolated UID $canary_bash_uid." >&2
             exit 1
           fi
           canary_env=(HOME="$sandbox_home" PATH="$sandbox_path" BASH_ENV="$canary")
@@ -283,6 +304,7 @@ jobs:
           canary_status=0
           sudo -n -u "$sandbox_user" -- env -i "${canary_env[@]}" \
             /bin/bash -c '
+              [ "$(id -u)" = "$1" ] || exit 95
               [ "${__BETA_BASH_ENV_CANARY:-}" = loaded ] || exit 93
               for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
                 target=${!name-}
@@ -295,7 +317,7 @@ jobs:
                   exit 92
                 fi
               done
-            ' || canary_status=$?
+            ' beta-bashenv-canary "$canary_bash_uid" || canary_status=$?
           unset canary_env
           if [ "$canary_status" -eq 92 ]; then
             echo "❌ Isolated canary could write a runner command file or bypass variable." >&2
@@ -305,6 +327,9 @@ jobs:
             exit 1
           elif [ "$canary_status" -eq 94 ]; then
             echo "❌ BASH_ENV canary did not receive every runner command file." >&2
+            exit 1
+          elif [ "$canary_status" -eq 95 ]; then
+            echo "❌ BASH_ENV canary Bash ran under an unexpected UID." >&2
             exit 1
           elif [ "$canary_status" -ne 0 ]; then
             echo "❌ BASH_ENV canary harness failed with exit code $canary_status; isolation test is inconclusive." >&2
