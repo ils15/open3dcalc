@@ -1,11 +1,17 @@
 name: Beta release
 
-# Validation runs without credentials and exercises the repository's actual
-# Husky hooks. The publisher is a fresh runner with no checkout or project code;
-# it creates only the exact validated main commit's beta tag.
+# Validation runs without credentials and checks hook gates directly. The
+# publisher is a fresh runner with no checkout or project code; it creates only
+# the exact validated main commit's beta tag.
 
 "on":
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/beta.yml
+      - .github/workflows/beta-deploy.yml
 
 permissions: {}
 
@@ -22,9 +28,10 @@ jobs:
     env:
       BASH_ENV: /dev/null
       GIT_CONFIG_NOSYSTEM: "1"
+      GIT_CONFIG_GLOBAL: /dev/null
       GIT_TERMINAL_PROMPT: "0"
     steps:
-      - name: Fetch public main anonymously
+      - name: Fetch public candidate anonymously
         shell: bash
         run: |
           set -euo pipefail
@@ -36,11 +43,30 @@ jobs:
           git init --quiet "$GITHUB_WORKSPACE"
           git -C "$GITHUB_WORKSPACE" remote add origin \
             "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              [[ "$GITHUB_REF" =~ ^refs/pull/[0-9]+/merge$ ]] || {
+                echo "❌ Unexpected pull request ref: $GITHUB_REF." >&2
+                exit 1
+              }
+              fetch_ref="$GITHUB_REF"
+              target_ref=refs/remotes/origin/pr-validation
+              ;;
+            workflow_dispatch)
+              fetch_ref=refs/heads/main
+              target_ref=refs/remotes/origin/main
+              ;;
+            *)
+              echo "❌ Unsupported beta validation event:" \
+                "$GITHUB_EVENT_NAME." >&2
+              exit 1
+              ;;
+          esac
           git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
-            +refs/heads/main:refs/remotes/origin/main
+            "+$fetch_ref:$target_ref"
           git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
             '+refs/tags/*:refs/tags/*'
-          git -C "$GITHUB_WORKSPACE" checkout --quiet --detach refs/remotes/origin/main
+          git -C "$GITHUB_WORKSPACE" checkout --quiet --detach "$target_ref"
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$GITHUB_SHA"
 
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
@@ -66,29 +92,66 @@ jobs:
           tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP/gitleaks-bin" gitleaks
           "$RUNNER_TEMP/gitleaks-bin/gitleaks" version
 
-      # All npm-controlled commands execute as a dedicated unprivileged user.
-      # The current step's actual runner command-file directory is made
-      # inaccessible to that user (not overridden or redirected). A canary
-      # proves GITHUB_ENV/PATH/OUTPUT/STATE/SUMMARY writes fail and that a
-      # BASH_ENV payload cannot persist changes. The publisher consumes no
-      # outputs or artifacts from this job--only its success result.
-      - name: Install and run actual commit, commit-msg, and pre-push hooks
+      # All candidate npm lifecycle, hooks, and quality gates run in a pinned,
+      # disposable container. The only host mounts are read-only: the checkout,
+      # setup-node's Node 22 runtime, and the checksum-pinned Gitleaks binary.
+      # No GitHub command files, runner temp, Docker socket, secrets, or writable
+      # host path are exposed to candidate code. Container output is prefixed
+      # before logging so it cannot issue runner commands.
+      - name: Run candidate pre-commit and quality gates in isolation
+        id: candidate-validation
         shell: bash
         env:
           BASH_ENV: /dev/null
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
 
-          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "❌ Beta releases must be dispatched from main (got $GITHUB_REF)." >&2
+          candidate_sha="$GITHUB_SHA"
+          [[ "$candidate_sha" =~ ^[0-9a-f]{40}$ ]]
+          candidate_head_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)
+          test "$candidate_head_sha" = "$candidate_sha"
+          candidate_tree_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse "$candidate_sha^{tree}")
+          candidate_index_tree=$(env -u GIT_INDEX_FILE git -C "$GITHUB_WORKSPACE" write-tree)
+          test "$candidate_index_tree" = "$candidate_tree_sha"
+          [ -z "$(git -C "$GITHUB_WORKSPACE" status --porcelain --untracked-files=all)" ] || {
+            echo "❌ Candidate checkout is not clean before isolated validation." >&2
+            exit 1
+          }
+
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "❌ Beta releases must be dispatched from main (got $GITHUB_REF)." >&2
+              exit 1
+            fi
+            git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
+              +refs/heads/main:refs/remotes/origin/main
+            test "$(git -C "$GITHUB_WORKSPACE" rev-parse refs/remotes/origin/main)" = "$candidate_sha"
+            gate_base_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse "$candidate_sha^1")
+            commit_shas=("$candidate_sha")
+          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            [[ "$GITHUB_REF" =~ ^refs/pull/[0-9]+/merge$ ]]
+            [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+            git -C "$GITHUB_WORKSPACE" cat-file -e "$PR_BASE_SHA^{commit}"
+            git -C "$GITHUB_WORKSPACE" cat-file -e "$PR_HEAD_SHA^{commit}"
+            git -C "$GITHUB_WORKSPACE" merge-base --is-ancestor "$PR_BASE_SHA" "$candidate_sha"
+            git -C "$GITHUB_WORKSPACE" merge-base --is-ancestor "$PR_HEAD_SHA" "$candidate_sha"
+            gate_base_sha="$PR_BASE_SHA"
+            mapfile -t commit_shas < <(
+              git -C "$GITHUB_WORKSPACE" rev-list --reverse "$PR_BASE_SHA..$PR_HEAD_SHA"
+            )
+            ((${#commit_shas[@]} > 0)) || {
+              echo "❌ Pull request contains no candidate commits to validate." >&2
+              exit 1
+            }
+          else
+            echo "❌ Unsupported beta validation event: $GITHUB_EVENT_NAME." >&2
             exit 1
           fi
-          base_sha="$GITHUB_SHA"
-          [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]]
-          git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
-            +refs/heads/main:refs/remotes/origin/main
-          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$base_sha"
-          test "$(git -C "$GITHUB_WORKSPACE" rev-parse refs/remotes/origin/main)" = "$base_sha"
+          for commit_sha in "${commit_shas[@]}"; do
+            [[ "$commit_sha" =~ ^[0-9a-f]{40}$ ]]
+          done
 
           version=$(node --input-type=module <<'NODE'
           import fs from 'node:fs';
@@ -109,326 +172,271 @@ jobs:
             exit 1
           fi
 
-          command_paths=()
-          for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
-            value=${!name-}
-            [ -n "$value" ] || continue
-            [ -f "$value" ] && [ ! -L "$value" ] || {
-              echo "❌ Runner command file $name is missing or not a regular file." >&2
+          node_root=$(dirname -- "$(dirname -- "$(readlink -f -- "$(command -v node)")")")
+          case "$node_root/" in
+            "$RUNNER_TOOL_CACHE"/node/*/x64/) ;;
+            *)
+              echo "❌ setup-node runtime is outside the expected hosted tool cache: $node_root." >&2
               exit 1
-            }
-            command_paths+=("$value")
-          done
-          ((${#command_paths[@]} >= 3)) || {
-            echo "❌ Runner did not provide the expected command files." >&2
-            exit 1
-          }
-          command_dir=$(dirname "${command_paths[0]}")
-          [ -d "$command_dir" ] && [ ! -L "$command_dir" ] || {
-            echo "❌ Runner command-file directory is not a real directory." >&2
-            exit 1
-          }
-          for path in "${command_paths[@]}"; do
-            [ "$(dirname "$path")" = "$command_dir" ] || {
-              echo "❌ Runner command files are not isolated in one directory." >&2
-              exit 1
-            }
-            [ "$(stat -c '%h' "$path")" = 1 ] || {
-              echo "❌ Runner command file $path has an unexpected hard link." >&2
-              exit 1
-            }
-            [ "$(stat -c '%u' "$path")" = "$(id -u)" ] || {
-              echo "❌ Runner command-file owner differs from this step user." >&2
-              exit 1
-            }
-          done
-          [ "$(stat -c '%u' "$command_dir")" = "$(id -u)" ] || {
-            echo "❌ Runner command-file directory owner differs from this step user." >&2
-            exit 1
-          }
-          chmod 700 "$command_dir"
-          chmod 600 "${command_paths[@]}"
-
-          run_id=${GITHUB_RUN_ID//[^0-9]/}
-          [ -n "$run_id" ] || { echo "❌ Invalid workflow run id." >&2; exit 1; }
-          sandbox_user="beta-gate-$run_id"
-          sandbox_root="$RUNNER_TEMP/beta-gate-$run_id"
-          trusted_root="$RUNNER_TEMP/beta-trusted-$run_id"
-          trusted_git="$trusted_root/candidate.git"
-          guard_dir="$trusted_root/hook-guards"
-          install_tree="$sandbox_root/work/install-tree"
-          hook_tree="$sandbox_root/work/hook-tree"
-          sandbox_home="$sandbox_root/home"
-          uid=""
-          user_created=0
-
-          cleanup() {
-            if [ -n "$uid" ]; then
-              sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
-            fi
-            if [ "$user_created" = 1 ]; then
-              sudo -n rm -rf -- "$sandbox_root" "$trusted_root"
-              sudo -n userdel "$sandbox_user" >/dev/null 2>&1 || true
-            fi
-          }
-          trap cleanup EXIT
-
-          sudo -n true || {
-            echo "❌ A passwordless runner privilege boundary is unavailable." >&2
-            exit 1
-          }
-          sudo -n useradd --system --user-group --no-create-home \
-            --shell /usr/sbin/nologin "$sandbox_user"
-          user_created=1
-          uid=$(id -u "$sandbox_user")
-          gid=$(id -g "$sandbox_user")
-          mkdir -m 755 "$sandbox_root"
-          sudo -n install -d -m 755 -o "$uid" -g "$gid" \
-            "$sandbox_home" "$sandbox_root/work"
-          sudo -n install -d -m 700 -o "$uid" -g "$gid" \
-            "$sandbox_root/tmp" "$sandbox_root/npm-cache"
-          mkdir -m 755 "$trusted_root"
-          git -C "$GITHUB_WORKSPACE" clone --bare --no-hardlinks . "$trusted_git"
-          chmod -R a-w "$trusted_git"
-          find "$trusted_git" -type d -exec chmod 555 {} +
-          find "$trusted_git" -type f -exec chmod 444 {} +
-
-          sandbox_path="$RUNNER_TEMP/gitleaks-bin:$PATH"
-          sandbox() {
-            sudo -n -u "$sandbox_user" -- env -i \
-              PATH="$sandbox_path" \
-              HOME="$sandbox_home" \
-              XDG_CONFIG_HOME="$sandbox_home/.config" \
-              TMPDIR="$sandbox_root/tmp" \
-              NPM_CONFIG_CACHE="$sandbox_root/npm-cache" \
-              GIT_CONFIG_NOSYSTEM=1 \
-              GIT_CONFIG_GLOBAL=/dev/null \
-              GIT_TERMINAL_PROMPT=0 \
-              BASH_ENV=/dev/null \
-              "$@"
-          }
-          sandbox_in_tree() {
-            local tree="$1"
-            shift
-            sandbox /bin/bash -c 'cd "$1" && shift && exec "$@"' \
-              sandbox-shell "$tree" "$@"
-          }
-
-          # Canary: provide the actual runner paths to an isolated user and
-          # attempt command-file and BASH_ENV persistence. All writes must fail.
-          declare -A command_hashes=()
-          for path in "${command_paths[@]}"; do
-            command_hashes["$path"]=$(sha256sum "$path")
-          done
-          canary="$sandbox_home/canary.bashenv"
-          sudo -n -u "$sandbox_user" -- env -i \
-            HOME="$sandbox_home" PATH="$sandbox_path" \
-            /usr/bin/tee "$canary" >/dev/null <<EOF
-          for target in ${command_paths[*]@Q}; do
-            if printf 'BASH_ENV=/tmp/untrusted-startup\\n' >> "\$target" 2>/dev/null; then
-              exit 91
-            fi
-          done
-          : > "\$HOME/bash-env-ran"
-          EOF
-          canary_env=(HOME="$sandbox_home" PATH="$sandbox_path" BASH_ENV="$canary")
-          for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
-            value=${!name-}
-            [ -n "$value" ] && canary_env+=("$name=$value")
-          done
-          if ! sudo -n -u "$sandbox_user" -- env -i "${canary_env[@]}" \
-            /bin/bash -c 'for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do [ -n "$target" ] || continue; if printf "PWNED=1\\n" >> "$target" 2>/dev/null; then exit 92; fi; done'; then
-            echo "❌ Command-file/BASH_ENV canary could persist a write." >&2
-            exit 1
-          fi
-          sandbox test -f "$sandbox_home/bash-env-ran" || {
-            echo "❌ BASH_ENV canary did not execute; isolation test is inconclusive." >&2
-            exit 1
-          }
-          for path in "${command_paths[@]}"; do
-            [ "$(sha256sum "$path")" = "${command_hashes[$path]}" ] || {
-              echo "❌ Isolated canary changed a runner command file." >&2
-              exit 1
-            }
-          done
-
-          verify_command_files() {
-            local path
-            for path in "${command_paths[@]}"; do
-              [ "$(sha256sum "$path")" = "${command_hashes[$path]}" ] || {
-                echo "❌ npm/hook code changed a runner command file." >&2
-                return 1
-              }
-            done
-          }
-
-          sandbox git clone --no-checkout --no-hardlinks "$trusted_git" "$install_tree"
-          sandbox git -C "$install_tree" checkout --quiet --detach "$base_sha"
-          test "$(git -C "$install_tree" rev-parse HEAD)" = "$base_sha"
-          sandbox_in_tree "$install_tree" npm ci
-
-          # Stop any lifecycle daemon before the trusted post-install check.
-          sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
-          if pgrep -u "$uid" >/dev/null 2>&1; then
-            echo "❌ npm lifecycle process survived the sandbox boundary." >&2
-            exit 1
-          fi
-          verify_command_files
-
-          hook_sources=(
-            .husky/pre-commit .husky/commit-msg .husky/pre-push
-            scripts/scan-secrets-bifrost.mjs scripts/push-gate.mjs
-            scripts/push-gate-baseline.json package.json package-lock.json
-            commitlint.config.js .lintstagedrc.json eslint.config.js
-          )
-          verify_hook_sources() {
-            local tree="$1" path
-            for path in "${hook_sources[@]}"; do
-              if [ ! -f "$tree/$path" ] || [ -L "$tree/$path" ] || \
-                 ! git --git-dir="$trusted_git" cat-file blob "$base_sha:$path" \
-                   | cmp --silent - "$tree/$path"; then
-                echo "❌ Trusted hook source differs from candidate $base_sha:$path." >&2
-                return 1
-              fi
-            done
-          }
-          verify_hook_sources "$install_tree"
-
-          # Re-clone from immutable candidate objects after npm, so neither
-          # lifecycle changes to .git nor its working-tree edits can become the
-          # tree on which the actual hooks execute. Reuse only node_modules.
-          sandbox git clone --no-checkout --no-hardlinks "$trusted_git" "$hook_tree"
-          sandbox git -C "$hook_tree" checkout --quiet --detach "$base_sha"
-          sandbox cp -a "$install_tree/node_modules" "$hook_tree/node_modules"
-          verify_hook_sources "$hook_tree"
-
-          sandbox mkdir -p "$sandbox_home/.config" "$sandbox_home/.config/husky"
-          if [ -e "$sandbox_home/.huskyrc" ] || [ -e "$sandbox_home/.config/husky/init.sh" ]; then
-            echo "❌ Unexpected user Husky init script." >&2
-            exit 1
-          fi
-          sandbox_in_tree "$hook_tree" ./node_modules/.bin/husky
-          sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
-          if pgrep -u "$uid" >/dev/null 2>&1; then
-            echo "❌ Husky setup process survived the sandbox boundary." >&2
-            exit 1
-          fi
-
-          hooks_path=$(git -C "$hook_tree" config --local --get-all core.hooksPath || true)
-          if [ "$hooks_path" != ".husky/_" ]; then
-            echo "❌ Unexpected Git hooksPath after Husky activation: $hooks_path" >&2
-            exit 1
-          fi
-          for hook in pre-commit commit-msg pre-push; do
-            wrapper="$hook_tree/.husky/_/$hook"
-            if [ ! -f "$wrapper" ] || [ -L "$wrapper" ] || [ ! -x "$wrapper" ] || \
-               ! printf '%s  %s\n' \
-                 '34fe496008be71d8fdd446b2cce81e4bb0406109c130eafc583fbd9fe33244e2' \
-                 "$wrapper" | sha256sum --check --status; then
-              echo "❌ Husky wrapper integrity check failed: $hook" >&2
-              exit 1
-            fi
-          done
-          if [ ! -f "$hook_tree/.husky/_/h" ] || [ -L "$hook_tree/.husky/_/h" ] || \
-             ! printf '%s  %s\n' \
-               '70200b200ca709b0622784f93839a5b2872333a917a09afddefd7dc2d8cdc680' \
-               "$hook_tree/.husky/_/h" | sha256sum --check --status; then
-            echo "❌ Husky dispatcher integrity check failed." >&2
-            exit 1
-          fi
-
-          mkdir -m 755 "$guard_dir"
-          for hook in pre-commit commit-msg pre-push; do
-            cat > "$guard_dir/$hook" <<'GUARD'
-          #!/bin/sh
-          set -eu
-          hook=${0##*/}
-          case "$hook" in
-            pre-commit|commit-msg|pre-push) ;;
-            *) echo "Unknown beta hook: $hook" >&2; exit 2 ;;
+              ;;
           esac
-          [ "${BASH_ENV:-}" = /dev/null ] || { echo "Unexpected BASH_ENV" >&2; exit 2; }
-          [ "${HUSKY:-}" != 0 ] || { echo "HUSKY bypass detected" >&2; exit 2; }
-          [ ! -e "$HOME/.huskyrc" ] && [ ! -e "$HOME/.config/husky/init.sh" ] || {
-            echo "Unexpected user Husky init script" >&2; exit 2;
+          [[ "$(node -p 'process.versions.node.split(".")[0]')" = 22 ]]
+          [ -x "$node_root/bin/npm" ]
+          gitleaks_bin="$RUNNER_TEMP/gitleaks-bin/gitleaks"
+          [ -x "$gitleaks_bin" ]
+          command -v docker >/dev/null 2>&1
+          docker info >/dev/null
+
+          verify_host_candidate_state() {
+            local phase="$1" current_head current_tree index_tree dirty_paths
+            current_head=$(env -u GIT_INDEX_FILE git -C "$GITHUB_WORKSPACE" rev-parse HEAD)
+            current_tree=$(env -u GIT_INDEX_FILE git -C "$GITHUB_WORKSPACE" rev-parse 'HEAD^{tree}')
+            index_tree=$(env -u GIT_INDEX_FILE git -C "$GITHUB_WORKSPACE" write-tree)
+            dirty_paths=$(env -u GIT_INDEX_FILE git -C "$GITHUB_WORKSPACE" status --porcelain --untracked-files=all)
+            if [ "$current_head" != "$candidate_sha" ] || \
+               [ "$current_tree" != "$candidate_tree_sha" ] || \
+               [ "$index_tree" != "$candidate_index_tree" ] || \
+               [ -n "$dirty_paths" ]; then
+              echo "❌ Host candidate checkout changed $phase." >&2
+              printf 'HEAD=%s\nTREE=%s\nINDEX=%s\n' \
+                "$current_head" "$current_tree" "$index_tree" >&2
+              printf '%s\n' "${dirty_paths:-clean}" >&2
+              return 1
+            fi
           }
-          [ "${SKIP_GITLEAKS:-}" != 1 ] && [ "${SKIP_ENV_GUARD:-}" != 1 ] && \
-            [ "${SKIP_BIFROST_EXPOSURE:-}" != 1 ] && [ "${SKIP_HYGIENE:-}" != 1 ] && \
-            [ "${SKIP_PUSH_GATE:-}" != 1 ] || { echo "Hook bypass detected" >&2; exit 2; }
-          for path in \
-            .husky/pre-commit .husky/commit-msg .husky/pre-push \
-            scripts/scan-secrets-bifrost.mjs scripts/push-gate.mjs \
-            scripts/push-gate-baseline.json package.json package-lock.json \
-            commitlint.config.js .lintstagedrc.json eslint.config.js; do
-            file="$BETA_HOOK_TREE/$path"
-            [ -f "$file" ] && [ ! -L "$file" ] || { echo "Missing hook source: $path" >&2; exit 2; }
-            /usr/bin/git --git-dir="$BETA_TRUSTED_GIT" cat-file blob "$BETA_BASE_SHA:$path" \
-              | /usr/bin/cmp --silent - "$file" || { echo "Hook source changed: $path" >&2; exit 2; }
-          done
-          wrapper="$BETA_HOOK_TREE/.husky/_/$hook"
-          [ -f "$wrapper" ] && [ ! -L "$wrapper" ] && [ -x "$wrapper" ] || exit 2
-          printf '%s  %s\n' \
-            '34fe496008be71d8fdd446b2cce81e4bb0406109c130eafc583fbd9fe33244e2' \
-            "$wrapper" | /usr/bin/sha256sum --check --status || exit 2
-          dispatcher="$BETA_HOOK_TREE/.husky/_/h"
-          [ -f "$dispatcher" ] && [ ! -L "$dispatcher" ] || exit 2
-          printf '%s  %s\n' \
-            '70200b200ca709b0622784f93839a5b2872333a917a09afddefd7dc2d8cdc680' \
-            "$dispatcher" | /usr/bin/sha256sum --check --status || exit 2
-          exec "$wrapper" "$@"
-          GUARD
-            chmod 555 "$guard_dir/$hook"
-          done
-          chmod 555 "$guard_dir"
 
-          sandbox git -C "$hook_tree" config user.name "github-actions[bot]"
-          sandbox git -C "$hook_tree" config user.email "github-actions[bot]@users.noreply.github.com"
-          sudo -n chown -R "$(id -u):$(id -g)" "$trusted_root" "$guard_dir"
-          chmod -R a-w "$trusted_root"
-          find "$trusted_root" -type d -exec chmod 555 {} +
-          find "$trusted_root" -type f -exec chmod 444 {} +
-
-          # Final source comparison after installation/activation, then the
-          # immutable guard re-compares immediately before each real Husky hook.
-          verify_hook_sources "$hook_tree"
-          for hook in pre-commit commit-msg pre-push; do
-            wrapper="$hook_tree/.husky/_/$hook"
-            test -f "$wrapper" && test ! -L "$wrapper"
-          done
-
-          git_env=(
-            BETA_TRUSTED_GIT="$trusted_git"
-            BETA_BASE_SHA="$base_sha"
-            BETA_HOOK_TREE="$hook_tree"
-            HOME="$sandbox_home"
-            XDG_CONFIG_HOME="$sandbox_home/.config"
-            PATH="$sandbox_path"
-            BASH_ENV=/dev/null
-            GIT_CONFIG_NOSYSTEM=1
-            GIT_CONFIG_GLOBAL=/dev/null
-            GIT_TERMINAL_PROMPT=0
-          )
-          git_as_sandbox() {
-            sudo -n -u "$sandbox_user" -- env -i "${git_env[@]}" \
-              /usr/bin/git -C "$hook_tree" -c "core.hooksPath=$guard_dir" "$@"
+          # No provider credential crosses into candidate execution. The
+          # deterministic scanner still runs; its separate AI subcheck skips.
+          container_status=0
+          validation_log="$RUNNER_TEMP/beta-validation-$GITHUB_RUN_ID.log"
+          container_image='mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27'
+          if docker run --rm --init --platform linux/amd64 \
+            --security-opt=no-new-privileges:true \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/input,readonly" \
+            --mount "type=bind,source=$node_root,target=/node,readonly" \
+            --mount "type=bind,source=$gitleaks_bin,target=/tools/gitleaks,readonly" \
+            --env 'PATH=/node/bin:/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+            --env HOME=/tmp/beta-home \
+            --env TMPDIR=/tmp/beta-tmp \
+            --env NPM_CONFIG_CACHE=/tmp/npm-cache \
+            --env CI=true \
+            --env BASH_ENV=/dev/null \
+            --env GIT_CONFIG_NOSYSTEM=1 \
+            --env GIT_CONFIG_GLOBAL=/dev/null \
+            --env GIT_TERMINAL_PROMPT=0 \
+            --env BF_VIRTUAL_KEY= \
+            --env "CANDIDATE_SHA=$candidate_sha" \
+            --env "CANDIDATE_TREE_SHA=$candidate_tree_sha" \
+            --env "CANDIDATE_INDEX_TREE=$candidate_index_tree" \
+            --env "GATE_BASE_SHA=$gate_base_sha" \
+            --env "COMMIT_SHAS=$(printf '%s\n' "${commit_shas[@]}")" \
+            --env "BETA_TAG=$beta_tag" \
+            --workdir /tmp \
+            --entrypoint /bin/bash \
+            "$container_image" \
+            --noprofile --norc -euo pipefail -s >"$validation_log" 2>&1 <<'CONTAINER'
+          set -euo pipefail
+          test -z "$(env | grep '^GITHUB_' || true)" || {
+            echo '❌ GitHub runner variables unexpectedly crossed the container boundary.' >&2
+            exit 1
           }
-          git_as_sandbox commit --allow-empty -m "chore(beta): validate $beta_tag"
-          git_as_sandbox reset --hard "$base_sha"
+          test "$(node -p 'process.versions.node.split(".")[0]')" = 22
+          test -x /tools/gitleaks
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential
 
-          remote="$sandbox_root/work/validation.git"
-          sandbox /usr/bin/git init --bare "$remote"
-          git_as_sandbox remote add beta-validation "$remote"
-          git_as_sandbox push beta-validation "$base_sha:refs/heads/beta-validation"
-          remote_sha=$(sandbox /usr/bin/git --git-dir="$remote" rev-parse refs/heads/beta-validation)
-          test "$remote_sha" = "$base_sha"
-          verify_command_files
-          echo "✅ Actual hooks passed for $beta_tag at $base_sha."
+          work=/tmp/beta-work
+          test "$(id -u)" = 0
+          build_account=$(getent passwd pwuser) || {
+            echo '❌ Pinned Playwright image is missing the expected pwuser account.' >&2
+            exit 1
+          }
+          IFS=: read -r build_user _ build_uid build_gid _ _ _ <<< "$build_account"
+          if [[ "$build_user" != pwuser || ! "$build_uid" =~ ^[1-9][0-9]*$ || \
+                ! "$build_gid" =~ ^[1-9][0-9]*$ ]] || \
+             ! getent group "$build_gid" >/dev/null || \
+             [[ "$(id -u "$build_user")" != "$build_uid" || \
+                "$(id -g "$build_user")" != "$build_gid" ]]; then
+            echo '❌ Pinned Playwright image has an invalid pwuser UID/GID mapping.' >&2
+            exit 1
+          fi
+          install -d -m 700 -o "$build_uid" -g "$build_gid" \
+            "$work" /tmp/beta-home /tmp/beta-tmp /tmp/npm-cache
+          cp -a /input/. "$work/"
+          chown -R "$build_uid:$build_gid" "$work"
 
-          # No GITHUB_OUTPUT or artifact carries a value from npm/project code.
+          runuser --user "$build_user" -- /usr/bin/env -i \
+            PATH="$PATH" \
+            HOME=/tmp/beta-home \
+            TMPDIR=/tmp/beta-tmp \
+            NPM_CONFIG_CACHE=/tmp/npm-cache \
+            CI=true \
+            BASH_ENV=/dev/null \
+            GIT_CONFIG_NOSYSTEM=1 \
+            GIT_CONFIG_GLOBAL=/dev/null \
+            GIT_TERMINAL_PROMPT=0 \
+            BF_VIRTUAL_KEY= \
+            CANDIDATE_SHA="$CANDIDATE_SHA" \
+            CANDIDATE_TREE_SHA="$CANDIDATE_TREE_SHA" \
+            CANDIDATE_INDEX_TREE="$CANDIDATE_INDEX_TREE" \
+            GATE_BASE_SHA="$GATE_BASE_SHA" \
+            COMMIT_SHAS="$COMMIT_SHAS" \
+            BETA_TAG="$BETA_TAG" \
+            /bin/bash --noprofile --norc -euo pipefail -s <<'PROJECT'
+          set -euo pipefail
+          cd /tmp/beta-work
+          test "$(id -u)" -ne 0
+          [[ "$(node -p 'process.versions.node.split(".")[0]')" = 22 ]]
+          test -z "$(env | grep '^GITHUB_' || true)"
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          candidate_head_sha=$(env -u GIT_INDEX_FILE git rev-parse HEAD)
+          candidate_tree_sha=$(env -u GIT_INDEX_FILE git rev-parse "$CANDIDATE_SHA^{tree}")
+          candidate_index_tree=$(env -u GIT_INDEX_FILE git write-tree)
+          test "$candidate_head_sha" = "$CANDIDATE_SHA"
+          test "$candidate_tree_sha" = "$CANDIDATE_TREE_SHA"
+          test "$candidate_index_tree" = "$CANDIDATE_INDEX_TREE"
+
+          verify_candidate_state() {
+            local phase="$1" current_head current_tree index_tree dirty_paths
+            if ! current_head=$(env -u GIT_INDEX_FILE git rev-parse HEAD) ||
+               [ "$current_head" != "$candidate_head_sha" ]; then
+              echo "❌ Candidate HEAD changed $phase (expected $candidate_head_sha, got ${current_head:-unavailable})." >&2
+              return 1
+            fi
+            if ! current_tree=$(env -u GIT_INDEX_FILE git rev-parse 'HEAD^{tree}') ||
+               [ "$current_tree" != "$candidate_tree_sha" ]; then
+              echo "❌ Candidate tree changed $phase (expected $candidate_tree_sha, got ${current_tree:-unavailable})." >&2
+              return 1
+            fi
+            if ! index_tree=$(env -u GIT_INDEX_FILE git write-tree) ||
+               [ "$index_tree" != "$candidate_index_tree" ]; then
+              echo "❌ Candidate index changed $phase (expected $candidate_index_tree, got ${index_tree:-unavailable})." >&2
+              return 1
+            fi
+            if ! env -u GIT_INDEX_FILE git diff --quiet "$CANDIDATE_SHA" --; then
+              echo "❌ Candidate source diff detected $phase." >&2
+              return 1
+            fi
+            if ! dirty_paths=$(env -u GIT_INDEX_FILE git status --porcelain --untracked-files=all) ||
+               [ -n "$dirty_paths" ]; then
+              echo "❌ Candidate checkout is dirty $phase." >&2
+              printf '%s\n' "${dirty_paths:-status unavailable}" >&2
+              return 1
+            fi
+          }
+
+          run_verified_gate() {
+            local gate_name="$1"
+            shift
+            verify_candidate_state "before $gate_name"
+            "$@"
+            verify_candidate_state "after $gate_name"
+          }
+
+          run_verified_gate 'pinned base..candidate Gitleaks scan' \
+            bash scripts/scan-hosted-gitleaks.sh
+
+          npm ci
+          verify_candidate_state 'after npm ci'
+
+          for name in SKIP_GITLEAKS SKIP_ENV_GUARD SKIP_BIFROST_EXPOSURE SKIP_HYGIENE SKIP_PUSH_GATE HUSKY; do
+            [ -z "${!name-}" ] || {
+              echo "❌ Unexpected hook bypass variable: $name." >&2
+              exit 1
+            }
+          done
+          run_verified_gate 'pre-commit hook' \
+            bash scripts/hosted-pre-commit.sh
+
+          mapfile -t commit_shas <<< "$COMMIT_SHAS"
+          ((${#commit_shas[@]} > 0))
+          verify_candidate_state 'before commitlint'
+          for commit_sha in "${commit_shas[@]}"; do
+            [[ "$commit_sha" =~ ^[0-9a-f]{40}$ ]]
+            subject=$(git show -s --format=%s "$commit_sha")
+            case "$subject" in
+              'Merge branch'*|'Merge remote-tracking'*|'Merge pull request'*)
+                echo "Skipping commitlint for merge commit $commit_sha, as the local hook does."
+                ;;
+              *)
+                git show -s --format=%B "$commit_sha" | npx --no-install commitlint
+                ;;
+            esac
+          done
+          verify_candidate_state 'after commitlint'
+
+          run_verified_gate 'typecheck' npm run typecheck
+          run_verified_gate 'Electron typecheck' npm run typecheck:electron
+          run_verified_gate 'lint' npm run lint -- --max-warnings=0
+          run_verified_gate 'Prettier' npx --no-install prettier --check .github/workflows/beta.yml .github/workflows/beta-deploy.yml
+          run_verified_gate 'build' npm run build:all
+
+          gate_report='node_modules/.cache/push-gate/vitest.json'
+          mkdir -p "$(dirname "$gate_report")"
+          verify_candidate_state 'before Vitest'
+          vitest_status=0
+          npm run test:run -- --reporter=default --reporter=json \
+            "--outputFile.json=$gate_report" || vitest_status=$?
+          vitest_integrity_status=0
+          verify_candidate_state 'after Vitest' || vitest_integrity_status=$?
+          comparator_pre_integrity_status=0
+          verify_candidate_state 'before push-gate comparator' || comparator_pre_integrity_status=$?
+          comparator_status=0
+          node scripts/push-gate.mjs "$gate_report" || comparator_status=$?
+          comparator_integrity_status=0
+          verify_candidate_state 'after push-gate comparator' || comparator_integrity_status=$?
+          if [ "$vitest_status" -ne 0 ] || [ "$comparator_status" -ne 0 ] ||
+             [ "$vitest_integrity_status" -ne 0 ] || [ "$comparator_pre_integrity_status" -ne 0 ] ||
+             [ "$comparator_integrity_status" -ne 0 ]; then
+            echo "❌ Validation failed (Vitest=$vitest_status, comparator=$comparator_status, integrity=$((vitest_integrity_status + comparator_pre_integrity_status + comparator_integrity_status)))." >&2
+            exit 1
+          fi
+          echo "✅ Pre-commit and configured validation gates completed for $BETA_TAG at $CANDIDATE_SHA."
+          PROJECT
+          CONTAINER
+          then
+            :
+          else
+            container_status=$?
+          fi
+          while IFS= read -r line || [ -n "$line" ]; do
+            printf '[isolated-container] %s\n' "$line"
+          done < "$validation_log"
+
+          verify_host_candidate_state 'after isolated validation'
+          if [ "$container_status" -ne 0 ]; then
+            echo "❌ Isolated candidate validation failed with exit code $container_status." >&2
+            exit "$container_status"
+          fi
+          echo "✅ Pre-commit and configured validation gates completed for $beta_tag at $candidate_sha."
+
+      - name: Summarize secret-free validation
+        if: always()
+        env:
+          VALIDATION_OUTCOME: ${{ steps.candidate-validation.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$VALIDATION_OUTCOME" in
+            success|failure|cancelled|skipped) ;;
+            *) echo "❌ Unexpected candidate validation outcome: $VALIDATION_OUTCOME." >&2; exit 1 ;;
+          esac
+          {
+            printf '## Beta candidate validation\n\n'
+            printf -- '- Isolated validation step: `%s`.\n' "$VALIDATION_OUTCOME"
+            if [ "$VALIDATION_OUTCOME" = success ]; then
+              printf '%s\n' '- Deterministic secret checks: Gitleaks and the local pre-commit checks (environment-file guard, staged-diff heuristic, and hygiene) ran via `sh .husky/pre-commit`; this does not imply the Bifrost AI subcheck ran.'
+            else
+              printf '%s\n' '- Deterministic secret checks: Gitleaks and local pre-commit checks are configured in `sh .husky/pre-commit`, but completion is not asserted because isolated validation did not succeed.'
+            fi
+            printf '%s\n' '- Bifrost AI exposure subcheck: **NOT RUN** — this validation is intentionally secret-free, with no Bifrost credential supplied to candidate code. Its fail-open policy makes it advisory, not a required release gate; the skipped subcheck is not a pass.'
+            printf '%s\n' '- Scope: this workflow invokes the pre-commit hook, not the `commit-msg` or `pre-push` hooks. Review validation logs for scanner warnings; the scanner has fail-open error paths.'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   publish-tag:
     name: Publish validated beta tag
     needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: beta-release

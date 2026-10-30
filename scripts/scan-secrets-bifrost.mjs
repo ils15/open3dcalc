@@ -109,14 +109,10 @@ function charClasses(token) {
 
 /**
  * Arquivos que legitimamente contêm strings com cara de secret:
- *   - `scripts/__tests__/`        → fixtures de teste (casos positivos);
  *   - `scripts/scan-secrets-bifrost.mjs` → o próprio detector (strings de padrão).
- * O conteúdo desses arquivos é ignorado na análise do diff — mesma allowlist
- * do `.gitleaks.toml` na raiz. Evita o auto-bloqueio do hook ao commitar o
- * detector e seus testes (prática padrão de allowlist, revisada pelo Themis).
+ * Testes não são ignorados; seus valores sintéticos devem ser montados em runtime.
  */
 export const ALLOWED_FIXTURE_PATHS = [
-  /(^|\/)scripts\/__tests__\//,
   /(^|\/)scripts\/scan-secrets-bifrost\.mjs$/,
 ];
 
