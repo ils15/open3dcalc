@@ -84,218 +84,120 @@ jobs:
           fi
           echo "Validated $BETA_TAG at $GITHUB_SHA as an ancestor of current main."
 
-      # Playwright 1.63's Ubuntu 24.04 Chromium runtime dependencies, installed
-      # before project code. This keeps privileged apt from executing npm code.
-      - name: Install Chromium system dependencies
+      # npm lifecycle, test, and build code runs as the image's unprivileged
+      # pwuser account in a disposable container. Only trusted compiler setup runs
+      # as container root before project code starts.
+      # Only a read-only checkout/runtime and a dedicated output directory are
+      # mounted: no runner command files, host workspace writes, secrets, or
+      # Docker socket. The host validates and copies outputs after the container
+      # exits, before the trusted artifact action runs.
+      - name: Install, test, and build web beta in isolation
         shell: bash
         env:
           BASH_ENV: /dev/null
         run: |
           set -euo pipefail
-          sudo -n apt-get update
-          sudo -n apt-get install --yes --no-install-recommends \
-            xvfb fonts-noto-color-emoji fonts-unifont libfontconfig1 \
-            libfreetype6 xfonts-cyrillic xfonts-scalable fonts-liberation \
-            fonts-ipafont-gothic fonts-wqy-zenhei fonts-tlwg-loma-otf \
-            fonts-freefont-ttf libasound2t64 libatk-bridge2.0-0t64 \
-            libatk1.0-0t64 libatspi2.0-0t64 libcairo2 libcups2t64 \
-            libdbus-1-3 libdrm2 libgbm1 libglib2.0-0t64 libnspr4 libnss3 \
-            libpango-1.0-0 libx11-6 libxcb1 libxcomposite1 libxdamage1 \
-            libxext6 libxfixes3 libxkbcommon0 libxrandr2
-
-      # All npm and project code runs as a dedicated unprivileged user. The
-      # runner's actual command-file directory is made inaccessible to it, and
-      # a canary tests writes through every available GITHUB_* file including a
-      # BASH_ENV payload. Nothing from this job except built files crosses into
-      # the fresh publisher; no scalar outputs are produced.
-      - name: Install, test, and build web beta
-        shell: bash
-        env:
-          BASH_ENV: /dev/null
-          VITE_BETA_CHANNEL: "true"
-          VITE_TOOLPATH_PREVIEW: "true"
-        run: |
-          set -euo pipefail
-          command_paths=()
-          for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
-            value=${!name-}
-            [ -n "$value" ] || continue
-            [ -f "$value" ] && [ ! -L "$value" ] || {
-              echo "❌ Runner command file $name is missing or not a regular file." >&2
+          node_root=$(dirname -- "$(dirname -- "$(readlink -f -- "$(command -v node)")")")
+          case "$node_root/" in
+            "$RUNNER_TOOL_CACHE"/node/*/x64/) ;;
+            *)
+              echo "❌ setup-node runtime is outside the expected hosted tool cache: $node_root." >&2
               exit 1
-            }
-            command_paths+=("$value")
-          done
-          ((${#command_paths[@]} >= 3)) || {
-            echo "❌ Runner did not provide the expected command files." >&2
-            exit 1
-          }
-          command_dir=$(dirname "${command_paths[0]}")
-          [ -d "$command_dir" ] && [ ! -L "$command_dir" ] || {
-            echo "❌ Runner command-file directory is not a real directory." >&2
-            exit 1
-          }
-          for path in "${command_paths[@]}"; do
-            [ "$(dirname "$path")" = "$command_dir" ] || {
-              echo "❌ Runner command files are not isolated in one directory." >&2
-              exit 1
-            }
-            [ "$(stat -c '%h' "$path")" = 1 ] || {
-              echo "❌ Runner command file $path has an unexpected hard link." >&2
-              exit 1
-            }
-            [ "$(stat -c '%u' "$path")" = "$(id -u)" ] || {
-              echo "❌ Runner command-file owner differs from this step user." >&2
-              exit 1
-            }
-          done
-          [ "$(stat -c '%u' "$command_dir")" = "$(id -u)" ] || {
-            echo "❌ Runner command-file directory owner differs from this step user." >&2
-            exit 1
-          }
-          chmod 700 "$command_dir"
-          chmod 600 "${command_paths[@]}"
+              ;;
+          esac
+          [[ "$(node -p 'process.versions.node.split(".")[0]')" = 22 ]]
 
-          run_id=${GITHUB_RUN_ID//[^0-9]/}
-          [ -n "$run_id" ] || { echo "❌ Invalid workflow run id." >&2; exit 1; }
-          sandbox_user="beta-build-$run_id"
-          sandbox_root="$RUNNER_TEMP/beta-build-$run_id"
-          sandbox_tree="$sandbox_root/worktree"
-          sandbox_home="$sandbox_root/home"
-          uid=""
-          user_created=0
-          cleanup() {
-            if [ -n "$uid" ]; then
-              sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
-            fi
-            if [ "$user_created" = 1 ]; then
-              sudo -n rm -rf -- "$sandbox_root"
-              sudo -n userdel "$sandbox_user" >/dev/null 2>&1 || true
-            fi
-          }
-          trap cleanup EXIT
-
-          sudo -n true || {
-            echo "❌ A passwordless runner privilege boundary is unavailable." >&2
-            exit 1
-          }
-          sudo -n useradd --system --user-group --no-create-home \
-            --shell /usr/sbin/nologin "$sandbox_user"
-          user_created=1
-          uid=$(id -u "$sandbox_user")
-          gid=$(id -g "$sandbox_user")
-          mkdir -m 755 "$sandbox_root"
-          sudo -n install -d -m 755 -o "$uid" -g "$gid" \
-            "$sandbox_home" "$sandbox_root/work"
-          sudo -n install -d -m 700 -o "$uid" -g "$gid" \
-            "$sandbox_root/tmp" "$sandbox_root/npm-cache"
-
-          sandbox_path="$PATH"
-          sandbox() {
-            sudo -n -u "$sandbox_user" -- env -i \
-              PATH="$sandbox_path" \
-              HOME="$sandbox_home" \
-              XDG_CONFIG_HOME="$sandbox_home/.config" \
-              TMPDIR="$sandbox_root/tmp" \
-              NPM_CONFIG_CACHE="$sandbox_root/npm-cache" \
-              GIT_CONFIG_NOSYSTEM=1 \
-              GIT_CONFIG_GLOBAL=/dev/null \
-              GIT_TERMINAL_PROMPT=0 \
-              BASH_ENV=/dev/null \
-              VITE_BETA_CHANNEL="$VITE_BETA_CHANNEL" \
-              "$@"
-          }
-          sandbox_in_tree() {
-            local tree="$1"
-            shift
-            sandbox /bin/bash -c 'cd "$1" && shift && exec "$@"' \
-              sandbox-shell "$tree" "$@"
-          }
-
-          declare -A command_hashes=()
-          for path in "${command_paths[@]}"; do
-            command_hashes["$path"]=$(sha256sum "$path")
-          done
-          canary="$sandbox_home/canary.bashenv"
-          sudo -n -u "$sandbox_user" -- env -i \
-            HOME="$sandbox_home" PATH="$sandbox_path" \
-            /usr/bin/tee "$canary" >/dev/null <<'CANARY'
-          for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do
-            [ -n "$target" ] || continue
-            if printf 'BASH_ENV=untrusted-startup\n' >> "$target" 2>/dev/null; then
-              exit 91
-            fi
-          done
-          : > "$HOME/bash-env-ran"
-          CANARY
-          canary_env=(HOME="$sandbox_home" PATH="$sandbox_path" BASH_ENV="$canary")
-          for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
-            value=${!name-}
-            [ -n "$value" ] && canary_env+=("$name=$value")
-          done
-          if ! sudo -n -u "$sandbox_user" -- env -i "${canary_env[@]}" \
-            /bin/bash -c 'for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do [ -n "$target" ] || continue; if printf "PWNED=1\\n" >> "$target" 2>/dev/null; then exit 92; fi; done'; then
-            echo "❌ Command-file/BASH_ENV canary could persist a write." >&2
+          container_output=$(mktemp -d "$RUNNER_TEMP/beta-build-output.XXXXXX")
+          chmod 777 "$container_output"
+          trap 'rm -rf -- "$container_output"' EXIT
+          if [ -L beta-artifact ] || [ -e beta-artifact ]; then
+            echo "❌ Refusing to reuse a pre-existing beta-artifact path." >&2
             exit 1
           fi
-          sandbox test -f "$sandbox_home/bash-env-ran" || {
-            echo "❌ BASH_ENV canary did not execute; isolation test is inconclusive." >&2
+
+          docker run --rm --init -i --platform linux/amd64 --shm-size=1gb \
+            --security-opt=no-new-privileges:true \
+            --user root \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/input,readonly" \
+            --mount "type=bind,source=$node_root,target=/node,readonly" \
+            --mount "type=bind,source=$container_output,target=/output" \
+            --env 'PATH=/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' \
+            --env HOME=/tmp/beta-home \
+            --env TMPDIR=/tmp/beta-tmp \
+            --env NPM_CONFIG_CACHE=/tmp/npm-cache \
+            --env CI=true \
+            --env BASH_ENV=/dev/null \
+            --env GIT_CONFIG_NOSYSTEM=1 \
+            --env GIT_CONFIG_GLOBAL=/dev/null \
+            --env GIT_TERMINAL_PROMPT=0 \
+            --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+            --env VITE_BETA_CHANNEL=true \
+            --env VITE_TOOLPATH_PREVIEW=true \
+            --workdir /tmp \
+            --entrypoint /bin/bash \
+            'mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27' \
+            --noprofile --norc -euo pipefail -s <<'CONTAINER'
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential
+
+          test "$(id -u)" = 0
+          build_account=$(getent passwd pwuser) || {
+            echo '❌ Pinned Playwright image is missing the expected pwuser account.' >&2
             exit 1
           }
-          verify_command_files() {
-            local path
-            for path in "${command_paths[@]}"; do
-              [ "$(sha256sum "$path")" = "${command_hashes[$path]}" ] || {
-                echo "❌ Project code changed a runner command file." >&2
-                return 1
-              }
-            done
-          }
-          verify_command_files
+          IFS=: read -r build_user _ build_uid build_gid _ _ _ <<< "$build_account"
+          if [[ "$build_user" != pwuser || ! "$build_uid" =~ ^[1-9][0-9]*$ || \
+                ! "$build_gid" =~ ^[1-9][0-9]*$ ]] || \
+             ! getent group "$build_gid" >/dev/null || \
+             [[ "$(id -u "$build_user")" != "$build_uid" || \
+                "$(id -g "$build_user")" != "$build_gid" ]]; then
+            echo '❌ Pinned Playwright image has an invalid pwuser UID/GID mapping.' >&2
+            exit 1
+          fi
+          install -d -m 700 -o "$build_uid" -g "$build_gid" \
+            /tmp/beta-work /tmp/beta-home /tmp/beta-tmp /tmp/npm-cache
+          runuser --user "$build_user" --preserve-environment -- \
+            /bin/bash --noprofile --norc -euo pipefail -s <<'PROJECT'
+          cp -R /input/. /tmp/beta-work/
+          cd /tmp/beta-work
+          test "$(id -u)" -ne 0
+          [[ "$(node -p 'process.versions.node.split(".")[0]')" = 22 ]]
 
-          sandbox git clone --no-checkout --no-hardlinks \
-            "$GITHUB_WORKSPACE" "$sandbox_tree"
-          sandbox git -C "$sandbox_tree" checkout --quiet --detach "$GITHUB_SHA"
-          test "$(sandbox git -C "$sandbox_tree" rev-parse HEAD)" = "$GITHUB_SHA"
-          sandbox_in_tree "$sandbox_tree" npm ci
-          sandbox_in_tree "$sandbox_tree" npx playwright install chromium
-          sandbox_in_tree "$sandbox_tree" npm run test:browser
-          sandbox_in_tree "$sandbox_tree" npm run build:web
-          sandbox_in_tree "$sandbox_tree" cp dist-web/index.web.html dist-web/404.html
-          sandbox_in_tree "$sandbox_tree" cp dist-web/index.web.html dist-web/index.html
+          npm ci
+          npm run test:browser
+          npm run build:web
+          cp dist-web/index.web.html dist-web/404.html
+          cp dist-web/index.web.html dist-web/index.html
 
-          last_stable=$(sandbox git -C "$sandbox_tree" tag --list 'v*.*.*' \
-            --sort=-v:refname | grep -v '-' | head -1 || true)
+          last_stable=$(git tag --list 'v*.*.*' --sort=-v:refname \
+            | awk '!/-/ { print; exit }')
           if [ -n "$last_stable" ]; then
-            sandbox_in_tree "$sandbox_tree" npx changelogen \
-              --from "$last_stable" --output beta-notes.md || \
-              sandbox_in_tree "$sandbox_tree" sh -c ': > beta-notes.md'
+            npx --no-install changelogen --from "$last_stable" --output beta-notes.md
           else
             echo "No stable tag found; shipping an empty beta changelog." >&2
-            sandbox_in_tree "$sandbox_tree" sh -c ': > beta-notes.md'
+            : > beta-notes.md
           fi
 
-          sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
-          if pgrep -u "$uid" >/dev/null 2>&1; then
-            echo "❌ Project process survived the sandbox boundary." >&2
-            exit 1
-          fi
-          verify_command_files
-          test -d "$sandbox_tree/dist-web" && test -f "$sandbox_tree/beta-notes.md"
-          if find "$sandbox_tree/dist-web" -type l -print -quit | grep -q . || \
-             find "$sandbox_tree/dist-web" ! -type f ! -type d -print -quit | grep -q . || \
-             [ -L "$sandbox_tree/beta-notes.md" ]; then
+          cp -a dist-web /output/
+          cp -a beta-notes.md /output/
+          PROJECT
+          CONTAINER
+
+          test ! -L "$container_output/dist-web" && test -d "$container_output/dist-web"
+          test ! -L "$container_output/beta-notes.md" && test -f "$container_output/beta-notes.md"
+          if find "$container_output/dist-web" -type l -print -quit | grep -q . || \
+             find "$container_output/dist-web" ! -type f ! -type d -print -quit | grep -q .; then
             echo "❌ Build artifact contains a symlink or special file." >&2
             exit 1
           fi
-          mkdir -p "$GITHUB_WORKSPACE/beta-artifact"
+          mkdir -m 755 beta-artifact
           cp -R --no-preserve=mode,ownership,timestamps \
-            "$sandbox_tree/dist-web" "$GITHUB_WORKSPACE/beta-artifact/"
+            "$container_output/dist-web" beta-artifact/
           cp --no-preserve=mode,ownership,timestamps \
-            "$sandbox_tree/beta-notes.md" "$GITHUB_WORKSPACE/beta-artifact/beta-notes.md"
+            "$container_output/beta-notes.md" beta-artifact/beta-notes.md
 
-      # Only the built site and plain-text notes cross the job boundary. No tag,
-      # SHA, or other scalar output is produced by npm/project-controlled code.
+      # The publisher receives no values from project code: it reads tag/SHA
+      # from the immutable event and consumes only this artifact.
       - name: Upload beta site and release notes
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
