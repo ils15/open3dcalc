@@ -425,6 +425,7 @@ function setupIpcHandlers(): void {
       available: boolean;
       version?: string;
       releaseNotes?: string;
+      manual?: boolean;
       error?: string;
     }> => {
       try {
