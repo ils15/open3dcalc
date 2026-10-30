@@ -81,6 +81,29 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # The Gitleaks tests invoke the real scanner; install the same verified
+      # release used by Beta validation before npm lifecycle code or Vitest runs.
+      - name: Install pinned Gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            --output "$RUNNER_TEMP/gitleaks.tar.gz"
+          printf '%s  %s\n' "$GITLEAKS_SHA256" "$RUNNER_TEMP/gitleaks.tar.gz" \
+            | sha256sum --check --strict
+          gitleaks_dir="$RUNNER_TEMP/gitleaks-bin"
+          mkdir -p "$gitleaks_dir"
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$gitleaks_dir" gitleaks
+          test -x "$gitleaks_dir/gitleaks"
+          export PATH="$gitleaks_dir:$PATH"
+          test "$(command -v gitleaks)" = "$gitleaks_dir/gitleaks"
+          version_output="$(gitleaks version)"
+          test "$version_output" = "$GITLEAKS_VERSION"
+          printf '%s\n' "$gitleaks_dir" >> "$GITHUB_PATH"
       - name: ⚡ Cache node_modules
         id: npm-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
