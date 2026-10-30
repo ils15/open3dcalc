@@ -6,6 +6,11 @@ name: Beta release
 
 "on":
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/beta.yml
 
 permissions: {}
 
@@ -24,7 +29,7 @@ jobs:
       GIT_CONFIG_NOSYSTEM: "1"
       GIT_TERMINAL_PROMPT: "0"
     steps:
-      - name: Fetch public main anonymously
+      - name: Fetch public candidate anonymously
         shell: bash
         run: |
           set -euo pipefail
@@ -36,11 +41,30 @@ jobs:
           git init --quiet "$GITHUB_WORKSPACE"
           git -C "$GITHUB_WORKSPACE" remote add origin \
             "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              [[ "$GITHUB_REF" =~ ^refs/pull/[0-9]+/merge$ ]] || {
+                echo "❌ Unexpected pull request ref: $GITHUB_REF." >&2
+                exit 1
+              }
+              fetch_ref="$GITHUB_REF"
+              target_ref=refs/remotes/origin/pr-validation
+              ;;
+            workflow_dispatch)
+              fetch_ref=refs/heads/main
+              target_ref=refs/remotes/origin/main
+              ;;
+            *)
+              echo "❌ Unsupported beta validation event:" \
+                "$GITHUB_EVENT_NAME." >&2
+              exit 1
+              ;;
+          esac
           git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
-            +refs/heads/main:refs/remotes/origin/main
+            "+$fetch_ref:$target_ref"
           git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
             '+refs/tags/*:refs/tags/*'
-          git -C "$GITHUB_WORKSPACE" checkout --quiet --detach refs/remotes/origin/main
+          git -C "$GITHUB_WORKSPACE" checkout --quiet --detach "$target_ref"
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$GITHUB_SHA"
 
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
@@ -79,16 +103,25 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "❌ Beta releases must be dispatched from main (got $GITHUB_REF)." >&2
-            exit 1
-          fi
           base_sha="$GITHUB_SHA"
           [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]]
-          git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
-            +refs/heads/main:refs/remotes/origin/main
-          test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$base_sha"
-          test "$(git -C "$GITHUB_WORKSPACE" rev-parse refs/remotes/origin/main)" = "$base_sha"
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "❌ Beta releases must be dispatched from main (got $GITHUB_REF)." >&2
+              exit 1
+            fi
+            git -C "$GITHUB_WORKSPACE" fetch --no-tags origin \
+              +refs/heads/main:refs/remotes/origin/main
+            test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$base_sha"
+            test "$(git -C "$GITHUB_WORKSPACE" rev-parse refs/remotes/origin/main)" = "$base_sha"
+          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            [[ "$GITHUB_REF" =~ ^refs/pull/[0-9]+/merge$ ]]
+            test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$base_sha"
+          else
+            echo "❌ Unsupported beta validation event:" \
+              "$GITHUB_EVENT_NAME." >&2
+            exit 1
+          fi
 
           version=$(node --input-type=module <<'NODE'
           import fs from 'node:fs';
@@ -215,7 +248,7 @@ jobs:
           }
 
           # Canary: provide the actual runner paths to an isolated user and
-          # attempt command-file and BASH_ENV persistence. All writes must fail.
+          # attempt command-file and bypass-variable persistence. All writes must fail.
           declare -A command_hashes=()
           for path in "${command_paths[@]}"; do
             command_hashes["$path"]=$(sha256sum "$path")
@@ -225,20 +258,42 @@ jobs:
             HOME="$sandbox_home" PATH="$sandbox_path" \
             /usr/bin/tee "$canary" >/dev/null <<EOF
           for target in ${command_paths[*]@Q}; do
-            if printf 'BASH_ENV=/tmp/untrusted-startup\\n' >> "\$target" 2>/dev/null; then
+            if printf '%s\\n' \
+              'BASH_ENV=/tmp/untrusted-startup' \
+              'SKIP_PUSH_GATE=1' \
+              'HUSKY=0' >> "\$target" 2>/dev/null; then
               exit 91
             fi
           done
           : > "\$HOME/bash-env-ran"
           EOF
+          # The runner's umask may leave the freshly-created script unreadable.
+          # Keep it private (owner-only) while ensuring the isolated Bash can source it.
+          sandbox /usr/bin/chmod 600 "$canary"
+          if ! sandbox /usr/bin/test -r "$canary"; then
+            echo "❌ BASH_ENV canary is not readable by the isolated user; isolation test is inconclusive." >&2
+            exit 1
+          fi
           canary_env=(HOME="$sandbox_home" PATH="$sandbox_path" BASH_ENV="$canary")
           for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
             value=${!name-}
             [ -n "$value" ] && canary_env+=("$name=$value")
           done
-          if ! sudo -n -u "$sandbox_user" -- env -i "${canary_env[@]}" \
-            /bin/bash -c 'for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do [ -n "$target" ] || continue; if printf "PWNED=1\\n" >> "$target" 2>/dev/null; then exit 92; fi; done'; then
-            echo "❌ Command-file/BASH_ENV canary could persist a write." >&2
+          canary_status=0
+          sudo -n -u "$sandbox_user" -- env -i "${canary_env[@]}" \
+            /bin/bash -c '
+              for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do
+                [ -n "$target" ] || continue
+                if printf "PWNED=1\\n" >> "$target" 2>/dev/null; then
+                  exit 92
+                fi
+              done
+            ' || canary_status=$?
+          if [ "$canary_status" -eq 91 ] || [ "$canary_status" -eq 92 ]; then
+            echo "❌ Isolated canary could write a runner command file or bypass variable." >&2
+            exit 1
+          elif [ "$canary_status" -ne 0 ]; then
+            echo "❌ BASH_ENV canary harness failed with exit code $canary_status; isolation test is inconclusive." >&2
             exit 1
           fi
           sandbox test -f "$sandbox_home/bash-env-ran" || {
@@ -429,6 +484,7 @@ jobs:
   publish-tag:
     name: Publish validated beta tag
     needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: beta-release
