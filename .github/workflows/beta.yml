@@ -297,7 +297,7 @@ jobs:
           test "$candidate_index_tree" = "$CANDIDATE_INDEX_TREE"
 
           verify_candidate_state() {
-            local phase="$1" current_head current_tree index_tree dirty_paths staging_tree
+            local phase="$1" current_head current_tree index_tree dirty_paths
             if ! current_head=$(env -u GIT_INDEX_FILE git rev-parse HEAD) ||
                [ "$current_head" != "$candidate_head_sha" ]; then
               echo "❌ Candidate HEAD changed $phase (expected $candidate_head_sha, got ${current_head:-unavailable})." >&2
@@ -323,13 +323,6 @@ jobs:
               printf '%s\n' "${dirty_paths:-status unavailable}" >&2
               return 1
             fi
-            if [ -n "${BETA_STAGING_INDEX:-}" ]; then
-              if ! staging_tree=$(GIT_INDEX_FILE="$BETA_STAGING_INDEX" git write-tree) ||
-                 [ "$staging_tree" != "$candidate_tree_sha" ]; then
-                echo "❌ Temporary staging index diverged from candidate $phase (expected $candidate_tree_sha, got ${staging_tree:-unavailable})." >&2
-                return 1
-              fi
-            fi
           }
 
           run_verified_gate() {
@@ -340,26 +333,20 @@ jobs:
             verify_candidate_state "after $gate_name"
           }
 
+          run_verified_gate 'pinned base..candidate Gitleaks scan' \
+            bash scripts/scan-hosted-gitleaks.sh
+
           npm ci
           verify_candidate_state 'after npm ci'
 
-          staging_index="$TMPDIR/beta-staging-index"
-          [ ! -e "$staging_index" ] && [ ! -L "$staging_index" ] || {
-            echo '❌ Temporary staging index path already exists.' >&2
-            exit 1
-          }
-          export BETA_STAGING_INDEX="$staging_index"
-          export GIT_INDEX_FILE="$BETA_STAGING_INDEX"
           for name in SKIP_GITLEAKS SKIP_ENV_GUARD SKIP_BIFROST_EXPOSURE SKIP_HYGIENE SKIP_PUSH_GATE HUSKY; do
             [ -z "${!name-}" ] || {
               echo "❌ Unexpected hook bypass variable: $name." >&2
               exit 1
             }
           done
-          git read-tree "$GATE_BASE_SHA"
-          git add --all
-          verify_candidate_state 'after initializing temporary staging index'
-          run_verified_gate 'pre-commit hook' sh .husky/pre-commit
+          run_verified_gate 'pre-commit hook' \
+            bash scripts/hosted-pre-commit.sh
 
           mapfile -t commit_shas <<< "$COMMIT_SHAS"
           ((${#commit_shas[@]} > 0))

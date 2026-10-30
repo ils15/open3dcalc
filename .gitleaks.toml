@@ -1,16 +1,13 @@
 # Gitleaks allowlist — arquivos que legitimamente contêm strings com cara de
 # secret e NÃO devem bloquear o commit:
 #
-#   - scripts/__tests__/                    → fixtures de teste (casos positivos
-#     do scanner: ghp_, sk-, JWT, PRIVATE KEY — todos falsos, prefixados para
-#     deixar isso explícito).
 #   - scripts/scan-secrets-bifrost.mjs      → o próprio detector contém as
 #     strings de padrão (PEM, prefixos de API keys). Padrões separados por
 #     concatenação na fonte, mas a allowlist é a garantia definitiva.
 #
 # A allowlist é prática padrão do gitleaks e mantém a detecção 100% ativa no
-# restante do repositório (config, src, infra). O scanner determinístico usa a
-# mesma lista (ALLOWED_FIXTURE_PATHS) — as duas camadas ficam consistentes.
+# restante do repositório (config, src, infra e testes). Segredos de teste devem
+# ser montados dinamicamente para que a credencial sintética não exista no fonte.
 #
 # Referência: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
 #
@@ -58,6 +55,5 @@
 
 [allowlist]
   paths = [
-    '''scripts/__tests__/''',
     '''scripts/scan-secrets-bifrost\.mjs$''',
   ]

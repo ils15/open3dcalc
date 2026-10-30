@@ -5,7 +5,7 @@
 
 # ────────────────────────────────────────────────────────────────────────────
 #  Proteção de secrets em camadas (hardening)
-#  1. gitleaks — OBRIGATÓRIO (v8.x). SKIP_GITLEAKS=1 para pular.
+#  1. gitleaks — OBRIGATÓRIO (v8.x), sem opção de bypass.
 #  2. Guardião .env — bloqueia .env reais / *.pem (permite .env.example).
 #     SKIP_ENV_GUARD=1 para pular.
 #  3. Bifrost AI exposure check — heurísticas + LLM. SKIP_BIFROST_EXPOSURE=1.
@@ -14,18 +14,148 @@
 # ────────────────────────────────────────────────────────────────────────────
 
 # 🔒 1. Gitleaks — obrigatório
-if [ "${SKIP_GITLEAKS:-}" = "1" ]; then
-  echo "  ⏭️  Gitleaks pulado (SKIP_GITLEAKS=1)"
-else
-  if command -v gitleaks >/dev/null 2>&1; then
-    echo "🔒 Gitleaks: scanning staged files for secrets..."
-    gitleaks git --pre-commit --staged || exit 1
-  else
-    echo "❌ gitleaks não instalado — proteção de secrets obrigatória."
-    echo "   Instale (brew install gitleaks ou https://github.com/gitleaks/gitleaks)"
-    echo "   ou export SKIP_GITLEAKS=1 para pular (não recomendado)."
-    exit 1
+if [ "${SKIP_GITLEAKS+x}" = "x" ]; then
+  echo "❌ SKIP_GITLEAKS não é permitido: Gitleaks é obrigatório." >&2
+  exit 1
+fi
+if [ "${GITLEAKS_CONFIG+x}" = "x" ]; then
+  echo "❌ GITLEAKS_CONFIG não é permitido: use a configuração confiável de HEAD." >&2
+  exit 1
+fi
+if [ "${GITLEAKS_CONFIG_TOML+x}" = "x" ]; then
+  echo "❌ GITLEAKS_CONFIG_TOML não é permitido: use a configuração confiável de HEAD." >&2
+  exit 1
+fi
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "❌ gitleaks não instalado — proteção de secrets obrigatória." >&2
+  echo "   Instale (brew install gitleaks ou https://github.com/gitleaks/gitleaks)" >&2
+  exit 1
+fi
+if ! gitleaks_tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/open3dcalc-gitleaks.XXXXXX"); then
+  echo "❌ Não foi possível preparar os arquivos confiáveis do Gitleaks." >&2
+  exit 1
+fi
+trusted_gitleaks_config="$gitleaks_tmp_dir/config-head.toml"
+gitleaks_config="$gitleaks_tmp_dir/config.toml"
+trusted_gitleaks_ignore="$gitleaks_tmp_dir/empty-gitleaksignore"
+gitleaks_worktree="$gitleaks_tmp_dir/worktree"
+gitleaks_worktree_attempted=0
+gitleaks_worktree_added=0
+cleanup_gitleaks() {
+  cleanup_status=$?
+  trap - 0
+  trap - HUP INT TERM
+  cleanup_failed=0
+  if [ "$gitleaks_worktree_added" -eq 1 ]; then
+    if ! env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+      git worktree remove --force "$gitleaks_worktree"; then
+      echo "❌ Não foi possível remover o worktree descartável do Gitleaks: $gitleaks_worktree" >&2
+      cleanup_failed=1
+    elif [ -e "$gitleaks_worktree" ] || [ -L "$gitleaks_worktree" ]; then
+      echo "❌ O worktree descartável do Gitleaks ainda existe após a remoção." >&2
+      cleanup_failed=1
+    fi
+  elif [ "$gitleaks_worktree_attempted" -eq 1 ]; then
+    if ! registered_worktrees=$(env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+      git -C "$candidate_repo" worktree list --porcelain); then
+      echo "❌ Não foi possível verificar a limpeza do worktree Gitleaks tentado." >&2
+      cleanup_failed=1
+    elif printf '%s\n' "$registered_worktrees" | grep -Fqx "worktree $gitleaks_worktree"; then
+      if ! env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+        git -C "$candidate_repo" worktree remove --force "$gitleaks_worktree"; then
+        echo "❌ Não foi possível remover o worktree Gitleaks parcialmente criado." >&2
+        cleanup_failed=1
+      elif [ -e "$gitleaks_worktree" ] || [ -L "$gitleaks_worktree" ]; then
+        echo "❌ O worktree Gitleaks parcialmente criado ainda existe após a remoção." >&2
+        cleanup_failed=1
+      fi
+    fi
   fi
+  if [ "$cleanup_failed" -eq 0 ]; then
+    if ! rm -rf -- "$gitleaks_tmp_dir" ||
+      [ -e "$gitleaks_tmp_dir" ] || [ -L "$gitleaks_tmp_dir" ]; then
+      echo "❌ Não foi possível remover os arquivos temporários do Gitleaks." >&2
+      cleanup_failed=1
+    fi
+  else
+    echo "❌ Temporários do Gitleaks preservados para diagnóstico em $gitleaks_tmp_dir." >&2
+  fi
+  [ "$cleanup_failed" -eq 0 ] || cleanup_status=1
+  exit "$cleanup_status"
+}
+trap cleanup_gitleaks 0
+trap 'exit 1' HUP INT TERM
+candidate_repo=$(env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE git rev-parse --show-toplevel) || {
+  echo "❌ Não foi possível localizar o repositório para o scan Gitleaks." >&2
+  exit 1
+}
+candidate_head=$(env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE git -C "$candidate_repo" rev-parse HEAD) || {
+  echo "❌ Não foi possível identificar HEAD para o scan Gitleaks." >&2
+  exit 1
+}
+# Honor Git's active index (including an alternate GIT_INDEX_FILE), then unset
+# it only for commands inside the new worktree so its own index is used.
+candidate_index_tree=$(git write-tree) || {
+  echo "❌ Não foi possível ler a árvore staged para o scan Gitleaks." >&2
+  exit 1
+}
+if ! env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+  git -C "$candidate_repo" show "$candidate_head:.gitleaks.toml" > "$trusted_gitleaks_config" ||
+  [ ! -s "$trusted_gitleaks_config" ]; then
+  echo "❌ Configuração confiável HEAD:.gitleaks.toml indisponível ou vazia." >&2
+  exit 1
+fi
+# Defense in depth for commits whose trusted HEAD still has the legacy broad
+# test-directory exclusion; it must never suppress staged test-path findings.
+if ! sed '/scripts\/__tests__\//d' "$trusted_gitleaks_config" > "$gitleaks_config" ||
+  [ ! -s "$gitleaks_config" ]; then
+  echo "❌ Não foi possível preparar a configuração Gitleaks sem exclusões de testes." >&2
+  exit 1
+fi
+if ! : > "$trusted_gitleaks_ignore" || ! chmod 600 "$trusted_gitleaks_ignore"; then
+  echo "❌ Não foi possível preparar o ignore vazio e confiável do Gitleaks." >&2
+  exit 1
+fi
+gitleaks_worktree_attempted=1
+if ! env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+  git -C "$candidate_repo" worktree add --quiet --detach \
+  "$gitleaks_worktree" "$candidate_head"; then
+  echo "❌ Não foi possível criar o worktree descartável do Gitleaks." >&2
+  exit 1
+fi
+gitleaks_worktree_added=1
+if ! env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+  git -C "$gitleaks_worktree" read-tree --reset -u "$candidate_index_tree"; then
+  echo "❌ Não foi possível carregar a árvore staged no worktree descartável." >&2
+  exit 1
+fi
+snapshot_head=$(env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+  git -C "$gitleaks_worktree" rev-parse HEAD) || exit 1
+snapshot_index_tree=$(env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+  git -C "$gitleaks_worktree" write-tree) || exit 1
+if [ "$snapshot_head" != "$candidate_head" ] ||
+  [ "$snapshot_index_tree" != "$candidate_index_tree" ] ||
+  ! env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+    git -C "$gitleaks_worktree" diff --quiet; then
+  echo "❌ O worktree descartável não corresponde ao HEAD e índice staged esperados." >&2
+  exit 1
+fi
+# Gitleaks 8.30.1 auto-loads .gitleaksignore from its source even when an
+# explicit ignore path is supplied. Remove it only from this disposable copy.
+if ! rm -rf -- "$gitleaks_worktree/.gitleaksignore" ||
+  [ -e "$gitleaks_worktree/.gitleaksignore" ] ||
+  [ -L "$gitleaks_worktree/.gitleaksignore" ]; then
+  echo "❌ Não foi possível excluir .gitleaksignore do snapshot descartável." >&2
+  exit 1
+fi
+echo "🔒 Gitleaks: scanning staged files for secrets..."
+if ! (cd "$gitleaks_worktree" && \
+  env -u GIT_INDEX_FILE -u GIT_DIR -u GIT_WORK_TREE \
+  gitleaks git --config "$gitleaks_config" \
+    --gitleaks-ignore-path "$trusted_gitleaks_ignore" \
+    --pre-commit --staged --redact=100 --report-format json --report-path -); then
+  echo "❌ Gitleaks falhou; commit bloqueado." >&2
+  exit 1
 fi
 
 # 🛡️ 2. Guardião .env — bloqueia .env reais e *.pem no staged.
