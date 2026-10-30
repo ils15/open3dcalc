@@ -191,9 +191,12 @@ jobs:
           [ -n "$run_id" ] || { echo "❌ Invalid workflow run id." >&2; exit 1; }
           sandbox_user="beta-gate-$run_id"
           sandbox_root="$RUNNER_TEMP/beta-gate-$run_id"
-          trusted_root="$RUNNER_TEMP/beta-trusted-$run_id"
-          trusted_git="$trusted_root/candidate.git"
-          guard_dir="$trusted_root/hook-guards"
+          # Use a unique directory directly under searchable /tmp. RUNNER_TEMP
+          # may have private ancestors, which would make the immutable Git dir
+          # appear missing to the isolated hook UID despite its own 0555 mode.
+          trusted_root=""
+          trusted_git=""
+          guard_dir=""
           install_tree="$sandbox_root/work/install-tree"
           hook_tree="$sandbox_root/work/hook-tree"
           sandbox_home="$sandbox_root/home"
@@ -206,7 +209,10 @@ jobs:
               sudo -n pkill -KILL -u "$uid" >/dev/null 2>&1 || true
             fi
             if [ "$user_created" = 1 ]; then
-              sudo -n rm -rf -- "$sandbox_root" "$trusted_root"
+              sudo -n rm -rf -- "$sandbox_root"
+              if [ -n "$trusted_root" ]; then
+                sudo -n rm -rf -- "$trusted_root"
+              fi
               sudo -n userdel "$sandbox_user" >/dev/null 2>&1 || true
             fi
             if [ -n "$canary_dir" ]; then
@@ -230,11 +236,16 @@ jobs:
             "$sandbox_home" "$sandbox_root/work"
           sudo -n install -d -m 700 -o "$uid" -g "$gid" \
             "$sandbox_root/tmp" "$sandbox_root/npm-cache"
-          mkdir -m 755 "$trusted_root"
+          trusted_root=$(mktemp -d "/tmp/beta-trusted-$run_id.XXXXXXXX")
+          trusted_git="$trusted_root/candidate.git"
+          guard_dir="$trusted_root/hook-guards"
           git -C "$GITHUB_WORKSPACE" clone --bare --no-hardlinks . "$trusted_git"
           chmod -R a-w "$trusted_git"
           find "$trusted_git" -type d -exec chmod 555 {} +
           find "$trusted_git" -type f -exec chmod 444 {} +
+          # Keep the mktemp directory private until the bare repo is immutable;
+          # then permit traversal for read-only clones by the sandbox UID.
+          chmod 755 "$trusted_root"
 
           sandbox_path="$RUNNER_TEMP/gitleaks-bin:$PATH"
           sandbox() {
@@ -498,6 +509,14 @@ jobs:
             GIT_CONFIG_GLOBAL=/dev/null
             GIT_TERMINAL_PROMPT=0
           )
+          # Exercise the guard's exact bare-repo lookup as the isolated UID
+          # with the same environment passed to Git (and inherited by hooks).
+          if ! sudo -n -u "$sandbox_user" -- env -i "${git_env[@]}" \
+            /bin/sh -eu -c \
+            '/usr/bin/git --git-dir="$BETA_TRUSTED_GIT" cat-file -e "$BETA_BASE_SHA^{commit}"'; then
+            echo "❌ Trusted candidate Git dir is not readable in the hook environment." >&2
+            exit 1
+          fi
           git_as_sandbox() {
             sudo -n -u "$sandbox_user" -- env -i "${git_env[@]}" \
               /usr/bin/git -C "$hook_tree" -c "core.hooksPath=$guard_dir" "$@"
