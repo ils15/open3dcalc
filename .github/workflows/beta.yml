@@ -145,17 +145,22 @@ jobs:
           command_paths=()
           for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
             value=${!name-}
-            [ -n "$value" ] || continue
+            [ -n "$value" ] || {
+              echo "❌ Runner did not provide required command file $name." >&2
+              exit 1
+            }
             [ -f "$value" ] && [ ! -L "$value" ] || {
               echo "❌ Runner command file $name is missing or not a regular file." >&2
               exit 1
             }
+            for path in "${command_paths[@]}"; do
+              [ "$value" != "$path" ] || {
+                echo "❌ Runner command file $name duplicates path $value." >&2
+                exit 1
+              }
+            done
             command_paths+=("$value")
           done
-          ((${#command_paths[@]} >= 3)) || {
-            echo "❌ Runner did not provide the expected command files." >&2
-            exit 1
-          }
           command_dir=$(dirname "${command_paths[0]}")
           [ -d "$command_dir" ] && [ ! -L "$command_dir" ] || {
             echo "❌ Runner command-file directory is not a real directory." >&2
@@ -247,8 +252,8 @@ jobs:
               sandbox-shell "$tree" "$@"
           }
 
-          # Canary: provide the actual runner paths to an isolated user and
-          # attempt command-file and bypass-variable persistence. All writes must fail.
+          # The canary is only a harmless shell-variable marker. Keep BASH_ENV
+          # scoped to the isolated subprocess; the runner shell must never source it.
           declare -A command_hashes=()
           for path in "${command_paths[@]}"; do
             command_hashes["$path"]=$(sha256sum "$path")
@@ -257,49 +262,54 @@ jobs:
           sudo -n -u "$sandbox_user" -- env -i \
             HOME="$sandbox_home" PATH="$sandbox_path" \
             /usr/bin/tee "$canary" >/dev/null <<EOF
-          for target in ${command_paths[*]@Q}; do
-            if printf '%s\\n' \
-              'BASH_ENV=/tmp/untrusted-startup' \
-              'SKIP_PUSH_GATE=1' \
-              'HUSKY=0' >> "\$target" 2>/dev/null; then
-              exit 91
-            fi
-          done
-          : > "\$HOME/bash-env-ran"
+          __BETA_BASH_ENV_CANARY=loaded
           EOF
-          # The runner's umask may leave the freshly-created script unreadable.
-          # Keep it private (owner-only) while ensuring the isolated Bash can source it.
-          sandbox /usr/bin/chmod 600 "$canary"
-          if ! sandbox /usr/bin/test -r "$canary"; then
-            echo "❌ BASH_ENV canary is not readable by the isolated user; isolation test is inconclusive." >&2
+          # Runner and sandbox use different UIDs, so permit read access only;
+          # this file contains no command-file paths or write payloads.
+          sandbox /usr/bin/chmod 444 "$canary"
+          if ! test -r "$canary" || ! sandbox /usr/bin/test -r "$canary"; then
+            echo "❌ BASH_ENV marker is not readable by both test identities; isolation test is inconclusive." >&2
             exit 1
           fi
           canary_env=(HOME="$sandbox_home" PATH="$sandbox_path" BASH_ENV="$canary")
           for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
             value=${!name-}
-            [ -n "$value" ] && canary_env+=("$name=$value")
+            [ -n "$value" ] || {
+              echo "❌ Runner command file $name disappeared before canary execution." >&2
+              exit 1
+            }
+            canary_env+=("$name=$value")
           done
           canary_status=0
           sudo -n -u "$sandbox_user" -- env -i "${canary_env[@]}" \
             /bin/bash -c '
-              for target in "$GITHUB_ENV" "$GITHUB_PATH" "$GITHUB_OUTPUT" "$GITHUB_STATE" "$GITHUB_STEP_SUMMARY"; do
-                [ -n "$target" ] || continue
-                if printf "PWNED=1\\n" >> "$target" 2>/dev/null; then
+              [ "${__BETA_BASH_ENV_CANARY:-}" = loaded ] || exit 93
+              for name in GITHUB_ENV GITHUB_PATH GITHUB_OUTPUT GITHUB_STATE GITHUB_STEP_SUMMARY; do
+                target=${!name-}
+                [ -n "$target" ] || exit 94
+                if printf "%s\\n" \
+                  "BASH_ENV=/tmp/untrusted-startup" \
+                  "SKIP_PUSH_GATE=1" \
+                  "HUSKY=0" \
+                  "PWNED=1" >> "$target" 2>/dev/null; then
                   exit 92
                 fi
               done
             ' || canary_status=$?
-          if [ "$canary_status" -eq 91 ] || [ "$canary_status" -eq 92 ]; then
+          unset canary_env
+          if [ "$canary_status" -eq 92 ]; then
             echo "❌ Isolated canary could write a runner command file or bypass variable." >&2
+            exit 1
+          elif [ "$canary_status" -eq 93 ]; then
+            echo "❌ BASH_ENV canary did not execute; isolation test is inconclusive." >&2
+            exit 1
+          elif [ "$canary_status" -eq 94 ]; then
+            echo "❌ BASH_ENV canary did not receive every runner command file." >&2
             exit 1
           elif [ "$canary_status" -ne 0 ]; then
             echo "❌ BASH_ENV canary harness failed with exit code $canary_status; isolation test is inconclusive." >&2
             exit 1
           fi
-          sandbox test -f "$sandbox_home/bash-env-ran" || {
-            echo "❌ BASH_ENV canary did not execute; isolation test is inconclusive." >&2
-            exit 1
-          }
           for path in "${command_paths[@]}"; do
             [ "$(sha256sum "$path")" = "${command_hashes[$path]}" ] || {
               echo "❌ Isolated canary changed a runner command file." >&2
