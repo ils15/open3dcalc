@@ -37,7 +37,7 @@ jobs:
 
       - name: Run opencode
         # Pinned to the v1.18.12 release SHA (immutable) instead of @latest.
-        uses: anomalyco/opencode/github@16747470f976aca3d362ad730bcd3fe82ecc2c9a # v1.18.29
+        uses: anomalyco/opencode/github@9bbb8ce18c80f099e0e448775f59d965ead40a21 # v2.2.5
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
