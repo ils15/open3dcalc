@@ -157,18 +157,20 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
     >
       {/* Top branding and navigation; Beta makes this block internally scrollable. */}
       <div className={sidebarTopClassName}>
-        <div className="h-12 border-b border-[var(--color-border)] px-4 flex items-center gap-2.5">
+        <div className="h-12 border-b border-[var(--color-border)] px-3.5 flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-[var(--color-accent-fill)] flex items-center justify-center text-[var(--color-accent-fill-fg)] shadow-md shadow-[var(--color-accent-muted)] shrink-0">
             <Box className="w-4 h-4" />
           </div>
           {!collapsed && (
-            <div className="flex items-center gap-2 overflow-hidden">
-              <span className="font-extrabold text-sm text-[var(--color-text-primary)] tracking-tight">
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="font-extrabold text-sm text-[var(--color-text-primary)] tracking-tight leading-none">
                 Open3DCalc
               </span>
-              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-md bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-border-accent)] shrink-0">
-                v{APP_VERSION}
-              </span>
+              <div className="mt-1">
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-border-accent)] inline-block leading-none">
+                  v{APP_VERSION}
+                </span>
+              </div>
             </div>
           )}
         </div>

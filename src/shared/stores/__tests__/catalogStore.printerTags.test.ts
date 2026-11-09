@@ -435,7 +435,7 @@ describe("catalogStore — printer tags", () => {
       value: 2000,
       usefulLife: 3000,
       maintenancePerHour: 0.2,
-      image: "/images/printers/brands/bambu-lab/bambu-lab-a1-mini-card-300.png",
+      image: "/images/printers/fallback-fdm.svg",
       maxFilaments: 4,
       technology: "fdm",
       buildVolumeMm: { x: 180, y: 180, z: 180 },
