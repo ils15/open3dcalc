@@ -565,33 +565,6 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
           {feedback.message}
         </div>
       )}
-      {/* Studio Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-2xl p-5 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-positive animate-pulse" />
-            <span className="text-[10px] font-mono uppercase tracking-wider text-positive font-bold">
-              CENTRAL DE ORÇAMENTOS & PROPOSTAS COMERCIAIS
-            </span>
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)] flex items-center gap-2">
-            Gestão de Propostas Comerciais
-          </h1>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-            Crie, envie e gerencie orçamentos profissionais em PDF com
-            rastreamento de status e clientes
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="flex min-h-11 items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shadow-accent/40 self-start md:self-auto hover:scale-[1.02] active:scale-[0.98]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Novo Orçamento</span>
-        </button>
-      </div>
 
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -756,6 +729,15 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <span className="hidden md:inline">Cards</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Novo Orçamento</span>
+          </button>
         </div>
       </div>
 

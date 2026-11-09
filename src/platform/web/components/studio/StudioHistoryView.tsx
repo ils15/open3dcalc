@@ -104,45 +104,6 @@ export const StudioHistoryView: React.FC<StudioHistoryViewProps> = ({
 
   return (
     <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-raised border border-border-subtle rounded-2xl p-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse"></span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-info font-bold">
-              HISTÓRICO DE PRODUÇÃO & VENDAS
-            </span>
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-text-primary">
-            Histórico & Pedidos da Oficina
-          </h1>
-          <p className="text-xs text-text-secondary mt-0.5">
-            Registro detalhado de todos os cálculos, orçamentos emitidos e
-            parâmetros salvos
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onOpenQuoteModal}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-overlay hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-all"
-          >
-            <FileText className="w-3.5 h-3.5 text-info" />
-            <span>Emitir Proposta PDF</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange("calculator")}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shadow-accent/40"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Novo Cálculo</span>
-          </button>
-        </div>
-      </div>
-
       {/* Top KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Orders */}
@@ -320,6 +281,28 @@ export const StudioHistoryView: React.FC<StudioHistoryViewProps> = ({
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
+            </div>
+          )}
+
+          {entries.length > 0 && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <button
+                type="button"
+                onClick={onOpenQuoteModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-overlay hover:bg-surface-overlay border border-border-subtle text-text-secondary hover:text-text-primary text-xs font-semibold transition-all"
+              >
+                <FileText className="w-3.5 h-3.5 text-info" />
+                <span>Emitir Proposta PDF</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onTabChange("calculator")}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shadow-accent/40"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Novo Cálculo</span>
+              </button>
             </div>
           )}
         </div>

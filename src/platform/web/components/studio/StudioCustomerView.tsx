@@ -151,45 +151,6 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
       {!isModalOpen && (
         <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />
       )}
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-2xl p-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-positive animate-pulse"></span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-positive font-bold">
-              CRM & RELACIONAMENTO COM CLIENTES
-            </span>
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            Carteira de Clientes da Oficina
-          </h1>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-            Gerencie contatos, empresas parceiras e acompanhe o histórico de
-            propostas emitidas
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onOpenQuoteModal}
-            className="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-overlay hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-all"
-          >
-            <FileText className="w-3.5 h-3.5 text-info" />
-            <span>Nova Proposta Comercial</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-xl bg-positive hover:ring-2 hover:ring-positive/40 text-text-inverse text-xs font-bold transition-all shadow-md shadow-positive/40"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Cadastrar Cliente</span>
-          </button>
-        </div>
-      </div>
-
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Customers */}
@@ -297,8 +258,28 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           <Search className="w-3.5 h-3.5 text-text-secondary absolute left-2.5 top-1/2 -translate-y-1/2" />
         </div>
 
-        <div className="text-text-secondary text-xs font-semibold">
-          Exibindo {filteredCustomers.length} de {customers.length} clientes
+        <div className="flex items-center gap-2.5 justify-between sm:justify-end">
+          <div className="text-text-secondary text-xs font-semibold hidden md:block">
+            {filteredCustomers.length} de {customers.length} clientes
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenQuoteModal}
+            className="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-overlay hover:bg-surface-overlay border border-border-subtle text-text-secondary text-xs font-semibold transition-all"
+          >
+            <FileText className="w-3.5 h-3.5 text-info" />
+            <span>Nova Proposta</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-xl bg-positive hover:ring-2 hover:ring-positive/40 text-text-inverse text-xs font-bold transition-all shadow-md shadow-positive/40"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Cadastrar Cliente</span>
+          </button>
         </div>
       </div>
 

@@ -196,9 +196,6 @@ export function Header() {
               </div>
               <span className="font-extrabold text-[15px] sm:text-[16px] text-[var(--text-primary)] tracking-tight flex items-center gap-1.5">
                 {t("app.title")}
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--info-subtle)] text-[var(--info)] border border-[var(--info)]/60 font-bold">
-                  v2.0
-                </span>
                 <BetaBadge />
               </span>
             </button>

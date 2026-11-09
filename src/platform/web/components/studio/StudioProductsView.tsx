@@ -157,46 +157,6 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
 
   return (
     <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-raised border border-border-subtle rounded-2xl p-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-            <span className="text-[10px] font-mono uppercase tracking-wider text-accent font-bold">
-              CATÁLOGO DE PRODUTOS & PRONTA ENTREGA
-            </span>
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-text-primary flex items-center gap-2">
-            Estoque de Peças Prontas para Venda
-          </h1>
-          <p className="text-xs text-text-secondary mt-0.5">
-            Gerencie o estoque de peças acabadas, calcule preços de venda e
-            acompanhe margens de lucro
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-sunken hover:bg-surface-sunken text-text-secondary border border-border-subtle text-xs font-semibold transition-all"
-            title="Exportar inventário para CSV"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Exportar CSV</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shadow-accent/40 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Novo Produto</span>
-          </button>
-        </div>
-      </div>
-
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Peças */}
@@ -363,6 +323,27 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
             >
               <LayoutGrid className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Cards</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-sunken hover:bg-surface-sunken text-text-secondary border border-border-subtle text-xs font-semibold transition-all"
+              title="Exportar inventário para CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Exportar CSV</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shadow-accent/40"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Novo Produto</span>
             </button>
           </div>
         </div>
