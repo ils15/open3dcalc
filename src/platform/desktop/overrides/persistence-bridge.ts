@@ -203,10 +203,18 @@ const LOCALSTORAGE_KEYS = [
   "open3dcalc_color_palette_v1",
   "open3dcalc_consent_v1",
   "open3dcalc_tutorial_v1",
+  "open3dcalc_quickstart_dismissed",
   "open3dcalc_onboarded",
   "open3dcalc_dashboard_v1",
+  "open3dcalc_dashboard_goal",
   "open3dcalc_sections",
   "open3dcalc_theme",
+  "open3dcalc_products",
+  "open3dcalc_model_comparison",
+  "open3dcalc_layout_v1",
+  "open3dcalc_share_prefs_v1",
+  "open3dcalc_marketplace_comparison_v1",
+  "open3dcalc_nav_v1",
 ] as const;
 
 /**
@@ -222,10 +230,18 @@ const STALE_SWEEP_ALLOWLIST = new Set<string>([
   "open3dcalc_color_palette_v1",
   "open3dcalc_consent_v1",
   "open3dcalc_tutorial_v1",
+  "open3dcalc_quickstart_dismissed",
   "open3dcalc_onboarded",
   "open3dcalc_dashboard_v1",
+  "open3dcalc_dashboard_goal",
   "open3dcalc_sections",
   "open3dcalc_theme",
+  "open3dcalc_products",
+  "open3dcalc_model_comparison",
+  "open3dcalc_layout_v1",
+  "open3dcalc_share_prefs_v1",
+  "open3dcalc_marketplace_comparison_v1",
+  "open3dcalc_nav_v1",
 ]);
 
 /**
@@ -665,7 +681,25 @@ async function migrateIfNeeded(): Promise<void> {
   console.log(
     "[persistence-bridge] SQLite is incomplete — migrating localStorage → SQLite",
   );
-  for (const [key, raw] of sourceEntries) await db().save(key, raw);
+  for (const [key, raw] of sourceEntries) {
+    try {
+      await db().save(key, raw);
+    } catch (error) {
+      if (
+        key === "open3dcalc_consent_v1" &&
+        String((error as { message?: unknown } | null)?.message ?? error).includes(
+          "DatabaseIpcDeniedError",
+        )
+      ) {
+        console.warn(
+          "[persistence-bridge] Dropping invalid legacy open3dcalc_consent_v1 from localStorage during migration",
+        );
+        localStorage.removeItem(key);
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
 /* ------------------------------------------------------------------ */

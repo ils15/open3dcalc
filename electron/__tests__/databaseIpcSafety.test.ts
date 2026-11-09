@@ -297,12 +297,62 @@ describe("closed Electron database IPC policy", () => {
       "open3dcalc_color_palette_v1",
       "open3dcalc_consent_v1",
       "open3dcalc_tutorial_v1",
+      "open3dcalc_quickstart_dismissed",
       "open3dcalc_onboarded",
       "open3dcalc_dashboard_v1",
+      "open3dcalc_dashboard_goal",
       "open3dcalc_sections",
       "open3dcalc_theme",
       "open3dcalc_products",
+      "open3dcalc_model_comparison",
+      "open3dcalc_layout_v1",
+      "open3dcalc_share_prefs_v1",
+      "open3dcalc_marketplace_comparison_v1",
+      "open3dcalc_nav_v1",
     ]);
+  });
+
+  it("permits every non-PII open3dcalc_* localStorage key declared for Electron in SPEC-01", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const manifestPath = path.resolve(
+      import.meta.dirname,
+      "../../docs/privacy/SPEC-01-manifest-fixture.json",
+    );
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+      keys: Array<{
+        key: string;
+        surface: string;
+        platforms: string[];
+        pii: boolean;
+      }>;
+    };
+    const expectedNonPiiElectronKeys = manifest.keys
+      .filter(
+        (entry) =>
+          entry.key.startsWith("open3dcalc_") &&
+          entry.surface === "localStorage" &&
+          entry.platforms.includes("electron") &&
+          entry.pii === false,
+      )
+      .map((entry) => entry.key);
+
+    const { db, rows } = makeDatabase();
+    const { handlers } = register(db);
+    for (const key of expectedNonPiiElectronKeys) {
+      const payload =
+        key === "open3dcalc_consent_v1"
+          ? JSON.stringify({
+              state: { consentGiven: false, withdrawnReceipts: [] },
+              version: 1,
+            })
+          : JSON.stringify({ ok: true });
+      await expect(
+        handlers.get("db:save")!(trustedEvent, key, payload),
+        `${key} must be permitted by db:save`,
+      ).resolves.toBeUndefined();
+      expect(rows.get(key)).toBe(payload);
+    }
   });
 
   it("fails closed for database import before any database or file capability is needed", async () => {
