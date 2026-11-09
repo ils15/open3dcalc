@@ -13,6 +13,10 @@ import {
   Users,
   ChevronRight,
   Home,
+  FileText,
+  Package,
+  ShieldCheck,
+  BookOpen,
 } from "lucide-react";
 import { BrandIcon } from "@/shared/components/BrandIcon";
 import { Tab } from "@/shared/components/AppShell/tabs";
@@ -114,6 +118,36 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           icon: <Users className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
           title: "Clientes",
           subtitle: "Gestão de contatos e pedidos recorrentes",
+        };
+      case "quotes":
+        return {
+          icon: <FileText className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
+          title: "Orçamentos & Propostas",
+          subtitle: "Gestão comercial, propostas em PDF e acompanhamento",
+        };
+      case "products":
+        return {
+          icon: <Package className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
+          title: "Catálogo de Produtos",
+          subtitle: "Itens finalizados e histórico de precificação",
+        };
+      case "privacy":
+        return {
+          icon: <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
+          title: "Privacidade & Dados",
+          subtitle: "Armazenamento local e portabilidade de dados",
+        };
+      case "wiki":
+        return {
+          icon: <BookOpen className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
+          title: "Documentação & Wiki",
+          subtitle: "Guias, fórmulas e referências técnicas de impressão 3D",
+        };
+      case "changelog":
+        return {
+          icon: <FileText className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
+          title: "Notas de Versão",
+          subtitle: "Histórico de lançamentos e novidades do Open3DCalc",
         };
       default:
         return {

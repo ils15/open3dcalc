@@ -37,18 +37,20 @@ export function InputGroup({
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      <div className="flex items-start gap-2 min-h-[2.5rem]">
-        <label
-          htmlFor={id}
-          className={`text-[12px] font-semibold uppercase tracking-wider ${error ? "text-[var(--critical)]" : "text-[var(--text-secondary)]"}`}
-        >
-          {label}
-        </label>
-        {tooltip && (
-          <Tooltip content={tooltip}>
-            <Info className="w-3.5 h-3.5 text-[var(--text-muted)] cursor-help" />
-          </Tooltip>
-        )}
+      <div className="flex items-center justify-between gap-2 min-h-6">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <label
+            htmlFor={id}
+            className={`text-[11px] font-semibold uppercase tracking-wider truncate ${error ? "text-[var(--critical)]" : "text-[var(--text-secondary)]"}`}
+          >
+            {label}
+          </label>
+          {tooltip && (
+            <Tooltip content={tooltip}>
+              <Info className="w-3.5 h-3.5 text-[var(--text-muted)] cursor-help shrink-0" />
+            </Tooltip>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-1.5">
         {prefix && (

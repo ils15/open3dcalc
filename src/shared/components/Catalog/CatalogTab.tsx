@@ -562,71 +562,46 @@ function PrinterManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-[#0e1424] border border-[#1b253b]">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-[10px] font-mono uppercase tracking-wider text-blue-400 font-bold">
-              FROTA DA OFICINA
-            </span>
-          </div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            {t(
-              collection === "mine"
-                ? "catalog.myPrinters"
-                : "catalog.printerLibrary",
-            )}
-          </h3>
-          <p className="text-xs text-slate-400">
-            {collection === "mine"
-              ? t("catalog.personalPrintersSummary", {
-                  count: personalPrinters.length,
-                })
-              : t("catalog.printerLibrarySummary", {
-                  count: libraryPrinters.length,
-                })}
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
+        <div
+          className="inline-flex max-w-full flex-wrap rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-1"
+          role="group"
+          aria-label={t("catalog.printerCollections")}
+        >
+          {(
+            [
+              ["mine", "catalog.myPrinters", personalPrinters.length],
+              ["library", "catalog.printerLibrary", libraryPrinters.length],
+            ] as const
+          ).map(([value, label, count]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={collection === value}
+              onClick={() => {
+                setCollection(value);
+                store.setPrinterTagFilter(null);
+              }}
+              className={`min-h-11 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                collection === value
+                  ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
+              }`}
+            >
+              {t(label)} <span className="opacity-75">({count})</span>
+            </button>
+          ))}
         </div>
 
         <button
           type="button"
           aria-expanded={showCreateForm}
           onClick={() => setShowCreateForm(true)}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 px-4 py-2 text-xs font-bold text-white transition-all shadow-md shadow-blue-950/40 hover:scale-[1.02] active:scale-[0.98] shrink-0 self-start sm:self-auto"
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-[var(--color-accent-fill)] hover:bg-[var(--color-accent-fill-hover)] px-3.5 py-2 text-xs font-bold text-[var(--color-accent-fill-fg)] transition-all shadow-sm shrink-0 self-start sm:self-auto"
         >
           <Plus aria-hidden="true" className="h-4 w-4" />
           <span>{t("catalog.addPrinter")}</span>
         </button>
-      </div>
-
-      <div
-        className="inline-flex max-w-full flex-wrap rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1"
-        role="group"
-        aria-label={t("catalog.printerCollections")}
-      >
-        {(
-          [
-            ["mine", "catalog.myPrinters", personalPrinters.length],
-            ["library", "catalog.printerLibrary", libraryPrinters.length],
-          ] as const
-        ).map(([value, label, count]) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={collection === value}
-            onClick={() => {
-              setCollection(value);
-              store.setPrinterTagFilter(null);
-            }}
-            className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
-              collection === value
-                ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]"
-                : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)]"
-            }`}
-          >
-            {t(label)} <span className="opacity-75">({count})</span>
-          </button>
-        ))}
       </div>
 
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
