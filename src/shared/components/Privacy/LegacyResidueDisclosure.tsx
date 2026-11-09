@@ -69,7 +69,7 @@ export function LegacyResidueDisclosure({
         role="region"
         aria-labelledby={HEADING_ID}
         aria-live="polite"
-        className="surface rounded-xl p-4 space-y-3"
+        className="bg-surface-raised border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-sm space-y-3"
       >
         <h3
           id={HEADING_ID}
@@ -115,7 +115,7 @@ export function LegacyResidueDisclosure({
       role="region"
       aria-labelledby={HEADING_ID}
       aria-live="polite"
-      className="surface rounded-xl p-4 space-y-3"
+      className="bg-surface-raised border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-sm space-y-3"
     >
       <h3
         id={HEADING_ID}

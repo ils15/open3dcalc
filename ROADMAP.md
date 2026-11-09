@@ -18,7 +18,7 @@
 
 - **Estável:** `v1.14.0`.
 - **Beta web:** `v2.0.0-beta.30` (pré-release; canal web-only).
-- **Candidata atual no `main`:** `2.0.0-rc.6` (Release Candidate para `v2.0.0`, incluindo builds Desktop Windows, Linux e macOS).
+- **Candidata atual no `main`:** `2.0.0-rc.7` (Release Candidate para `v2.0.0`, incluindo builds Desktop Windows, Linux e macOS).
 
 ### Auditoria da beta.13 — snapshot histórico de 08/10/2026
 

@@ -16,6 +16,7 @@ import { StudioHistoryView } from "./StudioHistoryView";
 import { StudioCustomerView } from "./StudioCustomerView";
 import { StudioQuotesView } from "./StudioQuotesView";
 import { StudioProductsView } from "./StudioProductsView";
+import { StudioFooter } from "./StudioFooter";
 
 // Existing shared surfaces for remaining tabs
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
@@ -290,24 +291,31 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "wiki" && (
-                <div className="max-w-5xl mx-auto">
+                <div className="w-full max-w-6xl mx-auto pb-10">
                   <WikiPage />
                 </div>
               )}
 
               {activeTab === "changelog" && (
-                <div className="max-w-4xl mx-auto">
+                <div className="w-full max-w-5xl mx-auto pb-10">
                   <ChangelogPage />
                 </div>
               )}
 
               {activeTab === "privacy" && !isBetaChannel && (
-                <div className="max-w-4xl mx-auto">
+                <div className="w-full max-w-6xl mx-auto pb-10">
                   <PrivacyScreen />
                 </div>
               )}
             </motion.div>
           </AnimatePresence>
+
+          {/* Studio Footer */}
+          {!focusMode && (
+            <div className="w-full max-w-7xl mx-auto">
+              <StudioFooter onTabChange={setActiveTab} />
+            </div>
+          )}
 
           {/* Bottom clearance spacer so the floating StudioCockpitDock never covers content when scrolled to the end */}
           <div className="h-20 shrink-0 pointer-events-none" aria-hidden="true" />

@@ -86,7 +86,7 @@ export function ResultsSidebar({
       data-testid="results-sidebar-shell"
       data-sidebar-mode={sidebarMode}
       data-presentation={presentation}
-      className="flex min-h-0 flex-col gap-2.5"
+      className="flex min-h-0 lg:min-h-fit flex-col gap-2.5"
     >
       <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -178,7 +178,7 @@ export function ResultsSidebar({
       <div
         id="results-sidebar-panel"
         data-testid="results-sidebar-scroll-region"
-        className="min-h-0 flex-1 overflow-y-auto pr-1"
+        className="min-h-0 flex-1 overflow-y-auto lg:overflow-y-visible pr-1"
         // Only the tabs mode owns a tablist, so only then is this region a
         // tabpanel. `aria-controls` above points here, and an ARIA tabpanel
         // without `role` + `aria-labelledby` breaks the tabs pattern (WCAG

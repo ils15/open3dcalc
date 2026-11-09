@@ -157,7 +157,7 @@ export function Calculator() {
             data-testid="results-sidebar"
             className={`min-w-0 ${
               hasThreeRegionSpace
-                ? "calculator-results-sidebar col-start-3 row-start-1 flex flex-col gap-4 sticky top-4 self-start scroll-mt-24"
+                ? "calculator-results-sidebar col-start-3 row-start-1 flex flex-col gap-4 self-start scroll-mt-24"
                 : "col-start-2 row-start-1 scroll-mt-24"
             }`}
           >
