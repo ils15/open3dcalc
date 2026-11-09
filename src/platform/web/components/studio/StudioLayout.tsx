@@ -194,8 +194,8 @@ export const StudioLayout: React.FC = () => {
                the workspace centers at a readable measure (focus mode keeps
                its tighter column). */
             focusMode
-              ? "max-w-[84rem] mx-auto"
-              : "mx-auto w-full max-w-[100rem]"
+              ? "max-w-[84rem] mx-auto w-full"
+              : "w-full"
           }`}
         >
           {/* Focus mode exit banner. The exit button uses the arbitrary-value
@@ -269,7 +269,7 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "infill" && (
-                <div className="mx-auto w-full max-w-7xl bg-surface-raised/0">
+                <div className="mx-auto w-full max-w-7xl bg-surface-raised/0 pb-20">
                   <InfillCalculator />
                 </div>
               )}
