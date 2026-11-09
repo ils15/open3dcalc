@@ -344,7 +344,7 @@ export function MaterialSection({
                        wash pair. Ink is --color-text-primary for the same
                        reason as the QuoteSection button — accent ink on the
                        30% wash is 3.52:1 light / 4.49:1 dark. */
-                    className={`min-h-[44px] absolute right-2 top-7 text-[10px] px-2 py-1 rounded-md transition-colors ${
+                    className={`absolute right-0 top-0 min-h-[28px] text-[10px] font-medium px-2.5 py-1 rounded-md transition-colors ${
                       showSpoolSelector
                         ? "bg-[var(--color-accent-wash-strong)] text-[var(--color-text-primary)] border border-[var(--color-accent)]/40"
                         : "bg-[var(--color-accent-wash)] text-[var(--color-text-primary)] hover:bg-[var(--color-accent-wash-strong)]"

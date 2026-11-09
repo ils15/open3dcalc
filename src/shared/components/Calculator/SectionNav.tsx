@@ -34,7 +34,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
   return (
     <>
       {/* Tablet section nav — icons only */}
-      <nav className="hidden md:flex lg:hidden flex-col gap-1 w-14 shrink-0 sticky top-[76px] h-[calc(100vh-76px)] overflow-y-auto px-1 py-2">
+      <nav className="hidden md:flex lg:hidden flex-col gap-1 w-14 shrink-0 sticky top-4 h-fit px-1 py-2">
         {visibleSections.map((s) => {
           const keys = SECTION_ENABLES[s.id] || [];
           const anyEnabled =
@@ -71,7 +71,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
       </nav>
 
       {/* Desktop sidebar — icon + label + cost toggle dot */}
-      <nav className="hidden lg:flex flex-col gap-0.5 w-[134px] xl:w-[142px] shrink-0 sticky top-[76px] h-[calc(100vh-76px)] overflow-y-auto px-2">
+      <nav className="hidden lg:flex flex-col gap-0.5 w-[134px] xl:w-[142px] shrink-0 sticky top-4 h-fit px-2">
         <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 ml-2">
           {t("sections.title")}
         </div>

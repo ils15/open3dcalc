@@ -135,17 +135,17 @@ export function PriceHeroCard({
       {/* Commercial context: target markup vs. the real margin actually earned */}
       <div
         data-testid="commercial-context"
-        className="flex items-center justify-center gap-3 text-[10px] font-mono text-[var(--text-muted)]"
+        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-mono text-[var(--text-muted)]"
       >
-        <span>
+        <span className="whitespace-nowrap">
           {t("calc.markupTarget")}: <strong>{targetMarkup.toFixed(0)}%</strong>
         </span>
-        <span>
+        <span className="whitespace-nowrap">
           {t("calc.actualMargin")}:{" "}
           <strong className="text-[var(--positive)]">{realMarginValue}</strong>
         </span>
         {overrideCalc && (
-          <span>
+          <span className="whitespace-nowrap">
             {t("calc.effectiveMarkup")}:{" "}
             <strong>{overrideCalc.markupEffective.toFixed(0)}%</strong>
           </span>
@@ -252,16 +252,16 @@ export function PriceHeroCard({
       {!overrideCalc && (
         <div
           data-testid="fee-breakdown"
-          className="flex items-center justify-center gap-3 text-[10px] font-mono text-[var(--text-muted)]"
+          className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] font-mono text-[var(--text-muted)]"
         >
-          <span>
+          <span className="whitespace-nowrap">
             {t("bento.fields.taxAmount")}: {fmtCurrency(fees.taxAmount)}
           </span>
-          <span>
+          <span className="whitespace-nowrap">
             {t("bento.fields.marketplaceFeeAmount")}:{" "}
             {fmtCurrency(fees.marketplaceFee)}
           </span>
-          <span>
+          <span className="whitespace-nowrap">
             {t("bento.fields.totalFees")}: {fmtCurrency(fees.total)}
           </span>
         </div>
