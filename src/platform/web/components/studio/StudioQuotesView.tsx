@@ -15,6 +15,7 @@ import {
   Download,
   List,
   LayoutGrid,
+  Upload,
 } from "lucide-react";
 import { BrandIcon } from "@/shared/components/BrandIcon";
 import { Tab } from "@/shared/components/AppShell/tabs";
@@ -28,6 +29,7 @@ import {
 } from "@/shared/lib/localPiiPersistence";
 import { downloadBlob } from "@/shared/lib/download";
 import { guardExport } from "@/shared/lib/demoExportGuard";
+import { importData } from "@/shared/lib/dataSync";
 import { jsPDF } from "jspdf";
 import confetti from "canvas-confetti";
 
@@ -96,9 +98,30 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     tone: FeedbackTone;
     message: string;
   } | null>(null);
-  // Monotonic id source for typed (non-history) quote lines. A ref, not
-  // `Date.now()`: identity must not come from an impure render-phase read.
   const itemSeq = useRef(0);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await importData(file, { mode: "merge" });
+      setFeedback({
+        tone: "positive",
+        message: `${res.imported} categoria(s) importada(s) com sucesso!`,
+      });
+    } catch (err) {
+      setFeedback({
+        tone: "critical",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Falha ao importar o arquivo de orçamentos.",
+      });
+    } finally {
+      if (e.target) e.target.value = "";
+    }
+  };
 
   // Modals
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -730,6 +753,24 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             </button>
           </div>
 
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".open3dcalc,.json,application/json"
+            onChange={handleImportFile}
+            className="sr-only"
+            aria-label="Importar orçamentos ou backup"
+          />
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+            title="Importar orçamentos (.json ou .open3dcalc)"
+            className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-raised border border-border-subtle hover:bg-surface-overlay text-text-secondary hover:text-text-primary text-xs font-semibold transition-all shrink-0"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Importar</span>
+          </button>
+
           <button
             type="button"
             onClick={openCreateModal}
@@ -755,14 +796,24 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               ? "Nenhum orçamento corresponde aos filtros aplicados."
               : "Gere orçamentos formais com cálculo de peças, prazos e download de PDF comercial."}
           </p>
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Criar Primeiro Orçamento</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Criar Primeiro Orçamento</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => importInputRef.current?.click()}
+              className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-surface-raised border border-border-subtle hover:bg-surface-overlay text-text-secondary hover:text-text-primary text-xs font-semibold transition-all"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Importar Dados</span>
+            </button>
+          </div>
         </div>
       ) : viewMode === "list" ? (
         /* Modern Studio List / Table View */

@@ -240,7 +240,6 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/Catalog/PrinterTagEditor.tsx": 1,
   "src/shared/components/Privacy/LegacyResidueDisclosure.tsx": 1,
   "src/shared/components/ui/ConfirmDialog.tsx": 1,
-  "src/shared/components/ui/PrivacyBanner.tsx": 1,
   "src/shared/components/ui/QuickStartBanner.tsx": 1,
   "src/shared/lib/dataSync.test.ts": 1,
 };
@@ -305,8 +304,8 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
   it("reports the audited inventory so the header can be checked by eye", () => {
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
-    expect(files).toBe(54);
-    expect(occurrences).toBe(641);
+    expect(files).toBe(53);
+    expect(occurrences).toBe(640);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

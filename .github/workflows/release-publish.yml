@@ -31,8 +31,6 @@ jobs:
             target: --win
           - os: ubuntu-latest
             target: --linux
-          - os: macos-latest
-            target: --mac
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:

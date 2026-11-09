@@ -162,9 +162,12 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             <Box className="w-4 h-4" />
           </div>
           {!collapsed && (
-            <div className="flex items-center gap-1.5 overflow-hidden">
+            <div className="flex items-center gap-2 overflow-hidden">
               <span className="font-extrabold text-sm text-[var(--color-text-primary)] tracking-tight">
                 Open3DCalc
+              </span>
+              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-md bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-border-accent)] shrink-0">
+                v{APP_VERSION}
               </span>
             </div>
           )}

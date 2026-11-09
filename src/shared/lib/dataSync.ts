@@ -381,6 +381,233 @@ export function validateBundle(data: unknown): data is ExportBundle {
   return isSyncData(b.data);
 }
 
+/**
+ * Normalizes partial JSON backups, raw arrays of quotes/customers/history,
+ * or unbundled exports into a conformant SyncData structure.
+ */
+export function normalizeToSyncData(raw: unknown): SyncData | null {
+  if (!raw) return null;
+
+  if (isSyncData(raw)) return raw;
+
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    const wrapped = raw as Record<string, unknown>;
+    if (
+      wrapped.data &&
+      typeof wrapped.data === "object" &&
+      !Array.isArray(wrapped.data)
+    ) {
+      if (isSyncData(wrapped.data)) return wrapped.data;
+    }
+  }
+
+  const base: SyncData = {
+    settings: {},
+    history: [],
+    customers: [],
+    quotes: [],
+    catalog: {
+      printers: [],
+      materials: [],
+      marketplaces: [],
+    },
+    filaments: [],
+    products: [],
+    colorPalette: [],
+    modelComparison: [],
+    theme: "",
+    dashboard: {},
+    sections: {},
+  };
+
+  let recognized = false;
+
+  // Case 1: Raw array of objects
+  if (Array.isArray(raw) && raw.length > 0) {
+    const first = raw[0];
+    if (first && typeof first === "object") {
+      const rec = first as Record<string, unknown>;
+      if (
+        Array.isArray(rec.items) ||
+        (typeof rec.number === "number" && ("total" in rec || "status" in rec))
+      ) {
+        base.quotes = raw;
+        recognized = true;
+      } else if (
+        "name" in rec &&
+        ("email" in rec || "phone" in rec || "company" in rec || "address" in rec)
+      ) {
+        base.customers = raw;
+        recognized = true;
+      } else if (
+        "timestamp" in rec &&
+        ("calculation" in rec ||
+          "results" in rec ||
+          "cost" in rec ||
+          "summary" in rec ||
+          "printTimeHours" in rec)
+      ) {
+        base.history = raw;
+        recognized = true;
+      } else if ("density" in rec || "spoolWeight" in rec || "diameter" in rec) {
+        base.filaments = raw;
+        recognized = true;
+      } else if ("id" in rec) {
+        if ("status" in rec || "total" in rec) {
+          base.quotes = raw;
+          recognized = true;
+        } else {
+          base.history = raw;
+          recognized = true;
+        }
+      }
+    }
+  }
+
+  // Case 2: Object with one or more categories
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>;
+    const target = (obj.data &&
+    typeof obj.data === "object" &&
+    !Array.isArray(obj.data)
+      ? obj.data
+      : obj) as Record<string, unknown>;
+
+    // Quotes
+    const quotesCandidate =
+      target.quotes ?? target.open3dcalc_quotes_v1 ?? target.Quotes;
+    if (Array.isArray(quotesCandidate)) {
+      base.quotes = quotesCandidate;
+      recognized = true;
+    } else if (
+      isPersistWrapper(quotesCandidate) &&
+      Array.isArray((quotesCandidate.state as Record<string, unknown>).quotes)
+    ) {
+      base.quotes = (quotesCandidate.state as Record<string, unknown>)
+        .quotes as unknown[];
+      recognized = true;
+    }
+
+    // Customers
+    const customersCandidate =
+      target.customers ?? target.open3dcalc_customers_v1 ?? target.Customers;
+    if (Array.isArray(customersCandidate)) {
+      base.customers = customersCandidate;
+      recognized = true;
+    } else if (
+      isPersistWrapper(customersCandidate) &&
+      Array.isArray((customersCandidate.state as Record<string, unknown>).customers)
+    ) {
+      base.customers = (customersCandidate.state as Record<string, unknown>)
+        .customers as unknown[];
+      recognized = true;
+    }
+
+    // History
+    const historyCandidate =
+      target.history ??
+      target.open3dcalc_history_v2 ??
+      target.History ??
+      target.entries;
+    if (Array.isArray(historyCandidate)) {
+      base.history = historyCandidate;
+      recognized = true;
+    } else if (
+      isPersistWrapper(historyCandidate) &&
+      Array.isArray((historyCandidate.state as Record<string, unknown>).entries)
+    ) {
+      base.history = (historyCandidate.state as Record<string, unknown>)
+        .entries as unknown[];
+      recognized = true;
+    }
+
+    // Quotes next number
+    if (typeof target.quotesNextNumber === "number") {
+      base.quotesNextNumber = target.quotesNextNumber;
+    }
+
+    // Filaments
+    const filamentsCandidate =
+      target.filaments ?? target.open3dcalc_filaments;
+    if (Array.isArray(filamentsCandidate)) {
+      base.filaments = filamentsCandidate;
+      recognized = true;
+    }
+
+    // Products
+    const productsCandidate =
+      target.products ?? target.open3dcalc_products;
+    if (Array.isArray(productsCandidate)) {
+      base.products = productsCandidate;
+      recognized = true;
+    } else if (
+      isPersistWrapper(productsCandidate) &&
+      Array.isArray((productsCandidate.state as Record<string, unknown>).products)
+    ) {
+      base.products = (productsCandidate.state as Record<string, unknown>)
+        .products as unknown[];
+      recognized = true;
+    }
+
+    // Settings
+    const settingsCandidate =
+      target.settings ?? target.open3dcalc_settings_v2;
+    if (
+      settingsCandidate &&
+      typeof settingsCandidate === "object" &&
+      !Array.isArray(settingsCandidate)
+    ) {
+      base.settings = settingsCandidate as Record<string, unknown>;
+      recognized = true;
+    }
+
+    // Catalog
+    if (
+      target.catalog &&
+      typeof target.catalog === "object" &&
+      !Array.isArray(target.catalog)
+    ) {
+      const c = target.catalog as Record<string, unknown>;
+      base.catalog = {
+        printers: Array.isArray(c.printers) ? c.printers : [],
+        materials: Array.isArray(c.materials) ? c.materials : [],
+        marketplaces: Array.isArray(c.marketplaces) ? c.marketplaces : [],
+      };
+      if (
+        base.catalog.printers.length > 0 ||
+        base.catalog.materials.length > 0 ||
+        base.catalog.marketplaces.length > 0
+      ) {
+        recognized = true;
+      }
+    }
+
+    // Theme, dashboard, sections
+    if (typeof target.theme === "string" && target.theme !== "") {
+      base.theme = target.theme;
+      recognized = true;
+    }
+    if (
+      target.dashboard &&
+      typeof target.dashboard === "object" &&
+      !Array.isArray(target.dashboard)
+    ) {
+      base.dashboard = target.dashboard as Record<string, unknown>;
+      recognized = true;
+    }
+    if (
+      target.sections &&
+      typeof target.sections === "object" &&
+      !Array.isArray(target.sections)
+    ) {
+      base.sections = target.sections as Record<string, boolean>;
+      recognized = true;
+    }
+  }
+
+  return recognized ? base : null;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Merge strategy                                                     */
 /* ------------------------------------------------------------------ */
@@ -979,13 +1206,30 @@ export async function importData(
     );
   }
 
-  if (!validateBundle(parsed)) {
+  if (validateBundle(parsed)) {
+    try {
+      const result = await applyImport(parsed, options.mode);
+      return {
+        imported: result.imported.length,
+        conflicts: result.conflicts.length,
+        errors: 0,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Erro desconhecido ao importar.";
+      throw dataSyncError(message);
+    }
+  }
+
+  const normalized = normalizeToSyncData(parsed);
+  if (!normalized) {
     throw dataSyncError(
       "Este arquivo não é um backup JSON legível compatível.",
     );
   }
+
   try {
-    const result = await applyImport(parsed, options.mode);
+    const result = applySyncData(normalized, options.mode);
     return {
       imported: result.imported.length,
       conflicts: result.conflicts.length,

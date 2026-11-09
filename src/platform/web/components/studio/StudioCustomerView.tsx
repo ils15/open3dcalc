@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Users,
   Search,
@@ -15,6 +15,7 @@ import {
   Sparkles,
   MapPin,
   FileCheck,
+  Upload,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { BrandIcon } from "@/shared/components/BrandIcon";
@@ -23,6 +24,7 @@ import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 import { Customer, CustomerFormData } from "@/shared/types";
 import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefusalNotice";
+import { importData } from "@/shared/lib/dataSync";
 import {
   beginPiiSurfaceWrite,
   PII_STORE_KEY,
@@ -56,6 +58,23 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const res = await importData(file, { mode: "merge" });
+      setFeedbackMsg(`${res.imported} categoria(s) importada(s) com sucesso!`);
+    } catch (err) {
+      setFeedbackMsg(
+        err instanceof Error ? err.message : "Falha ao importar clientes.",
+      );
+    } finally {
+      if (e.target) e.target.value = "";
+    }
+  };
 
   const openCreateModal = () => {
     setEditingCustomer(null);
@@ -150,6 +169,15 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
     <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
       {!isModalOpen && (
         <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.customers} />
+      )}
+      {feedbackMsg !== null && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-xl border border-positive/40 bg-surface-raised px-4 py-2.5 text-xs font-semibold text-positive"
+        >
+          {feedbackMsg}
+        </div>
       )}
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -270,6 +298,24 @@ export const StudioCustomerView: React.FC<StudioCustomerViewProps> = ({
           >
             <FileText className="w-3.5 h-3.5 text-info" />
             <span>Nova Proposta</span>
+          </button>
+
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".open3dcalc,.json,application/json"
+            onChange={handleImportFile}
+            className="sr-only"
+            aria-label="Importar clientes ou backup"
+          />
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+            title="Importar clientes (.json ou .open3dcalc)"
+            className="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-overlay hover:bg-surface-raised border border-border-subtle text-text-secondary hover:text-text-primary text-xs font-semibold transition-all shrink-0"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Importar</span>
           </button>
 
           <button
