@@ -144,9 +144,12 @@ export const StudioFooter: React.FC<StudioFooterProps> = ({ onTabChange }) => {
           <span>Open3DCalc • Licença Aberta MIT • Comunidade Maker & 3D</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-positive inline-block" />
-          <span className="font-mono font-medium text-text-secondary">
-            v{APP_VERSION} • Desktop & Web
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-sunken border border-border-subtle font-mono text-xs font-bold text-text-primary shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-positive inline-block animate-pulse shrink-0" />
+            Versão v{APP_VERSION}
+          </span>
+          <span className="font-mono text-[11px] text-text-muted hidden sm:inline">
+            • Desktop & Web
           </span>
         </div>
       </div>
