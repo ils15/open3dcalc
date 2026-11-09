@@ -86,7 +86,7 @@ export function ResultsSidebar({
       data-testid="results-sidebar-shell"
       data-sidebar-mode={sidebarMode}
       data-presentation={presentation}
-      className="flex min-h-0 h-full flex-col gap-3"
+      className="flex min-h-0 flex-col gap-2.5"
     >
       <div className="min-w-0 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">

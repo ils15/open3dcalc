@@ -800,10 +800,10 @@ export function StlPreview({
             onDrop={handleDrop}
             onClick={handleClick}
             className={`
-            w-full min-h-[44px] border-2 border-dashed rounded-xl p-6
+            w-full min-h-[44px] border-2 border-dashed rounded-xl py-3.5 px-4
             text-center cursor-pointer transition-all duration-200
             focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none
-            flex flex-col items-center gap-2
+            flex flex-col items-center gap-1.5
             ${
               isDragOver
                 ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10 scale-[1.02]"

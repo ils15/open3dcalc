@@ -33,6 +33,17 @@ test("Classic calculator expands on ultrawide desktops without document overflow
     await dismissFirstRun(page);
     await page.getByTestId("calculator-measure").waitFor();
 
+    const sidebarScrollMetrics = await page
+      .getByTestId("results-sidebar-scroll-region")
+      .evaluate((element) => ({
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight,
+      }));
+    assert.ok(
+      sidebarScrollMetrics.scrollHeight <= sidebarScrollMetrics.clientHeight,
+      `Results sidebar must not create a nested vertical scrollbar: scrollHeight=${sidebarScrollMetrics.scrollHeight}, clientHeight=${sidebarScrollMetrics.clientHeight}`,
+    );
+
     const desktopWidth = await page
       .getByTestId("calculator-measure")
       .evaluate((element) => element.getBoundingClientRect().width);
@@ -53,7 +64,7 @@ test("Classic calculator expands on ultrawide desktops without document overflow
       () =>
         (globalThis.document
           .querySelector('[data-testid="calculator-measure"]')
-          ?.getBoundingClientRect().width ?? 0) > 1700,
+          ?.getBoundingClientRect().width ?? 0) > 1500,
     );
 
     const wideLayout = await page.evaluate(() => ({
@@ -69,8 +80,9 @@ test("Classic calculator expands on ultrawide desktops without document overflow
       `Calculator should expand at 1568px: 1440px=${desktopWidth}px, 1568px=${screenshotWidth}px`,
     );
     assert.ok(
-      wideLayout.measureWidth > screenshotWidth + 800,
-      `Calculator should grow at 2560px: 1568px=${screenshotWidth}px, 2560px=${wideLayout.measureWidth}px`,
+      wideLayout.measureWidth > screenshotWidth + 200 &&
+        wideLayout.measureWidth <= 1600,
+      `Calculator should grow up to max-w-[100rem] at 2560px: 1568px=${screenshotWidth}px, 2560px=${wideLayout.measureWidth}px`,
     );
     assert.ok(
       wideLayout.documentWidth <= wideLayout.viewportWidth,

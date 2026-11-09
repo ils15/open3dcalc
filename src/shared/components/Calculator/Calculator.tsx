@@ -157,13 +157,13 @@ export function Calculator() {
             data-testid="results-sidebar"
             className={`min-w-0 ${
               hasThreeRegionSpace
-                ? "calculator-results-sidebar col-start-3 row-start-1 flex flex-col gap-5 sticky top-[76px] self-start h-[calc(100vh-120px)] max-h-[calc(100vh-120px)] overflow-hidden scroll-mt-24"
+                ? "calculator-results-sidebar col-start-3 row-start-1 flex flex-col gap-4 sticky top-4 self-start scroll-mt-24"
                 : "col-start-2 row-start-1 scroll-mt-24"
             }`}
           >
             <div
               data-tutorial="results-sidebar"
-              className="flex min-h-0 h-full flex-col gap-5"
+              className="flex min-h-0 flex-col gap-4"
             >
               <ResultsSidebar
                 onExportBlocked={notifyBlockedExport}
@@ -173,16 +173,18 @@ export function Calculator() {
           </div>
           <div
             data-testid="calculator-inputs"
-            className={`calculator-controls col-start-2 min-w-0 @container space-y-5 ${
+            className={`calculator-controls col-start-2 min-w-0 @container space-y-4 ${
               hasThreeRegionSpace ? "row-start-1" : "row-start-2"
             }`}
           >
             <QuickStartBanner />
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 py-1">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <TechToggle />
-              <LevelToggle />
+              <div className="flex-1 min-w-[200px]">
+                <ProductName />
+              </div>
             </div>
-            <ProductName />
+            <LevelToggle />
             <SectionRenderer
               t={t}
               currencySymbol={currencySymbol}

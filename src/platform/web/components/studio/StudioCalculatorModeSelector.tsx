@@ -35,19 +35,19 @@ export function StudioCalculatorModeSelector({
   // right edges below it — centering it made the two drift apart on wide
   // viewports.
   return (
-    <section className="mb-4 flex w-full flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-      <div>
-        <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+    <section className="mb-3 flex w-full flex-col gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3.5 py-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <h2 className="text-xs font-semibold text-[var(--color-text-primary)]">
           Visualização da calculadora
         </h2>
-        <p className="mt-0.5 text-[11px] text-[var(--color-text-secondary)]">
+        <p className="text-[11px] text-[var(--color-text-secondary)]">
           Escolha o fluxo que combina com seu cálculo.
         </p>
       </div>
       <div
         role="group"
         aria-label="Modo da calculadora"
-        className="grid w-full grid-cols-3 gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-1.5 sm:flex sm:w-auto"
+        className="grid w-full grid-cols-3 gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-1 sm:flex sm:w-auto"
       >
         {MODES.map(({ mode: option, label, icon }) => {
           const isActive = mode === option;
@@ -57,9 +57,9 @@ export function StudioCalculatorModeSelector({
               type="button"
               aria-pressed={isActive}
               onClick={() => onModeChange(option)}
-              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-2.5 text-[10px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:min-w-[6.5rem] sm:flex-row sm:gap-2 sm:px-4 sm:text-xs ${
+              className={`flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] sm:min-w-[5.75rem] sm:px-3 sm:text-xs [&_svg]:size-3.5 ${
                 isActive
-                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md"
+                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
                   : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
               }`}
             >
