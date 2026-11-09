@@ -16,6 +16,8 @@ import Database from "better-sqlite3";
 import type { BrowserWindow } from "electron";
 import {
   checkForUpdates,
+  downloadUpdate,
+  installUpdate,
   getUpdateStatus,
   initUpdateService,
   setDatabase,
@@ -26,6 +28,33 @@ const { mockCheckForUpdates, mockOn } = vi.hoisted(() => ({
   mockCheckForUpdates: vi.fn().mockResolvedValue(null),
   mockOn: vi.fn(),
 }));
+
+const { mockOpenExternal } = vi.hoisted(() => ({
+  mockOpenExternal: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("electron", () => ({
+  shell: { openExternal: mockOpenExternal },
+}));
+
+// The service branches on process.platform (manual updates on macOS). Pin
+// it so the suite behaves the same on every host; macOS cases opt in.
+const REAL_PLATFORM = process.platform;
+
+function setPlatform(platform: NodeJS.Platform): void {
+  Object.defineProperty(process, "platform", {
+    value: platform,
+    configurable: true,
+  });
+}
+
+beforeEach(() => {
+  setPlatform("linux");
+});
+
+afterEach(() => {
+  setPlatform(REAL_PLATFORM);
+});
 
 vi.mock("electron-updater", () => ({
   default: {
@@ -48,9 +77,17 @@ const STORAGE_SQL = `CREATE TABLE storage (
 )`;
 
 function makeClient(): Database.Database {
-  const client = new Database(":memory:");
-  client.exec(STORAGE_SQL);
-  return client;
+  // better-sqlite3 resolves its native binding from process.platform, so
+  // open the client on the real host platform.
+  const pinned = process.platform;
+  setPlatform(REAL_PLATFORM);
+  try {
+    const client = new Database(":memory:");
+    client.exec(STORAGE_SQL);
+    return client;
+  } finally {
+    setPlatform(pinned);
+  }
 }
 
 function seedSkipped(client: Database.Database, version: string): void {
@@ -611,5 +648,100 @@ describe("update coverage — download/install/skip", () => {
     );
     errSpy.mockRestore();
     setDatabase({ $client: makeClient() });
+  });
+});
+
+describe("update service — manual update on macOS (unsigned build)", () => {
+  beforeEach(() => {
+    mockCheckForUpdates.mockReset();
+    mockOpenExternal.mockClear();
+    setDatabase({ $client: makeClient() });
+  });
+
+  it("isManualUpdate() is true only on darwin", async () => {
+    const mod = await import("../update.js");
+    setPlatform("darwin");
+    expect(mod.isManualUpdate()).toBe(true);
+    setPlatform("win32");
+    expect(mod.isManualUpdate()).toBe(false);
+    setPlatform("linux");
+    expect(mod.isManualUpdate()).toBe(false);
+  });
+
+  it("getReleaseUrl() links the version tag and rejects non-semver input", async () => {
+    const mod = await import("../update.js");
+    expect(mod.getReleaseUrl("2.1.0")).toBe(
+      "https://github.com/ils15/open3dcalc/releases/tag/v2.1.0",
+    );
+    expect(mod.getReleaseUrl("2.0.0-beta.5")).toBe(
+      "https://github.com/ils15/open3dcalc/releases/tag/v2.0.0-beta.5",
+    );
+    for (const bad of [undefined, "", "../../evil", "1.0.0/../x", "1.0"]) {
+      expect(mod.getReleaseUrl(bad)).toBe(
+        "https://github.com/ils15/open3dcalc/releases",
+      );
+    }
+  });
+
+  it("checkForUpdates() flags the result as manual on darwin", async () => {
+    setPlatform("darwin");
+    mockCheckForUpdates.mockResolvedValue({
+      updateInfo: { version: "2.5.0" },
+    });
+    const result = await checkForUpdates();
+    expect(result).toMatchObject({
+      available: true,
+      version: "2.5.0",
+      manual: true,
+    });
+  });
+
+  it("checkForUpdates() is not manual on other platforms", async () => {
+    mockCheckForUpdates.mockResolvedValue({
+      updateInfo: { version: "2.5.0" },
+    });
+    const result = await checkForUpdates();
+    expect(result.manual).toBe(false);
+  });
+
+  it("downloadUpdate() opens the release page instead of downloading on darwin", async () => {
+    setPlatform("darwin");
+    const auto = await getAutoUpdaterMocks();
+    auto.downloadUpdate.mockClear();
+    mockCheckForUpdates.mockResolvedValue({
+      updateInfo: { version: "2.5.0" },
+    });
+    await checkForUpdates();
+    await downloadUpdate();
+    expect(mockOpenExternal).toHaveBeenCalledWith(
+      "https://github.com/ils15/open3dcalc/releases/tag/v2.5.0",
+    );
+    expect(auto.downloadUpdate).not.toHaveBeenCalled();
+  });
+
+  it("installUpdate() refuses to quitAndInstall on darwin", async () => {
+    setPlatform("darwin");
+    const auto = await getAutoUpdaterMocks();
+    auto.quitAndInstall.mockClear();
+    expect(() => installUpdate()).toThrow(/not supported/);
+    expect(auto.quitAndInstall).not.toHaveBeenCalled();
+  });
+
+  it("the update-available event carries the manual flag", () => {
+    setPlatform("darwin");
+    mockOn.mockClear();
+    const send = vi.fn();
+    initUpdateService({ webContents: { send } } as unknown as BrowserWindow, {
+      $client: makeClient(),
+    });
+    const handler = mockOn.mock.calls.find(
+      ([event]) => event === "update-available",
+    )?.[1] as (info: { version: string }) => void;
+    handler({ version: "2.5.0" });
+    expect(send).toHaveBeenCalledWith("update:available", {
+      version: "2.5.0",
+      releaseNotes: undefined,
+      manual: true,
+    });
   });
 });

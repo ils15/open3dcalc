@@ -28,17 +28,16 @@ Receipts created under older policies remain historical records and evaluate as
 `policy_mismatch` under policy 1.9. No consent, withdrawal, or receipt action gates current
 local saves. See the dated decision at the start of each superseding ADR/spec below.
 
-## Next V2 candidate — real data, readable local storage, explicit migration
+## V2 candidate (`v2.0.0-rc.1`) — real data, readable local storage, explicit migration
 
-The owner-approved direction is to support real workshop data without app-level encryption,
+The owner-approved direction supports real workshop data without app-level encryption,
 passwords, or key management. Local profile contents and exported JSON are readable by anyone
 with access to the browser profile, Desktop profile, or file. Import/export uses integrity
-validation only; it does not encrypt or authenticate the data. V1/current-profile migration
-must be explicit, previewed, lossless, and covered by fixtures. The target contract is
+validation only; it does not encrypt or authenticate the data. Explicit, previewed, lossless
+migration is implemented for both Web Beta→Stable (`#324`, `src/shared/lib/betaImport.ts`) and
+Desktop v1.14→2.x SQLite (`#327`, `electron/legacyDesktopMigration.ts`). See
 [ADR-004](ADR-004-real-data-v2.md), [SPEC-01 V2 Candidate](SPEC-01-v2-candidate.md), and
-[SPEC-05](SPEC-05-v1-to-v2-migration.md). These documents do not claim migration or every
-data-management surface is already shipped. The published `v2.0.0-beta.15` still describes its
-older test-intended profile; do not infer its behavior from this branch.
+[SPEC-05](SPEC-05-v1-to-v2-migration.md).
 
 **Historical D1.0 metadata:** Track D1 (Privacy & Data Contracts), documentation deliverable
 **DRI:** Hermes (backend/data contracts executor)

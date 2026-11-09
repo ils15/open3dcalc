@@ -113,7 +113,9 @@ jobs:
             *) echo "Unsupported bump: $BUMP" >&2; exit 1 ;;
           esac
 
-          VERSION="v$(node -p "require('./package.json').version")"
+          RAW_VERSION="$(node -p "require('./package.json').version")"
+          npm version "$RAW_VERSION" --no-git-tag-version --allow-same-version
+          VERSION="v$RAW_VERSION"
           BRANCH="release/$VERSION"
           git switch -c "$BRANCH"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"

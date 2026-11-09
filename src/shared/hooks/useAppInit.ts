@@ -3,7 +3,6 @@ import { isPersistableCalculationState } from "@/shared/lib/calculationState";
 import { restoreAutoSnapshot } from "@/shared/stores/storeBridge";
 import { persistCalculatorSettings } from "@/shared/stores/calculatorStore.helpers";
 import { guardedStorage } from "@/shared/lib/manifestStorage";
-import { isBetaChannel } from "@/shared/config/betaChannel";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { computeValidatedStoreResults } from "@/shared/stores/calculatorStore.validation";
 import { getSharedCalculation } from "@/shared/lib/calculationLink";
@@ -13,7 +12,6 @@ import { useCatalogStore } from "@/shared/stores/catalogStore";
 import { useTutorialStore } from "@/shared/stores/tutorialStore";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useTutorialTabNavigation } from "@/shared/hooks/useTutorialTabNavigation";
-import { seedDefaultStudioDataIfEmpty } from "@/shared/lib/initialWorkshopSeed";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
 /**
@@ -162,8 +160,6 @@ export function useAppInit(onTabChange: (tab: Tab) => void): void {
 
   useEffect(() => {
     restoreAutoSnapshot();
-    // Do not seed example business data into the real-data Beta profile.
-    if (!isBetaChannel) seedDefaultStudioDataIfEmpty();
 
     const handleBeforeUnload = saveSettingsBeforeUnload;
     window.addEventListener("beforeunload", handleBeforeUnload);

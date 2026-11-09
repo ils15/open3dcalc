@@ -5,17 +5,17 @@ name: Release publication
   push:
     tags:
       - "v*.*.*"
-      # Exclude prerelease/beta tags (vX.Y.Z-beta.N): those are served by
-      # beta-deploy.yml, which publishes a web-only build to /beta/. The
-      # "Resolve tag" job below additionally enforces a strict stable pattern.
-      - "!v*-*"
+      # Exclude beta tags (vX.Y.Z-beta.N): those are served by
+      # beta-deploy.yml, which publishes a web-only build to /beta/. Stable
+      # (vX.Y.Z) and release-candidate (vX.Y.Z-rc.N) tags are built here.
+      - "!v*-beta.*"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to publish (e.g. v1.9.2)"
+        description: "Tag to publish (e.g. v2.0.0 or v2.0.0-rc.1)"
         required: true
         type: string
-        default: "v1.9.2"
+        default: "v2.0.0-rc.1"
 
 concurrency:
   group: release-publication-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
@@ -31,6 +31,8 @@ jobs:
             target: --win
           - os: ubuntu-latest
             target: --linux
+          - os: macos-latest
+            target: --mac
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:
@@ -105,8 +107,8 @@ jobs:
           TAG_INPUT: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
-          if [[ ! "$TAG_INPUT" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid release tag: expected vX.Y.Z, got '$TAG_INPUT'" >&2
+          if [[ ! "$TAG_INPUT" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "Invalid release tag: expected vX.Y.Z or vX.Y.Z-rc.N, got '$TAG_INPUT'" >&2
             exit 1
           fi
           TAG="$TAG_INPUT"
@@ -171,6 +173,7 @@ jobs:
           set -euo pipefail
           mapfile -t ARTIFACTS < <(find dist-electron -maxdepth 1 -type f \( \
             -name 'Open3DCalc-*.exe' -o -name 'Open3DCalc-*.AppImage' -o \
+            -name 'Open3DCalc-*.dmg' -o -name 'Open3DCalc-*.zip' -o \
             -name 'latest*.yml' -o -name '*.blockmap' \) -print | sort)
           if [ "${#ARTIFACTS[@]}" -eq 0 ]; then
             echo "No release artifacts found." >&2
@@ -242,8 +245,13 @@ jobs:
               fi
             done
            else
+             PRERELEASE_ARGS=()
+             if [[ "$TAG" == *-rc.* ]]; then
+               PRERELEASE_ARGS=(--prerelease)
+             fi
              gh release create "$TAG" --repo "$REPOSITORY" --title "Open3DCalc $TAG" \
                --notes-file release-notes.md --target "$TAG_SHA" \
+               "${PRERELEASE_ARGS[@]}" \
                "${UPLOAD_ITEMS[@]}"
            fi
 
@@ -265,6 +273,7 @@ jobs:
 
           mapfile -t ARTIFACTS < <(find dist-electron -maxdepth 1 -type f \( \
             -name 'Open3DCalc-*.exe' -o -name 'Open3DCalc-*.AppImage' -o \
+            -name 'Open3DCalc-*.dmg' -o -name 'Open3DCalc-*.zip' -o \
             -name 'latest*.yml' -o -name '*.blockmap' \) -print | sort)
           if [ "${#ARTIFACTS[@]}" -eq 0 ]; then
             echo "Validation failed: no local release artifacts found." >&2

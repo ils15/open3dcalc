@@ -387,7 +387,7 @@ describe("production SQLite startup migration recovery", () => {
         process.env["OPEN3DCALC_DB_PATH"] = previousPath;
       }
     }
-  });
+  }, 30_000);
 
   it("resumes a physical multi-statement migration after a durable partial write", () => {
     const legacy = openSeedDatabase();

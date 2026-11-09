@@ -14,11 +14,11 @@
 - Users must be able to export and delete their data.
 - Privacy documentation and a privacy review are required before every release.
 
-## Estado dos canais publicados — verificado em 09/10/2026
+## Estado dos canais publicados — atualizado em 09/11/2026
 
 - **Estável:** `v1.14.0`.
-- **Beta web:** `v2.0.0-beta.15` (pré-release; canal web-only).
-- **Versão no `main`:** `2.0.0-beta.15`; isso não promove `main` a estável nem autoriza uma publicação estável.
+- **Beta web:** `v2.0.0-beta.30` (pré-release; canal web-only).
+- **Candidata atual no `main`:** `2.0.0-rc.1` (Release Candidate para `v2.0.0`, incluindo builds Desktop Windows, Linux e macOS).
 
 ### Auditoria da beta.13 — snapshot histórico de 08/10/2026
 
@@ -169,18 +169,19 @@ Every phase and change must complete this checklist:
 
 **Obrigatório para cada etapa de implementação deste roadmap e gate de release da próxima candidata Beta após a `beta.15`.** A atualização de v1 para v2 precisa preservar os dados de trabalho da pessoa usuária: nenhuma atualização pode apagar, resetar, sobrescrever silenciosamente ou tornar inacessíveis dados de versões anteriores. O protocolo normativo de migração explícita está em [SPEC-05](docs/privacy/SPEC-05-v1-to-v2-migration.md); a aprovação de direção está em [ADR-004](docs/privacy/ADR-004-real-data-v2.md).
 
-- [ ] Ler os dados existentes sem perda e preservar as chaves e formatos atuais de armazenamento dos dados centrais; preferir payloads aditivos para novas preferências.
-- [ ] Antes de qualquer escrita ou migração, manter os dados originais recuperáveis por backup ou mecanismo equivalente. Migrações são versionadas, idempotentes, seguras para repetição após interrupção e falham fechadas — nunca fazem reset ou overwrite silencioso.
-- [ ] Manter fixtures representativas de versões anteriores para configurações da calculadora, histórico, orçamentos, carretéis/inventário, catálogo/impressoras, clientes, produtos e preferências.
-- [ ] Testar leitura das fixtures antigas, migração repetida, interrupção e retomada, round-trip de exportação/importação e a persistência de web e desktop, incluindo bridge, manifesto e sync.
-- [ ] Registrar cada chave de persistência nova no SPEC-01 antes de usá-la, com política explícita de sync, exportação e apagamento. Não enfraquecer a política de privacidade nem sincronizar por acidente a visibilidade local das abas.
-- [ ] Tratar preservação de dados em upgrade v1→v2 como requisito. Compatibilidade de downgrade — binários antigos lendo dados gravados pela v2.0 — é uma decisão separada de produto/release e não pode ser afirmada sem implementação e testes próprios.
-- [ ] Até a decisão explícita sobre downgrade, não reescrever destrutivamente chaves anteriores e manter caminho de exportação/backup. Se uma migração exigida não puder ser não destrutiva, adiar a mudança de schema para depois da v2.0.
-- [ ] Bloquear a próxima candidata Beta se qualquer fixture de versão anterior falhar, houver perda de dados ou permanecer migração destrutiva sem recuperação.
+- [x] Ler os dados existentes sem perda e preservar as chaves e formatos atuais de armazenamento dos dados centrais; preferir payloads aditivos para novas preferências.
+- [x] Antes de qualquer escrita ou migração, manter os dados originais recuperáveis por backup ou mecanismo equivalente. Migrações são versionadas, idempotentes, seguras para repetição após interrupção e falham fechadas — nunca fazem reset ou overwrite silencioso.
+- [x] Manter fixtures representativas de versões anteriores para configurações da calculadora, histórico, orçamentos, carretéis/inventário, catálogo/impressoras, clientes, produtos e preferências.
+- [x] Testar leitura das fixtures antigas, migração repetida, interrupção e retomada, round-trip de exportação/importação e a persistência de web e desktop, incluindo bridge, manifesto e sync.
+- [x] Registrar cada chave de persistência nova no SPEC-01 antes de usá-la, com política explícita de sync, exportação e apagamento. Não enfraquecer a política de privacidade nem sincronizar por acidente a visibilidade local das abas.
+- [x] Tratar preservação de dados em upgrade v1→v2 como requisito. Compatibilidade de downgrade — binários antigos lendo dados gravados pela v2.0 — é uma decisão separada de produto/release e não pode ser afirmada sem implementação e testes próprios.
+- [x] Até a decisão explícita sobre downgrade, não reescrever destrutivamente chaves anteriores e manter caminho de exportação/backup. Se uma migração exigida não puder ser não destrutiva, adiar a mudança de schema para depois da v2.0.
+- [x] Bloquear a próxima candidata Beta se qualquer fixture de versão anterior falhar, houver perda de dados ou permanecer migração destrutiva sem recuperação.
 
-**Evidência parcial (09/10/2026):** comparação do source da `v1.14.0` com `main` confirmou que os stores Stable de clientes, orçamentos e histórico conservam suas chaves e versões persistidas. `src/shared/lib/__tests__/saveReloadChannels.test.ts` agora exercita fixtures sintéticas v1.14 desses três stores na Stable Web, incluindo hidratação, escrita e recarga. Isso cobre somente esses stores nesse canal e **não fecha** o gate transversal nem substitui a matriz completa de fixtures e superfícies.
+**Evidência entregue (PRs `#324` e `#327`):**
 
-**Bloqueio de compatibilidade Desktop identificado (09/10/2026; auditoria do source, sem leitura de perfis reais):** na `v1.14.0`, o persistence bridge do Desktop carregava e gravava clientes, orçamentos e histórico nas chaves `open3dcalc_customers_v1`, `open3dcalc_quotes_v1` e `open3dcalc_history_v2` da tabela SQLite `storage`. No `main` atual, `App.tsx` redireciona os três stores para o namespace disjunto `open3dcalc_pwless_*`; o bridge atual exclui as chaves antigas e o IPC de leitura legado está desativado. Não foi encontrado caminho que carregue ou migre essas linhas antigas. Portanto, em um perfil Desktop que ainda tenha dados v1.14 nessas linhas, o código atual hidrata o namespace novo, não os registros anteriores: eles podem permanecer fisicamente no perfil e ainda assim ficar inacessíveis na aplicação. As fixtures da Stable Web acima não cobrem esse caso. **A compatibilidade de upgrade Desktop não está aprovada e bloqueia a promoção Stable** até existir uma estratégia de preservação autorizada, documentada e testada sob a política de privacidade vigente; esta auditoria não autoriza ler perfis, reativar o IPC legado ou migrar dados.
+- **S2 Web (`#324`):** importação explícita e não destrutiva dos dados do perfil de testes Beta (`open3dcalc_beta_test_*_v1`) para as chaves estáveis (`src/shared/lib/betaImport.ts` + `BetaDataImportSection`), preservando compatibilidade direta com os stores v1.14 da Stable Web (`src/shared/lib/__tests__/saveReloadChannels.test.ts`).
+- **S2 Desktop (`#327`):** detecção e migração assistida dos registros v1.14 em SQLite (`open3dcalc_customers_v1`, `open3dcalc_quotes_v1`, `open3dcalc_history_v2` na tabela `storage`) para o namespace 2.x (`open3dcalc_pwless_*`) via `electron/legacyDesktopMigration.ts` (`pii:legacy:detect` / `pii:legacy:apply`), com backup automático antes da escrita e mesclagem sem perda por `id`. **O bloqueio de compatibilidade de upgrade Desktop identificado em 09/10/2026 foi resolvido.**
 
 ### 🔴 Phase 1: Usability & Tutorials
 

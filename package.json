@@ -1,7 +1,7 @@
 {
   "name": "open3dcalc",
   "private": true,
-  "version": "2.0.0-beta.30",
+  "version": "2.0.0-rc.1",
   "main": "electron/dist/electron/main.js",
   "type": "module",
   "scripts": {
@@ -172,14 +172,21 @@
           "target": "dmg",
           "arch": [
             "x64",
-            "arm64",
-            "universal"
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
           ]
         }
       ],
       "category": "public.app-category.utilities",
       "hardenedRuntime": true,
-      "artifactName": "${productName}-${version}.${ext}"
+      "identity": "-",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "dmg": {
       "contents": [

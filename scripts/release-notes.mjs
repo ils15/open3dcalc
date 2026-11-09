@@ -127,29 +127,45 @@ export const authorFor = (item) => {
     ? personLogin(commitAuthor)
     : "Unknown";
 };
-const version = (tag) => (/^v\d+\.\d+\.\d+$/.test(tag) ? tag : null);
+const version = (tag) =>
+  /^v\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(tag) ? tag : null;
 const compare = (a, b) =>
   String(a).localeCompare(String(b), "en", { numeric: true });
 const semverOf = (tag) => {
-  const match = /^v(\d+)\.(\d+)\.(\d+)$/.exec(String(tag ?? ""));
+  const match = /^v(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?$/.exec(String(tag ?? ""));
   return match
     ? {
         tag: String(tag),
         major: Number(match[1]),
         minor: Number(match[2]),
         patch: Number(match[3]),
+        rc: match[4] !== undefined ? Number(match[4]) : null,
       }
     : null;
 };
 const semverCompare = (a, b) =>
-  a.major - b.major || a.minor - b.minor || a.patch - b.patch;
-// Highest SemVer tag strictly older than `release`, or null for the first one.
+  a.major - b.major ||
+  a.minor - b.minor ||
+  a.patch - b.patch ||
+  (a.rc === null && b.rc === null
+    ? 0
+    : a.rc === null
+      ? 1
+      : b.rc === null
+        ? -1
+        : a.rc - b.rc);
+// Highest stable SemVer tag strictly older than `release`, or null for the first one.
 const previousReleaseFor = (tags, release) => {
   const target = semverOf(release);
   if (!target) return null;
   const older = tags
     .map((tag) => semverOf(tag.name ?? tag))
-    .filter((candidate) => candidate && semverCompare(candidate, target) < 0)
+    .filter(
+      (candidate) =>
+        candidate &&
+        candidate.rc === null &&
+        semverCompare(candidate, target) < 0,
+    )
     .sort((a, b) => semverCompare(b, a));
   return older[0]?.tag ?? null;
 };
