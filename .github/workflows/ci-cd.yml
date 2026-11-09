@@ -9,7 +9,7 @@ name: CI/CD
     # (vX.Y.Z-beta.N) are excluded: beta-deploy.yml publishes those to /beta/.
     tags:
       - "v*.*.*"
-      - "!v*-*"
+      - "!v*-beta.*"
   pull_request:
     branches: [main]
 
