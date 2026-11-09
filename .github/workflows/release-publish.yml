@@ -313,7 +313,7 @@ jobs:
             draft_attempt++)); do
             gh api "repos/$REPOSITORY/releases/tags/$TAG" \
               >"$RELEASE_JSON" || true
-            RELEASE_DRAFT=$(jq -r '.draft // true' "$RELEASE_JSON")
+            RELEASE_DRAFT=$(jq -r 'if .draft == null then true else .draft end' "$RELEASE_JSON")
             echo "Attempt $draft_attempt/$MAX_DRAFT_POLL_ATTEMPTS:" \
               "draft=$RELEASE_DRAFT"
             if [ "$RELEASE_DRAFT" = "false" ]; then
@@ -324,7 +324,7 @@ jobs:
 
            RELEASE_TAG=$(jq -r '.tag_name // empty' "$RELEASE_JSON")
            RELEASE_ID=$(jq -r '.id // empty' "$RELEASE_JSON")
-           RELEASE_DRAFT=$(jq -r '.draft // true' "$RELEASE_JSON")
+           RELEASE_DRAFT=$(jq -r 'if .draft == null then true else .draft end' "$RELEASE_JSON")
            RELEASE_PUBLISHED_AT=$(jq -r \
              '.published_at // empty' "$RELEASE_JSON")
            if [ "$RELEASE_TAG" != "$TAG" ] || [ -z "$RELEASE_ID" ]; then
