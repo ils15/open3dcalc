@@ -50,6 +50,8 @@ jobs:
         env:
           GITLEAKS_VERSION: 8.30.1
           GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -62,7 +64,12 @@ jobs:
           gitleaks_dir="$RUNNER_TEMP/gitleaks-bin"
           mkdir -p "$gitleaks_dir"
           tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$gitleaks_dir" gitleaks
-          "$gitleaks_dir/gitleaks" git --config .gitleaks.toml --redact=100 --no-banner
+          if [ -n "${PR_BASE_SHA:-}" ] && [ -n "${PR_HEAD_SHA:-}" ]; then
+            LOG_RANGE="${PR_BASE_SHA}..${PR_HEAD_SHA}"
+          else
+            LOG_RANGE="HEAD~1..HEAD"
+          fi
+          "$gitleaks_dir/gitleaks" git --config .gitleaks.toml --redact=100 --no-banner --log-opts="$LOG_RANGE"
       - name: 📦 Dependency audit
         run: npm audit --omit=optional --audit-level=critical
       - name: Rebuild native modules
