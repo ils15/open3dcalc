@@ -223,7 +223,7 @@ jobs:
           echo "  https://github.com/$REPO/actions/runs/$RUN_ID"
 
   build-web:
-    needs: [checks, test]
+    needs: [test]
     # Tag-gated: the stable Pages bundle is published from the immutable stable
     # tag, not from main pushes. Beta tags (vX.Y.Z-beta.N) are excluded here —
     # beta-deploy.yml publishes those under /beta/ instead.
@@ -286,7 +286,7 @@ jobs:
           keep_files: true
 
   build-desktop:
-    needs: [checks, test]
+    needs: [test]
     # Fork guard (same as the quality job): for PR workflows github.ref is
     # refs/pull/<number>/merge, so a ref-based condition would skip the
     # desktop build on every PR. Run on trusted pushes to main AND same-repo

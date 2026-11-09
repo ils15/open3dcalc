@@ -28,6 +28,7 @@ import {
   useSetCurrency,
 } from "@/shared/contexts/CurrencyContext";
 import type { CurrencySetting } from "@/shared/lib/currency";
+import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
 import { StudioSubHeader } from "./StudioSubHeader";
 
 interface StudioHeaderProps {
@@ -246,6 +247,12 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         >
           Moeda ativa: {resolvedCurrency}
         </span>
+
+        {/* Dados & Backup Modal Quick Access */}
+        <DataSyncButton
+          variant="icon"
+          className="min-h-11 min-w-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-2 text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-bg-hover)]"
+        />
 
         {/* Modo Demo Button (only appears when not in demo mode) */}
         <DemoModeButton />

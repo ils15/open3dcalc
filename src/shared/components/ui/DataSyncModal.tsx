@@ -465,7 +465,7 @@ function ImportTab({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".open3dcalc"
+        accept=".open3dcalc,.json,application/json"
         onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
         className="sr-only"
         aria-label={t("sync.import.selectFile")}

@@ -239,4 +239,27 @@ describe("data export and import", () => {
     expect(await hashData("abc")).toBe(await hashData("abc"));
     expect(await hashData("abc")).not.toBe(await hashData("abd"));
   });
+
+  it("normalizes partial JSON and raw business arrays", async () => {
+    const rawQuotes = [
+      {
+        id: "q-101",
+        number: 42,
+        title: "Peça Personalizada",
+        items: [{ id: "item-1", name: "Engrenagem", quantity: 2, unitPrice: 25 }],
+        status: "sent",
+        total: 50,
+      },
+    ];
+    const file = new File(
+      [JSON.stringify({ quotes: rawQuotes })],
+      "backup-quotes.json",
+      { type: "application/json" },
+    );
+
+    const result = await importData(file, { mode: "merge" });
+    expect(result.imported).toBeGreaterThan(0);
+    expect(useQuoteStore.getState().quotes.some((q) => q.id === "q-101")).toBe(true);
+  });
 });
+
