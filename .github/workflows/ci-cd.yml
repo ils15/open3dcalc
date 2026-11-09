@@ -233,7 +233,7 @@ jobs:
     # PAT). GitHub suppresses workflow runs for events caused by GITHUB_TOKEN
     # (anti-recursion), so a GITHUB_TOKEN-pushed tag would leave the stable web
     # bundle quietly frozen with no failing job.
-    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-beta.')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
