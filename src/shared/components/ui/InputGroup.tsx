@@ -41,7 +41,7 @@ export function InputGroup({
         <div className="flex items-center gap-1.5 min-w-0">
           <label
             htmlFor={id}
-            className={`text-[11px] font-semibold uppercase tracking-wider truncate ${error ? "text-[var(--critical)]" : "text-[var(--text-secondary)]"}`}
+            className={`text-[12px] font-semibold uppercase tracking-wider truncate ${error ? "text-[var(--critical)]" : "text-[var(--text-secondary)]"}`}
           >
             {label}
           </label>

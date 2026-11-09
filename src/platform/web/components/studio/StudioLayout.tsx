@@ -269,7 +269,7 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "infill" && (
-                <div className="mx-auto w-full max-w-7xl">
+                <div className="mx-auto w-full max-w-7xl bg-surface-raised/0">
                   <InfillCalculator />
                 </div>
               )}

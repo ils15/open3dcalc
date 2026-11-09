@@ -257,7 +257,7 @@ export function Select({
       <div className="min-h-6 flex items-center justify-between">
         <label
           htmlFor={`${id}-trigger`}
-          className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] truncate"
+          className="text-[12px] font-semibold uppercase tracking-wider text-[var(--text-secondary)] truncate"
         >
           {label}
         </label>
