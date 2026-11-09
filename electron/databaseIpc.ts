@@ -21,11 +21,18 @@ export const DATABASE_IPC_SAFE_STORAGE_KEYS = [
   "open3dcalc_color_palette_v1",
   "open3dcalc_consent_v1",
   "open3dcalc_tutorial_v1",
+  "open3dcalc_quickstart_dismissed",
   "open3dcalc_onboarded",
   "open3dcalc_dashboard_v1",
+  "open3dcalc_dashboard_goal",
   "open3dcalc_sections",
   "open3dcalc_theme",
   "open3dcalc_products",
+  "open3dcalc_model_comparison",
+  "open3dcalc_layout_v1",
+  "open3dcalc_share_prefs_v1",
+  "open3dcalc_marketplace_comparison_v1",
+  "open3dcalc_nav_v1",
 ] as const;
 
 export type DatabaseStorageOperation = "load" | "save" | "delete";

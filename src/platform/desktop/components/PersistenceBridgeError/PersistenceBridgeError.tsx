@@ -229,9 +229,19 @@ function BridgeErrorSurface({
  */
 function refusalReason(error: unknown): string {
   if (typeof error === "object" && error !== null) {
-    const candidate = error as { reason?: unknown; name?: unknown };
+    const candidate = error as {
+      reason?: unknown;
+      name?: unknown;
+      message?: unknown;
+    };
     if (typeof candidate.reason === "string" && candidate.reason) {
       return candidate.reason;
+    }
+    if (typeof candidate.message === "string") {
+      const ipcMatch = candidate.message.match(
+        /^Error invoking remote method '[^']+':\s*([A-Za-z0-9_]+Error):/,
+      );
+      if (ipcMatch?.[1]) return ipcMatch[1];
     }
     if (typeof candidate.name === "string" && candidate.name)
       return candidate.name;
