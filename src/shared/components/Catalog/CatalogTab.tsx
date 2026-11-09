@@ -44,12 +44,11 @@ interface CatalogTabProps {
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const SHIPPED_PRINTER_IMAGE_PATHS = new Set([
-  // Brand cards ship as original artwork PNGs (see public/images/printers/
-  // brands). The path prefix, not a hardcoded list, keeps the gate open to
-  // new seed models while custom user entries and fallback artwork never resolve.
+  "/images/printers/fallback-fdm.svg",
+  "/images/printers/fallback-resin.svg",
   ...printers
     .map((printer) => printer.image)
-    .filter((image): image is string => Boolean(image?.includes("/brands/"))),
+    .filter((image): image is string => Boolean(image)),
 ]);
 function resolveCatalogImageSource(
   source: string | undefined,
