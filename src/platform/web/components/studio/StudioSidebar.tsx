@@ -166,7 +166,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                 Open3DCalc
               </span>
               <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-[var(--color-accent-wash)] text-[var(--color-accent)] font-bold border border-[var(--color-border-accent)]">
-                v2.5
+                v2.0
               </span>
             </div>
           )}

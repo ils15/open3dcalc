@@ -18,26 +18,19 @@ through the current owner decisions. Current policy-1.9 runtime facts and the ne
 direction are separated in ADR-001–004, SPEC-01–05, and TEST-MATRIX. SPEC-03 is retained as a
 historical record only; it does not define an active encrypted format.
 
-**Historical implementation status:** policy-1.9 implementation evidence was merged by PR #279;
-the published web Beta `v2.0.0-beta.15` retains its earlier test-intended behavior. The next
-candidate direction in this branch is readable local real data with explicit migration, not
-local encryption. Final privacy, legal, and release reviews remain separate gates.
+**Implementation status (`v2.0.0-rc.1`):** policy-1.9 implementation evidence was merged by PR #279; S0/S1 readable local persistence and JSON export/import with SHA-256 integrity checksum, S2 Web Beta→Stable import (`#324`), and S2 Desktop v1.14→2.x SQLite migration with pre-write backup (`#327`) are implemented and covered by automated tests.
 
-## Next V2 candidate trace — ADR-004/SPEC-05 (implementation pending)
+## V2 candidate trace — ADR-004/SPEC-05 (`v2.0.0-rc.1`)
 
 The R1–R15 table below remains the historical D1.0 finding trace under current policy 1.9.
-It is not evidence that the next-candidate requirements are implemented. The real-data
-candidate adds these release obligations:
+The real-data V2 candidate release obligations and their implementation status are:
 
-| Requirement                                                                        | Normative contract                                                      | Current state                                                      |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Readable local persistence for real records; no app password/key/encryption flow   | ADR-004 §2.2; SPEC-01 V2 Candidate §§1–3; TEST-MATRIX §1                | Direction approved; exact candidate inventory and evidence pending |
-| Exact-source, user-selected, previewed and retry-safe V1/current-profile migration | ADR-002 candidate amendment; SPEC-05 §§2–5; TEST-MATRIX §4              | Registry audit and implementation pending                          |
-| Readable JSON export/import with checksum validation and exact-scope deletion      | ADR-003 candidate amendment; SPEC-02/03; ADR-004 §2.4; TEST-MATRIX §2–3 | Runtime coverage/release evidence pending                          |
-| Honest readable-data disclosure and demo isolation                                 | ADR-004 §§2.1, 2.2, 2.4; SPEC-04 candidate amendment; TEST-MATRIX §3    | Candidate UX and evidence pending                                  |
-
-No row in this trace marks a release gate as passed. The policy 1.9 runtime and beta.15
-evidence remain historical until an exact candidate tree passes its own tests and review.
+| Requirement                                                                        | Normative contract                                                      | Current state                                                                                            |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Readable local persistence for real records; no app password/key/encryption flow   | ADR-004 §2.2; SPEC-01 V2 Candidate §§1–3; TEST-MATRIX §1                | Implemented and tested (`manifestStorage.ts`, `newPiiStorage.ts`, `saveReloadChannels.test.ts`)          |
+| Exact-source, user-selected, previewed and retry-safe V1/current-profile migration | ADR-002 candidate amendment; SPEC-05 §§2–5; TEST-MATRIX §4              | Implemented for Web (`#324`, `betaImport.ts`) and Desktop (`#327`, `electron/legacyDesktopMigration.ts`) |
+| Readable JSON export/import with checksum validation and exact-scope deletion      | ADR-003 candidate amendment; SPEC-02/03; ADR-004 §2.4; TEST-MATRIX §2–3 | Implemented and tested (`dataSync.ts`, `erasureSaga`, `PrivacyScreen.tsx`)                               |
+| Honest readable-data disclosure and demo isolation                                 | ADR-004 §§2.1, 2.2, 2.4; SPEC-04 candidate amendment; TEST-MATRIX §3    | Implemented and tested (`PrivacyOnboarding.tsx`, `DemoModeIndicator.tsx`, `#323`, `#329`)                |
 
 **Track:** D1 — Privacy & Data Contracts (D1.0, documentation only)
 **DRI:** Hermes
