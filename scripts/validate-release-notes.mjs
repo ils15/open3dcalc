@@ -141,7 +141,7 @@ export const parseArgs = (argv) => {
     ["--release", release],
     ["--tag", tag],
   ])
-    if (tagValue && !/^v\d+\.\d+\.\d+$/.test(tagValue))
+    if (tagValue && !/^v\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(tagValue))
       throw new Error(`${name} must be a tag in vX.Y.Z format`);
   return { file, release, tag };
 };
