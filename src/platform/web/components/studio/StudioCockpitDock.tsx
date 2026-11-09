@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Plus,
   Maximize,
-  HelpCircle,
+  Keyboard,
   X,
   Calculator,
   Package,
@@ -127,7 +127,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
         {/* The floating dock pills. `shrink-0` on each pill keeps their intrinsic
           width so the ROW scrolls instead of squashing the labels; the row
           itself is the scroll container and is capped to the viewport. */}
-        <div className="pointer-events-auto flex items-center bg-[var(--color-bg-elevated)] backdrop-blur-md border border-[var(--color-border)] rounded-full p-1 shadow-[var(--shadow-lg)] gap-1.5 overflow-x-auto max-w-full">
+        <div className="pointer-events-auto flex items-center bg-[var(--color-bg-elevated)] backdrop-blur-md border border-[var(--color-border)] rounded-full p-1.5 shadow-[var(--shadow-lg)] gap-1.5 overflow-x-auto max-w-full">
           {/* Mini-dash status indicator */}
           <button
             onClick={onOpenMiniDash}
@@ -168,24 +168,30 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
             <span>Ações Rápidas</span>
           </button>
 
+          {/* Divider between primary actions and utility tools */}
+          <div
+            className="h-5 w-px bg-[var(--color-border)] shrink-0 mx-0.5"
+            aria-hidden="true"
+          />
+
           {/* Modo foco */}
           <button
             onClick={onToggleFocusMode}
             aria-label="Modo Foco"
-            className="shrink-0 min-h-11 min-w-11 p-1.5 text-[var(--color-violet)] hover:text-[var(--color-violet)] hover:bg-[var(--color-violet-muted)] rounded-full transition-colors"
+            className="shrink-0 flex items-center justify-center min-h-11 min-w-11 rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-violet)] hover:bg-[var(--color-violet-muted)] border border-transparent hover:border-[var(--color-border)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
             title="Modo Foco"
           >
-            <Maximize className="w-3.5 h-3.5" />
+            <Maximize className="w-4 h-4" />
           </button>
 
           {/* Atalhos */}
           <button
             onClick={onOpenShortcuts}
             aria-label="Atalhos de teclado"
-            className="shrink-0 min-h-11 min-w-11 p-1.5 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-full transition-colors"
+            className="shrink-0 flex items-center justify-center min-h-11 min-w-11 rounded-full text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-transparent hover:border-[var(--color-border)] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
             title="Atalhos (?)"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
+            <Keyboard className="w-4 h-4" />
           </button>
         </div>
       </div>

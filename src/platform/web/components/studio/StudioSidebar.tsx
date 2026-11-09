@@ -294,19 +294,27 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
       {/* Bottom: Collapse toggle (pinned on Beta). */}
       <div className={sidebarBottomClassName}>
-        {!collapsed && (
-          <div className="flex items-center justify-between px-1 mb-2 text-[10px] text-text-muted font-mono">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-positive inline-block" />
-              v{APP_VERSION}
-            </span>
+        {!collapsed ? (
+          <div className="mb-2 px-2.5 py-1.5 rounded-xl bg-surface-sunken border border-border-subtle flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-positive inline-block animate-pulse shrink-0" />
+              <span className="font-mono text-xs font-bold text-text-primary">
+                v{APP_VERSION}
+              </span>
+            </div>
             <button
               type="button"
               onClick={() => onTabChange("changelog")}
-              className="hover:text-text-primary transition-colors underline"
+              className="text-[11px] font-medium text-accent hover:underline"
             >
-              Changelog
+              {t("nav.releaseNotes")}
             </button>
+          </div>
+        ) : (
+          <div className="mb-2 flex justify-center" title={`Open3DCalc v${APP_VERSION}`}>
+            <span className="px-1.5 py-0.5 rounded-md bg-surface-sunken border border-border-subtle font-mono text-[10px] font-bold text-text-secondary">
+              v{APP_VERSION}
+            </span>
           </div>
         )}
         <button
