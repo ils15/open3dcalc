@@ -269,25 +269,8 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "infill" && (
-                <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
-                  <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-info font-bold">
-                        GEOMETRIA & DENSIDADE VOLUMÉTRICA
-                      </span>
-                    </div>
-                    <h1 className="text-xl font-bold tracking-tight text-text-primary">
-                      Calculadora de Preenchimento (Infill)
-                    </h1>
-                    <p className="text-xs text-text-secondary mt-0.5">
-                      Simulação de consumo volumétrico, economia de filamento e
-                      tempo por padrão de infill
-                    </p>
-                  </div>
-                  <div className="bg-surface-raised border border-border-subtle rounded-2xl p-6">
-                    <InfillCalculator />
-                  </div>
+                <div className="mx-auto w-full max-w-7xl">
+                  <InfillCalculator />
                 </div>
               )}
 
@@ -325,6 +308,9 @@ export const StudioLayout: React.FC = () => {
               )}
             </motion.div>
           </AnimatePresence>
+
+          {/* Bottom clearance spacer so the floating StudioCockpitDock never covers content when scrolled to the end */}
+          <div className="h-20 shrink-0 pointer-events-none" aria-hidden="true" />
         </main>
       </div>
 

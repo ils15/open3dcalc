@@ -530,7 +530,7 @@ export function MaterialSection({
                       <button
                         type="button"
                         onClick={() => store.setSelectedSpoolId(null)}
-                        className="text-[10px] text-[var(--color-text-muted)] hover:text-red-400 transition-colors flex items-center gap-1"
+                        className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-critical)] transition-colors flex items-center gap-1"
                       >
                         <X className="w-3 h-3" />
                         {t("results.clearSpool")}
@@ -554,10 +554,10 @@ export function MaterialSection({
                                 isSelected ? null : spool.id,
                               )
                             }
-                            className={`w-full text-left p-2 rounded-lg transition-colors flex items-center gap-2.5 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none ${
+                            className={`w-full text-left p-2.5 rounded-lg transition-colors flex items-center gap-2.5 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
                               isSelected
-                                ? "bg-emerald-800/30 border border-emerald-500/40"
-                                : "bg-[var(--color-bg-hover)] hover:bg-[var(--color-bg-hover)] border border-transparent"
+                                ? "bg-[var(--color-accent-subtle)] border border-[var(--color-accent)]/40"
+                                : "bg-[var(--color-bg-elevated)]/50 hover:bg-[var(--color-bg-elevated)] border border-[var(--color-border-subtle)]"
                             }`}
                           >
                             <span
@@ -577,7 +577,7 @@ export function MaterialSection({
                               </div>
                             </div>
                             {isSelected && (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0" />
                             )}
                           </button>
                         );
@@ -585,7 +585,7 @@ export function MaterialSection({
                     )}
                   </div>
                   {store.selectedSpoolId && (
-                    <p className="text-[10px] text-emerald-400/70 mt-1.5 text-center">
+                    <p className="text-[10px] text-[var(--color-positive)] mt-1.5 text-center">
                       <Database className="w-3 h-3 inline mr-1 align-middle" />
                       {t("results.deductAvailable").replace(
                         "{{weight}}",

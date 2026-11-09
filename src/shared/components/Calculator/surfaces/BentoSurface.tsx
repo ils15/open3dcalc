@@ -146,50 +146,6 @@ export function BentoSurface(): React.ReactElement {
         {calculationNotice}
         {header}
 
-        {/* KPI Mini-Banner */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
-              Tempo Estimado
-            </span>
-            <strong className="text-[var(--color-text-primary)] text-xs font-bold">
-              {breakdown.time.estimatedHours.toFixed(1)}h
-            </strong>
-          </div>
-          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
-              Peso da Peça
-            </span>
-            <strong className="text-[var(--color-text-primary)] text-xs font-bold">
-              {result.unitWeight.toFixed(1)}g
-            </strong>
-          </div>
-          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
-              Custo Fabril
-            </span>
-            <strong className="text-[var(--color-text-secondary)] text-xs font-bold">
-              {format(result.totalCost)}
-            </strong>
-          </div>
-          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
-            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
-              Preço Sugerido
-            </span>
-            <strong className="text-[var(--color-success)] text-xs font-bold">
-              {format(breakdown.displaySellPrice)}
-            </strong>
-          </div>
-          <div className="p-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border)] col-span-2 sm:col-span-1">
-            <span className="text-[10px] uppercase font-mono text-[var(--color-text-muted)] block">
-              Lucro Líquido
-            </span>
-            <strong className="text-[var(--color-accent)] text-xs font-bold">
-              {format(breakdown.displayProfit)}
-            </strong>
-          </div>
-        </div>
-
         <section
           id="bento-results"
           aria-labelledby="bento-results-heading"
@@ -206,6 +162,7 @@ export function BentoSurface(): React.ReactElement {
             historyActionLabel={t("results.addHistorySeparate")}
           />
         </section>
+
         <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
           <BentoMaterialCard
             materialType={materialType}

@@ -173,16 +173,16 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
         </div>
 
         {/* Modules Section */}
-        <div className="px-3 py-3">
+        <div className="px-2.5 py-2">
           {!collapsed && (
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-2">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-1.5">
               {t("nav.modules")}
             </p>
           )}
           <nav
             id="beta-sidebar-nav"
             aria-label={t("nav.mainNavigation")}
-            className="flex flex-col gap-1"
+            className="flex flex-col gap-0.5"
           >
             {resolvedModules.map((m) => {
               const isActive =
@@ -197,7 +197,7 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                   title={m.label}
                   aria-label={m.label}
                   aria-current={isActive ? "page" : undefined}
-                  className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
+                  className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
                     isActive
                       ? "bg-[var(--color-accent-wash)] text-[var(--color-accent)] border border-[var(--color-border-accent)] shadow-sm"
                       : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
@@ -234,13 +234,13 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
         </div>
 
         {/* Resources Section */}
-        <div className="px-3 py-2 border-t border-[var(--color-border-subtle)]">
+        <div className="px-2.5 py-1.5 border-t border-[var(--color-border-subtle)]">
           {!collapsed && (
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-2">
+            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-1">
               {t("nav.resources")}
             </p>
           )}
-          <nav aria-label={t("nav.resources")} className="flex flex-col gap-1">
+          <nav aria-label={t("nav.resources")} className="flex flex-col gap-0.5">
             {resources.map((r, i) => {
               if (r.href) {
                 return (

@@ -24,14 +24,14 @@ export function PrivacyBanner() {
         background: 'var(--color-bg-primary)',
       }}
     >
-      <div className="max-w-[1440px] mx-auto flex items-start gap-3 px-4 sm:px-6 py-3">
-        <Shield className="w-5 h-5 mt-0.5 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
-        <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] leading-relaxed flex-1">
+      <div className="max-w-[1440px] mx-auto flex items-center gap-3 px-4 sm:px-6 py-2">
+        <Shield className="w-4 h-4 shrink-0 text-[var(--color-accent)]" aria-hidden="true" />
+        <p className="text-xs text-[var(--color-text-secondary)] leading-normal flex-1">
           {t('privacy.banner.text')}
         </p>
         <button
           onClick={dismissBanner}
-          className="shrink-0 p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="shrink-0 p-1 rounded-lg text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           aria-label={t('privacy.banner.dismiss')}
         >
           <X className="w-4 h-4" />
