@@ -116,7 +116,7 @@ export function BetaDataImportSection(): React.ReactElement | null {
 
   return (
     <div
-      className="surface rounded-xl p-4 space-y-3"
+      className="bg-surface-raised border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-sm space-y-3"
       data-testid="beta-import-section"
     >
       <h3 className="text-sm font-bold text-[var(--color-text-primary)]">

@@ -19,6 +19,7 @@ import { Tab } from "@/shared/components/AppShell/tabs";
 import { BrandIcon } from "@/shared/components/BrandIcon";
 import { isBetaChannel } from "@/shared/config/betaChannel";
 import { useTranslation } from "react-i18next";
+import { APP_VERSION } from "@/shared/version";
 
 interface StudioSidebarProps {
   activeTab: Tab;
@@ -290,12 +291,28 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
 
       {/* Bottom: Collapse toggle (pinned on Beta). */}
       <div className={sidebarBottomClassName}>
+        {!collapsed && (
+          <div className="flex items-center justify-between px-1 mb-2 text-[10px] text-text-muted font-mono">
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-positive inline-block" />
+              v{APP_VERSION}
+            </span>
+            <button
+              type="button"
+              onClick={() => onTabChange("changelog")}
+              className="hover:text-text-primary transition-colors underline"
+            >
+              Changelog
+            </button>
+          </div>
+        )}
         <button
           type="button"
           onClick={onToggleCollapse}
           aria-expanded={!collapsed}
           aria-controls="beta-sidebar-nav"
           aria-label={collapsed ? t("nav.expandPanel") : t("nav.collapsePanel")}
+          title={collapsed ? `v${APP_VERSION} • ${t("nav.expandPanel")}` : undefined}
           className={`w-full flex ${navTarget} items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border)] transition-colors`}
         >
           {collapsed ? (

@@ -273,11 +273,11 @@ function StablePrivacyScreen() {
 
   if (!isDesktopRuntime) {
     return (
-      <div className="p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-4">
-        <div className="surface rounded-xl p-4 flex items-start gap-3">
+      <div className="p-4 sm:p-6 w-full space-y-5">
+        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-sm flex items-start gap-3.5">
           <AlertCircle className="w-5 h-5 text-[var(--color-text-muted)] shrink-0 mt-0.5" />
           <div>
-            <h2 className="font-semibold text-[var(--color-text-primary)]">
+            <h2 className="font-semibold text-base text-[var(--color-text-primary)]">
               {t("privacy.quarantine.title")}
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1">
@@ -290,13 +290,13 @@ function StablePrivacyScreen() {
             JSON export/import is the only backup path the browser profile
             has. */}
         <section
-          className="surface rounded-xl p-4 space-y-3"
+          className="bg-surface-raised border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-sm space-y-3"
           data-testid="local-data-sync"
         >
-          <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+          <h3 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)]">
             {t("privacy.localData.syncTitle")}
           </h3>
-          <p className="text-xs text-[var(--color-text-secondary)]">
+          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
             {t("privacy.localData.syncDescription")}
           </p>
           <DataSyncButton variant="menu" />
@@ -308,8 +308,8 @@ function StablePrivacyScreen() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-4">
-      <section className="surface rounded-xl p-4 space-y-2">
+    <div className="p-4 sm:p-6 w-full space-y-5">
+      <section className="bg-surface-raised border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-sm space-y-2">
         <div className="flex items-start gap-3">
           <ShieldCheck className="w-6 h-6 text-[var(--color-accent)] shrink-0 mt-1" />
           <div>
@@ -329,13 +329,13 @@ function StablePrivacyScreen() {
 
       {/* ── Local data portability (S1): readable JSON export/import ── */}
       <section
-        className="surface rounded-xl p-4 space-y-3"
+        className="bg-surface-raised border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-sm space-y-3"
         data-testid="local-data-sync"
       >
-        <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+        <h3 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)]">
           {t("privacy.localData.syncTitle")}
         </h3>
-        <p className="text-xs text-[var(--color-text-secondary)]">
+        <p className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
           {t("privacy.localData.syncDescription")}
         </p>
         <DataSyncButton variant="menu" />
@@ -347,8 +347,8 @@ function StablePrivacyScreen() {
       <LegacyResidueDisclosure />
 
       {/* ── SPEC-04 consent receipt ─────────────────────────────────── */}
-      <div className="surface rounded-xl p-4 space-y-3">
-        <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
+      <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5 sm:p-6 shadow-sm space-y-3">
+        <h3 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)]">
           {t("privacy.consent_receipt.title")}
         </h3>
         {consentStatus === null ? (
@@ -417,7 +417,7 @@ function StablePrivacyScreen() {
 
       {/* ── EXACT new-namespace delete-all (functional) ─────────────── */}
       <div
-        className="surface rounded-xl p-4 border border-[var(--color-danger)]/30 space-y-3"
+        className="bg-surface-raised rounded-2xl p-5 sm:p-6 border border-[var(--color-danger)]/30 space-y-3 shadow-sm"
         data-testid="new-pii-erasure"
       >
         <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
@@ -462,7 +462,7 @@ function StablePrivacyScreen() {
       </div>
 
       {/* ── SPEC-02 delete-all (legacy/mixed — stays unavailable) ───── */}
-      <div className="surface rounded-xl p-4 border border-[var(--color-danger)]/30 space-y-3">
+      <div className="bg-surface-raised rounded-2xl p-5 sm:p-6 border border-[var(--color-danger)]/30 space-y-3 shadow-sm">
         <h3 className="text-sm font-bold text-[var(--color-text-primary)]">
           {t("privacy.erasure.legacyScopeTitle")}
         </h3>
