@@ -87,4 +87,20 @@ describe("WorkshopHub", () => {
       "materials",
     );
   });
+
+  it("switches to business profile section", () => {
+    const onTabChange = vi.fn();
+    render(<WorkshopHub activeTab="catalog" onTabChange={onTabChange} />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "workshop.businessProfile" }));
+
+    expect(onTabChange).toHaveBeenCalledWith("catalog");
+    expect(
+      screen.getByRole("tab", { name: "workshop.businessProfile" }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getByText(/identidade visual & logotipo/i),
+    ).toBeInTheDocument();
+  });
 });
+

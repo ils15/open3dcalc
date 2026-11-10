@@ -36,6 +36,7 @@ interface StudioHeaderProps {
   onTabChange: (tab: Tab) => void;
   activeTechnology: "fdm" | "resin";
   onOpenQuoteModal: () => void;
+  onOpenWhatsAppModal?: () => void;
   currentProjectName?: string;
 }
 
@@ -44,6 +45,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   onTabChange,
   activeTechnology,
   onOpenQuoteModal,
+  onOpenWhatsAppModal,
   currentProjectName,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -165,6 +167,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
 
   const handleWhatsApp = () => {
     if (guardExport()) return;
+    if (onOpenWhatsAppModal) {
+      onOpenWhatsAppModal();
+      return;
+    }
     const text = encodeURIComponent(
       `*Orçamento - Open3DCalc Studio*\n` +
         `Projeto: *${currentProjectName || "Projeto 3D"}*\n` +

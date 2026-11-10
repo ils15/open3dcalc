@@ -12,6 +12,10 @@ import { StudioMiniDashOverlay } from "./StudioMiniDashOverlay";
 import { StudioCopilotModal } from "./StudioCopilotModal";
 import { StudioShortcutsModal } from "./StudioShortcutsModal";
 import { StudioQuoteModal } from "./StudioQuoteModal";
+import {
+  StudioWhatsAppModal,
+  type StudioWhatsAppModalInitialData,
+} from "./StudioWhatsAppModal";
 import { StudioHistoryView } from "./StudioHistoryView";
 import { StudioCustomerView } from "./StudioCustomerView";
 import { StudioQuotesView } from "./StudioQuotesView";
@@ -83,6 +87,10 @@ export const StudioLayout: React.FC = () => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
+  const [whatsAppData, setWhatsAppData] = useState<
+    StudioWhatsAppModalInitialData | undefined
+  >(undefined);
 
   // Keyboard shortcut listener
   useEffect(() => {
@@ -110,6 +118,7 @@ export const StudioLayout: React.FC = () => {
         setIsCopilotOpen(false);
         setIsShortcutsOpen(false);
         setIsQuoteModalOpen(false);
+        setIsWhatsAppModalOpen(false);
         if (focusMode) setFocusMode(false);
       } else if (e.key === "1") {
         setActiveTab("calculator");
@@ -162,6 +171,12 @@ export const StudioLayout: React.FC = () => {
             onTabChange={setActiveTab}
             activeTechnology={activeTechnology}
             onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+            onOpenWhatsAppModal={() => {
+              setWhatsAppData({
+                projectName: currentProjectName || "Projeto 3D",
+              });
+              setIsWhatsAppModalOpen(true);
+            }}
             currentProjectName={currentProjectName}
           />
           <DemoModeIndicator />
@@ -356,6 +371,12 @@ export const StudioLayout: React.FC = () => {
         isOpen={isQuoteModalOpen}
         onClose={() => setIsQuoteModalOpen(false)}
         projectName={currentProjectName || "Peça 3D"}
+      />
+
+      <StudioWhatsAppModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        initialData={whatsAppData}
       />
     </div>
   );
