@@ -29,10 +29,13 @@ const INLINE_AUTHOR = /^https:\/\/github\.com\/[\w.-]+\/?$/;
  * Validate a release body against the canonical publication contract.
  *
  * @param {string} markdown Release body (markdown).
- * @param {{ tag?: string }} [options] Optional tag the Full Changelog must reference.
+ * @param {{ tag?: string, expectedPreviousTag?: string }} [options] Optional tag constraints.
  * @returns {{ ok: boolean, errors: string[] }} Deterministic verdict.
  */
-export const validateReleaseNotes = (markdown, { tag } = {}) => {
+export const validateReleaseNotes = (
+  markdown,
+  { tag, expectedPreviousTag } = {},
+) => {
   const errors = [];
   const text = String(markdown ?? "");
   const lines = text.split("\n");
@@ -110,16 +113,40 @@ export const validateReleaseNotes = (markdown, { tag } = {}) => {
       errors.push("**Full Changelog** must be the last non-empty line");
     if (tag && !changelogs[0].includes(tag))
       errors.push(`Full Changelog must reference ${tag}`);
+    let prevTag = expectedPreviousTag;
+    if (!prevTag && tag) {
+      const rcMatch = tag.match(/^v(\d+\.\d+\.\d+)-rc\.(\d+)$/);
+      if (rcMatch) {
+        const [, base, rcStr] = rcMatch;
+        const rcNum = Number(rcStr);
+        if (rcNum > 1) {
+          prevTag = `v${base}-rc.${rcNum - 1}`;
+        }
+      }
+    }
+    if (prevTag && tag) {
+      const expectedCompare = `compare/${prevTag}...${tag}`;
+      if (!changelogs[0].includes(expectedCompare)) {
+        errors.push(
+          `Full Changelog for ${tag} must compare incrementally from ${prevTag}: expected ${expectedCompare}`,
+        );
+      }
+    }
   }
 
   return { ok: errors.length === 0, errors };
 };
 
 export const usage =
-  "Usage: node scripts/validate-release-notes.mjs (--file <path> | --release vX.Y.Z) [--tag vX.Y.Z]";
+  "Usage: node scripts/validate-release-notes.mjs (--file <path> | --release vX.Y.Z) [--tag vX.Y.Z] [--expected-previous-tag vX.Y.Z]";
 
 export const parseArgs = (argv) => {
-  const allowed = new Set(["--file", "--release", "--tag"]);
+  const allowed = new Set([
+    "--file",
+    "--release",
+    "--tag",
+    "--expected-previous-tag",
+  ]);
   for (const arg of argv)
     if (arg.startsWith("--") && !allowed.has(arg))
       throw new Error(`Unknown flag: ${arg}\n${usage}`);
@@ -127,12 +154,18 @@ export const parseArgs = (argv) => {
     const index = argv.indexOf(name);
     return index >= 0 ? argv[index + 1] : undefined;
   };
-  for (const name of ["--file", "--release", "--tag"])
+  for (const name of [
+    "--file",
+    "--release",
+    "--tag",
+    "--expected-previous-tag",
+  ])
     if (argv.includes(name) && (!value(name) || value(name).startsWith("--")))
       throw new Error(`${name} requires a value`);
   const file = value("--file");
   const release = value("--release");
   const tag = value("--tag");
+  const expectedPreviousTag = value("--expected-previous-tag");
   if (!file && !release)
     throw new Error(`${usage}\nA --file or --release is required.`);
   if (file && release)
@@ -140,10 +173,11 @@ export const parseArgs = (argv) => {
   for (const [name, tagValue] of [
     ["--release", release],
     ["--tag", tag],
+    ["--expected-previous-tag", expectedPreviousTag],
   ])
     if (tagValue && !/^v\d+\.\d+\.\d+(?:-rc\.\d+)?$/.test(tagValue))
       throw new Error(`${name} must be a tag in vX.Y.Z format`);
-  return { file, release, tag };
+  return { file, release, tag, expectedPreviousTag };
 };
 
 const defaultFetchReleaseBody = async (repository, tag) => {
@@ -179,6 +213,7 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
   }
   const result = validateReleaseNotes(markdown, {
     tag: options.tag ?? options.release,
+    expectedPreviousTag: options.expectedPreviousTag,
   });
   return { ...result, source };
 }

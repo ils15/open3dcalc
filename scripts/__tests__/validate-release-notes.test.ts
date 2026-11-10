@@ -155,24 +155,76 @@ describe("validateReleaseNotes", () => {
     expect(result.ok).toBe(false);
     expect(result.errors.join("\n")).toMatch(/v9\.9\.9/);
   });
+
+  it("enforces incremental comparison for release candidate tags (rc.N > 1)", () => {
+    const cumulativeRC = VALID.replace(
+      "https://github.com/ils15/open3dcalc/compare/v1.0.0...v1.1.0",
+      "https://github.com/ils15/open3dcalc/compare/v1.14.0...v2.0.0-rc.3",
+    );
+    const failure = validateReleaseNotes(cumulativeRC, { tag: "v2.0.0-rc.3" });
+    expect(failure.ok).toBe(false);
+    expect(failure.errors.join("\n")).toContain(
+      "Full Changelog for v2.0.0-rc.3 must compare incrementally from v2.0.0-rc.2: expected compare/v2.0.0-rc.2...v2.0.0-rc.3",
+    );
+
+    const incrementalRC = VALID.replace(
+      "https://github.com/ils15/open3dcalc/compare/v1.0.0...v1.1.0",
+      "https://github.com/ils15/open3dcalc/compare/v2.0.0-rc.2...v2.0.0-rc.3",
+    );
+    const success = validateReleaseNotes(incrementalRC, { tag: "v2.0.0-rc.3" });
+    expect(success.ok).toBe(true);
+  });
+
+  it("enforces explicit expectedPreviousTag comparison", () => {
+    const failure = validateReleaseNotes(VALID, {
+      tag: "v1.1.0",
+      expectedPreviousTag: "v1.0.9",
+    });
+    expect(failure.ok).toBe(false);
+    expect(failure.errors.join("\n")).toContain(
+      "must compare incrementally from v1.0.9: expected compare/v1.0.9...v1.1.0",
+    );
+
+    const success = validateReleaseNotes(VALID, {
+      tag: "v1.1.0",
+      expectedPreviousTag: "v1.0.0",
+    });
+    expect(success.ok).toBe(true);
+  });
 });
 
 describe("validate-release-notes CLI", () => {
-  it("parses --file and --release, rejecting misuse", () => {
+  it("parses --file, --release, --tag, and --expected-previous-tag", () => {
     expect(parseArgs(["--file", "notes.md"])).toEqual({
       file: "notes.md",
       release: undefined,
       tag: undefined,
+      expectedPreviousTag: undefined,
     });
-    expect(parseArgs(["--release", "v1.1.0", "--tag", "v1.1.0"]).release).toBe(
-      "v1.1.0",
-    );
+    expect(
+      parseArgs([
+        "--release",
+        "v1.1.0",
+        "--tag",
+        "v1.1.0",
+        "--expected-previous-tag",
+        "v1.0.0",
+      ]),
+    ).toEqual({
+      file: undefined,
+      release: "v1.1.0",
+      tag: "v1.1.0",
+      expectedPreviousTag: "v1.0.0",
+    });
     expect(() => parseArgs([])).toThrow("required");
     expect(() => parseArgs(["--file", "a", "--release", "v1.0.0"])).toThrow(
       "not both",
     );
     expect(() => parseArgs(["--file"])).toThrow("requires a value");
     expect(() => parseArgs(["--file", "a", "--nope"])).toThrow("Unknown flag");
+    expect(() =>
+      parseArgs(["--file", "a", "--expected-previous-tag", "invalid"]),
+    ).toThrow("must be a tag in vX.Y.Z format");
   });
 
   it("validates a --file body and reports failures without throwing", async () => {

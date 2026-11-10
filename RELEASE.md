@@ -57,6 +57,38 @@ divergente faz o job falhar e preserva a branch. Se essa confirmação falhar, o
 diagnóstico é preservado e a branch não é removida. Só após confirmação da
 Release e dos digests remove `release/vX.Y.Z`.
 
+## Release Candidates (RC) e Notas Incrementais
+
+As versões Release Candidate (`vX.Y.Z-rc.N`) seguem uma regra estrita de **notas incrementais**:
+- Cada release candidate documenta **apenas** o delta de mudanças em relação à RC imediatamente anterior (`vX.Y.Z-rc.(N-1)...vX.Y.Z-rc.N`).
+- O gerador de notas (`scripts/release-notes.mjs`) e o validador de CI (`scripts/validate-release-notes.mjs`) barram automaticamente qualquer tentativa de gerar notas cumulativas para RCs.
+- Apenas a versão estável final (`vX.Y.Z`) consolida o changelog completo de todas as RCs e betas do ciclo.
+
+## Release Guard CLI (`npm run release:cut`)
+
+Para garantir que nenhuma release saia desorganizada ou com arquivos inconsistentes, utilize o script automatizado:
+
+```bash
+# Cortar o próximo Release Candidate (ex: rc.11 -> rc.12)
+npm run release:cut -- --bump rc
+
+# Simular todas as validações e notas sem efetuar commit/tag
+npm run release:cut -- --dry-run
+
+# Promover Release Candidate para Estável (ex: 2.0.0-rc.11 -> 2.0.0)
+npm run release:cut -- --bump patch
+
+# Cortar versão específica
+npm run release:cut -- --version 2.0.0-rc.12
+```
+
+O comando executa automaticamente:
+1. **Guarda de Git**: rejeita se o repositório tiver arquivos modificados ou untracked.
+2. **Bateria de Qualidade**: executa a bateria obrigatória (`verify:battery` — typecheck, eslint, testes e builds).
+3. **Sincronização de Versões**: atualiza `package.json`, `package-lock.json` e `ROADMAP.md` em perfeita sincronia.
+4. **Validação de Notas**: gera a prévia das notas e valida que o formato canônico e o link incremental estão 100% corretos.
+5. **Commit e Tag**: cria o commit semântico `chore(release): vX.Y.Z` e a tag git anotada correspondente.
+
 ## Rerun, falhas parciais e recuperação
 
 - Preparação: a única branch `release/vX.Y.Z` existente e seu PR são

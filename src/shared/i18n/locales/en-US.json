@@ -1670,7 +1670,7 @@
       },
       {
         "version": "1.14.0",
-        "date": "",
+        "date": "2026-09-22",
         "sections": [
           {
             "title": "🚀 Features",
@@ -1735,7 +1735,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1790,7 +1792,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1817,8 +1821,7 @@
             "items": [
               "**changelog:** Canonical dates, i18n locale, and release backfill (#103)",
               "**gcode:** Preserve filament totals across extruder resets (#105)",
-              "**build:** Remove accidentally tracked node_modules symlink (4929271)",
-              "**gcode:** no longer ignores gcode without a TIME header and supports the Prusa/Orca format (closes #32) — removes the silent `if(printTimeMinutes>0)` gate in `StlPreview.tsx:242`, `d/h/m/s` parser (`1h 23m 45s`/`2d 5h`/`45m 30s`) in `gcodeParser.ts`, `geometry: BufferGeometry | null`, `setGeometry(null)` on the GCODE branch, drop zone stays visible (`!modelInfo?.geometry`), `stl.clear` button for GCODE, 13 new tests (7 parser + 6 StlPreview), 893/893 passing, lint/typecheck clean, Themis PASS_WITH_NOTES resolved"
+              "**build:** Remove accidentally tracked node_modules symlink (4929271)"
             ]
           },
           {
@@ -1844,7 +1847,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1906,7 +1911,10 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)", "Lupolima"]
+            "items": [
+              "Ils15 (@ils15)",
+              "Lupolima"
+            ]
           }
         ]
       },
@@ -1931,7 +1939,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -1967,7 +1977,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -2009,7 +2021,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -2093,7 +2107,9 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -2109,11 +2125,15 @@
           },
           {
             "title": "🧹 Other",
-            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
+            "items": [
+              "**release:** V1.8.1 [skip ci] (079945e)"
+            ]
           },
           {
             "title": "❤️ Contributors",
-            "items": ["Ils15 (@ils15)"]
+            "items": [
+              "Ils15 (@ils15)"
+            ]
           }
         ]
       },
@@ -2145,7 +2165,10 @@
           },
           {
             "title": "✅ Tests",
-            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
+            "items": [
+              "417 tests, 36/36 files passing",
+              "Coverage >80%"
+            ]
           }
         ]
       },
