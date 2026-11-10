@@ -1,7 +1,7 @@
 {
   "name": "open3dcalc",
   "private": true,
-  "version": "2.0.0-rc.10",
+  "version": "2.0.0-rc.11",
   "main": "electron/dist/electron/main.js",
   "type": "module",
   "scripts": {
@@ -28,7 +28,8 @@
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx db/migrate.ts",
-    "diagnostic:retention": "node scripts/diagnostic-retention.mjs"
+    "diagnostic:retention": "node scripts/diagnostic-retention.mjs",
+    "verify:battery": "npm run typecheck && npm run typecheck:electron && npm run verify:electron && npm run lint && npm run test:run -- scripts/__tests__/release-notes.test.ts src/platform/web/components/studio/StudioSidebar.stable.test.tsx src/platform/web/components/studio/StudioSidebar.beta.test.tsx src/shared/components/Catalog/__tests__/CatalogTab.test.tsx src/shared/lib/__tests__/catalogAssets.test.ts && npm run build:all"
   },
   "dependencies": {
     "@chestnutlabs/gcode-dialects": "0.20.1",

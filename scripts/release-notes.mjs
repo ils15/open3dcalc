@@ -154,16 +154,19 @@ const semverCompare = (a, b) =>
       : b.rc === null
         ? -1
         : a.rc - b.rc);
-// Highest stable SemVer tag strictly older than `release`, or null for the first one.
-const previousReleaseFor = (tags, release) => {
+// Previous SemVer tag strictly older than `release`.
+// For release candidates (rc !== null), finds the immediately preceding RC or stable release (incremental notes).
+// For stable releases (rc === null), finds the highest strictly older stable release (full release notes).
+export const previousReleaseFor = (tags, release) => {
   const target = semverOf(release);
   if (!target) return null;
+  const isTargetRc = target.rc !== null;
   const older = tags
     .map((tag) => semverOf(tag.name ?? tag))
     .filter(
       (candidate) =>
         candidate &&
-        candidate.rc === null &&
+        (isTargetRc || candidate.rc === null) &&
         semverCompare(candidate, target) < 0,
     )
     .sort((a, b) => semverCompare(b, a));

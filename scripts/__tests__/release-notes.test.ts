@@ -11,6 +11,7 @@ import {
   main,
   escapeMarkdown,
   normalize,
+  previousReleaseFor,
   render,
   retryDelayMs,
   sha256,
@@ -905,5 +906,41 @@ describe("audited release notes", () => {
     expect(render(catalog, "ils15/open3dcalc)")).toContain(
       "https://github.com/ils15/open3dcalc\\)/commits/",
     );
+  });
+
+  describe("previousReleaseFor (incremental release resolution)", () => {
+    const tags = [
+      { name: "v2.0.0-rc.10" },
+      { name: "v2.0.0-rc.9" },
+      { name: "v2.0.0-rc.8" },
+      { name: "v2.0.0-rc.1" },
+      { name: "v1.14.0" },
+      { name: "v1.13.0" },
+    ];
+
+    it("resolves an RC tag to the immediately preceding RC tag for incremental notes", () => {
+      expect(previousReleaseFor(tags, "v2.0.0-rc.10")).toBe("v2.0.0-rc.9");
+      expect(previousReleaseFor(tags, "v2.0.0-rc.9")).toBe("v2.0.0-rc.8");
+    });
+
+    it("resolves the first RC tag to the preceding stable release", () => {
+      expect(previousReleaseFor(tags, "v2.0.0-rc.1")).toBe("v1.14.0");
+    });
+
+    it("resolves a final stable release to the preceding stable release, skipping RCs", () => {
+      const tagsWithStable = [{ name: "v2.0.0" }, ...tags];
+      expect(previousReleaseFor(tagsWithStable, "v2.0.0")).toBe("v1.14.0");
+    });
+
+    it("handles unordered tags and string candidates gracefully", () => {
+      const unordered = ["v1.14.0", "v2.0.0-rc.3", "v2.0.0-rc.1", "v2.0.0-rc.2"];
+      expect(previousReleaseFor(unordered, "v2.0.0-rc.3")).toBe("v2.0.0-rc.2");
+      expect(previousReleaseFor(unordered, "v2.0.0-rc.2")).toBe("v2.0.0-rc.1");
+    });
+
+    it("returns null when no strictly older release exists", () => {
+      expect(previousReleaseFor(tags, "v1.13.0")).toBeNull();
+      expect(previousReleaseFor(tags, "invalid-tag")).toBeNull();
+    });
   });
 });
