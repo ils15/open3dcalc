@@ -874,6 +874,7 @@ describe("focus mode — a passive surface never buries the exit", () => {
       "src/platform/web/components/studio/StudioQuoteModal.tsx",
       "src/platform/web/components/studio/StudioQuotesView.tsx",
       "src/platform/web/components/studio/StudioShortcutsModal.tsx",
+      "src/platform/web/components/studio/StudioWhatsAppModal.tsx",
       "src/shared/components/SpoolShelf/SpoolManagerView.tsx",
     ].sort();
     expect(

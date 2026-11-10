@@ -154,7 +154,7 @@ export const WorkshopBusinessProfileView: React.FC = () => {
                       type="button"
                       onClick={removeLogo}
                       title="Remover logotipo"
-                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                      className="absolute inset-0 bg-surface-overlay/80 opacity-0 group-hover:opacity-100 flex items-center justify-center text-text-primary transition-opacity"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
