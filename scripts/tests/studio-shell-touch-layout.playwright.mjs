@@ -77,7 +77,7 @@ test("Studio and labeled-section controls provide 44px touch targets", async () 
         page.locator("header + div button"),
       ),
       dock: await measureVisibleTargets(
-        page.locator(".fixed.inset-x-0.bottom-4 button"),
+        page.locator('[data-testid="studio-cockpit-bar"] button'),
       ),
       sectionInputs: await measureVisibleTargets(
         page.locator("section[aria-label] input"),
@@ -240,7 +240,7 @@ test("390px layout keeps header actions and scrollable tabs reachable above the 
     assert.ok(lastTabLayout.right <= (lastTabLayout.railRight ?? -Infinity));
 
     const dockRow = page.locator(
-      ".fixed.inset-x-0.bottom-4 > div.pointer-events-auto",
+      '[data-testid="studio-cockpit-bar"] [role="toolbar"]',
     );
     const dockLayout = await dockRow.evaluate((dock) => ({
       clientWidth: dock.clientWidth,
@@ -248,34 +248,16 @@ test("390px layout keeps header actions and scrollable tabs reachable above the 
       overflowX: globalThis.getComputedStyle(dock).overflowX,
       buttonCount: dock.querySelectorAll("button").length,
     }));
-    assert.equal(dockLayout.overflowX, "auto");
-    assert.equal(dockLayout.buttonCount, 4);
-    if (dockLayout.scrollWidth > dockLayout.clientWidth) {
-      await dockRow.evaluate((dock) => {
-        dock.scrollLeft = dock.scrollWidth;
-      });
-      const lastDockButton = dockRow.locator("button").last();
-      const lastDockButtonLayout = await lastDockButton.evaluate((button) => {
-        const rect = button.getBoundingClientRect();
-        const row = button.parentElement?.getBoundingClientRect();
-        return {
-          left: rect.left,
-          right: rect.right,
-          rowLeft: row?.left,
-          rowRight: row?.right,
-        };
-      });
-      assert.ok(
-        lastDockButtonLayout.left >= (lastDockButtonLayout.rowLeft ?? Infinity),
-      );
-      assert.ok(
-        lastDockButtonLayout.right <=
-          (lastDockButtonLayout.rowRight ?? -Infinity),
-      );
-    }
+    // The unified bar collapses labels instead of scrolling: it must never
+    // overflow, and it keeps Mini-Dash, Ações Rápidas, Modo Foco and Atalhos.
+    assert.ok(
+      dockLayout.scrollWidth <= dockLayout.clientWidth,
+      `cockpit bar overflows: ${dockLayout.scrollWidth}px > ${dockLayout.clientWidth}px`,
+    );
+    assert.ok(dockLayout.buttonCount >= 4);
 
     assert.ok(
-      await page.locator(".fixed.inset-x-0.bottom-4").count(),
+      await page.locator('[data-testid="studio-cockpit-bar"]').count(),
       "studio dock is rendered",
     );
     await page.evaluate(() =>
@@ -286,7 +268,7 @@ test("390px layout keeps header actions and scrollable tabs reachable above the 
     );
     const bottomLayout = await page.evaluate(() => {
       const dock = globalThis.document.querySelector(
-        ".fixed.inset-x-0.bottom-4",
+        '[data-testid="studio-cockpit-bar"]',
       );
       const main = globalThis.document.querySelector("main");
       const dockRect = dock?.getBoundingClientRect();
@@ -327,9 +309,7 @@ test("390px layout keeps header actions and scrollable tabs reachable above the 
         dockBottomGap:
           globalThis.window.innerHeight -
           (dockRect?.bottom ?? globalThis.window.innerHeight),
-        mainPaddingBottom: Number.parseFloat(
-          globalThis.getComputedStyle(main).paddingBottom,
-        ),
+        mainBottom: main?.getBoundingClientRect().bottom ?? Infinity,
       };
     });
     assert.deepEqual(
@@ -338,9 +318,8 @@ test("390px layout keeps header actions and scrollable tabs reachable above the 
       "fixed dock covers workspace navigation or content labels",
     );
     assert.ok(
-      bottomLayout.mainPaddingBottom >=
-        bottomLayout.dockHeight + bottomLayout.dockBottomGap,
-      "workspace scroll padding does not clear the fixed dock",
+      bottomLayout.mainBottom <= (bottomLayout.dockTop ?? -Infinity) + 0.5,
+      "workspace scroll viewport does not end above the fixed bar",
     );
     if (bottomLayout.contentBottom !== null) {
       assert.ok(
