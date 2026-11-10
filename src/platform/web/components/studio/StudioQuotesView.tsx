@@ -27,11 +27,14 @@ import {
   PII_STORE_KEY,
   beginPiiSurfaceWrite,
 } from "@/shared/lib/localPiiPersistence";
-import { downloadBlob } from "@/shared/lib/download";
 import { guardExport } from "@/shared/lib/demoExportGuard";
 import { importData } from "@/shared/lib/dataSync";
-import { jsPDF } from "jspdf";
 import confetti from "canvas-confetti";
+import { exportCommercialQuotePdf } from "./exportQuotePdf";
+import {
+  StudioWhatsAppModal,
+  type StudioWhatsAppModalInitialData,
+} from "./StudioWhatsAppModal";
 
 interface StudioQuotesViewProps {
   onTabChange?: (tab: Tab) => void;
@@ -91,6 +94,9 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     "all",
   );
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [whatsAppData, setWhatsAppData] =
+    useState<StudioWhatsAppModalInitialData | null>(null);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   // Consumes `quotes.saveSuccess` (pt-BR/en-US parity) via the same polite
   // status-banner pattern as ProductActionsCard, so a save is confirmed in the
   // user's language instead of only by a confetti burst.
@@ -344,231 +350,26 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     setIsFormOpen(false);
   };
 
-  // Export Quote to Professional PDF using jsPDF
+  // Export Quote to Professional PDF using centralized export helper
   const exportQuoteToPdf = (quote: Quote) => {
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
     const customer = customers.find((c) => c.id === quote.customerId);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const margin = 16;
-    const contentWidth = pageWidth - margin * 2;
-
-    // Header Dark Banner
-    doc.setFillColor(15, 23, 42); // Slate 900
-    doc.roundedRect(margin, margin, contentWidth, 24, 3, 3, "F");
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(15);
-    doc.text("OPEN3DCALC STUDIO", margin + 8, margin + 10);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(190, 210, 245);
-    doc.text(
-      "Proposta Comercial & Orçamento de Impressão 3D",
-      margin + 8,
-      margin + 17,
-    );
-
-    // Number & Date on right
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.text(
-      `ORÇAMENTO #${String(quote.number).padStart(3, "0")}`,
-      pageWidth - margin - 8,
-      margin + 10,
-      { align: "right" },
-    );
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(200, 220, 255);
-    doc.text(
-      `Data: ${new Date(quote.createdAt).toLocaleDateString("pt-BR")}`,
-      pageWidth - margin - 8,
-      margin + 17,
-      { align: "right" },
-    );
-
-    let y = margin + 30;
-
-    // Customer & Proposal Info
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(margin, y, contentWidth, 20, 2, 2, "FD");
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(15, 23, 42);
-    doc.text(
-      `CLIENTE: ${customer?.name || quote.customerSnapshot?.name || "Cliente sem cadastro nominal"}`,
-      margin + 6,
-      y + 7,
-    );
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    if (customer?.email || customer?.phone) {
-      doc.text(
-        `Contato: ${customer.email || ""} ${customer.phone ? `• Tel: ${customer.phone}` : ""}`,
-        margin + 6,
-        y + 13,
-      );
-    }
-    if (quote.validUntil) {
-      doc.text(
-        `Validade da Proposta: até ${new Date(quote.validUntil).toLocaleDateString("pt-BR")}`,
-        pageWidth - margin - 6,
-        y + 7,
-        { align: "right" },
-      );
-    }
-
-    y += 26;
-
-    // Table Header
-    doc.setFillColor(37, 99, 235); // Blue 600
-    doc.rect(margin, y, contentWidth, 7, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
-    doc.text("ITEM / DESCRIÇÃO DA PEÇA", margin + 4, y + 5);
-    doc.text("QTD", margin + 110, y + 5, { align: "center" });
-    doc.text("UNITÁRIO", margin + 135, y + 5, { align: "right" });
-    doc.text("TOTAL", pageWidth - margin - 4, y + 5, { align: "right" });
-
-    y += 7;
-
-    // Items rows
-    quote.items.forEach((item, idx) => {
-      const isEven = idx % 2 === 0;
-      doc.setFillColor(
-        isEven ? 255 : 248,
-        isEven ? 255 : 250,
-        isEven ? 255 : 252,
-      );
-      doc.rect(margin, y, contentWidth, 7, "F");
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(15, 23, 42);
-      doc.text(item.name, margin + 4, y + 5);
-      doc.text(String(item.quantity), margin + 110, y + 5, { align: "center" });
-      doc.text(
-        `R$ ${item.unitPrice.toFixed(2).replace(".", ",")}`,
-        margin + 135,
-        y + 5,
-        { align: "right" },
-      );
-      const itemTot =
-        item.quantity *
-        item.unitPrice *
-        (1 - (item.discountPercent || 0) / 100);
-      doc.setFont("helvetica", "bold");
-      doc.text(
-        `R$ ${itemTot.toFixed(2).replace(".", ",")}`,
-        pageWidth - margin - 4,
-        y + 5,
-        { align: "right" },
-      );
-
-      y += 7;
-    });
-
-    y += 4;
-
-    // Totals Box
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(5, 150, 105);
-    doc.setLineWidth(0.5);
-    doc.roundedRect(pageWidth - margin - 75, y, 75, 24, 2, 2, "FD");
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text("Subtotal:", pageWidth - margin - 70, y + 6);
-    doc.text(
-      `R$ ${(quote.subtotal || quote.total).toFixed(2).replace(".", ",")}`,
-      pageWidth - margin - 5,
-      y + 6,
-      { align: "right" },
-    );
-
-    if (quote.globalDiscountPercent > 0) {
-      doc.text(
-        `Desconto (-${quote.globalDiscountPercent}%):`,
-        pageWidth - margin - 70,
-        y + 12,
-      );
-      doc.text(
-        `R$ ${(quote.discountAmount || 0).toFixed(2).replace(".", ",")}`,
-        pageWidth - margin - 5,
-        y + 12,
-        { align: "right" },
-      );
-    }
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(5, 150, 105);
-    doc.text("TOTAL:", pageWidth - margin - 70, y + 19);
-    doc.text(
-      `R$ ${quote.total.toFixed(2).replace(".", ",")}`,
-      pageWidth - margin - 5,
-      y + 19,
-      { align: "right" },
-    );
-
-    y += 30;
-
-    // Conditions and Notes
-    if (quote.paymentTerms || quote.footerNote) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.setTextColor(15, 23, 42);
-      doc.text("CONDIÇÕES DE FORNECIMENTO:", margin, y);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
-      if (quote.paymentTerms) {
-        doc.text(
-          `• Condições de Pagamento: ${quote.paymentTerms}`,
-          margin,
-          y + 5,
-        );
-      }
-      if (quote.footerNote) {
-        doc.text(`• Observações: ${quote.footerNote}`, margin, y + 10);
-      }
-    }
-
-    // Funnel through the single choke point. `doc.save()` would reach the disk
-    // by itself, bypassing `downloadBlob` and with it the demo-export guard —
-    // a parallel funnel by construction.
-    downloadBlob(
-      doc.output("blob"),
-      `Orcamento_${String(quote.number).padStart(3, "0")}.pdf`,
-    );
+    exportCommercialQuotePdf(quote, customer);
   };
 
-  // WhatsApp Share helper
+  // WhatsApp Share helper with interactive modal & customized templates
   const shareWhatsApp = (q: Quote): void => {
     if (guardExport()) return;
     const customer = customers.find((c) => c.id === q.customerId);
-    const text = encodeURIComponent(
-      `Olá ${customer ? customer.name : ""}! Segue a proposta comercial de impressão 3D:\n` +
-        `📋 *Orçamento #${String(q.number).padStart(3, "0")} - ${q.title}*\n` +
-        `📦 Itens: ${q.items.map((it) => `${it.quantity}x ${it.name}`).join(", ")}\n` +
-        `💰 *Valor Total: R$ ${q.total.toFixed(2).replace(".", ",")}*\n` +
-        `💳 Pagamento: ${q.paymentTerms || "A combinar"}\n` +
-        `Ficamos à disposição para iniciar a produção!`,
-    );
-    const phone = customer?.phone ? customer.phone.replace(/\D/g, "") : "";
-    const url = phone
-      ? `https://wa.me/55${phone}?text=${text}`
-      : `https://wa.me/?text=${text}`;
-    window.open(url, "_blank");
+    setWhatsAppData({
+      clientName: customer ? customer.name : (q.customerSnapshot?.name || ""),
+      clientPhone: customer ? customer.phone : "",
+      clientCompany: customer ? customer.company : "",
+      projectName: `Orçamento #${String(q.number).padStart(3, "0")} - ${q.title}`,
+      items: q.items.map((it) => `${it.quantity}x ${it.name}`).join(", "),
+      totalValue: q.total,
+      paymentTerms: q.paymentTerms,
+    });
+    setIsWhatsAppModalOpen(true);
   };
 
   return (
@@ -1620,6 +1421,12 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
           </div>
         </div>
       )}
+
+      <StudioWhatsAppModal
+        isOpen={isWhatsAppModalOpen}
+        onClose={() => setIsWhatsAppModalOpen(false)}
+        initialData={whatsAppData ?? undefined}
+      />
     </div>
   );
 };

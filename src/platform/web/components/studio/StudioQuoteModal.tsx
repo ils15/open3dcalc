@@ -6,6 +6,7 @@ import { BrandIcon } from "@/shared/components/BrandIcon";
 import { useCustomerStore } from "@/shared/stores/customerStore";
 import { guardExport } from "@/shared/lib/demoExportGuard";
 import { serializeCsvRows } from "@/shared/lib/csvExport";
+import { StudioWhatsAppModal } from "./StudioWhatsAppModal";
 
 interface StudioQuoteModalProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
   const [proposalValidity, setProposalValidity] = useState("10 dias corridos");
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -133,8 +135,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
 
   const handleWhatsApp = (): void => {
     if (guardExport()) return;
-    const text = encodeURIComponent(quoteText);
-    window.open(`https://wa.me/?text=${text}`, "_blank");
+    setIsWhatsAppOpen(true);
   };
 
   return (
@@ -378,6 +379,20 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
           </div>
         </div>
       </div>
+
+      <StudioWhatsAppModal
+        isOpen={isWhatsAppOpen}
+        onClose={() => setIsWhatsAppOpen(false)}
+        initialData={{
+          clientName,
+          clientCompany,
+          projectName,
+          items: `${projectName} (${material}, ${weightGrams}g, ${hours}h ${minutes}m)`,
+          totalValue: sellPrice,
+          leadTime: deliveryDays,
+          paymentTerms,
+        }}
+      />
     </div>
   );
 };

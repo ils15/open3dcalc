@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Boxes, Printer, Spool, Store } from "lucide-react";
+import { Boxes, Building2, Printer, Spool, Store } from "lucide-react";
 
 import { CatalogTab, type CatalogSection } from "./CatalogTab";
 import { SpoolShelf, SpoolManagerView } from "@/shared/components/SpoolShelf";
+import { WorkshopBusinessProfileView } from "./WorkshopBusinessProfileView";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
-type WorkshopSection = CatalogSection | "stock";
+type WorkshopSection = CatalogSection | "stock" | "business";
 
 interface WorkshopHubProps {
   activeTab: Tab;
@@ -24,6 +25,7 @@ const SECTION_ROUTE: Record<WorkshopSection, Tab> = {
   materials: "catalog",
   stock: "inventory",
   marketplaces: "marketplace",
+  business: "catalog",
 };
 
 const SECTIONS: {
@@ -35,6 +37,7 @@ const SECTIONS: {
   { id: "materials", label: "workshop.materials", icon: Boxes },
   { id: "stock", label: "workshop.stock", icon: Spool },
   { id: "marketplaces", label: "workshop.salesChannels", icon: Store },
+  { id: "business", label: "workshop.businessProfile", icon: Building2 },
 ];
 
 function getSectionFromRoute(tab: Tab): WorkshopSection {
@@ -68,7 +71,7 @@ export function WorkshopHub({
   return (
     <section className="mx-auto flex w-full max-w-[100rem] flex-col gap-4 pb-16 text-[var(--color-text-primary)]">
       <div
-        className="surface grid grid-cols-2 gap-1.5 rounded-xl border border-[var(--color-border)] p-1.5 sm:grid-cols-4"
+        className="surface grid grid-cols-2 gap-1.5 rounded-xl border border-[var(--color-border)] p-1.5 sm:grid-cols-3 lg:grid-cols-5"
         role="tablist"
         aria-label={t("workshop.title")}
       >
@@ -102,7 +105,9 @@ export function WorkshopHub({
         aria-labelledby={`workshop-tab-${section}`}
         className="min-w-0"
       >
-        {section === "stock" ? (
+        {section === "business" ? (
+          <WorkshopBusinessProfileView />
+        ) : section === "stock" ? (
           <div className="flex flex-col gap-4">
             {/* Stock presentation toggle: the full management view or the
                 compact shelf. The choice persists in the declared
