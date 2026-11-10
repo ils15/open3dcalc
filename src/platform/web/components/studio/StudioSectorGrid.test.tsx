@@ -44,7 +44,7 @@ describe("Studio sector grid — centered like the Example", () => {
     (file) => {
       const source = read(file);
       expect(source).toMatch(/mx-auto/);
-      expect(source).toMatch(/max-w-(?:7xl|\[1920px\])/);
+      expect(source).toMatch(/max-w-(?:7xl|\[1920px\]|\[100rem\])/);
     },
   );
 
@@ -54,7 +54,7 @@ describe("Studio sector grid — centered like the Example", () => {
 
   it("StudioLayout centers the inline catalog and infill wrappers", () => {
     const layout = read("platform/web/components/studio/StudioLayout.tsx");
-    expect(layout).toMatch(/max-w-7xl/);
+    expect(layout).toMatch(/max-w-(?:7xl|\[100rem\])/);
     expect(layout).not.toMatch(/max-w-full/);
   });
 
