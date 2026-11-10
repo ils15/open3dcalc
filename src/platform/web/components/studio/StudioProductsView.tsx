@@ -156,7 +156,7 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = () => {
   const formIsBelowCost = formSaleNum < formCostNum;
 
   return (
-    <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
+    <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-[100rem] pb-20">
       {/* KPI Bento Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Total Peças */}

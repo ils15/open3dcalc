@@ -196,7 +196,7 @@ export const StudioLayout: React.FC = () => {
                its tighter column). */
             focusMode
               ? "max-w-[84rem] mx-auto w-full"
-              : "w-full"
+              : "max-w-[100rem] mx-auto w-full"
           }`}
         >
           {/* Focus mode exit banner. The exit button uses the arbitrary-value
@@ -270,7 +270,7 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "infill" && (
-                <div className="mx-auto w-full max-w-7xl bg-surface-raised/0 pb-20">
+                <div className="mx-auto w-full max-w-[100rem] bg-surface-raised/0 pb-20">
                   <InfillCalculator />
                 </div>
               )}
@@ -312,7 +312,7 @@ export const StudioLayout: React.FC = () => {
 
           {/* Studio Footer */}
           {!focusMode && (
-            <div className="w-full max-w-7xl mx-auto">
+            <div className="w-full max-w-[100rem] mx-auto">
               <StudioFooter onTabChange={setActiveTab} />
             </div>
           )}

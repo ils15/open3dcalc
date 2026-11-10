@@ -123,7 +123,7 @@ export function BentoSurface(): React.ReactElement {
     return (
       <section
         aria-label={t("bento.regionLabel")}
-        className="mx-auto w-full min-w-0 max-w-7xl px-3 py-4 sm:px-5 sm:py-6"
+        className="mx-auto w-full min-w-0 max-w-[100rem] px-3 py-4 sm:px-5 sm:py-6"
       >
         <h1 className="sr-only">{t("bento.title")}</h1>
         <div className="min-w-0 space-y-4 sm:space-y-5">
@@ -139,7 +139,7 @@ export function BentoSurface(): React.ReactElement {
   return (
     <section
       aria-label={t("bento.regionLabel")}
-      className="mx-auto w-full min-w-0 max-w-7xl px-3 py-4 sm:px-5 sm:py-6"
+      className="mx-auto w-full min-w-0 max-w-[100rem] px-3 py-4 sm:px-5 sm:py-6"
     >
       <h1 className="sr-only">{t("bento.title")}</h1>
       <div className="min-w-0 space-y-4 sm:space-y-5">

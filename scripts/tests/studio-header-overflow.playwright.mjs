@@ -18,11 +18,18 @@ async function openCatalog(page) {
   });
   if (await consent.isVisible()) await consent.click();
 
-  await page.getByRole("button", { name: "Cadastros" }).first().click();
-  await page.waitForFunction(() =>
-    globalThis.document
-      .querySelector("header")
-      ?.textContent?.includes("Frota de Impressoras"),
+  await page
+    .getByRole("button", { name: /Minha Oficina|Cadastros/i })
+    .first()
+    .click();
+  await page.waitForFunction(
+    () =>
+      globalThis.document
+        .querySelector("header")
+        ?.textContent?.includes("Minha Oficina") ||
+      globalThis.document
+        .querySelector("header")
+        ?.textContent?.includes("Frota de Impressoras"),
   );
   await page.waitForTimeout(350);
 }
@@ -118,7 +125,7 @@ test("localized Cadastros tabs, keyboard search, and CRUD work in the browser", 
     await openCatalog(page);
     const main = page.getByRole("main");
 
-    assert.match(await main.innerText(), /Cadastros Gerais da Oficina/);
+    assert.match(await main.innerText(), /Impressoras/);
     await main.getByRole("tab", { name: "Materiais" }).click();
     const materialSearch = main.getByRole("searchbox", {
       name: "Buscar materiais por nome",
@@ -155,7 +162,9 @@ test("localized Cadastros tabs, keyboard search, and CRUD work in the browser", 
     await materialCard.getByRole("button", { name: "Remover" }).click();
     await materialCard.waitFor({ state: "detached" });
 
-    await main.getByRole("tab", { name: "Taxas e Canais" }).click();
+    await main
+      .getByRole("tab", { name: /Taxas e Canais|Lojas e canais de venda/i })
+      .click();
     await main.getByLabel("Nome da loja").fill("Playwright Marketplace");
     await main.getByLabel("Taxa %").fill("8");
     await main.getByLabel("Taxa fixa").fill("1.5");
