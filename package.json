@@ -22,6 +22,8 @@
     "test:studio-header:playwright": "node --test scripts/tests/studio-header-overflow.playwright.mjs",
     "test:studio-layout-ux:playwright": "node --test scripts/tests/studio-layout-ux-dedup.playwright.mjs",
     "release:notes:validate": "node scripts/validate-release-notes.mjs",
+    "release:prepare": "node scripts/prepare-release.mjs",
+    "release:cut": "node scripts/prepare-release.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "verify:electron": "node scripts/verify-electron-imports.mjs",
     "typecheck:electron": "tsc -p electron/tsconfig.json --noEmit",
@@ -29,7 +31,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx db/migrate.ts",
     "diagnostic:retention": "node scripts/diagnostic-retention.mjs",
-    "verify:battery": "npm run typecheck && npm run typecheck:electron && npm run verify:electron && npm run lint && npm run test:run -- scripts/__tests__/release-notes.test.ts src/platform/web/components/studio/StudioSidebar.stable.test.tsx src/platform/web/components/studio/StudioSidebar.beta.test.tsx src/shared/components/Catalog/__tests__/CatalogTab.test.tsx src/shared/lib/__tests__/catalogAssets.test.ts && npm run build:all"
+    "verify:battery": "npm run typecheck && npm run typecheck:electron && npm run verify:electron && npm run lint && npm run test:run -- scripts/__tests__/release-notes.test.ts scripts/__tests__/validate-release-notes.test.ts scripts/__tests__/prepare-release.test.ts src/platform/web/components/studio/StudioSidebar.stable.test.tsx src/platform/web/components/studio/StudioSidebar.beta.test.tsx src/shared/components/Catalog/__tests__/CatalogTab.test.tsx src/shared/lib/__tests__/catalogAssets.test.ts && npm run build:all"
   },
   "dependencies": {
     "@chestnutlabs/gcode-dialects": "0.20.1",
