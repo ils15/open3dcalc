@@ -166,10 +166,9 @@ test("Bento fits at 390px and the fixed dock never covers focusable content", as
 
     const layout = await page.evaluate(() => {
       const main = globalThis.document.querySelector("main");
-      const dockButton = globalThis.document.querySelector(
-        '[aria-label="Modo Foco"]',
+      const dock = globalThis.document.querySelector(
+        '[data-testid="studio-cockpit-bar"] [role="toolbar"]',
       );
-      const dock = dockButton?.parentElement?.parentElement;
       if (!main || !dock)
         throw new Error("Main content or cockpit dock missing");
 
@@ -206,7 +205,7 @@ test("Bento fits at 390px and the fixed dock never covers focusable content", as
         mainRect: main.getBoundingClientRect().toJSON(),
         mainScrollWidth: main.scrollWidth,
         mainClientWidth: main.clientWidth,
-        dockPosition: globalThis.getComputedStyle(dock).position,
+        dockPosition: globalThis.getComputedStyle(dock.parentElement).position,
         dockClearanceHeight: globalThis.document
           .querySelector('[data-testid="cockpit-dock-clearance"]')
           ?.getBoundingClientRect().height,
@@ -228,7 +227,7 @@ test("Bento fits at 390px and the fixed dock never covers focusable content", as
       "The main scroll viewport must end before the fixed dock starts",
     );
     if (layout.dockPosition === "fixed") {
-      assert.ok(layout.dockClearanceHeight >= 96);
+      assert.ok(layout.dockClearanceHeight >= layout.atTop.dockRect.height);
     } else {
       assert.ok(
         layout.mainRect.bottom <= layout.atTop.dockRect.top,

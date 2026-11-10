@@ -3,10 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/shared/config/betaChannel", () => ({ isBetaChannel: false }));
 
+import { APP_VERSION } from "@/shared/version";
 import { StudioCockpitDock } from "./StudioCockpitDock";
 
 describe("StudioCockpitDock Stable layout", () => {
-  it("preserves the fixed dock and bottom inset", () => {
+  it("pins the unified bar to the bottom edge", () => {
     const { container } = render(
       <StudioCockpitDock
         onOpenMiniDash={vi.fn()}
@@ -19,7 +20,7 @@ describe("StudioCockpitDock Stable layout", () => {
     );
 
     expect(container.firstElementChild).toHaveClass(/\bfixed\b/);
-    expect(container.firstElementChild).toHaveClass(/\bbottom-4\b/);
+    expect(container.firstElementChild).toHaveClass(/\bbottom-0\b/);
   });
 
   it("keeps the dock's primary controls at least 44px tall", () => {
@@ -40,7 +41,7 @@ describe("StudioCockpitDock Stable layout", () => {
     }
   });
 
-  it("keeps the Stable fixed-track spacing", () => {
+  it("spans the full width as an edge-to-edge status bar", () => {
     const { container } = render(
       <StudioCockpitDock
         onOpenMiniDash={vi.fn()}
@@ -55,8 +56,10 @@ describe("StudioCockpitDock Stable layout", () => {
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).toMatch(/\bfixed\b/);
     expect(root.className).toMatch(/inset-x-0/);
-    expect(root.className).toMatch(/px-4/);
-    expect(root.className).toMatch(/bottom-4/);
+    expect(root.className).toMatch(/bottom-0/);
+    expect(screen.getByRole("toolbar", { name: "Barra do Studio" })).toHaveClass(
+      "w-full",
+    );
   });
 
   it("keeps every dock action reachable with theme tokens (no hardcoded navy)", () => {
@@ -100,7 +103,9 @@ describe("StudioCockpitDock Stable layout", () => {
 
     const clearance = screen.getByTestId("cockpit-dock-clearance");
     expect(clearance).toHaveAttribute("aria-hidden", "true");
-    expect(clearance).toHaveClass("h-[calc(6rem+env(safe-area-inset-bottom))]");
+    expect(clearance).toHaveClass(
+      "h-[calc(3.5rem+1px+env(safe-area-inset-bottom))]",
+    );
     expect(clearance.querySelector("button")).toBeNull();
   });
 
@@ -128,5 +133,43 @@ describe("StudioCockpitDock Stable layout", () => {
       screen.getByRole("button", { name: "Assistente IA de Impressão" }),
     );
     expect(onOpenCopilot).toHaveBeenCalledOnce();
+  });
+
+  it("shows the app version and opens the changelog from the bar", () => {
+    const onTabChange = vi.fn();
+    render(
+      <StudioCockpitDock
+        onOpenMiniDash={vi.fn()}
+        onToggleFocusMode={vi.fn()}
+        onOpenShortcuts={vi.fn()}
+        onTabChange={onTabChange}
+        onOpenCopilot={vi.fn()}
+        onOpenNewQuote={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: `v${APP_VERSION}` }));
+    expect(onTabChange).toHaveBeenCalledWith("changelog");
+    expect(
+      screen.getByRole("link", { name: "Código aberto no GitHub" }),
+    ).toHaveAttribute("href", "https://github.com/ils15/open3dcalc");
+  });
+
+  it("closes the quick actions menu with Escape", () => {
+    render(
+      <StudioCockpitDock
+        onOpenMiniDash={vi.fn()}
+        onToggleFocusMode={vi.fn()}
+        onOpenShortcuts={vi.fn()}
+        onTabChange={vi.fn()}
+        onOpenCopilot={vi.fn()}
+        onOpenNewQuote={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ações Rápidas" }));
+    expect(screen.getByRole("group", { name: "Menu de ações rápidas" })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("group", { name: "Menu de ações rápidas" })).toBeNull();
   });
 });

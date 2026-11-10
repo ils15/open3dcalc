@@ -20,7 +20,6 @@ import { StudioHistoryView } from "./StudioHistoryView";
 import { StudioCustomerView } from "./StudioCustomerView";
 import { StudioQuotesView } from "./StudioQuotesView";
 import { StudioProductsView } from "./StudioProductsView";
-import { StudioFooter } from "./StudioFooter";
 
 // Existing shared surfaces for remaining tabs
 import { InfillCalculator } from "@/shared/components/Calculator/InfillCalculator";
@@ -324,16 +323,6 @@ export const StudioLayout: React.FC = () => {
               )}
             </motion.div>
           </AnimatePresence>
-
-          {/* Studio Footer */}
-          {!focusMode && (
-            <div className="w-full max-w-[100rem] mx-auto">
-              <StudioFooter onTabChange={setActiveTab} />
-            </div>
-          )}
-
-          {/* Bottom clearance spacer so the floating StudioCockpitDock never covers content when scrolled to the end */}
-          <div className="h-20 shrink-0 pointer-events-none" aria-hidden="true" />
         </main>
       </div>
 
