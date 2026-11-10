@@ -295,6 +295,7 @@ describe("closed Electron database IPC policy", () => {
       "open3dcalc_catalog_v1",
       "open3dcalc_filaments",
       "open3dcalc_color_palette_v1",
+      "open3dcalc_workshop_profile_v1",
       "open3dcalc_consent_v1",
       "open3dcalc_tutorial_v1",
       "open3dcalc_quickstart_dismissed",
