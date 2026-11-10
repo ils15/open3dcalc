@@ -66,7 +66,7 @@ export function WorkshopHub({
   };
 
   return (
-    <section className="mx-auto flex w-full max-w-[1920px] flex-col gap-4 pb-16 text-[var(--color-text-primary)]">
+    <section className="mx-auto flex w-full max-w-[100rem] flex-col gap-4 pb-16 text-[var(--color-text-primary)]">
       <div
         className="surface grid grid-cols-2 gap-1.5 rounded-xl border border-[var(--color-border)] p-1.5 sm:grid-cols-4"
         role="tablist"

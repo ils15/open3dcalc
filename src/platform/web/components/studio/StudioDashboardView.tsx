@@ -301,7 +301,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-[1920px] flex-col gap-5 pb-16 text-text-primary">
+    <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-5 pb-16 text-text-primary">
       {/* Top Notice if in Normal Mode without data */}
       {!isDemoMode && !hasRealData && (
         <div className="bg-surface-overlay border border-accent/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
