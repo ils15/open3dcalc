@@ -56,6 +56,14 @@ docs/*
 !docs/plans/
 docs/plans/*
 !docs/plans/ux-integracao-dashboard.md
+# Documentação de referência para onde o README aponta (o README é a porta de
+# entrada; o detalhe técnico vive aqui e precisa ser versionado).
+!docs/arquitetura.md
+!docs/desenvolvimento.md
+!docs/design-e-acessibilidade.md
+!docs/funcionalidades.md
+!docs/privacidade.md
+!docs/releases.md
 
 # Logs
 logs/
