@@ -1634,6 +1634,27 @@
     },
     "versions": [
       {
+        "version": "2.0.2",
+        "date": "2026-11-18",
+        "sections": [
+          {
+            "title": "🚀 Features",
+            "items": [
+              "**ProfitAnalyticsModule in Studio Dashboard** — advanced profitability, material/printer margin breakdown, and break-even analytics mounted inside the *Pricing & Profitability* workspace",
+              "**Products Split Inspector with Inline Markup & Channels** — quick markup presets (`+30%` to `+150%`) with live price/profit preview, fast *Available/Sold* toggle, and marketplace net-profit ranking",
+              "**1-Click A/B → Quote Conversion** — *Create A/B Quote* button in the live scenario comparator bar, generating a 2-option comparative quote draft automatically"
+            ]
+          },
+          {
+            "title": "🎨 UI/UX & Quality",
+            "items": [
+              "**Pure Semantic Tokens (Batch 1)** — migrated `CostDistributionBars`, `QuoteSection`, and `StudioWhatsAppModal` to pure semantic design tokens (`50 → 46` files in the visual guard)",
+              "**Dead Code Cleanup** — removed unreferenced `slicerOptimizer.ts` and updated suite quality metrics (`4,421+` tests)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "2.0.1",
         "date": "2026-11-18",
         "sections": [
