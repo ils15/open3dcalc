@@ -10,6 +10,7 @@ import {
   type CostSegment,
 } from "@/shared/hooks/useFinancialBreakdown";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { CalculationErrorState } from "@/shared/components/Results/CalculationErrorState";
 import { ResultsPanel } from "@/shared/components/Results/ResultsPanel";
 import { LevelToggle } from "../LevelToggle";
@@ -119,11 +120,19 @@ export function BentoSurface(): React.ReactElement {
     </div>
   );
 
+  const workspaceWidth = useLayoutStore((s) => s.workspaceWidth ?? "standard");
+  const containerWidthClass =
+    workspaceWidth === "focused"
+      ? "max-w-7xl"
+      : workspaceWidth === "wide"
+        ? "max-w-none"
+        : "max-w-[100rem]";
+
   if (!results) {
     return (
       <section
         aria-label={t("bento.regionLabel")}
-        className="mx-auto w-full min-w-0 max-w-[100rem] px-3 py-4 sm:px-5 sm:py-6"
+        className={`mx-auto w-full min-w-0 ${containerWidthClass} px-3 py-4 sm:px-5 sm:py-5`}
       >
         <h1 className="sr-only">{t("bento.title")}</h1>
         <div className="min-w-0 space-y-4 sm:space-y-5">
@@ -139,7 +148,7 @@ export function BentoSurface(): React.ReactElement {
   return (
     <section
       aria-label={t("bento.regionLabel")}
-      className="mx-auto w-full min-w-0 max-w-[100rem] px-3 py-4 sm:px-5 sm:py-6"
+      className={`mx-auto w-full min-w-0 ${containerWidthClass} px-3 py-4 sm:px-5 sm:py-5`}
     >
       <h1 className="sr-only">{t("bento.title")}</h1>
       <div className="min-w-0 space-y-4 sm:space-y-5">

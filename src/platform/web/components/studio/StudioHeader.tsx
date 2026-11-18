@@ -21,6 +21,9 @@ import {
   Sun,
   Moon,
   Globe,
+  Monitor,
+  Columns3,
+  MoveHorizontal,
 } from "lucide-react";
 import { BrandIcon } from "@/shared/components/BrandIcon";
 import { isWorkshopRoute, Tab } from "@/shared/components/AppShell/tabs";
@@ -33,6 +36,10 @@ import {
 } from "@/shared/contexts/CurrencyContext";
 import type { CurrencySetting } from "@/shared/lib/currency";
 import { DataSyncButton } from "@/shared/components/ui/DataSyncButton";
+import {
+  useLayoutStore,
+  type WorkspaceWidth,
+} from "@/shared/stores/layoutStore";
 import { StudioSubHeader } from "./StudioSubHeader";
 import { useSafeStudioTheme } from "./useSafeStudioTheme";
 
@@ -64,11 +71,54 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   const { currency: resolvedCurrency } = useCurrency();
   const setCurrency = useSetCurrency();
 
+  const workspaceWidth = useLayoutStore(
+    (state) => state.workspaceWidth ?? "standard",
+  );
+  const cycleWorkspaceWidth = useLayoutStore(
+    (state) => state.cycleWorkspaceWidth,
+  );
+
   const tr = (key: string, ptFallback: string, enFallback: string): string => {
     const resolved = t(key);
     if (resolved && resolved !== key) return resolved;
     return isEn ? enFallback : ptFallback;
   };
+
+  const widthMeta: Record<
+    WorkspaceWidth,
+    { label: string; title: string; icon: React.ReactElement }
+  > = {
+    focused: {
+      label: tr("studio.widthFocused", "Focado", "Focused"),
+      title: tr(
+        "studio.widthFocusedHint",
+        "Largura Focado (Monitor Padrão / Notebook) — Clique ou Alt+W para alternar",
+        "Focused Width (Standard Monitor / Laptop) — Click or Alt+W to switch",
+      ),
+      icon: <Columns3 className="h-3.5 w-3.5 text-[var(--color-accent)]" />,
+    },
+    standard: {
+      label: tr("studio.widthStandard", "Padrão", "Standard"),
+      title: tr(
+        "studio.widthStandardHint",
+        "Largura Padrão (Equilibrada) — Clique ou Alt+W para alternar",
+        "Standard Width (Balanced) — Click or Alt+W to switch",
+      ),
+      icon: <Monitor className="h-3.5 w-3.5 text-[var(--color-accent)]" />,
+    },
+    wide: {
+      label: tr("studio.widthWide", "Amplo", "Wide"),
+      title: tr(
+        "studio.widthWideHint",
+        "Largura Amplo (Ultrawide / Tela Cheia) — Clique ou Alt+W para alternar",
+        "Wide Width (Ultrawide) — Click or Alt+W to switch",
+      ),
+      icon: (
+        <MoveHorizontal className="h-3.5 w-3.5 text-[var(--color-accent)]" />
+      ),
+    },
+  };
+  const currentWidthMeta = widthMeta[workspaceWidth];
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -170,7 +220,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       case "customers":
         return {
           icon: <Users className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
-          title: t("tabs.customers"),
+          title: t("nav.customers"),
           subtitle: tr(
             "studio.customersSub",
             "Gestão de contatos e pedidos recorrentes",
@@ -180,7 +230,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       case "quotes":
         return {
           icon: <FileText className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
-          title: t("tabs.quotes"),
+          title: t("nav.quotes"),
           subtitle: tr(
             "studio.quotesSub",
             "Gestão comercial, propostas em PDF e acompanhamento",
@@ -190,7 +240,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
       case "products":
         return {
           icon: <Package className="w-3.5 h-3.5 text-[var(--color-accent)]" />,
-          title: t("tabs.products"),
+          title: t("nav.products"),
           subtitle: tr(
             "studio.productsSub",
             "Itens finalizados e histórico de precificação",
@@ -478,6 +528,19 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
           ) : (
             <Moon className="h-4 w-4" aria-hidden="true" />
           )}
+        </button>
+
+        {/* Workspace Display Width Switcher (Focused / Standard / Wide) */}
+        <button
+          type="button"
+          data-testid="studio-width-toggle"
+          onClick={cycleWorkspaceWidth}
+          aria-label={currentWidthMeta.title}
+          title={currentWidthMeta.title}
+          className="hidden lg:inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-2 text-[11px] font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+        >
+          {currentWidthMeta.icon}
+          <span className="hidden 2xl:inline">{currentWidthMeta.label}</span>
         </button>
 
         {/* Dados & Backup Modal Quick Access (compact icon-only button matching ThemeToggle) */}

@@ -1,8 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FileText,
-  Search,
   Plus,
   Edit2,
   Trash2,
@@ -16,11 +15,13 @@ import {
   List,
   LayoutGrid,
   Upload,
+  Sparkles,
 } from "lucide-react";
 import { BrandIcon } from "@/shared/components/BrandIcon";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
 import { useCustomerStore } from "@/shared/stores/customerStore";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 import { Quote, QuoteFormData } from "@/shared/types";
 import { PiiWriteRefusalNotice } from "@/shared/components/Privacy/PiiWriteRefusalNotice";
 import {
@@ -35,6 +36,10 @@ import {
   StudioWhatsAppModal,
   type StudioWhatsAppModalInitialData,
 } from "./StudioWhatsAppModal";
+import { useWorkspaceContainerClass } from "./workspaceWidth";
+import { StudioKpiStrip, type StudioKpiItem } from "./StudioKpiStrip";
+import { StudioViewToolbar } from "./StudioViewToolbar";
+import { StudioSplitInspector } from "./StudioSplitInspector";
 
 interface StudioQuotesViewProps {
   onTabChange?: (tab: Tab) => void;
@@ -80,8 +85,12 @@ const STATUS_CONFIG: Record<
   },
 };
 
-export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
+export const StudioQuotesView: React.FC<StudioQuotesViewProps> = ({
+  onOpenNewQuote,
+}) => {
   const { t } = useTranslation();
+  const containerClass = useWorkspaceContainerClass();
+  const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
   const quotes = useQuoteStore((s) => s.quotes);
   const addQuote = useQuoteStore((s) => s.addQuote);
   const updateQuote = useQuoteStore((s) => s.updateQuote);
@@ -94,6 +103,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     "all",
   );
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
   const [whatsAppData, setWhatsAppData] =
     useState<StudioWhatsAppModalInitialData | null>(null);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
@@ -157,22 +167,31 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
   >([]);
 
   // Filtered quotes
-  const filteredQuotes = quotes.filter((q) => {
-    if (statusFilter !== "all" && q.status !== statusFilter) return false;
-    if (!search.trim()) return true;
-    const query = search.toLowerCase();
-    const customer = customers.find((c) => c.id === q.customerId);
-    // `customerSnapshot` is the single authority for the customer's name on a
-    // stored quote. The live customer record wins when it is still around;
-    // the snapshot is what keeps the quote readable after a customer is gone.
-    const snapshotName = q.customerSnapshot?.name;
-    return (
-      q.title.toLowerCase().includes(query) ||
-      String(q.number).includes(query) ||
-      (snapshotName && snapshotName.toLowerCase().includes(query)) ||
-      (customer && customer.name.toLowerCase().includes(query))
-    );
-  });
+  const filteredQuotes = useMemo(
+    () =>
+      quotes.filter((q) => {
+        if (statusFilter !== "all" && q.status !== statusFilter) return false;
+        if (!search.trim()) return true;
+        const query = search.toLowerCase();
+        const customer = customers.find((c) => c.id === q.customerId);
+        // `customerSnapshot` is the single authority for the customer's name on a
+        // stored quote. The live customer record wins when it is still around;
+        // the snapshot is what keeps the quote readable after a customer is gone.
+        const snapshotName = q.customerSnapshot?.name;
+        return (
+          q.title.toLowerCase().includes(query) ||
+          String(q.number).includes(query) ||
+          (snapshotName && snapshotName.toLowerCase().includes(query)) ||
+          (customer && customer.name.toLowerCase().includes(query))
+        );
+      }),
+    [quotes, statusFilter, search, customers],
+  );
+
+  const selectedQuote = useMemo(
+    () => filteredQuotes.find((q) => q.id === selectedQuoteId) ?? null,
+    [filteredQuotes, selectedQuoteId],
+  );
 
   // KPI calculations
   const totalQuotesCount = quotes.length;
@@ -192,6 +211,41 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     totalQuotesCount > 0
       ? quotes.reduce((acc, q) => acc + (q.total || 0), 0) / totalQuotesCount
       : 0;
+
+  const kpiItems: StudioKpiItem[] = [
+    {
+      id: "total-quotes",
+      label: "TOTAL DE ORÇAMENTOS",
+      value: totalQuotesCount,
+      unit: "emitidos",
+      subtitle: `${pendingQuotes.length} em negociação / rascunho`,
+      icon: <FileText className="w-4 h-4 text-info" />,
+    },
+    {
+      id: "approved-total",
+      label: "VALOR TOTAL APROVADO",
+      value: formatCurrency(approvedTotal),
+      subtitle: `${approvedQuotes.length} pedidos fechados`,
+      icon: <Check className="w-4 h-4 text-positive" />,
+      tone: "positive",
+    },
+    {
+      id: "pending-total",
+      label: "VALOR EM ABERTO",
+      value: formatCurrency(pendingTotal),
+      subtitle: "Potencial de fechamento imediato",
+      icon: <Clock className="w-4 h-4 text-warning" />,
+      tone: "warning",
+    },
+    {
+      id: "avg-ticket",
+      label: "TICKET MÉDIO",
+      value: formatCurrency(avgTicket),
+      subtitle: "Média por pedido gerado",
+      icon: <DollarSign className="w-4 h-4 text-accent" />,
+      tone: "accent",
+    },
+  ];
 
   const openCreateModal = () => {
     setEditingQuote(null);
@@ -310,10 +364,6 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     };
 
     if (editingQuote) {
-      // `updateQuote` takes a `Partial<Quote>`, so the edit path must hand it
-      // real `QuoteItem`s — including `totalPrice`, which only the store is
-      // allowed to derive. Deriving it here with the same formula keeps the
-      // persisted shape identical to the `addQuote` path.
       updateQuote(editingQuote.id, {
         title: payload.title,
         customerId: payload.customerId,
@@ -337,8 +387,6 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         subtotal: formSubtotal,
         discountAmount: formDiscountVal,
         total: formTotal,
-        // `updatedAt` is the store's to set — `updateQuote` stamps it itself,
-        // so the view never has to read the clock.
       });
       setFeedback({ tone: "positive", message: t("quotes.updatedSuccess") });
     } else {
@@ -361,7 +409,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     if (guardExport()) return;
     const customer = customers.find((c) => c.id === q.customerId);
     setWhatsAppData({
-      clientName: customer ? customer.name : (q.customerSnapshot?.name || ""),
+      clientName: customer ? customer.name : q.customerSnapshot?.name || "",
       clientPhone: customer ? customer.phone : "",
       clientCompany: customer ? customer.company : "",
       projectName: `Orçamento #${String(q.number).padStart(3, "0")} - ${q.title}`,
@@ -372,11 +420,30 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
     setIsWhatsAppModalOpen(true);
   };
 
+  const handleQuickStatusUpdate = (
+    quote: Quote,
+    nextStatus: Quote["status"],
+  ) => {
+    if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null) return;
+    setQuoteStatus(quote.id, nextStatus);
+    if (viewingQuote?.id === quote.id) {
+      setViewingQuote({ ...quote, status: nextStatus });
+    }
+  };
+
+  const selectedCustomerObj = selectedQuote
+    ? customers.find((c) => c.id === selectedQuote.customerId)
+    : undefined;
+  const selectedCustomerName = selectedQuote
+    ? selectedCustomerObj?.name ||
+      selectedQuote.customerSnapshot?.name ||
+      "Cliente sem cadastro nominal"
+    : "";
+
   return (
-    <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-[100rem] pb-20">
-      {/* H-4: unavailable Desktop storage refuses the write at the persistence
-          layer. Without this the store mutates in memory, the list shows the new quote, and it
-          evaporates on reload with no message. */}
+    <div
+      className={`flex flex-col gap-6 text-text-primary ${containerClass} pb-20`}
+    >
       {!isFormOpen && !viewingQuote && confirmDeleteId === null && (
         <PiiWriteRefusalNotice storeKey={PII_STORE_KEY.quotes} />
       )}
@@ -390,200 +457,120 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         </div>
       )}
 
-      {/* KPI Bento Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Total Quotes */}
-        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-text-secondary">
-            <span className="text-[10px] font-mono uppercase font-semibold">
-              TOTAL DE ORÇAMENTOS
-            </span>
-            <FileText className="w-4 h-4 text-info" />
-          </div>
-          <div className="my-2">
-            <span className="text-2xl font-extrabold text-text-primary">
-              {totalQuotesCount}
-            </span>
-            <span className="text-xs text-text-secondary ml-1.5">emitidos</span>
-          </div>
-          <div className="text-[10px] text-text-muted">
-            {pendingQuotes.length} em negociação / rascunho
-          </div>
-        </div>
+      <StudioKpiStrip items={kpiItems} />
 
-        {/* Total Aprovado */}
-        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-text-secondary">
-            <span className="text-[10px] font-mono uppercase font-semibold">
-              VALOR TOTAL APROVADO
-            </span>
-            <Check className="w-4 h-4 text-positive" />
-          </div>
-          <div className="my-2">
-            <span className="text-2xl font-extrabold text-positive">
-              R$ {approvedTotal.toFixed(2).replace(".", ",")}
-            </span>
-          </div>
-          <div className="text-[10px] text-positive font-medium">
-            {approvedQuotes.length} pedidos fechados
-          </div>
-        </div>
+      <StudioViewToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar por número, título ou cliente..."
+        filters={
+          <>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              {(["all", "draft", "sent", "approved", "rejected"] as const).map(
+                (st) => {
+                  const count =
+                    st === "all"
+                      ? quotes.length
+                      : quotes.filter((q) => q.status === st).length;
+                  const label =
+                    st === "all" ? "Todos" : STATUS_CONFIG[st].label;
+                  const isActive = statusFilter === st;
 
-        {/* Em Aberto */}
-        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-text-secondary">
-            <span className="text-[10px] font-mono uppercase font-semibold">
-              VALOR EM ABERTO
-            </span>
-            <Clock className="w-4 h-4 text-warning" />
-          </div>
-          <div className="my-2">
-            <span className="text-2xl font-extrabold text-warning">
-              R$ {pendingTotal.toFixed(2).replace(".", ",")}
-            </span>
-          </div>
-          <div className="text-[10px] text-text-secondary">
-            Potencial de fechamento imediato
-          </div>
-        </div>
-
-        {/* Ticket Médio */}
-        <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-text-secondary">
-            <span className="text-[10px] font-mono uppercase font-semibold">
-              TICKET MÉDIO
-            </span>
-            <DollarSign className="w-4 h-4 text-accent" />
-          </div>
-          <div className="my-2">
-            <span className="text-2xl font-extrabold text-accent">
-              R$ {avgTicket.toFixed(2).replace(".", ",")}
-            </span>
-          </div>
-          <div className="text-[10px] text-text-secondary">
-            Média por pedido gerado
-          </div>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface-raised border border-border-subtle rounded-2xl p-3">
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por número, título ou cliente..."
-            className="w-full bg-surface-raised border border-border-subtle rounded-xl pl-9 pr-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent"
-          />
-          <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
-        {/* Controls: Status Pills and View Switcher */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          {/* Status Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            {(["all", "draft", "sent", "approved", "rejected"] as const).map(
-              (st) => {
-                const count =
-                  st === "all"
-                    ? quotes.length
-                    : quotes.filter((q) => q.status === st).length;
-                const label = st === "all" ? "Todos" : STATUS_CONFIG[st].label;
-                const isActive = statusFilter === st;
-
-                return (
-                  <button
-                    key={st}
-                    type="button"
-                    onClick={() => setStatusFilter(st)}
-                    className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                      isActive
-                        ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                        : "bg-surface-raised text-text-secondary hover:text-text-primary hover:bg-surface-overlay"
-                    }`}
-                  >
-                    <span>{label}</span>
-                    <span
-                      className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${isActive ? "bg-surface-sunken" : "bg-surface-sunken"}`}
+                  return (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setStatusFilter(st)}
+                      className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                        isActive
+                          ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                          : "bg-surface-sunken text-text-secondary hover:text-text-primary hover:bg-surface-overlay"
+                      }`}
                     >
-                      {count}
-                    </span>
-                  </button>
-                );
-              },
-            )}
-          </div>
+                      <span>{label}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-surface-raised/60">
+                        {count}
+                      </span>
+                    </button>
+                  );
+                },
+              )}
+            </div>
 
-          {/* View Mode Toggle: Lista vs Cards */}
-          <div className="flex items-center bg-surface-raised border border-border-subtle rounded-xl p-0.5 shrink-0 text-xs">
+            <div className="flex items-center bg-surface-sunken border border-border-subtle rounded-xl p-0.5 shrink-0 text-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`flex min-h-11 items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
+                  viewMode === "list"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                    : "text-text-secondary hover:text-text-primary"
+                }`}
+                title="Visualização em Lista / Tabela"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Lista</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`flex min-h-11 items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
+                  viewMode === "grid"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                    : "text-text-secondary hover:text-text-primary"
+                }`}
+                title="Visualização em Grade de Cards"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Cards</span>
+              </button>
+            </div>
+          </>
+        }
+        actions={
+          <>
+            {onOpenNewQuote ? (
+              <button
+                type="button"
+                onClick={onOpenNewQuote}
+                className="flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-sunken border border-border-subtle hover:bg-surface-overlay text-text-secondary hover:text-text-primary text-xs font-semibold transition-all shrink-0"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-accent" />
+                <span className="hidden md:inline">Proposta Rápida</span>
+              </button>
+            ) : null}
+
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".open3dcalc,.json,application/json"
+              onChange={handleImportFile}
+              className="sr-only"
+              aria-label="Importar orçamentos ou backup"
+            />
             <button
               type="button"
-              onClick={() => setViewMode("list")}
-              className={`flex min-h-11 items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
-                viewMode === "list"
-                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-              title="Visualização em Lista / Tabela"
+              onClick={() => importInputRef.current?.click()}
+              title="Importar orçamentos (.json ou .open3dcalc)"
+              className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-sunken border border-border-subtle hover:bg-surface-overlay text-text-secondary hover:text-text-primary text-xs font-semibold transition-all shrink-0"
             >
-              <List className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Lista</span>
+              <Upload className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Importar</span>
             </button>
+
             <button
               type="button"
-              onClick={() => setViewMode("grid")}
-              className={`flex min-h-11 items-center gap-1.5 px-3 py-1 rounded-lg transition-all font-semibold ${
-                viewMode === "grid"
-                  ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-              title="Visualização em Grade de Cards"
+              onClick={openCreateModal}
+              className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shrink-0 hover:scale-[1.02] active:scale-[0.98]"
             >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Cards</span>
+              <Plus className="w-4 h-4" />
+              <span>Novo Orçamento</span>
             </button>
-          </div>
+          </>
+        }
+      />
 
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".open3dcalc,.json,application/json"
-            onChange={handleImportFile}
-            className="sr-only"
-            aria-label="Importar orçamentos ou backup"
-          />
-          <button
-            type="button"
-            onClick={() => importInputRef.current?.click()}
-            title="Importar orçamentos (.json ou .open3dcalc)"
-            className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-raised border border-border-subtle hover:bg-surface-overlay text-text-secondary hover:text-text-primary text-xs font-semibold transition-all shrink-0"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Importar</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md shrink-0 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Novo Orçamento</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Quote List or Cards (Modern Studio Views) */}
+      {/* Quote List or Cards + Split Inspector */}
       {filteredQuotes.length === 0 ? (
         <div className="bg-surface-raised border border-border-subtle rounded-2xl p-12 text-center flex flex-col items-center justify-center">
           <div className="w-14 h-14 rounded-2xl bg-accent-subtle border border-accent/20 flex items-center justify-center text-info mb-3">
@@ -616,339 +603,503 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
             </button>
           </div>
         </div>
-      ) : viewMode === "list" ? (
-        /* Modern Studio List / Table View */
-        <div className="bg-surface-raised border border-border-subtle rounded-2xl overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-border-subtle bg-surface-sunken text-[10px] font-mono uppercase tracking-wider text-text-secondary">
-                  <th className="py-3.5 px-4 font-bold">CÓDIGO</th>
-                  <th className="py-3.5 px-4 font-bold">CLIENTE</th>
-                  <th className="py-3.5 px-4 font-bold">PROPOSTA & PEÇAS</th>
-                  <th className="py-3.5 px-4 font-bold">DATA / EMISSÃO</th>
-                  <th className="py-3.5 px-4 font-bold text-center">STATUS</th>
-                  <th className="py-3.5 px-4 font-bold text-right">
-                    VALOR TOTAL
-                  </th>
-                  <th className="py-3.5 px-4 font-bold text-right">AÇÕES</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-subtle">
-                {filteredQuotes.map((quote) => {
-                  const customer = customers.find(
-                    (c) => c.id === quote.customerId,
-                  );
-                  const statusCfg = STATUS_CONFIG[quote.status];
-                  const customerDisplayName = customer
-                    ? customer.name
-                    : quote.customerSnapshot?.name ||
-                      "Cliente sem cadastro nominal";
-                  const dateStr = new Date(quote.createdAt).toLocaleDateString(
-                    "pt-BR",
-                  );
+      ) : (
+        <StudioSplitInspector
+          isOpen={selectedQuote !== null}
+          onClose={() => setSelectedQuoteId(null)}
+          title={selectedQuote?.title || "Proposta"}
+          subtitle={
+            selectedQuote
+              ? `#${String(selectedQuote.number).padStart(3, "0")} • ${selectedCustomerName}`
+              : undefined
+          }
+          badge={
+            selectedQuote ? (
+              <span
+                className={`inline-block text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full font-bold border ${STATUS_CONFIG[selectedQuote.status].bg} ${STATUS_CONFIG[selectedQuote.status].color} ${STATUS_CONFIG[selectedQuote.status].border}`}
+              >
+                {STATUS_CONFIG[selectedQuote.status].label}
+              </span>
+            ) : null
+          }
+          inspectorContent={
+            selectedQuote ? (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-mono uppercase font-bold text-text-secondary">
+                    Transição Rápida de Status
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(["draft", "sent", "approved", "rejected"] as const).map(
+                      (st) => (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() =>
+                            handleQuickStatusUpdate(selectedQuote, st)
+                          }
+                          className={`min-h-10 px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+                            selectedQuote.status === st
+                              ? `${STATUS_CONFIG[st].bg} ${STATUS_CONFIG[st].color} ${STATUS_CONFIG[st].border}`
+                              : "bg-surface-sunken border-border-subtle text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
+                          }`}
+                        >
+                          {STATUS_CONFIG[st].label}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </div>
 
-                  return (
-                    <tr
-                      key={quote.id}
-                      className="hover:bg-surface-raised transition-colors group"
+                <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3 space-y-1.5">
+                  <span className="text-[10px] font-mono uppercase font-bold text-text-secondary block">
+                    Peças ({selectedQuote.items.length})
+                  </span>
+                  {selectedQuote.items.map((it, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between text-xs text-text-secondary border-b border-border-subtle pb-1 last:border-none last:pb-0"
                     >
-                      {/* Código */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="text-xs font-mono font-bold text-info px-2 py-1 rounded bg-accent-subtle border border-accent/20">
+                      <span className="truncate">
+                        {it.quantity}x {it.name}
+                      </span>
+                      <span className="font-mono font-bold text-positive shrink-0 ml-2">
+                        {formatCurrency(it.quantity * it.unitPrice)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t border-border-subtle flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase text-text-muted">
+                      Total Final
+                    </span>
+                    <span className="text-base font-extrabold text-positive font-mono">
+                      {formatCurrency(selectedQuote.total)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3 space-y-1 text-[11px] text-text-secondary">
+                  <div className="flex justify-between gap-2">
+                    <span>Pagamento</span>
+                    <strong className="text-text-primary text-right">
+                      {selectedQuote.paymentTerms || "A combinar"}
+                    </strong>
+                  </div>
+                  {selectedQuote.deliveryEstimate ? (
+                    <div className="flex justify-between gap-2">
+                      <span>Prazo</span>
+                      <strong className="text-text-primary">
+                        {selectedQuote.deliveryEstimate}
+                      </strong>
+                    </div>
+                  ) : null}
+                  {selectedQuote.validUntil ? (
+                    <div className="flex justify-between gap-2">
+                      <span>Validade</span>
+                      <strong className="text-text-primary">
+                        {new Date(selectedQuote.validUntil).toLocaleDateString(
+                          "pt-BR",
+                        )}
+                      </strong>
+                    </div>
+                  ) : null}
+                </div>
+              </>
+            ) : null
+          }
+          footer={
+            selectedQuote ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => exportQuoteToPdf(selectedQuote)}
+                  className="flex-1 flex min-h-11 items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:brightness-110 text-[var(--color-accent-fill-fg)] font-bold text-xs transition-all"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>PDF Comercial</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shareWhatsApp(selectedQuote)}
+                  className="flex min-h-11 items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--positive-fill)] bg-[var(--positive-fill)] text-[var(--positive-fill-fg)] font-bold text-xs hover:brightness-110 transition-all"
+                >
+                  <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
+                  <span>WhatsApp</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openEditModal(selectedQuote)}
+                  className="flex min-h-11 items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-surface-sunken hover:bg-surface-overlay border border-border-subtle text-text-primary font-semibold text-xs transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>Editar</span>
+                </button>
+              </>
+            ) : null
+          }
+        >
+          {viewMode === "list" ? (
+            <div className="bg-surface-raised border border-border-subtle rounded-2xl overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border-subtle bg-surface-sunken text-[10px] font-mono uppercase tracking-wider text-text-secondary">
+                      <th className="py-3.5 px-4 font-bold">CÓDIGO</th>
+                      <th className="py-3.5 px-4 font-bold">CLIENTE</th>
+                      <th className="py-3.5 px-4 font-bold">
+                        PROPOSTA & PEÇAS
+                      </th>
+                      <th className="py-3.5 px-4 font-bold">DATA / EMISSÃO</th>
+                      <th className="py-3.5 px-4 font-bold text-center">
+                        STATUS
+                      </th>
+                      <th className="py-3.5 px-4 font-bold text-right">
+                        VALOR TOTAL
+                      </th>
+                      <th className="py-3.5 px-4 font-bold text-right">
+                        AÇÕES
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-subtle">
+                    {filteredQuotes.map((quote) => {
+                      const customer = customers.find(
+                        (c) => c.id === quote.customerId,
+                      );
+                      const statusCfg = STATUS_CONFIG[quote.status];
+                      const customerDisplayName = customer
+                        ? customer.name
+                        : quote.customerSnapshot?.name ||
+                          "Cliente sem cadastro nominal";
+                      const dateStr = new Date(
+                        quote.createdAt,
+                      ).toLocaleDateString("pt-BR");
+                      const isSelected = selectedQuote?.id === quote.id;
+
+                      return (
+                        <tr
+                          key={quote.id}
+                          onClick={() =>
+                            setSelectedQuoteId((prev) =>
+                              prev === quote.id ? null : quote.id,
+                            )
+                          }
+                          className={`cursor-pointer transition-colors group ${
+                            isSelected
+                              ? "bg-accent-subtle/30"
+                              : "hover:bg-surface-overlay/50"
+                          }`}
+                        >
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span className="text-xs font-mono font-bold text-info px-2 py-1 rounded bg-accent-subtle border border-accent/20">
+                              #{String(quote.number).padStart(3, "0")}
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-surface-sunken border border-border-subtle flex items-center justify-center text-[10px] font-bold text-text-secondary">
+                                {customerDisplayName
+                                  .substring(0, 2)
+                                  .toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-text-primary block">
+                                  {customerDisplayName}
+                                </span>
+                                {customer?.company ? (
+                                  <span className="text-[10px] text-text-secondary">
+                                    {customer.company}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <div className="max-w-xs md:max-w-md">
+                              <span className="font-bold text-text-secondary block truncate group-hover:text-info transition-colors">
+                                {quote.title}
+                              </span>
+                              <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-text-secondary truncate">
+                                <span className="px-1.5 py-0.2 rounded bg-surface-sunken text-[10px] text-text-secondary font-mono">
+                                  {quote.items.length}{" "}
+                                  {quote.items.length === 1 ? "item" : "itens"}
+                                </span>
+                                <span className="truncate">
+                                  {quote.items
+                                    .map((it) => `${it.quantity}x ${it.name}`)
+                                    .join(", ")}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4 whitespace-nowrap text-text-secondary font-mono text-[11px]">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-text-muted" />
+                              <span>{dateStr}</span>
+                            </div>
+                            {quote.validUntil ? (
+                              <span className="text-[10px] text-text-muted block">
+                                Até{" "}
+                                {new Date(quote.validUntil).toLocaleDateString(
+                                  "pt-BR",
+                                )}
+                              </span>
+                            ) : null}
+                          </td>
+
+                          <td className="py-3.5 px-4 whitespace-nowrap text-center">
+                            <span
+                              className={`inline-block text-[10px] font-mono uppercase px-2.5 py-1 rounded-full font-bold border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}
+                            >
+                              {statusCfg.label}
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-4 whitespace-nowrap text-right">
+                            <span className="text-sm font-extrabold text-positive font-mono">
+                              {formatCurrency(quote.total)}
+                            </span>
+                          </td>
+
+                          <td
+                            className="py-3.5 px-4 whitespace-nowrap text-right"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setViewingQuote(quote)}
+                                className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-accent-subtle hover:brightness-110 text-info border border-accent/30 transition-all"
+                                title="Visualizar Proposta"
+                                aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => exportQuoteToPdf(quote)}
+                                className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-overlay text-text-secondary hover:text-text-primary border border-border-subtle transition-colors"
+                                title="Download em PDF Comercial"
+                                aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => shareWhatsApp(quote)}
+                                className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-positive/30 bg-positive-subtle p-1.5 text-positive transition-colors hover:border-[var(--positive-fill)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
+                                title="Enviar no WhatsApp"
+                                aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
+                              >
+                                <BrandIcon
+                                  brand="whatsapp"
+                                  className="h-3.5 w-3.5"
+                                />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => openEditModal(quote)}
+                                className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-overlay text-text-secondary hover:text-text-primary border border-border-subtle transition-colors"
+                                title="Editar Orçamento"
+                                aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteId(quote.id)}
+                                className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical border border-border-subtle hover:border-critical/30 transition-colors"
+                                title="Excluir Orçamento"
+                                aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`grid grid-cols-1 md:grid-cols-2 ${
+                selectedQuote
+                  ? "xl:grid-cols-2 2xl:grid-cols-3"
+                  : "xl:grid-cols-3 2xl:grid-cols-4"
+              } gap-4`}
+            >
+              {filteredQuotes.map((quote) => {
+                const customer = customers.find(
+                  (c) => c.id === quote.customerId,
+                );
+                const customerDisplayName = customer
+                  ? customer.name
+                  : quote.customerSnapshot?.name ||
+                    "Cliente sem cadastro nominal";
+                const statusCfg = STATUS_CONFIG[quote.status];
+                const isSelected = selectedQuote?.id === quote.id;
+
+                return (
+                  <div
+                    key={quote.id}
+                    onClick={() =>
+                      setSelectedQuoteId((prev) =>
+                        prev === quote.id ? null : quote.id,
+                      )
+                    }
+                    className={`cursor-pointer bg-surface-raised hover:bg-surface-overlay/50 border rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative ${
+                      isSelected
+                        ? "border-accent ring-1 ring-accent/30"
+                        : "border-border-subtle hover:border-border"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs font-mono font-bold text-info px-2 py-0.5 rounded bg-accent-subtle border border-accent/20">
                           #{String(quote.number).padStart(3, "0")}
                         </span>
-                      </td>
-
-                      {/* Cliente */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-surface-sunken border border-border-subtle flex items-center justify-center text-[10px] font-bold text-text-secondary">
-                            {customerDisplayName.substring(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-text-primary block">
-                              {customerDisplayName}
-                            </span>
-                            {customer?.company && (
-                              <span className="text-[10px] text-text-secondary">
-                                {customer.company}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Proposta & Peças */}
-                      <td className="py-3.5 px-4">
-                        <div className="max-w-xs md:max-w-md">
-                          <span className="font-bold text-text-secondary block truncate group-hover:text-info transition-colors">
-                            {quote.title}
-                          </span>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-text-secondary truncate">
-                            <span className="px-1.5 py-0.2 rounded bg-surface-sunken text-[10px] text-text-secondary font-mono">
-                              {quote.items.length}{" "}
-                              {quote.items.length === 1 ? "item" : "itens"}
-                            </span>
-                            <span className="truncate">
-                              {quote.items
-                                .map((it) => `${it.quantity}x ${it.name}`)
-                                .join(", ")}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Data */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-text-secondary font-mono text-[11px]">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-text-muted" />
-                          <span>{dateStr}</span>
-                        </div>
-                        {quote.validUntil && (
-                          <span className="text-[10px] text-text-muted block">
-                            Até{" "}
-                            {new Date(quote.validUntil).toLocaleDateString(
-                              "pt-BR",
-                            )}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-center">
                         <span
-                          className={`inline-block text-[10px] font-mono uppercase px-2.5 py-1 rounded-full font-bold border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}
+                          className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full font-bold border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}
                         >
                           {statusCfg.label}
                         </span>
-                      </td>
+                      </div>
 
-                      {/* Valor Total */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-right">
-                        <span className="text-sm font-extrabold text-positive font-mono">
-                          R$ {quote.total.toFixed(2).replace(".", ",")}
+                      <h3 className="text-sm font-bold text-text-primary group-hover:text-info transition-colors line-clamp-1">
+                        {quote.title}
+                      </h3>
+
+                      <div className="flex items-center gap-1.5 text-xs text-text-secondary mt-1 truncate">
+                        <Users className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                        <span className="truncate text-text-secondary font-medium">
+                          {customerDisplayName}
                         </span>
-                      </td>
+                      </div>
 
-                      {/* Ações */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setViewingQuote(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-accent-subtle hover:bg-accent-subtle text-info border border-accent/30 transition-colors"
-                            title="Visualizar Proposta"
-                            aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => exportQuoteToPdf(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary border border-border-subtle transition-colors"
-                            title="Download em PDF Comercial"
-                            aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => shareWhatsApp(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-positive/30 bg-positive-subtle p-1.5 text-positive transition-colors hover:border-[var(--positive-fill)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
-                            title="Enviar no WhatsApp"
-                            aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
-                          >
-                            <BrandIcon
-                              brand="whatsapp"
-                              className="h-3.5 w-3.5"
-                            />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(quote)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary border border-border-subtle transition-colors"
-                            title="Editar Orçamento"
-                            aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setConfirmDeleteId(quote.id)}
-                            className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical border border-border-subtle hover:border-critical/30 transition-colors"
-                            title="Excluir Orçamento"
-                            aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                      <div className="bg-surface-sunken border border-border-subtle rounded-xl p-2.5 mt-3 flex flex-col gap-1.5">
+                        <div className="text-[11px] text-text-secondary flex items-center justify-between">
+                          <span>
+                            {quote.items.length}{" "}
+                            {quote.items.length === 1 ? "item" : "itens"} no
+                            pedido
+                          </span>
+                          <span className="font-mono text-text-muted">
+                            {new Date(quote.createdAt).toLocaleDateString(
+                              "pt-BR",
+                            )}
+                          </span>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        /* Modern Studio Cards Grid View */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredQuotes.map((quote) => {
-            const customer = customers.find((c) => c.id === quote.customerId);
-            const customerDisplayName = customer
-              ? customer.name
-              : quote.customerSnapshot?.name || "Cliente sem cadastro nominal";
-            const statusCfg = STATUS_CONFIG[quote.status];
 
-            return (
-              <div
-                key={quote.id}
-                className="bg-surface-raised hover:bg-surface-raised border border-border-subtle hover:border-border-subtle rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative"
-              >
-                {/* Header: Number, Status, Date */}
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-xs font-mono font-bold text-info px-2 py-0.5 rounded bg-accent-subtle border border-accent/20">
-                      #{String(quote.number).padStart(3, "0")}
-                    </span>
-                    <span
-                      className={`text-[9px] font-mono uppercase px-2 py-0.5 rounded-full font-bold border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}
-                    >
-                      {statusCfg.label}
-                    </span>
-                  </div>
-
-                  <h3 className="text-sm font-bold text-text-primary group-hover:text-info transition-colors line-clamp-1">
-                    {quote.title}
-                  </h3>
-
-                  {/* Customer row */}
-                  <div className="flex items-center gap-1.5 text-xs text-text-secondary mt-1 truncate">
-                    <Users className="w-3.5 h-3.5 text-text-muted shrink-0" />
-                    <span className="truncate text-text-secondary font-medium">
-                      {customer
-                        ? customer.name
-                        : quote.customerSnapshot?.name ||
-                          "Cliente sem cadastro nominal"}
-                    </span>
-                  </div>
-
-                  {/* Items summary */}
-                  <div className="bg-surface-sunken border border-border-subtle rounded-xl p-2.5 mt-3 flex flex-col gap-1.5">
-                    <div className="text-[11px] text-text-secondary flex items-center justify-between">
-                      <span>
-                        {quote.items.length}{" "}
-                        {quote.items.length === 1 ? "item" : "itens"} no pedido
-                      </span>
-                      <span className="font-mono text-text-muted">
-                        {new Date(quote.createdAt).toLocaleDateString("pt-BR")}
-                      </span>
+                        <div className="space-y-1">
+                          {quote.items.slice(0, 2).map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between text-xs text-text-secondary truncate"
+                            >
+                              <span className="truncate text-[11px]">
+                                {item.quantity}x {item.name}
+                              </span>
+                              <span className="font-mono text-text-secondary text-[10px] ml-2">
+                                {formatCurrency(item.quantity * item.unitPrice)}
+                              </span>
+                            </div>
+                          ))}
+                          {quote.items.length > 2 && (
+                            <span className="text-[10px] text-text-muted italic block">
+                              +{quote.items.length - 2} outro(s) item(ns)...
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="space-y-1">
-                      {quote.items.slice(0, 2).map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between text-xs text-text-secondary truncate"
+                    <div
+                      className="pt-2 border-t border-border-subtle flex flex-col gap-2.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono uppercase text-text-muted">
+                          VALOR TOTAL:
+                        </span>
+                        <span className="text-base font-extrabold text-positive font-mono">
+                          {formatCurrency(quote.total)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setViewingQuote(quote)}
+                          className="flex-1 flex min-h-11 items-center justify-center gap-1 py-1.5 rounded-lg bg-accent-subtle hover:brightness-110 text-info font-semibold text-xs border border-accent/30 transition-all"
+                          title="Visualizar detalhes da proposta"
+                          aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
                         >
-                          <span className="truncate text-[11px]">
-                            {item.quantity}x {item.name}
-                          </span>
-                          <span className="font-mono text-text-secondary text-[10px] ml-2">
-                            R${" "}
-                            {(item.quantity * item.unitPrice)
-                              .toFixed(2)
-                              .replace(".", ",")}
-                          </span>
-                        </div>
-                      ))}
-                      {quote.items.length > 2 && (
-                        <span className="text-[10px] text-text-muted italic block">
-                          +{quote.items.length - 2} outro(s) item(ns)...
-                        </span>
-                      )}
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Ver</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => exportQuoteToPdf(quote)}
+                          className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-overlay text-text-secondary hover:text-text-primary transition-colors border border-border-subtle"
+                          title="Download em PDF"
+                          aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => shareWhatsApp(quote)}
+                          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-positive/30 bg-positive-subtle p-1.5 text-positive transition-colors hover:border-[var(--positive-fill)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
+                          title="Compartilhar no WhatsApp"
+                          aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
+                        >
+                          <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(quote)}
+                          className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-overlay text-text-secondary hover:text-text-primary transition-colors border border-border-subtle"
+                          title="Editar Orçamento"
+                          aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(quote.id)}
+                          className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical transition-colors border border-border-subtle hover:border-critical/30"
+                          title="Excluir Orçamento"
+                          aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Total and Action Buttons */}
-                <div className="pt-2 border-t border-border-subtle flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase text-text-muted">
-                      VALOR TOTAL:
-                    </span>
-                    <span className="text-base font-extrabold text-positive font-mono">
-                      R$ {quote.total.toFixed(2).replace(".", ",")}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setViewingQuote(quote)}
-                      className="flex-1 flex min-h-11 items-center justify-center gap-1 py-1.5 rounded-lg bg-accent-subtle hover:bg-accent-subtle text-info font-semibold text-xs border border-accent/30 transition-colors"
-                      title="Visualizar detalhes da proposta"
-                      aria-label={`Visualizar proposta #${String(quote.number).padStart(3, "0")} para ${customerDisplayName}`}
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Ver</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => exportQuoteToPdf(quote)}
-                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary transition-colors border border-border-subtle"
-                      title="Download em PDF"
-                      aria-label={`Baixar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} em PDF`}
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => shareWhatsApp(quote)}
-                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-positive/30 bg-positive-subtle p-1.5 text-positive transition-colors hover:border-[var(--positive-fill)] hover:bg-[var(--positive-fill)] hover:text-[var(--positive-fill-fg)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-raised)]"
-                      title="Compartilhar no WhatsApp"
-                      aria-label={`Enviar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName} no WhatsApp`}
-                    >
-                      <BrandIcon brand="whatsapp" className="h-3.5 w-3.5" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(quote)}
-                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-surface-sunken text-text-secondary hover:text-text-primary transition-colors border border-border-subtle"
-                      title="Editar Orçamento"
-                      aria-label={`Editar orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setConfirmDeleteId(quote.id)}
-                      className="flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded-lg bg-surface-sunken hover:bg-critical-subtle text-text-secondary hover:text-critical transition-colors border border-border-subtle hover:border-critical/30"
-                      title="Excluir Orçamento"
-                      aria-label={`Excluir orçamento #${String(quote.number).padStart(3, "0")} de ${customerDisplayName}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </StudioSplitInspector>
       )}
 
-      {/* Create / Edit Quote Modal in Studio Dark Theme */}
+      {/* Create / Edit Quote Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-[var(--color-overlay-scrim)] backdrop-blur-sm flex items-center justify-center p-4">
           <div
             role="dialog"
             aria-modal="true"
@@ -1078,7 +1229,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   <button
                     type="button"
                     onClick={addItemToForm}
-                    className="flex items-center gap-1 text-info hover:text-info font-bold text-xs"
+                    className="flex items-center gap-1 text-info hover:underline font-bold text-xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Adicionar Peça</span>
@@ -1122,7 +1273,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       <div className="col-span-3">
                         <div className="flex items-center gap-1">
                           <span className="text-[10px] text-text-muted">
-                            R$:
+                            {currencySymbol}:
                           </span>
                           <input
                             type="number"
@@ -1137,10 +1288,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       </div>
                       <div className="col-span-2 flex items-center justify-end gap-1">
                         <span className="font-mono text-positive text-xs font-bold">
-                          R${" "}
-                          {(it.quantity * it.unitPrice)
-                            .toFixed(2)
-                            .replace(".", ",")}
+                          {formatCurrency(it.quantity * it.unitPrice)}
                         </span>
                         <button
                           type="button"
@@ -1208,7 +1356,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                 <span className="text-text-secondary">
                   Subtotal:{" "}
                   <strong className="text-text-secondary">
-                    R$ {formSubtotal.toFixed(2).replace(".", ",")}
+                    {formatCurrency(formSubtotal)}
                   </strong>
                   {globalDiscount > 0 && ` (-${globalDiscount}% desc)`}
                 </span>
@@ -1217,7 +1365,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                     Total Final:
                   </span>
                   <span className="text-lg font-extrabold text-positive font-mono">
-                    R$ {formTotal.toFixed(2).replace(".", ",")}
+                    {formatCurrency(formTotal)}
                   </span>
                 </div>
               </div>
@@ -1226,13 +1374,13 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary bg-surface-sunken hover:bg-surface-sunken transition-colors"
+                  className="min-h-11 px-4 py-2 rounded-xl text-xs font-semibold text-text-secondary hover:text-text-primary bg-surface-sunken hover:bg-surface-overlay transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold text-[var(--color-accent-fill-fg)] bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 transition-colors shadow-md"
+                  className="min-h-11 px-5 py-2 rounded-xl text-xs font-bold text-[var(--color-accent-fill-fg)] bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 transition-colors shadow-md"
                 >
                   {editingQuote ? "Salvar Alterações" : "Criar Orçamento"}
                 </button>
@@ -1242,9 +1390,9 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
         </div>
       )}
 
-      {/* Viewing Quote Modal in Studio Dark Theme */}
+      {/* Viewing Quote Modal */}
       {viewingQuote && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-[var(--color-overlay-scrim)] backdrop-blur-sm flex items-center justify-center p-4">
           <div
             role="dialog"
             aria-modal="true"
@@ -1283,15 +1431,8 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   (st) => (
                     <button
                       key={st}
-                      onClick={() => {
-                        if (
-                          beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null
-                        ) {
-                          return;
-                        }
-                        setQuoteStatus(viewingQuote.id, st);
-                        setViewingQuote({ ...viewingQuote, status: st });
-                      }}
+                      type="button"
+                      onClick={() => handleQuickStatusUpdate(viewingQuote, st)}
                       className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
                         viewingQuote.status === st
                           ? `${STATUS_CONFIG[st].bg} ${STATUS_CONFIG[st].color} border ${STATUS_CONFIG[st].border}`
@@ -1320,10 +1461,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                       {it.quantity}x {it.name}
                     </span>
                     <span className="font-mono text-positive font-bold">
-                      R${" "}
-                      {(it.quantity * it.unitPrice)
-                        .toFixed(2)
-                        .replace(".", ",")}
+                      {formatCurrency(it.quantity * it.unitPrice)}
                     </span>
                   </div>
                 ))}
@@ -1345,7 +1483,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   TOTAL DA PROPOSTA:
                 </span>
                 <span className="text-xl font-extrabold text-positive font-mono">
-                  R$ {viewingQuote.total.toFixed(2).replace(".", ",")}
+                  {formatCurrency(viewingQuote.total)}
                 </span>
               </div>
             </div>
@@ -1363,7 +1501,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => exportQuoteToPdf(viewingQuote)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-[var(--color-accent-fill-fg)] bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 transition-colors shadow-md"
+                className="flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-[var(--color-accent-fill-fg)] bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 transition-colors shadow-md"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download PDF</span>
@@ -1375,7 +1513,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
 
       {/* Delete Confirmation Dialog */}
       {confirmDeleteId && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-[var(--color-overlay-scrim)] backdrop-blur-sm flex items-center justify-center p-4">
           <div
             role="alertdialog"
             aria-modal="true"
@@ -1401,7 +1539,7 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
               <button
                 type="button"
                 onClick={() => setConfirmDeleteId(null)}
-                className="px-3 py-1.5 rounded-lg text-xs text-text-secondary hover:text-text-primary"
+                className="min-h-11 px-3 py-1.5 rounded-lg text-xs text-text-secondary hover:text-text-primary hover:bg-surface-overlay"
               >
                 Cancelar
               </button>
@@ -1411,9 +1549,12 @@ export const StudioQuotesView: React.FC<StudioQuotesViewProps> = () => {
                   if (beginPiiSurfaceWrite(PII_STORE_KEY.quotes) !== null)
                     return;
                   removeQuote(confirmDeleteId);
+                  if (selectedQuoteId === confirmDeleteId) {
+                    setSelectedQuoteId(null);
+                  }
                   setConfirmDeleteId(null);
                 }}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-critical hover:ring-2 hover:ring-critical/40 text-text-inverse"
+                className="min-h-11 px-3 py-1.5 rounded-lg text-xs font-bold bg-critical hover:ring-2 hover:ring-critical/40 text-text-inverse"
               >
                 Excluir
               </button>

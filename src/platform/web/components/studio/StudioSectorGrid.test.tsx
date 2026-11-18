@@ -40,11 +40,19 @@ const CENTERED_VIEWS: ReadonlyArray<string> = [
 
 describe("Studio sector grid — centered like the Example", () => {
   it.each(CENTERED_VIEWS)(
-    "%s centers its content grid (margin auto + max width)",
+    "%s centers its content grid (adaptive workspaceWidth or margin auto + max width)",
     (file) => {
       const source = read(file);
-      expect(source).toMatch(/mx-auto/);
-      expect(source).toMatch(/max-w-(?:7xl|\[1920px\]|\[100rem\])/);
+      const usesAdaptiveHelper = source.includes("useWorkspaceContainerClass");
+      if (!usesAdaptiveHelper) {
+        expect(source).toMatch(/mx-auto/);
+        expect(source).toMatch(/max-w-(?:7xl|\[1920px\]|\[100rem\])/);
+      } else {
+        const helper = read("platform/web/components/studio/workspaceWidth.ts");
+        expect(helper).toMatch(/max-w-7xl mx-auto/);
+        expect(helper).toMatch(/max-w-\[100rem\] mx-auto/);
+        expect(helper).toMatch(/max-w-none mx-auto/);
+      }
     },
   );
 
@@ -52,9 +60,9 @@ describe("Studio sector grid — centered like the Example", () => {
     expect(read(file)).not.toMatch(/max-w-full/);
   });
 
-  it("StudioLayout centers the inline catalog and infill wrappers", () => {
+  it("StudioLayout uses adaptive WORKSPACE_CONTAINER_CLASSES without max-w-full", () => {
     const layout = read("platform/web/components/studio/StudioLayout.tsx");
-    expect(layout).toMatch(/max-w-(?:7xl|\[100rem\])/);
+    expect(layout).toMatch(/WORKSPACE_CONTAINER_CLASSES/);
     expect(layout).not.toMatch(/max-w-full/);
   });
 

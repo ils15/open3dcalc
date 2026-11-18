@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Search,
@@ -28,6 +29,9 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { filamentBrands } from "@/shared/lib/filamentBrands";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
+import { useCurrency } from "@/shared/hooks/useCurrency";
+import { useWorkspaceContainerClass } from "@/platform/web/components/studio/workspaceWidth";
+import { LOW_STOCK_GRAMS, LOW_STOCK_FILTER_GRAMS } from "./SpoolCard";
 
 interface SpoolManagerViewProps {
   onTabChange?: (tab: Tab) => void;
@@ -55,6 +59,9 @@ const PRESET_PALETTE = [
 export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
   onTabChange,
 }) => {
+  const { t } = useTranslation();
+  const { symbol: currencySymbol, format: formatCurrency } = useCurrency();
+  const containerClass = useWorkspaceContainerClass();
   const isDemoMode = useIsDemoMode();
   const spools = useSpoolStore((s) => s.spools);
   const addSpool = useSpoolStore((s) => s.addSpool);
@@ -71,6 +78,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<"all" | SpoolStatus>(
     "all",
   );
+  const [onlyLowStock, setOnlyLowStock] = useState(false);
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -123,8 +131,10 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
       s.material.toLowerCase().includes(selectedMaterial.toLowerCase());
     const matchesStatus =
       selectedStatus === "all" || s.status === selectedStatus;
+    const matchesLowStock =
+      !onlyLowStock || isLowStockSpool(s, LOW_STOCK_FILTER_GRAMS);
 
-    return matchesSearch && matchesMaterial && matchesStatus;
+    return matchesSearch && matchesMaterial && matchesStatus && matchesLowStock;
   });
 
   const categorySpools = spools.filter((s) =>
@@ -141,10 +151,11 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
     0,
   );
   const lowStockCount = categorySpools.filter((s) =>
-    isLowStockSpool(s, 150),
+    isLowStockSpool(s, LOW_STOCK_GRAMS),
   ).length;
 
   const handleUseSpoolInCalc = (spool: FilamentSpool) => {
+    calcStore.setSelectedSpoolId(spool.id);
     if (isResin(spool.material)) {
       calcStore.setActiveTab("resin");
       calcStore.setResinMaterial({
@@ -263,7 +274,9 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 text-text-primary mx-auto w-full max-w-7xl pb-20">
+    <div
+      className={`flex flex-col gap-6 text-text-primary ${containerClass} pb-20`}
+    >
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface-raised border border-border-subtle rounded-2xl p-5">
         <div>
@@ -307,7 +320,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             categoryTab === "fdm"
               ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md shadow-accent/50"
-              : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
+              : "text-text-secondary hover:text-text-primary hover:bg-surface-overlay"
           }`}
         >
           <Package className="w-4 h-4" />
@@ -326,7 +339,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             categoryTab === "resin"
               ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-md shadow-accent/50"
-              : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
+              : "text-text-secondary hover:text-text-primary hover:bg-surface-overlay"
           }`}
         >
           <Droplet className="w-4 h-4" />
@@ -389,7 +402,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
           </div>
           <div className="my-2">
             <span className="text-2xl font-extrabold text-text-primary">
-              R$ {totalStockValue.toFixed(2).replace(".", ",")}
+              {formatCurrency(totalStockValue)}
             </span>
           </div>
           <div className="text-[10px] text-positive/90 font-medium">
@@ -401,7 +414,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
         <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
           <div className="flex items-center justify-between text-text-secondary">
             <span className="text-[10px] font-mono uppercase font-semibold">
-              ESTOQUE BAIXO (&lt;150g)
+              ESTOQUE BAIXO (&lt;{LOW_STOCK_GRAMS}g)
             </span>
             <AlertTriangle
               className={`w-4 h-4 ${lowStockCount > 0 ? "text-warning" : "text-text-muted"}`}
@@ -446,17 +459,33 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
             {materials.map((type) => (
               <button
                 key={type}
+                type="button"
                 onClick={() => setSelectedMaterial(type)}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                   selectedMaterial === type
                     ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
-                    : "text-text-secondary hover:text-text-primary hover:bg-surface-raised"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface-overlay"
                 }`}
               >
                 {type}
               </button>
             ))}
           </div>
+
+          <button
+            type="button"
+            data-testid="spool-manager-low-stock-filter"
+            aria-pressed={onlyLowStock}
+            onClick={() => setOnlyLowStock((prev) => !prev)}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap ${
+              onlyLowStock
+                ? "border-[var(--color-warning)] bg-[var(--color-warning-subtle)] text-[var(--color-warning)]"
+                : "border-border-subtle bg-surface-sunken text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span>{t("workshop.lowStockChip")}</span>
+          </button>
 
           {/* Status selector */}
           <select
@@ -508,18 +537,18 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {filteredSpools.map((spool) => {
             const pct = remainingPct(spool);
-            const hex = spool.colorHex || "#3b82f6";
+            const hex = spool.colorHex || "var(--color-accent)";
             const spoolRemainingCost =
               (spool.costPerKg / 1000) * spool.weightGrams;
-            const isLow = isLowStockSpool(spool, 150);
+            const isLow = isLowStockSpool(spool, LOW_STOCK_GRAMS);
 
             return (
               <div
                 key={spool.id}
-                className="bg-surface-raised hover:bg-surface-raised border border-border-subtle hover:border-border-subtle rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative overflow-hidden"
+                className="bg-surface-raised border border-border-subtle hover:border-[var(--color-border-accent)] rounded-2xl p-4 flex flex-col justify-between gap-4 transition-all group relative overflow-hidden"
               >
                 {/* Visual Spool Top Header */}
                 <div>
@@ -716,7 +745,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
 
                       <div className="flex items-center gap-2 text-[11px] text-text-secondary mt-1">
                         <span className="font-semibold text-text-secondary">
-                          R$ {spool.costPerKg.toFixed(2).replace(".", ",")}/
+                          {formatCurrency(spool.costPerKg)}/
                           {isResin(spool.material) ? "L" : "kg"}
                         </span>
                         <span>•</span>
@@ -765,7 +794,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
                       <span>
                         Valor restante:{" "}
                         <strong className="text-positive">
-                          R$ {spoolRemainingCost.toFixed(2).replace(".", ",")}
+                          {formatCurrency(spoolRemainingCost)}
                         </strong>
                       </span>
                       {spool.tareGrams && <span>Tara: {spool.tareGrams}g</span>}
@@ -793,7 +822,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
                   <button
                     type="button"
                     onClick={() => handleUseSpoolInCalc(spool)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent-subtle hover:bg-accent-subtle border border-accent/40 text-info font-semibold text-[11px] transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent-subtle hover:brightness-110 border border-accent/40 text-info font-semibold text-[11px] transition-all"
                     title="Definir na calculadora como material de trabalho"
                   >
                     <Calculator className="w-3 h-3" />
@@ -841,7 +870,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
 
       {/* Modal: Create / Edit Spool */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-[var(--color-overlay-scrim)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-surface-raised border border-border-subtle rounded-2xl w-full max-w-xl shadow-2xl p-6 relative flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
               <div className="flex items-center gap-2">
@@ -853,6 +882,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
                 </h2>
               </div>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
                 className="p-1 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-sunken transition-colors"
               >
@@ -889,7 +919,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
                       <button
                         key={fb.id}
                         type="button"
-                        title={`${fb.name} · ${fb.priceRangeBrl[0]}–${fb.priceRangeBrl[1]} R$/kg`}
+                        title={`${fb.name} · ${fb.priceRangeBrl[0]}–${fb.priceRangeBrl[1]} ${currencySymbol}/kg`}
                         onClick={() => setBrand(fb.name)}
                         className={`rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
                           brand === fb.name
@@ -1032,7 +1062,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
 
                 <div>
                   <label className="text-[10px] uppercase font-mono text-text-secondary block mb-1">
-                    CUSTO POR KG (R$) *
+                    CUSTO POR KG ({currencySymbol}) *
                   </label>
                   <input
                     type="number"
@@ -1141,7 +1171,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
 
       {/* Quick Deduct Grams Modal */}
       {deductModalSpool && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-50 bg-[var(--color-overlay-scrim)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-surface-raised border border-border-subtle rounded-2xl w-full max-w-sm shadow-2xl p-5 flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-border-subtle pb-2">
               <div className="flex items-center gap-2">
@@ -1151,6 +1181,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setDeductModalSpool(null)}
                 className="p-1 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-sunken"
               >
@@ -1204,7 +1235,7 @@ export const SpoolManagerView: React.FC<SpoolManagerViewProps> = ({
               <button
                 type="button"
                 onClick={handleConfirmDeduct}
-                className="px-4 py-1.5 rounded-lg bg-warning hover:bg-warning text-text-inverse font-bold shadow-md"
+                className="px-4 py-1.5 rounded-lg bg-[var(--color-accent-fill)] hover:brightness-110 text-[var(--color-accent-fill-fg)] font-bold shadow-md"
               >
                 Confirmar Desconto
               </button>

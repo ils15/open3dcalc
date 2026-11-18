@@ -14,6 +14,7 @@ import {
   Sun,
   Moon,
   Globe,
+  Monitor,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { BrandIcon } from "@/shared/components/BrandIcon";
@@ -25,6 +26,11 @@ import { LOW_STOCK_GRAMS } from "@/shared/components/SpoolShelf/SpoolCard";
 import { APP_VERSION } from "@/shared/version";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import {
+  useLayoutStore,
+  type WorkspaceWidth,
+} from "@/shared/stores/layoutStore";
+import { useWorkspaceContainerClass } from "./workspaceWidth";
 import { useSafeStudioTheme } from "./useSafeStudioTheme";
 
 interface StudioCockpitDockProps {
@@ -43,16 +49,6 @@ const QUICK_ACTION_CLASS =
 const ICON_BUTTON_CLASS =
   "shrink-0 flex items-center justify-center min-h-11 min-w-11 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]";
 
-/**
- * The Studio's unified bottom bar.
- *
- * It used to be a floating pill that sat over a large in-page footer card, and
- * the two competed for the same strip of screen. Everything that footer card
- * carried that is worth having on every screen (version, changelog, source,
- * local-first status) now lives here, in one fixed, edge-to-edge status bar in
- * the IDE pattern: status on the left, the primary action centered, utilities
- * on the right. Navigation stays in the sidebar, so nothing is duplicated.
- */
 export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
   onOpenMiniDash,
   onToggleFocusMode,
@@ -68,6 +64,9 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
   const { format: formatCurrency } = useCurrency();
   const { theme, toggleTheme } = useSafeStudioTheme();
   const isDark = theme === "dark";
+  const workspaceWidth = useLayoutStore((s) => s.workspaceWidth ?? "standard");
+  const setWorkspaceWidth = useLayoutStore((s) => s.setWorkspaceWidth);
+  const containerWidthClass = useWorkspaceContainerClass();
   const entries = useHistoryStore((s) => s.entries);
   const spools = useFilamentInventory((s) => s.spools);
   // The bar mirrors the Mini-Dash summary: the same saved-history revenue
@@ -162,6 +161,55 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
                 <span>Assistente IA de Impressão</span>
               </button>
             </div>
+            {/* Workspace Display Width Selector */}
+            <div className="mt-1.5 pt-1.5 border-t border-[var(--color-border)] px-1">
+              <div className="mb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                <span className="flex items-center gap-1">
+                  <Monitor className="w-3 h-3" />
+                  {isEn ? "Screen Width" : "Largura de Tela"}
+                </span>
+                <span className="font-mono">Alt+W</span>
+              </div>
+              <div
+                role="group"
+                aria-label={isEn ? "Workspace width" : "Largura do workspace"}
+                className="grid grid-cols-3 gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-0.5"
+              >
+                {(
+                  [
+                    {
+                      id: "focused" as WorkspaceWidth,
+                      label: isEn ? "Focused" : "Focado",
+                    },
+                    {
+                      id: "standard" as WorkspaceWidth,
+                      label: isEn ? "Standard" : "Padrão",
+                    },
+                    {
+                      id: "wide" as WorkspaceWidth,
+                      label: isEn ? "Wide" : "Amplo",
+                    },
+                  ] as const
+                ).map((opt) => {
+                  const active = workspaceWidth === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setWorkspaceWidth(opt.id)}
+                      className={`rounded-lg py-1.5 text-[11px] font-semibold transition-colors ${
+                        active
+                          ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="mt-1.5 pt-1.5 border-t border-[var(--color-border)] flex items-center justify-between gap-1">
               <button
                 type="button"
@@ -217,7 +265,9 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
           aria-label="Barra do Studio"
           className="pointer-events-auto w-full border-t border-[var(--color-border)] bg-[var(--color-bg-elevated)] backdrop-blur-md shadow-[var(--shadow-lg)] pb-[env(safe-area-inset-bottom)]"
         >
-          <div className="mx-auto w-full max-w-[100rem] grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-2 sm:px-4 py-1.5">
+          <div
+            className={`${containerWidthClass} grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-2 sm:px-4 py-1.5`}
+          >
             {/* Left: live status */}
             <div className="min-w-0 flex items-center gap-2">
               <button

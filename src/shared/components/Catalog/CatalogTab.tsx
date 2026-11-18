@@ -20,6 +20,7 @@ import {
 } from "@/shared/lib/marketplace";
 import {
   ArrowUpDown,
+  Calculator,
   Check,
   Copy,
   Pencil,
@@ -45,6 +46,7 @@ interface CatalogTabProps {
   onActiveSectionChange?: (section: CatalogSection) => void;
   showHeader?: boolean;
   showSectionTabs?: boolean;
+  onOpenCalculator?: () => void;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -212,6 +214,7 @@ export function CatalogTab({
   onActiveSectionChange,
   showHeader = true,
   showSectionTabs = true,
+  onOpenCalculator,
 }: CatalogTabProps = {}) {
   const { t } = useTranslation();
   const store = useCatalogStore();
@@ -338,7 +341,7 @@ export function CatalogTab({
 
       {section === "printers" && (
         <div id="tabpanel-printers" role="tabpanel">
-          <PrinterManager />
+          <PrinterManager onOpenCalculator={onOpenCalculator} />
         </div>
       )}
       {section === "materials" && (
@@ -373,7 +376,19 @@ const emptyPrinterForm = (): PrinterEditForm => ({
   maintenancePerHour: "0.25",
 });
 
-function PrinterManager() {
+type PrinterSortKey = "name" | "powerAsc" | "valueAsc" | "hourCostAsc";
+
+function getPrinterHourlyCost(printer: CatalogPrinter): number {
+  const depreciation =
+    printer.usefulLife > 0 ? printer.value / printer.usefulLife : 0;
+  return depreciation + printer.maintenancePerHour;
+}
+
+function PrinterManager({
+  onOpenCalculator,
+}: {
+  onOpenCalculator?: () => void;
+}) {
   const store = useCatalogStore();
   const activePrinterId = useCalculatorStore(
     (state) => state.selectedPrinter.id,
@@ -383,6 +398,7 @@ function PrinterManager() {
   const [collection, setCollection] = useState<"mine" | "library">("mine");
   const [search, setSearch] = useState("");
   const [technology, setTechnology] = useState<"all" | "fdm" | "resin">("all");
+  const [sortBy, setSortBy] = useState<PrinterSortKey>("name");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPrinterId, setEditingPrinterId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<PrinterEditForm>(emptyPrinterForm());
@@ -412,7 +428,7 @@ function PrinterManager() {
 
   const filteredPrinters = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
-    return visiblePrinters.filter((printer) => {
+    const filtered = visiblePrinters.filter((printer) => {
       const matchesSearch =
         !normalizedSearch ||
         `${printer.name} ${printer.brand}`
@@ -426,20 +442,42 @@ function PrinterManager() {
         (printer.tags ?? []).includes(store.selectedPrinterTag);
       return matchesSearch && matchesTechnology && matchesTag;
     });
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "powerAsc") return a.power - b.power;
+      if (sortBy === "valueAsc") return a.value - b.value;
+      if (sortBy === "hourCostAsc") {
+        return getPrinterHourlyCost(a) - getPrinterHourlyCost(b);
+      }
+      return a.name.localeCompare(b.name);
+    });
   }, [
     collection,
     search,
+    sortBy,
     store.selectedPrinterTag,
     technology,
     visiblePrinters,
   ]);
 
   const tagChipClass = (active: boolean) =>
-    `whitespace-nowrap rounded border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+    `whitespace-nowrap rounded border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
       active
-        ? "border-transparent bg-[#2563eb] text-white"
-        : "border-[#262a3c] bg-[#161824] text-slate-300 hover:text-white"
+        ? "border-transparent bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+        : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
     }`;
+
+  const clonePrinterToMine = useCallback(
+    (printer: CatalogPrinter) => {
+      store.addPrinter({
+        ...printer,
+        id: uid(),
+        name: `${printer.name} (${t("workshop.customSuffix")})`,
+        custom: true,
+      });
+      setCollection("mine");
+    },
+    [store, t],
+  );
 
   const selectPrinterForCalculation = useCallback((printer: CatalogPrinter) => {
     useCalculatorStore.getState().setSelectedPrinter(printer);
@@ -619,7 +657,7 @@ function PrinterManager() {
           role="group"
           aria-label={t("catalog.materialType")}
         >
-          <span className="mr-1 text-xs text-slate-400">
+          <span className="mr-1 text-xs text-[var(--color-text-muted)]">
             {t("catalog.materialType")}
           </span>
           {(
@@ -639,6 +677,28 @@ function PrinterManager() {
               {label}
             </button>
           ))}
+        </div>
+        <div className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 py-1">
+          <ArrowUpDown
+            className="h-3.5 w-3.5 text-[var(--color-text-muted)]"
+            aria-hidden="true"
+          />
+          <label htmlFor="printer-sort-select" className="sr-only">
+            {t("workshop.sortPrintersLabel")}
+          </label>
+          <select
+            id="printer-sort-select"
+            data-testid="printer-sort-select"
+            aria-label={t("workshop.sortPrintersLabel")}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as PrinterSortKey)}
+            className="bg-transparent text-xs font-semibold text-[var(--color-text-primary)] focus-visible:outline-none"
+          >
+            <option value="name">{t("workshop.sortName")}</option>
+            <option value="powerAsc">{t("workshop.sortPowerAsc")}</option>
+            <option value="valueAsc">{t("workshop.sortValueAsc")}</option>
+            <option value="hourCostAsc">{t("workshop.sortHourCostAsc")}</option>
+          </select>
         </div>
         {collection === "mine" && allTags.length > 0 && (
           <div
@@ -688,7 +748,7 @@ function PrinterManager() {
       )}
 
       <div
-        className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+        className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
         role="group"
         aria-label={t("catalog.printers")}
       >
@@ -701,6 +761,10 @@ function PrinterManager() {
               personal={personal}
               selected={activePrinterId === printer.id}
               onSelect={() => void selectPrinterForCalculation(printer)}
+              onClone={
+                !personal ? () => clonePrinterToMine(printer) : undefined
+              }
+              onOpenCalculator={onOpenCalculator}
               onEdit={() => openEditPrinter(printer)}
               onRemove={() => store.removePrinter(printer.id)}
             />
@@ -738,7 +802,7 @@ function PrinterManager() {
 
       {editingPrinter && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay-scrim)] p-4"
           onClick={requestClose}
           role="dialog"
           aria-modal="true"
@@ -807,7 +871,7 @@ function PrinterManager() {
               type="button"
               onClick={savePrinter}
               disabled={!editForm.name.trim()}
-              className="mt-5 w-full rounded-xl bg-[var(--positive-fill)] py-3 font-semibold text-[var(--positive-fill-fg)] transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--positive-fill)]"
+              className="mt-5 w-full rounded-xl bg-[var(--positive-fill)] py-3 font-semibold text-[var(--positive-fill-fg)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--positive-fill)]"
             >
               {t("catalog.saveChanges")}
             </button>
@@ -918,28 +982,28 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-[var(--color-overlay-scrim)] backdrop-blur-sm flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
     >
       <section
-        className="bg-[#0c1220] border border-[#21304f] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl text-slate-200 animate-scale-in"
+        className="surface bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl text-[var(--color-text-primary)] animate-scale-in"
         aria-label={t("catalog.addPrinter")}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[#1b253b] bg-[#090e1a]">
+        <div className="flex items-center justify-between p-5 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-[10px] font-mono uppercase tracking-wider text-blue-400 font-bold">
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-accent)] font-bold">
                 ADICIONAR À MINHA FROTA
               </span>
             </div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <PrinterIcon className="w-5 h-5 text-blue-400" />
+            <h2 className="text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+              <PrinterIcon className="w-5 h-5 text-[var(--color-accent)]" />
               Catálogo de Presets & Cadastro de Impressoras 3D
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
               Escolha um modelo homologado da biblioteca ou cadastre uma
               impressora personalizada
             </p>
@@ -948,7 +1012,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
             type="button"
             onClick={onCancel}
             aria-label={t("catalog.cancel")}
-            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] p-1.5 rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -956,8 +1020,8 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
 
         {/* Mode Switcher Tabs */}
         {!selectedPresetId && mode === "presets" && (
-          <div className="flex items-center justify-between p-3 border-b border-[#1b253b] bg-[#0c1220] gap-3">
-            <div className="flex items-center bg-[#111728] border border-[#212c45] rounded-xl p-0.5 text-xs font-semibold">
+          <div className="flex items-center justify-between p-3 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)] gap-3">
+            <div className="flex items-center bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-xl p-0.5 text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => {
@@ -966,11 +1030,11 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
                   mode === "presets"
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] shadow-sm"
+                    : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 }`}
               >
-                <Zap className="w-3.5 h-3.5 text-amber-300" />
+                <Zap className="w-3.5 h-3.5" />
                 <span>Presets Homologados ({printers.length} modelos)</span>
               </button>
               <button
@@ -987,14 +1051,14 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                   setTechnology("fdm");
                   setBuildVolumeMm({ x: 220, y: 220, z: 250 });
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-slate-400 hover:text-white"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Impressora Personalizada / Do Zero</span>
               </button>
             </div>
 
-            <div className="text-xs text-slate-400 font-mono hidden sm:block">
+            <div className="text-xs text-[var(--color-text-muted)] font-mono hidden sm:block">
               {filteredPresets.length} modelos encontrados
             </div>
           </div>
@@ -1006,20 +1070,21 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
             /* Presets Gallery View */
             <div className="space-y-4">
               {/* Preset Search and Filter Bar */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 bg-[#0a0f1c] border border-[#1b253b] p-3 rounded-xl">
+              <div className="flex flex-col sm:flex-row items-center gap-3 bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-3 rounded-xl">
                 <div className="relative flex-1 w-full">
-                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-3.5 h-3.5 text-[var(--color-text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={presetSearch}
                     onChange={(e) => setPresetSearch(e.target.value)}
                     placeholder="Buscar por modelo ou marca (ex: Ender, P1S, A1, K1, Mars, Saturn, Prusa...)"
-                    className="w-full bg-[#111728] border border-[#1f2b45] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-semibold"
+                    className="w-full bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-accent)] font-semibold"
                   />
                   {presetSearch && (
                     <button
+                      type="button"
                       onClick={() => setPresetSearch("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-xs"
                     >
                       ✕
                     </button>
@@ -1027,14 +1092,14 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                 </div>
 
                 {/* Technology Filter */}
-                <div className="flex items-center bg-[#111728] border border-[#1f2b45] rounded-lg p-0.5 text-[11px] font-semibold">
+                <div className="flex items-center bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-lg p-0.5 text-[11px] font-semibold">
                   <button
                     type="button"
                     onClick={() => setPresetTechFilter("all")}
                     className={`px-2.5 py-1 rounded transition-all ${
                       presetTechFilter === "all"
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-400 hover:text-white"
+                        ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+                        : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                     }`}
                   >
                     Todas
@@ -1044,8 +1109,8 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                     onClick={() => setPresetTechFilter("fdm")}
                     className={`px-2.5 py-1 rounded transition-all ${
                       presetTechFilter === "fdm"
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-400 hover:text-white"
+                        ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+                        : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                     }`}
                   >
                     FDM
@@ -1055,8 +1120,8 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                     onClick={() => setPresetTechFilter("resin")}
                     className={`px-2.5 py-1 rounded transition-all ${
                       presetTechFilter === "resin"
-                        ? "bg-purple-600 text-white"
-                        : "text-slate-400 hover:text-white"
+                        ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+                        : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                     }`}
                   >
                     Resina
@@ -1066,7 +1131,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
 
               {/* Brands Horizontal Scroll */}
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                <span className="text-[10px] text-slate-500 font-mono uppercase shrink-0 mr-1">
+                <span className="text-[10px] text-[var(--color-text-muted)] font-mono uppercase shrink-0 mr-1">
                   MARCA:
                 </span>
                 {presetBrands.map((b) => (
@@ -1076,8 +1141,8 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                     onClick={() => setPresetBrandFilter(b)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                       presetBrandFilter === b
-                        ? "bg-blue-600 text-white"
-                        : "bg-[#111728] text-slate-400 hover:text-white border border-[#1b253b]"
+                        ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
+                        : "bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
                     }`}
                   >
                     {b === "all" ? "Todas as Marcas" : b}
@@ -1098,7 +1163,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                   return (
                     <div
                       key={preset.id}
-                      className="bg-[#090e1a] hover:bg-[#0f1629] border border-[#1b253b] hover:border-blue-500/50 rounded-xl p-3.5 flex flex-col justify-between gap-3 transition-all group"
+                      className="bg-[var(--color-bg-primary)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border)] hover:border-[var(--color-border-accent)] rounded-xl p-3.5 flex flex-col justify-between gap-3 transition-all group"
                     >
                       <div>
                         <PrinterThumbnail
@@ -1106,7 +1171,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                           className="mb-3 h-20 w-full"
                         />
                         <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <span className="text-[10px] font-mono font-bold text-slate-400 px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+                          <span className="text-[10px] font-mono font-bold text-[var(--color-text-secondary)] px-2 py-0.5 rounded bg-[var(--color-bg-elevated)] border border-[var(--color-border)]">
                             {preset.brand}
                           </span>
                           <span
@@ -1120,24 +1185,26 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                           </span>
                         </div>
 
-                        <h4 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
+                        <h4 className="text-sm font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] transition-colors">
                           {preset.name}
                         </h4>
 
-                        <div className="mt-2 space-y-1 text-[11px] font-mono text-slate-400 bg-[#060a14] p-2 rounded-lg border border-[#141b2e]">
+                        <div className="mt-2 space-y-1 text-[11px] font-mono text-[var(--color-text-secondary)] bg-[var(--color-bg-elevated)] p-2 rounded-lg border border-[var(--color-border)]">
                           <div className="flex items-center justify-between">
                             <span>Volume:</span>
-                            <span className="text-slate-200">{vol}</span>
+                            <span className="text-[var(--color-text-primary)]">
+                              {vol}
+                            </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span>Potência:</span>
-                            <span className="text-slate-200">
+                            <span className="text-[var(--color-text-primary)]">
                               {preset.power} W
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span>Valor Base:</span>
-                            <span className="text-emerald-400 font-bold">
+                            <span className="text-[var(--color-positive)] font-bold">
                               {currencySymbol} {preset.value}
                             </span>
                           </div>
@@ -1147,7 +1214,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                       <button
                         type="button"
                         onClick={() => selectPreset(preset)}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white font-bold text-xs border border-blue-500/30 hover:border-transparent transition-all shadow-sm"
+                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] font-bold text-xs transition-all shadow-sm"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Adicionar esta Máquina</span>
@@ -1160,19 +1227,19 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
           ) : (
             /* Selected Preset / Custom Config Form */
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#1b253b]">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)]">
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedPresetId(null);
                     setMode("presets");
                   }}
-                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-semibold"
+                  className="flex items-center gap-1 text-xs text-[var(--color-accent)] hover:underline font-semibold"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   <span>Voltar para a Lista de Presets</span>
                 </button>
-                <span className="text-xs font-mono text-slate-400">
+                <span className="text-xs font-mono text-[var(--color-text-muted)]">
                   Ajuste os parâmetros conforme os dados da sua oficina
                 </span>
               </div>
@@ -1220,22 +1287,22 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
               </div>
 
               {/* Economic & Hourly Cost Summary */}
-              <div className="bg-[#080d18] border border-[#192338] p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+              <div className="bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block mb-1">
+                  <span className="text-[10px] font-mono uppercase text-[var(--color-text-muted)] block mb-1">
                     CUSTO CALCULADO DA HORA DE MÁQUINA
                   </span>
-                  <div className="text-sm font-bold text-white flex items-center gap-3">
+                  <div className="text-sm font-bold text-[var(--color-text-primary)] flex items-center gap-3">
                     <span>
                       Depreciação:{" "}
-                      <strong className="font-mono text-slate-300">
+                      <strong className="font-mono text-[var(--color-text-secondary)]">
                         {currencySymbol} {depreciationPerHour.toFixed(2)}/h
                       </strong>
                     </span>
                     <span>•</span>
                     <span>
                       Manutenção:{" "}
-                      <strong className="font-mono text-slate-300">
+                      <strong className="font-mono text-[var(--color-text-secondary)]">
                         {currencySymbol} {numMaint.toFixed(2)}/h
                       </strong>
                     </span>
@@ -1243,10 +1310,10 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">
+                  <span className="text-[10px] font-mono uppercase text-[var(--color-text-muted)] block">
                     TOTAL DE HORA-MÁQUINA:
                   </span>
-                  <span className="text-xl font-extrabold text-emerald-400 font-mono">
+                  <span className="text-xl font-extrabold text-[var(--color-positive)] font-mono">
                     {currencySymbol}{" "}
                     {totalMachineHourCost.toFixed(2).replace(".", ",")}/h
                   </span>
@@ -1257,11 +1324,11 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-[#1b253b] bg-[#090e1a] flex items-center justify-end gap-2.5">
+        <div className="p-4 border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] flex items-center justify-end gap-2.5">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+            className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           >
             {t("catalog.cancel")}
           </button>
@@ -1271,7 +1338,7 @@ function PrinterCreateForm({ onCancel, onCreated }: PrinterCreateFormProps) {
               type="button"
               onClick={add}
               disabled={!name.trim()}
-              className="px-5 py-2 rounded-xl bg-blue-600 hover:ring-2 hover:ring-blue-500/40 text-white text-xs font-bold transition-all shadow-md disabled:opacity-40"
+              className="px-5 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:bg-[var(--color-accent-fill-hover)] text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all shadow-md disabled:opacity-40"
             >
               {t("catalog.save")}
             </button>
@@ -1287,6 +1354,8 @@ interface PrinterProfileCardProps {
   personal: boolean;
   selected: boolean;
   onSelect: () => void;
+  onClone?: () => void;
+  onOpenCalculator?: () => void;
   onEdit: () => void;
   onRemove: () => void;
 }
@@ -1296,17 +1365,20 @@ function PrinterProfileCard({
   personal,
   selected,
   onSelect,
+  onClone,
+  onOpenCalculator,
   onEdit,
   onRemove,
 }: PrinterProfileCardProps) {
   const { t } = useTranslation();
-  const { symbol: currencySymbol } = useCurrency();
+  const { symbol: currencySymbol, format: formatCurrency } = useCurrency();
   const technologyLabel = printer.technology
     ? t(`catalog.${printer.technology}`)
     : t("catalog.technologyUnknown");
   const volumeLabel = printer.buildVolumeMm
     ? `${printer.buildVolumeMm.x} × ${printer.buildVolumeMm.y} × ${printer.buildVolumeMm.z} mm`
     : "—";
+  const hourlyCost = getPrinterHourlyCost(printer);
   const specs = [
     { label: t("stl.volume"), value: volumeLabel },
     { label: t("catalog.power"), value: `${printer.power} W` },
@@ -1315,6 +1387,10 @@ function PrinterProfileCard({
     {
       label: t("catalog.maintenancePerHour"),
       value: `${currencySymbol} ${printer.maintenancePerHour}/h`,
+    },
+    {
+      label: t("workshop.machineHourCost"),
+      value: `${formatCurrency(hourlyCost)}/h`,
     },
   ];
 
@@ -1376,20 +1452,44 @@ function PrinterProfileCard({
 
       {printer.custom && <PrinterTagEditor printer={printer} />}
 
-      <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          aria-pressed={selected}
-          onClick={onSelect}
-          className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
-            selected
-              ? "border-[var(--color-accent)] bg-[var(--color-bg-elevated)] text-[var(--color-accent)]"
-              : "border-[var(--color-border)] bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)]"
-          }`}
-        >
-          {selected ? <Check aria-hidden="true" className="h-3 w-3" /> : null}
-          {t("catalog.selectPrinter")}
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            aria-pressed={selected}
+            onClick={onSelect}
+            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+              selected
+                ? "border-[var(--color-accent)] bg-[var(--color-bg-elevated)] text-[var(--color-accent)]"
+                : "border-[var(--color-border)] bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)]"
+            }`}
+          >
+            {selected ? <Check aria-hidden="true" className="h-3 w-3" /> : null}
+            {t("catalog.selectPrinter")}
+          </button>
+          {!personal && onClone && (
+            <button
+              type="button"
+              data-testid="catalog-clone-printer-btn"
+              onClick={onClone}
+              className="inline-flex items-center gap-1 rounded border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2 py-1 text-[11px] font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+            >
+              <Copy aria-hidden="true" className="h-3 w-3" />
+              <span>{t("workshop.cloneToMine")}</span>
+            </button>
+          )}
+          {selected && onOpenCalculator && (
+            <button
+              type="button"
+              data-testid="catalog-open-calculator-btn"
+              onClick={onOpenCalculator}
+              className="inline-flex items-center gap-1 rounded border border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)] px-2 py-1 text-[11px] font-semibold text-[var(--color-accent)] transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+            >
+              <Calculator aria-hidden="true" className="h-3 w-3" />
+              <span>{t("workshop.openCalculatorAction")}</span>
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           {personal && (
             <button
@@ -1694,7 +1794,7 @@ function MaterialManager() {
         </div>
       }
     >
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {filteredMaterials.map((m) => {
           const isActiveInCalc =
             (m.type === "fdm" &&
@@ -1770,7 +1870,7 @@ function MaterialManager() {
                 {m.custom && (
                   <button
                     onClick={() => store.removeMaterial(m.id)}
-                    className="ml-auto text-xs text-[var(--color-danger)] hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded"
+                    className="ml-auto text-xs text-[var(--color-danger)] hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] focus-visible:outline-none rounded"
                   >
                     {t("catalog.remove")}
                   </button>
@@ -1991,7 +2091,7 @@ function MarketplaceManager() {
         </div>
       }
     >
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {filteredMarketplaces.map((m) => {
           const isSelected = selectedMarketplace?.id === m.id;
           const liveFee =
@@ -2096,7 +2196,7 @@ function MarketplaceManager() {
                 {m.custom && (
                   <button
                     onClick={() => store.removeMarketplace(m.id)}
-                    className="ml-auto text-xs text-[var(--color-danger)] hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded"
+                    className="ml-auto text-xs text-[var(--color-danger)] hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-danger)] focus-visible:outline-none rounded"
                   >
                     {t("catalog.remove")}
                   </button>

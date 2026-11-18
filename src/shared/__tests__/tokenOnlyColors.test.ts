@@ -190,19 +190,14 @@ const measured = measuredDebt();
  */
 const FLOOR: Readonly<Record<string, number>> = {
   "src/platform/web/components/studio/StudioCalculatorView.tsx": 3,
-  "src/platform/web/components/studio/StudioQuotesView.tsx": 3,
-  "src/shared/components/SpoolShelf/SpoolManagerView.tsx": 27,
-  "src/platform/web/components/studio/StudioProductsView.tsx": 2,
-  "src/shared/components/Catalog/CatalogTab.tsx": 110,
-  "src/platform/web/components/studio/StudioCustomerView.tsx": 1,
-  "src/platform/web/components/studio/StudioQuoteModal.tsx": 1,
+  "src/shared/components/SpoolShelf/SpoolManagerView.tsx": 24,
   "src/shared/components/Catalog/FilamentInventory.tsx": 61,
   "src/shared/components/Dashboard/Dashboard.tsx": 60,
   "src/shared/components/AIAssistant/AIAssistantPanels.tsx": 49,
   "src/shared/components/AIAssistant/AIAssistantModal.tsx": 48,
   "src/platform/web/components/studio/StudioMiniDashOverlay.tsx": 1,
   "src/platform/web/components/studio/StudioCopilotModal.tsx": 1,
-  "src/shared/components/SpoolShelf/SpoolCard.tsx": 28,
+  "src/shared/components/SpoolShelf/SpoolCard.tsx": 20,
   "src/shared/components/Results/CostDistributionBars.tsx": 26,
   "src/shared/components/Calculator/QuoteSection.tsx": 22,
   "src/platform/web/components/studio/StudioShortcutsModal.tsx": 1,
@@ -214,7 +209,6 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/shared/components/StlPreview/StlPreview.tsx": 15,
   "src/shared/lib/QuoteDoc.tsx": 13,
   "src/shared/components/Calculator/HistoryTab/HistoryTab.tsx": 12,
-  "src/shared/components/SpoolShelf/SpoolShelf.tsx": 12,
   "src/shared/lib/ExecutiveReportDoc.tsx": 11,
   "src/shared/components/SpoolShelf/SpoolForm.tsx": 10,
   "src/shared/lib/ReportDoc.tsx": 9,
@@ -307,8 +301,8 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
   it("reports the audited inventory so the header can be checked by eye", () => {
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
-    expect(files).toBe(56);
-    expect(occurrences).toBe(658);
+    expect(files).toBe(50);
+    expect(occurrences).toBe(518);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

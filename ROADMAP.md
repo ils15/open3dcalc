@@ -17,10 +17,10 @@
 ## Estado dos canais publicados — atualizado em 18/11/2026
 
 - **Estável (`/`)**: `v2.0.0` (publicado na raiz do GitHub Pages + builds Desktop Windows e Linux).
-- **Beta web (`/beta/`)**: `v2.0.1-beta.1` (pré-release; canal web-only alinhado com `v2.0.0` + modernização UX/Ergonomia Fases 1–3).
+- **Beta web (`/beta/`)**: `v2.0.1-beta.2` (pré-release; canal web-only alinhado com `v2.0.0` + modernização UX/Ergonomia Fases 1–4).
 - **Candidata atual para promoção Estável (`main`)**: `2.0.1` (em validação no canal Beta `/beta/` antes da promoção para Estável).
 
-### 🚀 Evolução UX, Ergonomia & Gestão de Oficina (Fases 1, 2 e 3 — Entregues em `feat/modernize-ui-navigation`)
+### 🚀 Evolução UX, Ergonomia & Gestão de Oficina (Fases 1, 2, 3 e 4 — `v2.0.1-beta.2`)
 
 Orquestração executada em 3 camadas (**Hydrogen `flash_lite` → Carbon High `pro` → Argon High**), preservando 100% do contrato `SPEC-01` (`dataManifest.ts`) e tokens semânticos puros:
 
@@ -36,6 +36,11 @@ Orquestração executada em 3 camadas (**Hydrogen `flash_lite` → Carbon High `
   - **Active Workshop Setup & Quick-Jump Deck (`WorkshopHub.tsx`):** Painel de contexto no topo de _Minha Oficina_ exibindo Impressora Ativa, Insumo Ativo, alerta de Estoque de Bobinas e Canal de Venda ativo, com salto de 1 clique entre seções e botão _Abrir na Calculadora_.
   - **Gestão Acionável de Materiais e Canais (`CatalogTab.tsx`):** Botões de 1 clique _Usar no Cálculo_ / _Usar Canal_ nos cards, clonagem rápida da Biblioteca oficial para _Meus Materiais_ / _Meus Canais_ (_Personalizar_), filtro por tecnologia (`Todos | FDM | Resina`), ordenação (`Nome | Menor Preço | Maior Preço`) e prévia ao vivo da taxa estimada de cada marketplace sobre o preço de venda atual.
   - **Barra de Ações Rápidas do Resultado (`QuickResultActionsBar.tsx` + `ResultsPanel.tsx`):** Ações ergonômicas de 1 clique logo abaixo do `PriceHeroCard` (_Copiar Resumo_, _Fixar Base A/B_ e _Salvar Rápido_) com confirmação visual imediata, eliminando rolagem vertical até o rodapé.
+- **Fase 4 — Largura Adaptativa Multi-Monitor (`Focado | Padrão | Amplo`), Modernização Menu a Menu & Fluxos Cruzados:**
+  - **Controle de Largura Adaptativa (`workspaceWidth.ts` + `layoutStore.ts`):** Preferência persistida (`focused | standard | wide`) com seletor rápido `#studio-width-toggle` no Header (`Alt+W`), Dock e Command Palette, otimizando tanto monitores padrão/notebook (`1280px–1440px`) quanto telas ultrawide (`1920px–2560px+`).
+  - **Calculadora & Dashboard Responsivos (`Calculator.css`, `Calculator.tsx`, `BentoSurface.tsx`, `StudioDashboardView.tsx`):** Grid fluido adaptado ao perfil escolhido (3 colunas equilibradas no Dashboard `xl`, painel lateral sem scroll aninhado e cards responsivos).
+  - **Oficina & Estoque Semânticos (`SpoolShelf.tsx`, `SpoolManagerView.tsx`, `SpoolCard.tsx`):** Tokens semânticos puros (eliminação da dívida visual de cores fixas no estoque/catálogo), filtros rápidos por material, grid `2xl:grid-cols-4` e botão direto _Usar na Calculadora_.
+  - **Comercial Unificado com Split Inspector & Fluxos Cruzados (`StudioKpiStrip.tsx`, `StudioViewToolbar.tsx`, `StudioSplitInspector.tsx`):** Padronização de _Histórico_, _Clientes_, _Orçamentos_ e _Produtos_ com inspetor lateral contextual, LTV ao vivo por cliente, normalização multi-moeda (`useCurrency`), fluxos de 1 clique (_Histórico/Produto → Calculadora/Orçamento_, _Cliente → Orçamento_, _Infill → Calculadora_) e largura confortável (`max-w-[75ch]`) na Wiki e Changelog.
 
 ### Auditoria da beta.13 — snapshot histórico de 08/10/2026
 
