@@ -51,6 +51,48 @@ Os itens remanescentes identificados na auditoria das Fases 1–4 que não entra
 - **Qualidade, Métricas de Coverage & Pendências 7q/7r (`#359`):** Atualizar a tabela `Quality Metrics` abaixo com a medição real de coverage da base `v2.0.1+`, formalizar a unidade definitiva de `usefulLife` (`Phase 7q`), revisar itens residuais do censo de contraste WCAG AA (`Phase 7r`) e registrar o fechamento do gate transversal `v1→v2`. ([Issue #359](https://github.com/ils15/open3dcalc/issues/359))
 - **IA/BYOK (`Deferred`):** Mantida fora do escopo da linha `v2.0.x` (sem backend nem telemetria oculta).
 
+---
+
+### 🗺️ Plano Mestre de Próximos Lançamentos (`v2.0.2` → `v2.1.0` → `v2.2.0` → `v2.3.0`)
+
+A partir da `v2.0.1`, todas as próximas atualizações seguem este cronograma orientado a releases (orquestração **Hydrogen `flash_lite` → Carbon High `pro` → Argon High**), combinando o aproveitamento de motores já prontos no código com os melhores diferenciais identificados no benchmark global (*3DCoster*, *Stimalo*, *InfillQuote*, *Maph Pro 3D*, *Calc3D*, *Creative3DP Tools*):
+
+#### 🔹 Release `v2.0.2` — Ativação de Módulos Prontos, Inspector de Produtos & Polimento Semântico (Curto Prazo)
+*Foco: Destravar funcionalidades de alto valor já codificadas e testadas no repositório, mas ainda desconectadas da shell `StudioLayout`.*
+- [ ] **Montar `ProfitAnalyticsModule` e `MaterialEfficiencyHeatmap` no `StudioDashboardView.tsx`:** Exibir a matriz de eficiência de materiais (`MaterialEfficiencyHeatmap.tsx`) e a análise avançada de rentabilidade/break-even (`ProfitAnalyticsModule.tsx`) em seção analítica expansível no Dashboard Studio.
+- [ ] **`StudioSplitInspector` em `StudioProductsView.tsx` (`#358`):** Substituir cards isolados pelo padrão mestre-detalhe com edição rápida inline de margem/markup, simulação de lucro por canal (`compareMarketplaces.ts`) e recálculo instantâneo quando o custo do filamento variar.
+- [ ] **Conversão 1-Clique do Comparador A/B para Orçamento (`#358`):** Botão *"Gerar Orçamento Comparativo (A vs. B)"* na barra de comparação A/B (`StudioCalculatorModeSelector.tsx`), criando rascunho de orçamento com as duas opções (ex.: Econômico vs. Reforçado) prontas para o cliente escolher.
+- [ ] **Redução de Dívida Semântica (`#357` — Lote 1) & Métricas (`#359`):** Migrar `CostDistributionBars.tsx`, `QuoteSection.tsx` e `StudioWhatsAppModal.tsx` para tokens semânticos puros, remover ou integrar `src/utils/slicerOptimizer.ts` e atualizar a tabela `Quality Metrics` com medição real de coverage da `v2.0.1+`.
+
+#### 🔹 Release `v2.1.0` — Precisão Multi-Cor (AMS / CFS / ACE Pro / MMU) & Ferramentas de Bancada Maker
+*Foco: Resolver a maior dor atual da impressão 3D moderna — o desperdício real em impressões multicoloridas — e inaugurar utilitários práticos de engenharia.*
+- [ ] **Motor Multi-Material M2/M3: Purga ("Poop"), Torre de Prime e Diluição em Mesa Cheia (`Phase 7m` + `#358`):**
+  - Evoluir `MultiMaterialPaintRow.tsx` e `calculatorEngine.ts` com estimativa de desperdício por troca de filamento (`purgeVolumeMm3` / `purgeGramsPerSwap` × `filamentChangeCount`) + peso da Torre de Prime (`primeTowerGrams`).
+  - **Simulador de Diluição em Lote ("1 Peça vs. Mesa Cheia"):** Demonstrar em tempo real como imprimir $N$ peças coloridas na mesma bandeja dilui o mesmo peso de purga/torre entre todas as unidades, derrubando o custo unitário e destacando a economia em R\$ e gramas.
+  - Extração automática de metadados de purga/trocas em comentários de `.gcode` e `.3mf` do Bambu Studio e OrcaSlicer (`filament_used [g]`, `flushed_filament`, `wipe_tower`, `change_filament_count`).
+- [ ] **Aba "Ferramentas de Bancada" (*Maker Toolbox*) na Oficina:**
+  - **Calculadora de Folga de Furos, Pinos & Insertos Térmicos (*Hole Tolerance & Press-Fit* — `Phase 6 P2` + `#358`):** Conectar os dados já prontos de `src/data/infillData.ts` em ferramenta visual para consulta de compensação dimensional por material (`PLA`, `PETG`, `ABS`, `ASA`, `TPU`) e tipo de encaixe (*Deslizante*, *Firme*, *Interferência*, *Inserto Latão M2–M6*).
+  - **Balança de Carretel Dedicada (*Kitchen Scale Spool Checker*):** Interface dedicada sobre `filamentRemaining.ts` + `brandTare.ts` com busca de tara por marca e botão de 1 clique *"Atualizar Peso no Meu Estoque"*.
+  - **Calibrador Rápido de Vazão / *Max Volumetric Speed* ($\text{mm}^3/\text{s}$):** Utilitário visual relacionando `altura de camada × largura de linha × velocidade (mm/s)` ao limite volumétrico do hotend.
+
+#### 🔹 Release `v2.2.0` — Fechamento Comercial Brasileiro (PIX QR no PDF, Tabela Reversa de Marketplaces & Baixa de Estoque)
+*Foco: Transformar o orçamento em venda fechada instantânea e automatizar a baixa física dos carretéis.*
+- [ ] **QR Code PIX Estático Offline (Padrão EMV BRCode) no Orçamento PDF e WhatsApp:**
+  - Gerador 100% local (`pixPayloadGenerator.ts`, zero servidor externo, 100% LGPD) de payload EMV BRCode estático a partir da chave PIX configurada localmente na Oficina, renderizado diretamente no rodapé do PDF (`QuoteDoc.tsx`) e copiável como "PIX Copia e Cola" no `StudioWhatsAppModal.tsx`.
+- [ ] **Tabela Reversa Multi-Marketplace ao Vivo na Calculadora & Produtos:**
+  - Card comparativo compacto usando `compareMarketplaces.ts` e `suggestedPrice.ts` mostrando simultaneamente: *"Para lucrar R\$ X limpos nesta peça, anuncie por: R\$ A na Venda Direta | R\$ B no Mercado Livre Clássico | R\$ C na Shopee Frete Grátis | R\$ D na Amazon"*.
+- [ ] **Fluxo "Orçamento Aprovado → Ordem de Produção & Baixa de Estoque FIFO":**
+  - Ao marcar um orçamento como **Aprovado / Concluído** em `QuotesView.tsx`, oferecer o botão *"Deduzir Filamento do Estoque"* (consumo FIFO ou seleção de bobina em `spoolInventoryStore.ts`) e registrar a receita diretamente no Histórico.
+
+#### 🔹 Release `v2.3.0` — Projetos Multi-Bandeja, BOM de Hardware & Modo Farm Lite
+*Foco: Atender makers que vendem produtos compostos (várias placas + parafusos/ímãs/embalagem) e pequenas farms de impressão.*
+- [ ] **Projetos Multi-Bandeja (*Multi-Plate Assembly*) & BOM de Ferragens/Embalagem Detalhado:**
+  - Agrupar múltiplas bandejas `.3mf`/`.gcode` em um único Produto/Orçamento e cadastrar itens unitários de BOM (insertos M3, ímãs de neodímio, rolamentos 608, caixas, plástico-bolha) somados automaticamente ao custo unitário.
+- [ ] **Horímetro de Manutenção Preventiva por Impressora (`SPEC-01`):**
+  - Rastrear horas acumuladas por impressora no catálogo com alertas visuais de revisão preventiva (lubrificação de eixos, troca de bico, tensão de correias, troca de FEP/película em resina).
+- [ ] **Modo Farm Lite — Capacidade & Prazo de Entrega (`Phase 7e` + `#358`):**
+  - Simulador de lote para $N$ unidades calculando automaticamente quantas bandejas são necessárias, quantas impressoras da oficina rodarão em paralelo e o **Prazo Real de Entrega em dias úteis** baseado na jornada diária configurada (`8h`, `16h`, `24h`).
+
 ### Auditoria da beta.13 — snapshot histórico de 08/10/2026
 
 As observações abaixo registram a auditoria daquela publicação e não devem ser tratadas como verificação da beta.15. A tag `v2.0.0-beta.13` apontava para `d08a4eafcc5fc20d03867a08bd417fae390f6b10`; naquele snapshot, `/beta/index.web.html` referenciava `assets/index.web-BFz5JDpp.js`. Merge de código, por si só, não comprova que a interface esteja montada ou publicada na web.
