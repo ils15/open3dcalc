@@ -16,11 +16,11 @@
 
 ## Estado dos canais publicados — atualizado em 18/11/2026
 
-- **Estável (`/`)**: `v2.0.0` (publicado na raiz do GitHub Pages + builds Desktop Windows e Linux).
-- **Beta web (`/beta/`)**: `v2.0.1-beta.2` (pré-release; canal web-only alinhado com `v2.0.0` + modernização UX/Ergonomia Fases 1–4).
-- **Candidata atual para promoção Estável (`main`)**: `2.0.1` (em validação no canal Beta `/beta/` antes da promoção para Estável).
+- **Estável (`/`)**: `v2.0.1` (publicado na raiz do GitHub Pages + builds Desktop Windows e Linux).
+- **Beta web (`/beta/`)**: `v2.0.1-beta.2` (último snapshot beta antes da promoção para `v2.0.1` Estável).
+- **Candidata atual no `main`**: `2.0.1` (promovida para Estável após validação em `/beta/`).
 
-### 🚀 Evolução UX, Ergonomia & Gestão de Oficina (Fases 1, 2, 3 e 4 — `v2.0.1-beta.2`)
+### 🚀 Evolução UX, Ergonomia & Gestão de Oficina (Fases 1, 2, 3 e 4 — `v2.0.1`)
 
 Orquestração executada em 3 camadas (**Hydrogen `flash_lite` → Carbon High `pro` → Argon High**), preservando 100% do contrato `SPEC-01` (`dataManifest.ts`) e tokens semânticos puros:
 
