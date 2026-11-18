@@ -1,6 +1,8 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Check,
+  FileText,
   GitCompareArrows,
   Layers,
   LayoutGrid,
@@ -20,6 +22,7 @@ import {
 } from "@/shared/lib/calculatorPresets";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import type { LayoutMode } from "@/shared/stores/layoutStore";
+import { useQuoteStore } from "@/shared/stores/quoteStore";
 import {
   computeEffectiveMarginPercent,
   computeScenarioDeltas,
@@ -65,11 +68,65 @@ export function StudioCalculatorModeSelector({
   const clearPinnedScenario = useScenarioComparisonStore(
     (state) => state.clearPinnedScenario,
   );
+  const [abQuoteSaved, setAbQuoteSaved] = useState(false);
 
   const tr = (key: string, ptFallback: string, enFallback: string): string => {
     const resolved = t(key);
     if (resolved && resolved !== key) return resolved;
     return isEn ? enFallback : ptFallback;
+  };
+
+  const handleCreateAbQuote = () => {
+    if (!pinnedScenario || !results) return;
+    const calcState = useCalculatorStore.getState();
+    const isResin = calcState.activeTab === "resin";
+    const currentMaterial = isResin
+      ? `${calcState.resinMaterial.type} · ${calcState.resinMaterial.volumeUsedMl}ml`
+      : `${calcState.fdmMaterial.type} · ${calcState.fdmMaterial.weightUsed}g`;
+    const currentLabel =
+      calcState.productName.trim() || currentMaterial;
+    const qtyA = Math.max(1, pinnedScenario.quantity || 1);
+    const qtyB = Math.max(1, calcState.quantity || 1);
+
+    useQuoteStore.getState().addQuote({
+      title: isEn
+        ? `A/B Comparison: ${pinnedScenario.label}`
+        : `Comparativo A/B: ${pinnedScenario.label}`,
+      items: [
+        {
+          historyEntryId: "ab-baseline",
+          name: isEn
+            ? `Option A (Baseline): ${pinnedScenario.label} (${pinnedScenario.materialSummary} · ${pinnedScenario.infillPercent}% infill)`
+            : `Opção A (Base): ${pinnedScenario.label} (${pinnedScenario.materialSummary} · ${pinnedScenario.infillPercent}% infill)`,
+          quantity: qtyA,
+          unitPrice: Number((pinnedScenario.sellPrice / qtyA).toFixed(2)),
+          discountPercent: 0,
+        },
+        {
+          historyEntryId: "ab-current",
+          name: isEn
+            ? `Option B (Alternative): ${currentLabel} (${currentMaterial} · ${calcState.infillPercent}% infill)`
+            : `Opção B (Alternativa): ${currentLabel} (${currentMaterial} · ${calcState.infillPercent}% infill)`,
+          quantity: qtyB,
+          unitPrice: Number((results.sellPrice / qtyB).toFixed(2)),
+          discountPercent: 0,
+        },
+      ],
+      globalDiscountPercent: 0,
+      status: "draft",
+      validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10),
+      paymentTerms: isEn
+        ? "50% upfront, 50% on delivery"
+        : "50% na aprovação, 50% na entrega",
+      deliveryEstimate: isEn ? "3–5 business days" : "3 a 5 dias úteis",
+      footerNote: isEn
+        ? "Comparative quote with two production options (A vs. B)."
+        : "Orçamento comparativo com duas opções de produção (A vs. B).",
+    });
+    setAbQuoteSaved(true);
+    setTimeout(() => setAbQuoteSaved(false), 2500);
   };
 
   const syncWizardIfGuided = (action: "reseed" | "reset") => {
@@ -365,7 +422,41 @@ export function StudioCalculatorModeSelector({
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleCreateAbQuote}
+                title={tr(
+                  "studio.compareCreateQuoteTitle",
+                  "Criar rascunho de orçamento com as duas opções (A vs. B)",
+                  "Create a quote draft with both options (A vs. B)",
+                )}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-accent)] transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+              >
+                {abQuoteSaved ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-positive" aria-hidden="true" />
+                    <span className="text-positive">
+                      {tr(
+                        "studio.compareQuoteCreated",
+                        "Orçamento A/B criado!",
+                        "A/B Quote created!",
+                      )}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>
+                      {tr(
+                        "studio.compareCreateQuote",
+                        "Gerar Orçamento (A vs. B)",
+                        "Create A/B Quote",
+                      )}
+                    </span>
+                  </>
+                )}
+              </button>
               <button
                 type="button"
                 onClick={() => pinFromCalculator()}

@@ -203,7 +203,7 @@ const StudioWhatsAppModalDialog: React.FC<StudioWhatsAppModalDialogProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-fade-in select-none"
+      className="fixed inset-0 z-50 bg-[var(--color-overlay-scrim)] backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-fade-in select-none"
       role="dialog"
       aria-modal="true"
       aria-labelledby="whatsapp-modal-title"
@@ -514,20 +514,20 @@ const StudioWhatsAppModalDialog: React.FC<StudioWhatsAppModalDialogProps> = ({
                 </div>
 
                 {/* WhatsApp Chat Container Simulation */}
-                <div className="flex-1 flex flex-col justify-end rounded-xl border border-border-subtle bg-[#0b141a]/95 p-3.5 sm:p-4 min-h-[290px] shadow-inner relative overflow-hidden">
+                <div className="flex-1 flex flex-col justify-end rounded-xl border border-border-subtle bg-surface-sunken p-3.5 sm:p-4 min-h-[290px] shadow-inner relative overflow-hidden">
                   {/* Subtle WhatsApp wallpaper doodle background effect */}
-                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#25d366_1px,transparent_1px)] [background-size:16px_16px]" />
+                  <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[radial-gradient(var(--color-positive)_1px,transparent_1px)] [background-size:16px_16px]" />
 
                   {isEditingMessage ? (
                     <textarea
                       rows={12}
                       value={messageText}
                       onChange={(e) => setCustomMessageText(e.target.value)}
-                      className="w-full flex-1 p-3 rounded-lg bg-[#1f2c34] border border-[#2a3942] text-xs text-[#e9edef] font-mono outline-none focus:ring-2 focus:ring-[#00a884] resize-none leading-relaxed"
+                      className="w-full flex-1 p-3 rounded-lg bg-surface-raised border border-border-subtle text-xs text-text-primary font-mono outline-none focus:ring-2 focus:ring-positive resize-none leading-relaxed"
                     />
                   ) : (
                     /* The Speech Bubble */
-                    <div className="self-end max-w-[92%] sm:max-w-[85%] rounded-2xl rounded-tr-none bg-[#005c4b] text-[#e9edef] p-3.5 shadow-md flex flex-col gap-1.5 text-xs leading-relaxed break-words font-sans">
+                    <div className="self-end max-w-[92%] sm:max-w-[85%] rounded-2xl rounded-tr-none bg-positive-subtle border border-positive/30 text-text-primary p-3.5 shadow-md flex flex-col gap-1.5 text-xs leading-relaxed break-words font-sans">
                       <div className="whitespace-pre-wrap">
                         {messageText.split("\n").map((line, idx) => (
                           <div key={idx} className="min-h-[1.1rem]">
@@ -535,7 +535,7 @@ const StudioWhatsAppModalDialog: React.FC<StudioWhatsAppModalDialogProps> = ({
                             {line.split(/(\*[^*]+\*)/g).map((chunk, cIdx) => {
                               if (chunk.startsWith("*") && chunk.endsWith("*") && chunk.length > 2) {
                                 return (
-                                  <strong key={cIdx} className="font-bold text-white">
+                                  <strong key={cIdx} className="font-bold text-text-primary">
                                     {chunk.slice(1, -1)}
                                   </strong>
                                 );
@@ -547,11 +547,11 @@ const StudioWhatsAppModalDialog: React.FC<StudioWhatsAppModalDialogProps> = ({
                       </div>
 
                       {/* Bubble footer with time and double checkmark */}
-                      <div className="self-end flex items-center gap-1 text-[10px] text-[#8696a0] select-none mt-1">
+                      <div className="self-end flex items-center gap-1 text-[10px] text-text-muted select-none mt-1">
                         <span>
                           {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         </span>
-                        <span className="text-[#53bdeb] font-bold">✓✓</span>
+                        <span className="text-info font-bold">✓✓</span>
                       </div>
                     </div>
                   )}

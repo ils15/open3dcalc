@@ -37,14 +37,14 @@ export function CostDistributionBars({
     <div
       data-testid="compact-cost-bars"
       aria-label={t("calc.costDistribution")}
-      className="bg-[#0f172a] border border-[#1e293b] rounded-2xl p-4 text-slate-200 shadow-xl space-y-4"
+      className="bg-surface-raised border border-border-subtle rounded-2xl p-4 text-text-primary shadow-xl space-y-4"
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-        <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+      <div className="flex items-center justify-between border-b border-border-subtle pb-2">
+        <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-text-secondary">
           COMPOSIÇÃO DE CUSTOS
         </span>
-        <div className="flex items-center gap-1 text-slate-500">
+        <div className="flex items-center gap-1 text-text-muted">
           <HelpCircle className="w-3.5 h-3.5" />
         </div>
       </div>
@@ -63,7 +63,7 @@ export function CostDistributionBars({
             <div
               key={`${segment.category}-${segment.name}`}
               data-testid={`compact-cost-bar-${segment.category}`}
-              className="flex items-center justify-between gap-2 py-0.5 text-slate-300"
+              className="flex items-center justify-between gap-2 py-0.5 text-text-secondary"
             >
               <div className="flex items-center gap-2 truncate">
                 <span
@@ -72,16 +72,18 @@ export function CostDistributionBars({
                     backgroundColor: CATEGORY_COLOR_TOKEN[segment.category],
                   }}
                 />
-                <span className="truncate text-slate-300">{segment.name}</span>
+                <span className="truncate text-text-secondary">
+                  {segment.name}
+                </span>
               </div>
 
               <div className="flex items-center gap-2.5 shrink-0 font-mono text-[11px]">
-                <span className="text-slate-400">{pct}%</span>
-                <span className="font-semibold text-white">
+                <span className="text-text-secondary">{pct}%</span>
+                <span className="font-semibold text-text-primary">
                   {formattedValue}
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
                 <div
                   role="img"
                   aria-label={`${segment.name}: ${segment.pct.toFixed(1)}%`}
@@ -97,16 +99,16 @@ export function CostDistributionBars({
         })}
       </div>
 
-      {/* Blue Callout Info Box */}
-      <div className="p-3 rounded-xl bg-blue-950/30 border border-blue-900/50 flex items-start gap-2.5 text-[11px] leading-relaxed text-blue-200">
-        <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+      {/* Info Callout Box */}
+      <div className="p-3 rounded-xl bg-accent-subtle border border-accent/30 flex items-start gap-2.5 text-[11px] leading-relaxed text-text-secondary">
+        <Info className="w-4 h-4 text-info shrink-0 mt-0.5" />
         <p>
           Lucro projetado de{" "}
-          <strong className="text-emerald-400 font-bold">
+          <strong className="text-positive font-bold">
             {formatCurrency(profit)}
           </strong>{" "}
           sobre o custo total de fabricação de{" "}
-          <strong className="text-white font-bold">
+          <strong className="text-text-primary font-bold">
             {formatCurrency(totalCost)}
           </strong>
           .
@@ -114,19 +116,21 @@ export function CostDistributionBars({
       </div>
 
       {/* Break-Even Box */}
-      <div className="p-3 rounded-xl bg-[#080d1a] border border-[#1e293b] space-y-1 text-xs">
+      <div className="p-3 rounded-xl bg-surface-sunken border border-border-subtle space-y-1 text-xs">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
-            <span className="text-emerald-400 font-bold">~</span>
+          <span className="text-[11px] font-semibold text-text-secondary flex items-center gap-1.5">
+            <span className="text-positive font-bold">~</span>
             Break-Even da Máquina
           </span>
-          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/80">
+          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-positive-subtle text-positive border border-positive/30">
             {breakEvenUnits} peças
           </span>
         </div>
-        <p className="text-[11px] text-slate-400 leading-normal">
+        <p className="text-[11px] text-text-secondary leading-normal">
           Vendendo{" "}
-          <strong className="text-white">{breakEvenUnits} unidades</strong>{" "}
+          <strong className="text-text-primary">
+            {breakEvenUnits} unidades
+          </strong>{" "}
           deste projeto você quita o valor da máquina ({formatCurrency(3200)}).
         </p>
       </div>

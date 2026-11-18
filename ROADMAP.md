@@ -59,10 +59,10 @@ A partir da `v2.0.1`, todas as próximas atualizações seguem este cronograma o
 
 #### 🔹 Release `v2.0.2` — Ativação de Módulos Prontos, Inspector de Produtos & Polimento Semântico (Curto Prazo)
 *Foco: Destravar funcionalidades de alto valor já codificadas e testadas no repositório, mas ainda desconectadas da shell `StudioLayout`.*
-- [ ] **Montar `ProfitAnalyticsModule` e `MaterialEfficiencyHeatmap` no `StudioDashboardView.tsx`:** Exibir a matriz de eficiência de materiais (`MaterialEfficiencyHeatmap.tsx`) e a análise avançada de rentabilidade/break-even (`ProfitAnalyticsModule.tsx`) em seção analítica expansível no Dashboard Studio.
-- [ ] **`StudioSplitInspector` em `StudioProductsView.tsx` (`#358`):** Substituir cards isolados pelo padrão mestre-detalhe com edição rápida inline de margem/markup, simulação de lucro por canal (`compareMarketplaces.ts`) e recálculo instantâneo quando o custo do filamento variar.
-- [ ] **Conversão 1-Clique do Comparador A/B para Orçamento (`#358`):** Botão *"Gerar Orçamento Comparativo (A vs. B)"* na barra de comparação A/B (`StudioCalculatorModeSelector.tsx`), criando rascunho de orçamento com as duas opções (ex.: Econômico vs. Reforçado) prontas para o cliente escolher.
-- [ ] **Redução de Dívida Semântica (`#357` — Lote 1) & Métricas (`#359`):** Migrar `CostDistributionBars.tsx`, `QuoteSection.tsx` e `StudioWhatsAppModal.tsx` para tokens semânticos puros, remover ou integrar `src/utils/slicerOptimizer.ts` e atualizar a tabela `Quality Metrics` com medição real de coverage da `v2.0.1+`.
+- [x] **Montar `ProfitAnalyticsModule` e `MaterialEfficiencyHeatmap` no `StudioDashboardView.tsx`:** Exibir a matriz de eficiência de materiais (`MaterialEfficiencyHeatmap.tsx`, já montada na aba `engineering`) e a análise avançada de rentabilidade/break-even (`ProfitAnalyticsModule.tsx`, montada na aba `pricing`) no Dashboard Studio.
+- [x] **`StudioSplitInspector` em `StudioProductsView.tsx` (`#358`):** Evoluído com edição rápida inline de markup/preço, alternância rápida de disponibilidade e simulação de lucro por canal (`compareMarketplaces.ts`).
+- [x] **Conversão 1-Clique do Comparador A/B para Orçamento (`#358`):** Botão *"Gerar Orçamento (A vs. B)"* na barra de comparação A/B (`StudioCalculatorModeSelector.tsx`), criando rascunho de orçamento com as duas opções prontas para o cliente escolher.
+- [x] **Redução de Dívida Semântica (`#357` — Lote 1) & Métricas (`#359`):** Migrados `CostDistributionBars.tsx`, `QuoteSection.tsx` e `StudioWhatsAppModal.tsx` para tokens semânticos puros (`50 → 46` arquivos e `518 → 441` ocorrências), removido o módulo morto `src/utils/slicerOptimizer.ts` e atualizada a contagem de testes em `Quality Metrics`.
 
 #### 🔹 Release `v2.1.0` — Precisão Multi-Cor (AMS / CFS / ACE Pro / MMU) & Ferramentas de Bancada Maker
 *Foco: Resolver a maior dor atual da impressão 3D moderna — o desperdício real em impressões multicoloridas — e inaugurar utilitários práticos de engenharia.*
@@ -2088,7 +2088,7 @@ IA foi explicitamente confirmada como fora da V2.0. A única área deferred é I
 | ----------------------- | ----------------------------------------------------- | --------------------------------------- |
 | Test coverage (overall) | ⚠️ **Não medida para a beta.11** — ver nota abaixo    | ≥60% (Beta 5, aprovado pelo utilizador) |
 | Coverage (calculation)  | ⚠️ Não medida para a beta.11                          | ≥90%                                    |
-| Tests                   | 4.255 (304 files) — último CI pós-#264, parent da tag | 500+                                    |
+| Tests                   | 4.421+ (353+ files, exceto teste local de gitleaks sem binário na VM) | 500+                                    |
 | Components with tests   | Partial                                               | 100%                                    |
 | Accessibility (a11y)    | —                                                     | WCAG A                                  |
 
