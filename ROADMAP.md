@@ -17,8 +17,8 @@
 ## Estado dos canais publicados — atualizado em 18/11/2026
 
 - **Estável (`/`)**: `v2.0.1` (publicado na raiz do GitHub Pages + builds Desktop Windows e Linux).
-- **Beta web (`/beta/`)**: `v2.0.1-beta.2` (último snapshot beta antes da promoção para `v2.0.1` Estável).
-- **Candidata atual no `main`**: `2.0.1` (promovida para Estável após validação em `/beta/`).
+- **Beta web (`/beta/`)**: `v2.0.2-beta.1` (pré-lançamento `v2.0.2` em validação no canal `/beta/`).
+- **Candidata atual no `main`**: `2.0.2-beta.1` (aguardando validação em `/beta/` para promoção a `v2.0.2` Estável).
 
 ### 🚀 Evolução UX, Ergonomia & Gestão de Oficina (Fases 1, 2, 3 e 4 — `v2.0.1`)
 
