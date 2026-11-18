@@ -1634,6 +1634,44 @@
     },
     "versions": [
       {
+        "version": "2.0.1",
+        "date": "2026-11-18",
+        "sections": [
+          {
+            "title": "🚀 Features",
+            "items": [
+              "**Adaptive Multi-Monitor Width** — new workspace width profile (`Focused | Standard | Wide`, shortcut `Alt+W`) keeping 3 columns on laptops (`1280px`) and unlocking ultrawide displays (`1920px–2560px+`)",
+              "**Global Command Palette (`Ctrl+K` / `⌘K`)** — instant search to jump between routes, toggle `FDM`/`Resin`, switch calculator modes, change workspace width, and trigger quick actions",
+              "**Workbench Control Deck & Live A/B Comparator** — 4 one-click Quick Presets (Standard PLA, Functional PETG, Fast Prototype, and Premium Marketplace) with `Ctrl+Z` undo and real-time A/B deltas (`Δ Cost`, `Δ Price`, `Δ Profit`, `Δ Margin`)",
+              "**Active Workshop Setup & Quick Results Bar** — interactive top deck in My Workshop showing active printer, material, spool alert, and channel, plus 1-click result actions (*Copy Summary*, *Pin A/B Baseline*, and *Quick Save*)",
+              "**Commercial Split Inspector & Cross-Menu Flows** — side contextual inspector in Quotes, Customers (with live LTV), and History, plus 1-click actions (*Simulate in Calculator*, *Create Quote*, *Save as Product*, and *Apply Infill to Calculator*)"
+            ]
+          },
+          {
+            "title": "🎨 UI/UX",
+            "items": [
+              "**3-Zone Header & Sidebar Workshop Sub-routes** — clear separation of route context, compact utilities, and commercial CTAs, plus 1-click sidebar links to *Printers & Materials*, *Spool Inventory* (with low-stock badge), and *Channels & Fees*",
+              "**Unified Dashboard & Commercial Views** — operational Dashboard Hero with direct shortcuts, shared KPI strips, and consistent toolbars across Studio",
+              "**Pure Semantic Tokens & Comfortable Reading** — removed hardcoded color classes across Workshop, Inventory, and Commercial views, plus readable `75ch` prose width in Wiki and Changelog"
+            ]
+          },
+          {
+            "title": "🚀 Improvements",
+            "items": [
+              "**Actionable Workshop & Inventory Management** — printer sorting and hourly cost preview, 1-click cloning (*Customize*), live marketplace fee preview, *Low Stock (< 200g)* quick filter, and visual remaining-grams bar",
+              "**Consistent Multi-Currency Formatting** — replaced fixed currency literals with active user currency and locale across Dashboard, Spools, and Commercial views"
+            ]
+          },
+          {
+            "title": "🐛 Fixes",
+            "items": [
+              "Fixed breadcrumbs on *Customers*, *Quotes*, and *Products* routes, raw translation key in Dashboard period summary, and direct *Use in Calculator* navigation from Spool Manager",
+              "Fixed WCAG AA contrast on preset printer CTA and preserved legacy layout persistence wire format (`SPEC-01`)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "2.0.0",
         "date": "",
         "sections": [

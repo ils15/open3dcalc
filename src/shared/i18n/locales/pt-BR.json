@@ -1634,6 +1634,44 @@
     },
     "versions": [
       {
+        "version": "2.0.1",
+        "date": "2026-11-18",
+        "sections": [
+          {
+            "title": "🚀 Novidades",
+            "items": [
+              "**Largura Adaptativa Multi-Monitor** — novo modo de espaço de trabalho (`Focado | Padrão | Amplo`, atalho `Alt+W`) para manter 3 colunas em notebooks (`1280px`) e aproveitar telas ultrawide (`1920px–2560px+`)",
+              "**Paleta de Comandos Global (`Ctrl+K` / `⌘K`)** — busca instantânea para navegar entre rotas, alternar tecnologia `FDM`/`Resina`, trocar modo da calculadora, mudar largura e disparar ações rápidas",
+              "**Workbench Control Deck & Comparador A/B** — 4 Perfis Rápidos de 1 clique (PLA Padrão, PETG Funcional, Protótipo Rápido e Marketplace Premium) com suporte a `Ctrl+Z` e Comparador A/B ao vivo (`Δ Custo`, `Δ Preço`, `Δ Lucro`, `Δ Margem`)",
+              "**Setup Ativo na Oficina & Barra Rápida de Resultados** — resumo interativo da impressora, insumo, estoque e canal ativo no topo de Minha Oficina e ações de 1 clique no painel de resultados (*Copiar Resumo*, *Fixar Base A/B* e *Salvar Rápido*)",
+              "**Split Inspector & Fluxos Cruzados Comerciais** — inspetor lateral contextual em Orçamentos, Clientes (com LTV ao vivo) e Histórico, além de ações diretas (*Simular na Calculadora*, *Criar Orçamento*, *Salvar como Produto* e *Aplicar Infill na Calculadora*)"
+            ]
+          },
+          {
+            "title": "🎨 UI/UX",
+            "items": [
+              "**Header em 3 Zonas & Sub-rotas na Sidebar** — separação clara entre contexto/breadcrumb, utilitários compactos e CTAs comerciais, com acesso em 1 clique na sidebar para *Impressoras & Materiais*, *Estoque de Carretéis* (com alerta de estoque baixo) e *Canais & Taxas*",
+              "**Dashboard & Menus Comerciais Unificados** — novo Hero operacional no Dashboard com atalhos diretos, KPIs padronizados e barras de ferramentas consistentes em todo o Studio",
+              "**Tokens Semânticos Puros & Leitura Confortável** — eliminação de cores fixas nas telas da Oficina, Estoque e Comercial, além de largura de leitura confortável (`75ch`) na Wiki e no Changelog"
+            ]
+          },
+          {
+            "title": "🚀 Melhorias",
+            "items": [
+              "**Gestão Acionável da Oficina e Estoque** — ordenação e custo/hora visível nos cards de impressoras, clonagem rápida (*Personalizar*), prévia ao vivo da taxa de marketplace, filtro rápido *Estoque Baixo (< 200g)* e barra visual de gramas restantes",
+              "**Formatação Multi-Moeda Consistente** — substituição de valores em moeda fixa pela moeda e idioma ativos no Dashboard, Estoque e telas comerciais"
+            ]
+          },
+          {
+            "title": "🐛 Correções",
+            "items": [
+              "Corrigidos breadcrumbs nas rotas *Clientes*, *Orçamentos* e *Produtos*, chave literal no resumo de período do Dashboard e fluxo direto *Usar na Calculadora* no gerenciador de carretéis",
+              "Ajustado o contraste WCAG AA do CTA de adição de impressora por preset e preservado o contrato de persistência de layout (`SPEC-01`)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "2.0.0",
         "date": "",
         "sections": [
