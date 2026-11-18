@@ -37,15 +37,19 @@ const STATUS_CONFIG: Record<
   draft: {
     label: "Rascunho",
     color: "text-[var(--color-text-secondary)]",
-    bg: "bg-gray-500/20",
+    bg: "bg-surface-sunken",
   },
-  sent: { label: "Enviado", color: "text-blue-400", bg: "bg-blue-500/20" },
+  sent: { label: "Enviado", color: "text-info", bg: "bg-accent-subtle" },
   approved: {
     label: "Aprovado",
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/20",
+    color: "text-positive",
+    bg: "bg-positive-subtle",
   },
-  rejected: { label: "Recusado", color: "text-red-400", bg: "bg-red-500/20" },
+  rejected: {
+    label: "Recusado",
+    color: "text-critical",
+    bg: "bg-critical-subtle",
+  },
 };
 
 // ── Focus trap hook ─────────────────────────────────────────────
@@ -113,7 +117,7 @@ function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay-scrim)] p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -437,7 +441,7 @@ function QuoteFormModal({
                     </div>
                     <button
                       onClick={() => removeItem(idx)}
-                      className="p-1.5 rounded-lg text-[var(--color-danger)] hover:bg-red-500/20 transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"
+                      className="p-1.5 rounded-lg text-[var(--color-danger)] hover:bg-critical-subtle transition-colors focus-visible:ring-2 focus-visible:ring-critical focus-visible:outline-none"
                       aria-label="Remover item"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -543,7 +547,7 @@ function QuoteFormModal({
 
         {/* Error */}
         {error && (
-          <div className="flex items-center gap-2 text-sm text-[var(--color-danger)] bg-red-500/10 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-[var(--color-danger)] bg-critical-subtle rounded-xl px-4 py-3">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -559,7 +563,7 @@ function QuoteFormModal({
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)] hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center justify-center gap-2"
           >
             <FileText className="w-4 h-4" />
             {isEditing ? "Atualizar" : "Salvar Orçamento"}
@@ -669,7 +673,7 @@ function QuoteViewModal({
             {/* contrast-site: quote-section-export-pdf-button */}
             <button
               onClick={handleExportPdf}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-positive-fill)] text-[var(--color-positive-fill-fg)] hover:brightness-110 transition-colors focus-visible:ring-2 focus-visible:ring-positive focus-visible:outline-none flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
               Exportar PDF
@@ -915,7 +919,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
         <button
           data-tutorial="quote-new"
           onClick={handleNewQuote}
-          className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-white hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
+          className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)] hover:bg-[var(--accent-fill-hover)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none flex items-center gap-1.5"
         >
           <Plus className="w-3.5 h-3.5" />
           {t("quotes.newQuote", "Novo Orçamento")}
@@ -935,7 +939,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
               onClick={() => quoteStore.setStatusFilter(f.key)}
               className={`px-3 py-1.5 text-xs rounded-lg transition-colors whitespace-nowrap ${
                 quoteStore.statusFilter === f.key
-                  ? "bg-[var(--accent-fill)] text-white"
+                  ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]"
                   : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               }`}
             >
@@ -1028,7 +1032,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
                   </button>
                   <button
                     onClick={() => handleEditQuote(quote)}
-                    className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-warning)] hover:bg-amber-500/20 transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                    className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-warning)] hover:bg-warning-subtle transition-colors focus-visible:ring-2 focus-visible:ring-warning focus-visible:outline-none"
                     aria-label="Editar"
                     title="Editar"
                   >
@@ -1036,7 +1040,7 @@ export function QuoteSection({ locale: localeProp }: { locale?: string } = {}) {
                   </button>
                   <button
                     onClick={() => setConfirmDeleteId(quote.id)}
-                    className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] hover:bg-red-500/20 transition-colors focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none"
+                    className="p-2 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] hover:bg-critical-subtle transition-colors focus-visible:ring-2 focus-visible:ring-critical focus-visible:outline-none"
                     aria-label="Excluir"
                     title="Excluir"
                   >

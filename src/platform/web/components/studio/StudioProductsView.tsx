@@ -16,6 +16,8 @@ import {
   Calculator,
   FileText,
   Eye,
+  Check,
+  Store,
 } from "lucide-react";
 import {
   useProductInventory,
@@ -23,6 +25,8 @@ import {
   exportProductsCSV,
 } from "@/shared/stores/productInventory";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useCatalogStore } from "@/shared/stores/catalogStore";
+import { compareMarketplaceProfits } from "@/shared/lib/compareMarketplaces";
 import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
@@ -96,6 +100,73 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({
     () => filteredProducts.find((p) => p.id === selectedProductId) ?? null,
     [filteredProducts, selectedProductId],
   );
+
+  const catalogMarketplaces = useCatalogStore((s) => s.marketplaces);
+  const fdmTaxPercent = useCalculatorStore((s) => s.fdmSales.taxPercent);
+  const [inlineMarkupOverride, setInlineMarkupOverride] = useState<{
+    productId: string;
+    value: string;
+  } | null>(null);
+  const [inlineSavedProductId, setInlineSavedProductId] = useState<
+    string | null
+  >(null);
+
+  const defaultMarkupString = useMemo(() => {
+    if (!selectedProduct) return "100";
+    const currentMarkup =
+      selectedProduct.costPrice > 0
+        ? Math.round(
+            ((selectedProduct.salePrice - selectedProduct.costPrice) /
+              selectedProduct.costPrice) *
+              100,
+          )
+        : 100;
+    return String(currentMarkup);
+  }, [selectedProduct]);
+
+  const inlineMarkupInput =
+    selectedProduct && inlineMarkupOverride?.productId === selectedProduct.id
+      ? inlineMarkupOverride.value
+      : defaultMarkupString;
+
+  const setInlineMarkupInput = (value: string) => {
+    if (!selectedProduct) return;
+    setInlineMarkupOverride({ productId: selectedProduct.id, value });
+  };
+
+  const inlineSavedNotice =
+    selectedProduct !== null && inlineSavedProductId === selectedProduct.id;
+
+  const parsedInlineMarkup = Number.isFinite(Number(inlineMarkupInput))
+    ? Number(inlineMarkupInput)
+    : 0;
+
+  const previewSalePrice = selectedProduct
+    ? Number(
+        (selectedProduct.costPrice * (1 + parsedInlineMarkup / 100)).toFixed(2),
+      )
+    : 0;
+  const previewProfit = selectedProduct
+    ? Number((previewSalePrice - selectedProduct.costPrice).toFixed(2))
+    : 0;
+
+  const channelComparison = useMemo(() => {
+    if (!selectedProduct || selectedProduct.costPrice <= 0) return [];
+    return compareMarketplaceProfits({
+      totalCost: selectedProduct.costPrice,
+      marginPercent: Math.max(0, parsedInlineMarkup),
+      taxPercent: fdmTaxPercent,
+      marketplaces:
+        catalogMarketplaces.length > 0 ? catalogMarketplaces : undefined,
+    })
+      .filter((row) => row.isValid)
+      .slice(0, 4);
+  }, [
+    selectedProduct,
+    parsedInlineMarkup,
+    fdmTaxPercent,
+    catalogMarketplaces,
+  ]);
 
   // KPIs
   const totalProducts = products.length;
@@ -457,6 +528,139 @@ export const StudioProductsView: React.FC<StudioProductsViewProps> = ({
                     </span>
                   </div>
                 ) : null}
+
+                {/* Inline Markup & Price Editor */}
+                <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-bold">
+                      Ajuste Rápido de Markup
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        markSold(selectedProduct.id, !selectedProduct.sold)
+                      }
+                      className="px-2 py-0.5 rounded-md border border-border-subtle bg-surface-raised hover:bg-surface-overlay text-[10px] font-semibold text-text-secondary hover:text-text-primary transition-colors"
+                    >
+                      {selectedProduct.sold
+                        ? "Marcar Disponível"
+                        : "Marcar Vendido"}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[30, 50, 80, 100, 150].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setInlineMarkupInput(String(pct))}
+                        className={`px-2 py-1 rounded-lg font-mono text-[10px] font-bold border transition-colors ${
+                          Math.round(parsedInlineMarkup) === pct
+                            ? "border-accent bg-accent-subtle text-accent"
+                            : "border-border-subtle bg-surface-raised text-text-secondary hover:text-text-primary"
+                        }`}
+                      >
+                        +{pct}%
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        step="5"
+                        aria-label="Markup inline (%)"
+                        value={inlineMarkupInput}
+                        onChange={(e) => setInlineMarkupInput(e.target.value)}
+                        className="w-full bg-surface-raised border border-border-subtle rounded-lg px-2.5 py-1.5 pr-7 text-xs font-mono font-bold text-text-primary outline-none focus:border-accent"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-mono text-text-muted">
+                        %
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateProduct(selectedProduct.id, {
+                          salePrice: Math.max(0, previewSalePrice),
+                        });
+                        setInlineSavedProductId(selectedProduct.id);
+                        setTimeout(() => setInlineSavedProductId(null), 2000);
+                      }}
+                      className="inline-flex min-h-9 items-center gap-1 rounded-lg bg-[var(--color-accent-fill)] px-3 py-1.5 text-[11px] font-bold text-[var(--color-accent-fill-fg)] hover:brightness-110 transition-all"
+                    >
+                      {inlineSavedNotice ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Aplicado</span>
+                        </>
+                      ) : (
+                        <span>Aplicar {formatCurrency(previewSalePrice)}</span>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] font-mono text-text-secondary pt-1 border-t border-border-subtle">
+                    <span>Lucro projetado:</span>
+                    <span
+                      className={
+                        previewProfit >= 0
+                          ? "text-positive font-bold"
+                          : "text-critical font-bold"
+                      }
+                    >
+                      {previewProfit >= 0 ? "+" : ""}
+                      {formatCurrency(previewProfit)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Channel Profit Simulation */}
+                {channelComparison.length > 0 && (
+                  <div className="bg-surface-sunken border border-border-subtle rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-text-muted font-bold">
+                        <Store className="w-3 h-3 text-accent" />
+                        Simulação por Canal ({Math.max(0, parsedInlineMarkup)}%)
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {channelComparison.map((row, idx) => (
+                        <li
+                          key={row.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-surface-raised px-2.5 py-1.5 text-[11px]"
+                        >
+                          <div className="min-w-0 flex items-center gap-1.5">
+                            {idx === 0 && (
+                              <span className="px-1.5 py-0.5 rounded bg-positive-subtle text-positive font-mono text-[9px] font-bold shrink-0">
+                                TOP
+                              </span>
+                            )}
+                            <span className="truncate font-semibold text-text-primary">
+                              {row.name}
+                            </span>
+                          </div>
+                          <div className="shrink-0 text-right font-mono">
+                            <div className="font-bold text-text-primary">
+                              {formatCurrency(row.sellPrice)}
+                            </div>
+                            <div
+                              className={`text-[10px] ${
+                                row.netProfit >= 0
+                                  ? "text-positive"
+                                  : "text-critical"
+                              }`}
+                            >
+                              {row.netProfit >= 0 ? "+" : ""}
+                              {formatCurrency(row.netProfit)} líq.
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             ) : null
           }

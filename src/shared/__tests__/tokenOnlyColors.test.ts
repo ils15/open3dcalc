@@ -198,13 +198,9 @@ const FLOOR: Readonly<Record<string, number>> = {
   "src/platform/web/components/studio/StudioMiniDashOverlay.tsx": 1,
   "src/platform/web/components/studio/StudioCopilotModal.tsx": 1,
   "src/shared/components/SpoolShelf/SpoolCard.tsx": 20,
-  "src/shared/components/Results/CostDistributionBars.tsx": 26,
-  "src/shared/components/Calculator/QuoteSection.tsx": 22,
   "src/platform/web/components/studio/StudioShortcutsModal.tsx": 1,
-  "src/platform/web/components/studio/StudioWhatsAppModal.tsx": 11,
   "src/shared/components/Catalog/WorkshopBusinessProfileView.tsx": 6,
   "src/shared/stores/workshopProfileStore.ts": 1,
-  "src/utils/slicerOptimizer.ts": 18,
   "src/shared/components/AppShell/QuickStatusPill.tsx": 16,
   "src/shared/components/StlPreview/StlPreview.tsx": 15,
   "src/shared/lib/QuoteDoc.tsx": 13,
@@ -301,8 +297,8 @@ describe("VIS-005 token-only colours: no NEW hardcoded palette literals", () => 
   it("reports the audited inventory so the header can be checked by eye", () => {
     const files = Object.keys(FLOOR).length;
     const occurrences = Object.values(FLOOR).reduce((a, b) => a + b, 0);
-    expect(files).toBe(50);
-    expect(occurrences).toBe(518);
+    expect(files).toBe(46);
+    expect(occurrences).toBe(441);
   });
 
   it("has no file carrying debt that the floor does not name", () => {

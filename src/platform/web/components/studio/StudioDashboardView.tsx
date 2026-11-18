@@ -44,6 +44,12 @@ const MaterialEfficiencyHeatmap = lazy(() =>
   ),
 );
 
+const ProfitAnalyticsModule = lazy(() =>
+  import("@/shared/components/Dashboard/ProfitAnalyticsModule").then((m) => ({
+    default: m.ProfitAnalyticsModule,
+  })),
+);
+
 type Workspace = "finance" | "pricing" | "operations" | "engineering";
 
 const WORKSPACES: {
@@ -1028,6 +1034,18 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 </ul>
               )}
             </section>
+
+            {hasRealData && (
+              <Suspense
+                fallback={
+                  <div className="rounded-2xl border border-border-subtle bg-surface-raised p-8 text-center text-sm text-text-secondary">
+                    {t("dashboard.loadingCharts")}
+                  </div>
+                }
+              >
+                <ProfitAnalyticsModule entries={visibleEntries} />
+              </Suspense>
+            )}
           </>
         )}
 
