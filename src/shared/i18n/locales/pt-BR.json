@@ -1634,6 +1634,27 @@
     },
     "versions": [
       {
+        "version": "2.0.2",
+        "date": "2026-11-18",
+        "sections": [
+          {
+            "title": "🚀 Novidades",
+            "items": [
+              "**ProfitAnalyticsModule no Dashboard Studio** — análise avançada de rentabilidade, margem por material/impressora e ponto de equilíbrio integrada na aba *Precificação & Lucratividade*",
+              "**Inspector de Produtos com Markup Inline & Canais** — ajuste rápido de markup (`+30%` a `+150%`) com prévia ao vivo, alternância rápida *Disponível/Vendido* e ranking de lucro líquido por marketplace no painel lateral",
+              "**Conversão 1-Clique A/B → Orçamento** — botão *Gerar Orçamento (A vs. B)* na barra do comparador ao vivo, criando automaticamente um rascunho com as duas opções para o cliente"
+            ]
+          },
+          {
+            "title": "🎨 UI/UX & Qualidade",
+            "items": [
+              "**Tokens Semânticos Puros (Lote 1)** — migração completa de `CostDistributionBars`, `QuoteSection` e `StudioWhatsAppModal` para tokens semânticos (`50 → 46` arquivos no guard visual)",
+              "**Limpeza de Código Morto** — remoção de `slicerOptimizer.ts` sem referências e atualização das métricas da suíte (`4.421+` testes)"
+            ]
+          }
+        ]
+      },
+      {
         "version": "2.0.1",
         "date": "2026-11-18",
         "sections": [
