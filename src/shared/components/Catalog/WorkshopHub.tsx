@@ -9,12 +9,14 @@ import {
   Printer,
   Spool,
   Store,
+  Wrench,
 } from "lucide-react";
 
 import { CatalogTab, type CatalogSection } from "./CatalogTab";
 import { SpoolShelf, SpoolManagerView } from "@/shared/components/SpoolShelf";
 import { LOW_STOCK_GRAMS } from "@/shared/components/SpoolShelf/SpoolCard";
 import { WorkshopBusinessProfileView } from "./WorkshopBusinessProfileView";
+import { MakerToolboxView } from "./MakerToolboxView";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
@@ -23,7 +25,7 @@ import { useCurrency } from "@/shared/hooks/useCurrency";
 import { useWorkspaceContainerClass } from "@/platform/web/components/studio/workspaceWidth";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
-type WorkshopSection = CatalogSection | "stock" | "business";
+type WorkshopSection = CatalogSection | "stock" | "business" | "toolbox";
 
 interface WorkshopHubProps {
   activeTab: Tab;
@@ -41,6 +43,7 @@ const SECTION_ROUTE: Record<WorkshopSection, Tab> = {
   stock: "inventory",
   marketplaces: "marketplace",
   business: "catalog",
+  toolbox: "catalog",
 };
 
 const SECTIONS: {
@@ -53,6 +56,7 @@ const SECTIONS: {
   { id: "stock", label: "workshop.stock", icon: Spool },
   { id: "marketplaces", label: "workshop.salesChannels", icon: Store },
   { id: "business", label: "workshop.businessProfile", icon: Building2 },
+  { id: "toolbox", label: "workshop.toolbox", icon: Wrench },
 ];
 
 function getSectionFromRoute(tab: Tab): WorkshopSection {
@@ -247,7 +251,7 @@ export function WorkshopHub({
       </div>
 
       <div
-        className="surface grid grid-cols-2 gap-1.5 rounded-xl border border-[var(--color-border)] p-1.5 sm:grid-cols-3 lg:grid-cols-5"
+        className="surface grid grid-cols-2 gap-1.5 rounded-xl border border-[var(--color-border)] p-1.5 sm:grid-cols-3 lg:grid-cols-6"
         role="tablist"
         aria-label={t("workshop.title")}
       >
@@ -283,6 +287,8 @@ export function WorkshopHub({
       >
         {section === "business" ? (
           <WorkshopBusinessProfileView />
+        ) : section === "toolbox" ? (
+          <MakerToolboxView />
         ) : section === "stock" ? (
           <div className="flex flex-col gap-4">
             {/* Stock presentation toggle: the full management view or the

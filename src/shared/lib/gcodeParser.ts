@@ -38,6 +38,12 @@ export interface GcodeInfo {
   bounds?: GcodeBoundsResult | null;
   slicer: string;
   filamentType: string;
+  /** Bambu Studio / OrcaSlicer flushed ("poop") filament weight in grams. */
+  flushedWeightGrams?: number;
+  /** Wipe / prime tower filament weight in grams. */
+  wipeTowerGrams?: number;
+  /** Number of multi-material filament swaps detected in metadata or T-codes. */
+  filamentChangeCount?: number;
 }
 
 export interface ParseGcodeOptions {
@@ -210,6 +216,22 @@ export function parseGcode(
     if (trimmed.startsWith("M140") || trimmed.startsWith("M190")) {
       const tempMatch = trimmed.match(/S(\d+)/);
       if (tempMatch && !info.bedTemp) info.bedTemp = parseInt(tempMatch[1]);
+    }
+
+    // Bambu Studio / OrcaSlicer multi-color metadata
+    if (/^;\s*(?:total\s+flushed\s+weight(?:\s*\[g\])?|flushed_filament(?:\s*\[g\])?|filament_flushed\s*\[g\])\s*[:=]/i.test(trimmed)) {
+      const val = parseFiniteFloat(trimmed.split(/[:=]/)[1]);
+      if (val !== undefined && val >= 0) info.flushedWeightGrams = val;
+    }
+    if (/^;\s*(?:wipe_tower(?:\s*\[g\])?|wipe\s+tower\s+used\s*\[g\]|prime_tower_weight(?:\s*\[g\])?)\s*[:=]/i.test(trimmed)) {
+      const val = parseFiniteFloat(trimmed.split(/[:=]/)[1]);
+      if (val !== undefined && val >= 0) info.wipeTowerGrams = val;
+    }
+    if (/^;\s*(?:filament_changes|total\s+filament\s+changes)\s*[:=]/i.test(trimmed)) {
+      const val = parseFiniteFloat(trimmed.split(/[:=]/)[1]);
+      if (val !== undefined && val >= 0) {
+        info.filamentChangeCount = Math.round(val);
+      }
     }
 
     // E movements for filament calculation
