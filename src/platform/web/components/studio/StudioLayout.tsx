@@ -1,8 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import { Calculator, Clock, FileText, Warehouse } from "lucide-react";
 import { isWorkshopRoute, Tab } from "@/shared/components/AppShell/tabs";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useHistoryStore } from "@/shared/stores/historyStore";
+import { useQuoteStore } from "@/shared/stores/quoteStore";
+import { useFilamentInventory } from "@/shared/stores/filamentInventory";
+import { isLowStockSpool } from "@/shared/stores/spoolStore";
+import { LOW_STOCK_GRAMS } from "@/shared/components/SpoolShelf/SpoolCard";
 import { StudioCalculatorModeSelector } from "./StudioCalculatorModeSelector";
 import { StudioHeader } from "./StudioHeader";
 import { StudioSidebar } from "./StudioSidebar";
@@ -12,6 +19,7 @@ import { StudioMiniDashOverlay } from "./StudioMiniDashOverlay";
 import { StudioCopilotModal } from "./StudioCopilotModal";
 import { StudioShortcutsModal } from "./StudioShortcutsModal";
 import { StudioQuoteModal } from "./StudioQuoteModal";
+import { StudioCommandPalette } from "./StudioCommandPalette";
 import {
   StudioWhatsAppModal,
   type StudioWhatsAppModalInitialData,
@@ -36,6 +44,7 @@ import { PrivacyOnboarding } from "@/shared/components/Privacy/PrivacyOnboarding
 import { isBetaChannel } from "@/shared/config/betaChannel";
 
 export const StudioLayout: React.FC = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("calculator");
   const mainRef = useRef<HTMLElement>(null);
   // `layoutMode` is SHARED state, not local. It used to be a local `useState`,
@@ -60,6 +69,58 @@ export const StudioLayout: React.FC = () => {
   // when the user moves between Classic, Bento, and Guided.
   const activeTechnology = useCalculatorStore((state) => state.activeTab);
   const currentProjectName = useCalculatorStore((state) => state.productName);
+  const historyCount = useHistoryStore((state) => state.entries.length);
+  const quotesCount = useQuoteStore((state) => state.quotes.length);
+  const spools = useFilamentInventory((state) => state.spools);
+  const lowSpoolCount = useMemo(
+    () =>
+      spools.filter((spool) => isLowStockSpool(spool, LOW_STOCK_GRAMS)).length,
+    [spools],
+  );
+
+  const sidebarModuleOverrides = useMemo(
+    () => [
+      {
+        id: "calculator" as Tab,
+        label: t("nav.calculator"),
+        icon: <Calculator className="w-4 h-4" />,
+      },
+      {
+        id: "quotes" as Tab,
+        label: t("nav.quotes"),
+        icon: <FileText className="w-4 h-4" />,
+        countBadge: quotesCount > 0 ? quotesCount : undefined,
+      },
+      {
+        id: "history" as Tab,
+        label: t("nav.history"),
+        icon: <Clock className="w-4 h-4" />,
+        countBadge: historyCount > 0 ? historyCount : undefined,
+      },
+      {
+        id: "catalog" as Tab,
+        label: t("nav.catalog"),
+        icon: <Warehouse className="w-4 h-4" />,
+        countBadge: lowSpoolCount > 0 ? lowSpoolCount : undefined,
+        subItems: [
+          {
+            id: "catalog" as Tab,
+            label: t("nav.workshopSubPrinters"),
+          },
+          {
+            id: "inventory" as Tab,
+            label: t("nav.workshopSubInventory"),
+            countBadge: lowSpoolCount > 0 ? lowSpoolCount : undefined,
+          },
+          {
+            id: "marketplace" as Tab,
+            label: t("nav.workshopSubMarketplace"),
+          },
+        ],
+      },
+    ],
+    [t, quotesCount, historyCount, lowSpoolCount],
+  );
 
   useEffect(() => {
     if (typeof mainRef.current?.scrollTo === "function") {
@@ -86,6 +147,7 @@ export const StudioLayout: React.FC = () => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [whatsAppData, setWhatsAppData] = useState<
     StudioWhatsAppModalInitialData | undefined
@@ -94,7 +156,14 @@ export const StudioLayout: React.FC = () => {
   // Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts inside inputs or textareas
+      // Global Command Palette (Ctrl+K / Cmd+K) works from anywhere
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      // Don't trigger single-key shortcuts inside inputs or textareas
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -113,6 +182,7 @@ export const StudioLayout: React.FC = () => {
         e.preventDefault();
         setIsShortcutsOpen(true);
       } else if (e.key === "Escape") {
+        setIsCommandPaletteOpen(false);
         setIsMiniDashOpen(false);
         setIsCopilotOpen(false);
         setIsShortcutsOpen(false);
@@ -170,6 +240,7 @@ export const StudioLayout: React.FC = () => {
             onTabChange={setActiveTab}
             activeTechnology={activeTechnology}
             onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
             onOpenWhatsAppModal={() => {
               setWhatsAppData({
                 projectName: currentProjectName || "Projeto 3D",
@@ -196,6 +267,7 @@ export const StudioLayout: React.FC = () => {
             onTabChange={setActiveTab}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            modules={sidebarModuleOverrides}
           />
         )}
 
@@ -297,7 +369,10 @@ export const StudioLayout: React.FC = () => {
               )}
 
               {activeTab === "quotes" && (
-                <StudioQuotesView onTabChange={setActiveTab} />
+                <StudioQuotesView
+                  onTabChange={setActiveTab}
+                  onOpenNewQuote={() => setIsQuoteModalOpen(true)}
+                />
               )}
 
               {activeTab === "products" && (
@@ -335,10 +410,29 @@ export const StudioLayout: React.FC = () => {
           onTabChange={setActiveTab}
           onOpenCopilot={() => setIsCopilotOpen(true)}
           onOpenNewQuote={() => setIsQuoteModalOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         />
       )}
 
       {/* Modals & Overlays */}
+      <StudioCommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+        onOpenWhatsAppModal={() => {
+          setWhatsAppData({
+            projectName: currentProjectName || "Projeto 3D",
+          });
+          setIsWhatsAppModalOpen(true);
+        }}
+        onOpenCopilot={() => setIsCopilotOpen(true)}
+        onOpenMiniDash={() => setIsMiniDashOpen(true)}
+        onToggleFocusMode={() => setFocusMode((prev) => !prev)}
+        onOpenShortcuts={() => setIsShortcutsOpen(true)}
+      />
+
       <StudioMiniDashOverlay
         isOpen={isMiniDashOpen}
         onClose={() => setIsMiniDashOpen(false)}

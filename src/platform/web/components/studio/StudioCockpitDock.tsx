@@ -10,6 +10,10 @@ import {
   FileText,
   Sparkles,
   ShieldCheck,
+  Search,
+  Sun,
+  Moon,
+  Globe,
 } from "lucide-react";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { BrandIcon } from "@/shared/components/BrandIcon";
@@ -20,6 +24,8 @@ import { isLowStockSpool } from "@/shared/stores/spoolStore";
 import { LOW_STOCK_GRAMS } from "@/shared/components/SpoolShelf/SpoolCard";
 import { APP_VERSION } from "@/shared/version";
 import { useTranslation } from "react-i18next";
+import { useCurrency } from "@/shared/hooks/useCurrency";
+import { useSafeStudioTheme } from "./useSafeStudioTheme";
 
 interface StudioCockpitDockProps {
   onOpenMiniDash: () => void;
@@ -28,6 +34,7 @@ interface StudioCockpitDockProps {
   onTabChange: (tab: Tab) => void;
   onOpenCopilot: () => void;
   onOpenNewQuote: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
 const QUICK_ACTION_CLASS =
@@ -53,9 +60,14 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
   onTabChange,
   onOpenCopilot,
   onOpenNewQuote,
+  onOpenCommandPalette,
 }) => {
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = Boolean(i18n?.language?.startsWith("en"));
+  const { format: formatCurrency } = useCurrency();
+  const { theme, toggleTheme } = useSafeStudioTheme();
+  const isDark = theme === "dark";
   const entries = useHistoryStore((s) => s.entries);
   const spools = useFilamentInventory((s) => s.spools);
   // The bar mirrors the Mini-Dash summary: the same saved-history revenue
@@ -64,10 +76,7 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
   const lowCount = spools.filter((spool) =>
     isLowStockSpool(spool, LOW_STOCK_GRAMS),
   ).length;
-  const revenueLabel = revenue.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
+  const revenueLabel = formatCurrency(revenue);
   const dockPosition = isBetaChannel
     ? "relative px-4 sm:px-6 lg:px-8 pt-4 pb-4 sm:pb-6"
     : "fixed inset-x-0 bottom-0";
@@ -152,6 +161,52 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
                 <Sparkles className="w-4 h-4 shrink-0 text-[var(--color-warning)]" />
                 <span>Assistente IA de Impressão</span>
               </button>
+            </div>
+            <div className="mt-1.5 pt-1.5 border-t border-[var(--color-border)] flex items-center justify-between gap-1">
+              <button
+                type="button"
+                onClick={() => runAction(toggleTheme)}
+                className="flex-1 flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+              >
+                {isDark ? (
+                  <Sun className="w-3.5 h-3.5 text-[var(--color-warning)]" />
+                ) : (
+                  <Moon className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+                )}
+                <span>
+                  {isDark
+                    ? isEn
+                      ? "Light"
+                      : "Modo Claro"
+                    : isEn
+                      ? "Dark"
+                      : "Modo Escuro"}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  runAction(() => {
+                    if (typeof i18n?.changeLanguage === "function") {
+                      void i18n.changeLanguage(isEn ? "pt-BR" : "en-US");
+                    }
+                  })
+                }
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+              >
+                <Globe className="w-3.5 h-3.5 text-[var(--color-info)]" />
+                <span>{isEn ? "PT-BR" : "EN-US"}</span>
+              </button>
+              {onOpenCommandPalette && (
+                <button
+                  type="button"
+                  onClick={() => runAction(onOpenCommandPalette)}
+                  className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold text-[var(--color-accent)] hover:bg-[var(--color-accent-wash)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>⌘K</span>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -239,6 +294,21 @@ export const StudioCockpitDock: React.FC<StudioCockpitDockProps> = ({
                 aria-hidden="true"
               />
               <div className="flex items-center gap-1">
+                {onOpenCommandPalette && (
+                  <button
+                    type="button"
+                    onClick={onOpenCommandPalette}
+                    aria-label={
+                      isEn ? "Quick Search (Ctrl+K)" : "Busca rápida (Ctrl+K)"
+                    }
+                    title={
+                      isEn ? "Quick Search (Ctrl+K)" : "Busca rápida (Ctrl+K)"
+                    }
+                    className={`md:hidden ${ICON_BUTTON_CLASS}`}
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={onToggleFocusMode}

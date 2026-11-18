@@ -68,7 +68,14 @@
     "github": "Código no GitHub",
     "communityTelegram": "Comunidade Telegram",
     "collapsePanel": "Recolher painel",
-    "expandPanel": "Expandir painel de navegação"
+    "expandPanel": "Expandir painel de navegação",
+    "groupProduction": "Produção & Cálculo",
+    "groupCommercial": "Comercial & Vendas",
+    "groupWorkshop": "Oficina & Sistema",
+    "commandPalette": "Busca rápida e comandos",
+    "workshopSubPrinters": "Impressoras & Materiais",
+    "workshopSubInventory": "Estoque de Carretéis",
+    "workshopSubMarketplace": "Canais & Taxas"
   },
   "utilityBar": {
     "label": "Preferências de exibição"
@@ -1735,9 +1742,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1792,9 +1797,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1847,9 +1850,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1911,10 +1912,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -1939,9 +1937,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1977,9 +1973,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -2021,9 +2015,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -2107,9 +2099,7 @@
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -2125,15 +2115,11 @@
           },
           {
             "title": "🧹 Outros",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contribuidores",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -2165,10 +2151,7 @@
           },
           {
             "title": "✅ Tests",
-            "items": [
-              "417 testes, 36/36 arquivos passando",
-              "Cobertura >80%"
-            ]
+            "items": ["417 testes, 36/36 arquivos passando", "Cobertura >80%"]
           }
         ]
       },
@@ -2944,7 +2927,35 @@
     "businessProfile": "Dados da Empresa & WhatsApp",
     "stockViewLabel": "Visualização do estoque",
     "stockViewManager": "Gestão",
-    "stockViewShelf": "Estante"
+    "stockViewShelf": "Estante",
+    "activeSetupTitle": "Setup Ativo na Calculadora",
+    "openInCalculator": "Abrir na Calculadora",
+    "activePrinterSlot": "Impressora Ativa",
+    "activeMaterialSlot": "Insumo Ativo",
+    "activeChannelSlot": "Canal de Venda",
+    "activeStockSlot": "Estoque de Bobinas",
+    "stockLowAlert": "{{count}} em estoque baixo",
+    "stockNormal": "{{count}} bobinas OK",
+    "applyMaterial": "Usar no Cálculo",
+    "activeInCalculator": "Ativo no Cálculo",
+    "cloneToMine": "Personalizar",
+    "customSuffix": "Personalizado",
+    "filterTechLabel": "Filtrar tecnologia",
+    "filterAll": "Todos",
+    "sortLabel": "Ordenar materiais",
+    "sortName": "Nome (A–Z)",
+    "sortPriceAsc": "Menor Preço",
+    "sortPriceDesc": "Maior Preço",
+    "selectChannel": "Usar Canal",
+    "activeChannel": "Canal Ativo",
+    "estimatedFeeLive": "Taxa no cálculo atual: {{fee}} ({{pct}}%)",
+    "quickActionsLabel": "Ações rápidas do resultado",
+    "quickCopySummary": "Copiar Resumo",
+    "quickCopied": "Copiado!",
+    "quickPinScenario": "Fixar Base A/B",
+    "quickPinned": "Base A Fixada",
+    "quickSaveHistory": "Salvar Rápido",
+    "quickSaved": "Salvo!"
   },
   "dashboardView": {
     "title": "Painel de Gestão & Oficina 3D",
@@ -3003,5 +3014,78 @@
     "costPrefix": "custo R$ {{value}}",
     "demoRankingEmpty": "Nenhum cálculo salvo para exibir.",
     "roiCardTitle": "Break-Even da Máquina"
+  },
+  "studio": {
+    "calcTitle": "Calculadora 3D",
+    "calcSub": "Cálculo de custos, tempos e preço de venda",
+    "dashboardTitle": "Dashboard Geral",
+    "dashboardSub": "Resumo dos cálculos salvos e da estrutura da oficina",
+    "historyTitle": "Histórico & Pedidos",
+    "historySub": "Histórico de orçamentos gerados e status de produção",
+    "infillTitle": "Calculadora de Infill",
+    "infillSub": "Densidade volumétrica e padrões de preenchimento",
+    "customersTitle": "Clientes",
+    "customersSub": "Gestão de contatos e pedidos recorrentes",
+    "quotesTitle": "Orçamentos & Propostas",
+    "quotesSub": "Gestão comercial, propostas em PDF e acompanhamento",
+    "productsTitle": "Catálogo de Produtos",
+    "productsSub": "Itens finalizados e histórico de precificação",
+    "privacyTitle": "Privacidade & Dados",
+    "privacySub": "Armazenamento local e portabilidade de dados",
+    "wikiTitle": "Documentação & Wiki",
+    "wikiSub": "Guias, fórmulas e referências técnicas de impressão 3D",
+    "changelogTitle": "Notas de Versão",
+    "changelogSub": "Histórico de lançamentos e novidades do Open3DCalc",
+    "defaultSub": "Layouts de impressão e precificação",
+    "modeTitle": "Visualização da calculadora",
+    "modeSub": "Escolha o fluxo que combina com seu cálculo.",
+    "modeGroupLabel": "Modo da calculadora",
+    "modeClassic": "Clássico",
+    "modeClassicHint": "Formulário técnico completo",
+    "modeBento": "Bento",
+    "modeBentoHint": "Painel visual compacto",
+    "modeGuided": "Guiado",
+    "modeGuidedHint": "Passo a passo assistido",
+    "cmdTitle": "Navegação & Comandos",
+    "cmdPlaceholder": "Buscar módulos, modos, oficina ou ações...",
+    "cmdEmpty": "Nenhum comando ou destino encontrado.",
+    "cmdGroupNav": "Módulos & Destinos",
+    "cmdGroupCalc": "Calculadora & Visualização",
+    "cmdGroupActions": "Ações Rápidas & Preferências",
+    "cmdNavigate": "Navegar",
+    "cmdSelect": "Executar",
+    "cmdClose": "Fechar",
+    "cmdTrigger": "Buscar...",
+    "cmdTriggerAria": "Abrir busca rápida e comandos (Ctrl+K)",
+    "deckTech": "Tecnologia",
+    "deckProject": "Peça / Projeto",
+    "deckLevel": "Complexidade",
+    "presetsGroupLabel": "Perfis rápidos de cálculo",
+    "presetsLabel": "Perfis Rápidos",
+    "presetPlaStandard": "PLA Padrão",
+    "presetPlaStandardHint": "PLA · 0.20mm · 20% infill · 50% markup (Venda Direta)",
+    "presetPetgFunctional": "PETG Funcional",
+    "presetPetgFunctionalHint": "PETG · 4 paredes · 35% infill · 65% markup (Peça Técnica)",
+    "presetFastPrototype": "Protótipo Rápido",
+    "presetFastPrototypeHint": "PLA Draft · 0.28mm · 12% infill · 35% markup (Validação Rápida)",
+    "presetMarketplace": "Marketplace Premium",
+    "presetMarketplaceHint": "PLA+ · Embalagem reforçada · Taxa Shopee/ML · 80% markup",
+    "workbenchFillExample": "Exemplo",
+    "workbenchFillExampleTitle": "Preencher calculadora com exemplo realista",
+    "workbenchReset": "Resetar",
+    "workbenchResetTitle": "Restaurar todos os valores padrão da calculadora",
+    "comparePinBtn": "Fixar Cenário Base (A/B)",
+    "comparePinnedBtn": "Base A Fixada",
+    "comparePinTitle": "Fixar o resultado atual como Cenário A para comparar alterações ao vivo",
+    "compareBannerTitle": "Comparador de Cenários A/B",
+    "compareBaselineLabel": "Base (A)",
+    "compareCurrentLabel": "Atual (B)",
+    "compareUpdatePin": "Atualizar Base",
+    "compareClearPin": "Limpar Comparação",
+    "compareCost": "Custo",
+    "comparePrice": "Preço de Venda",
+    "compareProfit": "Lucro Líquido",
+    "compareMargin": "Margem",
+    "headerWorkshopQuickNav": "Atalhos da Oficina"
   }
 }
