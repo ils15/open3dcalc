@@ -42,6 +42,15 @@ Orquestração executada em 3 camadas (**Hydrogen `flash_lite` → Carbon High `
   - **Oficina & Estoque Semânticos (`SpoolShelf.tsx`, `SpoolManagerView.tsx`, `SpoolCard.tsx`):** Tokens semânticos puros (eliminação da dívida visual de cores fixas no estoque/catálogo), filtros rápidos por material, grid `2xl:grid-cols-4` e botão direto _Usar na Calculadora_.
   - **Comercial Unificado com Split Inspector & Fluxos Cruzados (`StudioKpiStrip.tsx`, `StudioViewToolbar.tsx`, `StudioSplitInspector.tsx`):** Padronização de _Histórico_, _Clientes_, _Orçamentos_ e _Produtos_ com inspetor lateral contextual, LTV ao vivo por cliente, normalização multi-moeda (`useCurrency`), fluxos de 1 clique (_Histórico/Produto → Calculadora/Orçamento_, _Cliente → Orçamento_, _Infill → Calculadora_) e largura confortável (`max-w-[75ch]`) na Wiki e Changelog.
 
+### 📋 Backlog & Issues Rastreadas Pós-v2.0.1
+
+Os itens remanescentes identificados na auditoria das Fases 1–4 que não entraram no corte da `v2.0.1` foram registrados formalmente para as próximas versões (`v2.0.2` / `v2.1.0`):
+
+- **Tokens Semânticos Puros (`#357` — `[VIS-005]`):** Migrar os `50` arquivos / `518` ocorrências restantes de cores fixas em `tokenOnlyColors.test.ts` (componentes legados/compartilhados Web + Desktop como `FilamentInventory.tsx`, `Dashboard.tsx`, `SpoolManagerView.tsx`, `CostDistributionBars.tsx`, `QuoteSection.tsx`, `StudioWhatsAppModal.tsx` e revisão do módulo morto `slicerOptimizer.ts`). ([Issue #357](https://github.com/ils15/open3dcalc/issues/357))
+- **Evoluções UX & Calculadoras Pendentes (`#358`):** Estender `StudioSplitInspector` para a tela de `Produtos` (edição rápida de margem/custo), converter cenários A/B diretamente em rascunho de Orçamento com 1 clique, conectar a tabela pronta de *Hole Tolerance & Press-Fit* (`Phase 6 P2`), expandir o multi-material AMS/CFS/ACE 2 (`Phase 7m`) além de `M1` e retomar a especificação do *Modo Farm* (`Phase 7e`). ([Issue #358](https://github.com/ils15/open3dcalc/issues/358))
+- **Qualidade, Métricas de Coverage & Pendências 7q/7r (`#359`):** Atualizar a tabela `Quality Metrics` abaixo com a medição real de coverage da base `v2.0.1+`, formalizar a unidade definitiva de `usefulLife` (`Phase 7q`), revisar itens residuais do censo de contraste WCAG AA (`Phase 7r`) e registrar o fechamento do gate transversal `v1→v2`. ([Issue #359](https://github.com/ils15/open3dcalc/issues/359))
+- **IA/BYOK (`Deferred`):** Mantida fora do escopo da linha `v2.0.x` (sem backend nem telemetria oculta).
+
 ### Auditoria da beta.13 — snapshot histórico de 08/10/2026
 
 As observações abaixo registram a auditoria daquela publicação e não devem ser tratadas como verificação da beta.15. A tag `v2.0.0-beta.13` apontava para `d08a4eafcc5fc20d03867a08bd417fae390f6b10`; naquele snapshot, `/beta/index.web.html` referenciava `assets/index.web-BFz5JDpp.js`. Merge de código, por si só, não comprova que a interface esteja montada ou publicada na web.
