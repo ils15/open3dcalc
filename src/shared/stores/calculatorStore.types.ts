@@ -135,6 +135,11 @@ export interface CalculatorState {
 
   setQuickStart: () => void;
   resetCalculator: () => void;
+  lastAppliedPresetId:
+    import("@/shared/lib/calculatorPresets").CalculatorPresetId | null;
+  applyCalculatorPreset: (
+    presetId: import("@/shared/lib/calculatorPresets").CalculatorPresetId,
+  ) => void;
 
   /** JSON snapshots for undo (max UNDO_LIMIT entries). */
   history: string[];

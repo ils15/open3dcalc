@@ -15,6 +15,7 @@ import { LevelToggle } from "./LevelToggle";
 import { ProductName } from "./ProductName";
 import { SectionNav } from "./SectionNav";
 import { SectionRenderer } from "./SectionRenderer";
+import { SECTIONS } from "./Calculator.constants";
 import { hasCalculatorRailSpace } from "./Calculator.layout";
 import "./Calculator.css";
 
@@ -75,6 +76,31 @@ export function Calculator() {
 
   const isFDM = store.activeTab === "fdm";
   const { symbol: currencySymbol } = useCurrency();
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+    const targets = SECTIONS.map((s) =>
+      document.getElementById(`section-${s.id}`),
+    ).filter((el): el is HTMLElement => el !== null);
+    if (targets.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort(
+            (a, b) => a.boundingClientRect.top - b.boundingClientRect.top,
+          )[0];
+        if (visible?.target.id.startsWith("section-")) {
+          setActiveSection(visible.target.id.slice("section-".length));
+        }
+      },
+      { rootMargin: "-15% 0px -65% 0px", threshold: [0, 0.2] },
+    );
+
+    for (const el of targets) observer.observe(el);
+    return () => observer.disconnect();
+  }, [store.calcLevel, isFDM]);
 
   useEffect(() => {
     const element = layoutMeasureRef.current;
@@ -178,13 +204,17 @@ export function Calculator() {
             }`}
           >
             <QuickStartBanner />
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <TechToggle />
-              <div className="flex-1 min-w-[200px]">
-                <ProductName />
+            <div className="surface rounded-2xl p-3 sm:p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <TechToggle wrapOnNarrow />
+                <div className="flex-1 min-w-[200px]">
+                  <ProductName />
+                </div>
+              </div>
+              <div className="pt-2 border-t border-[var(--color-border)] flex flex-wrap items-center justify-between gap-2">
+                <LevelToggle wrapOnNarrow />
               </div>
             </div>
-            <LevelToggle />
             <SectionRenderer
               t={t}
               currencySymbol={currencySymbol}

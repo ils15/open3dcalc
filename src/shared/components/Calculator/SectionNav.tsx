@@ -71,8 +71,8 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
       </nav>
 
       {/* Desktop sidebar — icon + label + cost toggle dot */}
-      <nav className="hidden lg:flex flex-col gap-0.5 w-[134px] xl:w-[142px] shrink-0 sticky top-4 h-fit px-2">
-        <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 ml-2">
+      <nav className="hidden lg:flex flex-col gap-1 w-[134px] xl:w-[142px] shrink-0 sticky top-4 h-fit px-1.5 py-1">
+        <div className="text-[9px] font-mono font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-1 ml-2">
           {t("sections.title")}
         </div>
         {visibleSections.map((s) => {
@@ -80,6 +80,7 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
           const anyEnabled =
             keys.length === 0 || keys.some((k) => enabledSections[k]);
           const step = stepById.get(s.id);
+          const isActive = activeSection === s.id;
           return (
             <div key={s.id}>
               {/* contrast-site: section-nav-compact-item */}
@@ -90,22 +91,38 @@ export function SectionNav({ activeSection, onSectionClick }: SectionNavProps) {
                     .getElementById(`section-${s.id}`)
                     ?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className={`w-full py-2.5 px-3 rounded-xl flex items-center gap-2.5 min-h-[44px] transition-all text-left focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
-                  activeSection === s.id
-                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-semibold border border-[var(--color-accent)]/20"
+                className={`relative w-full py-2.5 px-2.5 rounded-xl flex items-center gap-2 min-h-[44px] transition-all text-left focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none ${
+                  isActive
+                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)] font-semibold border border-[var(--color-accent)]/20 shadow-xs"
                     : `text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-transparent ${
                         keys.length > 0 && !anyEnabled ? "opacity-50" : ""
                       }`
                 }`}
                 title={t(s.label)}
               >
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-[var(--color-accent)]"
+                  />
+                )}
                 {step !== undefined && <StepBadge step={step} size="sm" />}
                 <s.Icon
-                  className={`w-4 h-4 shrink-0 ${activeSection === s.id ? "text-[var(--color-accent)]" : ""}`}
+                  className={`w-4 h-4 shrink-0 ${isActive ? "text-[var(--color-accent)]" : ""}`}
                 />
-                <span className="text-[11px] font-medium leading-tight">
+                <span className="text-[11px] font-medium leading-tight truncate flex-1">
                   {t(s.shortKey)}
                 </span>
+                {keys.length > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      anyEnabled
+                        ? "bg-[var(--color-success)]"
+                        : "bg-[var(--color-border-hover)]"
+                    }`}
+                  />
+                )}
               </button>
             </div>
           );

@@ -68,7 +68,14 @@
     "github": "Source on GitHub",
     "communityTelegram": "Telegram Community",
     "collapsePanel": "Collapse panel",
-    "expandPanel": "Expand navigation panel"
+    "expandPanel": "Expand navigation panel",
+    "groupProduction": "Production & Pricing",
+    "groupCommercial": "Sales & Commercial",
+    "groupWorkshop": "Workshop & System",
+    "commandPalette": "Quick search and commands",
+    "workshopSubPrinters": "Printers & Materials",
+    "workshopSubInventory": "Spool Inventory",
+    "workshopSubMarketplace": "Sales Channels & Fees"
   },
   "utilityBar": {
     "label": "Display preferences"
@@ -1735,9 +1742,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1792,9 +1797,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1847,9 +1850,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1911,10 +1912,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)",
-              "Lupolima"
-            ]
+            "items": ["Ils15 (@ils15)", "Lupolima"]
           }
         ]
       },
@@ -1939,9 +1937,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -1977,9 +1973,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -2021,9 +2015,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -2107,9 +2099,7 @@
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -2125,15 +2115,11 @@
           },
           {
             "title": "🧹 Other",
-            "items": [
-              "**release:** V1.8.1 [skip ci] (079945e)"
-            ]
+            "items": ["**release:** V1.8.1 [skip ci] (079945e)"]
           },
           {
             "title": "❤️ Contributors",
-            "items": [
-              "Ils15 (@ils15)"
-            ]
+            "items": ["Ils15 (@ils15)"]
           }
         ]
       },
@@ -2165,10 +2151,7 @@
           },
           {
             "title": "✅ Tests",
-            "items": [
-              "417 tests, 36/36 files passing",
-              "Coverage >80%"
-            ]
+            "items": ["417 tests, 36/36 files passing", "Coverage >80%"]
           }
         ]
       },
@@ -2944,7 +2927,35 @@
     "businessProfile": "Business & WhatsApp",
     "stockViewLabel": "Stock view",
     "stockViewManager": "Management",
-    "stockViewShelf": "Shelf"
+    "stockViewShelf": "Shelf",
+    "activeSetupTitle": "Active Calculator Setup",
+    "openInCalculator": "Open in Calculator",
+    "activePrinterSlot": "Active Printer",
+    "activeMaterialSlot": "Active Material",
+    "activeChannelSlot": "Sales Channel",
+    "activeStockSlot": "Spool Stock",
+    "stockLowAlert": "{{count}} low stock",
+    "stockNormal": "{{count}} spools OK",
+    "applyMaterial": "Use in Calculation",
+    "activeInCalculator": "Active in Calculation",
+    "cloneToMine": "Customize",
+    "customSuffix": "Custom",
+    "filterTechLabel": "Filter technology",
+    "filterAll": "All",
+    "sortLabel": "Sort materials",
+    "sortName": "Name (A–Z)",
+    "sortPriceAsc": "Lowest Price",
+    "sortPriceDesc": "Highest Price",
+    "selectChannel": "Use Channel",
+    "activeChannel": "Active Channel",
+    "estimatedFeeLive": "Fee on current calc: {{fee}} ({{pct}}%)",
+    "quickActionsLabel": "Quick result actions",
+    "quickCopySummary": "Copy Summary",
+    "quickCopied": "Copied!",
+    "quickPinScenario": "Pin Baseline A/B",
+    "quickPinned": "Baseline A Pinned",
+    "quickSaveHistory": "Quick Save",
+    "quickSaved": "Saved!"
   },
   "dashboardView": {
     "title": "Management & Workshop 3D Panel",
@@ -3001,6 +3012,80 @@
     "noRecent": "No saved calculations to show.",
     "unnamed": "Unnamed calculation",
     "costPrefix": "cost ${{value}}",
-    "demoRankingEmpty": "No saved calculations to show."
+    "demoRankingEmpty": "No saved calculations to show.",
+    "roiCardTitle": "Machine Break-Even"
+  },
+  "studio": {
+    "calcTitle": "3D Calculator",
+    "calcSub": "Cost, print time and selling price breakdown",
+    "dashboardTitle": "Overview Dashboard",
+    "dashboardSub": "Summary of saved calculations and workshop setup",
+    "historyTitle": "History & Orders",
+    "historySub": "Generated quotes history and production status",
+    "infillTitle": "Infill Calculator",
+    "infillSub": "Volumetric density and infill pattern comparison",
+    "customersTitle": "Customers",
+    "customersSub": "Contact management and repeat orders",
+    "quotesTitle": "Quotes & Proposals",
+    "quotesSub": "Commercial management, PDF proposals and follow-ups",
+    "productsTitle": "Product Catalog",
+    "productsSub": "Finished items and pricing history",
+    "privacyTitle": "Privacy & Data",
+    "privacySub": "Local-first storage and data portability",
+    "wikiTitle": "Documentation & Wiki",
+    "wikiSub": "Guides, formulas and 3D printing technical references",
+    "changelogTitle": "Release Notes",
+    "changelogSub": "Release history and what's new in Open3DCalc",
+    "defaultSub": "Print layouts and pricing",
+    "modeTitle": "Calculator view",
+    "modeSub": "Choose the workflow that fits your calculation.",
+    "modeGroupLabel": "Calculator mode",
+    "modeClassic": "Classic",
+    "modeClassicHint": "Full technical form",
+    "modeBento": "Bento",
+    "modeBentoHint": "Compact visual grid",
+    "modeGuided": "Guided",
+    "modeGuidedHint": "Step-by-step wizard",
+    "cmdTitle": "Navigation & Commands",
+    "cmdPlaceholder": "Search modules, modes, workshop or actions...",
+    "cmdEmpty": "No matching command or destination found.",
+    "cmdGroupNav": "Modules & Destinations",
+    "cmdGroupCalc": "Calculator & View Mode",
+    "cmdGroupActions": "Quick Actions & Preferences",
+    "cmdNavigate": "Navigate",
+    "cmdSelect": "Run",
+    "cmdClose": "Close",
+    "cmdTrigger": "Search...",
+    "cmdTriggerAria": "Open quick search and commands (Ctrl+K)",
+    "deckTech": "Technology",
+    "deckProject": "Part / Project",
+    "deckLevel": "Complexity",
+    "presetsGroupLabel": "Quick calculation presets",
+    "presetsLabel": "Quick Presets",
+    "presetPlaStandard": "Standard PLA",
+    "presetPlaStandardHint": "PLA · 0.20mm · 20% infill · 50% markup (Direct Sale)",
+    "presetPetgFunctional": "Functional PETG",
+    "presetPetgFunctionalHint": "PETG · 4 walls · 35% infill · 65% markup (Technical Part)",
+    "presetFastPrototype": "Fast Prototype",
+    "presetFastPrototypeHint": "Draft PLA · 0.28mm · 12% infill · 35% markup (Fast Validation)",
+    "presetMarketplace": "Marketplace Premium",
+    "presetMarketplaceHint": "PLA+ · Reinforced packaging · Marketplace fee · 80% markup",
+    "workbenchFillExample": "Example",
+    "workbenchFillExampleTitle": "Fill calculator with a realistic sample part",
+    "workbenchReset": "Reset",
+    "workbenchResetTitle": "Restore all default calculator values",
+    "comparePinBtn": "Pin Baseline (A/B)",
+    "comparePinnedBtn": "Baseline A Pinned",
+    "comparePinTitle": "Pin current result as Scenario A to compare live changes",
+    "compareBannerTitle": "A/B Scenario Comparator",
+    "compareBaselineLabel": "Baseline (A)",
+    "compareCurrentLabel": "Current (B)",
+    "compareUpdatePin": "Update Baseline",
+    "compareClearPin": "Clear Comparison",
+    "compareCost": "Cost",
+    "comparePrice": "Sell Price",
+    "compareProfit": "Net Profit",
+    "compareMargin": "Margin",
+    "headerWorkshopQuickNav": "Workshop Quick Links"
   }
 }

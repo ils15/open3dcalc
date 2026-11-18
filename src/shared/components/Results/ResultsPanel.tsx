@@ -15,6 +15,7 @@ import { CostBreakdownCard } from "./CostBreakdownCard";
 import { DiagnosticDetailsCard } from "./DiagnosticDetailsCard";
 import { PriceHeroCard } from "./PriceHeroCard";
 import { ProfitSummaryCard } from "./ProfitSummaryCard";
+import { QuickResultActionsBar } from "./QuickResultActionsBar";
 import { ResultsActions } from "./ResultsActions";
 import { SuggestedPriceTool } from "@/shared/components/Calculator/SuggestedPriceTool";
 
@@ -238,6 +239,7 @@ export function ResultsPanel({
             ? setFdmSales({ ...fdmSales, profitMarginPercent: percent })
             : setResinSales({ ...resinSales, profitMarginPercent: percent })
         }
+        footerActions={isSidebar ? <QuickResultActionsBar /> : undefined}
       />
       <SuggestedPriceTool
         totalCost={results.totalCost}

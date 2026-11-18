@@ -1,11 +1,25 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Boxes, Building2, Printer, Spool, Store } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Boxes,
+  Building2,
+  Calculator,
+  Printer,
+  Spool,
+  Store,
+} from "lucide-react";
 
 import { CatalogTab, type CatalogSection } from "./CatalogTab";
 import { SpoolShelf, SpoolManagerView } from "@/shared/components/SpoolShelf";
+import { LOW_STOCK_GRAMS } from "@/shared/components/SpoolShelf/SpoolCard";
 import { WorkshopBusinessProfileView } from "./WorkshopBusinessProfileView";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
+import { useCalculatorStore } from "@/shared/stores/calculatorStore";
+import { useFilamentInventory } from "@/shared/stores/filamentInventory";
+import { isLowStockSpool } from "@/shared/stores/spoolStore";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
 type WorkshopSection = CatalogSection | "stock" | "business";
@@ -49,8 +63,29 @@ export function WorkshopHub({
   onTabChange,
 }: WorkshopHubProps): React.ReactElement {
   const { t } = useTranslation();
+  const { symbol: currencySymbol } = useCurrency();
   const stockView = useLayoutStore((s) => s.stockView ?? "manager");
   const setStockView = useLayoutStore((s) => s.setStockView);
+  const activeTechnology = useCalculatorStore((s) => s.activeTab ?? "fdm");
+  const selectedPrinter = useCalculatorStore((s) => s.selectedPrinter);
+  const fdmMaterial = useCalculatorStore((s) => s.fdmMaterial);
+  const resinMaterial = useCalculatorStore((s) => s.resinMaterial);
+  const selectedMarketplace = useCalculatorStore((s) => s.selectedMarketplace);
+  const spools = useFilamentInventory((s) => s.spools ?? []);
+  const lowSpoolCount = useMemo(
+    () =>
+      spools.filter((spool) => isLowStockSpool(spool, LOW_STOCK_GRAMS)).length,
+    [spools],
+  );
+  const activeMaterialSummary =
+    activeTechnology === "fdm"
+      ? fdmMaterial
+        ? `${fdmMaterial.type} · ${currencySymbol} ${fdmMaterial.costPerKg}/kg`
+        : "PLA"
+      : resinMaterial
+        ? `${resinMaterial.type} · ${currencySymbol} ${resinMaterial.costPerLiter}/L`
+        : "Standard";
+
   const [selectedSection, setSelectedSection] = useState<WorkshopSection>(() =>
     getSectionFromRoute(activeTab),
   );
@@ -70,6 +105,143 @@ export function WorkshopHub({
 
   return (
     <section className="mx-auto flex w-full max-w-[100rem] flex-col gap-4 pb-16 text-[var(--color-text-primary)]">
+      {/* Active Workshop Setup & Quick-Jump Deck */}
+      <div
+        data-testid="workshop-active-setup-deck"
+        className="surface flex flex-col gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3.5 sm:p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-2 w-2 rounded-full bg-[var(--color-accent)]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">
+              {t("workshop.activeSetupTitle")}
+            </span>
+            <span className="rounded-md border border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)] px-2 py-0.5 text-[11px] font-semibold uppercase text-[var(--color-accent)]">
+              {activeTechnology === "fdm" ? "FDM" : "Resina"}
+            </span>
+          </div>
+          <button
+            type="button"
+            data-testid="workshop-open-calculator-btn"
+            onClick={() => onTabChange("calculator")}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[var(--color-accent-fill)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent-fill-fg)] transition-colors hover:bg-[var(--color-accent-fill-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+          >
+            <Calculator className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>{t("workshop.openInCalculator")}</span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <button
+            type="button"
+            data-testid="workshop-slot-printer"
+            onClick={() => selectSection("printers")}
+            className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+              section === "printers"
+                ? "border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)]"
+                : "border-[var(--color-border)] bg-[var(--color-bg-primary)] hover:bg-[var(--color-bg-hover)]"
+            }`}
+          >
+            <Printer
+              className="h-4 w-4 shrink-0 text-[var(--color-accent)]"
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                {t("workshop.activePrinterSlot")}
+              </div>
+              <div className="truncate text-xs font-semibold text-[var(--color-text-primary)]">
+                {selectedPrinter?.name ?? "—"}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            data-testid="workshop-slot-material"
+            onClick={() => selectSection("materials")}
+            className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+              section === "materials"
+                ? "border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)]"
+                : "border-[var(--color-border)] bg-[var(--color-bg-primary)] hover:bg-[var(--color-bg-hover)]"
+            }`}
+          >
+            <Boxes
+              className="h-4 w-4 shrink-0 text-[var(--color-accent)]"
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                {t("workshop.activeMaterialSlot")}
+              </div>
+              <div className="truncate text-xs font-semibold text-[var(--color-text-primary)]">
+                {activeMaterialSummary}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            data-testid="workshop-slot-stock"
+            onClick={() => selectSection("stock")}
+            className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+              section === "stock"
+                ? "border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)]"
+                : "border-[var(--color-border)] bg-[var(--color-bg-primary)] hover:bg-[var(--color-bg-hover)]"
+            }`}
+          >
+            {lowSpoolCount > 0 ? (
+              <AlertTriangle
+                className="h-4 w-4 shrink-0 text-[var(--color-warning)]"
+                aria-hidden="true"
+              />
+            ) : (
+              <Spool
+                className="h-4 w-4 shrink-0 text-[var(--color-accent)]"
+                aria-hidden="true"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                {t("workshop.activeStockSlot")}
+              </div>
+              <div className="truncate text-xs font-semibold text-[var(--color-text-primary)]">
+                {lowSpoolCount > 0
+                  ? t("workshop.stockLowAlert", { count: lowSpoolCount })
+                  : t("workshop.stockNormal", { count: spools.length })}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            data-testid="workshop-slot-channel"
+            onClick={() => selectSection("marketplaces")}
+            className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+              section === "marketplaces"
+                ? "border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)]"
+                : "border-[var(--color-border)] bg-[var(--color-bg-primary)] hover:bg-[var(--color-bg-hover)]"
+            }`}
+          >
+            <Store
+              className="h-4 w-4 shrink-0 text-[var(--color-accent)]"
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                {t("workshop.activeChannelSlot")}
+              </div>
+              <div className="truncate text-xs font-semibold text-[var(--color-text-primary)]">
+                {selectedMarketplace
+                  ? `${selectedMarketplace.name} (${selectedMarketplace.feePercent}%)`
+                  : "—"}
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <div
         className="surface grid grid-cols-2 gap-1.5 rounded-xl border border-[var(--color-border)] p-1.5 sm:grid-cols-3 lg:grid-cols-5"
         role="tablist"

@@ -19,6 +19,8 @@ export interface PriceHeroCardProps {
   marginPercent?: number;
   /** Writes a new commercial margin (recomputes the base suggested price). */
   onMarginChange?: (percent: number) => void;
+  /** Optional ergonomic quick actions rendered inside the hero footer. */
+  footerActions?: React.ReactNode;
 }
 
 export function PriceHeroCard({
@@ -26,6 +28,7 @@ export function PriceHeroCard({
   onSellOverrideChange,
   marginPercent,
   onMarginChange,
+  footerActions,
 }: PriceHeroCardProps) {
   const { t, i18n } = useTranslation();
   const { format: fmtCurrency } = useCurrency();
@@ -311,6 +314,8 @@ export function PriceHeroCard({
           </button>
         </div>
       )}
+
+      {footerActions}
     </div>
   );
 }

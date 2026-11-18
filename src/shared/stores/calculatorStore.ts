@@ -58,6 +58,10 @@ import {
   persistCalculatorSettings,
   persistCurrencyPreference,
 } from "./calculatorStore.helpers";
+import {
+  getCalculatorPreset,
+  type CalculatorPresetId,
+} from "@/shared/lib/calculatorPresets";
 import { computeValidatedStoreResults } from "./calculatorStore.validation";
 
 type PrinterProfile = (typeof printers)[number];
@@ -68,6 +72,7 @@ export type {
   CalcLevel,
   ComputeStoreInput,
 } from "./calculatorStore.types";
+export type { CalculatorPresetId } from "@/shared/lib/calculatorPresets";
 
 const UNDO_LIMIT = 20;
 
@@ -110,6 +115,7 @@ function captureSnapshot(s: CalculatorState): string {
     infillPercent: s.infillPercent,
     targetMarginMode: s.targetMarginMode,
     enabledSections: s.enabledSections,
+    lastAppliedPresetId: s.lastAppliedPresetId ?? null,
   });
 }
 
@@ -126,13 +132,23 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         ? [...(state.history || []), captureSnapshot(state)].slice(-UNDO_LIMIT)
         : state.history || [];
       const nextState = typeof update === "function" ? update(state) : update;
+      const lastAppliedPresetId =
+        "lastAppliedPresetId" in nextState
+          ? (nextState.lastAppliedPresetId ?? null)
+          : null;
       // Multi-material pricing is deferred until the Phase 7m model is
       // complete. Keep the slot configuration, but never let an action or
       // legacy snapshot reactivate the incomplete pricing path.
-      const merged = { ...state, ...nextState, fdmAmsEnabled: false };
+      const merged = {
+        ...state,
+        ...nextState,
+        lastAppliedPresetId,
+        fdmAmsEnabled: false,
+      };
       const validated = computeValidatedStoreResults(merged);
       return {
         ...nextState,
+        lastAppliedPresetId,
         fdmAmsEnabled: false,
         ...validated.input,
         results: validated.results,
@@ -236,6 +252,7 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
     selectedSpoolId: null,
     lastDeductedInfo: null,
     lastHistoryKey: null,
+    lastAppliedPresetId: null as CalculatorPresetId | null,
     history: [],
   };
 
@@ -607,7 +624,51 @@ export const useCalculatorStore = create<CalculatorState>((set, get) => {
         selectedMarketplace: marketplaces[0],
         selectedSpoolId: null,
         lastDeductedInfo: null,
+        lastAppliedPresetId: null,
       });
+    },
+
+    applyCalculatorPreset: (presetId) => {
+      const preset = getCalculatorPreset(presetId);
+      if (!preset) return;
+      const catalogMarketplaces = useCatalogStore.getState().marketplaces ?? [];
+      const targetMarketplace = getMarketplace(
+        preset.marketplaceId,
+        catalogMarketplaces,
+      );
+
+      setWithCompute((state) => ({
+        activeTab: preset.activeTab,
+        lastAppliedPresetId: preset.id,
+        infillPercent: preset.infillPercent,
+        selectedMarketplace: targetMarketplace,
+        fdmMaterial: {
+          ...state.fdmMaterial,
+          ...preset.fdmMaterial,
+        },
+        fdmPrintParams: {
+          ...state.fdmPrintParams,
+          ...preset.fdmPrintParams,
+        },
+        fdmSlicerProfile: {
+          ...state.fdmSlicerProfile,
+          ...preset.fdmSlicerProfile,
+        },
+        fdmHardware: {
+          ...state.fdmHardware,
+          ...preset.fdmHardware,
+        },
+        fdmLabor: {
+          ...state.fdmLabor,
+          ...preset.fdmLabor,
+        },
+        fdmSales: {
+          ...state.fdmSales,
+          ...preset.fdmSales,
+          marketplaceFeePercent: targetMarketplace.feePercent,
+          marketplaceFeeFixed: targetMarketplace.feeFixed,
+        },
+      }));
     },
 
     addToHistory: () => {

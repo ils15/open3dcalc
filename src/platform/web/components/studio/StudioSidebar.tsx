@@ -30,14 +30,24 @@ interface StudioSidebarProps {
   modules?: StudioModule[];
 }
 
-interface StudioModule {
+export interface StudioSubModule {
+  id: Tab;
+  label: string;
+  countBadge?: number;
+  badgeCount?: number;
+}
+
+export interface StudioModule {
   id: Tab;
   label: string;
   icon: React.ReactElement;
+  group?: "production" | "commercial" | "workshop";
   /** Small static hint rendered after the label (e.g. "beta"). */
   badge?: string;
   /** Live count badge, e.g. the number of quotes awaiting action. */
   countBadge?: number;
+  /** Optional direct 1-click sub-routes rendered when the sidebar is expanded. */
+  subItems?: StudioSubModule[];
 }
 
 export const StudioSidebar: React.FC<StudioSidebarProps> = ({
@@ -50,49 +60,72 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   const { t } = useTranslation();
   const allModules: StudioModule[] = [
     {
-      id: "dashboard" as Tab,
-      label: t("nav.dashboard"),
-      icon: <BarChart3 className="w-4 h-4" />,
-    },
-    {
       id: "calculator" as Tab,
       label: t("nav.calculator"),
       icon: <Calculator className="w-4 h-4" />,
+      group: "production",
+    },
+    {
+      id: "dashboard" as Tab,
+      label: t("nav.dashboard"),
+      icon: <BarChart3 className="w-4 h-4" />,
+      group: "production",
     },
     {
       id: "infill" as Tab,
       label: t("nav.infill"),
       icon: <Grid3x3 className="w-4 h-4" />,
-    },
-    {
-      id: "catalog" as Tab,
-      label: t("nav.catalog"),
-      icon: <Warehouse className="w-4 h-4" />,
-    },
-    {
-      id: "history" as Tab,
-      label: t("nav.history"),
-      icon: <Clock className="w-4 h-4" />,
+      group: "production",
     },
     {
       id: "quotes" as Tab,
       label: t("nav.quotes"),
       icon: <FileText className="w-4 h-4" />,
+      group: "commercial",
+    },
+    {
+      id: "history" as Tab,
+      label: t("nav.history"),
+      icon: <Clock className="w-4 h-4" />,
+      group: "commercial",
     },
     {
       id: "customers" as Tab,
       label: t("nav.customers"),
       icon: <Users className="w-4 h-4" />,
+      group: "commercial",
     },
     {
       id: "products" as Tab,
       label: t("nav.products"),
       icon: <Package className="w-4 h-4" />,
+      group: "commercial",
+    },
+    {
+      id: "catalog" as Tab,
+      label: t("nav.catalog"),
+      icon: <Warehouse className="w-4 h-4" />,
+      group: "workshop",
+      subItems: [
+        {
+          id: "catalog" as Tab,
+          label: t("nav.workshopSubPrinters"),
+        },
+        {
+          id: "inventory" as Tab,
+          label: t("nav.workshopSubInventory"),
+        },
+        {
+          id: "marketplace" as Tab,
+          label: t("nav.workshopSubMarketplace"),
+        },
+      ],
     },
     {
       id: "privacy" as Tab,
       label: t("nav.privacy"),
       icon: <ShieldCheck className="w-4 h-4" />,
+      group: "workshop",
     },
   ];
 
@@ -107,9 +140,42 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
   // The caller may override a module to attach a badge/count; unknown ids fall
   // back to the default entry so a typo degrades to a plain item instead of
   // dropping a navigation destination.
-  const resolvedModules = visibleModules.map(
-    (m) => modules?.find((o) => o.id === m.id) ?? m,
-  );
+  const resolvedModules = visibleModules.map((m) => {
+    const override = modules?.find((o) => o.id === m.id);
+    if (!override) return m;
+    const mergedSubItems = m.subItems?.map((sub) => {
+      const subOverride = override.subItems?.find((so) => so.id === sub.id);
+      return subOverride ? { ...sub, ...subOverride } : sub;
+    });
+    return {
+      ...m,
+      ...override,
+      group: m.group,
+      subItems: mergedSubItems ?? override.subItems ?? m.subItems,
+    };
+  });
+
+  const moduleGroups: Array<{
+    key: NonNullable<StudioModule["group"]>;
+    label: string;
+    items: StudioModule[];
+  }> = [
+    {
+      key: "production" as const,
+      label: t("nav.groupProduction"),
+      items: resolvedModules.filter((m) => m.group === "production"),
+    },
+    {
+      key: "commercial" as const,
+      label: t("nav.groupCommercial"),
+      items: resolvedModules.filter((m) => m.group === "commercial"),
+    },
+    {
+      key: "workshop" as const,
+      label: t("nav.groupWorkshop"),
+      items: resolvedModules.filter((m) => m.group === "workshop"),
+    },
+  ].filter((g) => g.items.length > 0);
 
   const resources = [
     {
@@ -157,93 +223,175 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
     >
       {/* Top branding and navigation; Beta makes this block internally scrollable. */}
       <div className={sidebarTopClassName}>
-        <div className="h-12 border-b border-[var(--color-border)] px-3.5 flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent-fill)] flex items-center justify-center text-[var(--color-accent-fill-fg)] shadow-md shadow-[var(--color-accent-muted)] shrink-0">
+        <div className="h-12 border-b border-[var(--color-border)] px-3.5 flex items-center gap-2.5 bg-[var(--color-bg-elevated)]/60">
+          <div className="w-8 h-8 rounded-xl bg-[var(--color-accent-fill)] flex items-center justify-center text-[var(--color-accent-fill-fg)] shadow-sm shrink-0">
             <Box className="w-4 h-4" />
           </div>
           {!collapsed && (
-            <div className="flex flex-col justify-center min-w-0">
-              <span className="font-extrabold text-sm text-[var(--color-text-primary)] tracking-tight leading-none">
-                Open3DCalc
-              </span>
-              <div className="mt-1">
-                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-border-accent)] inline-block leading-none">
+            <div className="flex flex-col justify-center min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="font-extrabold text-sm text-[var(--color-text-primary)] tracking-tight leading-none truncate">
+                  Open3DCalc
+                </span>
+                <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-[var(--color-accent-subtle)] text-[var(--color-accent)] border border-[var(--color-border-accent)] inline-block leading-none shrink-0">
                   v{APP_VERSION}
                 </span>
               </div>
+              <span className="mt-1 text-[10px] font-medium text-[var(--color-text-muted)] leading-none truncate">
+                3D Print Studio
+              </span>
             </div>
           )}
         </div>
 
-        {/* Modules Section */}
-        <div className="px-2.5 py-2">
-          {!collapsed && (
-            <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-1.5">
-              {t("nav.modules")}
-            </p>
-          )}
+        {/* Grouped Modules Navigation */}
+        <div className="px-2.5 py-2.5">
           <nav
             id="beta-sidebar-nav"
             aria-label={t("nav.mainNavigation")}
-            className="flex flex-col gap-0.5"
+            className="flex flex-col gap-3"
           >
-            {resolvedModules.map((m) => {
-              const isActive =
-                activeTab === m.id ||
-                (m.id === "catalog" &&
-                  (activeTab === "inventory" || activeTab === "marketplace"));
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => onTabChange(m.id)}
-                  title={m.label}
-                  aria-label={m.label}
-                  aria-current={isActive ? "page" : undefined}
-                  className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
-                    isActive
-                      ? "bg-[var(--color-accent-wash)] text-[var(--color-accent)] border border-[var(--color-border-accent)] shadow-sm"
-                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
-                  }`}
-                >
-                  <span
-                    className={
-                      isActive
-                        ? "text-[var(--color-accent)]"
-                        : "text-[var(--color-text-secondary)]"
-                    }
-                  >
-                    {m.icon}
-                  </span>
-                  {!collapsed && (
-                    <div className="flex-1 flex items-center justify-between overflow-hidden text-left">
-                      <span className="truncate">{m.label}</span>
-                      {m.badge && (
-                        <span className="text-[9px] font-mono text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] px-1 py-0.2 rounded border border-[var(--color-border)]">
-                          {m.badge}
+            {moduleGroups.map((group, groupIdx) => (
+              <div key={group.key} className="flex flex-col gap-0.5">
+                {!collapsed ? (
+                  <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-1">
+                    {group.label}
+                  </p>
+                ) : (
+                  groupIdx > 0 && (
+                    <div
+                      aria-hidden="true"
+                      className="h-px bg-[var(--color-border)] mx-2 mb-1.5"
+                    />
+                  )
+                )}
+                {group.items.map((m) => {
+                  const isActive =
+                    activeTab === m.id ||
+                    (m.id === "catalog" &&
+                      (activeTab === "inventory" ||
+                        activeTab === "marketplace"));
+                  const hasCount =
+                    typeof m.countBadge === "number" && m.countBadge > 0;
+                  return (
+                    <div key={m.id} className="flex flex-col gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => onTabChange(m.id)}
+                        title={m.label}
+                        aria-label={m.label}
+                        aria-current={isActive ? "page" : undefined}
+                        className={`relative w-full flex ${navTarget} items-center ${
+                          collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"
+                        } py-1.5 rounded-xl text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg-primary)] ${
+                          isActive
+                            ? "bg-[var(--color-accent-wash)] text-[var(--color-accent)] border border-[var(--color-border-accent)] shadow-xs"
+                            : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-transparent"
+                        }`}
+                      >
+                        {isActive && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-[var(--color-accent)]"
+                          />
+                        )}
+                        <span
+                          className={`relative shrink-0 ${
+                            isActive
+                              ? "text-[var(--color-accent)]"
+                              : "text-[var(--color-text-secondary)]"
+                          }`}
+                        >
+                          {m.icon}
+                          {collapsed && hasCount && (
+                            <span
+                              aria-hidden="true"
+                              className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--color-accent)] ring-2 ring-[var(--color-bg-surface)]"
+                            />
+                          )}
                         </span>
-                      )}
-                      {m.countBadge && (
-                        <span className="text-[10px] font-bold text-[var(--color-accent)] bg-[var(--color-accent-wash)] px-1.5 py-0.2 rounded-full border border-[var(--color-border-accent)]">
-                          {m.countBadge}
-                        </span>
+                        {!collapsed && (
+                          <div className="flex-1 flex items-center justify-between gap-1.5 overflow-hidden text-left">
+                            <span className="truncate">{m.label}</span>
+                            {m.badge && (
+                              <span className="text-[9px] font-mono text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] px-1.5 py-0.5 rounded border border-[var(--color-border)] shrink-0">
+                                {m.badge}
+                              </span>
+                            )}
+                            {hasCount && (
+                              <span className="text-[10px] font-mono font-bold text-[var(--color-accent)] bg-[var(--color-accent-subtle)] px-1.5 py-0.5 rounded-full border border-[var(--color-border-accent)] shrink-0 leading-none">
+                                {m.countBadge! > 99 ? "99+" : m.countBadge}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </button>
+
+                      {!collapsed && m.subItems && m.subItems.length > 0 && (
+                        <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-[var(--color-border)] pl-2.5">
+                          {m.subItems.map((sub) => {
+                            const isSubActive = activeTab === sub.id;
+                            const subBadgeCount =
+                              sub.countBadge ?? sub.badgeCount;
+                            const hasSubCount =
+                              typeof subBadgeCount === "number" &&
+                              subBadgeCount > 0;
+                            return (
+                              <button
+                                key={sub.id}
+                                type="button"
+                                onClick={() => onTabChange(sub.id)}
+                                title={sub.label}
+                                aria-label={sub.label}
+                                aria-pressed={isSubActive}
+                                className={`flex min-h-11 w-full items-center justify-between gap-1.5 rounded-lg px-2 py-1 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                                  isSubActive
+                                    ? "bg-[var(--color-accent-subtle)] font-semibold text-[var(--color-accent)]"
+                                    : "font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
+                                }`}
+                              >
+                                <span className="flex min-w-0 items-center gap-1.5 truncate">
+                                  <span
+                                    aria-hidden="true"
+                                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                                      isSubActive
+                                        ? "bg-[var(--color-accent)]"
+                                        : "bg-[var(--color-text-muted)]"
+                                    }`}
+                                  />
+                                  <span className="truncate">{sub.label}</span>
+                                </span>
+                                {hasSubCount && (
+                                  <span className="shrink-0 rounded-full border border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)] px-1.5 py-0.5 font-mono text-[9px] font-bold leading-none text-[var(--color-accent)]">
+                                    {subBadgeCount! > 99
+                                      ? "99+"
+                                      : subBadgeCount}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
-                  )}
-                </button>
-              );
-            })}
+                  );
+                })}
+              </div>
+            ))}
           </nav>
         </div>
 
         {/* Resources Section */}
-        <div className="px-2.5 py-1.5 border-t border-[var(--color-border-subtle)]">
+        <div className="px-2.5 py-2 border-t border-[var(--color-border)]">
           {!collapsed && (
             <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--color-text-muted)] px-2 mb-1">
               {t("nav.resources")}
             </p>
           )}
-          <nav aria-label={t("nav.resources")} className="flex flex-col gap-0.5">
+          <nav
+            aria-label={t("nav.resources")}
+            className="flex flex-col gap-0.5"
+          >
             {resources.map((r, i) => {
               if (r.href) {
                 return (
@@ -254,13 +402,18 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
                     rel="noreferrer"
                     title={r.label}
                     aria-label={r.label}
-                    className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors`}
+                    className={`w-full flex ${navTarget} items-center ${
+                      collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"
+                    } py-1.5 rounded-xl text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]`}
                   >
                     {r.icon}
                     {!collapsed && (
-                      <div className="flex-1 flex items-center justify-between text-left">
+                      <div className="flex-1 flex items-center justify-between text-left min-w-0">
                         <span className="truncate">{r.label}</span>
-                        <ExternalLink className="w-3 h-3 text-[var(--color-text-muted)]" />
+                        <ExternalLink
+                          className="w-3 h-3 shrink-0 text-[var(--color-text-muted)]"
+                          aria-hidden="true"
+                        />
                       </div>
                     )}
                   </a>
@@ -270,21 +423,37 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
               return (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => r.tab && onTabChange(r.tab)}
                   title={r.label}
                   aria-label={r.label}
                   aria-current={isActive ? "page" : undefined}
-                  className={`w-full flex ${navTarget} items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  className={`relative w-full flex ${navTarget} items-center ${
+                    collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"
+                  } py-1.5 rounded-xl text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
                     isActive
-                      ? "text-[var(--color-accent)] bg-[var(--color-accent-wash)]"
-                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+                      ? "text-[var(--color-accent)] bg-[var(--color-accent-wash)] border border-[var(--color-border-accent)] font-semibold"
+                      : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-transparent"
                   }`}
                 >
+                  {isActive && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-[var(--color-accent)]"
+                    />
+                  )}
                   {r.icon}
                   {!collapsed && (
-                    <div className="flex-1 flex items-center justify-between text-left">
+                    <div className="flex-1 flex items-center justify-between text-left min-w-0">
                       <span className="truncate">{r.label}</span>
-                      <ExternalLink className="w-3 h-3 text-[var(--color-text-muted)]" />
+                      <ChevronRight
+                        className={`w-3 h-3 shrink-0 ${
+                          isActive
+                            ? "text-[var(--color-accent)]"
+                            : "text-[var(--color-text-muted)] opacity-60"
+                        }`}
+                        aria-hidden="true"
+                      />
                     </div>
                   )}
                 </button>
@@ -313,7 +482,10 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
             </button>
           </div>
         ) : (
-          <div className="mb-2 flex justify-center" title={`Open3DCalc v${APP_VERSION}`}>
+          <div
+            className="mb-2 flex justify-center"
+            title={`Open3DCalc v${APP_VERSION}`}
+          >
             <span className="px-1.5 py-0.5 rounded-md bg-surface-sunken border border-border-subtle font-mono text-[10px] font-bold text-text-secondary">
               v{APP_VERSION}
             </span>
@@ -325,7 +497,9 @@ export const StudioSidebar: React.FC<StudioSidebarProps> = ({
           aria-expanded={!collapsed}
           aria-controls="beta-sidebar-nav"
           aria-label={collapsed ? t("nav.expandPanel") : t("nav.collapsePanel")}
-          title={collapsed ? `v${APP_VERSION} • ${t("nav.expandPanel")}` : undefined}
+          title={
+            collapsed ? `v${APP_VERSION} • ${t("nav.expandPanel")}` : undefined
+          }
           className={`w-full flex ${navTarget} items-center justify-center gap-2 py-2 rounded-lg text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border)] transition-colors`}
         >
           {collapsed ? (

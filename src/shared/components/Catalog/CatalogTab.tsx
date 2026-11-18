@@ -14,9 +14,14 @@ import {
   isPersonalMaterial,
 } from "@/shared/lib/catalogOwnership";
 import { materials } from "@/shared/lib/materials";
-import { marketplaces } from "@/shared/lib/marketplace";
 import {
+  calculateMarketplaceFee,
+  marketplaces,
+} from "@/shared/lib/marketplace";
+import {
+  ArrowUpDown,
   Check,
+  Copy,
   Pencil,
   Plus,
   Printer as PrinterIcon,
@@ -1416,6 +1421,12 @@ function PrinterProfileCard({
 
 function MaterialManager() {
   const store = useCatalogStore();
+  const activeTechnology = useCalculatorStore((s) => s.activeTab);
+  const fdmMaterial = useCalculatorStore((s) => s.fdmMaterial);
+  const resinMaterial = useCalculatorStore((s) => s.resinMaterial);
+  const setActiveTab = useCalculatorStore((s) => s.setActiveTab);
+  const setFdmMaterial = useCalculatorStore((s) => s.setFdmMaterial);
+  const setResinMaterial = useCalculatorStore((s) => s.setResinMaterial);
   const { t } = useTranslation();
   const { symbol: currencySymbol } = useCurrency();
   const [name, setName] = useState("");
@@ -1424,6 +1435,10 @@ function MaterialManager() {
   const [price, setPrice] = useState("");
   const [search, setSearch] = useState("");
   const [collection, setCollection] = useState<"mine" | "library">("mine");
+  const [techFilter, setTechFilter] = useState<"all" | "fdm" | "resin">("all");
+  const [sortBy, setSortBy] = useState<"name" | "priceAsc" | "priceDesc">(
+    "name",
+  );
 
   const personalMaterials = useMemo(
     () => store.materials.filter(isPersonalMaterial),
@@ -1437,10 +1452,54 @@ function MaterialManager() {
   const filteredMaterials = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
     const pool = collection === "mine" ? personalMaterials : libraryMaterials;
-    return pool.filter(
-      (material) => !query || material.name.toLocaleLowerCase().includes(query),
-    );
-  }, [collection, search, personalMaterials, libraryMaterials]);
+    const filtered = pool.filter((material) => {
+      if (techFilter !== "all" && material.type !== techFilter) return false;
+      return !query || material.name.toLocaleLowerCase().includes(query);
+    });
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "priceAsc") return a.avgPrice - b.avgPrice;
+      if (sortBy === "priceDesc") return b.avgPrice - a.avgPrice;
+      return a.name.localeCompare(b.name);
+    });
+  }, [
+    collection,
+    search,
+    techFilter,
+    sortBy,
+    personalMaterials,
+    libraryMaterials,
+  ]);
+
+  const applyMaterialToCalculator = (m: (typeof store.materials)[number]) => {
+    if (m.type === "fdm") {
+      setActiveTab?.("fdm");
+      setFdmMaterial?.({
+        ...fdmMaterial,
+        type: m.name,
+        costPerKg: m.avgPrice,
+        density: m.density,
+      });
+    } else {
+      setActiveTab?.("resin");
+      setResinMaterial?.({
+        ...resinMaterial,
+        type: m.name,
+        costPerLiter: m.avgPrice,
+      });
+    }
+  };
+
+  const cloneMaterialToMine = (m: (typeof store.materials)[number]) => {
+    store.addMaterial({
+      id: uid(),
+      name: `${m.name} (${t("workshop.customSuffix")})`,
+      type: m.type,
+      density: m.density,
+      avgPrice: m.avgPrice,
+      custom: true,
+    });
+    setCollection("mine");
+  };
 
   const add = () => {
     if (!name.trim()) return;
@@ -1539,76 +1598,187 @@ function MaterialManager() {
         </div>
       }
       toolbar={
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-          <div
-            className="inline-flex max-w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1"
-            role="group"
-            aria-label={t("catalog.materialCollections")}
-          >
-            {(
-              [
-                ["mine", "catalog.myMaterials", personalMaterials.length],
-                ["library", "catalog.materialLibrary", libraryMaterials.length],
-              ] as const
-            ).map(([value, label, count]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={collection === value}
-                onClick={() => setCollection(value)}
-                className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
-                  collection === value
-                    ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]"
-                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)]"
-                }`}
-              >
-                {t(label)} <span className="opacity-75">({count})</span>
-              </button>
-            ))}
+        <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <div
+              className="inline-flex max-w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1"
+              role="group"
+              aria-label={t("catalog.materialCollections")}
+            >
+              {(
+                [
+                  ["mine", "catalog.myMaterials", personalMaterials.length],
+                  [
+                    "library",
+                    "catalog.materialLibrary",
+                    libraryMaterials.length,
+                  ],
+                ] as const
+              ).map(([value, label, count]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={collection === value}
+                  onClick={() => setCollection(value)}
+                  className={`min-h-11 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                    collection === value
+                      ? "bg-[var(--accent-fill)] text-[var(--color-accent-fill-fg)]"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)]"
+                  }`}
+                >
+                  {t(label)} <span className="opacity-75">({count})</span>
+                </button>
+              ))}
+            </div>
+            <CatalogSearchField
+              label={t("catalog.materialSearch")}
+              value={search}
+              onChange={setSearch}
+            />
           </div>
-          <CatalogSearchField
-            label={t("catalog.materialSearch")}
-            value={search}
-            onChange={setSearch}
-          />
+          {/* Secondary filter & sort toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div
+              role="group"
+              aria-label={t("workshop.filterTechLabel")}
+              className="inline-flex items-center gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-1"
+            >
+              {(
+                [
+                  ["all", t("workshop.filterAll")],
+                  ["fdm", "FDM"],
+                  ["resin", t("catalog.resin")],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  data-testid={`material-filter-tech-${value}`}
+                  aria-pressed={techFilter === value}
+                  onClick={() => setTechFilter(value)}
+                  className={`min-h-8 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                    techFilter === value
+                      ? "bg-[var(--color-accent-subtle)] text-[var(--color-accent)]"
+                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 py-1">
+              <ArrowUpDown
+                className="h-3.5 w-3.5 text-[var(--color-text-muted)]"
+                aria-hidden="true"
+              />
+              <label htmlFor="material-sort-select" className="sr-only">
+                {t("workshop.sortLabel")}
+              </label>
+              <select
+                id="material-sort-select"
+                data-testid="material-sort-select"
+                aria-label={t("workshop.sortLabel")}
+                value={sortBy}
+                onChange={(e) =>
+                  setSortBy(e.target.value as "name" | "priceAsc" | "priceDesc")
+                }
+                className="bg-transparent text-xs font-semibold text-[var(--color-text-primary)] focus-visible:outline-none"
+              >
+                <option value="name">{t("workshop.sortName")}</option>
+                <option value="priceAsc">{t("workshop.sortPriceAsc")}</option>
+                <option value="priceDesc">{t("workshop.sortPriceDesc")}</option>
+              </select>
+            </div>
+          </div>
         </div>
       }
     >
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {filteredMaterials.map((m) => (
-          <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="font-semibold text-[var(--color-text-primary)]">
-                  {m.name}
+        {filteredMaterials.map((m) => {
+          const isActiveInCalc =
+            (m.type === "fdm" &&
+              activeTechnology === "fdm" &&
+              fdmMaterial?.type === m.name &&
+              fdmMaterial?.costPerKg === m.avgPrice) ||
+            (m.type === "resin" &&
+              activeTechnology === "resin" &&
+              resinMaterial?.type === m.name &&
+              resinMaterial?.costPerLiter === m.avgPrice);
+
+          return (
+            <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-[var(--color-text-primary)]">
+                    {m.name}
+                  </div>
+                  <div className="text-xs text-[var(--color-text-muted)] uppercase">
+                    {m.type}
+                  </div>
                 </div>
-                <div className="text-xs text-[var(--color-text-muted)] uppercase">
-                  {m.type}
-                </div>
+                {m.custom && (
+                  /* contrast-site: catalog-tab-material-custom-badge */
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)]">
+                    Custom
+                  </span>
+                )}
               </div>
-              {m.custom && (
-                /* contrast-site: catalog-tab-material-custom-badge */
-                <span className="text-[10px] px-2 py-1 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)]">
-                  Custom
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {t("catalog.density")}: {m.density}
-            </div>
-            <div className="text-xs text-[var(--color-text-secondary)]">
-              {t("catalog.avgPrice")}: {currencySymbol} {m.avgPrice}
-            </div>
-            {m.custom && (
-              <button
-                onClick={() => store.removeMaterial(m.id)}
-                className="text-xs text-[var(--color-danger)] hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded"
-              >
-                {t("catalog.remove")}
-              </button>
-            )}
-          </CatalogCard>
-        ))}
+              <div className="text-xs text-[var(--color-text-secondary)]">
+                {t("catalog.density")}: {m.density}
+              </div>
+              <div className="text-xs text-[var(--color-text-secondary)]">
+                {t("catalog.avgPrice")}: {currencySymbol} {m.avgPrice}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)] pt-2">
+                <button
+                  type="button"
+                  data-testid="catalog-apply-material-btn"
+                  aria-pressed={isActiveInCalc}
+                  onClick={() => applyMaterialToCalculator(m)}
+                  className={`inline-flex min-h-8 items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                    isActiveInCalc
+                      ? "border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)] text-[var(--color-accent)]"
+                      : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
+                  }`}
+                >
+                  {isActiveInCalc ? (
+                    <Check
+                      className="h-3.5 w-3.5 shrink-0"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Zap className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  )}
+                  <span>
+                    {isActiveInCalc
+                      ? t("workshop.activeInCalculator")
+                      : t("workshop.applyMaterial")}
+                  </span>
+                </button>
+                {!m.custom && (
+                  <button
+                    type="button"
+                    data-testid="catalog-clone-material-btn"
+                    onClick={() => cloneMaterialToMine(m)}
+                    className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+                  >
+                    <Copy className="h-3 w-3 shrink-0" aria-hidden="true" />
+                    <span>{t("workshop.cloneToMine")}</span>
+                  </button>
+                )}
+                {m.custom && (
+                  <button
+                    onClick={() => store.removeMaterial(m.id)}
+                    className="ml-auto text-xs text-[var(--color-danger)] hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded"
+                  >
+                    {t("catalog.remove")}
+                  </button>
+                )}
+              </div>
+            </CatalogCard>
+          );
+        })}
         {filteredMaterials.length === 0 && (
           <div
             role="status"
@@ -1634,8 +1804,13 @@ function MaterialManager() {
 
 function MarketplaceManager() {
   const store = useCatalogStore();
+  const selectedMarketplace = useCalculatorStore((s) => s.selectedMarketplace);
+  const setSelectedMarketplace = useCalculatorStore(
+    (s) => s.setSelectedMarketplace,
+  );
+  const sellPrice = useCalculatorStore((s) => s.results?.sellPrice ?? 0);
   const { t } = useTranslation();
-  const { symbol: currencySymbol } = useCurrency();
+  const { symbol: currencySymbol, format: formatCurrency } = useCurrency();
   const [name, setName] = useState("");
   const [feePercent, setFeePercent] = useState("");
   const [feeFixed, setFeeFixed] = useState("");
@@ -1661,6 +1836,19 @@ function MarketplaceManager() {
       return !query || searchable.toLocaleLowerCase().includes(query);
     });
   }, [collection, search, personalMarketplaces, libraryMarketplaces]);
+
+  const cloneMarketplaceToMine = (m: (typeof store.marketplaces)[number]) => {
+    store.addMarketplace({
+      id: uid(),
+      name: `${m.name} (${t("workshop.customSuffix")})`,
+      feePercent: m.feePercent,
+      feeFixed: m.feeFixed,
+      hasFreeShipping: m.hasFreeShipping,
+      logo: m.logo,
+      custom: true,
+    });
+    setCollection("mine");
+  };
 
   const add = () => {
     if (!name.trim()) return;
@@ -1804,60 +1992,119 @@ function MarketplaceManager() {
       }
     >
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {filteredMarketplaces.map((m) => (
-          <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <MarketplaceArt source={m.logo} className="h-12 w-12" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold text-[var(--color-text-primary)]">
-                  {m.name}
+        {filteredMarketplaces.map((m) => {
+          const isSelected = selectedMarketplace?.id === m.id;
+          const liveFee =
+            sellPrice > 0 ? calculateMarketplaceFee(sellPrice, m) : null;
+          const effectivePct =
+            liveFee && sellPrice > 0
+              ? ((liveFee.fee / sellPrice) * 100).toFixed(1)
+              : null;
+
+          return (
+            <CatalogCard key={m.id} ariaLabel={m.name} className="space-y-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <MarketplaceArt source={m.logo} className="h-12 w-12" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-[var(--color-text-primary)]">
+                    {m.name}
+                  </div>
+                  <span
+                    className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                      m.custom
+                        ? "border-[var(--color-accent-muted)] bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
+                        : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]"
+                    }`}
+                  >
+                    {m.custom
+                      ? t("catalog.customMarketplace")
+                      : t("catalog.defaultMarketplace")}
+                  </span>
                 </div>
-                <span
-                  className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                    m.custom
-                      ? "border-[var(--color-accent-muted)] bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
-                      : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]"
+              </div>
+              <dl className="grid grid-cols-2 gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 text-xs">
+                <div>
+                  <dt className="text-[10px] text-[var(--color-text-muted)]">
+                    {t("catalog.feePercent")}
+                  </dt>
+                  <dd className="font-semibold text-[var(--color-text-primary)]">
+                    {m.feePercent}%
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] text-[var(--color-text-muted)]">
+                    {t("catalog.feeFixed")}
+                  </dt>
+                  <dd className="font-semibold text-[var(--color-text-primary)]">
+                    {currencySymbol} {m.feeFixed}
+                  </dd>
+                </div>
+                <div className="col-span-2 border-t border-[var(--color-border)] pt-2 text-[var(--color-text-secondary)]">
+                  {m.hasFreeShipping
+                    ? t("catalog.hasFreeShipping")
+                    : t("catalog.noFreeShipping")}
+                </div>
+                {liveFee && effectivePct && (
+                  <div
+                    data-testid="catalog-channel-live-fee"
+                    className="col-span-2 border-t border-[var(--color-border)] pt-1.5 text-[11px] font-medium text-[var(--color-text-secondary)]"
+                  >
+                    {t("workshop.estimatedFeeLive", {
+                      fee: formatCurrency(liveFee.fee),
+                      pct: effectivePct,
+                    })}
+                  </div>
+                )}
+              </dl>
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <button
+                  type="button"
+                  data-testid="catalog-select-channel-btn"
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedMarketplace?.(m)}
+                  className={`inline-flex min-h-8 items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ${
+                    isSelected
+                      ? "border-[var(--color-border-accent)] bg-[var(--color-accent-subtle)] text-[var(--color-accent)]"
+                      : "border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
                   }`}
                 >
-                  {m.custom
-                    ? t("catalog.customMarketplace")
-                    : t("catalog.defaultMarketplace")}
-                </span>
+                  {isSelected ? (
+                    <Check
+                      className="h-3.5 w-3.5 shrink-0"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Zap className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  )}
+                  <span>
+                    {isSelected
+                      ? t("workshop.activeChannel")
+                      : t("workshop.selectChannel")}
+                  </span>
+                </button>
+                {!m.custom && (
+                  <button
+                    type="button"
+                    data-testid="catalog-clone-channel-btn"
+                    onClick={() => cloneMarketplaceToMine(m)}
+                    className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]"
+                  >
+                    <Copy className="h-3 w-3 shrink-0" aria-hidden="true" />
+                    <span>{t("workshop.cloneToMine")}</span>
+                  </button>
+                )}
+                {m.custom && (
+                  <button
+                    onClick={() => store.removeMarketplace(m.id)}
+                    className="ml-auto text-xs text-[var(--color-danger)] hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded"
+                  >
+                    {t("catalog.remove")}
+                  </button>
+                )}
               </div>
-            </div>
-            <dl className="grid grid-cols-2 gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 text-xs">
-              <div>
-                <dt className="text-[10px] text-[var(--color-text-muted)]">
-                  {t("catalog.feePercent")}
-                </dt>
-                <dd className="font-semibold text-[var(--color-text-primary)]">
-                  {m.feePercent}%
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[10px] text-[var(--color-text-muted)]">
-                  {t("catalog.feeFixed")}
-                </dt>
-                <dd className="font-semibold text-[var(--color-text-primary)]">
-                  {currencySymbol} {m.feeFixed}
-                </dd>
-              </div>
-              <div className="col-span-2 border-t border-[var(--color-border)] pt-2 text-[var(--color-text-secondary)]">
-                {m.hasFreeShipping
-                  ? t("catalog.hasFreeShipping")
-                  : t("catalog.noFreeShipping")}
-              </div>
-            </dl>
-            {m.custom && (
-              <button
-                onClick={() => store.removeMarketplace(m.id)}
-                className="text-xs text-[var(--color-danger)] hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none rounded"
-              >
-                {t("catalog.remove")}
-              </button>
-            )}
-          </CatalogCard>
-        ))}
+            </CatalogCard>
+          );
+        })}
         {filteredMarketplaces.length === 0 && (
           <div
             role="status"

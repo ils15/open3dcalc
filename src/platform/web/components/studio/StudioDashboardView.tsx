@@ -33,6 +33,7 @@ import { LOW_STOCK_GRAMS } from "@/shared/components/SpoolShelf/SpoolCard";
 import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 
 /* A5: the four workspaces are lazy-mounted so a workspace nobody opens never
    pays for its chart/heatmap code. */
@@ -65,6 +66,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
   onOpenCopilot,
 }) => {
   const { t } = useTranslation();
+  const { format: formatCurrency } = useCurrency();
   const isDemoMode = useIsDemoMode();
   const entries = useHistoryStore((s) => s.entries);
   const printers = useCatalogStore((s) => s.printers);
@@ -492,79 +494,24 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
       >
         {workspace === "finance" && (
           <>
-            {/* Live activity counts: only history/configuration data, no inferred
-          machine state or fabricated operational status. */}
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-              <div className="rounded-xl border border-border-subtle bg-surface-raised p-3.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                  Cálculos FDM
-                </div>
-                <div className="mt-1 text-xl font-bold text-text-primary">
-                  {isUsingDemo ? 7 : fdmCalculations}
-                </div>
-                <div className="text-[11px] text-text-secondary">
-                  {t("dashboardView.inPeriod")}
-                </div>
-              </div>
-              <div className="rounded-xl border border-border-subtle bg-surface-raised p-3.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                  Cálculos de resina
-                </div>
-                <div className="mt-1 text-xl font-bold text-text-primary">
-                  {isUsingDemo ? 2 : resinCalculations}
-                </div>
-                <div className="text-[11px] text-text-secondary">
-                  {t("dashboardView.inPeriod")}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => onTabChange("catalog")}
-                className="rounded-xl border border-border-subtle bg-surface-raised p-3.5 text-left transition-colors hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                  Impressoras personalizadas
-                </div>
-                <div className="mt-1 text-xl font-bold text-text-primary">
-                  {printers.filter((printer) => printer.custom).length}
-                </div>
-                <div className="text-[11px] text-text-secondary">
-                  {t("dashboardView.seeWorkshop")}
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => onTabChange("marketplace")}
-                className="rounded-xl border border-border-subtle bg-surface-raised p-3.5 text-left transition-colors hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                  Canais de venda personalizados
-                </div>
-                <div className="mt-1 text-xl font-bold text-text-primary">
-                  {salesChannels.filter((channel) => channel.custom).length}
-                </div>
-                <div className="text-[11px] text-text-secondary">
-                  {t("dashboardView.seeWorkshop")}
-                </div>
-              </button>
-            </div>
-
-            {/* 6 Top Metric Bento Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {/* Primary Financial Hero Trio */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Faturamento */}
-              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-text-secondary">
-                  <span className="text-[10px] font-mono uppercase font-semibold">
+              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5 flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-text-secondary">
                     {t("dashboardView.revenueLabel")}
                   </span>
-                  <DollarSign className="w-4 h-4 text-positive" />
-                </div>
-                <div className="my-2">
-                  <span className="text-xl font-extrabold text-text-primary">
-                    R$ {revenue.toFixed(2).replace(".", ",")}
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-subtle border border-border-accent text-accent">
+                    <DollarSign className="w-4 h-4" />
                   </span>
                 </div>
-                <div className="text-[10px] text-text-muted">
+                <div className="my-3">
+                  <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-text-primary">
+                    {formatCurrency(revenue)}
+                  </span>
+                </div>
+                <div className="text-xs text-text-muted">
                   {t("dashboardView.savedInPeriod", {
                     count: calculationCount,
                   })}
@@ -572,20 +519,22 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               </div>
 
               {/* Lucro Líquido */}
-              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-text-secondary">
-                  <span className="text-[10px] font-mono uppercase font-semibold">
+              <div className="bg-surface-raised border border-positive/30 rounded-2xl p-5 flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-positive">
                     {t("dashboardView.profitLabel")}
                   </span>
-                  <Percent className="w-4 h-4 text-positive" />
-                </div>
-                <div className="my-2">
-                  <span className="text-xl font-extrabold text-positive">
-                    R$ {netProfit.toFixed(2).replace(".", ",")}
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-positive-subtle border border-positive/30 text-positive">
+                    <Percent className="w-4 h-4" />
                   </span>
                 </div>
-                <div className="text-[10px] text-positive font-semibold flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" />
+                <div className="my-3">
+                  <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-positive">
+                    {formatCurrency(netProfit)}
+                  </span>
+                </div>
+                <div className="text-xs text-positive font-semibold flex items-center gap-1.5">
+                  <TrendingUp className="w-3.5 h-3.5 shrink-0" />
                   <span>
                     {t("dashboardView.marginLiquid", {
                       pct: Math.round(marginPct),
@@ -595,84 +544,146 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
               </div>
 
               {/* Custo Fabril */}
-              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-text-secondary">
-                  <span className="text-[10px] font-mono uppercase font-semibold">
+              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-5 flex flex-col justify-between shadow-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-text-secondary">
                     {t("dashboardView.costLabel")}
                   </span>
-                  <Layers className="w-4 h-4 text-text-secondary" />
-                </div>
-                <div className="my-2">
-                  <span className="text-xl font-extrabold text-text-primary">
-                    R$ {cost.toFixed(2).replace(".", ",")}
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-sunken border border-border-subtle text-text-secondary">
+                    <Layers className="w-4 h-4" />
                   </span>
                 </div>
-                <div className="text-[10px] text-text-muted">
+                <div className="my-3">
+                  <span className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-text-primary">
+                    {formatCurrency(cost)}
+                  </span>
+                </div>
+                <div className="text-xs text-text-muted">
                   {t("dashboardView.costSum")}
                 </div>
               </div>
+            </div>
 
+            {/* Operational Telemetry Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Horas Máquina */}
-              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-text-secondary">
-                  <span className="text-[10px] font-mono uppercase font-semibold">
+              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[10px] font-mono uppercase font-semibold text-text-muted">
                     {t("dashboardView.hoursLabel")}
-                  </span>
-                  <Clock className="w-4 h-4 text-warning" />
-                </div>
-                <div className="my-2">
-                  <span className="text-xl font-extrabold text-text-primary">
+                  </div>
+                  <div className="mt-1 text-xl font-extrabold font-mono text-text-primary">
                     {Math.floor(machineHours)}h{" "}
                     {Math.round((machineHours % 1) * 60)}m
-                  </span>
+                  </div>
+                  <div className="text-[11px] text-text-muted truncate">
+                    {t("dashboardView.hoursHint")}
+                  </div>
                 </div>
-                <div className="text-[10px] text-text-muted">
-                  {t("dashboardView.hoursHint")}
-                </div>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warning-subtle text-warning">
+                  <Clock className="w-4 h-4" />
+                </span>
               </div>
 
               {/* Consumo Total */}
-              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-text-secondary">
-                  <span className="text-[10px] font-mono uppercase font-semibold">
+              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[10px] font-mono uppercase font-semibold text-text-muted">
                     {t("dashboardView.consumptionLabel")}
-                  </span>
-                  <Package className="w-4 h-4 text-info" />
-                </div>
-                <div className="my-2">
-                  <span className="text-xl font-extrabold text-text-primary">
+                  </div>
+                  <div className="mt-1 text-xl font-extrabold font-mono text-text-primary">
                     {fdmGrams.toLocaleString("pt-BR", {
                       maximumFractionDigits: 0,
                     })}{" "}
                     g
-                  </span>
+                  </div>
+                  <div className="text-[11px] text-text-muted truncate">
+                    {t("dashboardView.resinMl", {
+                      ml: resinMillilitres.toLocaleString("pt-BR", {
+                        maximumFractionDigits: 1,
+                      }),
+                    })}
+                  </div>
                 </div>
-                <div className="text-[10px] text-text-muted">
-                  {t("dashboardView.resinMl", {
-                    ml: resinMillilitres.toLocaleString("pt-BR", {
-                      maximumFractionDigits: 1,
-                    }),
-                  })}
-                </div>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info-subtle text-info">
+                  <Package className="w-4 h-4" />
+                </span>
               </div>
 
               {/* Ticket Médio */}
-              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-text-secondary">
-                  <span className="text-[10px] font-mono uppercase font-semibold">
+              <div className="bg-surface-raised border border-border-subtle rounded-2xl p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[10px] font-mono uppercase font-semibold text-text-muted">
                     {t("dashboardView.avgTicketLabel")}
-                  </span>
-                  <ArrowUpRight className="w-4 h-4 text-accent" />
+                  </div>
+                  <div className="mt-1 text-xl font-extrabold font-mono text-text-primary">
+                    {formatCurrency(avgTicket)}
+                  </div>
+                  <div className="text-[11px] text-text-muted truncate">
+                    {t("dashboardView.avgTicketHint")}
+                  </div>
                 </div>
-                <div className="my-2">
-                  <span className="text-xl font-extrabold text-text-primary">
-                    R$ {avgTicket.toFixed(2).replace(".", ",")}
-                  </span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-subtle text-accent">
+                  <ArrowUpRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
+
+            {/* Live activity counts: only history/configuration data, no inferred
+          machine state or fabricated operational status. */}
+            <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+              <div className="rounded-xl border border-border-subtle bg-surface-sunken/70 px-3.5 py-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                  {t("dashboardView.fdmCalcs")}
                 </div>
-                <div className="text-[10px] text-text-muted">
-                  {t("dashboardView.avgTicketHint")}
+                <div className="mt-0.5 text-lg font-bold font-mono text-text-primary">
+                  {isUsingDemo ? 7 : fdmCalculations}
+                </div>
+                <div className="text-[11px] text-text-secondary">
+                  {t("dashboardView.inPeriod")}
                 </div>
               </div>
+              <div className="rounded-xl border border-border-subtle bg-surface-sunken/70 px-3.5 py-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                  {t("dashboardView.resinCalcs")}
+                </div>
+                <div className="mt-0.5 text-lg font-bold font-mono text-text-primary">
+                  {isUsingDemo ? 2 : resinCalculations}
+                </div>
+                <div className="text-[11px] text-text-secondary">
+                  {t("dashboardView.inPeriod")}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onTabChange("catalog")}
+                className="rounded-xl border border-border-subtle bg-surface-sunken/70 px-3.5 py-2.5 text-left transition-colors hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                  {t("dashboardView.customPrinters")}
+                </div>
+                <div className="mt-0.5 text-lg font-bold font-mono text-text-primary">
+                  {printers.filter((printer) => printer.custom).length}
+                </div>
+                <div className="text-[11px] text-accent font-medium">
+                  {t("dashboardView.seeWorkshop")}
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => onTabChange("marketplace")}
+                className="rounded-xl border border-border-subtle bg-surface-sunken/70 px-3.5 py-2.5 text-left transition-colors hover:bg-surface-overlay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                  {t("dashboardView.customChannels")}
+                </div>
+                <div className="mt-0.5 text-lg font-bold font-mono text-text-primary">
+                  {salesChannels.filter((channel) => channel.custom).length}
+                </div>
+                <div className="text-[11px] text-accent font-medium">
+                  {t("dashboardView.seeWorkshop")}
+                </div>
+              </button>
             </div>
 
             {/* Charts Row: Financial Area Chart (Left) and Donut Material Chart (Right) */}

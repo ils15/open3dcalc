@@ -14,11 +14,28 @@
 - Users must be able to export and delete their data.
 - Privacy documentation and a privacy review are required before every release.
 
-## Estado dos canais publicados — atualizado em 09/11/2026
+## Estado dos canais publicados — atualizado em 18/11/2026
 
-- **Estável:** `v1.14.0`.
-- **Beta web:** `v2.0.0-beta.30` (pré-release; canal web-only).
-- **Candidata atual no `main`:** `2.0.0` (Release Candidate para `v2.0.0`, incluindo builds Desktop Windows e Linux).
+- **Estável (`/`)**: `v2.0.0` (publicado na raiz do GitHub Pages + builds Desktop Windows e Linux).
+- **Beta web (`/beta/`)**: `v2.0.1-beta.1` (pré-release; canal web-only alinhado com `v2.0.0` + modernização UX/Ergonomia Fases 1–3).
+- **Candidata atual para promoção Estável (`main`)**: `2.0.1` (em validação no canal Beta `/beta/` antes da promoção para Estável).
+
+### 🚀 Evolução UX, Ergonomia & Gestão de Oficina (Fases 1, 2 e 3 — Entregues em `feat/modernize-ui-navigation`)
+
+Orquestração executada em 3 camadas (**Hydrogen `flash_lite` → Carbon High `pro` → Argon High**), preservando 100% do contrato `SPEC-01` (`dataManifest.ts`) e tokens semânticos puros:
+
+- **Fase 1 — Modernização Visual, Navegação & Command Palette (`⌘K`):**
+  - Header com `backdrop-blur-md`, Breadcrumb contextual clicável, status de tecnologia ativa (`FDM`/`Resina`) e seletor de tema seguro (`useSafeStudioTheme`).
+  - **Command Palette Global (`⌘K` / `Ctrl+K`)** (`StudioCommandPalette.tsx`) para navegação instantânea entre rotas, troca de modos de cálculo, alternância de tecnologia e ações rápidas.
+  - Hero de Boas-vindas & Quick-Start no Dashboard (`StudioDashboardView.tsx`) e barra segmentada de modos com indicador deslizante (`layoutId`).
+- **Fase 2 — Disposição Ergonômica de Botões, Sub-Rotas da Oficina & Workbench A/B:**
+  - **Header em 3 Zonas (`StudioHeader.tsx` + `DataSyncButton.tsx`):** Separação entre Contexto/Breadcrumb + atalhos `2xl` da Oficina (Zona 1), Utilitários de Sistema com `DataSyncButton` compacto `hideLabel` (`px-2.5 py-2.5`) (Zona 2) e CTAs Comerciais (Zona 3).
+  - **Árvore de Sub-rotas de 1 Clique na Sidebar (`StudioSidebar.tsx`):** Acesso direto sob _Minha Oficina_ para _Impressoras & Materiais_ (`catalog`), _Estoque de Carretéis_ (`inventory`, com badge de estoque baixo) e _Canais & Taxas_ (`marketplace`).
+  - **Workbench Control Deck (`StudioCalculatorModeSelector.tsx`):** Perfis Rápidos de 1 clique (`pla_standard`, `petg_functional`, `fast_prototype`, `marketplace_premium` em `calculatorPresets.ts`) com suporte a `Ctrl+Z` e **Comparador de Cenários A/B ao Vivo** (`scenarioComparisonStore.ts`) exibindo deltas em tempo real (`Δ Custo`, `Δ Preço`, `Δ Lucro`, `Δ Margem`).
+- **Fase 3 — Gestão Integrada de Itens da Oficina & Ergonomia dos Painéis de Resultado:**
+  - **Active Workshop Setup & Quick-Jump Deck (`WorkshopHub.tsx`):** Painel de contexto no topo de _Minha Oficina_ exibindo Impressora Ativa, Insumo Ativo, alerta de Estoque de Bobinas e Canal de Venda ativo, com salto de 1 clique entre seções e botão _Abrir na Calculadora_.
+  - **Gestão Acionável de Materiais e Canais (`CatalogTab.tsx`):** Botões de 1 clique _Usar no Cálculo_ / _Usar Canal_ nos cards, clonagem rápida da Biblioteca oficial para _Meus Materiais_ / _Meus Canais_ (_Personalizar_), filtro por tecnologia (`Todos | FDM | Resina`), ordenação (`Nome | Menor Preço | Maior Preço`) e prévia ao vivo da taxa estimada de cada marketplace sobre o preço de venda atual.
+  - **Barra de Ações Rápidas do Resultado (`QuickResultActionsBar.tsx` + `ResultsPanel.tsx`):** Ações ergonômicas de 1 clique logo abaixo do `PriceHeroCard` (_Copiar Resumo_, _Fixar Base A/B_ e _Salvar Rápido_) com confirmação visual imediata, eliminando rolagem vertical até o rodapé.
 
 ### Auditoria da beta.13 — snapshot histórico de 08/10/2026
 
