@@ -4,6 +4,10 @@ import { useTranslation } from "react-i18next";
 import { Calculator, Clock, FileText, Warehouse } from "lucide-react";
 import { isWorkshopRoute, Tab } from "@/shared/components/AppShell/tabs";
 import { useLayoutStore } from "@/shared/stores/layoutStore";
+import {
+  WORKSPACE_CONTAINER_CLASSES,
+  WORKSPACE_MAIN_PADDING,
+} from "./workspaceWidth";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useHistoryStore } from "@/shared/stores/historyStore";
 import { useQuoteStore } from "@/shared/stores/quoteStore";
@@ -18,7 +22,10 @@ import { StudioDashboardView } from "./StudioDashboardView";
 import { StudioMiniDashOverlay } from "./StudioMiniDashOverlay";
 import { StudioCopilotModal } from "./StudioCopilotModal";
 import { StudioShortcutsModal } from "./StudioShortcutsModal";
-import { StudioQuoteModal } from "./StudioQuoteModal";
+import {
+  StudioQuoteModal,
+  type StudioQuoteModalSeed,
+} from "./StudioQuoteModal";
 import { StudioCommandPalette } from "./StudioCommandPalette";
 import {
   StudioWhatsAppModal,
@@ -55,6 +62,12 @@ export const StudioLayout: React.FC = () => {
   // else. Reading and writing the store makes both guards honest.
   const layoutMode = useLayoutStore((state) => state.layoutMode);
   const setLayoutMode = useLayoutStore((state) => state.setLayoutMode);
+  const workspaceWidth = useLayoutStore(
+    (state) => state.workspaceWidth ?? "standard",
+  );
+  const cycleWorkspaceWidth = useLayoutStore(
+    (state) => state.cycleWorkspaceWidth,
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
       return window.innerWidth < 1280;
@@ -69,6 +82,13 @@ export const StudioLayout: React.FC = () => {
   // when the user moves between Classic, Bento, and Guided.
   const activeTechnology = useCalculatorStore((state) => state.activeTab);
   const currentProjectName = useCalculatorStore((state) => state.productName);
+  const fdmMaterial = useCalculatorStore((state) => state.fdmMaterial);
+  const resinMaterial = useCalculatorStore((state) => state.resinMaterial);
+  const fdmPrintParams = useCalculatorStore((state) => state.fdmPrintParams);
+  const resinPrintParams = useCalculatorStore(
+    (state) => state.resinPrintParams,
+  );
+  const currentResults = useCalculatorStore((state) => state.results);
   const historyCount = useHistoryStore((state) => state.entries.length);
   const quotesCount = useQuoteStore((state) => state.quotes.length);
   const spools = useFilamentInventory((state) => state.spools);
@@ -147,11 +167,17 @@ export const StudioLayout: React.FC = () => {
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [quoteSeed, setQuoteSeed] = useState<StudioQuoteModalSeed | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [whatsAppData, setWhatsAppData] = useState<
     StudioWhatsAppModalInitialData | undefined
   >(undefined);
+
+  const openQuoteModalWithSeed = (seed?: StudioQuoteModalSeed) => {
+    setQuoteSeed(seed ?? null);
+    setIsQuoteModalOpen(true);
+  };
 
   // Keyboard shortcut listener
   useEffect(() => {
@@ -160,6 +186,13 @@ export const StudioLayout: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      // Cycle Workspace Display Width (Alt+W) works from anywhere
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "w") {
+        e.preventDefault();
+        cycleWorkspaceWidth();
         return;
       }
 
@@ -202,31 +235,18 @@ export const StudioLayout: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [focusMode]);
+  }, [focusMode, cycleWorkspaceWidth]);
+
+  const containerWidthClass = focusMode
+    ? "max-w-[84rem] mx-auto w-full"
+    : WORKSPACE_CONTAINER_CLASSES[workspaceWidth];
+  const mainPaddingClass = focusMode
+    ? "p-4 sm:p-6 lg:p-8"
+    : WORKSPACE_MAIN_PADDING[workspaceWidth];
 
   return (
-    /* The shell and Studio surfaces use semantic tokens so the app's theme
-       class controls the entire workspace instead of leaving dark-only cards
-       inside a light shell.
-
-       The two `--accent-fill*` utilities are written in the ARBITRARY-VALUE
-       form on purpose. `--color-accent-fill` and `--color-accent-fill-fg` exist
-       only in the runtime alias layer of tokens.css and are NOT declared in
-       `@theme inline`, so a bare `bg-accent-fill` / `text-accent-fill-fg`
-       generates NO CSS at all: the browser then falls back to the inherited
-       value and `selection:text-accent-fill-fg` silently leaves selected text
-       on `--color-text-primary`. Verified absent from both shipped bundles.
-       `tailwindUtilitiesResolve.test.ts` now asserts that every token-driven
-       colour utility used in src/ actually resolves against `@theme`, so this
-       cannot recur.
-
-       `selection:*` uses `--color-accent-fill`, NOT `--color-accent`. The
-       foreground token flips in dark mode and does not retain enough contrast
-       with white ink, while `--color-accent-fill` is non-flipping, so selection
-       text clears AA in BOTH themes. Same rule the token layer already
-       states for the `--*-fill` family: when the background is fixed, the ink
-       must be fixed too. */
     <div
+      data-workspace-width={workspaceWidth}
       className={`${isBetaChannel ? "min-h-screen" : "h-dvh overflow-hidden"} bg-surface-canvas text-text-primary flex flex-col font-sans selection:bg-[var(--color-accent-fill)] selection:text-[var(--color-accent-fill-fg)]`}
     >
       {/* Global guard feedback must survive focus mode, which removes the chrome. */}
@@ -239,7 +259,7 @@ export const StudioLayout: React.FC = () => {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             activeTechnology={activeTechnology}
-            onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+            onOpenQuoteModal={() => openQuoteModalWithSeed()}
             onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
             onOpenWhatsAppModal={() => {
               setWhatsAppData({
@@ -274,23 +294,11 @@ export const StudioLayout: React.FC = () => {
         {/* Main Content Area */}
         <main
           ref={mainRef}
-          className={`flex-1 min-w-0 p-4 sm:p-6 lg:p-8 ${
+          className={`flex-1 min-w-0 ${mainPaddingClass} ${
             isBetaChannel ? "" : "min-h-0 overflow-y-auto overscroll-y-contain"
-          } ${
-            /* Ultrawide displays must not stretch content edge to edge:
-               the workspace centers at a readable measure (focus mode keeps
-               its tighter column). */
-            focusMode
-              ? "max-w-[84rem] mx-auto w-full"
-              : "max-w-[100rem] mx-auto w-full"
-          }`}
+          } ${containerWidthClass}`}
         >
-          {/* Focus mode exit banner. The exit button uses the arbitrary-value
-              form for `--accent-fill*` — see the note on the shell root: those
-              tokens are not in `@theme inline`, so the bare utilities generate
-              no CSS and the button loses its fill entirely (this is what C1
-              caught). The comment lives out here because `{focusMode && ( … )}`
-              is an expression, and JSX comments are not allowed inside one. */}
+          {/* Focus mode exit banner. */}
           {focusMode && (
             <div className="mb-4 flex items-center justify-between p-2.5 rounded-xl bg-accent-subtle border border-accent/40 text-xs">
               <span className="text-accent font-semibold">
@@ -305,13 +313,6 @@ export const StudioLayout: React.FC = () => {
             </div>
           )}
 
-          {/* Tab Views.
-              Without a transition the previous view is torn out of the DOM and
-              the next one appears in the same frame: a hard cut that reads as
-              a flicker. `framer-motion` is already a dependency (Tutorial uses
-              it), so this adds no new one. Keying the wrapper on `activeTab`
-              is what gives AnimatePresence a child to exit — the individual
-              `activeTab === …` blocks below stay exactly as they were. */}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={isWorkshopRoute(activeTab) ? "workshop" : activeTab}
@@ -351,48 +352,56 @@ export const StudioLayout: React.FC = () => {
               {activeTab === "history" && (
                 <StudioHistoryView
                   onTabChange={setActiveTab}
-                  onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+                  onOpenQuoteModal={openQuoteModalWithSeed}
                 />
               )}
 
               {activeTab === "infill" && (
-                <div className="mx-auto w-full max-w-[100rem] bg-surface-raised/0 pb-20">
-                  <InfillCalculator />
+                <div className="mx-auto w-full bg-surface-raised/0 pb-20">
+                  <InfillCalculator
+                    onApplyInfill={(pct) => {
+                      useCalculatorStore.getState().setInfillPercent(pct);
+                      setActiveTab("calculator");
+                    }}
+                  />
                 </div>
               )}
 
               {activeTab === "customers" && (
                 <StudioCustomerView
                   onTabChange={setActiveTab}
-                  onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+                  onOpenQuoteModal={openQuoteModalWithSeed}
                 />
               )}
 
               {activeTab === "quotes" && (
                 <StudioQuotesView
                   onTabChange={setActiveTab}
-                  onOpenNewQuote={() => setIsQuoteModalOpen(true)}
+                  onOpenNewQuote={() => openQuoteModalWithSeed()}
                 />
               )}
 
               {activeTab === "products" && (
-                <StudioProductsView onTabChange={setActiveTab} />
+                <StudioProductsView
+                  onTabChange={setActiveTab}
+                  onOpenQuoteModal={openQuoteModalWithSeed}
+                />
               )}
 
               {activeTab === "wiki" && (
-                <div className="w-full max-w-6xl mx-auto pb-10">
+                <div className="w-full mx-auto pb-10">
                   <WikiPage />
                 </div>
               )}
 
               {activeTab === "changelog" && (
-                <div className="w-full max-w-5xl mx-auto pb-10">
+                <div className="w-full mx-auto pb-10">
                   <ChangelogPage />
                 </div>
               )}
 
               {activeTab === "privacy" && !isBetaChannel && (
-                <div className="w-full max-w-6xl mx-auto pb-10">
+                <div className="w-full mx-auto pb-10">
                   <PrivacyScreen />
                 </div>
               )}
@@ -409,7 +418,7 @@ export const StudioLayout: React.FC = () => {
           onOpenShortcuts={() => setIsShortcutsOpen(true)}
           onTabChange={setActiveTab}
           onOpenCopilot={() => setIsCopilotOpen(true)}
-          onOpenNewQuote={() => setIsQuoteModalOpen(true)}
+          onOpenNewQuote={() => openQuoteModalWithSeed()}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         />
       )}
@@ -420,7 +429,7 @@ export const StudioLayout: React.FC = () => {
         onClose={() => setIsCommandPaletteOpen(false)}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+        onOpenQuoteModal={() => openQuoteModalWithSeed()}
         onOpenWhatsAppModal={() => {
           setWhatsAppData({
             projectName: currentProjectName || "Projeto 3D",
@@ -452,8 +461,47 @@ export const StudioLayout: React.FC = () => {
 
       <StudioQuoteModal
         isOpen={isQuoteModalOpen}
-        onClose={() => setIsQuoteModalOpen(false)}
-        projectName={currentProjectName || "Peça 3D"}
+        onClose={() => {
+          setIsQuoteModalOpen(false);
+          setQuoteSeed(null);
+        }}
+        projectName={
+          quoteSeed?.projectName ?? (currentProjectName || "Peça 3D")
+        }
+        material={
+          quoteSeed?.material ??
+          (activeTechnology === "fdm"
+            ? fdmMaterial?.type || "PLA"
+            : resinMaterial?.type || "Resina")
+        }
+        weightGrams={
+          quoteSeed?.weightGrams ??
+          (activeTechnology === "fdm"
+            ? fdmMaterial?.weightUsed
+            : resinMaterial?.volumeUsedMl)
+        }
+        hours={
+          quoteSeed?.hours ??
+          Math.floor(
+            activeTechnology === "fdm"
+              ? (fdmPrintParams?.printTimeHours ?? 0)
+              : (resinPrintParams?.printTimeHours ?? 0),
+          )
+        }
+        minutes={
+          quoteSeed?.minutes ??
+          Math.round(
+            ((activeTechnology === "fdm"
+              ? (fdmPrintParams?.printTimeHours ?? 0)
+              : (resinPrintParams?.printTimeHours ?? 0)) %
+              1) *
+              60,
+          )
+        }
+        totalCost={quoteSeed?.totalCost ?? currentResults?.totalCost}
+        sellPrice={quoteSeed?.sellPrice ?? currentResults?.sellPrice}
+        profit={quoteSeed?.profit ?? currentResults?.profit}
+        initialCustomerId={quoteSeed?.initialCustomerId}
       />
 
       <StudioWhatsAppModal

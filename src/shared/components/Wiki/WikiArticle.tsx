@@ -77,7 +77,7 @@ export function WikiArticle({ article, onAnchorClick }: WikiArticleProps) {
         </nav>
       ) : null}
       <article
-        className="wiki-prose surface min-w-0 rounded-xl p-5 sm:p-6 lg:p-8"
+        className="wiki-prose surface min-w-0 rounded-xl p-5 sm:p-6 lg:p-8 [&_p]:max-w-[75ch] [&_li]:max-w-[75ch] [&_blockquote]:max-w-[75ch]"
         onClick={onAnchorClick}
         dangerouslySetInnerHTML={{ __html: article.html }}
       />

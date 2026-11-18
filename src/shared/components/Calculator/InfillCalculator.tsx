@@ -15,7 +15,11 @@ const MATERIALS = [
   { label: "PLA-CF", value: "pla_cf", density: 1.3, costPerKg: 200 },
 ];
 
-export function InfillCalculator() {
+interface InfillCalculatorProps {
+  onApplyInfill?: (infillPercent: number) => void;
+}
+
+export function InfillCalculator({ onApplyInfill }: InfillCalculatorProps) {
   const { t } = useTranslation();
   const { format: fmtCurrency } = useCurrency();
   const [width, setWidth] = useState("50");
@@ -46,10 +50,11 @@ export function InfillCalculator() {
     1000;
   const solidVolumeCm3 = wallVolumeCm3 + topBottomVolumeCm3;
 
+  const parsedInfill = parseFloat(infillPercent) || 0;
   const result = calculateInfillImpact(
     solidVolumeCm3,
     boundingBoxCm3,
-    parseFloat(infillPercent) || 0,
+    parsedInfill,
     mat.density,
     mat.costPerKg,
   );
@@ -83,11 +88,20 @@ export function InfillCalculator() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start md:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-sunken border border-border-subtle text-xs font-semibold text-text-secondary">
-            <span className="w-2 h-2 rounded-full bg-accent" />
+            <span className="w-2 h-2 rounded-full bg-[var(--color-accent-fill)]" />
             {mat.label} • {infillPercent}% infill
           </span>
+          {onApplyInfill && (
+            <button
+              type="button"
+              onClick={() => onApplyInfill(parsedInfill)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--color-accent-fill)] hover:ring-2 hover:ring-accent/40 text-[var(--color-accent-fill-fg)] text-xs font-bold transition-all min-h-[38px]"
+            >
+              {t("infillCalculator.applyInfill", { percent: parsedInfill })}
+            </button>
+          )}
         </div>
       </div>
 
@@ -105,7 +119,9 @@ export function InfillCalculator() {
             <span className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight">
               {result.weight.toFixed(1)}
             </span>
-            <span className="text-sm font-medium text-text-secondary ml-1">g</span>
+            <span className="text-sm font-medium text-text-secondary ml-1">
+              g
+            </span>
           </div>
           <div className="text-[11px] text-text-muted mt-1">
             {infillPercent}% • {mat.label}
@@ -142,7 +158,9 @@ export function InfillCalculator() {
             <span className="text-2xl sm:text-3xl font-extrabold text-accent tracking-tight">
               {solidVolumeCm3.toFixed(1)}
             </span>
-            <span className="text-sm font-medium text-text-secondary ml-1">cm³</span>
+            <span className="text-sm font-medium text-text-secondary ml-1">
+              cm³
+            </span>
           </div>
           <div className="text-[11px] text-text-muted mt-1">
             {boundingBoxCm3.toFixed(1)} cm³ bbox
@@ -246,7 +264,7 @@ export function InfillCalculator() {
                   onClick={() => setInfillPercent(String(pct))}
                   className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors ${
                     parseFloat(infillPercent) === pct
-                      ? "bg-accent text-[var(--color-accent-fill-fg)] font-bold shadow-xs"
+                      ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] font-bold shadow-xs"
                       : "bg-surface-sunken hover:bg-surface-canvas border border-border-subtle text-text-secondary"
                   }`}
                 >
@@ -305,7 +323,7 @@ export function InfillCalculator() {
                           <span
                             className={`inline-block px-2 py-0.5 rounded-md text-xs ${
                               isSelected
-                                ? "bg-accent text-[var(--color-accent-fill-fg)]"
+                                ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)]"
                                 : "bg-surface-sunken text-text-primary"
                             }`}
                           >
@@ -334,7 +352,9 @@ export function InfillCalculator() {
           </div>
 
           <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-[11px] text-text-muted">
-            <span>{mat.label} ({mat.density} g/cm³)</span>
+            <span>
+              {mat.label} ({mat.density} g/cm³)
+            </span>
             <span>10% = ref</span>
           </div>
         </div>

@@ -204,15 +204,15 @@ export function Calculator() {
             }`}
           >
             <QuickStartBanner />
-            <div className="surface rounded-2xl p-3 sm:p-4 space-y-3">
+            <div className="surface rounded-2xl p-3 sm:px-4 sm:py-3 space-y-2.5">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <TechToggle wrapOnNarrow />
                 <div className="flex-1 min-w-[200px]">
                   <ProductName />
                 </div>
-              </div>
-              <div className="pt-2 border-t border-[var(--color-border)] flex flex-wrap items-center justify-between gap-2">
-                <LevelToggle wrapOnNarrow />
+                <div className="w-full pt-2 border-t border-[var(--color-border)] xl:w-auto xl:pt-0 xl:border-t-0 xl:border-l xl:pl-3 flex flex-wrap items-center justify-between gap-2">
+                  <LevelToggle wrapOnNarrow />
+                </div>
               </div>
             </div>
             <SectionRenderer

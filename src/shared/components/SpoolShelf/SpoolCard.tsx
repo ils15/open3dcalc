@@ -12,6 +12,9 @@ import { SpoolThumb, FALLBACK_HEX } from "./SpoolThumb";
 /** Limiar (g) abaixo do qual um carretel em estoque é sinalizado como baixo. */
 export const LOW_STOCK_GRAMS = 100;
 
+/** Limiar (g) para o filtro rápido de estoque baixo na oficina. */
+export const LOW_STOCK_FILTER_GRAMS = 200;
+
 /**
  * Status badge: the background/border washes stay the raw Tailwind palette
  * (theme-independent, so one value serves both themes), but the INK is now a
@@ -79,6 +82,7 @@ function readableTextColor(hex: string): "#111827" | "#ffffff" {
 interface SpoolCardProps {
   spool: FilamentSpool;
   requiredGrams?: number;
+  onUseInCalculator?: () => void;
   onEdit: (spool: FilamentSpool) => void;
   onRemove: (spool: FilamentSpool) => void;
 }
@@ -86,6 +90,7 @@ interface SpoolCardProps {
 export const SpoolCard = memo(function SpoolCard({
   spool,
   requiredGrams = 0,
+  onUseInCalculator,
   onEdit,
   onRemove,
 }: SpoolCardProps) {
@@ -97,7 +102,7 @@ export const SpoolCard = memo(function SpoolCard({
   const status: SpoolStatus = spool.status || "in_stock";
   const isLow = isLowStockSpool(spool, LOW_STOCK_GRAMS);
   const hex = spool.colorHex?.trim() || FALLBACK_HEX;
-  const barColor = pct < 20 ? "#f97316" : hex;
+  const barColor = pct < 20 ? "var(--color-warning)" : hex;
   const textOnColor = readableTextColor(hex);
 
   const handleUseInCalculation = () => {
@@ -133,6 +138,7 @@ export const SpoolCard = memo(function SpoolCard({
       }
     }
     setActiveTab("calculator");
+    onUseInCalculator?.();
   };
 
   return (
@@ -233,7 +239,7 @@ export const SpoolCard = memo(function SpoolCard({
           <span className="text-[10px] text-[var(--color-text-muted)] block">
             Custo por grama
           </span>
-          <span className="font-mono text-emerald-400 font-semibold">
+          <span className="font-mono text-[var(--color-positive)] font-semibold">
             {format(spool.costPerKg / 1000)}/g
           </span>
         </div>
@@ -251,7 +257,7 @@ export const SpoolCard = memo(function SpoolCard({
         <button
           type="button"
           onClick={handleUseInCalculation}
-          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 min-h-[36px] rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-colors"
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold py-2 min-h-[36px] rounded-lg bg-[var(--color-accent-fill)] hover:bg-[var(--color-accent-fill-hover)] text-[var(--color-accent-fill-fg)] shadow-sm transition-colors"
         >
           <Play className="w-3.5 h-3.5 fill-current" />
           Usar no Cálculo
@@ -268,7 +274,7 @@ export const SpoolCard = memo(function SpoolCard({
         <button
           type="button"
           onClick={() => onRemove(spool)}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 min-h-[44px] min-w-[44px] rounded-lg bg-red-600/10 text-red-400 hover:bg-red-600/30 transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 min-h-[44px] min-w-[44px] rounded-lg bg-[var(--color-danger-subtle)] text-[var(--color-danger)] hover:brightness-110 transition-all focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
           title={t("spools.removeSpool")}
           aria-label={t("spools.removeSpool")}
         >

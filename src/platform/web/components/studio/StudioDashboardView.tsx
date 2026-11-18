@@ -34,6 +34,7 @@ import { useIsDemoMode } from "@/shared/hooks/useDemoMode";
 import { useDemoModeStore } from "@/shared/stores/demoModeStore";
 import { useReducedMotion } from "@/shared/hooks/useReducedMotion";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import { useWorkspaceContainerClass } from "./workspaceWidth";
 
 /* A5: the four workspaces are lazy-mounted so a workspace nobody opens never
    pays for its chart/heatmap code. */
@@ -65,8 +66,10 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
   onTabChange,
   onOpenCopilot,
 }) => {
-  const { t } = useTranslation();
-  const { format: formatCurrency } = useCurrency();
+  const { t, i18n } = useTranslation();
+  const locale = i18n?.language || "pt-BR";
+  const { format: formatCurrency, symbol: currencySymbol } = useCurrency();
+  const containerWidthClass = useWorkspaceContainerClass();
   const isDemoMode = useIsDemoMode();
   const entries = useHistoryStore((s) => s.entries);
   const printers = useCatalogStore((s) => s.printers);
@@ -250,7 +253,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
         >((points, entry) => {
           const date = new Date(entry.timestamp);
           const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-          const label = date.toLocaleDateString("pt-BR", {
+          const label = date.toLocaleDateString(locale, {
             day: "2-digit",
             month: "2-digit",
           });
@@ -303,7 +306,9 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-5 pb-16 text-text-primary">
+    <div
+      className={`${containerWidthClass} flex flex-col gap-5 pb-16 text-text-primary`}
+    >
       {/* Top Notice if in Normal Mode without data */}
       {!isDemoMode && !hasRealData && (
         <div className="bg-surface-overlay border border-accent/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -592,14 +597,14 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                     {t("dashboardView.consumptionLabel")}
                   </div>
                   <div className="mt-1 text-xl font-extrabold font-mono text-text-primary">
-                    {fdmGrams.toLocaleString("pt-BR", {
+                    {fdmGrams.toLocaleString(locale, {
                       maximumFractionDigits: 0,
                     })}{" "}
                     g
                   </div>
                   <div className="text-[11px] text-text-muted truncate">
                     {t("dashboardView.resinMl", {
-                      ml: resinMillilitres.toLocaleString("pt-BR", {
+                      ml: resinMillilitres.toLocaleString(locale, {
                         maximumFractionDigits: 1,
                       }),
                     })}
@@ -774,7 +779,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                         stroke="var(--color-text-muted)"
                         fontSize={11}
                         tickLine={false}
-                        tickFormatter={(v) => `R$${v}`}
+                        tickFormatter={(v) => `${currencySymbol}${v}`}
                       />
                       <Tooltip
                         contentStyle={{
@@ -783,10 +788,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                           borderRadius: "8px",
                           fontSize: "12px",
                         }}
-                        formatter={(val) => [
-                          `R$ ${Number(val).toFixed(2).replace(".", ",")}`,
-                          "",
-                        ]}
+                        formatter={(val) => [formatCurrency(Number(val)), ""]}
                       />
                       <Area
                         type="monotone"
@@ -828,7 +830,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                       {t("dashboardView.materialTitle")}
                     </h2>
                     <span className="text-[11px] text-text-secondary">
-                      Total: {totalMaterialWeight.toLocaleString("pt-BR")} g no
+                      Total: {totalMaterialWeight.toLocaleString(locale)} g no
                       histórico
                     </span>
                   </div>
@@ -876,7 +878,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                       </ResponsiveContainer>
                       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                         <span className="text-base font-extrabold text-text-primary">
-                          {totalMaterialWeight.toLocaleString("pt-BR")} g
+                          {totalMaterialWeight.toLocaleString(locale)} g
                         </span>
                         <span className="text-[10px] font-mono uppercase text-text-secondary">
                           FDM
@@ -898,7 +900,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                       ></span>
                       <span className="truncate">{mat.name}</span>
                       <span className="text-text-muted font-mono ml-auto">
-                        {mat.value.toLocaleString("pt-BR")} g
+                        {mat.value.toLocaleString(locale)} g
                       </span>
                     </div>
                   ))}
@@ -919,7 +921,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   {Math.round(marginPct)}%
                 </div>
                 <div className="text-[11px] text-text-secondary">
-                  sobre R$ {revenue.toFixed(2).replace(".", ",")} de venda
+                  sobre {formatCurrency(revenue)} de venda
                 </div>
               </div>
               <div className="rounded-xl border border-border-subtle bg-surface-raised p-3.5">
@@ -969,7 +971,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                     Cálculos mais lucrativos
                   </h2>
                   <p className="text-[11px] text-text-secondary">
-                    Ranking do lucro por peça t("dashboardView.inPeriod").
+                    Ranking do lucro por peça {t("dashboardView.inPeriod")}.
                   </p>
                 </div>
                 <button
@@ -1004,14 +1006,14 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                           <div className="text-[11px] text-text-secondary">
                             {entry.type === "fdm" ? "FDM" : "Resina"} ·{" "}
                             {new Date(entry.timestamp).toLocaleDateString(
-                              "pt-BR",
+                              locale,
                             )}
                           </div>
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
                         <div className="text-sm font-bold text-positive">
-                          R$ {entry.profit.toFixed(2).replace(".", ",")}
+                          {formatCurrency(entry.profit)}
                         </div>
                         <div className="text-[11px] text-text-secondary">
                           margem{" "}
@@ -1250,7 +1252,7 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                   </div>
                   <div className="text-[11px] text-text-secondary">
                     {entry.type === "fdm" ? "FDM" : "Resina"} ·{" "}
-                    {new Date(entry.timestamp).toLocaleString("pt-BR", {
+                    {new Date(entry.timestamp).toLocaleString(locale, {
                       dateStyle: "short",
                       timeStyle: "short",
                     })}
@@ -1258,10 +1260,10 @@ export const StudioDashboardView: React.FC<StudioDashboardViewProps> = ({
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="text-sm font-bold text-text-primary">
-                    R$ {entry.sellPrice.toFixed(2).replace(".", ",")}
+                    {formatCurrency(entry.sellPrice)}
                   </div>
                   <div className="text-[11px] text-text-secondary">
-                    custo R$ {entry.totalCost.toFixed(2).replace(".", ",")}
+                    custo {formatCurrency(entry.totalCost)}
                   </div>
                 </div>
               </li>

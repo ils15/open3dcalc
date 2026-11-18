@@ -31,9 +31,11 @@ export const LAYOUT_STORAGE_KEY = "open3dcalc_layout_v1";
 export type LayoutMode = "classic" | "guided" | "bento";
 export type SidebarMode = "compact" | "tabs" | "dock" | "expanded";
 export type StockView = "shelf" | "manager";
+export type WorkspaceWidth = "focused" | "standard" | "wide";
 
 const DEFAULT_LAYOUT_MODE: LayoutMode = "classic";
 export const DEFAULT_SIDEBAR_MODE: SidebarMode = "compact";
+export const DEFAULT_WORKSPACE_WIDTH: WorkspaceWidth = "standard";
 const VALID_LAYOUT_MODES: readonly LayoutMode[] = [
   "classic",
   "guided",
@@ -46,12 +48,19 @@ const VALID_SIDEBAR_MODES: readonly SidebarMode[] = [
   "expanded",
 ];
 const VALID_STOCK_VIEWS: readonly StockView[] = ["shelf", "manager"];
+const VALID_WORKSPACE_WIDTHS: readonly WorkspaceWidth[] = [
+  "focused",
+  "standard",
+  "wide",
+];
 
 interface LayoutPreferences {
   layoutMode: LayoutMode;
   sidebarMode: SidebarMode;
   /** My Workshop stock presentation; absent = the shelf default. */
   stockView?: StockView;
+  /** Studio container width profile for laptop vs standard vs ultrawide displays. */
+  workspaceWidth: WorkspaceWidth;
 }
 
 function isLayoutMode(value: unknown): value is LayoutMode {
@@ -66,6 +75,12 @@ function isStockView(value: unknown): value is StockView {
   return (VALID_STOCK_VIEWS as readonly string[]).includes(value as string);
 }
 
+function isWorkspaceWidth(value: unknown): value is WorkspaceWidth {
+  return (VALID_WORKSPACE_WIDTHS as readonly string[]).includes(
+    value as string,
+  );
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -74,6 +89,7 @@ function defaultPreferences(): LayoutPreferences {
   return {
     layoutMode: DEFAULT_LAYOUT_MODE,
     sidebarMode: DEFAULT_SIDEBAR_MODE,
+    workspaceWidth: DEFAULT_WORKSPACE_WIDTH,
   };
 }
 
@@ -85,7 +101,11 @@ function loadLayoutPreferences(): LayoutPreferences {
     if (!saved) return defaultPreferences();
     const parsed: unknown = JSON.parse(saved);
     if (isLayoutMode(parsed)) {
-      return { layoutMode: parsed, sidebarMode: DEFAULT_SIDEBAR_MODE };
+      return {
+        layoutMode: parsed,
+        sidebarMode: DEFAULT_SIDEBAR_MODE,
+        workspaceWidth: DEFAULT_WORKSPACE_WIDTH,
+      };
     }
     if (
       isRecord(parsed) &&
@@ -98,6 +118,9 @@ function loadLayoutPreferences(): LayoutPreferences {
         ...(isStockView(parsed.stockView)
           ? { stockView: parsed.stockView }
           : {}),
+        workspaceWidth: isWorkspaceWidth(parsed.workspaceWidth)
+          ? parsed.workspaceWidth
+          : DEFAULT_WORKSPACE_WIDTH,
       };
     }
   } catch {
@@ -127,10 +150,15 @@ function persistPreferences(
   forceComposite: boolean,
 ): void {
   if (forceComposite || hasCompositePayload()) {
-    guardedStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(preferences));
+    const { workspaceWidth, ...rest } = preferences;
+    const wirePayload =
+      workspaceWidth !== DEFAULT_WORKSPACE_WIDTH
+        ? { ...rest, workspaceWidth }
+        : rest;
+    guardedStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(wirePayload));
     return;
   }
-  // Preserve the original wire format until the user chooses a sidebar mode.
+  // Preserve the original wire format until the user chooses a composite option.
   guardedStorage.setItem(
     LAYOUT_STORAGE_KEY,
     JSON.stringify(preferences.layoutMode),
@@ -141,6 +169,8 @@ interface LayoutState extends LayoutPreferences {
   setLayoutMode: (mode: LayoutMode) => void;
   setSidebarMode: (mode: SidebarMode) => void;
   setStockView: (view: StockView) => void;
+  setWorkspaceWidth: (width: WorkspaceWidth) => void;
+  cycleWorkspaceWidth: () => void;
 }
 
 const initialPreferences = loadLayoutPreferences();
@@ -150,9 +180,11 @@ export const useLayoutStore = create<LayoutState>((set) => ({
 
   setLayoutMode: (mode) => {
     set((state) => {
-      const preferences = {
+      const preferences: LayoutPreferences = {
         layoutMode: mode,
         sidebarMode: state.sidebarMode,
+        ...(state.stockView ? { stockView: state.stockView } : {}),
+        workspaceWidth: state.workspaceWidth,
       };
       persistPreferences(preferences, false);
       return preferences;
@@ -161,9 +193,11 @@ export const useLayoutStore = create<LayoutState>((set) => ({
 
   setSidebarMode: (mode) => {
     set((state) => {
-      const preferences = {
+      const preferences: LayoutPreferences = {
         layoutMode: state.layoutMode,
         sidebarMode: mode,
+        ...(state.stockView ? { stockView: state.stockView } : {}),
+        workspaceWidth: state.workspaceWidth,
       };
       // Selecting any sidebar mode opts into the composite format, including
       // compact, so the independent choice survives a reload.
@@ -174,10 +208,41 @@ export const useLayoutStore = create<LayoutState>((set) => ({
 
   setStockView: (view) => {
     set((state) => {
-      const preferences = {
+      const preferences: LayoutPreferences = {
         layoutMode: state.layoutMode,
         sidebarMode: state.sidebarMode,
         stockView: view,
+        workspaceWidth: state.workspaceWidth,
+      };
+      persistPreferences(preferences, true);
+      return preferences;
+    });
+  },
+
+  setWorkspaceWidth: (width) => {
+    set((state) => {
+      const preferences: LayoutPreferences = {
+        layoutMode: state.layoutMode,
+        sidebarMode: state.sidebarMode,
+        ...(state.stockView ? { stockView: state.stockView } : {}),
+        workspaceWidth: width,
+      };
+      persistPreferences(preferences, true);
+      return preferences;
+    });
+  },
+
+  cycleWorkspaceWidth: () => {
+    set((state) => {
+      const order: readonly WorkspaceWidth[] = ["focused", "standard", "wide"];
+      const nextIndex =
+        (order.indexOf(state.workspaceWidth) + 1) % order.length;
+      const nextWidth = order[nextIndex] ?? DEFAULT_WORKSPACE_WIDTH;
+      const preferences: LayoutPreferences = {
+        layoutMode: state.layoutMode,
+        sidebarMode: state.sidebarMode,
+        ...(state.stockView ? { stockView: state.stockView } : {}),
+        workspaceWidth: nextWidth,
       };
       persistPreferences(preferences, true);
       return preferences;

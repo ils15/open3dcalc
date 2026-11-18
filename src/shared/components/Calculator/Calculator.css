@@ -7,6 +7,14 @@
   column-gap: 1.5rem;
 }
 
+/* Focused display profile (1280px–1440px laptops & standard monitors):
+   slightly tighter rail and results column so 3-region fits comfortably with
+   the expanded sidebar and the center form crosses 38rem earlier. */
+[data-workspace-width="focused"] .calculator-layout--three-region {
+  grid-template-columns: 7.25rem minmax(32rem, 1fr) minmax(17.5rem, 19rem);
+  column-gap: 1rem;
+}
+
 /* Wide viewports keep the three-region template, but the measure container
    must NOT break out of its parent: the retired Studio shell compensated a
    fixed dock with a negative inline margin here, which now desynchronises the
@@ -20,6 +28,11 @@
 
   .calculator-layout--three-region {
     grid-template-columns: 8.125rem minmax(32rem, 1fr) minmax(18rem, 20.5625rem);
+  }
+
+  [data-workspace-width="wide"] .calculator-layout--three-region {
+    grid-template-columns: 8.5rem minmax(36rem, 1fr) minmax(20rem, 25rem);
+    column-gap: 2rem;
   }
 
   .calculator-results-sidebar {

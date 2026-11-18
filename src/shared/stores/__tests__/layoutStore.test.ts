@@ -3,36 +3,42 @@ import {
   useLayoutStore,
   LAYOUT_STORAGE_KEY,
   DEFAULT_SIDEBAR_MODE,
+  DEFAULT_WORKSPACE_WIDTH,
   type LayoutMode,
+  type WorkspaceWidth,
 } from "../layoutStore";
 import { useCalculatorStore } from "../calculatorStore";
 
-/**
- * Wave 1 (V2.0) — layout mode store.
- *
- * The key `open3dcalc_layout_v1` is registered in the SPEC-01 manifest
- * (class `ui_preference`); the guardedStorage gate denies unregistered keys,
- * so persistence only works because Wave 0 registered it.
- *
- * The store is deliberately SEPARATE from calculatorStore: `layoutMode` is an
- * ergonomic UI preference and must never enter the calculator undo snapshot
- * (undoing a cost edit must not revert the layout the user chose).
- */
-
 beforeEach(() => {
   localStorage.clear();
-  // sidebarMode lives in the same store: without this reset the sidebar
-  // preference chosen by a previous test leaks into the next one, even though
-  // no assertion here reads it.
+  // sidebarMode and workspaceWidth live in the same store: reset both so tests stay isolated.
   useLayoutStore.setState({
     layoutMode: "classic",
     sidebarMode: DEFAULT_SIDEBAR_MODE,
+    workspaceWidth: DEFAULT_WORKSPACE_WIDTH,
   });
 });
 
 describe("layoutStore — defaults and transitions", () => {
-  it("defaults to classic mode", () => {
+  it("defaults to classic mode and standard workspaceWidth", () => {
     expect(useLayoutStore.getState().layoutMode).toBe("classic");
+    expect(useLayoutStore.getState().workspaceWidth).toBe("standard");
+  });
+
+  it("setWorkspaceWidth and cycleWorkspaceWidth transition through focused -> standard -> wide", () => {
+    const store = useLayoutStore.getState();
+    const widths: WorkspaceWidth[] = ["focused", "standard", "wide"];
+    for (const width of widths) {
+      store.setWorkspaceWidth(width);
+      expect(useLayoutStore.getState().workspaceWidth).toBe(width);
+    }
+    store.setWorkspaceWidth("focused");
+    store.cycleWorkspaceWidth();
+    expect(useLayoutStore.getState().workspaceWidth).toBe("standard");
+    store.cycleWorkspaceWidth();
+    expect(useLayoutStore.getState().workspaceWidth).toBe("wide");
+    store.cycleWorkspaceWidth();
+    expect(useLayoutStore.getState().workspaceWidth).toBe("focused");
   });
 
   it("setLayoutMode() switches the active mode", () => {

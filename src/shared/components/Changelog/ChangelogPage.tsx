@@ -177,7 +177,7 @@ export function ChangelogPage() {
                               className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-accent)]/50"
                               aria-hidden="true"
                             />
-                            <span className="min-w-0 break-words">
+                            <span className="min-w-0 max-w-[75ch] break-words">
                               {renderInlineMarkdown(item)}
                             </span>
                           </li>

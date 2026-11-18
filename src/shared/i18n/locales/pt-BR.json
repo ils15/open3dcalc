@@ -35,7 +35,8 @@
     "colInfill": "Infill",
     "colWeight": "Peso",
     "colCost": "Custo",
-    "colDifference": "Diferença"
+    "colDifference": "Diferença",
+    "applyInfill": "Aplicar {{percent}}% na Calculadora"
   },
   "nav": {
     "calculator": "Calculadora",
@@ -2955,7 +2956,14 @@
     "quickPinScenario": "Fixar Base A/B",
     "quickPinned": "Base A Fixada",
     "quickSaveHistory": "Salvar Rápido",
-    "quickSaved": "Salvo!"
+    "quickSaved": "Salvo!",
+    "sortPrintersLabel": "Ordenar impressoras",
+    "sortPowerAsc": "Menor Potência (W)",
+    "sortValueAsc": "Menor Preço",
+    "sortHourCostAsc": "Menor Custo/h",
+    "machineHourCost": "Custo/hora",
+    "openCalculatorAction": "Abrir",
+    "lowStockChip": "Estoque Baixo (< 200g)"
   },
   "dashboardView": {
     "title": "Painel de Gestão & Oficina 3D",
@@ -3086,6 +3094,13 @@
     "comparePrice": "Preço de Venda",
     "compareProfit": "Lucro Líquido",
     "compareMargin": "Margem",
-    "headerWorkshopQuickNav": "Atalhos da Oficina"
+    "headerWorkshopQuickNav": "Atalhos da Oficina",
+    "widthFocused": "Focado",
+    "widthFocusedHint": "Largura focada para notebooks e monitores 1280px–1440px (Alt+W)",
+    "widthStandard": "Padrão",
+    "widthStandardHint": "Largura padrão equilibrada (Alt+W)",
+    "widthWide": "Amplo",
+    "widthWideHint": "Largura fluida para monitores Full HD/Ultrawide (Alt+W)",
+    "widthCycleTitle": "Alternar largura da tela: {{mode}} (Alt+W)"
   }
 }

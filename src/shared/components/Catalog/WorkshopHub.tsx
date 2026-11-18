@@ -20,6 +20,7 @@ import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useFilamentInventory } from "@/shared/stores/filamentInventory";
 import { isLowStockSpool } from "@/shared/stores/spoolStore";
 import { useCurrency } from "@/shared/hooks/useCurrency";
+import { useWorkspaceContainerClass } from "@/platform/web/components/studio/workspaceWidth";
 import type { Tab } from "@/shared/components/AppShell/tabs";
 
 type WorkshopSection = CatalogSection | "stock" | "business";
@@ -64,6 +65,7 @@ export function WorkshopHub({
 }: WorkshopHubProps): React.ReactElement {
   const { t } = useTranslation();
   const { symbol: currencySymbol } = useCurrency();
+  const containerClass = useWorkspaceContainerClass();
   const stockView = useLayoutStore((s) => s.stockView ?? "manager");
   const setStockView = useLayoutStore((s) => s.setStockView);
   const activeTechnology = useCalculatorStore((s) => s.activeTab ?? "fdm");
@@ -104,7 +106,9 @@ export function WorkshopHub({
   };
 
   return (
-    <section className="mx-auto flex w-full max-w-[100rem] flex-col gap-4 pb-16 text-[var(--color-text-primary)]">
+    <section
+      className={`${containerClass} flex flex-col gap-4 pb-16 text-[var(--color-text-primary)]`}
+    >
       {/* Active Workshop Setup & Quick-Jump Deck */}
       <div
         data-testid="workshop-active-setup-deck"
@@ -313,7 +317,7 @@ export function WorkshopHub({
             {stockView === "manager" ? (
               <SpoolManagerView onTabChange={onTabChange} />
             ) : (
-              <SpoolShelf />
+              <SpoolShelf onUseInCalculator={() => onTabChange("calculator")} />
             )}
           </div>
         ) : (
@@ -321,6 +325,7 @@ export function WorkshopHub({
             activeSection={section}
             showHeader={false}
             showSectionTabs={false}
+            onOpenCalculator={() => onTabChange("calculator")}
           />
         )}
       </div>

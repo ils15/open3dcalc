@@ -4,13 +4,12 @@ import confetti from "canvas-confetti";
 import { downloadBlob } from "@/shared/lib/download";
 import { BrandIcon } from "@/shared/components/BrandIcon";
 import { useCustomerStore } from "@/shared/stores/customerStore";
+import { useCurrency } from "@/shared/hooks/useCurrency";
 import { guardExport } from "@/shared/lib/demoExportGuard";
 import { serializeCsvRows } from "@/shared/lib/csvExport";
 import { StudioWhatsAppModal } from "./StudioWhatsAppModal";
 
-interface StudioQuoteModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+export interface StudioQuoteModalSeed {
   projectName?: string;
   material?: string;
   weightGrams?: number;
@@ -19,10 +18,25 @@ interface StudioQuoteModalProps {
   totalCost?: number;
   sellPrice?: number;
   profit?: number;
+  initialCustomerId?: string;
 }
 
-export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
-  isOpen,
+interface StudioQuoteModalProps extends StudioQuoteModalSeed {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return (
+    <StudioQuoteModalContent
+      key={props.initialCustomerId || "default"}
+      {...props}
+    />
+  );
+};
+
+const StudioQuoteModalContent: React.FC<StudioQuoteModalProps> = ({
   onClose,
   projectName = "Suporte de Impressão 3D",
   material = "PLA Basic",
@@ -32,11 +46,22 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
   totalCost = 18.5,
   sellPrice = 45.0,
   profit = 26.5,
+  initialCustomerId,
 }) => {
+  const { format: formatCurrency } = useCurrency();
   const customers = useCustomerStore((s) => s.customers);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
-  const [clientName, setClientName] = useState("Cliente Especial");
-  const [clientCompany, setClientCompany] = useState("");
+  const initialCustomer = initialCustomerId
+    ? customers.find((c) => c.id === initialCustomerId)
+    : undefined;
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
+    initialCustomerId ?? "",
+  );
+  const [clientName, setClientName] = useState(
+    initialCustomer?.name || "Cliente Especial",
+  );
+  const [clientCompany, setClientCompany] = useState(
+    initialCustomer?.company || "",
+  );
   const [paymentTerms, setPaymentTerms] = useState(
     "50% entrada + 50% entrega (PIX ou Cartão)",
   );
@@ -45,8 +70,6 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
-
-  if (!isOpen) return null;
 
   const handleSelectCustomer = (id: string) => {
     setSelectedCustomerId(id);
@@ -57,9 +80,9 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
     }
   };
 
-  const formattedSellPrice = (sellPrice || 45.0).toFixed(2).replace(".", ",");
-  const formattedCost = (totalCost || 18.5).toFixed(2).replace(".", ",");
-  const formattedProfit = (profit || 26.5).toFixed(2).replace(".", ",");
+  const formattedSellPrice = formatCurrency(sellPrice ?? 45.0);
+  const formattedCost = formatCurrency(totalCost ?? 18.5);
+  const formattedProfit = formatCurrency(profit ?? 26.5);
   const marginPercent =
     totalCost > 0 ? Math.round(((profit || 0) / totalCost) * 100) : 100;
 
@@ -78,7 +101,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
     `• Acabamento: Remoção de suportes & inspeção dimensional\n` +
     `-----------------------------------------------\n` +
     `CONDIÇÕES COMERCIAIS:\n` +
-    `• Investimento Total: *R$ ${formattedSellPrice}*\n` +
+    `• Investimento Total: *${formattedSellPrice}*\n` +
     `• Prazo de Fabricação: ${deliveryDays}\n` +
     `• Condição de Pagamento: ${paymentTerms}\n` +
     `===============================================\n` +
@@ -139,7 +162,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 z-50 bg-[var(--color-overlay-scrim)] backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div
         role="dialog"
         aria-modal="true"
@@ -280,7 +303,7 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
                 VALOR SUGERIDO
               </span>
               <span className="text-xl font-extrabold text-positive">
-                R$ {formattedSellPrice}
+                {formattedSellPrice}
               </span>
             </div>
           </div>
@@ -315,16 +338,14 @@ export const StudioQuoteModal: React.FC<StudioQuoteModalProps> = ({
                 Custo
               </span>
               <span className="font-semibold text-text-secondary">
-                R$ {formattedCost}
+                {formattedCost}
               </span>
             </div>
             <div>
               <span className="text-[10px] text-positive uppercase font-mono block font-bold">
                 Lucro (+{marginPercent}%)
               </span>
-              <span className="font-bold text-positive">
-                R$ {formattedProfit}
-              </span>
+              <span className="font-bold text-positive">{formattedProfit}</span>
             </div>
           </div>
 

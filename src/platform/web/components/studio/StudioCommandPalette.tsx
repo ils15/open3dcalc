@@ -28,11 +28,16 @@ import {
   CornerDownLeft,
   Check,
   X,
+  Monitor,
 } from "lucide-react";
 import { BrandIcon } from "@/shared/components/BrandIcon";
 import { Tab } from "@/shared/components/AppShell/tabs";
 import { isBetaChannel } from "@/shared/config/betaChannel";
-import { useLayoutStore, type LayoutMode } from "@/shared/stores/layoutStore";
+import {
+  useLayoutStore,
+  type LayoutMode,
+  type WorkspaceWidth,
+} from "@/shared/stores/layoutStore";
 import { useCalculatorStore } from "@/shared/stores/calculatorStore";
 import { useSafeStudioTheme } from "./useSafeStudioTheme";
 
@@ -84,6 +89,8 @@ const StudioCommandPaletteDialog: React.FC<StudioCommandPaletteProps> = ({
   const { theme, toggleTheme } = useSafeStudioTheme();
   const layoutMode = useLayoutStore((s) => s.layoutMode);
   const setLayoutMode = useLayoutStore((s) => s.setLayoutMode);
+  const workspaceWidth = useLayoutStore((s) => s.workspaceWidth ?? "standard");
+  const setWorkspaceWidth = useLayoutStore((s) => s.setWorkspaceWidth);
   const calcTech = useCalculatorStore((s) => s.activeTab);
   const setCalcTech = useCalculatorStore((s) => s.setActiveTab);
 
@@ -453,6 +460,58 @@ const StudioCommandPaletteDialog: React.FC<StudioCommandPaletteProps> = ({
         },
       },
       {
+        id: "act-width-focused",
+        group: "actions",
+        label: isEn
+          ? "Display Width: Focused (Standard Monitor / Laptop)"
+          : "Largura de Tela: Focado (Monitor Padrão / Notebook)",
+        hint: isEn
+          ? "Compact column for 1280px–1440px screens"
+          : "Otimizado para telas 1280px–1440px mantendo 3 colunas",
+        keywords: "largura tela monitor notebook compacto focused width alt+w",
+        icon: <Monitor className="w-4 h-4 text-accent" />,
+        shortcut: "Alt+W",
+        isActive: workspaceWidth === "focused",
+        onSelect: () => {
+          setWorkspaceWidth("focused" as WorkspaceWidth);
+          onClose();
+        },
+      },
+      {
+        id: "act-width-standard",
+        group: "actions",
+        label: isEn
+          ? "Display Width: Standard (Balanced)"
+          : "Largura de Tela: Padrão (Equilibrado)",
+        hint: isEn
+          ? "Balanced desktop measure (1600px cap)"
+          : "Medida equilibrada para desktop",
+        keywords: "largura tela monitor padrao standard width alt+w",
+        icon: <Monitor className="w-4 h-4 text-info" />,
+        isActive: workspaceWidth === "standard",
+        onSelect: () => {
+          setWorkspaceWidth("standard" as WorkspaceWidth);
+          onClose();
+        },
+      },
+      {
+        id: "act-width-wide",
+        group: "actions",
+        label: isEn
+          ? "Display Width: Wide (Ultrawide)"
+          : "Largura de Tela: Amplo (Ultrawide)",
+        hint: isEn
+          ? "Full fluid width for 1920px–2560px+ displays"
+          : "Aproveita monitores ultrawide sem margens desperdiçadas",
+        keywords: "largura tela wide ultrawide tela cheia full width alt+w",
+        icon: <Monitor className="w-4 h-4 text-positive" />,
+        isActive: workspaceWidth === "wide",
+        onSelect: () => {
+          setWorkspaceWidth("wide" as WorkspaceWidth);
+          onClose();
+        },
+      },
+      {
         id: "act-focus",
         group: "actions",
         label: isEn ? "Toggle Focus Mode" : "Alternar Modo Foco",
@@ -485,6 +544,7 @@ const StudioCommandPaletteDialog: React.FC<StudioCommandPaletteProps> = ({
     i18n,
     isEn,
     layoutMode,
+    workspaceWidth,
     onClose,
     onOpenCopilot,
     onOpenMiniDash,
@@ -495,6 +555,7 @@ const StudioCommandPaletteDialog: React.FC<StudioCommandPaletteProps> = ({
     onToggleFocusMode,
     setCalcTech,
     setLayoutMode,
+    setWorkspaceWidth,
     theme,
     toggleTheme,
   ]);

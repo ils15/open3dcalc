@@ -26,7 +26,11 @@ import {
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { ConfirmDialog } from "@/shared/components/ui/ConfirmDialog";
 import { Select } from "@/shared/components/ui/Select";
-import { SpoolCard, LOW_STOCK_GRAMS } from "./SpoolCard";
+import {
+  SpoolCard,
+  LOW_STOCK_GRAMS,
+  LOW_STOCK_FILTER_GRAMS,
+} from "./SpoolCard";
 import { SpoolForm, type SpoolFormValues } from "./SpoolForm";
 
 const STATUSES: SpoolStatus[] = ["in_stock", "on_the_way", "empty"];
@@ -47,7 +51,11 @@ const SORT_OPTIONS: { value: SpoolSortKey; key: string }[] = [
 
 const NO_MATERIAL = "Todos";
 
-export function SpoolShelf(): React.ReactElement {
+export function SpoolShelf({
+  onUseInCalculator,
+}: {
+  onUseInCalculator?: () => void;
+} = {}): React.ReactElement {
   const { t } = useTranslation();
   const spools = useSpoolStore((s) => s.spools);
   const addSpool = useSpoolStore((s) => s.addSpool);
@@ -63,6 +71,7 @@ export function SpoolShelf(): React.ReactElement {
   const [search, setSearch] = useState("");
   const [filterMaterial, setFilterMaterial] = useState<string>(NO_MATERIAL);
   const [filterStatus, setFilterStatus] = useState<SpoolStatus | "all">("all");
+  const [onlyLowStock, setOnlyLowStock] = useState(false);
   const [sortKey, setSortKey] = useState<SpoolSortKey>("dateAdded");
   const [sortDir, setSortDir] = useState<SpoolSortDir>("desc");
 
@@ -70,15 +79,24 @@ export function SpoolShelf(): React.ReactElement {
   const [editing, setEditing] = useState<FilamentSpool | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<FilamentSpool | null>(null);
 
-  const visible = useMemo(
-    () =>
-      getVisibleSpools(
-        { search, material: filterMaterial, status: filterStatus },
-        sortKey,
-        sortDir,
-      ),
-    [getVisibleSpools, search, filterMaterial, filterStatus, sortKey, sortDir],
-  );
+  const visible = useMemo(() => {
+    const base = getVisibleSpools(
+      { search, material: filterMaterial, status: filterStatus },
+      sortKey,
+      sortDir,
+    );
+    return onlyLowStock
+      ? base.filter((s) => isLowStockSpool(s, LOW_STOCK_FILTER_GRAMS))
+      : base;
+  }, [
+    getVisibleSpools,
+    search,
+    filterMaterial,
+    filterStatus,
+    onlyLowStock,
+    sortKey,
+    sortDir,
+  ]);
 
   const { format } = useCurrency();
 
@@ -133,6 +151,7 @@ export function SpoolShelf(): React.ReactElement {
     setSearch("");
     setFilterMaterial(NO_MATERIAL);
     setFilterStatus("all");
+    setOnlyLowStock(false);
   };
 
   return (
@@ -150,7 +169,7 @@ export function SpoolShelf(): React.ReactElement {
         <button
           type="button"
           onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-bold bg-[var(--color-accent-fill)] hover:bg-[var(--color-accent-fill-hover)] text-[var(--color-accent-fill-fg)] transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" aria-hidden="true" />
           {t("spools.newSpool")}
@@ -162,7 +181,7 @@ export function SpoolShelf(): React.ReactElement {
         <div className="surface rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-sm">
           <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] font-medium mb-1">
             <span>Total em Estoque</span>
-            <Package className="w-4 h-4 text-blue-400" />
+            <Package className="w-4 h-4 text-[var(--color-accent)]" />
           </div>
           <div className="text-xl font-black font-mono text-[var(--color-text-primary)]">
             {spools.length} carretéis
@@ -175,7 +194,7 @@ export function SpoolShelf(): React.ReactElement {
         <div className="surface rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-sm">
           <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] font-medium mb-1">
             <span>Peso Restante</span>
-            <Scale className="w-4 h-4 text-indigo-400" />
+            <Scale className="w-4 h-4 text-[var(--color-accent)]" />
           </div>
           <div className="text-xl font-black font-mono text-[var(--color-text-primary)]">
             {(totalWeightGrams / 1000).toFixed(1)} kg
@@ -188,9 +207,9 @@ export function SpoolShelf(): React.ReactElement {
         <div className="surface rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-sm">
           <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] font-medium mb-1">
             <span>Valor Investido</span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <DollarSign className="w-4 h-4 text-[var(--color-positive)]" />
           </div>
-          <div className="text-xl font-black font-mono text-emerald-400">
+          <div className="text-xl font-black font-mono text-[var(--color-positive)]">
             {format(totalInvested)}
           </div>
           <div className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
@@ -201,10 +220,10 @@ export function SpoolShelf(): React.ReactElement {
         <div className="surface rounded-xl p-4 border border-[var(--color-border)] bg-[var(--color-bg-elevated)] shadow-sm">
           <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)] font-medium mb-1">
             <span>Alerta de Estoque</span>
-            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <AlertTriangle className="w-4 h-4 text-[var(--color-warning)]" />
           </div>
           <div
-            className={`text-xl font-black font-mono ${lowCount > 0 ? "text-amber-400" : "text-slate-400"}`}
+            className={`text-xl font-black font-mono ${lowCount > 0 ? "text-[var(--color-warning)]" : "text-[var(--color-text-muted)]"}`}
           >
             {lowCount}{" "}
             {lowCount === 1 ? "carretel baixo" : "carretéis acabando"}
@@ -251,7 +270,7 @@ export function SpoolShelf(): React.ReactElement {
             aria-pressed={filterMaterial === m}
             className={`px-3 py-1.5 min-h-[32px] rounded-[6px] text-xs font-semibold transition-colors border ${
               filterMaterial === m
-                ? "bg-[var(--accent-fill)] text-white border-[var(--color-accent)]"
+                ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] border-[var(--color-accent)]"
                 : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]"
             }`}
           >
@@ -270,13 +289,31 @@ export function SpoolShelf(): React.ReactElement {
             aria-pressed={filterStatus === s}
             className={`px-3 py-1.5 min-h-[32px] rounded-[6px] text-xs font-semibold transition-colors border ${
               filterStatus === s
-                ? "bg-[var(--accent-fill)] text-white border-[var(--color-accent)]"
+                ? "bg-[var(--color-accent-fill)] text-[var(--color-accent-fill-fg)] border-[var(--color-accent)]"
                 : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]"
             }`}
           >
             {s === "all" ? t("spools.filterAllStatuses") : t(STATUS_KEY[s])}
           </button>
         ))}
+        <div
+          className="w-px h-5 bg-[var(--color-border)] mx-0.5"
+          aria-hidden="true"
+        />
+        <button
+          type="button"
+          data-testid="spool-shelf-low-stock-filter"
+          aria-pressed={onlyLowStock}
+          onClick={() => setOnlyLowStock((prev) => !prev)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[32px] rounded-[6px] text-xs font-semibold transition-colors border ${
+            onlyLowStock
+              ? "bg-[var(--color-warning-subtle)] text-[var(--color-warning)] border-[var(--color-warning)]"
+              : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:text-[var(--color-text-primary)]"
+          }`}
+        >
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          <span>{t("workshop.lowStockChip")}</span>
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 items-end">
@@ -319,6 +356,7 @@ export function SpoolShelf(): React.ReactElement {
               <SpoolCard
                 spool={spool}
                 requiredGrams={requiredGrams}
+                onUseInCalculator={onUseInCalculator}
                 onEdit={openEdit}
                 onRemove={setDeleteTarget}
               />

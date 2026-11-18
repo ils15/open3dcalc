@@ -35,7 +35,8 @@
     "colInfill": "Infill",
     "colWeight": "Weight",
     "colCost": "Cost",
-    "colDifference": "Difference"
+    "colDifference": "Difference",
+    "applyInfill": "Apply {{percent}}% to Calculator"
   },
   "nav": {
     "calculator": "Calculator",
@@ -2955,7 +2956,14 @@
     "quickPinScenario": "Pin Baseline A/B",
     "quickPinned": "Baseline A Pinned",
     "quickSaveHistory": "Quick Save",
-    "quickSaved": "Saved!"
+    "quickSaved": "Saved!",
+    "sortPrintersLabel": "Sort printers",
+    "sortPowerAsc": "Lowest Power (W)",
+    "sortValueAsc": "Lowest Price",
+    "sortHourCostAsc": "Lowest Cost/h",
+    "machineHourCost": "Cost/hour",
+    "openCalculatorAction": "Open",
+    "lowStockChip": "Low Stock (< 200g)"
   },
   "dashboardView": {
     "title": "Management & Workshop 3D Panel",
@@ -3086,6 +3094,13 @@
     "comparePrice": "Sell Price",
     "compareProfit": "Net Profit",
     "compareMargin": "Margin",
-    "headerWorkshopQuickNav": "Workshop Quick Links"
+    "headerWorkshopQuickNav": "Workshop Quick Links",
+    "widthFocused": "Focused",
+    "widthFocusedHint": "Focused width for 1280px–1440px laptops & monitors (Alt+W)",
+    "widthStandard": "Standard",
+    "widthStandardHint": "Balanced standard width (Alt+W)",
+    "widthWide": "Wide",
+    "widthWideHint": "Full fluid width for 1920px–2560px+ displays (Alt+W)",
+    "widthCycleTitle": "Switch workspace width: {{mode}} (Alt+W)"
   }
 }
