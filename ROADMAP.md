@@ -17,8 +17,8 @@
 ## Estado dos canais publicados — atualizado em 18/11/2026
 
 - **Estável (`/`)**: `v2.0.2` (publicado na raiz do GitHub Pages + builds Desktop Windows e Linux).
-- **Beta web (`/beta/`)**: `v2.0.2-beta.1` (último snapshot beta antes da promoção para `v2.0.2` Estável).
-- **Candidata atual no `main`**: `2.0.2` (promovida para Estável após validação em `/beta/`).
+- **Beta web (`/beta/`)**: `v2.1.0-beta.1` (Simulador Multi-Cor AMS/CFS/ACE/MMU + Ferramentas de Bancada Maker em validação no `/beta/`).
+- **Candidata atual no `main`**: `2.1.0-beta.1` (em validação no canal `/beta/` antes da promoção para `v2.1.0` Estável).
 
 ### 🚀 Evolução UX, Ergonomia & Gestão de Oficina (Fases 1, 2, 3 e 4 — `v2.0.1`)
 
