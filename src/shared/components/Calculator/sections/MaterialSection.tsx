@@ -16,6 +16,7 @@ import type { AMSSlot } from "@/shared/types";
 import { selectSpool } from "@/shared/stores/storeBridge";
 import type { FileParseResult } from "@/shared/components/StlPreview/StlPreview";
 import { StlPreview } from "@/shared/components/StlPreview/StlPreview";
+import { AmsPurgePanel } from "../AmsPurgePanel";
 import { SlicerProfileFields } from "./SlicerProfileFields";
 import { FilamentAssumptionsFields } from "./FilamentAssumptionsFields";
 import { formatWeight } from "@/shared/lib/format";
@@ -596,6 +597,7 @@ export function MaterialSection({
                 </div>
               );
             })()}
+          <AmsPurgePanel />
         </>
       ) : (
         <div className="grid grid-cols-1 @form:grid-cols-2 gap-3">

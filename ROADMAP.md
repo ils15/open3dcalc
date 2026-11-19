@@ -66,14 +66,14 @@ A partir da `v2.0.1`, todas as próximas atualizações seguem este cronograma o
 
 #### 🔹 Release `v2.1.0` — Precisão Multi-Cor (AMS / CFS / ACE Pro / MMU) & Ferramentas de Bancada Maker
 *Foco: Resolver a maior dor atual da impressão 3D moderna — o desperdício real em impressões multicoloridas — e inaugurar utilitários práticos de engenharia.*
-- [ ] **Motor Multi-Material M2/M3: Purga ("Poop"), Torre de Prime e Diluição em Mesa Cheia (`Phase 7m` + `#358`):**
-  - Evoluir `MultiMaterialPaintRow.tsx` e `calculatorEngine.ts` com estimativa de desperdício por troca de filamento (`purgeVolumeMm3` / `purgeGramsPerSwap` × `filamentChangeCount`) + peso da Torre de Prime (`primeTowerGrams`).
-  - **Simulador de Diluição em Lote ("1 Peça vs. Mesa Cheia"):** Demonstrar em tempo real como imprimir $N$ peças coloridas na mesma bandeja dilui o mesmo peso de purga/torre entre todas as unidades, derrubando o custo unitário e destacando a economia em R\$ e gramas.
-  - Extração automática de metadados de purga/trocas em comentários de `.gcode` e `.3mf` do Bambu Studio e OrcaSlicer (`filament_used [g]`, `flushed_filament`, `wipe_tower`, `change_filament_count`).
-- [ ] **Aba "Ferramentas de Bancada" (*Maker Toolbox*) na Oficina:**
-  - **Calculadora de Folga de Furos, Pinos & Insertos Térmicos (*Hole Tolerance & Press-Fit* — `Phase 6 P2` + `#358`):** Conectar os dados já prontos de `src/data/infillData.ts` em ferramenta visual para consulta de compensação dimensional por material (`PLA`, `PETG`, `ABS`, `ASA`, `TPU`) e tipo de encaixe (*Deslizante*, *Firme*, *Interferência*, *Inserto Latão M2–M6*).
-  - **Balança de Carretel Dedicada (*Kitchen Scale Spool Checker*):** Interface dedicada sobre `filamentRemaining.ts` + `brandTare.ts` com busca de tara por marca e botão de 1 clique *"Atualizar Peso no Meu Estoque"*.
-  - **Calibrador Rápido de Vazão / *Max Volumetric Speed* ($\text{mm}^3/\text{s}$):** Utilitário visual relacionando `altura de camada × largura de linha × velocidade (mm/s)` ao limite volumétrico do hotend.
+- [x] **Motor Multi-Material M2/M3: Purga ("Poop"), Torre de Prime e Diluição em Mesa Cheia (`Phase 7m` + `#358`):**
+  - Criado motor puro `amsPurge.ts` e painel interativo `AmsPurgePanel.tsx` em `MaterialSection.tsx` com estimativa de desperdício por troca de filamento (`purgeGramsPerSwap` × `filamentChanges`) + peso da Torre de Prime (`primeTowerGrams`).
+  - **Simulador de Diluição em Lote ("1 Peça vs. Mesa Cheia"):** Demonstra em tempo real como imprimir $N$ peças coloridas na mesma bandeja dilui o mesmo peso de purga/torre entre todas as unidades, com aplicação em 1 clique do peso diluído e quantidade na calculadora (`useCalculatorStore`).
+  - Extração automática de metadados de purga/trocas em comentários `.gcode` do Bambu Studio e OrcaSlicer (`flushedWeightGrams`, `wipeTowerGrams`, `filamentChangeCount` em `gcodeParser.ts`).
+- [x] **Aba "Ferramentas de Bancada" (*Maker Toolbox*) na Oficina (`WorkshopHub.tsx` + `MakerToolboxView.tsx`):**
+  - **Calculadora de Folga de Furos, Pinos & Insertos Térmicos (*Hole Tolerance & Press-Fit* — `Phase 6 P2` + `#358`):** Módulo puro `holeTolerance.ts` com compensação dimensional por material (`PLA`, `PETG`, `ABS`, `ASA`, `TPU`), tipo de encaixe (*Deslizante*, *Firme*, *Interferência*) e tabela rápida de insertos térmicos de latão `M2`–`M6`.
+  - **Balança de Carretel Dedicada (*Kitchen Scale Spool Checker*):** Interface dedicada sobre `filamentRemaining.ts` + `brandTare.ts` com busca de tara por marca, tara manual e botão de 1 clique *"Atualizar Carretel no Estoque"*.
+  - **Calibrador Rápido de Vazão / *Max Volumetric Speed* ($\text{mm}^3/\text{s}$):** Utilitário visual relacionando `altura de camada × largura de linha × velocidade (mm/s)` ao limite volumétrico do hotend (PTFE, All-Metal, High-Flow, Ultra High-Flow).
 
 #### 🔹 Release `v2.2.0` — Fechamento Comercial Brasileiro (PIX QR no PDF, Tabela Reversa de Marketplaces & Baixa de Estoque)
 *Foco: Transformar o orçamento em venda fechada instantânea e automatizar a baixa física dos carretéis.*
